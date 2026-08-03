@@ -1,0 +1,16 @@
+{
+  "module" : "logs-spy",
+  "date" : "2026-08-03T06:39:43.613148500Z",
+  "properties" : {
+    "packageName" : "com.glm.glmback",
+    "projectName" : "glmproject",
+    "baseName" : "glmproject",
+    "keycloakClientScopeName" : "glmproject",
+    "keycloakRealmName" : "glmproject",
+    "nodePackageManager" : "npm",
+    "serverPort" : 8080,
+    "endOfLine" : "lf",
+    "indentSize" : 2,
+    "springConfigurationFormat" : "yaml"
+  }
+}
