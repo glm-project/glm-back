@@ -34,6 +34,10 @@ npm install
 docker compose -f src/main/docker/postgresql.yml up -d
 ```
 
+```bash
+docker compose -f src/main/docker/keycloak.yml up -d
+```
+
 
 <!-- seed4j-needle-startupCommand -->
 
