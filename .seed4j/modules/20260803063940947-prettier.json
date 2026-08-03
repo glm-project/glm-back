@@ -1,0 +1,16 @@
+{
+  "module" : "prettier",
+  "date" : "2026-08-03T06:39:40.947297800Z",
+  "properties" : {
+    "packageName" : "com.glm.glmback",
+    "projectName" : "glmproject",
+    "baseName" : "glmproject",
+    "keycloakClientScopeName" : "glmproject",
+    "keycloakRealmName" : "glmproject",
+    "nodePackageManager" : "npm",
+    "serverPort" : 8080,
+    "endOfLine" : "lf",
+    "indentSize" : 2,
+    "springConfigurationFormat" : "yaml"
+  }
+}
