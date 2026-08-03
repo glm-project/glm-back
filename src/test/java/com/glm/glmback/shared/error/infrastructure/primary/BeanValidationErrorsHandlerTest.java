@@ -3,6 +3,10 @@ package com.glm.glmback.shared.error.infrastructure.primary;
 import static org.mockito.Mockito.*;
 
 import ch.qos.logback.classic.Level;
+import com.glm.glmback.Logs;
+import com.glm.glmback.LogsSpy;
+import com.glm.glmback.LogsSpyExtension;
+import com.glm.glmback.UnitTest;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validation;
 import jakarta.validation.ValidatorFactory;
@@ -12,10 +16,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.core.MethodParameter;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import com.glm.glmback.Logs;
-import com.glm.glmback.LogsSpy;
-import com.glm.glmback.LogsSpyExtension;
-import com.glm.glmback.UnitTest;
 
 @UnitTest
 @ExtendWith(LogsSpyExtension.class)

@@ -1,8 +1,8 @@
 package com.glm.glmback.shared.authentication.domain;
 
+import com.glm.glmback.shared.error.domain.Assert;
 import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
-import com.glm.glmback.shared.error.domain.Assert;
 
 public record Username(String username) {
   public Username {

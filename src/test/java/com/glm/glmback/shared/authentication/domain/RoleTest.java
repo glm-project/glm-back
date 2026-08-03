@@ -2,8 +2,8 @@ package com.glm.glmback.shared.authentication.domain;
 
 import static org.assertj.core.api.Assertions.*;
 
-import org.junit.jupiter.api.Test;
 import com.glm.glmback.UnitTest;
+import org.junit.jupiter.api.Test;
 
 @UnitTest
 class RoleTest {

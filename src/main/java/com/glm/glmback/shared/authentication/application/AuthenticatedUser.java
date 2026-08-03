@@ -1,5 +1,9 @@
 package com.glm.glmback.shared.authentication.application;
 
+import com.glm.glmback.shared.authentication.domain.Role;
+import com.glm.glmback.shared.authentication.domain.Roles;
+import com.glm.glmback.shared.authentication.domain.Username;
+import com.glm.glmback.shared.error.domain.Assert;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -11,10 +15,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-import com.glm.glmback.shared.authentication.domain.Role;
-import com.glm.glmback.shared.authentication.domain.Roles;
-import com.glm.glmback.shared.authentication.domain.Username;
-import com.glm.glmback.shared.error.domain.Assert;
 
 /**
  * This is a utility class to get authenticated user information

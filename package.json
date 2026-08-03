@@ -4,15 +4,25 @@
   "private": true,
   "description": "glmproject",
   "license": "UNLICENSED",
+  "scripts": {
+    "prepare": "husky",
+    "prettier:check": "prettier --check \"**/*.{java,xml,yml,yaml,json,md,feature}\"",
+    "prettier:format": "prettier --write \"**/*.{java,xml,yml,yaml,json,md,feature}\""
+  },
+  "devDependencies": {
+    "@prettier/plugin-xml": "3.4.2",
+    "chevrotain": "11.0.3",
+    "husky": "9.1.7",
+    "lint-staged": "17.0.8",
+    "prettier": "3.9.4",
+    "prettier-plugin-gherkin": "4.0.0",
+    "prettier-plugin-java": "2.8.1",
+    "prettier-plugin-organize-imports": "4.3.0",
+    "prettier-plugin-packagejson": "3.0.2",
+    "typescript": "5.9.2"
+  },
   "packageManager": "npm@11.18.0",
   "engines": {
     "node": ">=24"
-  },
-  "scripts": {
-    "prepare": "husky"
-  },
-  "devDependencies": {
-    "husky": "9.1.7",
-    "lint-staged": "17.0.8"
   }
 }
