@@ -2,12 +2,6 @@
 
 ## Prerequisites
 
-### Java
-
-You need to have Java 25:
-
-- [JDK 25](https://openjdk.java.net/projects/jdk/25/)
-
 ### Node.js and NPM
 
 Before you can build this project, you must install and configure the following dependencies on your machine:
@@ -24,30 +18,15 @@ npm install
 
 ## Local environment
 
-- [Local server](http://localhost:8080)
 
 <!-- seed4j-needle-localEnvironment -->
 
 ## Start up
-
-```bash
-docker compose -f src/main/docker/postgresql.yml up -d
-```
-
-```bash
-docker compose -f src/main/docker/keycloak.yml up -d
-```
 
 
 <!-- seed4j-needle-startupCommand -->
 
 ## Documentation
 
-- [Package types](documentation/package-types.md)
-- [Assertions](documentation/assertions.md)
-- [PostgreSQL](documentation/postgresql.md)
-- [Logs Spy](documentation/logs-spy.md)
-- [CORS configuration](documentation/cors-configuration.md)
-- [Cucumber](documentation/cucumber.md)
 
 <!-- seed4j-needle-documentation -->
