@@ -10,3 +10,5 @@ spring:
     password: ''
     url: jdbc:tc:postgresql:18.4:///glmproject?TC_TMPFS=/testtmpfs:rw
     username: glmproject
+  liquibase:
+    contexts: test
