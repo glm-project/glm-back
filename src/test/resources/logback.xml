@@ -16,5 +16,8 @@
   <logger name="org.hibernate.validator" level="WARN" />
   <logger name="org.hibernate.orm" level="WARN" />
   <logger name="org.hibernate.ejb.HibernatePersistence" level="OFF" />
+  <logger name="liquibase" level="WARN" />
+  <logger name="LiquibaseSchemaResolver" level="INFO" />
+  <logger name="com.zaxxer.hikari" level="WARN" />
   <!-- seed4j-needle-logback-add-log -->
 </configuration>
