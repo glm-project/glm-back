@@ -1,0 +1,83 @@
+package com.glm.glmback.elementdefabrication.domain;
+
+import java.time.Instant;
+
+public final class ElementsDeFabricationFixture {
+
+  public static final Instant LE_1ER_JANVIER_2026 = Instant.parse("2026-01-01T00:00:00Z");
+  public static final Instant LE_15_JANVIER_2026 = Instant.parse("2026-01-15T10:00:00Z");
+  public static final Instant LE_20_FEVRIER_2026 = Instant.parse("2026-02-20T14:30:00Z");
+  public static final Instant LE_31_MARS_2026 = Instant.parse("2026-03-31T23:59:59Z");
+
+  private ElementsDeFabricationFixture() {}
+
+  public static Titre titreAssemblageCarter() {
+    return new Titre("Assemblage carter");
+  }
+
+  public static Titre titreAssemblageCarterRevise() {
+    return new Titre("Assemblage carter revise");
+  }
+
+  public static Titre titreCarterMoteur() {
+    return new Titre("Carter moteur");
+  }
+
+  public static Description descriptionCarterEnFonte() {
+    return new Description("Carter en fonte");
+  }
+
+  public static Periode premierTrimestre2026() {
+    return new Periode(LE_1ER_JANVIER_2026, LE_31_MARS_2026);
+  }
+
+  public static ElementDeFabricationCriteria criteresPremierTrimestre2026() {
+    return new ElementDeFabricationCriteria(premierTrimestre2026());
+  }
+
+  public static Fiche ficheAssemblageCarter() {
+    return Fiche.builder()
+      .titre(titreAssemblageCarter())
+      .description(descriptionCarterEnFonte())
+      .dateDeCreation(LE_15_JANVIER_2026)
+      .dateDeModification(LE_15_JANVIER_2026);
+  }
+
+  public static Fiche ficheCarterMoteur() {
+    return Fiche.builder()
+      .titre(titreCarterMoteur())
+      .description(descriptionCarterEnFonte())
+      .dateDeCreation(LE_15_JANVIER_2026)
+      .dateDeModification(LE_15_JANVIER_2026);
+  }
+
+  public static OrdreDeFabrication ordreDeFabricationAssemblageCarter() {
+    return ordreDeFabricationAssemblageCarter(OrdreDeFabricationId.newId());
+  }
+
+  public static OrdreDeFabrication ordreDeFabricationAssemblageCarter(OrdreDeFabricationId id) {
+    return ordreDeFabricationAssemblageCarter(id, LE_15_JANVIER_2026);
+  }
+
+  public static OrdreDeFabrication ordreDeFabricationAssemblageCarterCreeLe(Instant dateDeCreation) {
+    return ordreDeFabricationAssemblageCarter(OrdreDeFabricationId.newId(), dateDeCreation);
+  }
+
+  public static Produit produitCarterMoteur() {
+    return Produit.builder()
+      .id(ProduitId.newId())
+      .titre(titreCarterMoteur())
+      .description(descriptionCarterEnFonte())
+      .dateDeCreation(LE_15_JANVIER_2026)
+      .dateDeModification(LE_15_JANVIER_2026);
+  }
+
+  private static OrdreDeFabrication ordreDeFabricationAssemblageCarter(OrdreDeFabricationId id, Instant dateDeCreation) {
+    return OrdreDeFabrication.builder()
+      .id(id)
+      .titre(titreAssemblageCarter())
+      .description(descriptionCarterEnFonte())
+      .dateDeCreation(dateDeCreation)
+      .dateDeModification(dateDeCreation);
+  }
+}
