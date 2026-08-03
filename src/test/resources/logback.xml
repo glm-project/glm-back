@@ -13,5 +13,8 @@
   <logger name="org.testcontainers" level="WARN" />
   <logger name="org.postgresql" level="WARN" />
   <logger name="org.jboss.logging" level="WARN" />
+  <logger name="org.hibernate.validator" level="WARN" />
+  <logger name="org.hibernate.orm" level="WARN" />
+  <logger name="org.hibernate.ejb.HibernatePersistence" level="OFF" />
   <!-- seed4j-needle-logback-add-log -->
 </configuration>
