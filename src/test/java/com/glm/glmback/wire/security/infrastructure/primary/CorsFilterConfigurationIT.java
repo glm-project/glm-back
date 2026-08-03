@@ -2,11 +2,11 @@ package com.glm.glmback.wire.security.infrastructure.primary;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.glm.glmback.IntegrationTest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.filter.CorsFilter;
-import com.glm.glmback.IntegrationTest;
 
 @IntegrationTest
 class CorsFilterConfigurationIT {

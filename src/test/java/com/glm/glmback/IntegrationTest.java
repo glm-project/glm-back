@@ -1,14 +1,14 @@
 package com.glm.glmback;
 
+import com.glm.glmback.shared.authentication.infrastructure.primary.TestSecurityConfiguration;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.junit.jupiter.api.DisplayNameGeneration;
-import org.springframework.security.test.context.support.WithMockUser;
-import com.glm.glmback.shared.authentication.infrastructure.primary.TestSecurityConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.annotation.AliasFor;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles("test")

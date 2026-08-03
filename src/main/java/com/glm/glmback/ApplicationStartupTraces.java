@@ -1,5 +1,7 @@
 package com.glm.glmback;
 
+import com.glm.glmback.shared.error.domain.Assert;
+import com.glm.glmback.shared.generation.domain.ExcludeFromGeneratedCodeCoverage;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import org.apache.commons.lang3.ArrayUtils;
@@ -7,8 +9,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
-import com.glm.glmback.shared.error.domain.Assert;
-import com.glm.glmback.shared.generation.domain.ExcludeFromGeneratedCodeCoverage;
 
 final class ApplicationStartupTraces {
 

@@ -18,15 +18,12 @@ npm install
 
 ## Local environment
 
-
 <!-- seed4j-needle-localEnvironment -->
 
 ## Start up
 
-
 <!-- seed4j-needle-startupCommand -->
 
 ## Documentation
-
 
 <!-- seed4j-needle-documentation -->

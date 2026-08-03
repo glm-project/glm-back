@@ -1,13 +1,13 @@
 package com.glm.glmback.shared.authentication.infrastructure.primary;
 
+import com.glm.glmback.shared.authentication.application.NotAuthenticatedUserException;
+import com.glm.glmback.shared.authentication.application.UnknownAuthenticationException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import com.glm.glmback.shared.authentication.application.NotAuthenticatedUserException;
-import com.glm.glmback.shared.authentication.application.UnknownAuthenticationException;
 
 @ControllerAdvice
 @Order(Ordered.LOWEST_PRECEDENCE - 20_000)

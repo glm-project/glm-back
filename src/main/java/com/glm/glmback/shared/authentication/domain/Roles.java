@@ -1,9 +1,9 @@
 package com.glm.glmback.shared.authentication.domain;
 
-import java.util.Set;
-import java.util.stream.Stream;
 import com.glm.glmback.shared.collection.domain.GlmprojectCollections;
 import com.glm.glmback.shared.error.domain.Assert;
+import java.util.Set;
+import java.util.stream.Stream;
 
 public record Roles(Set<Role> roles) {
   public static final Roles EMPTY = new Roles(null);

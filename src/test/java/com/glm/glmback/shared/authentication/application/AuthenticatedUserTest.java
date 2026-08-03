@@ -173,11 +173,7 @@ class AuthenticatedUserTest {
   }
 
   private static JwtAuthenticationToken jwtAuthenticationToken() {
-    Jwt jwt = Jwt.withTokenValue("token")
-      .header("alg", JwsAlgorithms.RS256)
-      .subject("seed4j")
-      .claim("preferred_username", "admin")
-      .build();
+    Jwt jwt = Jwt.withTokenValue("token").header("alg", JwsAlgorithms.RS256).subject("seed4j").claim("preferred_username", "admin").build();
 
     return new JwtAuthenticationToken(jwt, adminAuthorities());
   }

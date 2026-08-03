@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.glm.glmback.UnitTest;
+import com.glm.glmback.shared.authentication.domain.Role;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.List;
@@ -27,8 +29,6 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
-import com.glm.glmback.UnitTest;
-import com.glm.glmback.shared.authentication.domain.Role;
 
 @UnitTest
 @ExtendWith(MockitoExtension.class)

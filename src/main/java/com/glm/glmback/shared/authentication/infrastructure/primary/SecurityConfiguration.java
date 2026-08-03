@@ -2,6 +2,8 @@ package com.glm.glmback.shared.authentication.infrastructure.primary;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
+import com.glm.glmback.shared.authentication.domain.Role;
+import com.glm.glmback.shared.generation.domain.ExcludeFromGeneratedCodeCoverage;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
@@ -34,8 +36,6 @@ import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.web.filter.CorsFilter;
-import com.glm.glmback.shared.authentication.domain.Role;
-import com.glm.glmback.shared.generation.domain.ExcludeFromGeneratedCodeCoverage;
 
 @Configuration
 @EnableWebSecurity
@@ -50,10 +50,7 @@ class SecurityConfiguration {
   @Value("${spring.security.oauth2.client.provider.oidc.issuer-uri}")
   private String issuerUri;
 
-  public SecurityConfiguration(
-    CorsFilter corsFilter,
-    ApplicationSecurityProperties applicationSecurityProperties
-  ) {
+  public SecurityConfiguration(CorsFilter corsFilter, ApplicationSecurityProperties applicationSecurityProperties) {
     this.corsFilter = corsFilter;
     this.applicationSecurityProperties = applicationSecurityProperties;
   }

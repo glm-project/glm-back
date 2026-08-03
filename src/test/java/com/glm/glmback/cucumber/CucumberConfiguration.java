@@ -1,5 +1,9 @@
 package com.glm.glmback.cucumber;
 
+import com.glm.glmback.GlmprojectApp;
+import com.glm.glmback.cucumber.CucumberConfiguration.CucumberRestClientConfiguration;
+import com.glm.glmback.cucumber.rest.CucumberRestClient;
+import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
 import io.cucumber.java.Before;
 import io.cucumber.spring.CucumberContextConfiguration;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTestClient;
@@ -9,18 +13,11 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.client.RestTestClient;
-import com.glm.glmback.GlmprojectApp;
-import com.glm.glmback.cucumber.CucumberConfiguration.CucumberRestClientConfiguration;
-import com.glm.glmback.cucumber.rest.CucumberRestClient;
-import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
 
 @ActiveProfiles("test")
 @CucumberContextConfiguration
 @AutoConfigureRestTestClient
-@SpringBootTest(
-  classes = { GlmprojectApp.class, CucumberRestClientConfiguration.class },
-  webEnvironment = WebEnvironment.RANDOM_PORT
-)
+@SpringBootTest(classes = { GlmprojectApp.class, CucumberRestClientConfiguration.class }, webEnvironment = WebEnvironment.RANDOM_PORT)
 public class CucumberConfiguration {
 
   private final CucumberRestClient rest;

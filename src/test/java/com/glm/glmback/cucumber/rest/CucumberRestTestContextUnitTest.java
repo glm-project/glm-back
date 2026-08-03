@@ -4,6 +4,7 @@ import static java.nio.charset.StandardCharsets.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.glm.glmback.UnitTest;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
@@ -13,7 +14,6 @@ import org.springframework.http.HttpRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpResponse;
-import com.glm.glmback.UnitTest;
 
 @UnitTest
 class CucumberRestTestContextUnitTest {
