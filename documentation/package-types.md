@@ -10,7 +10,6 @@ To mark a package, you have to add a `package-info.java` file at the package roo
 ```java
 @com.glm.glmback.SharedKernel
 package com.glm.glmback;
-
 ```
 
 or:
@@ -18,5 +17,4 @@ or:
 ```java
 @com.glm.glmback.BusinessContext
 package com.glm.glmback;
-
 ```

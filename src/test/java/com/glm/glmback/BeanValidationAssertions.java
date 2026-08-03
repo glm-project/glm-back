@@ -2,12 +2,12 @@ package com.glm.glmback;
 
 import static org.assertj.core.api.Assertions.*;
 
+import com.glm.glmback.shared.error.domain.Assert;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import java.util.Set;
 import java.util.function.Predicate;
-import com.glm.glmback.shared.error.domain.Assert;
 
 public final class BeanValidationAssertions {
 

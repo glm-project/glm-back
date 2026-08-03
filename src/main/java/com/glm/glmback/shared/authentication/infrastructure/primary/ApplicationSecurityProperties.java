@@ -13,8 +13,7 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties(prefix = "application.security", ignoreUnknownFields = false)
 class ApplicationSecurityProperties {
 
-  private static final String CONTENT_SECURITY_POLICY =
-    """
+  private static final String CONTENT_SECURITY_POLICY = """
     default-src 'self'; frame-src 'self' data:; \
     script-src 'self' 'unsafe-inline' 'unsafe-eval' https://storage.googleapis.com; \
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; \

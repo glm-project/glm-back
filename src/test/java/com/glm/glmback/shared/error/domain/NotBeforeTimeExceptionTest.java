@@ -2,9 +2,9 @@ package com.glm.glmback.shared.error.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.glm.glmback.UnitTest;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
-import com.glm.glmback.UnitTest;
 
 @UnitTest
 class NotBeforeTimeExceptionTest {

@@ -1,10 +1,10 @@
 package com.glm.glmback.shared.authentication.infrastructure.primary;
 
+import com.glm.glmback.shared.authentication.application.NotAuthenticatedUserException;
+import com.glm.glmback.shared.authentication.application.UnknownAuthenticationException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.glm.glmback.shared.authentication.application.NotAuthenticatedUserException;
-import com.glm.glmback.shared.authentication.application.UnknownAuthenticationException;
 
 @RestController
 @RequestMapping("/api/account-exceptions")

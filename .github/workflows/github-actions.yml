@@ -24,12 +24,32 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 24.18.0
+          cache: npm
+      - name: 'Setup: install npm dependencies'
+        run: npm ci --ignore-scripts
+      - name: 'Lint: check formatting (Prettier)'
+        run: npm run prettier:check
       - name: 'Setup: Java'
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: 25
           cache: maven
+      - name: 'Setup: restore Testcontainers postgres image cache'
+        id: postgres-image-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/testcontainers-images/postgres.tar
+          key: testcontainers-postgres-18.4-${{ runner.os }}
+      - name: 'Setup: load cached postgres image'
+        if: steps.postgres-image-cache.outputs.cache-hit == 'true'
+        run: docker load -i ~/.cache/testcontainers-images/postgres.tar
       - name: 'Test: run tests'
         run: |
           mvn --batch-mode -ntp clean verify
+      - name: 'Setup: save postgres image to cache'
+        if: steps.postgres-image-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        run: |
+          mkdir -p ~/.cache/testcontainers-images
+          docker save postgres:18.4 -o ~/.cache/testcontainers-images/postgres.tar
