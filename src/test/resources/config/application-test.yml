@@ -12,3 +12,5 @@ spring:
     username: glmproject
   liquibase:
     contexts: test
+server:
+  port: 0
