@@ -49,6 +49,7 @@ class InMemoryElementDeFabricationRepositoryTest {
 
     OrdreDeFabrication modifie = OrdreDeFabrication.builder()
       .id(id)
+      .nom(OF_2026_000001)
       .titre(titreAssemblageCarterRevise())
       .description(descriptionCarterEnFonte())
       .dateDeCreation(LE_15_JANVIER_2026)
