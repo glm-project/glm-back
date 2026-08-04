@@ -65,7 +65,7 @@ Règle de dépendance stricte : `domain` ne dépend de rien d'infrastructure ; `
 
 - **Unitaire** (`*Test.java`, annotation `@UnitTest`) : pas de contexte Spring, JUnit 5 + AssertJ. À utiliser pour tester `domain` et `application` en isolation (mocks pour les ports).
 - **Intégration** (`*IT.java`, annotation `@IntegrationTest`) : `@SpringBootTest` + `TestSecurityConfiguration` + `@WithMockUser`, profil `test`. À utiliser pour les adapters `infrastructure` (sécurité, config, éventuellement persistence).
-- Note : il n'existe pas d'ArchUnit ni de Testcontainers actif dans les tests malgré les dépendances `org.reflections`/`testcontainers-postgresql` présentes dans `pom.xml` — ne pas présumer que des tests d'architecture ou des conteneurs de test existent déjà.
+- Note : il n'existe pas de tests ArchUnit malgré la dépendance `org.reflections` présente dans `pom.xml` — ne pas présumer que des tests d'architecture existent déjà. Testcontainers, en revanche, est actif : `src/test/resources/config/application-test.yml` pointe la datasource sur `jdbc:tc:postgresql`, donc **`mvn verify` exige que Docker soit démarré** — sans lui, tous les ITs et scénarios Cucumber échouent au chargement du contexte Spring.
 
 ### Fixtures
 

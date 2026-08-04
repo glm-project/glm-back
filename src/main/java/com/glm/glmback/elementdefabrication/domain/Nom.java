@@ -9,7 +9,7 @@ public record Nom(String value) {
     Assert.field("nom", value).notBlank();
   }
 
-  public static Nom de(Prefixe prefixe, Annee annee, long numero) {
+  public static Nom of(Prefixe prefixe, Annee annee, long numero) {
     return new Nom(FORMAT.formatted(prefixe.value(), annee.value(), numero));
   }
 }

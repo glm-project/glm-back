@@ -1,20 +1,12 @@
 package com.glm.glmback.elementdefabrication.infrastructure.primary;
 
 import com.glm.glmback.elementdefabrication.application.ElementDeFabricationApplicationService;
-import com.glm.glmback.elementdefabrication.domain.Description;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabrication;
-import com.glm.glmback.elementdefabrication.domain.Nom;
-import com.glm.glmback.elementdefabrication.domain.OrdreDeFabrication;
-import com.glm.glmback.elementdefabrication.domain.OrdreDeFabricationId;
 import com.glm.glmback.elementdefabrication.domain.Periode;
-import com.glm.glmback.elementdefabrication.domain.Produit;
-import com.glm.glmback.elementdefabrication.domain.ProduitId;
-import com.glm.glmback.elementdefabrication.domain.Titre;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import jakarta.validation.Valid;
 import java.time.Instant;
-import java.util.Optional;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -38,99 +30,45 @@ class ElementDeFabricationResource {
     this.applicationService = applicationService;
   }
 
-  @PostMapping("/ordres-de-fabrication")
+  @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
-  ElementDeFabricationReponse creerOrdreDeFabrication(@RequestBody @Valid CreationElementDeFabricationRequest request) {
-    return versReponse(
-      applicationService.creerOrdreDeFabrication(nomDe(request.nom()), new Titre(request.titre()), new Description(request.description()))
-    );
+  RestElementDeFabrication create(@RequestBody @Valid RestCreationElementDeFabrication request) {
+    return RestElementDeFabrication.from(applicationService.create(request.toDomain()));
   }
 
-  @PostMapping("/produits")
-  @ResponseStatus(HttpStatus.CREATED)
-  ElementDeFabricationReponse creerProduit(@RequestBody @Valid CreationElementDeFabricationRequest request) {
-    return versReponse(
-      applicationService.creerProduit(nomDe(request.nom()), new Titre(request.titre()), new Description(request.description()))
-    );
+  @GetMapping("/{type}/{id}")
+  RestElementDeFabrication get(@PathVariable RestTypeElementDeFabrication type, @PathVariable UUID id) {
+    return RestElementDeFabrication.from(applicationService.get(type.toDomain(id)));
   }
 
-  @GetMapping("/ordres-de-fabrication/{id}")
-  ElementDeFabricationReponse obtenirOrdreDeFabrication(@PathVariable UUID id) {
-    return versReponse(applicationService.obtenir(new OrdreDeFabricationId(id)));
-  }
-
-  @GetMapping("/produits/{id}")
-  ElementDeFabricationReponse obtenirProduit(@PathVariable UUID id) {
-    return versReponse(applicationService.obtenir(new ProduitId(id)));
-  }
-
-  @PutMapping("/ordres-de-fabrication/{id}")
-  ElementDeFabricationReponse modifierOrdreDeFabrication(
+  @PutMapping("/{type}/{id}")
+  RestElementDeFabrication update(
+    @PathVariable RestTypeElementDeFabrication type,
     @PathVariable UUID id,
-    @RequestBody @Valid ModificationElementDeFabricationRequest request
+    @RequestBody @Valid RestModificationElementDeFabrication request
   ) {
-    return versReponse(
-      applicationService.modifier(new OrdreDeFabricationId(id), new Titre(request.titre()), new Description(request.description()))
-    );
+    return RestElementDeFabrication.from(applicationService.update(request.toDomain(type.toDomain(id))));
   }
 
-  @PutMapping("/produits/{id}")
-  ElementDeFabricationReponse modifierProduit(@PathVariable UUID id, @RequestBody @Valid ModificationElementDeFabricationRequest request) {
-    return versReponse(applicationService.modifier(new ProduitId(id), new Titre(request.titre()), new Description(request.description())));
-  }
-
-  @DeleteMapping("/ordres-de-fabrication/{id}")
+  @DeleteMapping("/{type}/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  void supprimerOrdreDeFabrication(@PathVariable UUID id) {
-    applicationService.supprimer(new OrdreDeFabricationId(id));
-  }
-
-  @DeleteMapping("/produits/{id}")
-  @ResponseStatus(HttpStatus.NO_CONTENT)
-  void supprimerProduit(@PathVariable UUID id) {
-    applicationService.supprimer(new ProduitId(id));
+  void delete(@PathVariable RestTypeElementDeFabrication type, @PathVariable UUID id) {
+    applicationService.delete(type.toDomain(id));
   }
 
   @GetMapping
-  Page<ElementDeFabricationReponse> lister(
+  Page<RestElementDeFabrication> list(
     @RequestParam Instant debut,
     @RequestParam Instant fin,
     @RequestParam(defaultValue = "0") int page,
     @RequestParam(defaultValue = "20") int size
   ) {
-    Page<ElementDeFabrication> resultat = applicationService.lister(new Periode(debut, fin), new Pageable(page, size));
+    Page<ElementDeFabrication> resultat = applicationService.list(new Periode(debut, fin), new Pageable(page, size));
 
-    return Page.<ElementDeFabricationReponse>builder()
-      .content(resultat.content().stream().map(this::versReponse).toList())
+    return Page.<RestElementDeFabrication>builder()
+      .content(resultat.content().stream().map(RestElementDeFabrication::from).toList())
       .currentPage(resultat.currentPage())
       .pageSize(resultat.pageSize())
       .totalElementsCount(resultat.totalElementsCount());
-  }
-
-  private Optional<Nom> nomDe(String nom) {
-    return Optional.ofNullable(nom).map(Nom::new);
-  }
-
-  private ElementDeFabricationReponse versReponse(ElementDeFabrication element) {
-    return switch (element) {
-      case OrdreDeFabrication ordre -> new ElementDeFabricationReponse(
-        "ORDRE_DE_FABRICATION",
-        ordre.id().uuid(),
-        ordre.nom().value(),
-        ordre.titre().value(),
-        ordre.description().value(),
-        ordre.dateDeCreation(),
-        ordre.dateDeModification()
-      );
-      case Produit produit -> new ElementDeFabricationReponse(
-        "PRODUIT",
-        produit.id().uuid(),
-        produit.nom().value(),
-        produit.titre().value(),
-        produit.description().value(),
-        produit.dateDeCreation(),
-        produit.dateDeModification()
-      );
-    };
   }
 }

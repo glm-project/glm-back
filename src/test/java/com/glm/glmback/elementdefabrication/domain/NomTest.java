@@ -32,11 +32,11 @@ class NomTest {
 
   @Test
   void shouldBuildNomFromAnyPrefixe() {
-    assertThat(Nom.de(new Prefixe("FAB"), ANNEE_2026, 1).value()).isEqualTo("FAB-2026-000001");
+    assertThat(Nom.of(new Prefixe("FAB"), ANNEE_2026, 1).value()).isEqualTo("FAB-2026-000001");
   }
 
   @Test
   void shouldPadNumeroOverSixDigits() {
-    assertThat(Nom.de(PREFIXE_OF, ANNEE_2026, 123456).value()).isEqualTo("OF-2026-123456");
+    assertThat(Nom.of(PREFIXE_OF, ANNEE_2026, 123456).value()).isEqualTo("OF-2026-123456");
   }
 }

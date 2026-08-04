@@ -14,8 +14,8 @@ public final class ElementsDeFabricationFixture {
   public static final Prefixe PREFIXE_OF = new Prefixe("OF");
   public static final Prefixe PREFIXE_PRD = new Prefixe("PRD");
 
-  public static final Nom OF_2026_000001 = Nom.de(PREFIXE_OF, ANNEE_2026, 1);
-  public static final Nom PRD_2026_000001 = Nom.de(PREFIXE_PRD, ANNEE_2026, 1);
+  public static final Nom OF_2026_000001 = Nom.of(PREFIXE_OF, ANNEE_2026, 1);
+  public static final Nom PRD_2026_000001 = Nom.of(PREFIXE_PRD, ANNEE_2026, 1);
 
   private ElementsDeFabricationFixture() {}
 
@@ -41,6 +41,18 @@ public final class ElementsDeFabricationFixture {
 
   public static ElementDeFabricationCriteria criteresPremierTrimestre2026() {
     return new ElementDeFabricationCriteria(premierTrimestre2026());
+  }
+
+  public static OrdreDeFabricationToCreate ordreDeFabricationToCreateAssemblageCarter() {
+    return new OrdreDeFabricationToCreate(titreAssemblageCarter(), descriptionCarterEnFonte());
+  }
+
+  public static ProduitToCreate produitToCreateCarterMoteur() {
+    return new ProduitToCreate(titreCarterMoteur(), descriptionCarterEnFonte());
+  }
+
+  public static ElementDeFabricationToUpdate elementDeFabricationToUpdateAssemblageCarterRevise(ElementDeFabricationId id) {
+    return new ElementDeFabricationToUpdate(id, titreAssemblageCarterRevise(), descriptionCarterEnFonte());
   }
 
   public static Fiche ficheAssemblageCarter() {
