@@ -1,0 +1,59 @@
+package com.glm.glmback.elementdefabrication.domain;
+
+import static com.glm.glmback.elementdefabrication.domain.ElementsDeFabricationFixture.*;
+import static org.assertj.core.api.Assertions.*;
+
+import com.glm.glmback.UnitTest;
+import com.glm.glmback.shared.error.domain.MissingMandatoryValueException;
+import com.glm.glmback.shared.error.domain.NotAfterTimeException;
+import org.junit.jupiter.api.Test;
+
+@UnitTest
+class FicheTest {
+
+  @Test
+  void shouldNotBuildWithoutTitre() {
+    assertThatThrownBy(() -> new Fiche(null, descriptionCarterEnFonte(), LE_15_JANVIER_2026, LE_20_FEVRIER_2026))
+      .isExactlyInstanceOf(MissingMandatoryValueException.class)
+      .hasMessageContaining("titre");
+  }
+
+  @Test
+  void shouldNotBuildWithoutDescription() {
+    assertThatThrownBy(() -> new Fiche(titreAssemblageCarter(), null, LE_15_JANVIER_2026, LE_20_FEVRIER_2026))
+      .isExactlyInstanceOf(MissingMandatoryValueException.class)
+      .hasMessageContaining("description");
+  }
+
+  @Test
+  void shouldNotBuildWithoutDateDeCreation() {
+    assertThatThrownBy(() -> new Fiche(titreAssemblageCarter(), descriptionCarterEnFonte(), null, LE_20_FEVRIER_2026))
+      .isExactlyInstanceOf(MissingMandatoryValueException.class)
+      .hasMessageContaining("dateDeCreation");
+  }
+
+  @Test
+  void shouldNotBuildWithoutDateDeModification() {
+    assertThatThrownBy(() -> new Fiche(titreAssemblageCarter(), descriptionCarterEnFonte(), LE_15_JANVIER_2026, null))
+      .isExactlyInstanceOf(MissingMandatoryValueException.class)
+      .hasMessageContaining("dateDeModification");
+  }
+
+  @Test
+  void shouldNotBuildWithDateDeModificationBeforeDateDeCreation() {
+    assertThatThrownBy(() -> new Fiche(titreAssemblageCarter(), descriptionCarterEnFonte(), LE_20_FEVRIER_2026, LE_15_JANVIER_2026))
+      .isExactlyInstanceOf(NotAfterTimeException.class)
+      .hasMessageContaining("dateDeModification");
+  }
+
+  @Test
+  void shouldBuildNeverModifiedFiche() {
+    Fiche fiche = Fiche.builder()
+      .titre(titreAssemblageCarter())
+      .description(descriptionCarterEnFonte())
+      .dateDeCreation(LE_15_JANVIER_2026)
+      .dateDeModification(LE_15_JANVIER_2026);
+
+    assertThat(fiche.dateDeModification()).isEqualTo(fiche.dateDeCreation());
+  }
+}
