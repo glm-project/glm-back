@@ -17,7 +17,10 @@ import org.springframework.test.web.servlet.client.RestTestClient;
 @ActiveProfiles("test")
 @CucumberContextConfiguration
 @AutoConfigureRestTestClient
-@SpringBootTest(classes = { GlmprojectApp.class, CucumberRestClientConfiguration.class }, webEnvironment = WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+  classes = { GlmprojectApp.class, CucumberRestClientConfiguration.class, CucumberSecurityConfiguration.class },
+  webEnvironment = WebEnvironment.RANDOM_PORT
+)
 public class CucumberConfiguration {
 
   private final CucumberRestClient rest;
