@@ -9,6 +9,14 @@ public final class ElementsDeFabricationFixture {
   public static final Instant LE_20_FEVRIER_2026 = Instant.parse("2026-02-20T14:30:00Z");
   public static final Instant LE_31_MARS_2026 = Instant.parse("2026-03-31T23:59:59Z");
 
+  public static final Annee ANNEE_2026 = new Annee(2026);
+
+  public static final Prefixe PREFIXE_OF = new Prefixe("OF");
+  public static final Prefixe PREFIXE_PRD = new Prefixe("PRD");
+
+  public static final Nom OF_2026_000001 = Nom.de(PREFIXE_OF, ANNEE_2026, 1);
+  public static final Nom PRD_2026_000001 = Nom.de(PREFIXE_PRD, ANNEE_2026, 1);
+
   private ElementsDeFabricationFixture() {}
 
   public static Titre titreAssemblageCarter() {
@@ -66,6 +74,7 @@ public final class ElementsDeFabricationFixture {
   public static Produit produitCarterMoteur() {
     return Produit.builder()
       .id(ProduitId.newId())
+      .nom(PRD_2026_000001)
       .titre(titreCarterMoteur())
       .description(descriptionCarterEnFonte())
       .dateDeCreation(LE_15_JANVIER_2026)
@@ -75,6 +84,7 @@ public final class ElementsDeFabricationFixture {
   private static OrdreDeFabrication ordreDeFabricationAssemblageCarter(OrdreDeFabricationId id, Instant dateDeCreation) {
     return OrdreDeFabrication.builder()
       .id(id)
+      .nom(OF_2026_000001)
       .titre(titreAssemblageCarter())
       .description(descriptionCarterEnFonte())
       .dateDeCreation(dateDeCreation)

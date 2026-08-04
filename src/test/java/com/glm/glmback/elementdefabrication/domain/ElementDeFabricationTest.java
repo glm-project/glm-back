@@ -15,12 +15,14 @@ class ElementDeFabricationTest {
 
     ElementDeFabrication element = OrdreDeFabrication.builder()
       .id(id)
+      .nom(OF_2026_000001)
       .titre(titreAssemblageCarter())
       .description(descriptionCarterEnFonte())
       .dateDeCreation(LE_15_JANVIER_2026)
       .dateDeModification(LE_20_FEVRIER_2026);
 
     assertThat(element.id()).isEqualTo(id);
+    assertThat(element.nom()).isEqualTo(OF_2026_000001);
     assertThat(element.titre()).isEqualTo(titreAssemblageCarter());
     assertThat(element.description()).isEqualTo(descriptionCarterEnFonte());
     assertThat(element.dateDeCreation()).isEqualTo(LE_15_JANVIER_2026);
@@ -33,12 +35,14 @@ class ElementDeFabricationTest {
 
     ElementDeFabrication element = Produit.builder()
       .id(id)
+      .nom(PRD_2026_000001)
       .titre(titreCarterMoteur())
       .description(descriptionCarterEnFonte())
       .dateDeCreation(LE_15_JANVIER_2026)
       .dateDeModification(LE_20_FEVRIER_2026);
 
     assertThat(element.id()).isEqualTo(id);
+    assertThat(element.nom()).isEqualTo(PRD_2026_000001);
     assertThat(element.titre()).isEqualTo(titreCarterMoteur());
     assertThat(element.description()).isEqualTo(descriptionCarterEnFonte());
     assertThat(element.dateDeCreation()).isEqualTo(LE_15_JANVIER_2026);

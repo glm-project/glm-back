@@ -5,6 +5,8 @@ import java.time.Instant;
 public sealed interface ElementDeFabrication permits OrdreDeFabrication, Produit {
   ElementDeFabricationId id();
 
+  Nom nom();
+
   Fiche fiche();
 
   default Titre titre() {
