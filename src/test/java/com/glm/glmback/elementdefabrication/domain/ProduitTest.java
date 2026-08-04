@@ -14,16 +14,26 @@ class ProduitTest {
   void shouldNotBuildWithoutId() {
     Fiche fiche = ficheCarterMoteur();
 
-    assertThatThrownBy(() -> new Produit(null, fiche))
+    assertThatThrownBy(() -> new Produit(null, PRD_2026_000001, fiche))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("id");
+  }
+
+  @Test
+  void shouldNotBuildWithoutNom() {
+    ProduitId id = ProduitId.newId();
+    Fiche fiche = ficheCarterMoteur();
+
+    assertThatThrownBy(() -> new Produit(id, null, fiche))
+      .isExactlyInstanceOf(MissingMandatoryValueException.class)
+      .hasMessageContaining("nom");
   }
 
   @Test
   void shouldNotBuildWithoutFiche() {
     ProduitId id = ProduitId.newId();
 
-    assertThatThrownBy(() -> new Produit(id, null))
+    assertThatThrownBy(() -> new Produit(id, PRD_2026_000001, null))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("fiche");
   }
@@ -34,12 +44,14 @@ class ProduitTest {
 
     Produit produit = Produit.builder()
       .id(id)
+      .nom(PRD_2026_000001)
       .titre(titreCarterMoteur())
       .description(descriptionCarterEnFonte())
       .dateDeCreation(LE_15_JANVIER_2026)
       .dateDeModification(LE_15_JANVIER_2026);
 
     assertThat(produit.id()).isEqualTo(id);
+    assertThat(produit.nom()).isEqualTo(PRD_2026_000001);
     assertThat(produit.fiche()).isEqualTo(ficheCarterMoteur());
   }
 }
