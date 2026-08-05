@@ -57,16 +57,16 @@ public final class ElementsDeFabricationFixture {
 
   public static Fiche ficheAssemblageCarter() {
     return Fiche.builder()
-      .titre(titreAssemblageCarter())
-      .description(descriptionCarterEnFonte())
+      .titre(titreAssemblageCarter().value())
+      .description(descriptionCarterEnFonte().value())
       .dateDeCreation(LE_15_JANVIER_2026)
       .dateDeModification(LE_15_JANVIER_2026);
   }
 
   public static Fiche ficheCarterMoteur() {
     return Fiche.builder()
-      .titre(titreCarterMoteur())
-      .description(descriptionCarterEnFonte())
+      .titre(titreCarterMoteur().value())
+      .description(descriptionCarterEnFonte().value())
       .dateDeCreation(LE_15_JANVIER_2026)
       .dateDeModification(LE_15_JANVIER_2026);
   }
@@ -86,9 +86,11 @@ public final class ElementsDeFabricationFixture {
   public static Produit produitCarterMoteur() {
     return Produit.builder()
       .id(ProduitId.newId())
-      .nom(PRD_2026_000001)
-      .titre(titreCarterMoteur())
-      .description(descriptionCarterEnFonte())
+      .prefixe(PREFIXE_PRD.value())
+      .annee(ANNEE_2026.value())
+      .compteur(1)
+      .titre(titreCarterMoteur().value())
+      .description(descriptionCarterEnFonte().value())
       .dateDeCreation(LE_15_JANVIER_2026)
       .dateDeModification(LE_15_JANVIER_2026);
   }
@@ -96,9 +98,11 @@ public final class ElementsDeFabricationFixture {
   private static OrdreDeFabrication ordreDeFabricationAssemblageCarter(OrdreDeFabricationId id, Instant dateDeCreation) {
     return OrdreDeFabrication.builder()
       .id(id)
-      .nom(OF_2026_000001)
-      .titre(titreAssemblageCarter())
-      .description(descriptionCarterEnFonte())
+      .prefixe(PREFIXE_OF.value())
+      .annee(ANNEE_2026.value())
+      .compteur(1)
+      .titre(titreAssemblageCarter().value())
+      .description(descriptionCarterEnFonte().value())
       .dateDeCreation(dateDeCreation)
       .dateDeModification(dateDeCreation);
   }

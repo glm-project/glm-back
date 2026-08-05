@@ -7,7 +7,6 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.elementdefabrication.infrastructure.secondary.InMemoryElementDeFabricationRepository;
-import com.glm.glmback.shared.error.domain.MissingMandatoryValueException;
 import com.glm.glmback.shared.pagination.domain.Page;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
@@ -27,58 +26,6 @@ class ElementsDeFabricationServiceTest {
     .compteur(new CompteurFige())
     .prefixes(new PrefixesFiges(PREFIXE_OF, PREFIXE_PRD))
     .clock(maintenant::get);
-
-  @Test
-  void shouldNotBuildWithoutRepository() {
-    assertThatThrownBy(() ->
-      ElementsDeFabricationService.builder()
-        .repository(null)
-        .compteur(new CompteurFige())
-        .prefixes(new PrefixesFiges(PREFIXE_OF, PREFIXE_PRD))
-        .clock(fixedClock(LE_10_MAI_2026))
-    )
-      .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("repository");
-  }
-
-  @Test
-  void shouldNotBuildWithoutCompteur() {
-    assertThatThrownBy(() ->
-      ElementsDeFabricationService.builder()
-        .repository(new InMemoryElementDeFabricationRepository())
-        .compteur(null)
-        .prefixes(new PrefixesFiges(PREFIXE_OF, PREFIXE_PRD))
-        .clock(fixedClock(LE_10_MAI_2026))
-    )
-      .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("compteur");
-  }
-
-  @Test
-  void shouldNotBuildWithoutPrefixes() {
-    assertThatThrownBy(() ->
-      ElementsDeFabricationService.builder()
-        .repository(new InMemoryElementDeFabricationRepository())
-        .compteur(new CompteurFige())
-        .prefixes(null)
-        .clock(fixedClock(LE_10_MAI_2026))
-    )
-      .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("prefixes");
-  }
-
-  @Test
-  void shouldNotBuildWithoutClock() {
-    assertThatThrownBy(() ->
-      ElementsDeFabricationService.builder()
-        .repository(new InMemoryElementDeFabricationRepository())
-        .compteur(new CompteurFige())
-        .prefixes(new PrefixesFiges(PREFIXE_OF, PREFIXE_PRD))
-        .clock(null)
-    )
-      .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("clock");
-  }
 
   @Test
   void shouldCreateOrdreDeFabricationWithGeneratedNom() {

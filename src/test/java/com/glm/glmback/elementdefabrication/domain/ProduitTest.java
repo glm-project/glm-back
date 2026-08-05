@@ -39,14 +39,16 @@ class ProduitTest {
   }
 
   @Test
-  void shouldBuildProduitFromStepBuilder() {
+  void shouldBuildProduitFromPrimitives() {
     ProduitId id = ProduitId.newId();
 
     Produit produit = Produit.builder()
       .id(id)
-      .nom(PRD_2026_000001)
-      .titre(titreCarterMoteur())
-      .description(descriptionCarterEnFonte())
+      .prefixe("PRD")
+      .annee(2026)
+      .compteur(1)
+      .titre("Carter moteur")
+      .description("Carter en fonte")
       .dateDeCreation(LE_15_JANVIER_2026)
       .dateDeModification(LE_15_JANVIER_2026);
 

@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
@@ -396,6 +397,27 @@ public final class Assert {
 
       if (value.length() > length) {
         throw StringTooLongException.builder().field(field).value(value).maxLength(length).build();
+      }
+
+      return this;
+    }
+
+    /**
+     * Ensure that the input value matches the given pattern
+     *
+     * @param pattern
+     *          pattern the whole value has to match
+     * @return The current asserter
+     * @throws MissingMandatoryValueException
+     *           if the value is null
+     * @throws StringNotMatchingPatternException
+     *           if the value doesn't match the pattern
+     */
+    public StringAsserter matches(Pattern pattern) {
+      notNull();
+
+      if (!pattern.matcher(value).matches()) {
+        throw StringNotMatchingPatternException.builder().field(field).value(value).pattern(pattern.pattern()).build();
       }
 
       return this;

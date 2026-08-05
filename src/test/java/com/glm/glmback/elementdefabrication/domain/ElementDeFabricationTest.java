@@ -15,9 +15,11 @@ class ElementDeFabricationTest {
 
     ElementDeFabrication element = OrdreDeFabrication.builder()
       .id(id)
-      .nom(OF_2026_000001)
-      .titre(titreAssemblageCarter())
-      .description(descriptionCarterEnFonte())
+      .prefixe(PREFIXE_OF.value())
+      .annee(ANNEE_2026.value())
+      .compteur(1)
+      .titre(titreAssemblageCarter().value())
+      .description(descriptionCarterEnFonte().value())
       .dateDeCreation(LE_15_JANVIER_2026)
       .dateDeModification(LE_20_FEVRIER_2026);
 
@@ -35,9 +37,11 @@ class ElementDeFabricationTest {
 
     ElementDeFabrication element = Produit.builder()
       .id(id)
-      .nom(PRD_2026_000001)
-      .titre(titreCarterMoteur())
-      .description(descriptionCarterEnFonte())
+      .prefixe(PREFIXE_PRD.value())
+      .annee(ANNEE_2026.value())
+      .compteur(1)
+      .titre(titreCarterMoteur().value())
+      .description(descriptionCarterEnFonte().value())
       .dateDeCreation(LE_15_JANVIER_2026)
       .dateDeModification(LE_20_FEVRIER_2026);
 

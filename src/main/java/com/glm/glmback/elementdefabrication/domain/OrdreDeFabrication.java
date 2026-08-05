@@ -10,38 +10,57 @@ public record OrdreDeFabrication(OrdreDeFabricationId id, Nom nom, Fiche fiche) 
     Assert.notNull("fiche", fiche);
   }
 
+  private OrdreDeFabrication(
+    OrdreDeFabricationId id,
+    String prefixe,
+    int annee,
+    long compteur,
+    String titre,
+    String description,
+    Instant dateDeCreation,
+    Instant dateDeModification
+  ) {
+    this(
+      id,
+      Nom.of(new Prefixe(prefixe), new Annee(annee), compteur),
+      Fiche.builder().titre(titre).description(description).dateDeCreation(dateDeCreation).dateDeModification(dateDeModification)
+    );
+  }
+
   public static OrdreDeFabricationIdBuilder builder() {
     return id ->
-      nom ->
-        titre ->
-          description ->
-            dateDeCreation ->
-              dateDeModification ->
-                new OrdreDeFabrication(
-                  id,
-                  nom,
-                  Fiche.builder()
-                    .titre(titre)
-                    .description(description)
-                    .dateDeCreation(dateDeCreation)
-                    .dateDeModification(dateDeModification)
-                );
+      prefixe ->
+        annee ->
+          compteur ->
+            titre ->
+              description ->
+                dateDeCreation ->
+                  dateDeModification ->
+                    new OrdreDeFabrication(id, prefixe, annee, compteur, titre, description, dateDeCreation, dateDeModification);
   }
 
   public interface OrdreDeFabricationIdBuilder {
-    OrdreDeFabricationNomBuilder id(OrdreDeFabricationId id);
+    OrdreDeFabricationPrefixeBuilder id(OrdreDeFabricationId id);
   }
 
-  public interface OrdreDeFabricationNomBuilder {
-    OrdreDeFabricationTitreBuilder nom(Nom nom);
+  public interface OrdreDeFabricationPrefixeBuilder {
+    OrdreDeFabricationAnneeBuilder prefixe(String prefixe);
+  }
+
+  public interface OrdreDeFabricationAnneeBuilder {
+    OrdreDeFabricationCompteurBuilder annee(int annee);
+  }
+
+  public interface OrdreDeFabricationCompteurBuilder {
+    OrdreDeFabricationTitreBuilder compteur(long compteur);
   }
 
   public interface OrdreDeFabricationTitreBuilder {
-    OrdreDeFabricationDescriptionBuilder titre(Titre titre);
+    OrdreDeFabricationDescriptionBuilder titre(String titre);
   }
 
   public interface OrdreDeFabricationDescriptionBuilder {
-    OrdreDeFabricationDateDeCreationBuilder description(Description description);
+    OrdreDeFabricationDateDeCreationBuilder description(String description);
   }
 
   public interface OrdreDeFabricationDateDeCreationBuilder {

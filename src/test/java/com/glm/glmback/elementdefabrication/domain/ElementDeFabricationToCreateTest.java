@@ -53,4 +53,18 @@ class ElementDeFabricationToCreateTest {
     assertThat(toCreate.titre()).isEqualTo(titreCarterMoteur());
     assertThat(toCreate.description()).isEqualTo(descriptionCarterEnFonte());
   }
+
+  @Test
+  void shouldBuildOrdreDeFabricationToCreateFromPrimitives() {
+    OrdreDeFabricationToCreate toCreate = new OrdreDeFabricationToCreate("Assemblage carter", "Carter en fonte");
+
+    assertThat(toCreate).isEqualTo(ordreDeFabricationToCreateAssemblageCarter());
+  }
+
+  @Test
+  void shouldBuildProduitToCreateFromPrimitives() {
+    ProduitToCreate toCreate = new ProduitToCreate("Carter moteur", "Carter en fonte");
+
+    assertThat(toCreate).isEqualTo(produitToCreateCarterMoteur());
+  }
 }

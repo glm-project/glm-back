@@ -1,6 +1,5 @@
 package com.glm.glmback.elementdefabrication.domain;
 
-import com.glm.glmback.shared.error.domain.Assert;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import com.glm.glmback.shared.time.domain.Clock;
@@ -19,11 +18,6 @@ public final class ElementsDeFabricationService {
     PrefixesDElementsDeFabrication prefixes,
     Clock clock
   ) {
-    Assert.notNull("repository", repository);
-    Assert.notNull("compteur", compteur);
-    Assert.notNull("prefixes", prefixes);
-    Assert.notNull("clock", clock);
-
     this.repository = repository;
     this.compteur = compteur;
     this.prefixes = prefixes;
@@ -36,21 +30,25 @@ public final class ElementsDeFabricationService {
 
   public ElementDeFabrication create(ElementDeFabricationToCreate toCreate) {
     Instant maintenant = clock.now();
-    Annee annee = Annee.de(maintenant);
+    Annee annee = Annee.of(maintenant);
 
     ElementDeFabrication cree = switch (toCreate) {
       case OrdreDeFabricationToCreate ordre -> OrdreDeFabrication.builder()
         .id(OrdreDeFabricationId.newId())
-        .nom(nomDOrdreDeFabrication(annee))
-        .titre(ordre.titre())
-        .description(ordre.description())
+        .prefixe(prefixes.prefixeDOrdreDeFabrication().value())
+        .annee(annee.value())
+        .compteur(compteur.prochainNumeroDOrdreDeFabrication(annee))
+        .titre(ordre.titre().value())
+        .description(ordre.description().value())
         .dateDeCreation(maintenant)
         .dateDeModification(maintenant);
       case ProduitToCreate produit -> Produit.builder()
         .id(ProduitId.newId())
-        .nom(nomDeProduit(annee))
-        .titre(produit.titre())
-        .description(produit.description())
+        .prefixe(prefixes.prefixeDeProduit().value())
+        .annee(annee.value())
+        .compteur(compteur.prochainNumeroDeProduit(annee))
+        .titre(produit.titre().value())
+        .description(produit.description().value())
         .dateDeCreation(maintenant)
         .dateDeModification(maintenant);
     };
@@ -73,16 +71,20 @@ public final class ElementsDeFabricationService {
     ElementDeFabrication modifie = switch (existant) {
       case OrdreDeFabrication ordre -> OrdreDeFabrication.builder()
         .id(ordre.id())
-        .nom(ordre.nom())
-        .titre(toUpdate.titre())
-        .description(toUpdate.description())
+        .prefixe(ordre.nom().prefixe().value())
+        .annee(ordre.nom().annee().value())
+        .compteur(ordre.nom().compteur())
+        .titre(toUpdate.titre().value())
+        .description(toUpdate.description().value())
         .dateDeCreation(ordre.dateDeCreation())
         .dateDeModification(maintenant);
       case Produit produit -> Produit.builder()
         .id(produit.id())
-        .nom(produit.nom())
-        .titre(toUpdate.titre())
-        .description(toUpdate.description())
+        .prefixe(produit.nom().prefixe().value())
+        .annee(produit.nom().annee().value())
+        .compteur(produit.nom().compteur())
+        .titre(toUpdate.titre().value())
+        .description(toUpdate.description().value())
         .dateDeCreation(produit.dateDeCreation())
         .dateDeModification(maintenant);
     };
@@ -92,14 +94,6 @@ public final class ElementsDeFabricationService {
 
   public void delete(ElementDeFabricationId id) {
     repository.delete(id);
-  }
-
-  private Nom nomDOrdreDeFabrication(Annee annee) {
-    return Nom.of(prefixes.prefixeDOrdreDeFabrication(), annee, compteur.prochainNumeroDOrdreDeFabrication(annee));
-  }
-
-  private Nom nomDeProduit(Annee annee) {
-    return Nom.of(prefixes.prefixeDeProduit(), annee, compteur.prochainNumeroDeProduit(annee));
   }
 
   public interface ElementsDeFabricationServiceRepositoryBuilder {

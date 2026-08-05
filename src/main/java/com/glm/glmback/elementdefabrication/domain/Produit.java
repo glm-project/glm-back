@@ -10,38 +10,56 @@ public record Produit(ProduitId id, Nom nom, Fiche fiche) implements ElementDeFa
     Assert.notNull("fiche", fiche);
   }
 
+  private Produit(
+    ProduitId id,
+    String prefixe,
+    int annee,
+    long compteur,
+    String titre,
+    String description,
+    Instant dateDeCreation,
+    Instant dateDeModification
+  ) {
+    this(
+      id,
+      Nom.of(new Prefixe(prefixe), new Annee(annee), compteur),
+      Fiche.builder().titre(titre).description(description).dateDeCreation(dateDeCreation).dateDeModification(dateDeModification)
+    );
+  }
+
   public static ProduitIdBuilder builder() {
     return id ->
-      nom ->
-        titre ->
-          description ->
-            dateDeCreation ->
-              dateDeModification ->
-                new Produit(
-                  id,
-                  nom,
-                  Fiche.builder()
-                    .titre(titre)
-                    .description(description)
-                    .dateDeCreation(dateDeCreation)
-                    .dateDeModification(dateDeModification)
-                );
+      prefixe ->
+        annee ->
+          compteur ->
+            titre ->
+              description ->
+                dateDeCreation ->
+                  dateDeModification -> new Produit(id, prefixe, annee, compteur, titre, description, dateDeCreation, dateDeModification);
   }
 
   public interface ProduitIdBuilder {
-    ProduitNomBuilder id(ProduitId id);
+    ProduitPrefixeBuilder id(ProduitId id);
   }
 
-  public interface ProduitNomBuilder {
-    ProduitTitreBuilder nom(Nom nom);
+  public interface ProduitPrefixeBuilder {
+    ProduitAnneeBuilder prefixe(String prefixe);
+  }
+
+  public interface ProduitAnneeBuilder {
+    ProduitCompteurBuilder annee(int annee);
+  }
+
+  public interface ProduitCompteurBuilder {
+    ProduitTitreBuilder compteur(long compteur);
   }
 
   public interface ProduitTitreBuilder {
-    ProduitDescriptionBuilder titre(Titre titre);
+    ProduitDescriptionBuilder titre(String titre);
   }
 
   public interface ProduitDescriptionBuilder {
-    ProduitDateDeCreationBuilder description(Description description);
+    ProduitDateDeCreationBuilder description(String description);
   }
 
   public interface ProduitDateDeCreationBuilder {

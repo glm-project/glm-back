@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.shared.error.domain.MissingMandatoryValueException;
+import com.glm.glmback.shared.error.domain.StringNotMatchingPatternException;
 import org.junit.jupiter.api.Test;
 
 @UnitTest
@@ -25,7 +26,14 @@ class NomTest {
   }
 
   @Test
-  void shouldBuildNomFromPrefixeAnneeAndNumero() {
+  void shouldNotBuildWithNomOutOfPattern() {
+    assertThatThrownBy(() -> new Nom("of-2026-1"))
+      .isExactlyInstanceOf(StringNotMatchingPatternException.class)
+      .hasMessageContaining("nom");
+  }
+
+  @Test
+  void shouldBuildNomFromPrefixeAnneeAndCompteur() {
     assertThat(OF_2026_000001.value()).isEqualTo("OF-2026-000001");
     assertThat(PRD_2026_000001.value()).isEqualTo("PRD-2026-000001");
   }
@@ -36,7 +44,14 @@ class NomTest {
   }
 
   @Test
-  void shouldPadNumeroOverSixDigits() {
+  void shouldPadCompteurOverSixDigits() {
     assertThat(Nom.of(PREFIXE_OF, ANNEE_2026, 123456).value()).isEqualTo("OF-2026-123456");
+  }
+
+  @Test
+  void shouldReadConstituantsOfNom() {
+    assertThat(OF_2026_000001.prefixe()).isEqualTo(PREFIXE_OF);
+    assertThat(OF_2026_000001.annee()).isEqualTo(ANNEE_2026);
+    assertThat(OF_2026_000001.compteur()).isEqualTo(1);
   }
 }

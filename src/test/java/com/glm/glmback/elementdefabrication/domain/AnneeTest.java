@@ -33,11 +33,11 @@ class AnneeTest {
 
   @Test
   void shouldReadAnneeFromInstant() {
-    assertThat(Annee.de(LE_15_JANVIER_2026)).isEqualTo(ANNEE_2026);
+    assertThat(Annee.of(LE_15_JANVIER_2026)).isEqualTo(ANNEE_2026);
   }
 
   @Test
   void shouldReadAnneeFromInstantOnLastSecondOfYear() {
-    assertThat(Annee.de(Instant.parse("2026-12-31T23:59:59Z"))).isEqualTo(ANNEE_2026);
+    assertThat(Annee.of(Instant.parse("2026-12-31T23:59:59Z"))).isEqualTo(ANNEE_2026);
   }
 }

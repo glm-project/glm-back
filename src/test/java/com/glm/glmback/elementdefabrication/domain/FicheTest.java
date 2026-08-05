@@ -49,11 +49,13 @@ class FicheTest {
   @Test
   void shouldBuildNeverModifiedFiche() {
     Fiche fiche = Fiche.builder()
-      .titre(titreAssemblageCarter())
-      .description(descriptionCarterEnFonte())
+      .titre(titreAssemblageCarter().value())
+      .description(descriptionCarterEnFonte().value())
       .dateDeCreation(LE_15_JANVIER_2026)
       .dateDeModification(LE_15_JANVIER_2026);
 
+    assertThat(fiche.titre()).isEqualTo(titreAssemblageCarter());
+    assertThat(fiche.description()).isEqualTo(descriptionCarterEnFonte());
     assertThat(fiche.dateDeModification()).isEqualTo(fiche.dateDeCreation());
   }
 }

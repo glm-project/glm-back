@@ -45,4 +45,13 @@ class ElementDeFabricationToUpdateTest {
     assertThat(toUpdate.titre()).isEqualTo(titreAssemblageCarterRevise());
     assertThat(toUpdate.description()).isEqualTo(descriptionCarterEnFonte());
   }
+
+  @Test
+  void shouldBuildElementDeFabricationToUpdateFromPrimitives() {
+    ElementDeFabricationId id = OrdreDeFabricationId.newId();
+
+    ElementDeFabricationToUpdate toUpdate = new ElementDeFabricationToUpdate(id, "Assemblage carter revise", "Carter en fonte");
+
+    assertThat(toUpdate).isEqualTo(elementDeFabricationToUpdateAssemblageCarterRevise(id));
+  }
 }

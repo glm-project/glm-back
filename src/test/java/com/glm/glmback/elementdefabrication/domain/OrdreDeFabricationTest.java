@@ -39,14 +39,16 @@ class OrdreDeFabricationTest {
   }
 
   @Test
-  void shouldBuildOrdreDeFabricationFromStepBuilder() {
+  void shouldBuildOrdreDeFabricationFromPrimitives() {
     OrdreDeFabricationId id = OrdreDeFabricationId.newId();
 
     OrdreDeFabrication ordre = OrdreDeFabrication.builder()
       .id(id)
-      .nom(OF_2026_000001)
-      .titre(titreAssemblageCarter())
-      .description(descriptionCarterEnFonte())
+      .prefixe("OF")
+      .annee(2026)
+      .compteur(1)
+      .titre("Assemblage carter")
+      .description("Carter en fonte")
       .dateDeCreation(LE_15_JANVIER_2026)
       .dateDeModification(LE_15_JANVIER_2026);
 

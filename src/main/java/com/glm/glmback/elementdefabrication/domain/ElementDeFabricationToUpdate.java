@@ -8,4 +8,8 @@ public record ElementDeFabricationToUpdate(ElementDeFabricationId id, Titre titr
     Assert.notNull("titre", titre);
     Assert.notNull("description", description);
   }
+
+  public ElementDeFabricationToUpdate(ElementDeFabricationId id, String titre, String description) {
+    this(id, new Titre(titre), new Description(description));
+  }
 }

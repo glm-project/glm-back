@@ -7,4 +7,8 @@ public record ProduitToCreate(Titre titre, Description description) implements E
     Assert.notNull("titre", titre);
     Assert.notNull("description", description);
   }
+
+  public ProduitToCreate(String titre, String description) {
+    this(new Titre(titre), new Description(description));
+  }
 }

@@ -11,17 +11,21 @@ public record Fiche(Titre titre, Description description, Instant dateDeCreation
     Assert.field("dateDeModification", dateDeModification).afterOrAt(dateDeCreation);
   }
 
+  private Fiche(String titre, String description, Instant dateDeCreation, Instant dateDeModification) {
+    this(new Titre(titre), new Description(description), dateDeCreation, dateDeModification);
+  }
+
   public static FicheTitreBuilder builder() {
     return titre ->
       description -> dateDeCreation -> dateDeModification -> new Fiche(titre, description, dateDeCreation, dateDeModification);
   }
 
   public interface FicheTitreBuilder {
-    FicheDescriptionBuilder titre(Titre titre);
+    FicheDescriptionBuilder titre(String titre);
   }
 
   public interface FicheDescriptionBuilder {
-    FicheDateDeCreationBuilder description(Description description);
+    FicheDateDeCreationBuilder description(String description);
   }
 
   public interface FicheDateDeCreationBuilder {
