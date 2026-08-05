@@ -11,60 +11,47 @@ import org.junit.jupiter.api.Test;
 class ElementDeFabricationToCreateTest {
 
   @Test
-  void shouldNotBuildOrdreDeFabricationWithoutTitre() {
-    assertThatThrownBy(() -> new OrdreDeFabricationToCreate(null, descriptionCarterEnFonte()))
+  void shouldNotBuildWithoutType() {
+    assertThatThrownBy(() -> new ElementDeFabricationToCreate(null, titreAssemblageCarter(), descriptionCarterEnFonte()))
+      .isExactlyInstanceOf(MissingMandatoryValueException.class)
+      .hasMessageContaining("type");
+  }
+
+  @Test
+  void shouldNotBuildWithoutTitre() {
+    assertThatThrownBy(() ->
+      new ElementDeFabricationToCreate(TypeDElementDeFabrication.ORDRE_DE_FABRICATION, null, descriptionCarterEnFonte())
+    )
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("titre");
   }
 
   @Test
-  void shouldNotBuildOrdreDeFabricationWithoutDescription() {
-    assertThatThrownBy(() -> new OrdreDeFabricationToCreate(titreAssemblageCarter(), null))
+  void shouldNotBuildWithoutDescription() {
+    assertThatThrownBy(() ->
+      new ElementDeFabricationToCreate(TypeDElementDeFabrication.ORDRE_DE_FABRICATION, titreAssemblageCarter(), null)
+    )
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("description");
   }
 
   @Test
-  void shouldNotBuildProduitWithoutTitre() {
-    assertThatThrownBy(() -> new ProduitToCreate(null, descriptionCarterEnFonte()))
-      .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("titre");
-  }
+  void shouldReadElementDeFabricationToCreate() {
+    ElementDeFabricationToCreate toCreate = elementDeFabricationToCreateCarterMoteur();
 
-  @Test
-  void shouldNotBuildProduitWithoutDescription() {
-    assertThatThrownBy(() -> new ProduitToCreate(titreCarterMoteur(), null))
-      .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("description");
-  }
-
-  @Test
-  void shouldReadOrdreDeFabricationToCreate() {
-    ElementDeFabricationToCreate toCreate = ordreDeFabricationToCreateAssemblageCarter();
-
-    assertThat(toCreate.titre()).isEqualTo(titreAssemblageCarter());
-    assertThat(toCreate.description()).isEqualTo(descriptionCarterEnFonte());
-  }
-
-  @Test
-  void shouldReadProduitToCreate() {
-    ElementDeFabricationToCreate toCreate = produitToCreateCarterMoteur();
-
+    assertThat(toCreate.type()).isEqualTo(TypeDElementDeFabrication.PRODUIT);
     assertThat(toCreate.titre()).isEqualTo(titreCarterMoteur());
     assertThat(toCreate.description()).isEqualTo(descriptionCarterEnFonte());
   }
 
   @Test
-  void shouldBuildOrdreDeFabricationToCreateFromPrimitives() {
-    OrdreDeFabricationToCreate toCreate = new OrdreDeFabricationToCreate("Assemblage carter", "Carter en fonte");
+  void shouldBuildElementDeFabricationToCreateFromPrimitives() {
+    ElementDeFabricationToCreate toCreate = new ElementDeFabricationToCreate(
+      TypeDElementDeFabrication.ORDRE_DE_FABRICATION,
+      "Assemblage carter",
+      "Carter en fonte"
+    );
 
-    assertThat(toCreate).isEqualTo(ordreDeFabricationToCreateAssemblageCarter());
-  }
-
-  @Test
-  void shouldBuildProduitToCreateFromPrimitives() {
-    ProduitToCreate toCreate = new ProduitToCreate("Carter moteur", "Carter en fonte");
-
-    assertThat(toCreate).isEqualTo(produitToCreateCarterMoteur());
+    assertThat(toCreate).isEqualTo(elementDeFabricationToCreateAssemblageCarter());
   }
 }

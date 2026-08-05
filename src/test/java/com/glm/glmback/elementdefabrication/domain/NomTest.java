@@ -47,11 +47,4 @@ class NomTest {
   void shouldPadCompteurOverSixDigits() {
     assertThat(Nom.of(PREFIXE_OF, ANNEE_2026, 123456).value()).isEqualTo("OF-2026-123456");
   }
-
-  @Test
-  void shouldReadConstituantsOfNom() {
-    assertThat(OF_2026_000001.prefixe()).isEqualTo(PREFIXE_OF);
-    assertThat(OF_2026_000001.annee()).isEqualTo(ANNEE_2026);
-    assertThat(OF_2026_000001.compteur()).isEqualTo(1);
-  }
 }

@@ -1,7 +1,15 @@
 package com.glm.glmback.elementdefabrication.domain;
 
-public sealed interface ElementDeFabricationToCreate permits OrdreDeFabricationToCreate, ProduitToCreate {
-  Titre titre();
+import com.glm.glmback.shared.error.domain.Assert;
 
-  Description description();
+public record ElementDeFabricationToCreate(TypeDElementDeFabrication type, Titre titre, Description description) {
+  public ElementDeFabricationToCreate {
+    Assert.notNull("type", type);
+    Assert.notNull("titre", titre);
+    Assert.notNull("description", description);
+  }
+
+  public ElementDeFabricationToCreate(TypeDElementDeFabrication type, String titre, String description) {
+    this(type, new Titre(titre), new Description(description));
+  }
 }

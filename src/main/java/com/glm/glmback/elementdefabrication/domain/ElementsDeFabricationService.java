@@ -30,29 +30,17 @@ public final class ElementsDeFabricationService {
 
   public ElementDeFabrication create(ElementDeFabricationToCreate toCreate) {
     Instant maintenant = clock.now();
-    Annee annee = Annee.of(maintenant);
 
-    ElementDeFabrication cree = switch (toCreate) {
-      case OrdreDeFabricationToCreate ordre -> OrdreDeFabrication.builder()
+    return repository.create(
+      ElementDeFabrication.builder()
         .id(ElementDeFabricationId.newId())
-        .prefixe(prefixes.prefixeDOrdreDeFabrication())
-        .compteur(compteur.prochainNumeroDOrdreDeFabrication(annee))
-        .titre(ordre.titre().value())
-        .description(ordre.description().value())
+        .type(toCreate.type())
+        .nom(nom(toCreate.type(), Annee.of(maintenant)))
+        .titre(toCreate.titre().value())
+        .description(toCreate.description().value())
         .dateDeCreation(maintenant)
-        .dateDeModification(maintenant);
-      case ProduitToCreate produit -> Produit.builder()
-        .id(ElementDeFabricationId.newId())
-        .prefixe(prefixes.prefixeDeProduit().value())
-        .annee(annee.value())
-        .compteur(compteur.prochainNumeroDeProduit(annee))
-        .titre(produit.titre().value())
-        .description(produit.description().value())
-        .dateDeCreation(maintenant)
-        .dateDeModification(maintenant);
-    };
-
-    return repository.create(cree);
+        .dateDeModification(maintenant)
+    );
   }
 
   public ElementDeFabrication get(ElementDeFabricationId id) {
@@ -64,34 +52,15 @@ public final class ElementsDeFabricationService {
   }
 
   public ElementDeFabrication update(ElementDeFabricationToUpdate toUpdate) {
-    ElementDeFabrication existant = get(toUpdate.id());
-    Instant maintenant = clock.now();
-
-    ElementDeFabrication modifie = switch (existant) {
-      case OrdreDeFabrication ordre -> OrdreDeFabrication.builder()
-        .id(ordre.id())
-        .prefixe(ordre.nom().prefixe())
-        .compteur(ordre.nom().compteur())
-        .titre(toUpdate.titre().value())
-        .description(toUpdate.description().value())
-        .dateDeCreation(ordre.dateDeCreation())
-        .dateDeModification(maintenant);
-      case Produit produit -> Produit.builder()
-        .id(produit.id())
-        .prefixe(produit.nom().prefixe().value())
-        .annee(produit.nom().annee().value())
-        .compteur(produit.nom().compteur())
-        .titre(toUpdate.titre().value())
-        .description(toUpdate.description().value())
-        .dateDeCreation(produit.dateDeCreation())
-        .dateDeModification(maintenant);
-    };
-
-    return repository.update(modifie);
+    return repository.update(get(toUpdate.id()).revise(toUpdate.titre(), toUpdate.description(), clock.now()));
   }
 
   public void delete(ElementDeFabricationId id) {
     repository.delete(id);
+  }
+
+  private Nom nom(TypeDElementDeFabrication type, Annee annee) {
+    return Nom.of(prefixes.prefixe(type), annee, compteur.prochainNumero(type, annee));
   }
 
   public interface ElementsDeFabricationServiceRepositoryBuilder {

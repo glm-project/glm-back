@@ -1,6 +1,7 @@
 package com.glm.glmback.elementdefabrication.infrastructure.secondary;
 
 import static com.glm.glmback.elementdefabrication.domain.ElementsDeFabricationFixture.*;
+import static com.glm.glmback.elementdefabrication.domain.TypeDElementDeFabrication.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
@@ -13,11 +14,11 @@ class InMemoryPrefixesDElementsDeFabricationTest {
 
   @Test
   void shouldGetPrefixeDOrdreDeFabrication() {
-    assertThat(prefixes.prefixeDOrdreDeFabrication()).isEqualTo(PREFIXE_OF);
+    assertThat(prefixes.prefixe(ORDRE_DE_FABRICATION)).isEqualTo(PREFIXE_OF);
   }
 
   @Test
   void shouldGetPrefixeDeProduit() {
-    assertThat(prefixes.prefixeDeProduit()).isEqualTo(PREFIXE_PRD);
+    assertThat(prefixes.prefixe(PRODUIT)).isEqualTo(PREFIXE_PRD);
   }
 }

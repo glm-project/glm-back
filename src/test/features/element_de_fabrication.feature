@@ -44,7 +44,7 @@ Feature: Gestion des elements de fabrication
     Then la reponse a le statut http 200
 
   Scenario: Lecture d'un element de fabrication inexistant renvoie 404
-    When je consulte l'element de fabrication "11111111-1111-1111-1111-111111111111" de type "ORDRE_DE_FABRICATION"
+    When je consulte l'element de fabrication "11111111-1111-1111-1111-111111111111"
     Then la reponse a le statut http 404
 
   Scenario: Modification d'un ordre de fabrication existant
@@ -72,7 +72,7 @@ Feature: Gestion des elements de fabrication
       | titre | Carter moteur revise |
 
   Scenario: Modification d'un element de fabrication inexistant renvoie 404
-    When je modifie l'element de fabrication "11111111-1111-1111-1111-111111111111" de type "PRODUIT"
+    When je modifie l'element de fabrication "11111111-1111-1111-1111-111111111111"
       | titre       | Carter moteur revise  |
       | description | Carter en fonte usine |
     Then la reponse a le statut http 404
@@ -88,7 +88,7 @@ Feature: Gestion des elements de fabrication
     Then la reponse a le statut http 404
 
   Scenario: Suppression d'un element de fabrication inexistant renvoie 404
-    When je supprime l'element de fabrication "11111111-1111-1111-1111-111111111111" de type "PRODUIT"
+    When je supprime l'element de fabrication "11111111-1111-1111-1111-111111111111"
     Then la reponse a le statut http 404
 
   Scenario: Liste paginee sur une periode contenant les deux types d'elements

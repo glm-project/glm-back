@@ -23,7 +23,6 @@ public class ElementDeFabricationSteps {
   private CucumberRestClient rest;
 
   private UUID dernierIdCree;
-  private String dernierTypeCree;
 
   @When("je cree un element de fabrication")
   public void jeCreeUnElementDeFabrication(Map<String, String> donnees) {
@@ -34,37 +33,36 @@ public class ElementDeFabricationSteps {
   public void jaiCreeUnElementDeFabrication(Map<String, String> donnees) {
     rest.post(BASE_URI, JSON.writeValueAsString(donnees));
     dernierIdCree = idDeLaDerniereReponse();
-    dernierTypeCree = donnees.get("type");
   }
 
   @When("je consulte cet element de fabrication")
   public void jeConsulteCetElementDeFabrication() {
-    rest.get(BASE_URI + "/" + dernierTypeCree + "/" + dernierIdCree);
+    rest.get(BASE_URI + "/" + dernierIdCree);
   }
 
-  @When("je consulte l'element de fabrication {string} de type {string}")
-  public void jeConsulteLElementDeFabrication(String id, String type) {
-    rest.get(BASE_URI + "/" + type + "/" + id);
+  @When("je consulte l'element de fabrication {string}")
+  public void jeConsulteLElementDeFabrication(String id) {
+    rest.get(BASE_URI + "/" + id);
   }
 
   @When("je modifie cet element de fabrication")
   public void jeModifieCetElementDeFabrication(Map<String, String> donnees) {
-    rest.put(BASE_URI + "/" + dernierTypeCree + "/" + dernierIdCree, JSON.writeValueAsString(donnees));
+    rest.put(BASE_URI + "/" + dernierIdCree, JSON.writeValueAsString(donnees));
   }
 
-  @When("je modifie l'element de fabrication {string} de type {string}")
-  public void jeModifieLElementDeFabrication(String id, String type, Map<String, String> donnees) {
-    rest.put(BASE_URI + "/" + type + "/" + id, JSON.writeValueAsString(donnees));
+  @When("je modifie l'element de fabrication {string}")
+  public void jeModifieLElementDeFabrication(String id, Map<String, String> donnees) {
+    rest.put(BASE_URI + "/" + id, JSON.writeValueAsString(donnees));
   }
 
   @When("je supprime cet element de fabrication")
   public void jeSupprimeCetElementDeFabrication() {
-    rest.delete(BASE_URI + "/" + dernierTypeCree + "/" + dernierIdCree);
+    rest.delete(BASE_URI + "/" + dernierIdCree);
   }
 
-  @When("je supprime l'element de fabrication {string} de type {string}")
-  public void jeSupprimeLElementDeFabrication(String id, String type) {
-    rest.delete(BASE_URI + "/" + type + "/" + id);
+  @When("je supprime l'element de fabrication {string}")
+  public void jeSupprimeLElementDeFabrication(String id) {
+    rest.delete(BASE_URI + "/" + id);
   }
 
   @When("je liste les elements de fabrication entre {string} et {string}")

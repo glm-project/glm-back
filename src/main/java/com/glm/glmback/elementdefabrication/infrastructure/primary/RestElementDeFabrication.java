@@ -1,13 +1,12 @@
 package com.glm.glmback.elementdefabrication.infrastructure.primary;
 
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabrication;
-import com.glm.glmback.elementdefabrication.domain.OrdreDeFabrication;
-import com.glm.glmback.elementdefabrication.domain.Produit;
+import com.glm.glmback.elementdefabrication.domain.TypeDElementDeFabrication;
 import java.time.Instant;
 import java.util.UUID;
 
 record RestElementDeFabrication(
-  RestTypeElementDeFabrication type,
+  TypeDElementDeFabrication type,
   UUID id,
   String nom,
   String titre,
@@ -17,7 +16,7 @@ record RestElementDeFabrication(
 ) {
   static RestElementDeFabrication from(ElementDeFabrication element) {
     return new RestElementDeFabrication(
-      typeDe(element),
+      element.type(),
       element.id().uuid(),
       element.nom().value(),
       element.titre().value(),
@@ -25,12 +24,5 @@ record RestElementDeFabrication(
       element.dateDeCreation(),
       element.dateDeModification()
     );
-  }
-
-  private static RestTypeElementDeFabrication typeDe(ElementDeFabrication element) {
-    return switch (element) {
-      case OrdreDeFabrication _ -> RestTypeElementDeFabrication.ORDRE_DE_FABRICATION;
-      case Produit _ -> RestTypeElementDeFabrication.PRODUIT;
-    };
   }
 }

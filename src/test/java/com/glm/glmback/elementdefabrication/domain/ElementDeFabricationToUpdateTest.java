@@ -19,7 +19,7 @@ class ElementDeFabricationToUpdateTest {
 
   @Test
   void shouldNotBuildWithoutTitre() {
-    ElementDeFabricationId id = OrdreDeFabricationId.newId();
+    ElementDeFabricationId id = ElementDeFabricationId.newId();
 
     assertThatThrownBy(() -> new ElementDeFabricationToUpdate(id, null, descriptionCarterEnFonte()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
@@ -28,7 +28,7 @@ class ElementDeFabricationToUpdateTest {
 
   @Test
   void shouldNotBuildWithoutDescription() {
-    ElementDeFabricationId id = OrdreDeFabricationId.newId();
+    ElementDeFabricationId id = ElementDeFabricationId.newId();
 
     assertThatThrownBy(() -> new ElementDeFabricationToUpdate(id, titreAssemblageCarterRevise(), null))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
@@ -37,7 +37,7 @@ class ElementDeFabricationToUpdateTest {
 
   @Test
   void shouldReadElementDeFabricationToUpdate() {
-    ElementDeFabricationId id = OrdreDeFabricationId.newId();
+    ElementDeFabricationId id = ElementDeFabricationId.newId();
 
     ElementDeFabricationToUpdate toUpdate = elementDeFabricationToUpdateAssemblageCarterRevise(id);
 
@@ -48,7 +48,7 @@ class ElementDeFabricationToUpdateTest {
 
   @Test
   void shouldBuildElementDeFabricationToUpdateFromPrimitives() {
-    ElementDeFabricationId id = OrdreDeFabricationId.newId();
+    ElementDeFabricationId id = ElementDeFabricationId.newId();
 
     ElementDeFabricationToUpdate toUpdate = new ElementDeFabricationToUpdate(id, "Assemblage carter revise", "Carter en fonte");
 
