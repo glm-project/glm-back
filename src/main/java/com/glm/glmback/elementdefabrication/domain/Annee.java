@@ -12,7 +12,7 @@ public record Annee(int value) {
     Assert.field("annee", value).min(PREMIERE_ANNEE).max(DERNIERE_ANNEE);
   }
 
-  public static Annee de(Instant date) {
+  public static Annee of(Instant date) {
     return new Annee(date.atZone(ZoneOffset.UTC).getYear());
   }
 }
