@@ -1,54 +1,92 @@
 package com.glm.glmback.elementdefabrication.domain;
 
 import com.glm.glmback.shared.error.domain.Assert;
+
 import java.time.Instant;
 
-public record OrdreDeFabrication(OrdreDeFabricationId id, Nom nom, Fiche fiche) implements ElementDeFabrication {
+public record OrdreDeFabrication(ElementDeFabricationId id, Nom nom, Fiche fiche) implements ElementDeFabrication {
   public OrdreDeFabrication {
     Assert.notNull("id", id);
     Assert.notNull("nom", nom);
     Assert.notNull("fiche", fiche);
   }
 
-  private OrdreDeFabrication(
-    OrdreDeFabricationId id,
-    String prefixe,
-    int annee,
-    long compteur,
-    String titre,
-    String description,
-    Instant dateDeCreation,
-    Instant dateDeModification
-  ) {
-    this(
-      id,
-      Nom.of(new Prefixe(prefixe), new Annee(annee), compteur),
-      Fiche.builder().titre(titre).description(description).dateDeCreation(dateDeCreation).dateDeModification(dateDeModification)
-    );
+  private OrdreDeFabrication(OrdreDeFabricationBuilder builder) {
+    this(builder.id,
+    Nom.of(builder.prefixe, Annee.of(builder.dateDeCreation), builder.compteur),
+    Fiche.builder().titre(builder.titre).description(builder.description).dateDeCreation(builder.dateDeCreation).dateDeModification(builder.dateDeModification));
   }
 
   public static OrdreDeFabricationIdBuilder builder() {
-    return id ->
-      prefixe ->
-        annee ->
-          compteur ->
-            titre ->
-              description ->
-                dateDeCreation ->
-                  dateDeModification ->
-                    new OrdreDeFabrication(id, prefixe, annee, compteur, titre, description, dateDeCreation, dateDeModification);
+    return new OrdreDeFabricationBuilder();
+  }
+
+  public static class OrdreDeFabricationBuilder implements OrdreDeFabricationIdBuilder, OrdreDeFabricationPrefixeBuilder, OrdreDeFabricationCompteurBuilder, OrdreDeFabricationTitreBuilder, OrdreDeFabricationDescriptionBuilder, OrdreDeFabricationDateDeCreationBuilder, OrdreDeFabricationDateDeModificationBuilder {
+
+    long compteur;
+    Instant dateDeCreation;
+    String description;
+    ElementDeFabricationId id;
+    Prefixe prefixe;
+    String titre;
+    Instant dateDeModification;
+
+    @Override
+    public OrdreDeFabricationTitreBuilder compteur(long compteur) {
+      this.compteur = compteur;
+
+      return this;
+    }
+
+    @Override
+    public OrdreDeFabricationDateDeModificationBuilder dateDeCreation(Instant dateDeCreation) {
+      this.dateDeCreation = dateDeCreation;
+
+      return this;
+    }
+
+    @Override
+    public OrdreDeFabricationDateDeCreationBuilder description(String description) {
+      this.description = description;
+
+      return this;
+    }
+
+    @Override
+    public OrdreDeFabricationPrefixeBuilder id(ElementDeFabricationId id) {
+      this.id = id;
+
+      return this;
+    }
+
+    @Override
+    public OrdreDeFabricationCompteurBuilder prefixe(Prefixe prefixe) {
+      this.prefixe = prefixe;
+
+      return this;
+    }
+
+    @Override
+    public OrdreDeFabricationDescriptionBuilder titre(String titre) {
+      this.titre = titre;
+
+      return this;
+    }
+
+    @Override
+    public OrdreDeFabrication dateDeModification(Instant dateDeModification) {
+      this.dateDeModification = dateDeModification;
+
+      return new OrdreDeFabrication(this);
+    }
   }
 
   public interface OrdreDeFabricationIdBuilder {
-    OrdreDeFabricationPrefixeBuilder id(OrdreDeFabricationId id);
+    OrdreDeFabricationPrefixeBuilder id(ElementDeFabricationId id);
   }
 
   public interface OrdreDeFabricationPrefixeBuilder {
-    OrdreDeFabricationAnneeBuilder prefixe(String prefixe);
-  }
-
-  public interface OrdreDeFabricationAnneeBuilder {
-    OrdreDeFabricationCompteurBuilder annee(int annee);
+    OrdreDeFabricationCompteurBuilder prefixe(Prefixe prefixe);
   }
 
   public interface OrdreDeFabricationCompteurBuilder {

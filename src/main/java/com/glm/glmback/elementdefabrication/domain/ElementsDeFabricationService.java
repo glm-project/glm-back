@@ -34,16 +34,15 @@ public final class ElementsDeFabricationService {
 
     ElementDeFabrication cree = switch (toCreate) {
       case OrdreDeFabricationToCreate ordre -> OrdreDeFabrication.builder()
-        .id(OrdreDeFabricationId.newId())
-        .prefixe(prefixes.prefixeDOrdreDeFabrication().value())
-        .annee(annee.value())
+        .id(ElementDeFabricationId.newId())
+        .prefixe(prefixes.prefixeDOrdreDeFabrication())
         .compteur(compteur.prochainNumeroDOrdreDeFabrication(annee))
         .titre(ordre.titre().value())
         .description(ordre.description().value())
         .dateDeCreation(maintenant)
         .dateDeModification(maintenant);
       case ProduitToCreate produit -> Produit.builder()
-        .id(ProduitId.newId())
+        .id(ElementDeFabricationId.newId())
         .prefixe(prefixes.prefixeDeProduit().value())
         .annee(annee.value())
         .compteur(compteur.prochainNumeroDeProduit(annee))
@@ -71,8 +70,7 @@ public final class ElementsDeFabricationService {
     ElementDeFabrication modifie = switch (existant) {
       case OrdreDeFabrication ordre -> OrdreDeFabrication.builder()
         .id(ordre.id())
-        .prefixe(ordre.nom().prefixe().value())
-        .annee(ordre.nom().annee().value())
+        .prefixe(ordre.nom().prefixe())
         .compteur(ordre.nom().compteur())
         .titre(toUpdate.titre().value())
         .description(toUpdate.description().value())

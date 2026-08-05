@@ -2,6 +2,7 @@ package com.glm.glmback.elementdefabrication.infrastructure.primary;
 
 import com.glm.glmback.elementdefabrication.application.ElementDeFabricationApplicationService;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabrication;
+import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationId;
 import com.glm.glmback.elementdefabrication.domain.Periode;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
@@ -37,23 +38,22 @@ class ElementDeFabricationResource {
   }
 
   @GetMapping("/{type}/{id}")
-  RestElementDeFabrication get(@PathVariable RestTypeElementDeFabrication type, @PathVariable UUID id) {
-    return RestElementDeFabrication.from(applicationService.get(type.toDomain(id)));
+  RestElementDeFabrication get(@PathVariable UUID id) {
+    return RestElementDeFabrication.from(applicationService.get(new ElementDeFabricationId(id)));
   }
 
   @PutMapping("/{type}/{id}")
   RestElementDeFabrication update(
-    @PathVariable RestTypeElementDeFabrication type,
     @PathVariable UUID id,
     @RequestBody @Valid RestModificationElementDeFabrication request
   ) {
-    return RestElementDeFabrication.from(applicationService.update(request.toDomain(type.toDomain(id))));
+    return RestElementDeFabrication.from(applicationService.update(request.toDomain(new ElementDeFabricationId(id))));
   }
 
   @DeleteMapping("/{type}/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  void delete(@PathVariable RestTypeElementDeFabrication type, @PathVariable UUID id) {
-    applicationService.delete(type.toDomain(id));
+  void delete(@PathVariable UUID id) {
+    applicationService.delete(new ElementDeFabricationId(id));
   }
 
   @GetMapping

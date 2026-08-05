@@ -3,7 +3,7 @@ package com.glm.glmback.elementdefabrication.domain;
 import com.glm.glmback.shared.error.domain.Assert;
 import java.time.Instant;
 
-public record Produit(ProduitId id, Nom nom, Fiche fiche) implements ElementDeFabrication {
+public record Produit(ElementDeFabricationId id, Nom nom, Fiche fiche) implements ElementDeFabrication {
   public Produit {
     Assert.notNull("id", id);
     Assert.notNull("nom", nom);
@@ -11,7 +11,7 @@ public record Produit(ProduitId id, Nom nom, Fiche fiche) implements ElementDeFa
   }
 
   private Produit(
-    ProduitId id,
+    ElementDeFabricationId id,
     String prefixe,
     int annee,
     long compteur,
@@ -39,7 +39,7 @@ public record Produit(ProduitId id, Nom nom, Fiche fiche) implements ElementDeFa
   }
 
   public interface ProduitIdBuilder {
-    ProduitPrefixeBuilder id(ProduitId id);
+    ProduitPrefixeBuilder id(ElementDeFabricationId id);
   }
 
   public interface ProduitPrefixeBuilder {
