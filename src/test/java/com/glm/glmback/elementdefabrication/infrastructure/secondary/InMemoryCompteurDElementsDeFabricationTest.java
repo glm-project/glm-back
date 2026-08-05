@@ -1,6 +1,7 @@
 package com.glm.glmback.elementdefabrication.infrastructure.secondary;
 
 import static com.glm.glmback.elementdefabrication.domain.ElementsDeFabricationFixture.*;
+import static com.glm.glmback.elementdefabrication.domain.TypeDElementDeFabrication.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
@@ -15,35 +16,30 @@ class InMemoryCompteurDElementsDeFabricationTest {
   private final InMemoryCompteurDElementsDeFabrication compteur = new InMemoryCompteurDElementsDeFabrication();
 
   @Test
-  void shouldStartOrdreDeFabricationSerieAtOne() {
-    assertThat(compteur.prochainNumeroDOrdreDeFabrication(ANNEE_2026)).isEqualTo(1);
+  void shouldStartSerieAtOne() {
+    assertThat(compteur.prochainNumero(ORDRE_DE_FABRICATION, ANNEE_2026)).isEqualTo(1);
   }
 
   @Test
-  void shouldIncrementOrdreDeFabricationSerie() {
-    compteur.prochainNumeroDOrdreDeFabrication(ANNEE_2026);
+  void shouldIncrementSerie() {
+    compteur.prochainNumero(ORDRE_DE_FABRICATION, ANNEE_2026);
 
-    assertThat(compteur.prochainNumeroDOrdreDeFabrication(ANNEE_2026)).isEqualTo(2);
+    assertThat(compteur.prochainNumero(ORDRE_DE_FABRICATION, ANNEE_2026)).isEqualTo(2);
   }
 
   @Test
-  void shouldStartProduitSerieAtOne() {
-    assertThat(compteur.prochainNumeroDeProduit(ANNEE_2026)).isEqualTo(1);
-  }
+  void shouldNotShareSerieBetweenTypes() {
+    compteur.prochainNumero(ORDRE_DE_FABRICATION, ANNEE_2026);
+    compteur.prochainNumero(ORDRE_DE_FABRICATION, ANNEE_2026);
 
-  @Test
-  void shouldNotShareSerieBetweenOrdresDeFabricationAndProduits() {
-    compteur.prochainNumeroDOrdreDeFabrication(ANNEE_2026);
-    compteur.prochainNumeroDOrdreDeFabrication(ANNEE_2026);
-
-    assertThat(compteur.prochainNumeroDeProduit(ANNEE_2026)).isEqualTo(1);
+    assertThat(compteur.prochainNumero(PRODUIT, ANNEE_2026)).isEqualTo(1);
   }
 
   @Test
   void shouldRestartSerieOnNewAnnee() {
-    compteur.prochainNumeroDOrdreDeFabrication(ANNEE_2026);
-    compteur.prochainNumeroDOrdreDeFabrication(ANNEE_2026);
+    compteur.prochainNumero(ORDRE_DE_FABRICATION, ANNEE_2026);
+    compteur.prochainNumero(ORDRE_DE_FABRICATION, ANNEE_2026);
 
-    assertThat(compteur.prochainNumeroDOrdreDeFabrication(ANNEE_2027)).isEqualTo(1);
+    assertThat(compteur.prochainNumero(ORDRE_DE_FABRICATION, ANNEE_2027)).isEqualTo(1);
   }
 }

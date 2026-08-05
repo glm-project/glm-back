@@ -49,11 +49,34 @@ class FicheTest {
   @Test
   void shouldBuildNeverModifiedFiche() {
     Fiche fiche = Fiche.builder()
-      .titre(titreAssemblageCarter())
-      .description(descriptionCarterEnFonte())
+      .titre(titreAssemblageCarter().value())
+      .description(descriptionCarterEnFonte().value())
       .dateDeCreation(LE_15_JANVIER_2026)
       .dateDeModification(LE_15_JANVIER_2026);
 
+    assertThat(fiche.titre()).isEqualTo(titreAssemblageCarter());
+    assertThat(fiche.description()).isEqualTo(descriptionCarterEnFonte());
     assertThat(fiche.dateDeModification()).isEqualTo(fiche.dateDeCreation());
+  }
+
+  @Test
+  void shouldReviseFiche() {
+    Fiche revisee = ficheAssemblageCarter().revise(titreAssemblageCarterRevise(), descriptionCarterEnFonte(), LE_20_FEVRIER_2026);
+
+    assertThat(revisee.titre()).isEqualTo(titreAssemblageCarterRevise());
+    assertThat(revisee.description()).isEqualTo(descriptionCarterEnFonte());
+    assertThat(revisee.dateDeCreation()).isEqualTo(LE_15_JANVIER_2026);
+    assertThat(revisee.dateDeModification()).isEqualTo(LE_20_FEVRIER_2026);
+  }
+
+  @Test
+  void shouldNotReviseBeforeDateDeCreation() {
+    Fiche fiche = ficheAssemblageCarter();
+    Titre titre = titreAssemblageCarterRevise();
+    Description description = descriptionCarterEnFonte();
+
+    assertThatThrownBy(() -> fiche.revise(titre, description, LE_15_JANVIER_2026.minusSeconds(1)))
+      .isExactlyInstanceOf(NotAfterTimeException.class)
+      .hasMessageContaining("dateDeModification");
   }
 }

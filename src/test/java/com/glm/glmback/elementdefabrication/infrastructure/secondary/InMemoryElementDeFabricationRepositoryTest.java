@@ -7,10 +7,8 @@ import static org.assertj.core.api.Assertions.*;
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabrication;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationDejaExistantException;
+import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationId;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationIntrouvableException;
-import com.glm.glmback.elementdefabrication.domain.OrdreDeFabrication;
-import com.glm.glmback.elementdefabrication.domain.OrdreDeFabricationId;
-import com.glm.glmback.elementdefabrication.domain.Produit;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import java.time.Instant;
@@ -22,8 +20,8 @@ class InMemoryElementDeFabricationRepositoryTest {
   private final InMemoryElementDeFabricationRepository repository = new InMemoryElementDeFabricationRepository();
 
   @Test
-  void shouldCreateOrdreDeFabrication() {
-    OrdreDeFabrication ordre = ordreDeFabricationAssemblageCarter();
+  void shouldCreateElementDeFabrication() {
+    ElementDeFabrication ordre = elementDeFabricationAssemblageCarter();
 
     ElementDeFabrication cree = repository.create(ordre);
 
@@ -33,8 +31,8 @@ class InMemoryElementDeFabricationRepositoryTest {
 
   @Test
   void shouldNotCreateTwiceSameElementDeFabrication() {
-    OrdreDeFabricationId id = OrdreDeFabricationId.newId();
-    OrdreDeFabrication ordre = ordreDeFabricationAssemblageCarter(id);
+    ElementDeFabricationId id = ElementDeFabricationId.newId();
+    ElementDeFabrication ordre = elementDeFabricationAssemblageCarter(id);
     repository.create(ordre);
 
     assertThatThrownBy(() -> repository.create(ordre))
@@ -44,16 +42,10 @@ class InMemoryElementDeFabricationRepositoryTest {
 
   @Test
   void shouldUpdateElementDeFabrication() {
-    OrdreDeFabricationId id = OrdreDeFabricationId.newId();
-    repository.create(ordreDeFabricationAssemblageCarter(id));
+    ElementDeFabricationId id = ElementDeFabricationId.newId();
+    repository.create(elementDeFabricationAssemblageCarter(id));
 
-    OrdreDeFabrication modifie = OrdreDeFabrication.builder()
-      .id(id)
-      .nom(OF_2026_000001)
-      .titre(titreAssemblageCarterRevise())
-      .description(descriptionCarterEnFonte())
-      .dateDeCreation(LE_15_JANVIER_2026)
-      .dateDeModification(LE_20_FEVRIER_2026);
+    ElementDeFabrication modifie = elementDeFabricationAssemblageCarterRevise(id);
 
     assertThat(repository.update(modifie)).isEqualTo(modifie);
     assertThat(repository.get(id)).contains(modifie);
@@ -61,8 +53,8 @@ class InMemoryElementDeFabricationRepositoryTest {
 
   @Test
   void shouldNotUpdateUnknownElementDeFabrication() {
-    OrdreDeFabricationId id = OrdreDeFabricationId.newId();
-    OrdreDeFabrication inconnu = ordreDeFabricationAssemblageCarter(id);
+    ElementDeFabricationId id = ElementDeFabricationId.newId();
+    ElementDeFabrication inconnu = elementDeFabricationAssemblageCarter(id);
 
     assertThatThrownBy(() -> repository.update(inconnu))
       .isExactlyInstanceOf(ElementDeFabricationIntrouvableException.class)
@@ -71,7 +63,7 @@ class InMemoryElementDeFabricationRepositoryTest {
 
   @Test
   void shouldDeleteElementDeFabrication() {
-    OrdreDeFabrication ordre = ordreDeFabricationAssemblageCarter();
+    ElementDeFabrication ordre = elementDeFabricationAssemblageCarter();
     repository.create(ordre);
 
     repository.delete(ordre.id());
@@ -81,7 +73,7 @@ class InMemoryElementDeFabricationRepositoryTest {
 
   @Test
   void shouldNotDeleteUnknownElementDeFabrication() {
-    OrdreDeFabricationId inconnu = OrdreDeFabricationId.newId();
+    ElementDeFabricationId inconnu = ElementDeFabricationId.newId();
 
     assertThatThrownBy(() -> repository.delete(inconnu))
       .isExactlyInstanceOf(ElementDeFabricationIntrouvableException.class)
@@ -90,13 +82,13 @@ class InMemoryElementDeFabricationRepositoryTest {
 
   @Test
   void shouldNotGetUnknownElementDeFabrication() {
-    assertThat(repository.get(OrdreDeFabricationId.newId())).isEmpty();
+    assertThat(repository.get(ElementDeFabricationId.newId())).isEmpty();
   }
 
   @Test
   void shouldListOrdresDeFabricationAndProduitsInPeriode() {
-    OrdreDeFabrication ordre = ordreDeFabricationAssemblageCarter();
-    Produit produit = produitCarterMoteur();
+    ElementDeFabrication ordre = elementDeFabricationAssemblageCarter();
+    ElementDeFabrication produit = elementDeFabricationCarterMoteur();
     repository.create(ordre);
     repository.create(produit);
 
@@ -108,7 +100,7 @@ class InMemoryElementDeFabricationRepositoryTest {
 
   @Test
   void shouldNotListElementDeFabricationOutOfPeriode() {
-    repository.create(ordreDeFabricationAssemblageCarterCreeLe(LE_31_MARS_2026.plusSeconds(1)));
+    repository.create(elementDeFabricationAssemblageCarterCreeLe(LE_31_MARS_2026.plusSeconds(1)));
 
     Page<ElementDeFabrication> page = repository.list(criteresPremierTrimestre2026(), firstPageOfTen());
 
@@ -119,8 +111,8 @@ class InMemoryElementDeFabricationRepositoryTest {
 
   @Test
   void shouldListElementsDeFabricationMostRecentFirst() {
-    OrdreDeFabrication ancien = ordreDeFabricationAssemblageCarterCreeLe(LE_15_JANVIER_2026);
-    OrdreDeFabrication recent = ordreDeFabricationAssemblageCarterCreeLe(LE_20_FEVRIER_2026);
+    ElementDeFabrication ancien = elementDeFabricationAssemblageCarterCreeLe(LE_15_JANVIER_2026);
+    ElementDeFabrication recent = elementDeFabricationAssemblageCarterCreeLe(LE_20_FEVRIER_2026);
     repository.create(ancien);
     repository.create(recent);
 
@@ -131,9 +123,9 @@ class InMemoryElementDeFabricationRepositoryTest {
 
   @Test
   void shouldListSecondPageOfElementsDeFabrication() {
-    repository.create(ordreDeFabricationAssemblageCarterCreeLe(Instant.parse("2026-01-10T00:00:00Z")));
-    repository.create(ordreDeFabricationAssemblageCarterCreeLe(Instant.parse("2026-01-20T00:00:00Z")));
-    OrdreDeFabrication plusAncien = ordreDeFabricationAssemblageCarterCreeLe(Instant.parse("2026-01-05T00:00:00Z"));
+    repository.create(elementDeFabricationAssemblageCarterCreeLe(Instant.parse("2026-01-10T00:00:00Z")));
+    repository.create(elementDeFabricationAssemblageCarterCreeLe(Instant.parse("2026-01-20T00:00:00Z")));
+    ElementDeFabrication plusAncien = elementDeFabricationAssemblageCarterCreeLe(Instant.parse("2026-01-05T00:00:00Z"));
     repository.create(plusAncien);
 
     Page<ElementDeFabrication> premierePage = repository.list(criteresPremierTrimestre2026(), new Pageable(0, 2));

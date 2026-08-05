@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -20,6 +21,7 @@ class AssertTest {
 
   private static final String FIELD_NAME = "fieldName";
   private static final String NOT_NULL_OR_EMPTY = "NotNullOrEmpty";
+  private static final Pattern DIGITS = Pattern.compile("^\\d+$");
 
   @Nested
   class NotNullTest {
@@ -216,6 +218,27 @@ class AssertTest {
     @ValueSource(ints = { 5, 6 })
     void shouldValidateShortEnoughString(int maxLength) {
       assertThatCode(() -> Assert.field(FIELD_NAME, "value").maxLength(maxLength)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldNotValidateNullInputAgainstPattern() {
+      assertThatThrownBy(() -> Assert.field(FIELD_NAME, (String) null).matches(DIGITS))
+        .isExactlyInstanceOf(MissingMandatoryValueException.class)
+        .hasMessageContaining(FIELD_NAME);
+    }
+
+    @Test
+    void shouldNotValidateStringOutOfPattern() {
+      assertThatThrownBy(() -> Assert.field(FIELD_NAME, "value").matches(DIGITS))
+        .isExactlyInstanceOf(StringNotMatchingPatternException.class)
+        .hasMessageContaining(DIGITS.pattern())
+        .hasMessageContaining("value")
+        .hasMessageContaining(FIELD_NAME);
+    }
+
+    @Test
+    void shouldValidateStringMatchingPattern() {
+      assertThatCode(() -> Assert.field(FIELD_NAME, "42").matches(DIGITS)).doesNotThrowAnyException();
     }
   }
 

@@ -19,11 +19,13 @@ class ElementDeFabricationCriteriaTest {
 
   @Test
   void shouldMatchElementCreatedInPeriode() {
-    assertThat(criteresPremierTrimestre2026().matches(ordreDeFabricationAssemblageCarterCreeLe(LE_15_JANVIER_2026))).isTrue();
+    assertThat(criteresPremierTrimestre2026().matches(elementDeFabricationAssemblageCarterCreeLe(LE_15_JANVIER_2026))).isTrue();
   }
 
   @Test
   void shouldNotMatchElementCreatedOutOfPeriode() {
-    assertThat(criteresPremierTrimestre2026().matches(ordreDeFabricationAssemblageCarterCreeLe(LE_31_MARS_2026.plusSeconds(1)))).isFalse();
+    assertThat(
+      criteresPremierTrimestre2026().matches(elementDeFabricationAssemblageCarterCreeLe(LE_31_MARS_2026.plusSeconds(1)))
+    ).isFalse();
   }
 }
