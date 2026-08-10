@@ -3,3 +3,10 @@ logging:
     com:
       glm:
         glmback: DEBUG
+application:
+  multitenancy:
+    tenants:
+      - id: impeccmold
+        schema: impeccmold
+      - id: katilys
+        schema: katilys

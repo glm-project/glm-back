@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.glm.glmback.shared.authentication.infrastructure.primary.TestSecurityConfiguration;
+import com.glm.glmback.shared.multitenancy.application.CurrentTenant;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
@@ -34,17 +35,22 @@ public class CucumberSecurityConfiguration {
 
   private Jwt buildJwt(String token) {
     String decoded = new String(Base64.getDecoder().decode(token), StandardCharsets.UTF_8);
-    String[] parts = decoded.split("\\|", 2);
+    String[] parts = decoded.split("\\|", 3);
     String username = parts[0];
     List<String> roles = parts.length > 1 ? List.of(parts[1].split(",")) : List.of();
 
-    return Jwt.withTokenValue(token)
+    Jwt.Builder jwt = Jwt.withTokenValue(token)
       .header("alg", "none")
       .claim("sub", username)
       .claim("preferred_username", username)
       .claim("groups", roles)
       .issuedAt(Instant.now())
-      .expiresAt(Instant.now().plusSeconds(3600))
-      .build();
+      .expiresAt(Instant.now().plusSeconds(3600));
+
+    if (parts.length > 2 && !parts[2].isBlank()) {
+      jwt.claim(CurrentTenant.TENANT, parts[2]);
+    }
+
+    return jwt.build();
   }
 }
