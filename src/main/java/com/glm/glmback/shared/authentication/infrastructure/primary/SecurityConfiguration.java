@@ -4,6 +4,7 @@ import static org.springframework.security.config.Customizer.withDefaults;
 
 import com.glm.glmback.shared.authentication.domain.Role;
 import com.glm.glmback.shared.generation.domain.ExcludeFromGeneratedCodeCoverage;
+import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantAuthorizationManager;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
@@ -46,13 +47,19 @@ class SecurityConfiguration {
 
   private final ApplicationSecurityProperties applicationSecurityProperties;
   private final CorsFilter corsFilter;
+  private final TenantAuthorizationManager tenantAuthorizationManager;
 
   @Value("${spring.security.oauth2.client.provider.oidc.issuer-uri}")
   private String issuerUri;
 
-  public SecurityConfiguration(CorsFilter corsFilter, ApplicationSecurityProperties applicationSecurityProperties) {
+  public SecurityConfiguration(
+    CorsFilter corsFilter,
+    ApplicationSecurityProperties applicationSecurityProperties,
+    TenantAuthorizationManager tenantAuthorizationManager
+  ) {
     this.corsFilter = corsFilter;
     this.applicationSecurityProperties = applicationSecurityProperties;
+    this.tenantAuthorizationManager = tenantAuthorizationManager;
   }
 
   @Bean
@@ -80,7 +87,7 @@ class SecurityConfiguration {
         .requestMatchers(PathPatternRequestMatcher.withDefaults().matcher("/api/authenticate")).permitAll()
         .requestMatchers(PathPatternRequestMatcher.withDefaults().matcher("/api/auth-info")).permitAll()
         .requestMatchers(PathPatternRequestMatcher.withDefaults().matcher("/api/admin/**")).hasAuthority(Role.ADMIN.key())
-        .requestMatchers(PathPatternRequestMatcher.withDefaults().matcher("/api/**")).authenticated()
+        .requestMatchers(PathPatternRequestMatcher.withDefaults().matcher("/api/**")).access(tenantAuthorizationManager)
         .requestMatchers(PathPatternRequestMatcher.withDefaults().matcher("/management/health")).permitAll()
         .requestMatchers(PathPatternRequestMatcher.withDefaults().matcher("/management/health/**")).permitAll()
         .requestMatchers(PathPatternRequestMatcher.withDefaults().matcher("/management/info")).permitAll()

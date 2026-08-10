@@ -4,6 +4,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.glm.glmback.IntegrationTest;
+import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -18,6 +19,7 @@ class AuthenticationExceptionAdviceIT {
   private MockMvc mockMvc;
 
   @Test
+  @WithTenant("impeccmold")
   void shouldHandleNotAuthenticatedUserException() throws Exception {
     mockMvc
       .perform(get("/api/account-exceptions/not-authenticated"))
@@ -28,6 +30,7 @@ class AuthenticationExceptionAdviceIT {
   }
 
   @Test
+  @WithTenant("impeccmold")
   void shouldHandleUnknownAuthenticationException() throws Exception {
     mockMvc
       .perform(get("/api/account-exceptions/unknown-authentication"))

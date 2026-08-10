@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <changeSet id="element_de_fabrication" author="glm">
+    <createTable tableName="element_de_fabrication">
+      <column name="id" type="${uuidType}">
+        <constraints nullable="false" primaryKey="true" />
+      </column>
+
+      <column name="type" type="varchar(30)">
+        <constraints nullable="false" />
+      </column>
+
+      <column name="nom" type="varchar(30)">
+        <constraints nullable="false" unique="true" uniqueConstraintName="ux_element_de_fabrication_nom" />
+      </column>
+
+      <column name="titre" type="varchar(255)">
+        <constraints nullable="false" />
+      </column>
+
+      <column name="description" type="varchar(1000)">
+        <constraints nullable="false" />
+      </column>
+
+      <column name="date_de_creation" type="${datetimeType}">
+        <constraints nullable="false" />
+      </column>
+
+      <column name="date_de_modification" type="${datetimeType}">
+        <constraints nullable="false" />
+      </column>
+    </createTable>
+
+    <createIndex indexName="ix_element_de_fabrication_date_de_creation" tableName="element_de_fabrication">
+      <column name="date_de_creation" />
+      <column name="id" />
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="compteur_d_elements_de_fabrication" author="glm">
+    <createTable tableName="compteur_d_elements_de_fabrication">
+      <column name="type" type="varchar(30)">
+        <constraints nullable="false" />
+      </column>
+
+      <column name="annee" type="int">
+        <constraints nullable="false" />
+      </column>
+
+      <column name="numero" type="bigint">
+        <constraints nullable="false" />
+      </column>
+    </createTable>
+
+    <addPrimaryKey
+      columnNames="type, annee"
+      constraintName="pk_compteur_d_elements_de_fabrication"
+      tableName="compteur_d_elements_de_fabrication"
+    />
+  </changeSet>
+</databaseChangeLog>

@@ -21,3 +21,10 @@ spring:
             issuer-uri: http://DO_NOT_CALL:9080/realms/glmproject
 server:
   port: 0
+application:
+  multitenancy:
+    tenants:
+      - id: impeccmold
+        schema: impeccmold
+      - id: katilys
+        schema: katilys

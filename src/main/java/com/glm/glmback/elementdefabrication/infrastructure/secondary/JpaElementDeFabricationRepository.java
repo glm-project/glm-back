@@ -6,73 +6,71 @@ import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationDejaExist
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationId;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationIntrouvableException;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationRepository;
+import com.glm.glmback.elementdefabrication.domain.Periode;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
-import java.time.Instant;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public class InMemoryElementDeFabricationRepository implements ElementDeFabricationRepository {
+class JpaElementDeFabricationRepository implements ElementDeFabricationRepository {
 
-  private final Map<ElementDeFabricationId, ElementDeFabrication> elements = new ConcurrentHashMap<>();
+  private static final Sort PAR_DATE_DE_CREATION_DESCENDANTE = Sort.by(Sort.Order.desc("dateDeCreation"), Sort.Order.asc("id"));
+
+  private final SpringDataElementDeFabricationRepository elements;
+
+  JpaElementDeFabricationRepository(SpringDataElementDeFabricationRepository elements) {
+    this.elements = elements;
+  }
 
   @Override
   public ElementDeFabrication create(ElementDeFabrication element) {
-    ElementDeFabrication existant = elements.putIfAbsent(element.id(), element);
-    if (existant != null) {
+    if (elements.existsById(element.id().uuid())) {
       throw new ElementDeFabricationDejaExistantException(element.id());
     }
+    elements.save(ElementDeFabricationEntity.from(element));
 
     return element;
   }
 
   @Override
   public ElementDeFabrication update(ElementDeFabrication element) {
-    ElementDeFabrication precedent = elements.replace(element.id(), element);
-    if (precedent == null) {
+    if (!elements.existsById(element.id().uuid())) {
       throw new ElementDeFabricationIntrouvableException(element.id());
     }
+    elements.save(ElementDeFabricationEntity.from(element));
 
     return element;
   }
 
   @Override
   public void delete(ElementDeFabricationId id) {
-    ElementDeFabrication supprime = elements.remove(id);
-    if (supprime == null) {
+    if (!elements.existsById(id.uuid())) {
       throw new ElementDeFabricationIntrouvableException(id);
     }
+    elements.deleteById(id.uuid());
   }
 
   @Override
   public Optional<ElementDeFabrication> get(ElementDeFabricationId id) {
-    return Optional.ofNullable(elements.get(id));
+    return elements.findById(id.uuid()).map(ElementDeFabricationEntity::toDomain);
   }
 
   @Override
   public Page<ElementDeFabrication> list(ElementDeFabricationCriteria criteria, Pageable pageable) {
-    List<ElementDeFabrication> filtres = elements
-      .values()
-      .stream()
-      .filter(criteria::matches)
-      .sorted(parDateDeCreationDescendante())
-      .toList();
+    Periode periode = criteria.periode();
+    var page = elements.findByDateDeCreationBetween(
+      periode.debut(),
+      periode.fin(),
+      PageRequest.of(pageable.page(), pageable.size(), PAR_DATE_DE_CREATION_DESCENDANTE)
+    );
 
     return Page.<ElementDeFabrication>builder()
-      .content(filtres.stream().skip(pageable.offset()).limit(pageable.size()).toList())
+      .content(page.getContent().stream().map(ElementDeFabricationEntity::toDomain).toList())
       .currentPage(pageable.page())
       .pageSize(pageable.size())
-      .totalElementsCount(filtres.size());
-  }
-
-  private static Comparator<ElementDeFabrication> parDateDeCreationDescendante() {
-    return Comparator.comparing(ElementDeFabrication::dateDeCreation, Comparator.<Instant>reverseOrder()).thenComparing(
-      ElementDeFabrication::id
-    );
+      .totalElementsCount(page.getTotalElements());
   }
 }

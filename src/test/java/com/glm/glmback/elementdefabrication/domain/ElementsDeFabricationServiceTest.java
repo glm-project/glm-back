@@ -6,7 +6,6 @@ import static com.glm.glmback.shared.time.domain.TimeFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
-import com.glm.glmback.elementdefabrication.infrastructure.secondary.InMemoryElementDeFabricationRepository;
 import com.glm.glmback.shared.pagination.domain.Page;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
@@ -22,7 +21,7 @@ class ElementsDeFabricationServiceTest {
 
   private final AtomicReference<Instant> maintenant = new AtomicReference<>(LE_10_MAI_2026);
   private final ElementsDeFabricationService elements = ElementsDeFabricationService.builder()
-    .repository(new InMemoryElementDeFabricationRepository())
+    .repository(new ElementsDeFabricationEnMemoire())
     .compteur(new CompteurFige())
     .prefixes(new PrefixesFiges(PREFIXE_OF, PREFIXE_PRD))
     .clock(maintenant::get);
@@ -53,7 +52,7 @@ class ElementsDeFabricationServiceTest {
   @Test
   void shouldGenerateNomFromPrefixesOfSecondaryAdapter() {
     ElementsDeFabricationService autreNomenclature = ElementsDeFabricationService.builder()
-      .repository(new InMemoryElementDeFabricationRepository())
+      .repository(new ElementsDeFabricationEnMemoire())
       .compteur(new CompteurFige())
       .prefixes(new PrefixesFiges(new Prefixe("FAB"), new Prefixe("ART")))
       .clock(fixedClock(LE_10_MAI_2026));
@@ -68,7 +67,7 @@ class ElementsDeFabricationServiceTest {
   @Test
   void shouldGenerateNomFromAnneeOfClock() {
     ElementsDeFabricationService elementsDe2027 = ElementsDeFabricationService.builder()
-      .repository(new InMemoryElementDeFabricationRepository())
+      .repository(new ElementsDeFabricationEnMemoire())
       .compteur(new CompteurFige())
       .prefixes(new PrefixesFiges(PREFIXE_OF, PREFIXE_PRD))
       .clock(fixedClock(LE_1ER_JUIN_2027));
