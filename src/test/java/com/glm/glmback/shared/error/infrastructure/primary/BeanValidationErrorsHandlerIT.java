@@ -4,6 +4,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.glm.glmback.IntegrationTest;
+import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -18,6 +19,7 @@ class BeanValidationErrorsHandlerIT {
   private MockMvc rest;
 
   @Test
+  @WithTenant("impeccmold")
   void shouldHandleBodyParameterValidationError() throws Exception {
     rest
       .perform(post("/api/bean-validation-errors/mandatory-body-parameter").content("{}").contentType(MediaType.APPLICATION_JSON))
@@ -28,6 +30,7 @@ class BeanValidationErrorsHandlerIT {
   }
 
   @Test
+  @WithTenant("impeccmold")
   void shouldHandleControllerParameterValidationError() throws Exception {
     rest
       .perform(get("/api/bean-validation-errors/complicated-path-variable/dummy"))

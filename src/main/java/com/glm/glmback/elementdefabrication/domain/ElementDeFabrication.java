@@ -24,7 +24,7 @@ public record ElementDeFabrication(ElementDeFabricationId id, TypeDElementDeFabr
     );
   }
 
-  static ElementDeFabricationIdBuilder builder() {
+  public static ElementDeFabricationIdBuilder builder() {
     return new ElementDeFabricationBuilder();
   }
 
@@ -117,31 +117,31 @@ public record ElementDeFabrication(ElementDeFabricationId id, TypeDElementDeFabr
     }
   }
 
-  interface ElementDeFabricationIdBuilder {
+  public interface ElementDeFabricationIdBuilder {
     ElementDeFabricationTypeBuilder id(ElementDeFabricationId id);
   }
 
-  interface ElementDeFabricationTypeBuilder {
+  public interface ElementDeFabricationTypeBuilder {
     ElementDeFabricationNomBuilder type(TypeDElementDeFabrication type);
   }
 
-  interface ElementDeFabricationNomBuilder {
+  public interface ElementDeFabricationNomBuilder {
     ElementDeFabricationTitreBuilder nom(Nom nom);
   }
 
-  interface ElementDeFabricationTitreBuilder {
+  public interface ElementDeFabricationTitreBuilder {
     ElementDeFabricationDescriptionBuilder titre(String titre);
   }
 
-  interface ElementDeFabricationDescriptionBuilder {
+  public interface ElementDeFabricationDescriptionBuilder {
     ElementDeFabricationDateDeCreationBuilder description(String description);
   }
 
-  interface ElementDeFabricationDateDeCreationBuilder {
+  public interface ElementDeFabricationDateDeCreationBuilder {
     ElementDeFabricationDateDeModificationBuilder dateDeCreation(Instant dateDeCreation);
   }
 
-  interface ElementDeFabricationDateDeModificationBuilder {
+  public interface ElementDeFabricationDateDeModificationBuilder {
     ElementDeFabrication dateDeModification(Instant dateDeModification);
   }
 }

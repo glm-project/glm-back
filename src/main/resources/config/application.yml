@@ -40,6 +40,7 @@ spring:
           fail_on_pagination_over_collection_fetch: true
           in_clause_parameter_padding: true
   liquibase:
+    enabled: false
     change-log: classpath:config/liquibase/master.xml
   jackson:
     default-property-inclusion: non_absent
@@ -60,3 +61,7 @@ application:
   security:
     oauth2:
       audience: account,api://default
+  multitenancy:
+    # Aucune entreprise par defaut : impeccmold et katilys sont un jeu de developpement,
+    # declare dans les profils local et test. Voir documentation/multitenancy.md.
+    tenants: []

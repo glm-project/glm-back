@@ -121,6 +121,37 @@ Feature: Gestion des elements de fabrication
     When je consulte cet element de fabrication
     Then la reponse a le statut http 200
 
+  Scenario: Un element de fabrication n'est pas visible depuis une autre entreprise
+    Given I am logged in as "admin" with role "ADMIN" for tenant "impeccmold"
+    And j'ai cree un element de fabrication
+      | type        | PRODUIT         |
+      | titre       | Carter moteur   |
+      | description | Carter en fonte |
+    Given I am logged in as "admin" with role "ADMIN" for tenant "katilys"
+    When je consulte cet element de fabrication
+    Then la reponse a le statut http 404
+
+  Scenario: Chaque entreprise a sa propre numerotation
+    Given I am logged in as "admin" with role "ADMIN" for tenant "impeccmold"
+    When je cree un element de fabrication
+      | type        | PRODUIT         |
+      | titre       | Carter moteur   |
+      | description | Carter en fonte |
+    Then la reponse a le statut http 201
+    And la reponse d'element de fabrication a un nom commencant par "PRD-"
+    Given I am logged in as "admin" with role "ADMIN" for tenant "katilys"
+    When je cree un element de fabrication
+      | type        | PRODUIT         |
+      | titre       | Carter moteur   |
+      | description | Carter en fonte |
+    Then la reponse a le statut http 201
+    And la reponse d'element de fabrication a un nom commencant par "PRD-"
+
+  Scenario: Acces refuse a un utilisateur sans entreprise
+    Given I am logged in as "admin" with role "ADMIN" without tenant
+    When je liste les elements de fabrication entre "2000-01-01T00:00:00Z" et "2100-01-01T00:00:00Z"
+    Then la reponse a le statut http 403
+
   Scenario: Creation refusee si le titre est vide
     When je cree un element de fabrication
       | type        | ORDRE_DE_FABRICATION |
