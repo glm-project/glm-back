@@ -28,12 +28,12 @@ class ElementsDeFabricationServiceTest {
 
   @Test
   void shouldCreateOrdreDeFabricationWithGeneratedNom() {
-    ElementDeFabrication cree = elements.create(elementDeFabricationToCreateAssemblageCarter());
+    ElementDeFabrication cree = elements.create(elementDeFabricationToCreateOrdre1015());
 
     assertThat(cree.type()).isEqualTo(TypeDElementDeFabrication.ORDRE_DE_FABRICATION);
     assertThat(cree.nom().value()).isEqualTo("OF-2026-000042");
-    assertThat(cree.titre()).isEqualTo(titreAssemblageCarter());
-    assertThat(cree.description()).isEqualTo(descriptionCarterEnFonte());
+    assertThat(cree.reference()).contains(reference1015());
+    assertThat(cree.description()).contains(descriptionCarterEnFonte());
     assertThat(cree.dateDeCreation()).isEqualTo(LE_10_MAI_2026);
     assertThat(cree.dateDeModification()).isEqualTo(LE_10_MAI_2026);
     assertThat(elements.get(cree.id())).isEqualTo(cree);
@@ -41,12 +41,42 @@ class ElementsDeFabricationServiceTest {
 
   @Test
   void shouldCreateProduitWithGeneratedNom() {
-    ElementDeFabrication cree = elements.create(elementDeFabricationToCreateCarterMoteur());
+    ElementDeFabrication cree = elements.create(elementDeFabricationToCreateProduit2456());
 
     assertThat(cree.type()).isEqualTo(TypeDElementDeFabrication.PRODUIT);
     assertThat(cree.nom().value()).isEqualTo("PRD-2026-000042");
-    assertThat(cree.titre()).isEqualTo(titreCarterMoteur());
+    assertThat(cree.reference()).contains(reference2456());
     assertThat(elements.get(cree.id())).isEqualTo(cree);
+  }
+
+  @Test
+  void shouldCreateProduitWithoutReferenceNorDescription() {
+    ElementDeFabrication cree = elements.create(elementDeFabricationToCreateProduitSansReference());
+
+    assertThat(cree.nom().value()).isEqualTo("PRD-2026-000042");
+    assertThat(cree.reference()).isEmpty();
+    assertThat(cree.description()).isEmpty();
+    assertThat(elements.get(cree.id())).isEqualTo(cree);
+  }
+
+  @Test
+  void shouldCreateManyElementsDeFabricationWithoutReference() {
+    elements.create(elementDeFabricationToCreateProduitSansReference());
+
+    ElementDeFabrication second = elements.create(elementDeFabricationToCreateProduitSansReference());
+
+    assertThat(second.reference()).isEmpty();
+  }
+
+  @Test
+  void shouldNotCreateElementDeFabricationWithReferenceOfAnotherOne() {
+    elements.create(elementDeFabricationToCreateOrdre1015());
+
+    ElementDeFabricationToCreate memeReference = elementDeFabricationToCreateProduit1015();
+
+    assertThatThrownBy(() -> elements.create(memeReference))
+      .isExactlyInstanceOf(ReferenceDejaUtiliseeException.class)
+      .hasMessageContaining("1015");
   }
 
   @Test
@@ -57,8 +87,8 @@ class ElementsDeFabricationServiceTest {
       .prefixes(new PrefixesFiges(new Prefixe("FAB"), new Prefixe("ART")))
       .clock(fixedClock(LE_10_MAI_2026));
 
-    ElementDeFabrication ordre = autreNomenclature.create(elementDeFabricationToCreateAssemblageCarter());
-    ElementDeFabrication produit = autreNomenclature.create(elementDeFabricationToCreateCarterMoteur());
+    ElementDeFabrication ordre = autreNomenclature.create(elementDeFabricationToCreateOrdre1015());
+    ElementDeFabrication produit = autreNomenclature.create(elementDeFabricationToCreateProduit2456());
 
     assertThat(ordre.nom().value()).isEqualTo("FAB-2026-000042");
     assertThat(produit.nom().value()).isEqualTo("ART-2026-000042");
@@ -72,7 +102,7 @@ class ElementsDeFabricationServiceTest {
       .prefixes(new PrefixesFiges(PREFIXE_OF, PREFIXE_PRD))
       .clock(fixedClock(LE_1ER_JUIN_2027));
 
-    ElementDeFabrication cree = elementsDe2027.create(elementDeFabricationToCreateAssemblageCarter());
+    ElementDeFabrication cree = elementsDe2027.create(elementDeFabricationToCreateOrdre1015());
 
     assertThat(cree.nom().value()).isEqualTo("OF-2027-000042");
   }
@@ -86,8 +116,8 @@ class ElementsDeFabricationServiceTest {
 
   @Test
   void shouldListElementsDeFabricationInPeriode() {
-    ElementDeFabrication ordre = elements.create(elementDeFabricationToCreateAssemblageCarter());
-    ElementDeFabrication produit = elements.create(elementDeFabricationToCreateCarterMoteur());
+    ElementDeFabrication ordre = elements.create(elementDeFabricationToCreateOrdre1015());
+    ElementDeFabrication produit = elements.create(elementDeFabricationToCreateProduit2456());
 
     Page<ElementDeFabrication> page = elements.list(
       new Periode(LE_10_MAI_2026.minusSeconds(1), LE_10_MAI_2026.plusSeconds(1)),
@@ -99,7 +129,7 @@ class ElementsDeFabricationServiceTest {
 
   @Test
   void shouldNotListElementsDeFabricationOutOfPeriode() {
-    elements.create(elementDeFabricationToCreateAssemblageCarter());
+    elements.create(elementDeFabricationToCreateOrdre1015());
 
     Page<ElementDeFabrication> page = elements.list(premierTrimestre2026(), firstPageOfTen());
 
@@ -108,15 +138,15 @@ class ElementsDeFabricationServiceTest {
 
   @Test
   void shouldUpdateOrdreDeFabrication() {
-    ElementDeFabrication cree = elements.create(elementDeFabricationToCreateAssemblageCarter());
+    ElementDeFabrication cree = elements.create(elementDeFabricationToCreateOrdre1015());
     maintenant.set(LE_15_JUIN_2026);
 
-    ElementDeFabrication modifie = elements.update(elementDeFabricationToUpdateAssemblageCarterRevise(cree.id()));
+    ElementDeFabrication modifie = elements.update(elementDeFabricationToUpdate1017(cree.id()));
 
     assertThat(modifie.type()).isEqualTo(TypeDElementDeFabrication.ORDRE_DE_FABRICATION);
     assertThat(modifie.id()).isEqualTo(cree.id());
     assertThat(modifie.nom()).isEqualTo(cree.nom());
-    assertThat(modifie.titre()).isEqualTo(titreAssemblageCarterRevise());
+    assertThat(modifie.reference()).contains(reference1017());
     assertThat(modifie.dateDeCreation()).isEqualTo(LE_10_MAI_2026);
     assertThat(modifie.dateDeModification()).isEqualTo(LE_15_JUIN_2026);
     assertThat(elements.get(cree.id())).isEqualTo(modifie);
@@ -124,29 +154,52 @@ class ElementsDeFabricationServiceTest {
 
   @Test
   void shouldUpdateProduit() {
-    ElementDeFabrication cree = elements.create(elementDeFabricationToCreateCarterMoteur());
+    ElementDeFabrication cree = elements.create(elementDeFabricationToCreateProduit2456());
     maintenant.set(LE_15_JUIN_2026);
 
-    ElementDeFabrication modifie = elements.update(elementDeFabricationToUpdateAssemblageCarterRevise(cree.id()));
+    ElementDeFabrication modifie = elements.update(elementDeFabricationToUpdate1017(cree.id()));
 
     assertThat(modifie.type()).isEqualTo(TypeDElementDeFabrication.PRODUIT);
     assertThat(modifie.id()).isEqualTo(cree.id());
     assertThat(modifie.nom()).isEqualTo(cree.nom());
-    assertThat(modifie.titre()).isEqualTo(titreAssemblageCarterRevise());
+    assertThat(modifie.reference()).contains(reference1017());
     assertThat(modifie.dateDeCreation()).isEqualTo(LE_10_MAI_2026);
     assertThat(modifie.dateDeModification()).isEqualTo(LE_15_JUIN_2026);
   }
 
   @Test
+  void shouldUpdateElementDeFabricationKeepingItsOwnReference() {
+    ElementDeFabrication cree = elements.create(elementDeFabricationToCreateOrdre1015());
+    maintenant.set(LE_15_JUIN_2026);
+
+    ElementDeFabrication modifie = elements.update(elementDeFabricationToUpdate1015(cree.id()));
+
+    assertThat(modifie.reference()).contains(reference1015());
+    assertThat(modifie.dateDeModification()).isEqualTo(LE_15_JUIN_2026);
+  }
+
+  @Test
+  void shouldNotUpdateElementDeFabricationWithReferenceOfAnotherOne() {
+    elements.create(elementDeFabricationToCreateOrdre1015());
+    ElementDeFabrication produit = elements.create(elementDeFabricationToCreateProduit2456());
+
+    ElementDeFabricationToUpdate memeReference = elementDeFabricationToUpdate1015(produit.id());
+
+    assertThatThrownBy(() -> elements.update(memeReference))
+      .isExactlyInstanceOf(ReferenceDejaUtiliseeException.class)
+      .hasMessageContaining("1015");
+  }
+
+  @Test
   void shouldNotUpdateUnknownElementDeFabrication() {
-    ElementDeFabricationToUpdate inconnu = elementDeFabricationToUpdateAssemblageCarterRevise(ElementDeFabricationId.newId());
+    ElementDeFabricationToUpdate inconnu = elementDeFabricationToUpdate1017(ElementDeFabricationId.newId());
 
     assertThatThrownBy(() -> elements.update(inconnu)).isExactlyInstanceOf(ElementDeFabricationIntrouvableException.class);
   }
 
   @Test
   void shouldDeleteExistingElementDeFabrication() {
-    ElementDeFabrication cree = elements.create(elementDeFabricationToCreateAssemblageCarter());
+    ElementDeFabrication cree = elements.create(elementDeFabricationToCreateOrdre1015());
 
     elements.delete(cree.id());
 

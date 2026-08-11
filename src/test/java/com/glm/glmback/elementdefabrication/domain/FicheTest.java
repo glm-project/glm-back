@@ -6,42 +6,56 @@ import static org.assertj.core.api.Assertions.*;
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.shared.error.domain.MissingMandatoryValueException;
 import com.glm.glmback.shared.error.domain.NotAfterTimeException;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 @UnitTest
 class FicheTest {
 
   @Test
-  void shouldNotBuildWithoutTitre() {
-    assertThatThrownBy(() -> new Fiche(null, descriptionCarterEnFonte(), LE_15_JANVIER_2026, LE_20_FEVRIER_2026))
+  void shouldNotBuildWithoutReference() {
+    Optional<Description> description = Optional.of(descriptionCarterEnFonte());
+
+    assertThatThrownBy(() -> new Fiche(null, description, LE_15_JANVIER_2026, LE_20_FEVRIER_2026))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("titre");
+      .hasMessageContaining("reference");
   }
 
   @Test
   void shouldNotBuildWithoutDescription() {
-    assertThatThrownBy(() -> new Fiche(titreAssemblageCarter(), null, LE_15_JANVIER_2026, LE_20_FEVRIER_2026))
+    Optional<Reference> reference = Optional.of(reference1015());
+
+    assertThatThrownBy(() -> new Fiche(reference, null, LE_15_JANVIER_2026, LE_20_FEVRIER_2026))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("description");
   }
 
   @Test
   void shouldNotBuildWithoutDateDeCreation() {
-    assertThatThrownBy(() -> new Fiche(titreAssemblageCarter(), descriptionCarterEnFonte(), null, LE_20_FEVRIER_2026))
+    Optional<Reference> reference = Optional.of(reference1015());
+    Optional<Description> description = Optional.of(descriptionCarterEnFonte());
+
+    assertThatThrownBy(() -> new Fiche(reference, description, null, LE_20_FEVRIER_2026))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("dateDeCreation");
   }
 
   @Test
   void shouldNotBuildWithoutDateDeModification() {
-    assertThatThrownBy(() -> new Fiche(titreAssemblageCarter(), descriptionCarterEnFonte(), LE_15_JANVIER_2026, null))
+    Optional<Reference> reference = Optional.of(reference1015());
+    Optional<Description> description = Optional.of(descriptionCarterEnFonte());
+
+    assertThatThrownBy(() -> new Fiche(reference, description, LE_15_JANVIER_2026, null))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("dateDeModification");
   }
 
   @Test
   void shouldNotBuildWithDateDeModificationBeforeDateDeCreation() {
-    assertThatThrownBy(() -> new Fiche(titreAssemblageCarter(), descriptionCarterEnFonte(), LE_20_FEVRIER_2026, LE_15_JANVIER_2026))
+    Optional<Reference> reference = Optional.of(reference1015());
+    Optional<Description> description = Optional.of(descriptionCarterEnFonte());
+
+    assertThatThrownBy(() -> new Fiche(reference, description, LE_20_FEVRIER_2026, LE_15_JANVIER_2026))
       .isExactlyInstanceOf(NotAfterTimeException.class)
       .hasMessageContaining("dateDeModification");
   }
@@ -49,33 +63,54 @@ class FicheTest {
   @Test
   void shouldBuildNeverModifiedFiche() {
     Fiche fiche = Fiche.builder()
-      .titre(titreAssemblageCarter().value())
-      .description(descriptionCarterEnFonte().value())
+      .reference("1015")
+      .description("Carter en fonte")
       .dateDeCreation(LE_15_JANVIER_2026)
       .dateDeModification(LE_15_JANVIER_2026);
 
-    assertThat(fiche.titre()).isEqualTo(titreAssemblageCarter());
-    assertThat(fiche.description()).isEqualTo(descriptionCarterEnFonte());
+    assertThat(fiche.reference()).contains(reference1015());
+    assertThat(fiche.description()).contains(descriptionCarterEnFonte());
     assertThat(fiche.dateDeModification()).isEqualTo(fiche.dateDeCreation());
   }
 
   @Test
-  void shouldReviseFiche() {
-    Fiche revisee = ficheAssemblageCarter().revise(titreAssemblageCarterRevise(), descriptionCarterEnFonte(), LE_20_FEVRIER_2026);
+  void shouldBuildFicheWithoutReferenceNorDescription() {
+    Fiche fiche = Fiche.builder()
+      .reference(null)
+      .description(null)
+      .dateDeCreation(LE_15_JANVIER_2026)
+      .dateDeModification(LE_15_JANVIER_2026);
 
-    assertThat(revisee.titre()).isEqualTo(titreAssemblageCarterRevise());
-    assertThat(revisee.description()).isEqualTo(descriptionCarterEnFonte());
+    assertThat(fiche.reference()).isEmpty();
+    assertThat(fiche.description()).isEmpty();
+  }
+
+  @Test
+  void shouldReviseFiche() {
+    Fiche revisee = fiche1015().revise(Optional.of(reference1017()), Optional.of(descriptionCarterEnFonte()), LE_20_FEVRIER_2026);
+
+    assertThat(revisee.reference()).contains(reference1017());
+    assertThat(revisee.description()).contains(descriptionCarterEnFonte());
     assertThat(revisee.dateDeCreation()).isEqualTo(LE_15_JANVIER_2026);
     assertThat(revisee.dateDeModification()).isEqualTo(LE_20_FEVRIER_2026);
   }
 
   @Test
-  void shouldNotReviseBeforeDateDeCreation() {
-    Fiche fiche = ficheAssemblageCarter();
-    Titre titre = titreAssemblageCarterRevise();
-    Description description = descriptionCarterEnFonte();
+  void shouldReviseFicheWithoutReferenceNorDescription() {
+    Fiche revisee = fiche1015().revise(Optional.empty(), Optional.empty(), LE_20_FEVRIER_2026);
 
-    assertThatThrownBy(() -> fiche.revise(titre, description, LE_15_JANVIER_2026.minusSeconds(1)))
+    assertThat(revisee.reference()).isEmpty();
+    assertThat(revisee.description()).isEmpty();
+    assertThat(revisee.dateDeCreation()).isEqualTo(LE_15_JANVIER_2026);
+  }
+
+  @Test
+  void shouldNotReviseBeforeDateDeCreation() {
+    Fiche fiche = fiche1015();
+    Optional<Reference> reference = Optional.of(reference1017());
+    Optional<Description> description = Optional.of(descriptionCarterEnFonte());
+
+    assertThatThrownBy(() -> fiche.revise(reference, description, LE_15_JANVIER_2026.minusSeconds(1)))
       .isExactlyInstanceOf(NotAfterTimeException.class)
       .hasMessageContaining("dateDeModification");
   }

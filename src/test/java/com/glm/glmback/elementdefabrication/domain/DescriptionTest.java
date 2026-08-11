@@ -38,4 +38,19 @@ class DescriptionTest {
   void shouldGetValueFromValidDescription() {
     assertThat(descriptionCarterEnFonte().value()).isEqualTo("Carter en fonte");
   }
+
+  @Test
+  void shouldNotBuildOptionalDescriptionFromNull() {
+    assertThat(Description.of(null)).isEmpty();
+  }
+
+  @Test
+  void shouldNotBuildOptionalDescriptionFromBlank() {
+    assertThat(Description.of(" ")).isEmpty();
+  }
+
+  @Test
+  void shouldBuildOptionalDescriptionFromValue() {
+    assertThat(Description.of("Carter en fonte")).contains(descriptionCarterEnFonte());
+  }
 }

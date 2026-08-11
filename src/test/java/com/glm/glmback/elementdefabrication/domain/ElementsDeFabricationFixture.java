@@ -1,6 +1,7 @@
 package com.glm.glmback.elementdefabrication.domain;
 
 import java.time.Instant;
+import java.util.Optional;
 
 public final class ElementsDeFabricationFixture {
 
@@ -19,16 +20,16 @@ public final class ElementsDeFabricationFixture {
 
   private ElementsDeFabricationFixture() {}
 
-  public static Titre titreAssemblageCarter() {
-    return new Titre("Assemblage carter");
+  public static Reference reference1015() {
+    return new Reference("1015");
   }
 
-  public static Titre titreAssemblageCarterRevise() {
-    return new Titre("Assemblage carter revise");
+  public static Reference reference1017() {
+    return new Reference("1017");
   }
 
-  public static Titre titreCarterMoteur() {
-    return new Titre("Carter moteur");
+  public static Reference reference2456() {
+    return new Reference("2456");
   }
 
   public static Description descriptionCarterEnFonte() {
@@ -43,79 +44,98 @@ public final class ElementsDeFabricationFixture {
     return new ElementDeFabricationCriteria(premierTrimestre2026());
   }
 
-  public static ElementDeFabricationToCreate elementDeFabricationToCreateAssemblageCarter() {
-    return new ElementDeFabricationToCreate(
-      TypeDElementDeFabrication.ORDRE_DE_FABRICATION,
-      titreAssemblageCarter(),
-      descriptionCarterEnFonte()
-    );
+  public static ElementDeFabricationToCreate elementDeFabricationToCreateOrdre1015() {
+    return new ElementDeFabricationToCreate(TypeDElementDeFabrication.ORDRE_DE_FABRICATION, "1015", "Carter en fonte");
   }
 
-  public static ElementDeFabricationToCreate elementDeFabricationToCreateCarterMoteur() {
-    return new ElementDeFabricationToCreate(TypeDElementDeFabrication.PRODUIT, titreCarterMoteur(), descriptionCarterEnFonte());
+  public static ElementDeFabricationToCreate elementDeFabricationToCreateProduit2456() {
+    return new ElementDeFabricationToCreate(TypeDElementDeFabrication.PRODUIT, "2456", "Carter en fonte");
   }
 
-  public static ElementDeFabricationToUpdate elementDeFabricationToUpdateAssemblageCarterRevise(ElementDeFabricationId id) {
-    return new ElementDeFabricationToUpdate(id, titreAssemblageCarterRevise(), descriptionCarterEnFonte());
+  public static ElementDeFabricationToCreate elementDeFabricationToCreateProduit1015() {
+    return new ElementDeFabricationToCreate(TypeDElementDeFabrication.PRODUIT, "1015", "Carter en fonte");
   }
 
-  public static Fiche ficheAssemblageCarter() {
+  public static ElementDeFabricationToCreate elementDeFabricationToCreateProduitSansReference() {
+    return new ElementDeFabricationToCreate(TypeDElementDeFabrication.PRODUIT, Optional.empty(), Optional.empty());
+  }
+
+  public static ElementDeFabricationToUpdate elementDeFabricationToUpdate1017(ElementDeFabricationId id) {
+    return new ElementDeFabricationToUpdate(id, "1017", "Carter en fonte");
+  }
+
+  public static ElementDeFabricationToUpdate elementDeFabricationToUpdate1015(ElementDeFabricationId id) {
+    return new ElementDeFabricationToUpdate(id, "1015", "Carter en fonte");
+  }
+
+  public static Fiche fiche1015() {
     return Fiche.builder()
-      .titre(titreAssemblageCarter().value())
-      .description(descriptionCarterEnFonte().value())
+      .reference("1015")
+      .description("Carter en fonte")
       .dateDeCreation(LE_15_JANVIER_2026)
       .dateDeModification(LE_15_JANVIER_2026);
   }
 
-  public static Fiche ficheCarterMoteur() {
+  public static Fiche fiche2456() {
     return Fiche.builder()
-      .titre(titreCarterMoteur().value())
-      .description(descriptionCarterEnFonte().value())
+      .reference("2456")
+      .description("Carter en fonte")
       .dateDeCreation(LE_15_JANVIER_2026)
       .dateDeModification(LE_15_JANVIER_2026);
   }
 
-  public static ElementDeFabrication elementDeFabricationAssemblageCarter() {
-    return elementDeFabricationAssemblageCarter(ElementDeFabricationId.newId());
+  public static ElementDeFabrication elementDeFabricationOrdre1015() {
+    return elementDeFabricationOrdre1015(ElementDeFabricationId.newId());
   }
 
-  public static ElementDeFabrication elementDeFabricationAssemblageCarter(ElementDeFabricationId id) {
-    return elementDeFabricationAssemblageCarter(id, LE_15_JANVIER_2026);
+  public static ElementDeFabrication elementDeFabricationOrdre1015(ElementDeFabricationId id) {
+    return elementDeFabricationOrdre1015(id, LE_15_JANVIER_2026);
   }
 
-  public static ElementDeFabrication elementDeFabricationAssemblageCarterCreeLe(Instant dateDeCreation) {
-    return elementDeFabricationAssemblageCarter(ElementDeFabricationId.newId(), dateDeCreation);
+  public static ElementDeFabrication elementDeFabricationOrdre1015CreeLe(Instant dateDeCreation) {
+    return elementDeFabricationOrdre1015(ElementDeFabricationId.newId(), dateDeCreation);
   }
 
-  public static ElementDeFabrication elementDeFabricationAssemblageCarterRevise(ElementDeFabricationId id) {
+  public static ElementDeFabrication elementDeFabricationOrdre1017(ElementDeFabricationId id) {
     return ElementDeFabrication.builder()
       .id(id)
       .type(TypeDElementDeFabrication.ORDRE_DE_FABRICATION)
       .nom(OF_2026_000001)
-      .titre(titreAssemblageCarterRevise().value())
-      .description(descriptionCarterEnFonte().value())
+      .reference("1017")
+      .description("Carter en fonte")
       .dateDeCreation(LE_15_JANVIER_2026)
       .dateDeModification(LE_20_FEVRIER_2026);
   }
 
-  public static ElementDeFabrication elementDeFabricationCarterMoteur() {
+  public static ElementDeFabrication elementDeFabricationProduit2456() {
     return ElementDeFabrication.builder()
       .id(ElementDeFabricationId.newId())
       .type(TypeDElementDeFabrication.PRODUIT)
       .nom(PRD_2026_000001)
-      .titre(titreCarterMoteur().value())
-      .description(descriptionCarterEnFonte().value())
+      .reference("2456")
+      .description("Carter en fonte")
       .dateDeCreation(LE_15_JANVIER_2026)
       .dateDeModification(LE_15_JANVIER_2026);
   }
 
-  private static ElementDeFabrication elementDeFabricationAssemblageCarter(ElementDeFabricationId id, Instant dateDeCreation) {
+  public static ElementDeFabrication elementDeFabricationProduitSansReference() {
+    return ElementDeFabrication.builder()
+      .id(ElementDeFabricationId.newId())
+      .type(TypeDElementDeFabrication.PRODUIT)
+      .nom(PRD_2026_000001)
+      .reference(null)
+      .description(null)
+      .dateDeCreation(LE_15_JANVIER_2026)
+      .dateDeModification(LE_15_JANVIER_2026);
+  }
+
+  private static ElementDeFabrication elementDeFabricationOrdre1015(ElementDeFabricationId id, Instant dateDeCreation) {
     return ElementDeFabrication.builder()
       .id(id)
       .type(TypeDElementDeFabrication.ORDRE_DE_FABRICATION)
       .nom(OF_2026_000001)
-      .titre(titreAssemblageCarter().value())
-      .description(descriptionCarterEnFonte().value())
+      .reference("1015")
+      .description("Carter en fonte")
       .dateDeCreation(dateDeCreation)
       .dateDeModification(dateDeCreation);
   }

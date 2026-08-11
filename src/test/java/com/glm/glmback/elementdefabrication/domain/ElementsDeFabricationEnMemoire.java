@@ -50,6 +50,16 @@ final class ElementsDeFabricationEnMemoire implements ElementDeFabricationReposi
   }
 
   @Override
+  public Optional<ElementDeFabricationId> idPourReference(Reference reference) {
+    return elements
+      .values()
+      .stream()
+      .filter(element -> element.reference().filter(reference::equals).isPresent())
+      .findFirst()
+      .map(ElementDeFabrication::id);
+  }
+
+  @Override
   public Page<ElementDeFabrication> list(ElementDeFabricationCriteria criteria, Pageable pageable) {
     List<ElementDeFabrication> filtres = elements
       .values()
