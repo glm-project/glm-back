@@ -1,8 +1,10 @@
 package com.glm.glmback.elementdefabrication.infrastructure.secondary;
 
+import com.glm.glmback.elementdefabrication.domain.Description;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabrication;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationId;
 import com.glm.glmback.elementdefabrication.domain.Nom;
+import com.glm.glmback.elementdefabrication.domain.Reference;
 import com.glm.glmback.elementdefabrication.domain.TypeDElementDeFabrication;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -26,7 +28,7 @@ class ElementDeFabricationEntity {
 
   private String nom;
 
-  private String titre;
+  private String reference;
 
   private String description;
 
@@ -42,8 +44,8 @@ class ElementDeFabricationEntity {
     id = element.id().uuid();
     type = element.type();
     nom = element.nom().value();
-    titre = element.titre().value();
-    description = element.description().value();
+    reference = element.reference().map(Reference::value).orElse(null);
+    description = element.description().map(Description::value).orElse(null);
     dateDeCreation = element.dateDeCreation();
     dateDeModification = element.dateDeModification();
   }
@@ -57,7 +59,7 @@ class ElementDeFabricationEntity {
       .id(new ElementDeFabricationId(id))
       .type(type)
       .nom(new Nom(nom))
-      .titre(titre)
+      .reference(reference)
       .description(description)
       .dateDeCreation(dateDeCreation)
       .dateDeModification(dateDeModification);

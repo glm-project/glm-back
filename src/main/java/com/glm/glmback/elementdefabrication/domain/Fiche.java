@@ -2,39 +2,40 @@ package com.glm.glmback.elementdefabrication.domain;
 
 import com.glm.glmback.shared.error.domain.Assert;
 import java.time.Instant;
+import java.util.Optional;
 
-public record Fiche(Titre titre, Description description, Instant dateDeCreation, Instant dateDeModification) {
+public record Fiche(Optional<Reference> reference, Optional<Description> description, Instant dateDeCreation, Instant dateDeModification) {
   public Fiche {
-    Assert.notNull("titre", titre);
+    Assert.notNull("reference", reference);
     Assert.notNull("description", description);
     Assert.notNull("dateDeCreation", dateDeCreation);
     Assert.field("dateDeModification", dateDeModification).afterOrAt(dateDeCreation);
   }
 
   private Fiche(FicheBuilder builder) {
-    this(new Titre(builder.titre), new Description(builder.description), builder.dateDeCreation, builder.dateDeModification);
+    this(Reference.of(builder.reference), Description.of(builder.description), builder.dateDeCreation, builder.dateDeModification);
   }
 
-  static FicheTitreBuilder builder() {
+  static FicheReferenceBuilder builder() {
     return new FicheBuilder();
   }
 
-  public Fiche revise(Titre titre, Description description, Instant dateDeModification) {
-    return new Fiche(titre, description, dateDeCreation, dateDeModification);
+  public Fiche revise(Optional<Reference> reference, Optional<Description> description, Instant dateDeModification) {
+    return new Fiche(reference, description, dateDeCreation, dateDeModification);
   }
 
   private static final class FicheBuilder
-    implements FicheTitreBuilder, FicheDescriptionBuilder, FicheDateDeCreationBuilder, FicheDateDeModificationBuilder
+    implements FicheReferenceBuilder, FicheDescriptionBuilder, FicheDateDeCreationBuilder, FicheDateDeModificationBuilder
   {
 
-    private String titre;
+    private String reference;
     private String description;
     private Instant dateDeCreation;
     private Instant dateDeModification;
 
     @Override
-    public FicheDescriptionBuilder titre(String titre) {
-      this.titre = titre;
+    public FicheDescriptionBuilder reference(String reference) {
+      this.reference = reference;
 
       return this;
     }
@@ -61,8 +62,8 @@ public record Fiche(Titre titre, Description description, Instant dateDeCreation
     }
   }
 
-  interface FicheTitreBuilder {
-    FicheDescriptionBuilder titre(String titre);
+  interface FicheReferenceBuilder {
+    FicheDescriptionBuilder reference(String reference);
   }
 
   interface FicheDescriptionBuilder {

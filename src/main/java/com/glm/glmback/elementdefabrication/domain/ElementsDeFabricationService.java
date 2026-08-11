@@ -4,6 +4,7 @@ import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import com.glm.glmback.shared.time.domain.Clock;
 import java.time.Instant;
+import java.util.Optional;
 
 public final class ElementsDeFabricationService {
 
@@ -30,14 +31,16 @@ public final class ElementsDeFabricationService {
 
   public ElementDeFabrication create(ElementDeFabricationToCreate toCreate) {
     Instant maintenant = clock.now();
+    ElementDeFabricationId id = ElementDeFabricationId.newId();
+    verifierReferenceLibre(id, toCreate.reference());
 
     return repository.create(
       ElementDeFabrication.builder()
-        .id(ElementDeFabricationId.newId())
+        .id(id)
         .type(toCreate.type())
         .nom(nom(toCreate.type(), Annee.of(maintenant)))
-        .titre(toCreate.titre().value())
-        .description(toCreate.description().value())
+        .reference(toCreate.reference().map(Reference::value).orElse(null))
+        .description(toCreate.description().map(Description::value).orElse(null))
         .dateDeCreation(maintenant)
         .dateDeModification(maintenant)
     );
@@ -52,7 +55,10 @@ public final class ElementsDeFabricationService {
   }
 
   public ElementDeFabrication update(ElementDeFabricationToUpdate toUpdate) {
-    return repository.update(get(toUpdate.id()).revise(toUpdate.titre(), toUpdate.description(), clock.now()));
+    ElementDeFabrication existant = get(toUpdate.id());
+    verifierReferenceLibre(existant.id(), toUpdate.reference());
+
+    return repository.update(existant.revise(toUpdate.reference(), toUpdate.description(), clock.now()));
   }
 
   public void delete(ElementDeFabricationId id) {
@@ -61,6 +67,20 @@ public final class ElementsDeFabricationService {
 
   private Nom nom(TypeDElementDeFabrication type, Annee annee) {
     return Nom.of(prefixes.prefixe(type), annee, compteur.prochainNumero(type, annee));
+  }
+
+  /**
+   * Un seul chemin sert la creation et la modification : a la creation l'identifiant vient d'etre tire,
+   * l'egalite ne peut pas se produire ; a la modification, l'element qui conserve sa propre reference ne
+   * se heurte pas a lui-meme.
+   */
+  private void verifierReferenceLibre(ElementDeFabricationId id, Optional<Reference> reference) {
+    reference
+      .flatMap(repository::idPourReference)
+      .filter(detenteur -> !detenteur.equals(id))
+      .ifPresent(detenteur -> {
+        throw new ReferenceDejaUtiliseeException(reference.orElseThrow());
+      });
   }
 
   public interface ElementsDeFabricationServiceRepositoryBuilder {

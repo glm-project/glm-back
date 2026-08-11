@@ -1,15 +1,20 @@
 package com.glm.glmback.elementdefabrication.domain;
 
 import com.glm.glmback.shared.error.domain.Assert;
+import java.util.Optional;
 
-public record ElementDeFabricationToCreate(TypeDElementDeFabrication type, Titre titre, Description description) {
+public record ElementDeFabricationToCreate(
+  TypeDElementDeFabrication type,
+  Optional<Reference> reference,
+  Optional<Description> description
+) {
   public ElementDeFabricationToCreate {
     Assert.notNull("type", type);
-    Assert.notNull("titre", titre);
+    Assert.notNull("reference", reference);
     Assert.notNull("description", description);
   }
 
-  public ElementDeFabricationToCreate(TypeDElementDeFabrication type, String titre, String description) {
-    this(type, new Titre(titre), new Description(description));
+  public ElementDeFabricationToCreate(TypeDElementDeFabrication type, String reference, String description) {
+    this(type, Reference.of(reference), Description.of(description));
   }
 }

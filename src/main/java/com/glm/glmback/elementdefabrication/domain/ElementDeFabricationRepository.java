@@ -13,5 +13,7 @@ public interface ElementDeFabricationRepository {
 
   Optional<ElementDeFabrication> get(ElementDeFabricationId id);
 
+  Optional<ElementDeFabricationId> idPourReference(Reference reference);
+
   Page<ElementDeFabrication> list(ElementDeFabricationCriteria criteria, Pageable pageable);
 }

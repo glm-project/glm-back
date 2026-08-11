@@ -14,6 +14,7 @@ import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationRepositor
 import com.glm.glmback.elementdefabrication.domain.Nom;
 import com.glm.glmback.elementdefabrication.domain.Periode;
 import com.glm.glmback.elementdefabrication.domain.Prefixe;
+import com.glm.glmback.elementdefabrication.domain.Reference;
 import com.glm.glmback.elementdefabrication.domain.TypeDElementDeFabrication;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurityContexts;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
@@ -82,7 +83,11 @@ class JpaElementDeFabricationRepositoryIT {
     ElementDeFabrication element = elementDeFabricationCreeLe(LE_15_JANVIER_2026);
     inTransaction(() -> elements.create(element));
 
-    ElementDeFabrication revise = element.revise(titreAssemblageCarterRevise(), descriptionCarterEnFonte(), LE_20_FEVRIER_2026);
+    ElementDeFabrication revise = element.revise(
+      Optional.of(referenceDeTest(COMPTEUR.incrementAndGet())),
+      Optional.of(descriptionCarterEnFonte()),
+      LE_20_FEVRIER_2026
+    );
     inTransaction(() -> elements.update(revise));
 
     assertThat(inTransaction(() -> elements.get(element.id()))).contains(revise);
@@ -190,6 +195,55 @@ class JpaElementDeFabricationRepositoryIT {
     assertThat(inTransaction(() -> elements.get(partage))).contains(chezImpeccMold);
   }
 
+  @Test
+  @WithTenant(IMPECCMOLD)
+  void shouldGetIdOfElementDeFabricationHoldingReference() {
+    ElementDeFabrication element = elementDeFabricationCreeLe(LE_15_JANVIER_2026);
+    inTransaction(() -> elements.create(element));
+
+    assertThat(inTransaction(() -> elements.idPourReference(element.reference().orElseThrow()))).contains(element.id());
+  }
+
+  @Test
+  @WithTenant(IMPECCMOLD)
+  void shouldNotGetIdOfUnusedReference() {
+    assertThat(inTransaction(() -> elements.idPourReference(new Reference("IT-inconnue")))).isEmpty();
+  }
+
+  @Test
+  @WithTenant(IMPECCMOLD)
+  void shouldCreateManyElementsDeFabricationWithoutReference() {
+    ElementDeFabrication premier = elementDeFabricationSansReference(LE_15_JANVIER_2026);
+    ElementDeFabrication second = elementDeFabricationSansReference(LE_15_JANVIER_2026);
+
+    inTransaction(() -> elements.create(premier));
+    inTransaction(() -> elements.create(second));
+
+    assertThat(inTransaction(() -> elements.get(premier.id()))).contains(premier);
+    assertThat(inTransaction(() -> elements.get(second.id()))).contains(second);
+  }
+
+  @Test
+  void shouldReuseSameReferenceInEachTenant() {
+    ElementDeFabrication chezImpeccMold = elementDeFabricationCreeLe(LE_15_JANVIER_2026);
+    ElementDeFabrication chezKatilys = ElementDeFabrication.builder()
+      .id(ElementDeFabricationId.newId())
+      .type(TypeDElementDeFabrication.PRODUIT)
+      .nom(Nom.of(PREFIXE_IT, ANNEE_2026, COMPTEUR.incrementAndGet()))
+      .reference(chezImpeccMold.reference().orElseThrow().value())
+      .description(descriptionCarterEnFonte().value())
+      .dateDeCreation(LE_15_JANVIER_2026)
+      .dateDeModification(LE_15_JANVIER_2026);
+
+    TenantSecurityContexts.authenticateOn(IMPECCMOLD);
+    inTransaction(() -> elements.create(chezImpeccMold));
+
+    TenantSecurityContexts.authenticateOn(KATILYS);
+    inTransaction(() -> elements.create(chezKatilys));
+
+    assertThat(inTransaction(() -> elements.get(chezKatilys.id()))).contains(chezKatilys);
+  }
+
   private static ElementDeFabricationCriteria criteres(Instant debut, Instant fin) {
     return new ElementDeFabricationCriteria(new Periode(debut, fin));
   }
@@ -199,14 +253,31 @@ class JpaElementDeFabricationRepositoryIT {
   }
 
   private static ElementDeFabrication elementDeFabrication(ElementDeFabricationId id, Instant dateDeCreation) {
+    long numero = COMPTEUR.incrementAndGet();
+
     return ElementDeFabrication.builder()
       .id(id)
       .type(TypeDElementDeFabrication.PRODUIT)
-      .nom(Nom.of(PREFIXE_IT, ANNEE_2026, COMPTEUR.incrementAndGet()))
-      .titre(titreCarterMoteur().value())
+      .nom(Nom.of(PREFIXE_IT, ANNEE_2026, numero))
+      .reference(referenceDeTest(numero).value())
       .description(descriptionCarterEnFonte().value())
       .dateDeCreation(dateDeCreation)
       .dateDeModification(dateDeCreation);
+  }
+
+  private static ElementDeFabrication elementDeFabricationSansReference(Instant dateDeCreation) {
+    return ElementDeFabrication.builder()
+      .id(ElementDeFabricationId.newId())
+      .type(TypeDElementDeFabrication.PRODUIT)
+      .nom(Nom.of(PREFIXE_IT, ANNEE_2026, COMPTEUR.incrementAndGet()))
+      .reference(null)
+      .description(null)
+      .dateDeCreation(dateDeCreation)
+      .dateDeModification(dateDeCreation);
+  }
+
+  private static Reference referenceDeTest(long numero) {
+    return new Reference("IT-%06d".formatted(numero));
   }
 
   private <T> T inTransaction(Supplier<T> action) {

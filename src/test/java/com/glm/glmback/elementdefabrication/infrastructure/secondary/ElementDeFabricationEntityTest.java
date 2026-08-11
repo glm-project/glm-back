@@ -12,14 +12,21 @@ class ElementDeFabricationEntityTest {
 
   @Test
   void shouldConvertOrdreDeFabricationToDomainAndBack() {
-    ElementDeFabrication element = elementDeFabricationAssemblageCarter();
+    ElementDeFabrication element = elementDeFabricationOrdre1015();
 
     assertThat(ElementDeFabricationEntity.from(element).toDomain()).isEqualTo(element);
   }
 
   @Test
   void shouldConvertProduitToDomainAndBack() {
-    ElementDeFabrication element = elementDeFabricationCarterMoteur();
+    ElementDeFabrication element = elementDeFabricationProduit2456();
+
+    assertThat(ElementDeFabricationEntity.from(element).toDomain()).isEqualTo(element);
+  }
+
+  @Test
+  void shouldConvertElementDeFabricationWithoutReferenceNorDescriptionToDomainAndBack() {
+    ElementDeFabrication element = elementDeFabricationProduitSansReference();
 
     assertThat(ElementDeFabricationEntity.from(element).toDomain()).isEqualTo(element);
   }

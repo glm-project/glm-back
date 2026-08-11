@@ -7,6 +7,7 @@ import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationId;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationIntrouvableException;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationRepository;
 import com.glm.glmback.elementdefabrication.domain.Periode;
+import com.glm.glmback.elementdefabrication.domain.Reference;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import java.util.Optional;
@@ -56,6 +57,11 @@ class JpaElementDeFabricationRepository implements ElementDeFabricationRepositor
   @Override
   public Optional<ElementDeFabrication> get(ElementDeFabricationId id) {
     return elements.findById(id.uuid()).map(ElementDeFabricationEntity::toDomain);
+  }
+
+  @Override
+  public Optional<ElementDeFabricationId> idPourReference(Reference reference) {
+    return elements.findIdByReference(reference.value()).map(ElementDeFabricationId::new);
   }
 
   @Override
