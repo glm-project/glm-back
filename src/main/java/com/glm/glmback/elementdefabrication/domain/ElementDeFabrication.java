@@ -2,6 +2,7 @@ package com.glm.glmback.elementdefabrication.domain;
 
 import com.glm.glmback.shared.error.domain.Assert;
 import java.time.Instant;
+import java.util.Optional;
 
 public record ElementDeFabrication(ElementDeFabricationId id, TypeDElementDeFabrication type, Nom nom, Fiche fiche) {
   public ElementDeFabrication {
@@ -17,7 +18,7 @@ public record ElementDeFabrication(ElementDeFabricationId id, TypeDElementDeFabr
       builder.type,
       builder.nom,
       Fiche.builder()
-        .titre(builder.titre)
+        .reference(builder.reference)
         .description(builder.description)
         .dateDeCreation(builder.dateDeCreation)
         .dateDeModification(builder.dateDeModification)
@@ -28,15 +29,15 @@ public record ElementDeFabrication(ElementDeFabricationId id, TypeDElementDeFabr
     return new ElementDeFabricationBuilder();
   }
 
-  public ElementDeFabrication revise(Titre titre, Description description, Instant dateDeModification) {
-    return new ElementDeFabrication(id, type, nom, fiche.revise(titre, description, dateDeModification));
+  public ElementDeFabrication revise(Optional<Reference> reference, Optional<Description> description, Instant dateDeModification) {
+    return new ElementDeFabrication(id, type, nom, fiche.revise(reference, description, dateDeModification));
   }
 
-  public Titre titre() {
-    return fiche.titre();
+  public Optional<Reference> reference() {
+    return fiche.reference();
   }
 
-  public Description description() {
+  public Optional<Description> description() {
     return fiche.description();
   }
 
@@ -53,7 +54,7 @@ public record ElementDeFabrication(ElementDeFabricationId id, TypeDElementDeFabr
       ElementDeFabricationIdBuilder,
       ElementDeFabricationTypeBuilder,
       ElementDeFabricationNomBuilder,
-      ElementDeFabricationTitreBuilder,
+      ElementDeFabricationReferenceBuilder,
       ElementDeFabricationDescriptionBuilder,
       ElementDeFabricationDateDeCreationBuilder,
       ElementDeFabricationDateDeModificationBuilder
@@ -62,7 +63,7 @@ public record ElementDeFabrication(ElementDeFabricationId id, TypeDElementDeFabr
     private ElementDeFabricationId id;
     private TypeDElementDeFabrication type;
     private Nom nom;
-    private String titre;
+    private String reference;
     private String description;
     private Instant dateDeCreation;
     private Instant dateDeModification;
@@ -82,15 +83,15 @@ public record ElementDeFabrication(ElementDeFabricationId id, TypeDElementDeFabr
     }
 
     @Override
-    public ElementDeFabricationTitreBuilder nom(Nom nom) {
+    public ElementDeFabricationReferenceBuilder nom(Nom nom) {
       this.nom = nom;
 
       return this;
     }
 
     @Override
-    public ElementDeFabricationDescriptionBuilder titre(String titre) {
-      this.titre = titre;
+    public ElementDeFabricationDescriptionBuilder reference(String reference) {
+      this.reference = reference;
 
       return this;
     }
@@ -126,11 +127,11 @@ public record ElementDeFabrication(ElementDeFabricationId id, TypeDElementDeFabr
   }
 
   public interface ElementDeFabricationNomBuilder {
-    ElementDeFabricationTitreBuilder nom(Nom nom);
+    ElementDeFabricationReferenceBuilder nom(Nom nom);
   }
 
-  public interface ElementDeFabricationTitreBuilder {
-    ElementDeFabricationDescriptionBuilder titre(String titre);
+  public interface ElementDeFabricationReferenceBuilder {
+    ElementDeFabricationDescriptionBuilder reference(String reference);
   }
 
   public interface ElementDeFabricationDescriptionBuilder {

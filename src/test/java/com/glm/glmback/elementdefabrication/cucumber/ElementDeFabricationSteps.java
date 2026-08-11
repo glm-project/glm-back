@@ -50,6 +50,11 @@ public class ElementDeFabricationSteps {
     rest.put(BASE_URI + "/" + dernierIdCree, JSON.writeValueAsString(donnees));
   }
 
+  @When("je modifie cet element de fabrication sans reference ni description")
+  public void jeModifieCetElementDeFabricationSansReferenceNiDescription() {
+    rest.put(BASE_URI + "/" + dernierIdCree, "{}");
+  }
+
   @When("je modifie l'element de fabrication {string}")
   public void jeModifieLElementDeFabrication(String id, Map<String, String> donnees) {
     rest.put(BASE_URI + "/" + id, JSON.writeValueAsString(donnees));
@@ -83,6 +88,12 @@ public class ElementDeFabricationSteps {
   @Then("la reponse d'element de fabrication a un nom commencant par {string}")
   public void laReponseAUnNomCommencantPar(String prefixe) {
     assertThat((String) CucumberRestTestContext.getElement("$.nom")).startsWith(prefixe);
+  }
+
+  @Then("la reponse d'element de fabrication n'a ni reference ni description")
+  public void laReponseDElementDeFabricationNAPasDeReferenceNiDescription() {
+    assertThat(CucumberRestTestContext.getElement("$.reference")).isNull();
+    assertThat(CucumberRestTestContext.getElement("$.description")).isNull();
   }
 
   @Then("la reponse contient au moins {int} elements")

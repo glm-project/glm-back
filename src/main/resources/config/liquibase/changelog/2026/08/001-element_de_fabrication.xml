@@ -5,6 +5,14 @@
   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
 >
   <changeSet id="element_de_fabrication" author="glm">
+    <comment>
+      La reference est l'identifiant que l'entreprise donne elle-meme a l'element dans son propre systeme, et
+      la description un complement libre : les deux sont facultatifs, un element de fabrication se reduit
+      legitimement a son seul numero. PostgreSQL considerant les NULL comme distincts, la contrainte
+      d'unicite sur la reference laisse coexister autant d'elements sans reference que necessaire. Elle vaut
+      par schema, donc par entreprise.
+    </comment>
+
     <createTable tableName="element_de_fabrication">
       <column name="id" type="${uuidType}">
         <constraints nullable="false" primaryKey="true" />
@@ -18,13 +26,11 @@
         <constraints nullable="false" unique="true" uniqueConstraintName="ux_element_de_fabrication_nom" />
       </column>
 
-      <column name="titre" type="varchar(255)">
-        <constraints nullable="false" />
+      <column name="reference" type="varchar(100)">
+        <constraints unique="true" uniqueConstraintName="ux_element_de_fabrication_reference" />
       </column>
 
-      <column name="description" type="varchar(1000)">
-        <constraints nullable="false" />
-      </column>
+      <column name="description" type="varchar(1000)" />
 
       <column name="date_de_creation" type="${datetimeType}">
         <constraints nullable="false" />
