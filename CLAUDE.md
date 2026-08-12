@@ -8,6 +8,8 @@ Ce fichier fournit à Claude Code les règles à respecter en permanence sur ce 
 
 Le code technique partagé vit dans `shared/` (dont le shared kernel `shared/pagination`) et `wire/`. Le contexte métier (bounded contexts et leur rôle) est décrit dans [documentation/contexte-metier.md](documentation/contexte-metier.md) — à tenir à jour à chaque nouveau bounded context.
 
+**Chaque bounded context porte son propre `CLAUDE.md`**, à la racine de son package (`src/main/java/com/glm/glmback/<contexte>/CLAUDE.md`) : il énonce ce dont le contexte s'occupe, ce dont il ne s'occupe **pas**, ses agrégats, ses invariants et ses ports sortants. Le lire avant de toucher au contexte, et le créer avec tout nouveau bounded context. Il ne duplique ni les règles de code ci-dessous, ni la justification métier de `documentation/contexte-metier.md` — il pointe vers elles.
+
 Toute nouvelle fonctionnalité doit suivre les règles ci-dessous dès sa création.
 
 ## Principes obligatoires
