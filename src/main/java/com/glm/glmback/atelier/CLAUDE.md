@@ -70,11 +70,33 @@ Tout besoin d'une donnée de paramétrage passe par un nouveau port, jamais par 
 
 ## État d'avancement
 
-Seul `domain/` existe. `application/`, `infrastructure/primary/` et `infrastructure/secondary/` restent à écrire — donc
-pas encore de feature Cucumber, faute d'endpoint à appeler.
+Les quatre couches existent. L'API REST est décrite par OpenAPI (`/swagger-ui.html`) et par
+[documentation/atelier-api.md](../../../../../../documentation/atelier-api.md), le guide d'intégration du développeur
+front — le tenir à jour avec le contrat.
 
-Le scénario métier de référence, à lire avant toute modification du modèle, est
-`src/test/java/com/glm/glmback/atelier/domain/VieDeLAtelierTest.java` : une journée complète jouée de bout en bout, avec
-le verbatim client en javadoc de chaque assertion.
+`infrastructure/secondary/` est **provisoire** :
+
+- `SuivisDAtelierEnMemoire` et `JourneesDeTravailEnMemoire` persistent en mémoire, **partitionnées par entreprise**
+  pour ne pas relâcher l'isolation que l'adapter JPA garantira. Leurs gardes d'identité ne sont pas atteignables par
+  l'API — elles sont couvertes par des tests unitaires dédiés, pas par Cucumber ;
+- `ElementsDeFabricationEngageables` lit la table `element_de_fabrication` par une entité en lecture seule propre à
+  l'atelier : aucun import de `elementdefabrication`, l'invariant tient ;
+- `FonctionsDesOperateursInconnues` rend toujours vide, faute de référentiel des ressources. La nature étant
+  facultative par invariant, c'est un port en attente de sa source, pas un cas dégradé.
+
+L'`Auteur` d'une saisie vient toujours du jeton (`AuteurConnecte`), jamais du corps de la requête ; l'`Operateur`, lui,
+reste dans le corps.
+
+Deux scénarios métier de référence, à lire avant toute modification du modèle :
+
+- `src/test/java/com/glm/glmback/atelier/domain/VieDeLAtelierTest.java` — une journée complète en appels directs, avec
+  le verbatim client en javadoc de chaque assertion ;
+- `src/test/features/atelier_suivi.feature` — la même journée rejouée en HTTP, avec `atelier_presence.feature` pour la
+  présence seule.
+
+Les scénarios pilotent l'horloge (`CucumberClock`, step `Given il est "..."`). Deux pièges s'y rappellent seuls :
+**faire avancer l'horloge entre deux événements** — à horodatage identique, l'ordre du journal se départage sur
+l'identifiant, donc au hasard — et **ne jamais corriger vers une date postérieure à l'instant courant**, que
+`Horodatage` refuse.
 
 Les points encore ouverts sont listés en fin de section `atelier` dans `documentation/contexte-metier.md`.

@@ -3,6 +3,11 @@ logging:
     com:
       glm:
         glmback: DEBUG
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
 application:
   multitenancy:
     tenants:

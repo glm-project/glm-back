@@ -8,6 +8,7 @@ import java.util.stream.Stream;
 
 public enum Role {
   ADMIN,
+  GESTIONNAIRE,
   USER,
   ANONYMOUS,
   UNKNOWN;

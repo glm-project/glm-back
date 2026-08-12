@@ -75,11 +75,6 @@ public class ElementDeFabricationSteps {
     rest.get(BASE_URI + "?debut=" + debut + "&fin=" + fin);
   }
 
-  @Then("la reponse a le statut http {int}")
-  public void laReponseALeStatutHttp(int status) {
-    assertThatLastResponse().hasHttpStatus(status);
-  }
-
   @Then("la reponse d'element de fabrication contient")
   public void laReponseDElementDeFabricationContient(Map<String, Object> attendu) {
     assertThatLastResponse().hasResponse().containing(attendu);

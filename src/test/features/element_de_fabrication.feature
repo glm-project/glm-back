@@ -1,7 +1,7 @@
 Feature: Gestion des elements de fabrication
 
   Background:
-    Given I am logged in as "admin" with role "ADMIN"
+    Given I am logged in as "gestionnaire" with role "GESTIONNAIRE"
 
   Scenario: Creation d'un ordre de fabrication avec numerotation automatique du nom
     When je cree un element de fabrication
@@ -164,11 +164,19 @@ Feature: Gestion des elements de fabrication
     Then la reponse a le statut http 200
     And la reponse contient au moins 2 elements
 
-  Scenario: Creation refusee a un utilisateur sans role admin
+  Scenario: Creation refusee a un utilisateur sans role gestionnaire
     Given I am logged in as "user" with role "USER"
     When je cree un element de fabrication
       | type        | ORDRE_DE_FABRICATION |
       | reference   | 1019                 |
+      | description | Carter en fonte      |
+    Then la reponse a le statut http 403
+
+  Scenario: Creation refusee a un administrateur technique
+    Given I am logged in as "admin" with role "ADMIN"
+    When je cree un element de fabrication
+      | type        | ORDRE_DE_FABRICATION |
+      | reference   | 1025                 |
       | description | Carter en fonte      |
     Then la reponse a le statut http 403
 
@@ -182,24 +190,24 @@ Feature: Gestion des elements de fabrication
     Then la reponse a le statut http 200
 
   Scenario: Un element de fabrication n'est pas visible depuis une autre entreprise
-    Given I am logged in as "admin" with role "ADMIN" for tenant "impeccmold"
+    Given I am logged in as "gestionnaire" with role "GESTIONNAIRE" for tenant "impeccmold"
     And j'ai cree un element de fabrication
       | type        | PRODUIT         |
       | reference   | 1021            |
       | description | Carter en fonte |
-    Given I am logged in as "admin" with role "ADMIN" for tenant "katilys"
+    Given I am logged in as "gestionnaire" with role "GESTIONNAIRE" for tenant "katilys"
     When je consulte cet element de fabrication
     Then la reponse a le statut http 404
 
   Scenario: Chaque entreprise a sa propre numerotation
-    Given I am logged in as "admin" with role "ADMIN" for tenant "impeccmold"
+    Given I am logged in as "gestionnaire" with role "GESTIONNAIRE" for tenant "impeccmold"
     When je cree un element de fabrication
       | type        | PRODUIT         |
       | reference   | 1022            |
       | description | Carter en fonte |
     Then la reponse a le statut http 201
     And la reponse d'element de fabrication a un nom commencant par "PRD-"
-    Given I am logged in as "admin" with role "ADMIN" for tenant "katilys"
+    Given I am logged in as "gestionnaire" with role "GESTIONNAIRE" for tenant "katilys"
     When je cree un element de fabrication
       | type        | PRODUIT         |
       | reference   | 1023            |
@@ -208,18 +216,18 @@ Feature: Gestion des elements de fabrication
     And la reponse d'element de fabrication a un nom commencant par "PRD-"
 
   Scenario: Deux entreprises peuvent utiliser la meme reference
-    Given I am logged in as "admin" with role "ADMIN" for tenant "impeccmold"
+    Given I am logged in as "gestionnaire" with role "GESTIONNAIRE" for tenant "impeccmold"
     When je cree un element de fabrication
       | type      | PRODUIT |
       | reference | 1024    |
     Then la reponse a le statut http 201
-    Given I am logged in as "admin" with role "ADMIN" for tenant "katilys"
+    Given I am logged in as "gestionnaire" with role "GESTIONNAIRE" for tenant "katilys"
     When je cree un element de fabrication
       | type      | PRODUIT |
       | reference | 1024    |
     Then la reponse a le statut http 201
 
   Scenario: Acces refuse a un utilisateur sans entreprise
-    Given I am logged in as "admin" with role "ADMIN" without tenant
+    Given I am logged in as "gestionnaire" with role "GESTIONNAIRE" without tenant
     When je liste les elements de fabrication entre "2000-01-01T00:00:00Z" et "2100-01-01T00:00:00Z"
     Then la reponse a le statut http 403
