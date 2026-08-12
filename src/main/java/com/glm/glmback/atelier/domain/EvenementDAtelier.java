@@ -43,7 +43,11 @@ public record EvenementDAtelier(
     this(builder.id, builder.type, builder.operateur, builder.poste, builder.nature, builder.auteur, builder.horodatage, Optional.empty());
   }
 
-  static EvenementDAtelierIdBuilder builder() {
+  /**
+   * Publique pour la seule raison admise : la relecture depuis la persistance vit dans
+   * {@code infrastructure/secondary}. La creation, elle, reste l'affaire de ce domaine.
+   */
+  public static EvenementDAtelierIdBuilder builder() {
     return new EvenementDAtelierBuilder();
   }
 
@@ -152,31 +156,31 @@ public record EvenementDAtelier(
     }
   }
 
-  interface EvenementDAtelierIdBuilder {
+  public interface EvenementDAtelierIdBuilder {
     EvenementDAtelierTypeBuilder id(EvenementDAtelierId id);
   }
 
-  interface EvenementDAtelierTypeBuilder {
+  public interface EvenementDAtelierTypeBuilder {
     EvenementDAtelierOperateurBuilder type(TypeDEvenementDAtelier type);
   }
 
-  interface EvenementDAtelierOperateurBuilder {
+  public interface EvenementDAtelierOperateurBuilder {
     EvenementDAtelierPosteBuilder operateur(Operateur operateur);
   }
 
-  interface EvenementDAtelierPosteBuilder {
+  public interface EvenementDAtelierPosteBuilder {
     EvenementDAtelierNatureBuilder poste(Optional<PosteDeTravail> poste);
   }
 
-  interface EvenementDAtelierNatureBuilder {
+  public interface EvenementDAtelierNatureBuilder {
     EvenementDAtelierAuteurBuilder nature(Optional<NatureDOperation> nature);
   }
 
-  interface EvenementDAtelierAuteurBuilder {
+  public interface EvenementDAtelierAuteurBuilder {
     EvenementDAtelierHorodatageBuilder auteur(Auteur auteur);
   }
 
-  interface EvenementDAtelierHorodatageBuilder {
+  public interface EvenementDAtelierHorodatageBuilder {
     EvenementDAtelier horodatage(Horodatage horodatage);
   }
 }

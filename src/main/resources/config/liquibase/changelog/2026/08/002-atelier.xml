@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <changeSet id="suivi_d_atelier" author="glm">
+    <comment>
+      Le nom et le type de l'element sont copies a l'engagement : l'atelier ne pointe pas la table du
+      contexte voisin, un element renommee plus tard ne doit pas reecrire l'histoire de l'atelier.
+      La colonne etat est une projection, ecrite depuis le domaine a chaque ecriture et jamais relue
+      pour reconstruire l'agregat : le journal reste la seule source de verite, l'etat n'est qu'un
+      index qui rend le filtre de l'ecran d'atelier exprimable en SQL.
+    </comment>
+
+    <createTable tableName="suivi_d_atelier">
+      <column name="id" type="${uuidType}">
+        <constraints nullable="false" primaryKey="true" />
+      </column>
+
+      <column name="element_id" type="${uuidType}">
+        <constraints nullable="false" />
+      </column>
+
+      <column name="element_nom" type="varchar(30)">
+        <constraints nullable="false" />
+      </column>
+
+      <column name="element_type" type="varchar(30)">
+        <constraints nullable="false" />
+      </column>
+
+      <column name="engagement_auteur" type="varchar(100)">
+        <constraints nullable="false" />
+      </column>
+
+      <column name="engagement_date" type="${datetimeType}">
+        <constraints nullable="false" />
+      </column>
+
+      <column name="cloture_auteur" type="varchar(100)" />
+
+      <column name="cloture_date_de_survenue" type="${datetimeType}" />
+
+      <column name="cloture_date_d_enregistrement" type="${datetimeType}" />
+
+      <column name="etat" type="varchar(20)">
+        <constraints nullable="false" />
+      </column>
+    </createTable>
+
+    <createIndex indexName="ix_suivi_d_atelier_engagement" tableName="suivi_d_atelier">
+      <column name="engagement_date" />
+      <column name="id" />
+    </createIndex>
+
+    <createIndex indexName="ix_suivi_d_atelier_etat" tableName="suivi_d_atelier">
+      <column name="etat" />
+      <column name="engagement_date" />
+      <column name="id" />
+    </createIndex>
+
+    <createIndex indexName="ix_suivi_d_atelier_element" tableName="suivi_d_atelier">
+      <column name="element_id" />
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="evenement_d_atelier" author="glm">
+    <comment>
+      Un evenement annule reste au journal, porteur de son annulation : rien n'est jamais supprime de
+      cette table. Les index par operateur et par poste ne servent pas l'atelier lui-meme, qui lit
+      toujours par suivi ; ils ouvrent les projections transverses des contextes a venir, qui
+      agregent le temps par operateur ou par poste sur une periode.
+    </comment>
+
+    <createTable tableName="evenement_d_atelier">
+      <column name="id" type="${uuidType}">
+        <constraints nullable="false" primaryKey="true" />
+      </column>
+
+      <column name="suivi_id" type="${uuidType}">
+        <constraints nullable="false" foreignKeyName="fk_evenement_d_atelier_suivi" references="suivi_d_atelier(id)" />
+      </column>
+
+      <column name="type" type="varchar(20)">
+        <constraints nullable="false" />
+      </column>
+
+      <column name="operateur" type="varchar(100)">
+        <constraints nullable="false" />
+      </column>
+
+      <column name="poste" type="varchar(100)" />
+
+      <column name="nature" type="varchar(50)" />
+
+      <column name="auteur" type="varchar(100)">
+        <constraints nullable="false" />
+      </column>
+
+      <column name="date_de_survenue" type="${datetimeType}">
+        <constraints nullable="false" />
+      </column>
+
+      <column name="date_d_enregistrement" type="${datetimeType}">
+        <constraints nullable="false" />
+      </column>
+
+      <column name="annulation_auteur" type="varchar(100)" />
+
+      <column name="annulation_date" type="${datetimeType}" />
+
+      <column name="annulation_motif" type="varchar(255)" />
+    </createTable>
+
+    <createIndex indexName="ix_evenement_d_atelier_suivi" tableName="evenement_d_atelier">
+      <column name="suivi_id" />
+      <column name="date_de_survenue" />
+      <column name="id" />
+    </createIndex>
+
+    <createIndex indexName="ix_evenement_d_atelier_operateur" tableName="evenement_d_atelier">
+      <column name="operateur" />
+      <column name="date_de_survenue" />
+    </createIndex>
+
+    <createIndex indexName="ix_evenement_d_atelier_poste" tableName="evenement_d_atelier">
+      <column name="poste" />
+      <column name="date_de_survenue" />
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="journee_de_travail" author="glm">
+    <comment>
+      Une journee de travail est une venue, pas un jour calendaire : ses bornes sont l'arrivee et le
+      depart, et aucun fuseau horaire n'entre ici. debut et fin sont des projections du journal, au
+      meme titre que etat : elles rendent exprimables en SQL le tri de la liste et la recherche de la
+      journee contenant un instant, sans jamais servir a reconstruire l'agregat.
+    </comment>
+
+    <createTable tableName="journee_de_travail">
+      <column name="id" type="${uuidType}">
+        <constraints nullable="false" primaryKey="true" />
+      </column>
+
+      <column name="operateur" type="varchar(100)">
+        <constraints nullable="false" />
+      </column>
+
+      <column name="etat" type="varchar(20)">
+        <constraints nullable="false" />
+      </column>
+
+      <column name="debut" type="${datetimeType}" />
+
+      <column name="fin" type="${datetimeType}" />
+    </createTable>
+
+    <createIndex indexName="ix_journee_de_travail_debut" tableName="journee_de_travail">
+      <column name="debut" />
+      <column name="id" />
+    </createIndex>
+
+    <createIndex indexName="ix_journee_de_travail_operateur" tableName="journee_de_travail">
+      <column name="operateur" />
+      <column name="debut" />
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="evenement_de_presence" author="glm">
+    <comment>
+      Ces evenements ne portent pas d'operateur : il vit sur la journee, et l'y dupliquer
+      contredirait l'agregat. Une projection par operateur passe donc par la jointure, servie par
+      ix_journee_de_travail_operateur.
+    </comment>
+
+    <createTable tableName="evenement_de_presence">
+      <column name="id" type="${uuidType}">
+        <constraints nullable="false" primaryKey="true" />
+      </column>
+
+      <column name="journee_id" type="${uuidType}">
+        <constraints nullable="false" foreignKeyName="fk_evenement_de_presence_journee" references="journee_de_travail(id)" />
+      </column>
+
+      <column name="type" type="varchar(20)">
+        <constraints nullable="false" />
+      </column>
+
+      <column name="auteur" type="varchar(100)">
+        <constraints nullable="false" />
+      </column>
+
+      <column name="date_de_survenue" type="${datetimeType}">
+        <constraints nullable="false" />
+      </column>
+
+      <column name="date_d_enregistrement" type="${datetimeType}">
+        <constraints nullable="false" />
+      </column>
+
+      <column name="annulation_auteur" type="varchar(100)" />
+
+      <column name="annulation_date" type="${datetimeType}" />
+
+      <column name="annulation_motif" type="varchar(255)" />
+    </createTable>
+
+    <createIndex indexName="ix_evenement_de_presence_journee" tableName="evenement_de_presence">
+      <column name="journee_id" />
+      <column name="date_de_survenue" />
+      <column name="id" />
+    </createIndex>
+  </changeSet>
+</databaseChangeLog>

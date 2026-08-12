@@ -10,6 +10,7 @@ import com.glm.glmback.atelier.domain.EvenementDePresenceIntrouvableException;
 import com.glm.glmback.atelier.domain.EvenementDejaAnnuleException;
 import com.glm.glmback.atelier.domain.JourneeDeTravailDejaOuverteException;
 import com.glm.glmback.atelier.domain.JourneeDeTravailIntrouvableException;
+import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierClotureException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.TransitionDAtelierInterditeException;
@@ -95,6 +96,11 @@ class AtelierExceptionAdvice {
   @ExceptionHandler(EvenementAvantEngagementException.class)
   ProblemDetail handleEvenementAvantEngagement(EvenementAvantEngagementException e) {
     return conflit("evenement anterieur a l'engagement", e);
+  }
+
+  @ExceptionHandler(SaisieConcurrenteException.class)
+  ProblemDetail handleSaisieConcurrente(SaisieConcurrenteException e) {
+    return conflit("saisie concurrente", e);
   }
 
   private static ProblemDetail introuvable(String titre, RuntimeException e) {

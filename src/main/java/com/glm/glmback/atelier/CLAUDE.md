@@ -74,15 +74,35 @@ Les quatre couches existent. L'API REST est décrite par OpenAPI (`/swagger-ui.h
 [documentation/atelier-api.md](../../../../../../documentation/atelier-api.md), le guide d'intégration du développeur
 front — le tenir à jour avec le contrat.
 
-`infrastructure/secondary/` est **provisoire** :
+`infrastructure/secondary/` persiste en PostgreSQL, dans le schéma de l'entreprise courante :
 
-- `SuivisDAtelierEnMemoire` et `JourneesDeTravailEnMemoire` persistent en mémoire, **partitionnées par entreprise**
-  pour ne pas relâcher l'isolation que l'adapter JPA garantira. Leurs gardes d'identité ne sont pas atteignables par
-  l'API — elles sont couvertes par des tests unitaires dédiés, pas par Cucumber ;
+- `JpaSuiviDAtelierRepository` et `JpaJourneeDeTravailRepository` écrivent chacun leur agrégat sur deux tables — la
+  ligne de l'agrégat et son journal —, l'agrégat étant reconstruit en entier par le domaine mais **rapproché par
+  identifiant** côté persistance : un pointage coûte l'insertion d'une ligne, jamais la réécriture du journal ;
 - `ElementsDeFabricationEngageables` lit la table `element_de_fabrication` par une entité en lecture seule propre à
   l'atelier : aucun import de `elementdefabrication`, l'invariant tient ;
 - `FonctionsDesOperateursInconnues` rend toujours vide, faute de référentiel des ressources. La nature étant
   facultative par invariant, c'est un port en attente de sa source, pas un cas dégradé.
+
+### Les colonnes de projection ne contredisent pas « le journal est la source de vérité »
+
+`suivi_d_atelier.etat`, `journee_de_travail.etat`, `.debut` et `.fin` sont **dérivées du journal, écrites depuis le
+domaine à chaque enregistrement, et jamais relues** : `toDomain()` rejoue toujours le journal et ignore ces colonnes.
+Ce sont des index, pas un état stocké — sans eux, filtrer l'écran d'atelier sur `etats` ou retrouver la journée
+contenant un instant obligerait à ramener toute l'entreprise en mémoire à chaque lecture de temps effectif. Elles ne
+dépendent que du journal, jamais de l'instant courant, donc restent justes entre deux écritures.
+
+Leur contrepartie : `SuiviDAtelierCriteria.matches` et `JourneeDeTravailCriteria.matches` ne sont plus appelées par la
+production, qui traduit les mêmes règles en SQL. C'est `PariteDesRepositoriesDAtelierIT` qui rétablit par l'exécution
+la garantie que donnait le code partagé — le modifier en même temps que l'une des deux expressions de la règle.
+
+### Concurrence
+
+Deux saisies parties du même état valideraient chacune sa transition contre un journal qui ignore l'autre, et le
+journal obtenu — deux débuts consécutifs sur la même activité — deviendrait illisible à chaque relecture. `update`
+charge donc l'agrégat sous verrou pessimiste, puis refuse par `SaisieConcurrenteException` (409) toute saisie dont le
+journal ignore un événement déjà stocké. Un `@Version` n'aurait rien protégé : la collection d'événements est le côté
+inverse de l'association, donc l'insertion d'un événement ne salit pas la ligne parente et n'incrémente aucune version.
 
 L'`Auteur` d'une saisie vient toujours du jeton (`AuteurConnecte`), jamais du corps de la requête ; l'`Operateur`, lui,
 reste dans le corps.
