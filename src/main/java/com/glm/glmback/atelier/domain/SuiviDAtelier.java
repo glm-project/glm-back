@@ -38,7 +38,11 @@ public record SuiviDAtelier(
     this(builder.id, builder.element, builder.engagement, builder.journal, Optional.empty());
   }
 
-  static SuiviDAtelierIdBuilder builder() {
+  /**
+   * Publique pour la seule raison admise : la relecture depuis la persistance vit dans
+   * {@code infrastructure/secondary}. La creation, elle, reste l'affaire de ce domaine.
+   */
+  public static SuiviDAtelierIdBuilder builder() {
     return new SuiviDAtelierBuilder();
   }
 
@@ -146,19 +150,19 @@ public record SuiviDAtelier(
     }
   }
 
-  interface SuiviDAtelierIdBuilder {
+  public interface SuiviDAtelierIdBuilder {
     SuiviDAtelierElementBuilder id(SuiviDAtelierId id);
   }
 
-  interface SuiviDAtelierElementBuilder {
+  public interface SuiviDAtelierElementBuilder {
     SuiviDAtelierEngagementBuilder element(ElementEngage element);
   }
 
-  interface SuiviDAtelierEngagementBuilder {
+  public interface SuiviDAtelierEngagementBuilder {
     SuiviDAtelierJournalBuilder engagement(Engagement engagement);
   }
 
-  interface SuiviDAtelierJournalBuilder {
+  public interface SuiviDAtelierJournalBuilder {
     SuiviDAtelier journal(JournalDAtelier journal);
   }
 }

@@ -181,16 +181,20 @@ client en supposant l'inverse.
 Toutes les erreurs métier sont des `ProblemDetail` (RFC 7807) portant `title`, `status` et une propriété `message`
 lisible.
 
-| Statut | Cas                                                                                                                                           |
-| ------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| 400    | Corps invalide (Bean Validation) — détail par champ dans `errors`.                                                                            |
-| 403    | Jeton sans entreprise connue, ou rôle insuffisant.                                                                                            |
-| 404    | Suivi, journée, événement ou élément de fabrication introuvable ; ou aucune journée ouverte pour cet opérateur.                               |
-| 409    | Élément déjà engagé, journée déjà ouverte, élément clôturé, événement déjà annulé, transition impossible, événement antérieur à l'engagement. |
+| Statut | Cas                                                                                                                                                                   |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 400    | Corps invalide (Bean Validation) — détail par champ dans `errors`.                                                                                                    |
+| 403    | Jeton sans entreprise connue, ou rôle insuffisant.                                                                                                                    |
+| 404    | Suivi, journée, événement ou élément de fabrication introuvable ; ou aucune journée ouverte pour cet opérateur.                                                       |
+| 409    | Élément déjà engagé, journée déjà ouverte, élément clôturé, événement déjà annulé, transition impossible, événement antérieur à l'engagement, **saisie concurrente**. |
 
 Les **409 de transition** sont les plus fréquents à l'usage : une `REPRISE` sans `PAUSE`, deux `DEBUT` consécutifs sur
 la même activité, un `DEPART` sur une journée déjà fermée. Ils portent un `message` explicite — l'afficher plutôt que
 le remplacer par un texte générique.
+
+La **saisie concurrente** est le seul 409 qui ne dit rien de la saisie elle-même : elle était valide, mais quelqu'un a
+pointé sur le même élément ou la même journée entre la lecture et l'écriture. C'est le seul cas où **rejouer** l'appel
+tel quel est la bonne réaction — relire l'agrégat, et reproposer la saisie.
 
 > Limite connue : une `dateDeSurvenue` postérieure à l'instant courant (corriger un événement « dans le futur »)
 > viole un invariant du domaine et ressort aujourd'hui en **500**, faute de mapping pour `AssertionException`. Côté
@@ -200,9 +204,6 @@ le remplacer par un texte générique.
 
 ## 5. Limites de l'implémentation actuelle
 
-- **La persistance de l'atelier est en mémoire**, en attendant l'adapter JPA : les données sont perdues au
-  redémarrage du serveur. L'isolation par entreprise est en revanche déjà respectée. Le contrat HTTP, lui, est
-  définitif — le front peut être écrit contre lui sans réserve.
 - **`nature` est toujours vide** : aucun référentiel des ressources n'existe encore, donc aucun profil d'opérateur.
   Le champ est au contrat et se remplira sans changement d'API. Ne pas construire d'écran qui en dépende.
 - **`operateur` et `poste` sont des chaînes libres**, pas des références à un référentiel : à saisir ou à proposer
