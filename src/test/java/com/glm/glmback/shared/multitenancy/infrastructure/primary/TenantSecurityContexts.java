@@ -15,7 +15,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
  */
 public final class TenantSecurityContexts {
 
-  private static final List<String> ROLES = List.of("ROLE_ADMIN", "ROLE_USER");
+  private static final List<String> ROLES = List.of("ROLE_ADMIN", "ROLE_GESTIONNAIRE", "ROLE_USER");
 
   private TenantSecurityContexts() {}
 

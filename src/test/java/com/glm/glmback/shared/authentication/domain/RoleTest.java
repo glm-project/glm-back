@@ -22,4 +22,9 @@ class RoleTest {
   void shouldConvertFromRole() {
     assertThat(Role.from("ROLE_ADMIN")).isEqualTo(Role.ADMIN);
   }
+
+  @Test
+  void shouldConvertFromGestionnaireRole() {
+    assertThat(Role.from("ROLE_GESTIONNAIRE")).isEqualTo(Role.GESTIONNAIRE);
+  }
 }

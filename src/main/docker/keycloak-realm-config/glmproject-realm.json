@@ -73,6 +73,15 @@
         "attributes": {}
       },
       {
+        "id": "b7d4c1a2-3e5f-4a68-9c0d-1f2e3a4b5c6d",
+        "name": "ROLE_GESTIONNAIRE",
+        "description": "glmproject business manager role",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "glmproject",
+        "attributes": {}
+      },
+      {
         "id": "d2b73e7b-a2d7-40e9-8ebc-2af00454e8aa",
         "name": "default-roles-glmproject",
         "description": "${role_default-roles}",
@@ -416,6 +425,15 @@
       "realmRoles": ["ROLE_USER"],
       "clientRoles": {},
       "subGroups": []
+    },
+    {
+      "id": "c3a1e9d7-5b24-4f80-8e17-6d9c0b2a4f83",
+      "name": "Gestionnaires",
+      "path": "/Gestionnaires",
+      "attributes": {},
+      "realmRoles": ["ROLE_GESTIONNAIRE"],
+      "clientRoles": {},
+      "subGroups": []
     }
   ],
   "defaultRole": {
@@ -593,6 +611,35 @@
       "groups": ["/Users"]
     },
     {
+      "id": "7a4e2c91-6b83-4d05-9e17-f204a6b8c1d3",
+      "createdTimestamp": 1755000000000,
+      "username": "gestionnaire.impeccmold",
+      "enabled": true,
+      "totp": false,
+      "emailVerified": true,
+      "firstName": "Gestionnaire",
+      "lastName": "ImpeccMold",
+      "email": "gestionnaire.impeccmold@localhost",
+      "attributes": {
+        "tenant": ["impeccmold"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "gestionnaire.impeccmold",
+          "temporary": false
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": ["offline_access", "uma_authorization"],
+      "clientRoles": {
+        "account": ["view-profile", "manage-account"]
+      },
+      "notBefore": 0,
+      "groups": ["/Gestionnaires", "/Users"]
+    },
+    {
       "id": "3f2c7b0a-4d5e-4f70-a132-c3d4e5f60718",
       "createdTimestamp": 1755000000000,
       "username": "admin.katilys",
@@ -649,6 +696,35 @@
       },
       "notBefore": 0,
       "groups": ["/Users"]
+    },
+    {
+      "id": "8b5f3d02-7c94-4e16-af28-0315b7c9d2e4",
+      "createdTimestamp": 1755000000000,
+      "username": "gestionnaire.katilys",
+      "enabled": true,
+      "totp": false,
+      "emailVerified": true,
+      "firstName": "Gestionnaire",
+      "lastName": "Katilys",
+      "email": "gestionnaire.katilys@localhost",
+      "attributes": {
+        "tenant": ["katilys"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "gestionnaire.katilys",
+          "temporary": false
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": ["offline_access", "uma_authorization"],
+      "clientRoles": {
+        "account": ["view-profile", "manage-account"]
+      },
+      "notBefore": 0,
+      "groups": ["/Gestionnaires", "/Users"]
     }
   ],
   "scopeMappings": [

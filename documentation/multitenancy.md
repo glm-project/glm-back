@@ -86,16 +86,23 @@ L'identifiant et le schema doivent respecter `^[a-z][a-z0-9_]{0,62}$`.
 
 ## Utilisateurs de developpement
 
-Le realm `glmproject` contient quatre utilisateurs d'entreprise, mot de passe egal au login :
+Le realm `glmproject` contient six utilisateurs d'entreprise, mot de passe egal au login :
 
-| username           | roles                     | tenant       |
-| ------------------ | ------------------------- | ------------ |
-| `admin.impeccmold` | `ROLE_ADMIN`, `ROLE_USER` | `impeccmold` |
-| `user.impeccmold`  | `ROLE_USER`               | `impeccmold` |
-| `admin.katilys`    | `ROLE_ADMIN`, `ROLE_USER` | `katilys`    |
-| `user.katilys`     | `ROLE_USER`               | `katilys`    |
+| username                  | roles                            | tenant       |
+| ------------------------- | -------------------------------- | ------------ |
+| `gestionnaire.impeccmold` | `ROLE_GESTIONNAIRE`, `ROLE_USER` | `impeccmold` |
+| `admin.impeccmold`        | `ROLE_ADMIN`, `ROLE_USER`        | `impeccmold` |
+| `user.impeccmold`         | `ROLE_USER`                      | `impeccmold` |
+| `gestionnaire.katilys`    | `ROLE_GESTIONNAIRE`, `ROLE_USER` | `katilys`    |
+| `admin.katilys`           | `ROLE_ADMIN`, `ROLE_USER`        | `katilys`    |
+| `user.katilys`            | `ROLE_USER`                      | `katilys`    |
 
 Les utilisateurs historiques `admin` et `user` portent `tenant: impeccmold`.
+
+**C'est `ROLE_GESTIONNAIRE`, et non `ROLE_ADMIN`, qui ouvre les actes metier** (creation, modification, suppression,
+engagement, cloture, corrections). `ROLE_ADMIN` est reserve a l'administration technique — `/api/admin/**` et
+`/management/**` — et ne donne aucun acces au metier : un `admin.*` ne peut que lire, via son `ROLE_USER`. Pour
+travailler sur l'API metier en developpement, se connecter en `gestionnaire.*`.
 
 Trois pieges de l'import du realm :
 

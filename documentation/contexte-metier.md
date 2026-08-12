@@ -108,7 +108,9 @@ Le diviseur est bien le nombre de postes, et non le nombre d'activités ou d'él
 
 L'écran des opérateurs veut tous les éléments actifs d'un coup, sans rien qui défile et sans notion de date : la période de `SuiviDAtelierCriteria` est donc **facultative**, et ne sert qu'aux écrans de back-office.
 
-À ce jour, seul le `domain/` existe : `application/`, `infrastructure/primary/` et `infrastructure/secondary/` restent à écrire.
+Les quatre couches existent désormais. `infrastructure/secondary/` reste provisoire : les deux agrégats sont persistés **en mémoire**, partitionnés par entreprise, en attendant l'adapter JPA — le contrat HTTP, lui, est stable. `ElementsEngageables` lit la table `element_de_fabrication` par une entité en lecture seule propre à l'atelier, sans jamais importer le contexte voisin. `FonctionsDesOperateurs` rend toujours vide, faute de référentiel des ressources.
+
+L'API est décrite par OpenAPI (`/swagger-ui.html`) et par [atelier-api.md](atelier-api.md), qui porte ce que la spec ne peut pas dire.
 
 ### Points ouverts
 

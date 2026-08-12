@@ -110,6 +110,8 @@ docker compose -f src/main/docker/keycloak.yml up -d
   - **Une étape porte la valeur finale, jamais ses ingrédients** : le step builder assemble, il ne fabrique pas. Le `Nom` se compose d'un préfixe, d'une année et d'un compteur, mais l'étape prend un `Nom` — sa fabrication (`Nom.of`) appartient à la **fabrique de domaine** qui détient les ports, ici `ElementsDeFabricationService`. Exposer les ingrédients obligerait la modification, qui conserve pourtant le nom existant, à le décomposer pour le reconstruire à l'identique : un aller-retour qui ne peut que se tromper.
   - Un value object porteur d'une règle de composition reste une **valeur simple** et garantit sa forme par une **assertion de motif** — ce qui vaut aussi pour une valeur relue depuis la persistance, qui n'a jamais transité par la fabrique.
   - Attention : un record public ne peut pas avoir de constructeur canonique privé (JLS 8.10.4) — sur un record, le builder est la voie idiomatique imposée par convention, le constructeur canonique restant techniquement accessible.
+- **Rôles** : `GESTIONNAIRE` ouvre les actes métier (création, engagement, clôture, corrections), `USER` le pointage et la lecture. `ADMIN` est réservé à l'administration technique (`/api/admin/**`, `/management/**`) et **ne donne aucun accès métier** — ne jamais le remettre dans un `@Secured` de service applicatif. Les rôles se déclarent sur le service applicatif, jamais sur le contrôleur.
+- **OpenAPI** : springdoc est au classpath, la configuration globale vit dans `wire/openapi`. Seul `atelier` est annoté (`@Tag`, `@Operation`, `@ApiResponse`, `@Schema`) — c'est le patron à suivre pour les contextes suivants, `elementdefabrication` restant à reprendre.
 - Checkstyle (`checkstyle.xml` à la racine) appliqué à `src/main` et `src/test` — respecter le style existant plutôt qu'introduire de nouvelles conventions.
 - Formatage via Prettier (`npm run prettier:check` / `npm run prettier:format`), couvrant aussi les fichiers Gherkin.
 
@@ -124,3 +126,4 @@ Ne pas dupliquer ce qui est déjà documenté — s'y référer :
 - `documentation/cors-configuration.md` — configuration CORS.
 - `documentation/multitenancy.md` — isolation par entreprise, schéma par tenant, utilisateurs de développement.
 - `documentation/cucumber.md` — écriture des scénarios et du glue code Cucumber.
+- `documentation/atelier-api.md` — guide d'intégration de l'API atelier pour le développeur front.
