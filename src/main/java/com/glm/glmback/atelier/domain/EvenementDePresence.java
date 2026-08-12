@@ -27,7 +27,11 @@ public record EvenementDePresence(
     Assert.notNull("annulation", annulation);
   }
 
-  static EvenementDePresenceIdBuilder builder() {
+  /**
+   * Publique pour la seule raison admise : la relecture depuis la persistance vit dans
+   * {@code infrastructure/secondary}. La creation, elle, reste l'affaire de ce domaine.
+   */
+  public static EvenementDePresenceIdBuilder builder() {
     return id -> type -> auteur -> horodatage -> new EvenementDePresence(id, type, auteur, horodatage, Optional.empty());
   }
 
@@ -51,19 +55,19 @@ public record EvenementDePresence(
     return horodatage.dateDEnregistrement();
   }
 
-  interface EvenementDePresenceIdBuilder {
+  public interface EvenementDePresenceIdBuilder {
     EvenementDePresenceTypeBuilder id(EvenementDePresenceId id);
   }
 
-  interface EvenementDePresenceTypeBuilder {
+  public interface EvenementDePresenceTypeBuilder {
     EvenementDePresenceAuteurBuilder type(TypeDEvenementDePresence type);
   }
 
-  interface EvenementDePresenceAuteurBuilder {
+  public interface EvenementDePresenceAuteurBuilder {
     EvenementDePresenceHorodatageBuilder auteur(Auteur auteur);
   }
 
-  interface EvenementDePresenceHorodatageBuilder {
+  public interface EvenementDePresenceHorodatageBuilder {
     EvenementDePresence horodatage(Horodatage horodatage);
   }
 }
