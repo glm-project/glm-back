@@ -57,6 +57,19 @@ spring:
             scope: openid,profile,email
 server:
   port: 8080
+springdoc:
+  # La description de l'API n'est servie qu'en developpement et en test : elle est eteinte par defaut, et rallumee
+  # par les profils local et test. Un environnement qui oublierait de se declarer n'expose donc rien, plutot que
+  # l'inverse — c'est aussi ce qui protege le futur profil de production, qui n'existe pas encore.
+  api-docs:
+    enabled: false
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: false
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+    display-request-duration: true
 application:
   security:
     oauth2:

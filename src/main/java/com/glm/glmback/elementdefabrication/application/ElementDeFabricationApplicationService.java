@@ -34,31 +34,31 @@ public class ElementDeFabricationApplicationService {
       .clock(clock);
   }
 
-  @Secured("ROLE_ADMIN")
+  @Secured("ROLE_GESTIONNAIRE")
   @Transactional
   public ElementDeFabrication create(ElementDeFabricationToCreate toCreate) {
     return elementsDeFabrication.create(toCreate);
   }
 
-  @Secured({ "ROLE_USER", "ROLE_ADMIN" })
+  @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
   @Transactional(readOnly = true)
   public ElementDeFabrication get(ElementDeFabricationId id) {
     return elementsDeFabrication.get(id);
   }
 
-  @Secured({ "ROLE_USER", "ROLE_ADMIN" })
+  @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
   @Transactional(readOnly = true)
   public Page<ElementDeFabrication> list(Periode periode, Pageable pageable) {
     return elementsDeFabrication.list(periode, pageable);
   }
 
-  @Secured("ROLE_ADMIN")
+  @Secured("ROLE_GESTIONNAIRE")
   @Transactional
   public ElementDeFabrication update(ElementDeFabricationToUpdate toUpdate) {
     return elementsDeFabrication.update(toUpdate);
   }
 
-  @Secured("ROLE_ADMIN")
+  @Secured("ROLE_GESTIONNAIRE")
   @Transactional
   public void delete(ElementDeFabricationId id) {
     elementsDeFabrication.delete(id);
