@@ -84,7 +84,7 @@ class PariteDesRepositoriesDAtelierIT {
   @Test
   @WithTenant("impeccmold")
   void shouldRendreLesMemesJourneesQueLeDoubleEnMemoire() {
-    Operateur operateur = new Operateur("parite-" + UUID.randomUUID());
+    OperateurId operateur = new OperateurId(UUID.randomUUID());
     Instant lundi = Instant.parse("2042-02-05T07:00:00Z");
     Instant mardi = Instant.parse("2042-02-06T07:00:00Z");
     List<JourneeDeTravail> jeu = List.of(journeeOuverteA(operateur, lundi), journeeCompleteA(operateur, mardi));
@@ -108,7 +108,7 @@ class PariteDesRepositoriesDAtelierIT {
   @Test
   @WithTenant("impeccmold")
   void shouldTrouverLaMemeJourneeContenantUnInstantQueLeDoubleEnMemoire() {
-    Operateur operateur = new Operateur("parite-" + UUID.randomUUID());
+    OperateurId operateur = new OperateurId(UUID.randomUUID());
     Instant arrivee = Instant.parse("2042-03-05T07:00:00Z");
     JourneeDeTravail complete = journeeCompleteA(operateur, arrivee);
 
@@ -135,18 +135,18 @@ class PariteDesRepositoriesDAtelierIT {
     return EvenementDAtelier.builder()
       .id(EvenementDAtelierId.newId())
       .type(TypeDEvenementDAtelier.DEBUT)
-      .operateur(OPERATEUR_DUPONT)
-      .poste(Optional.of(POSTE_FRAISEUSE_1))
+      .operateur(OPERATEUR_ID_DUPONT)
+      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
       .nature(Optional.of(NATURE_FRAISAGE))
       .auteur(AUTEUR_DUPONT)
       .horodatage(Horodatage.saisiA(date));
   }
 
-  private static JourneeDeTravail journeeOuverteA(Operateur operateur, Instant arrivee) {
+  private static JourneeDeTravail journeeOuverteA(OperateurId operateur, Instant arrivee) {
     return JourneeDeTravail.ouverte(JourneeDeTravailId.newId(), operateur).enregistre(presence(TypeDEvenementDePresence.ARRIVEE, arrivee));
   }
 
-  private static JourneeDeTravail journeeCompleteA(Operateur operateur, Instant arrivee) {
+  private static JourneeDeTravail journeeCompleteA(OperateurId operateur, Instant arrivee) {
     return journeeOuverteA(operateur, arrivee).enregistre(presence(TypeDEvenementDePresence.DEPART, arrivee.plusSeconds(36000)));
   }
 

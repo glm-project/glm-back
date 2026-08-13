@@ -18,5 +18,5 @@ interface SpringDataJourneeDeTravailRepository
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   Optional<JourneeDeTravailEntity> findForUpdateById(UUID id);
 
-  Optional<JourneeDeTravailEntity> findFirstByOperateurAndEtatNotOrderByDebutDescIdAsc(String operateur, EtatDePresence etat);
+  Optional<JourneeDeTravailEntity> findFirstByOperateurIdAndEtatNotOrderByDebutDescIdAsc(UUID operateurId, EtatDePresence etat);
 }

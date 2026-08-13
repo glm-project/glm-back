@@ -8,6 +8,7 @@ import com.glm.glmback.postedetravail.domain.PosteDeTravailId;
 import com.glm.glmback.postedetravail.domain.PosteDeTravailRepository;
 import com.glm.glmback.postedetravail.domain.PostesDeTravailService;
 import com.glm.glmback.postedetravail.domain.PostesEnUsage;
+import com.glm.glmback.postedetravail.domain.PostesPointes;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import java.util.Optional;
@@ -20,8 +21,8 @@ public class PostesDeTravailApplicationService {
 
   private final PostesDeTravailService postesDeTravail;
 
-  public PostesDeTravailApplicationService(PosteDeTravailRepository repository, PostesEnUsage usages) {
-    this.postesDeTravail = new PostesDeTravailService(repository, usages);
+  public PostesDeTravailApplicationService(PosteDeTravailRepository repository, PostesEnUsage usages, PostesPointes pointages) {
+    this.postesDeTravail = new PostesDeTravailService(repository, usages, pointages);
   }
 
   @Secured("ROLE_GESTIONNAIRE")

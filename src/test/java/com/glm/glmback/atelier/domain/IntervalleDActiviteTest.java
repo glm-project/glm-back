@@ -41,7 +41,7 @@ class IntervalleDActiviteTest {
     assertThatThrownBy(() ->
       new IntervalleDActivite(
         EVENEMENT,
-        OPERATEUR_DUPONT,
+        OPERATEUR_ID_DUPONT,
         null,
         Optional.of(NATURE_FRAISAGE),
         CategorieDActivite.TRAVAIL,
@@ -58,8 +58,8 @@ class IntervalleDActiviteTest {
     assertThatThrownBy(() ->
       new IntervalleDActivite(
         EVENEMENT,
-        OPERATEUR_DUPONT,
-        Optional.of(POSTE_FRAISEUSE_1),
+        OPERATEUR_ID_DUPONT,
+        Optional.of(POSTE_ID_FRAISEUSE_1),
         null,
         CategorieDActivite.TRAVAIL,
         LE_10_MAI_2026_A_8H,
@@ -76,7 +76,7 @@ class IntervalleDActiviteTest {
       new IntervalleDActivite(
         EVENEMENT,
         null,
-        Optional.of(POSTE_FRAISEUSE_1),
+        Optional.of(POSTE_ID_FRAISEUSE_1),
         Optional.of(NATURE_FRAISAGE),
         CategorieDActivite.TRAVAIL,
         LE_10_MAI_2026_A_8H,
@@ -92,8 +92,8 @@ class IntervalleDActiviteTest {
     assertThatThrownBy(() ->
       new IntervalleDActivite(
         EVENEMENT,
-        OPERATEUR_DUPONT,
-        Optional.of(POSTE_FRAISEUSE_1),
+        OPERATEUR_ID_DUPONT,
+        Optional.of(POSTE_ID_FRAISEUSE_1),
         Optional.of(NATURE_FRAISAGE),
         null,
         LE_10_MAI_2026_A_8H,
@@ -141,7 +141,7 @@ class IntervalleDActiviteTest {
     assertThat(reduit.debut()).isEqualTo(LE_10_MAI_2026_A_9H);
     assertThat(reduit.fin()).contains(LE_10_MAI_2026_A_12H);
     assertThat(reduit.evenement()).isEqualTo(EVENEMENT);
-    assertThat(reduit.poste()).contains(POSTE_FRAISEUSE_1);
+    assertThat(reduit.poste()).contains(POSTE_ID_FRAISEUSE_1);
   }
 
   @Test
@@ -158,8 +158,8 @@ class IntervalleDActiviteTest {
   private static IntervalleDActivite intervalle(EvenementDAtelierId evenement, Instant debut, Optional<Instant> fin) {
     return IntervalleDActivite.builder()
       .evenement(evenement)
-      .operateur(OPERATEUR_DUPONT)
-      .poste(Optional.of(POSTE_FRAISEUSE_1))
+      .operateur(OPERATEUR_ID_DUPONT)
+      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
       .nature(Optional.of(NATURE_FRAISAGE))
       .categorie(CategorieDActivite.TRAVAIL)
       .debut(debut)

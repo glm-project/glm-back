@@ -10,7 +10,7 @@ import com.glm.glmback.shared.error.domain.Assert;
  * client son bouton de pause unique et son bouton d'arret de fin de journee, sans jamais N clics pour N taches.
  * </p>
  */
-public record PointageDePresenceAEnregistrer(Operateur operateur, Auteur auteur, TypeDEvenementDePresence type) {
+public record PointageDePresenceAEnregistrer(OperateurId operateur, Auteur auteur, TypeDEvenementDePresence type) {
   public PointageDePresenceAEnregistrer {
     Assert.notNull("operateur", operateur);
     Assert.notNull("auteur", auteur);

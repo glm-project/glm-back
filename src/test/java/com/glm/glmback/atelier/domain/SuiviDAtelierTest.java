@@ -80,7 +80,7 @@ class SuiviDAtelierTest {
       .enregistre(debutSurFraiseuse2ParDupontA(LE_10_MAI_2026_A_9H))
       .enregistre(finSurFraiseuse2ParDupontA(LE_10_MAI_2026_A_12H));
 
-    assertThat(suivi.activitesEnCours()).extracting(ActiviteEnCours::poste).containsExactly(Optional.of(POSTE_FRAISEUSE_1));
+    assertThat(suivi.activitesEnCours()).extracting(ActiviteEnCours::poste).containsExactly(Optional.of(POSTE_ID_FRAISEUSE_1));
     assertThat(suivi.activites()).hasSize(2);
   }
 

@@ -9,33 +9,33 @@ import com.glm.glmback.shared.error.domain.StringTooLongException;
 import org.junit.jupiter.api.Test;
 
 @UnitTest
-class PosteDeTravailTest {
+class PrenomTest {
 
   @Test
   void shouldNotBuildWithoutValue() {
-    assertThatThrownBy(() -> new PosteDeTravail(null))
+    assertThatThrownBy(() -> new Prenom(null))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("poste de travail");
+      .hasMessageContaining("prenom");
   }
 
   @Test
   void shouldNotBuildWithBlankValue() {
-    assertThatThrownBy(() -> new PosteDeTravail(" "))
+    assertThatThrownBy(() -> new Prenom(" "))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("poste de travail");
+      .hasMessageContaining("prenom");
   }
 
   @Test
   void shouldNotBuildWithTooLongValue() {
     String tooLong = "a".repeat(100 + 1);
 
-    assertThatThrownBy(() -> new PosteDeTravail(tooLong))
+    assertThatThrownBy(() -> new Prenom(tooLong))
       .isExactlyInstanceOf(StringTooLongException.class)
-      .hasMessageContaining("poste de travail");
+      .hasMessageContaining("prenom");
   }
 
   @Test
-  void shouldGetValueFromValidPosteDeTravail() {
-    assertThat(POSTE_FRAISEUSE_1.value()).isEqualTo("fraiseuse 1");
+  void shouldGetValueFromValidPrenom() {
+    assertThat(PRENOM_JEAN.value()).isEqualTo("Jean");
   }
 }

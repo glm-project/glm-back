@@ -16,7 +16,7 @@ import com.glm.glmback.atelier.domain.JourneeDeTravailDejaOuverteException;
 import com.glm.glmback.atelier.domain.JourneeDeTravailId;
 import com.glm.glmback.atelier.domain.JourneeDeTravailIntrouvableException;
 import com.glm.glmback.atelier.domain.JourneeDeTravailRepository;
-import com.glm.glmback.atelier.domain.Operateur;
+import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.Periode;
 import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
 import com.glm.glmback.atelier.domain.TypeDEvenementDePresence;
@@ -25,6 +25,7 @@ import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.pagination.domain.Page;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.AfterEach;
@@ -58,7 +59,7 @@ class JpaJourneeDeTravailRepositoryIT {
   @Test
   @WithTenant(IMPECCMOLD)
   void shouldRelireUneJourneeOuverte() {
-    Operateur operateur = operateurDeTest();
+    OperateurId operateur = operateurDeTest();
     JourneeDeTravail ouverte = journeeOuverteA(operateur, Instant.parse("2041-01-05T07:00:00Z"));
 
     inTransaction(() -> journees.create(ouverte));
@@ -72,7 +73,7 @@ class JpaJourneeDeTravailRepositoryIT {
   @Test
   @WithTenant(IMPECCMOLD)
   void shouldRelireUneJourneeCompleteAvecSonAmplitudeEtSesFenetres() {
-    Operateur operateur = operateurDeTest();
+    OperateurId operateur = operateurDeTest();
     Instant arrivee = Instant.parse("2041-01-06T07:00:00Z");
     JourneeDeTravail complete = journeeCompleteA(operateur, arrivee);
 
@@ -87,7 +88,7 @@ class JpaJourneeDeTravailRepositoryIT {
   @Test
   @WithTenant(IMPECCMOLD)
   void shouldConserverUnEvenementDePresenceAnnuleAuJournal() {
-    Operateur operateur = operateurDeTest();
+    OperateurId operateur = operateurDeTest();
     Instant arrivee = Instant.parse("2041-01-07T07:00:00Z");
     EvenementDePresence pointage = presence(TypeDEvenementDePresence.ARRIVEE, arrivee);
     JourneeDeTravail ouverte = JourneeDeTravail.ouverte(JourneeDeTravailId.newId(), operateur).enregistre(pointage);
@@ -133,7 +134,7 @@ class JpaJourneeDeTravailRepositoryIT {
   @Test
   @WithTenant(IMPECCMOLD)
   void shouldTrouverLaJourneeEnCoursDUnOperateur() {
-    Operateur operateur = operateurDeTest();
+    OperateurId operateur = operateurDeTest();
     JourneeDeTravail ouverte = journeeOuverteA(operateur, Instant.parse("2041-02-05T07:00:00Z"));
     inTransaction(() -> journees.create(ouverte));
 
@@ -144,7 +145,7 @@ class JpaJourneeDeTravailRepositoryIT {
   @Test
   @WithTenant(IMPECCMOLD)
   void shouldNePasTrouverDeJourneeEnCoursApresLeDepart() {
-    Operateur operateur = operateurDeTest();
+    OperateurId operateur = operateurDeTest();
     inTransaction(() -> journees.create(journeeCompleteA(operateur, Instant.parse("2041-02-06T07:00:00Z"))));
 
     assertThat(inTransaction(() -> journees.getEnCoursPour(operateur))).isEmpty();
@@ -153,7 +154,7 @@ class JpaJourneeDeTravailRepositoryIT {
   @Test
   @WithTenant(IMPECCMOLD)
   void shouldTrouverLaJourneeContenantUnInstant() {
-    Operateur operateur = operateurDeTest();
+    OperateurId operateur = operateurDeTest();
     Instant arrivee = Instant.parse("2041-02-07T07:00:00Z");
     JourneeDeTravail complete = journeeCompleteA(operateur, arrivee);
     inTransaction(() -> journees.create(complete));
@@ -169,7 +170,7 @@ class JpaJourneeDeTravailRepositoryIT {
   @Test
   @WithTenant(IMPECCMOLD)
   void shouldTrouverLaJourneeEncoreOuverteContenantUnInstantTardif() {
-    Operateur operateur = operateurDeTest();
+    OperateurId operateur = operateurDeTest();
     Instant arrivee = Instant.parse("2041-02-08T07:00:00Z");
     JourneeDeTravail ouverte = journeeOuverteA(operateur, arrivee);
     inTransaction(() -> journees.create(ouverte));
@@ -180,7 +181,7 @@ class JpaJourneeDeTravailRepositoryIT {
   @Test
   @WithTenant(IMPECCMOLD)
   void shouldListerLesJourneesDUnOperateurDuPlusRecentAuPlusAncien() {
-    Operateur operateur = operateurDeTest();
+    OperateurId operateur = operateurDeTest();
     JourneeDeTravail ancienne = journeeOuverteA(operateur, Instant.parse("2041-03-05T07:00:00Z"));
     JourneeDeTravail recente = journeeOuverteA(operateur, Instant.parse("2041-03-06T07:00:00Z"));
     inTransaction(() -> journees.create(ancienne));
@@ -199,7 +200,7 @@ class JpaJourneeDeTravailRepositoryIT {
   @Test
   @WithTenant(IMPECCMOLD)
   void shouldListerEnDernierUneJourneeSansDebut() {
-    Operateur operateur = operateurDeTest();
+    OperateurId operateur = operateurDeTest();
     Instant arrivee = Instant.parse("2041-03-07T07:00:00Z");
     EvenementDePresence pointage = presence(TypeDEvenementDePresence.ARRIVEE, arrivee);
     JourneeDeTravail sansDebut = JourneeDeTravail.ouverte(JourneeDeTravailId.newId(), operateur).enregistre(pointage);
@@ -220,7 +221,7 @@ class JpaJourneeDeTravailRepositoryIT {
   @Test
   @WithTenant(IMPECCMOLD)
   void shouldFiltrerLesJourneesParPeriodeDeDebut() {
-    Operateur operateur = operateurDeTest();
+    OperateurId operateur = operateurDeTest();
     Instant lundi = Instant.parse("2041-04-05T07:00:00Z");
     Instant mardi = Instant.parse("2041-04-06T07:00:00Z");
     inTransaction(() -> journees.create(journeeOuverteA(operateur, lundi)));
@@ -249,7 +250,7 @@ class JpaJourneeDeTravailRepositoryIT {
   @Test
   @WithTenant(IMPECCMOLD)
   void shouldRefuserUneSaisieCalculeeSurUnJournalPerime() {
-    Operateur operateur = operateurDeTest();
+    OperateurId operateur = operateurDeTest();
     Instant arrivee = Instant.parse("2041-05-05T07:00:00Z");
     JourneeDeTravail ouverte = journeeOuverteA(operateur, arrivee);
     inTransaction(() -> journees.create(ouverte));
@@ -263,7 +264,7 @@ class JpaJourneeDeTravailRepositoryIT {
 
   @Test
   void shouldNePasLireLaJourneeDUneAutreEntreprise() {
-    Operateur operateur = operateurDeTest();
+    OperateurId operateur = operateurDeTest();
     JourneeDeTravail ouverte = journeeOuverteA(operateur, Instant.parse("2041-06-05T07:00:00Z"));
 
     TenantSecurityContexts.authenticateOn(IMPECCMOLD);
@@ -277,19 +278,19 @@ class JpaJourneeDeTravailRepositoryIT {
     assertThat(pageChezKatilys.content()).isEmpty();
   }
 
-  private static JourneeDeTravailCriteria criteres(Optional<Periode> periode, Operateur operateur) {
+  private static JourneeDeTravailCriteria criteres(Optional<Periode> periode, OperateurId operateur) {
     return new JourneeDeTravailCriteria(periode, Optional.of(operateur));
   }
 
-  private static Operateur operateurDeTest() {
-    return new Operateur("it-journee-%d".formatted(COMPTEUR.incrementAndGet()));
+  private static OperateurId operateurDeTest() {
+    return new OperateurId(new UUID(COMPTEUR.incrementAndGet(), 0));
   }
 
-  private static JourneeDeTravail journeeOuverteA(Operateur operateur, Instant arrivee) {
+  private static JourneeDeTravail journeeOuverteA(OperateurId operateur, Instant arrivee) {
     return JourneeDeTravail.ouverte(JourneeDeTravailId.newId(), operateur).enregistre(presence(TypeDEvenementDePresence.ARRIVEE, arrivee));
   }
 
-  private static JourneeDeTravail journeeCompleteA(Operateur operateur, Instant arrivee) {
+  private static JourneeDeTravail journeeCompleteA(OperateurId operateur, Instant arrivee) {
     return journeeOuverteA(operateur, arrivee)
       .enregistre(presence(TypeDEvenementDePresence.PAUSE, arrivee.plusSeconds(18000)))
       .enregistre(presence(TypeDEvenementDePresence.REPRISE, arrivee.plusSeconds(21600)))

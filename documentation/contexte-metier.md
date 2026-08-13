@@ -35,7 +35,7 @@ Le contexte porte **deux agrégats** : la `JourneeDeTravail` d'un opérateur et 
 
 **Le journal d'événements est la source de vérité.** L'état d'un agrégat et ses intervalles de temps ne sont jamais stockés : ils se déduisent du repli du journal, trié par date de survenue. C'est la correction qui l'impose — un temps juste exige que la saisie oubliée compte à l'heure où elle a eu lieu, pas à l'heure où on la rattrape, et un modèle à compteurs ne sait pas revenir en arrière. Chaque événement porte donc un `Horodatage` bitemporel : sa date de survenue, métier, et sa date d'enregistrement, technique.
 
-**Une régularisation se reconnaît à l'écart entre ces deux dates, pas à l'identité de l'auteur.** Les deux faits sont distincts et exposés séparément : `estUneRegularisation()` dit que la saisie est différée, `estSaisiParUnTiers()` dit qu'un gestionnaire a saisi pour un opérateur. L'option de pointage en retard, qui laisse l'opérateur saisir lui-même son heure de début, est bien une régularisation sans aucun tiers.
+**Une régularisation se reconnaît à l'écart entre ces deux dates, pas à l'identité de l'auteur.** `estUneRegularisation()` dit que la saisie est différée — et c'est le seul fait exposé : l'option de pointage en retard, qui laisse l'opérateur saisir lui-même son heure de début, est bien une régularisation sans aucun tiers. Le booléen jumeau `estSaisiParUnTiers` a été retiré avec le passage à l'identifiant : l'`Auteur` vient du jeton et l'opérateur du référentiel, et rien ne relie encore les deux — le comparer n'aurait plus produit qu'une réponse toujours vraie. Il reviendra avec le lot « utilisateur connecté ».
 
 ### La présence, base de la paie
 
@@ -62,12 +62,22 @@ Borner l'intervalle à sa journée est aussi ce qui empêche un travail jamais a
 
 ### L'activité, un opérateur sur un poste de travail
 
-`CleDActivite` est le couple (opérateur, `Optional<PosteDeTravail>`). Le `PosteDeTravail` est ce que l'opérateur engage en pointant : une machine chez le client de référence, un établi, un four, une salle ailleurs.
+`CleDActivite` est le couple (`OperateurId`, `Optional<PosteDeTravailId>`). Le poste de travail est ce que l'opérateur engage en pointant : une machine chez le client de référence, un établi, un four, une salle ailleurs.
 
 - Il est **facultatif** : une entreprise sans parc machine laisse l'`Optional` vide et retrouve une activité unique par opérateur.
 - C'est **lui**, et non la nature de l'opération, qui identifie l'activité. L'érosionniste qui met deux pièces du même élément sur deux machines mène ainsi deux activités indépendantes — cas que le client détaille explicitement, et qu'une clé fondée sur la fonction refuserait.
 
-La `NatureDOperation` (fraisage, tournage, érosion, dessin) est **recopiée du profil de l'opérateur** au moment de la saisie, par le port `FonctionsDesOperateurs`, comme le nom de l'élément est recopié à l'engagement : un profil modifié plus tard ne réécrit pas l'histoire de l'atelier. Elle ne porte **aucun invariant** — elle n'est qu'un axe d'agrégation pour la synthèse par catégorie de travail. Le client ne demande aucun blocage, et un pointage refusé en atelier coûterait plus cher qu'une ligne de synthèse mal rangée. Elle est facultative comme le poste.
+La `NatureDOperation` (fraisage, tournage, érosion, dessin) est **recopiée du poste** au moment de la saisie, par le port `PostesConnus`, comme le nom de l'élément est recopié à l'engagement : un poste requalifié plus tard ne réécrit pas l'histoire de l'atelier. Elle vient du poste et non de la personne, parce que c'est le poste qui dit quel métier s'y exerce — un opérateur polyvalent déclenche un pointage par poste. Elle ne porte **aucun invariant** : elle n'est qu'un axe d'agrégation pour la synthèse par catégorie de travail, et elle reste facultative comme le poste.
+
+### Le référentiel, atteint par identifiant
+
+Le journal ne retient que des **identifiants** — `OperateurId`, `PosteDeTravailId` —, jamais un libellé, à la seule exception de la nature. C'est ce qui permet à toute agrégation à venir de compter une personne pour une personne, là où deux orthographes d'un texte libre en auraient compté deux.
+
+Rien d'autre n'en est copié, à la différence du nom de l'élément figé à l'engagement, et la raison est symétrique : un élément renommé ne doit pas réécrire son histoire, alors qu'une fiche d'opérateur corrigée doit s'afficher corrigée sur toutes les feuilles de temps, y compris les anciennes. Les libellés sont donc **relus à chaque lecture** par `OperateursConnus` et `PostesConnus`, dont l'accès par ensemble résout un journal entier en une requête. `AnnuaireDAtelier` porte ce résultat le temps d'une lecture.
+
+La contrepartie de ce choix : **ni un opérateur ni un poste ayant servi à pointer ne se supprime**. La règle vit dans les deux référentiels, derrière un port qui lit le journal d'atelier.
+
+**L'habilitation est la seule règle dure du contexte.** Un pointage sur un poste où l'opérateur n'est pas déclaré est refusé (409), par `Habilitations`. La règle ne joue que lorsqu'un poste est fourni : une entreprise sans parc machine n'a aucune habilitation à déclarer et retrouve son comportement nominal. Elle joue en revanche sur les **trois** écritures du journal — pointage, régularisation et correction —, sans quoi le back-office contournerait ce que le pupitre applique.
 
 ### Non conformité
 
@@ -112,19 +122,20 @@ Les quatre couches existent désormais, et les deux agrégats sont persistés en
 
 Le modèle est relationnel plutôt qu'un journal sérialisé en `jsonb`, parce que les projections à venir — coût de revient, paie, synthèses — filtrent et groupent sur des attributs d'**événement** à travers tous les agrégats : un index les sert directement, là où un document devrait être désérialisé en entier pour être presque tout jeté. Les index `(operateur, date_de_survenue)` et `(poste, date_de_survenue)` sont posés dès maintenant à cette fin, et un contexte lecteur n'aura qu'à poser dessus une entité en lecture seule, comme `atelier` le fait déjà sur `element_de_fabrication`.
 
-`ElementsEngageables` lit la table `element_de_fabrication` par une entité en lecture seule propre à l'atelier, sans jamais importer le contexte voisin. `FonctionsDesOperateurs` rend toujours vide, faute de référentiel des ressources.
+`ElementsEngageables` lit la table `element_de_fabrication` par une entité en lecture seule propre à l'atelier, sans jamais importer le contexte voisin. `OperateursConnus`, `PostesConnus` et `Habilitations` font de même sur `operateur`, `poste_de_travail` et `operateur_poste`.
 
 L'API est décrite par OpenAPI (`/swagger-ui.html`) et par [atelier-api.md](atelier-api.md), qui porte ce que la spec ne peut pas dire.
 
 ### Points ouverts
 
-1. **Quelle mesure alimente la paie ?** L'amplitude arrivée → départ, ou la somme des fenêtres de présence, pause de midi déduite ? Le client dit « les heures où il arrive à la société, il pointe et il part », mais pointe aussi sa pause déjeuner. Les deux mesures sont exposées, le choix reste à faire avec l'assistante.
-2. **Le coût de revient monétaire.** Le taux horaire de l'opérateur et le coût horaire du poste n'existent nulle part : aucune source de données, donc aucun port. Le lot suivant. À reprendre en même temps que l'objection de Nicolas sur la division du taux humain, restée sans conclusion en réunion.
-3. **Le bouton de pause global n'a jamais été validé de première main.** Il ne vient que de la réunion d'équipe. Dans la réunion client, la pause est décrite au singulier, sur un seul élément. Le modèle retient le bouton global — à reconfirmer, c'est lui qui structure l'écran principal.
-4. **Le GLM comme résidu** (présence moins temps affecté) plutôt que comme élément fictif : cohérent avec ce que le client conclut, mais l'écran devra le rendre visible d'une façon ou d'une autre, puisqu'il tient au bouton.
-5. **Le cycle de vie de l'élément lui-même.** La clôture existe côté atelier, sur le suivi. Reste à trancher si l'élément de fabrication porte en propre un statut, ou si son activité se lit entièrement par la présence ou l'absence d'un suivi non clôturé.
-6. **Aucune garde d'unicité en base** sur « un seul suivi non clôturé par élément » ni « une seule journée ouverte par opérateur », contrairement à ce que `elementdefabrication` fait pour la `Reference`. Les deux règles vivent dans les services, mais une contrainte partielle transformerait en 500 deux états que le domaine admet aujourd'hui : rouvrir la clôture d'un suivi dont l'élément a été réengagé depuis, ou annuler le `DEPART` d'une journée dont l'opérateur est déjà revenu. À trancher côté domaine avant de poser la contrainte.
-7. **L'écriture du journal rapproche par identifiant**, ce qui coûte une lecture indexée de la collection à chaque pointage. Si un journal devenait assez long pour que cette lecture pèse, la sortie est un upsert natif gardé (`on conflict (id) do update ... where ... is distinct from ...`), qui épargne à PostgreSQL toute version de tuple sur les lignes inchangées — au prix d'une scission permanente entre lecture JPA et écriture JDBC.
+1. **Régulariser après une dé-habilitation est refusé.** L'habilitation étant vérifiée sur les trois écritures du journal, un gestionnaire ne peut plus rattraper une saisie oubliée sur un poste dont l'opérateur a été retiré depuis. Le cas est assumé pour ce lot — il ferme la porte au contournement —, mais il laisserait un trou dans la paie s'il se produisait : à rouvrir si le client le rencontre.
+2. **Quelle mesure alimente la paie ?** L'amplitude arrivée → départ, ou la somme des fenêtres de présence, pause de midi déduite ? Le client dit « les heures où il arrive à la société, il pointe et il part », mais pointe aussi sa pause déjeuner. Les deux mesures sont exposées, le choix reste à faire avec l'assistante.
+3. **Le coût de revient monétaire.** Le taux horaire de l'opérateur et le coût horaire du poste n'existent nulle part : aucune source de données, donc aucun port. Le lot suivant. À reprendre en même temps que l'objection de Nicolas sur la division du taux humain, restée sans conclusion en réunion.
+4. **Le bouton de pause global n'a jamais été validé de première main.** Il ne vient que de la réunion d'équipe. Dans la réunion client, la pause est décrite au singulier, sur un seul élément. Le modèle retient le bouton global — à reconfirmer, c'est lui qui structure l'écran principal.
+5. **Le GLM comme résidu** (présence moins temps affecté) plutôt que comme élément fictif : cohérent avec ce que le client conclut, mais l'écran devra le rendre visible d'une façon ou d'une autre, puisqu'il tient au bouton.
+6. **Le cycle de vie de l'élément lui-même.** La clôture existe côté atelier, sur le suivi. Reste à trancher si l'élément de fabrication porte en propre un statut, ou si son activité se lit entièrement par la présence ou l'absence d'un suivi non clôturé.
+7. **Aucune garde d'unicité en base** sur « un seul suivi non clôturé par élément » ni « une seule journée ouverte par opérateur », contrairement à ce que `elementdefabrication` fait pour la `Reference`. Les deux règles vivent dans les services, mais une contrainte partielle transformerait en 500 deux états que le domaine admet aujourd'hui : rouvrir la clôture d'un suivi dont l'élément a été réengagé depuis, ou annuler le `DEPART` d'une journée dont l'opérateur est déjà revenu. À trancher côté domaine avant de poser la contrainte.
+8. **L'écriture du journal rapproche par identifiant**, ce qui coûte une lecture indexée de la collection à chaque pointage. Si un journal devenait assez long pour que cette lecture pèse, la sortie est un upsert natif gardé (`on conflict (id) do update ... where ... is distinct from ...`), qui épargne à PostgreSQL toute version de tuple sur les lignes inchangées — au prix d'une scission permanente entre lecture JPA et écriture JDBC.
 
 ## postedetravail
 
@@ -137,6 +148,8 @@ Le terme reste volontairement générique, comme dans l'atelier : une machine ch
 **La nature est obligatoire ici**, alors qu'elle reste facultative dans l'atelier. Ce n'est pas une contradiction : l'atelier doit fonctionner pour une entreprise sans parc machine ni métiers distincts, qui n'ouvrira simplement pas cet écran. Mais un poste qui serait déclaré sans dire quel travail s'y fait ne servirait à rien — c'est précisément ce que ce contexte apporte.
 
 **Un poste encore habilité ne se supprime pas** : cela laisserait des opérateurs pointer sur du vide. La règle vit dans le domaine, derrière le port `PostesEnUsage`, dont l'adapter lit la table `operateur_poste` par une entité en lecture seule — sans jamais importer `operateur`, annoté `@BusinessContext`.
+
+**Un poste sur lequel du temps a été pointé ne se supprime plus du tout**, et ce second refus est définitif là où le premier se lève en retirant l'habilitation : le journal d'atelier ne retenant que l'identifiant du poste, sa disparition laisserait des heures de travail sans machine. Le port `PostesPointes` lit `evenement_d_atelier` de la même façon.
 
 ## operateur
 
@@ -152,6 +165,8 @@ Il s'ensuit que **la nature appartient au poste**. Déclarer un métier sur la p
 
 La phrase du client « la machine est liée à l'opérateur, et l'opérateur a la fonction » dit **où se saisit** le paramétrage — sur la ligne de l'opérateur, on liste ses postes —, pas d'où la nature se déduit au moment du pointage.
 
+**Un opérateur qui a pointé ne se supprime pas**, sur un élément comme en présence : le journal d'atelier et les journées de travail ne retiennent que son identifiant, et sa disparition laisserait des heures sans personne à payer. Le port `OperateursQuiOntPointe` lit les deux tables de l'atelier par des entités en lecture seule.
+
 ### Identité et matricule
 
 L'identité (nom, prénom) est **unique par entreprise**. Le **matricule** est l'identifiant que l'entreprise donne elle-même à ses collaborateurs : **facultatif**, car toutes n'en attribuent pas, et **unique dès qu'il est renseigné** — patron exact de `elementdefabrication.Reference`, `NULL` distincts compris, donc autant d'opérateurs sans matricule que nécessaire.
@@ -164,9 +179,7 @@ L'identité (nom, prénom) est **unique par entreprise**. Le **matricule** est l
 
 ### Points ouverts
 
-1. **Branchement avec `atelier`.** `FonctionsDesOperateursInconnues` rend toujours vide, et `atelier.Operateur` comme `atelier.PosteDeTravail` restent des textes libres saisis dans le corps de la requête. Le lot de branchement devra choisir comment l'atelier atteint ces référentiels sans les importer, et ce qu'un renommage de poste fait à l'historique déjà écrit.
-2. **La `NatureDOperation` de l'atelier viendra du poste.** C'est le lot resté en suspens ; il est désormais alimentable, puisque le poste porte enfin sa nature.
-3. **Les gestionnaires ne sont pas déclarés.** Leur fiche n'aurait aucun usage tant que l'authentification n'est pas tranchée : l'`Auteur` d'une saisie vient du jeton, pas d'un référentiel. À rouvrir avec ce sujet.
-4. **Aucun plafond sur le nombre de postes par personne**, alors que le client énonce « maximum 4 machines par personne ». Une donnée de paramétrage ne s'écrit pas en constante du domaine, et GLM est une trame : une autre entreprise en habilitera six. Si le plafond doit être tenu, il viendra d'un port.
-5. **Montants.** Coût horaire du poste et taux horaire de l'opérateur n'existent nulle part : lot « coût de revient ». Les deux agrégats sont dimensionnés pour les recevoir.
-6. **Utilisateur connecté.** Non tranché. La continuité de service est envisagée par un serveur interne stockant les pointages et les remontant au cloud au retour du réseau. Point technique à verser au dossier : la **vérification** d'un jeton déjà émis est locale, signature contre le JWKS mis en cache ; ce qui exige le cloud, c'est son **émission** et son rafraîchissement.
+1. **Les gestionnaires ne sont pas déclarés.** Leur fiche n'aurait aucun usage tant que l'authentification n'est pas tranchée : l'`Auteur` d'une saisie vient du jeton, pas d'un référentiel. À rouvrir avec ce sujet.
+2. **Aucun plafond sur le nombre de postes par personne**, alors que le client énonce « maximum 4 machines par personne ». Une donnée de paramétrage ne s'écrit pas en constante du domaine, et GLM est une trame : une autre entreprise en habilitera six. Si le plafond doit être tenu, il viendra d'un port.
+3. **Montants.** Coût horaire du poste et taux horaire de l'opérateur n'existent nulle part : lot « coût de revient ». Les deux agrégats sont dimensionnés pour les recevoir.
+4. **Utilisateur connecté.** Non tranché. La continuité de service est envisagée par un serveur interne stockant les pointages et les remontant au cloud au retour du réseau. Point technique à verser au dossier : la **vérification** d'un jeton déjà émis est locale, signature contre le JWKS mis en cache ; ce qui exige le cloud, c'est son **émission** et son rafraîchissement.

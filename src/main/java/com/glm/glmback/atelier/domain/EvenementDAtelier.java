@@ -13,16 +13,17 @@ import java.util.Optional;
  * </p>
  *
  * <p>
- * La nature de l'operation est recopiee du profil de l'operateur au moment de la saisie. Elle ne porte aucun invariant
- * et ne participe pas a l'identite de l'activite : elle n'est qu'un axe d'agregation, fige pour que la synthese d'un
- * element ne change pas le jour ou un profil change.
+ * La nature de l'operation est recopiee du poste au moment de la saisie. Elle ne porte aucun invariant et ne
+ * participe pas a l'identite de l'activite : elle n'est qu'un axe d'agregation, fige pour que la synthese d'un element
+ * ne change pas le jour ou un poste est requalifie. C'est la seule chose que le journal copie du referentiel, tout le
+ * reste n'y etant que reference.
  * </p>
  */
 public record EvenementDAtelier(
   EvenementDAtelierId id,
   TypeDEvenementDAtelier type,
-  Operateur operateur,
-  Optional<PosteDeTravail> poste,
+  OperateurId operateur,
+  Optional<PosteDeTravailId> poste,
   Optional<NatureDOperation> nature,
   Auteur auteur,
   Horodatage horodatage,
@@ -71,10 +72,6 @@ public record EvenementDAtelier(
     return horodatage.estDifferee();
   }
 
-  public boolean estSaisiParUnTiers() {
-    return !auteur.value().equals(operateur.value());
-  }
-
   public CleDActivite cle() {
     return new CleDActivite(operateur, poste);
   }
@@ -100,8 +97,8 @@ public record EvenementDAtelier(
 
     private EvenementDAtelierId id;
     private TypeDEvenementDAtelier type;
-    private Operateur operateur;
-    private Optional<PosteDeTravail> poste;
+    private OperateurId operateur;
+    private Optional<PosteDeTravailId> poste;
     private Optional<NatureDOperation> nature;
     private Auteur auteur;
     private Horodatage horodatage;
@@ -121,14 +118,14 @@ public record EvenementDAtelier(
     }
 
     @Override
-    public EvenementDAtelierPosteBuilder operateur(Operateur operateur) {
+    public EvenementDAtelierPosteBuilder operateur(OperateurId operateur) {
       this.operateur = operateur;
 
       return this;
     }
 
     @Override
-    public EvenementDAtelierNatureBuilder poste(Optional<PosteDeTravail> poste) {
+    public EvenementDAtelierNatureBuilder poste(Optional<PosteDeTravailId> poste) {
       this.poste = poste;
 
       return this;
@@ -165,11 +162,11 @@ public record EvenementDAtelier(
   }
 
   public interface EvenementDAtelierOperateurBuilder {
-    EvenementDAtelierPosteBuilder operateur(Operateur operateur);
+    EvenementDAtelierPosteBuilder operateur(OperateurId operateur);
   }
 
   public interface EvenementDAtelierPosteBuilder {
-    EvenementDAtelierNatureBuilder poste(Optional<PosteDeTravail> poste);
+    EvenementDAtelierNatureBuilder poste(Optional<PosteDeTravailId> poste);
   }
 
   public interface EvenementDAtelierNatureBuilder {

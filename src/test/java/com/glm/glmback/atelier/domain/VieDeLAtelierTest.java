@@ -34,12 +34,15 @@ class VieDeLAtelierTest {
   private final AtomicReference<Instant> maintenant = new AtomicReference<>(LE_10_MAI_2026_A_7H);
   private final SuivisDAtelierEnMemoire suivis = new SuivisDAtelierEnMemoire();
   private final JourneesDeTravailEnMemoire journees = new JourneesDeTravailEnMemoire();
+  private final RessourcesDAtelierEnMemoire ressources = RessourcesDAtelierEnMemoire.deLAtelier();
   private final SuivisDAtelierService atelier = SuivisDAtelierService.builder()
     .repository(suivis)
     .elements(new ElementsEngageablesFiges())
-    .fonctions(new FraisageAuProfil())
+    .operateurs(ressources.operateurs())
+    .postes(ressources.postes())
+    .habilitations(ressources.habilitations())
     .clock(maintenant::get);
-  private final JourneesDeTravailService presence = new JourneesDeTravailService(journees, maintenant::get);
+  private final JourneesDeTravailService presence = new JourneesDeTravailService(journees, ressources.operateurs(), maintenant::get);
   private final TempsDAtelierService temps = new TempsDAtelierService(suivis, journees);
 
   private SuiviDAtelierId premierOrdre;
@@ -51,22 +54,22 @@ class VieDeLAtelierTest {
     ilEst(LE_10_MAI_2026_A_7H);
     premierOrdre = engage(ELEMENT_OF_2026_000042);
     secondOrdre = engage(ELEMENT_OF_2026_000043);
-    journeeDeDupont = presence.arrive(new ArriveeAEnregistrer(OPERATEUR_DUPONT, AUTEUR_DUPONT)).id();
+    journeeDeDupont = presence.arrive(new ArriveeAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT)).id();
 
     ilEst(LE_10_MAI_2026_A_8H);
-    atelier.pointe(pointage(premierOrdre, TypeDEvenementDAtelier.DEBUT, POSTE_FRAISEUSE_1));
+    atelier.pointe(pointage(premierOrdre, TypeDEvenementDAtelier.DEBUT, POSTE_ID_FRAISEUSE_1));
 
     ilEst(LE_10_MAI_2026_A_9H);
-    atelier.pointe(pointage(secondOrdre, TypeDEvenementDAtelier.DEBUT, POSTE_FRAISEUSE_2));
+    atelier.pointe(pointage(secondOrdre, TypeDEvenementDAtelier.DEBUT, POSTE_ID_FRAISEUSE_2));
 
     ilEst(LE_10_MAI_2026_A_12H);
-    presence.pointe(new PointageDePresenceAEnregistrer(OPERATEUR_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.PAUSE));
+    presence.pointe(new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.PAUSE));
 
     ilEst(LE_10_MAI_2026_A_13H);
-    presence.pointe(new PointageDePresenceAEnregistrer(OPERATEUR_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.REPRISE));
+    presence.pointe(new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.REPRISE));
 
     ilEst(LE_10_MAI_2026_A_16H);
-    atelier.pointe(pointage(secondOrdre, TypeDEvenementDAtelier.FIN, POSTE_FRAISEUSE_2));
+    atelier.pointe(pointage(secondOrdre, TypeDEvenementDAtelier.FIN, POSTE_ID_FRAISEUSE_2));
 
     ilEst(LE_11_MAI_2026_A_9H15);
     presence.regularise(
@@ -102,8 +105,8 @@ class VieDeLAtelierTest {
     assertThat(temps.tempsEffectif(premierOrdre))
       .extracting(IntervalleDActivite::poste, IntervalleDActivite::debut, IntervalleDActivite::fin)
       .containsExactly(
-        tuple(Optional.of(POSTE_FRAISEUSE_1), LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H)),
-        tuple(Optional.of(POSTE_FRAISEUSE_1), LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_17H))
+        tuple(Optional.of(POSTE_ID_FRAISEUSE_1), LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H)),
+        tuple(Optional.of(POSTE_ID_FRAISEUSE_1), LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_17H))
       );
   }
 
@@ -116,8 +119,8 @@ class VieDeLAtelierTest {
     assertThat(temps.tempsEffectif(secondOrdre))
       .extracting(IntervalleDActivite::poste, IntervalleDActivite::debut, IntervalleDActivite::fin)
       .containsExactly(
-        tuple(Optional.of(POSTE_FRAISEUSE_2), LE_10_MAI_2026_A_9H, Optional.of(LE_10_MAI_2026_A_12H)),
-        tuple(Optional.of(POSTE_FRAISEUSE_2), LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_16H))
+        tuple(Optional.of(POSTE_ID_FRAISEUSE_2), LE_10_MAI_2026_A_9H, Optional.of(LE_10_MAI_2026_A_12H)),
+        tuple(Optional.of(POSTE_ID_FRAISEUSE_2), LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_16H))
       );
   }
 
@@ -167,8 +170,13 @@ class VieDeLAtelierTest {
     return atelier.engage(new EngagementAEnregistrer(element, AUTEUR_LEROY)).id();
   }
 
-  private static PointageAEnregistrer pointage(SuiviDAtelierId suivi, TypeDEvenementDAtelier type, PosteDeTravail poste) {
-    return PointageAEnregistrer.builder().suivi(suivi).type(type).operateur(OPERATEUR_DUPONT).poste(Optional.of(poste));
+  private static PointageAEnregistrer pointage(SuiviDAtelierId suivi, TypeDEvenementDAtelier type, PosteDeTravailId poste) {
+    return PointageAEnregistrer.builder()
+      .suivi(suivi)
+      .type(type)
+      .operateur(OPERATEUR_ID_DUPONT)
+      .poste(Optional.of(poste))
+      .auteur(AUTEUR_DUPONT);
   }
 
   private static final class ElementsEngageablesFiges implements ElementsEngageables {
@@ -183,14 +191,6 @@ class VieDeLAtelierTest {
     @Override
     public Optional<ElementEngage> get(ElementEngageId id) {
       return Optional.ofNullable(ELEMENTS.get(id));
-    }
-  }
-
-  private static final class FraisageAuProfil implements FonctionsDesOperateurs {
-
-    @Override
-    public Optional<NatureDOperation> fonction(Operateur operateur) {
-      return Optional.of(NATURE_FRAISAGE);
     }
   }
 }

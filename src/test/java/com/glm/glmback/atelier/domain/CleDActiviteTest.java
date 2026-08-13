@@ -13,34 +13,34 @@ class CleDActiviteTest {
 
   @Test
   void shouldNotBuildWithoutOperateur() {
-    assertThatThrownBy(() -> new CleDActivite(null, Optional.of(POSTE_FRAISEUSE_1)))
+    assertThatThrownBy(() -> new CleDActivite(null, Optional.of(POSTE_ID_FRAISEUSE_1)))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("operateur");
   }
 
   @Test
   void shouldNotBuildWithoutPoste() {
-    assertThatThrownBy(() -> new CleDActivite(OPERATEUR_DUPONT, null))
+    assertThatThrownBy(() -> new CleDActivite(OPERATEUR_ID_DUPONT, null))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("poste de travail");
   }
 
   @Test
   void shouldDistinguerLesPostesDUnMemeOperateur() {
-    assertThat(new CleDActivite(OPERATEUR_DUPONT, Optional.of(POSTE_FRAISEUSE_1))).isNotEqualTo(
-      new CleDActivite(OPERATEUR_DUPONT, Optional.of(POSTE_FRAISEUSE_2))
+    assertThat(new CleDActivite(OPERATEUR_ID_DUPONT, Optional.of(POSTE_ID_FRAISEUSE_1))).isNotEqualTo(
+      new CleDActivite(OPERATEUR_ID_DUPONT, Optional.of(POSTE_ID_FRAISEUSE_2))
     );
   }
 
   @Test
   void shouldDistinguerLesOperateursDUnMemePoste() {
-    assertThat(new CleDActivite(OPERATEUR_DUPONT, Optional.of(POSTE_FRAISEUSE_1))).isNotEqualTo(
-      new CleDActivite(OPERATEUR_MARTIN, Optional.of(POSTE_FRAISEUSE_1))
+    assertThat(new CleDActivite(OPERATEUR_ID_DUPONT, Optional.of(POSTE_ID_FRAISEUSE_1))).isNotEqualTo(
+      new CleDActivite(OPERATEUR_ID_MARTIN, Optional.of(POSTE_ID_FRAISEUSE_1))
     );
   }
 
   @Test
   void shouldReduireLaCleALOperateurSansPoste() {
-    assertThat(new CleDActivite(OPERATEUR_DUPONT, Optional.empty())).isEqualTo(new CleDActivite(OPERATEUR_DUPONT, Optional.empty()));
+    assertThat(new CleDActivite(OPERATEUR_ID_DUPONT, Optional.empty())).isEqualTo(new CleDActivite(OPERATEUR_ID_DUPONT, Optional.empty()));
   }
 }

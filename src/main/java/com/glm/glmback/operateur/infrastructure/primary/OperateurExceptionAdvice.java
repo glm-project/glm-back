@@ -2,6 +2,7 @@ package com.glm.glmback.operateur.infrastructure.primary;
 
 import com.glm.glmback.operateur.domain.IdentiteDejaUtiliseeException;
 import com.glm.glmback.operateur.domain.MatriculeDejaUtiliseException;
+import com.glm.glmback.operateur.domain.OperateurAPointeException;
 import com.glm.glmback.operateur.domain.OperateurIntrouvableException;
 import com.glm.glmback.operateur.domain.PosteHabilitableIntrouvableException;
 import org.springframework.core.Ordered;
@@ -30,6 +31,15 @@ class OperateurExceptionAdvice {
   ProblemDetail handlePosteHabilitableIntrouvable(PosteHabilitableIntrouvableException e) {
     var detail = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
     detail.setTitle("poste de travail introuvable");
+    detail.setProperty(MESSAGE_KEY, e.getMessage());
+
+    return detail;
+  }
+
+  @ExceptionHandler(OperateurAPointeException.class)
+  ProblemDetail handleOperateurAPointe(OperateurAPointeException e) {
+    var detail = ProblemDetail.forStatus(HttpStatus.CONFLICT);
+    detail.setTitle("operateur ayant pointe");
     detail.setProperty(MESSAGE_KEY, e.getMessage());
 
     return detail;

@@ -12,7 +12,7 @@ public interface JourneeDeTravailRepository {
 
   Optional<JourneeDeTravail> get(JourneeDeTravailId id);
 
-  Optional<JourneeDeTravail> getEnCoursPour(Operateur operateur);
+  Optional<JourneeDeTravail> getEnCoursPour(OperateurId operateur);
 
   /**
    * La journee de cet operateur qui recouvre l'instant vise, s'il y en a une.
@@ -23,7 +23,7 @@ public interface JourneeDeTravailRepository {
    * regulariser.
    * </p>
    */
-  Optional<JourneeDeTravail> journeeContenant(Operateur operateur, Instant instant);
+  Optional<JourneeDeTravail> journeeContenant(OperateurId operateur, Instant instant);
 
   Page<JourneeDeTravail> list(JourneeDeTravailCriteria criteria, Pageable pageable);
 }

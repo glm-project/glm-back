@@ -16,6 +16,7 @@ class OperateursServiceTest {
 
   private OperateursEnMemoire repository;
   private PostesHabilitablesEnMemoire postes;
+  private PointagesEnMemoire pointages;
   private OperateursService operateurs;
 
   @BeforeEach
@@ -24,7 +25,8 @@ class OperateursServiceTest {
     postes = new PostesHabilitablesEnMemoire();
     postes.declare(POSTE_HABILITABLE_TOUR_1);
     postes.declare(POSTE_HABILITABLE_POSTE_DE_SOUDURE);
-    operateurs = new OperateursService(repository, postes);
+    pointages = new PointagesEnMemoire();
+    operateurs = new OperateursService(repository, postes, pointages);
   }
 
   /**
@@ -166,6 +168,18 @@ class OperateursServiceTest {
     operateurs.delete(id);
 
     assertThatThrownBy(() -> operateurs.get(id)).isExactlyInstanceOf(OperateurIntrouvableException.class);
+  }
+
+  /**
+   * Le journal d'atelier et les journees de travail ne retiennent que l'identifiant : supprimer l'operateur laisserait
+   * des heures sans personne a payer.
+   */
+  @Test
+  void shouldNotDeleteOperateurWhoAlreadyPointed() {
+    OperateurId id = operateurs.create(operateurACreerDupont()).operateur().id();
+    pointages.pointe(id);
+
+    assertThatThrownBy(() -> operateurs.delete(id)).isExactlyInstanceOf(OperateurAPointeException.class);
   }
 
   @Test

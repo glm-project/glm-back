@@ -1,9 +1,10 @@
 package com.glm.glmback.atelier.infrastructure.primary;
 
 import com.glm.glmback.atelier.application.JourneesDeTravailApplicationService;
+import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
 import com.glm.glmback.atelier.domain.JourneeDeTravail;
 import com.glm.glmback.atelier.domain.JourneeDeTravailId;
-import com.glm.glmback.atelier.domain.Operateur;
+import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.Periode;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
@@ -12,6 +13,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -57,14 +59,14 @@ class JourneeDeTravailResource {
   Page<RestJourneeDeTravail> list(
     @RequestParam(required = false) Instant debut,
     @RequestParam(required = false) Instant fin,
-    @RequestParam(required = false) String operateur,
+    @RequestParam(required = false) UUID operateur,
     @RequestParam(defaultValue = "0") int page,
     @RequestParam(defaultValue = "20") int size
   ) {
     Page<JourneeDeTravail> resultat = applicationService.list(periode(debut, fin), operateur(operateur), new Pageable(page, size));
 
     return Page.<RestJourneeDeTravail>builder()
-      .content(resultat.content().stream().map(RestJourneeDeTravail::from).toList())
+      .content(rendus(resultat.content()))
       .currentPage(resultat.currentPage())
       .pageSize(resultat.pageSize())
       .totalElementsCount(resultat.totalElementsCount());
@@ -82,9 +84,10 @@ class JourneeDeTravailResource {
     """
   )
   @ApiResponse(responseCode = "201", description = "La journee est ouverte.")
+  @ApiResponse(responseCode = "404", description = "Aucun operateur ne porte cet identifiant.")
   @ApiResponse(responseCode = "409", description = "Cet operateur a deja une journee ouverte.")
   RestJourneeDeTravail arrive(@RequestBody @Valid RestArrivee request) {
-    return RestJourneeDeTravail.from(applicationService.arrive(request.toDomain(AuteurConnecte.get())));
+    return rendu(applicationService.arrive(request.toDomain(AuteurConnecte.get())));
   }
 
   @PostMapping("/pointages")
@@ -102,7 +105,7 @@ class JourneeDeTravailResource {
   @ApiResponse(responseCode = "404", description = "Cet operateur n'a aucune journee ouverte.")
   @ApiResponse(responseCode = "409", description = "Transition impossible depuis l'etat de presence courant.")
   RestJourneeDeTravail pointe(@RequestBody @Valid RestPointageDePresence request) {
-    return RestJourneeDeTravail.from(applicationService.pointe(request.toDomain(AuteurConnecte.get())));
+    return rendu(applicationService.pointe(request.toDomain(AuteurConnecte.get())));
   }
 
   @GetMapping("/{id}")
@@ -112,7 +115,7 @@ class JourneeDeTravailResource {
   )
   @ApiResponse(responseCode = "404", description = "Journee introuvable.")
   RestJourneeDeTravail get(@PathVariable UUID id) {
-    return RestJourneeDeTravail.from(applicationService.get(new JourneeDeTravailId(id)));
+    return rendu(applicationService.get(new JourneeDeTravailId(id)));
   }
 
   @PostMapping("/{id}/regularisations")
@@ -128,7 +131,7 @@ class JourneeDeTravailResource {
   @ApiResponse(responseCode = "404", description = "Journee introuvable.")
   @ApiResponse(responseCode = "409", description = "Transition impossible depuis l'etat de presence a cet instant.")
   RestJourneeDeTravail regularise(@PathVariable UUID id, @RequestBody @Valid RestRegularisationDePresence request) {
-    return RestJourneeDeTravail.from(applicationService.regularise(request.toDomain(new JourneeDeTravailId(id), AuteurConnecte.get())));
+    return rendu(applicationService.regularise(request.toDomain(new JourneeDeTravailId(id), AuteurConnecte.get())));
   }
 
   @PostMapping("/{id}/evenements/{evenementId}/annulation")
@@ -136,9 +139,7 @@ class JourneeDeTravailResource {
   @ApiResponse(responseCode = "404", description = "Journee ou evenement introuvable.")
   @ApiResponse(responseCode = "409", description = "Evenement deja annule.")
   RestJourneeDeTravail annule(@PathVariable UUID id, @PathVariable UUID evenementId, @RequestBody @Valid RestAnnulationDEvenement request) {
-    return RestJourneeDeTravail.from(
-      applicationService.annule(request.toDomain(new JourneeDeTravailId(id), evenementId, AuteurConnecte.get()))
-    );
+    return rendu(applicationService.annule(request.toDomain(new JourneeDeTravailId(id), evenementId, AuteurConnecte.get())));
   }
 
   @PutMapping("/{id}/evenements/{evenementId}")
@@ -150,9 +151,26 @@ class JourneeDeTravailResource {
     @PathVariable UUID evenementId,
     @RequestBody @Valid RestCorrectionDePresence request
   ) {
-    return RestJourneeDeTravail.from(
-      applicationService.corrige(request.toDomain(new JourneeDeTravailId(id), evenementId, AuteurConnecte.get()))
-    );
+    return rendu(applicationService.corrige(request.toDomain(new JourneeDeTravailId(id), evenementId, AuteurConnecte.get())));
+  }
+
+  /**
+   * La journee rendue avec son operateur resolu : le journal ne stocke qu'un identifiant.
+   */
+  private RestJourneeDeTravail rendu(JourneeDeTravail journee) {
+    return RestJourneeDeTravail.from(journee, applicationService.annuairePour(journee));
+  }
+
+  /**
+   * Une page entiere resolue en un seul aller par port, jamais un par journee.
+   */
+  private List<RestJourneeDeTravail> rendus(List<JourneeDeTravail> journees) {
+    AnnuaireDAtelier annuaire = applicationService.annuairePourJournees(journees);
+
+    return journees
+      .stream()
+      .map(journee -> RestJourneeDeTravail.from(journee, annuaire))
+      .toList();
   }
 
   private static Optional<Periode> periode(Instant debut, Instant fin) {
@@ -163,7 +181,7 @@ class JourneeDeTravailResource {
     return Optional.of(new Periode(debut, fin));
   }
 
-  private static Optional<Operateur> operateur(String operateur) {
-    return Optional.ofNullable(operateur).map(Operateur::new);
+  private static Optional<OperateurId> operateur(UUID operateur) {
+    return Optional.ofNullable(operateur).map(OperateurId::new);
   }
 }

@@ -9,33 +9,33 @@ import com.glm.glmback.shared.error.domain.StringTooLongException;
 import org.junit.jupiter.api.Test;
 
 @UnitTest
-class OperateurTest {
+class LibelleDePosteTest {
 
   @Test
   void shouldNotBuildWithoutValue() {
-    assertThatThrownBy(() -> new Operateur(null))
+    assertThatThrownBy(() -> new LibelleDePoste(null))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("operateur");
+      .hasMessageContaining("libelle du poste");
   }
 
   @Test
   void shouldNotBuildWithBlankValue() {
-    assertThatThrownBy(() -> new Operateur(" "))
+    assertThatThrownBy(() -> new LibelleDePoste(" "))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("operateur");
+      .hasMessageContaining("libelle du poste");
   }
 
   @Test
   void shouldNotBuildWithTooLongValue() {
     String tooLong = "a".repeat(100 + 1);
 
-    assertThatThrownBy(() -> new Operateur(tooLong))
+    assertThatThrownBy(() -> new LibelleDePoste(tooLong))
       .isExactlyInstanceOf(StringTooLongException.class)
-      .hasMessageContaining("operateur");
+      .hasMessageContaining("libelle du poste");
   }
 
   @Test
-  void shouldGetValueFromValidOperateur() {
-    assertThat(OPERATEUR_DUPONT.value()).isEqualTo("dupont");
+  void shouldGetValueFromValidLibelleDePoste() {
+    assertThat(LIBELLE_FRAISEUSE_1.value()).isEqualTo("Fraiseuse 1");
   }
 }

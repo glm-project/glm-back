@@ -35,7 +35,7 @@ class ActiviteEnCoursTest {
   void shouldReadOperateurEtPosteFromCle() {
     ActiviteEnCours activite = new ActiviteEnCours(cleDeFraiseuse1DeDupont(), CategorieDActivite.TRAVAIL, LE_10_MAI_2026_A_8H);
 
-    assertThat(activite.operateur()).isEqualTo(OPERATEUR_DUPONT);
-    assertThat(activite.poste()).contains(POSTE_FRAISEUSE_1);
+    assertThat(activite.operateur()).isEqualTo(OPERATEUR_ID_DUPONT);
+    assertThat(activite.poste()).contains(POSTE_ID_FRAISEUSE_1);
   }
 }

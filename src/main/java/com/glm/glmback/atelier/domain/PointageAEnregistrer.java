@@ -8,28 +8,31 @@ import java.util.Optional;
  *
  * <p>
  * Le poste de travail est facultatif : un operateur mono-poste, ou une entreprise sans parc machine, garde un seul
- * clic. La nature de l'operation n'est pas fournie par l'appelant, le service la recopie du profil de l'operateur.
+ * clic. La nature de l'operation n'est pas fournie par l'appelant, le service la recopie du poste.
+ * </p>
+ *
+ * <p>
+ * L'operateur et l'auteur sont deux choses differentes : sur un pupitre partage, celui qui saisit n'est pas
+ * necessairement celui dont on compte le temps. L'auteur vient toujours du jeton, jamais du corps de la requete.
  * </p>
  */
 public record PointageAEnregistrer(
   SuiviDAtelierId suivi,
   TypeDEvenementDAtelier type,
-  Operateur operateur,
-  Optional<PosteDeTravail> poste
+  OperateurId operateur,
+  Optional<PosteDeTravailId> poste,
+  Auteur auteur
 ) {
   public PointageAEnregistrer {
     Assert.notNull("suivi", suivi);
     Assert.notNull("type", type);
     Assert.notNull("operateur", operateur);
     Assert.notNull("poste de travail", poste);
-  }
-
-  public PointageAEnregistrer(SuiviDAtelierId suivi, TypeDEvenementDAtelier type, Operateur operateur) {
-    this(suivi, type, operateur, Optional.empty());
+    Assert.notNull("auteur", auteur);
   }
 
   public static PointageAEnregistrerSuiviBuilder builder() {
-    return suivi -> type -> operateur -> poste -> new PointageAEnregistrer(suivi, type, operateur, poste);
+    return suivi -> type -> operateur -> poste -> auteur -> new PointageAEnregistrer(suivi, type, operateur, poste, auteur);
   }
 
   public interface PointageAEnregistrerSuiviBuilder {
@@ -41,10 +44,14 @@ public record PointageAEnregistrer(
   }
 
   public interface PointageAEnregistrerOperateurBuilder {
-    PointageAEnregistrerPosteBuilder operateur(Operateur operateur);
+    PointageAEnregistrerPosteBuilder operateur(OperateurId operateur);
   }
 
   public interface PointageAEnregistrerPosteBuilder {
-    PointageAEnregistrer poste(Optional<PosteDeTravail> poste);
+    PointageAEnregistrerAuteurBuilder poste(Optional<PosteDeTravailId> poste);
+  }
+
+  public interface PointageAEnregistrerAuteurBuilder {
+    PointageAEnregistrer auteur(Auteur auteur);
   }
 }

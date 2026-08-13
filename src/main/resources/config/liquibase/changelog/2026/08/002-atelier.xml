@@ -71,6 +71,13 @@
       cette table. Les index par operateur et par poste ne servent pas l'atelier lui-meme, qui lit
       toujours par suivi ; ils ouvrent les projections transverses des contextes a venir, qui
       agregent le temps par operateur ou par poste sur une periode.
+
+      L'operateur et le poste sont des identifiants des referentiels, jamais des libelles : c'est ce
+      qui permet a ces agregations de compter une personne pour une personne, la ou deux orthographes
+      d'un texte libre en auraient compte deux. Aucune cle etrangere ne les porte, l'atelier ne devant
+      pas dependre du schema de ses voisins ; la garde vit dans leur domaine, qui refuse de supprimer
+      ce qui a servi a pointer. La nature, elle, reste un libelle : elle est copiee du poste a la
+      saisie et doit rester celle du jour ou le temps a ete passe.
     </comment>
 
     <createTable tableName="evenement_d_atelier">
@@ -86,11 +93,11 @@
         <constraints nullable="false" />
       </column>
 
-      <column name="operateur" type="varchar(100)">
+      <column name="operateur_id" type="${uuidType}">
         <constraints nullable="false" />
       </column>
 
-      <column name="poste" type="varchar(100)" />
+      <column name="poste_id" type="${uuidType}" />
 
       <column name="nature" type="varchar(50)" />
 
@@ -120,12 +127,12 @@
     </createIndex>
 
     <createIndex indexName="ix_evenement_d_atelier_operateur" tableName="evenement_d_atelier">
-      <column name="operateur" />
+      <column name="operateur_id" />
       <column name="date_de_survenue" />
     </createIndex>
 
     <createIndex indexName="ix_evenement_d_atelier_poste" tableName="evenement_d_atelier">
-      <column name="poste" />
+      <column name="poste_id" />
       <column name="date_de_survenue" />
     </createIndex>
   </changeSet>
@@ -136,6 +143,8 @@
       depart, et aucun fuseau horaire n'entre ici. debut et fin sont des projections du journal, au
       meme titre que etat : elles rendent exprimables en SQL le tri de la liste et la recherche de la
       journee contenant un instant, sans jamais servir a reconstruire l'agregat.
+
+      L'operateur est un identifiant du referentiel, pour la meme raison que dans le journal d'atelier.
     </comment>
 
     <createTable tableName="journee_de_travail">
@@ -143,7 +152,7 @@
         <constraints nullable="false" primaryKey="true" />
       </column>
 
-      <column name="operateur" type="varchar(100)">
+      <column name="operateur_id" type="${uuidType}">
         <constraints nullable="false" />
       </column>
 
@@ -162,7 +171,7 @@
     </createIndex>
 
     <createIndex indexName="ix_journee_de_travail_operateur" tableName="journee_de_travail">
-      <column name="operateur" />
+      <column name="operateur_id" />
       <column name="debut" />
     </createIndex>
   </changeSet>

@@ -14,8 +14,8 @@ import java.util.Optional;
  */
 public record IntervalleDActivite(
   EvenementDAtelierId evenement,
-  Operateur operateur,
-  Optional<PosteDeTravail> poste,
+  OperateurId operateur,
+  Optional<PosteDeTravailId> poste,
   Optional<NatureDOperation> nature,
   CategorieDActivite categorie,
   Instant debut,
@@ -60,11 +60,11 @@ public record IntervalleDActivite(
   }
 
   interface IntervalleDActiviteOperateurBuilder {
-    IntervalleDActivitePosteBuilder operateur(Operateur operateur);
+    IntervalleDActivitePosteBuilder operateur(OperateurId operateur);
   }
 
   interface IntervalleDActivitePosteBuilder {
-    IntervalleDActiviteNatureBuilder poste(Optional<PosteDeTravail> poste);
+    IntervalleDActiviteNatureBuilder poste(Optional<PosteDeTravailId> poste);
   }
 
   interface IntervalleDActiviteNatureBuilder {

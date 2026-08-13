@@ -6,7 +6,7 @@ public final class TransitionDAtelierInterditeException extends RuntimeException
     super(
       "L'evenement %s de %s du %s est refuse : l'activite est %s".formatted(
         evenement.type(),
-        evenement.operateur().value(),
+        evenement.operateur().uuid(),
         evenement.dateDeSurvenue(),
         etat
       )

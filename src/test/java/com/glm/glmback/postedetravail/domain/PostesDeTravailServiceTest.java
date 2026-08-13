@@ -15,13 +15,15 @@ class PostesDeTravailServiceTest {
 
   private PostesDeTravailEnMemoire repository;
   private HabilitationsEnMemoire habilitations;
+  private PointagesEnMemoire pointages;
   private PostesDeTravailService postes;
 
   @BeforeEach
   void setUp() {
     repository = new PostesDeTravailEnMemoire();
     habilitations = new HabilitationsEnMemoire();
-    postes = new PostesDeTravailService(repository, habilitations);
+    pointages = new PointagesEnMemoire();
+    postes = new PostesDeTravailService(repository, habilitations, pointages);
   }
 
   @Test
@@ -112,6 +114,18 @@ class PostesDeTravailServiceTest {
     postes.delete(cree.id());
 
     assertThatThrownBy(() -> postes.get(cree.id())).isExactlyInstanceOf(PosteDeTravailIntrouvableException.class);
+  }
+
+  /**
+   * Le journal d'atelier ne retient que l'identifiant du poste : le supprimer laisserait des heures de travail sans
+   * machine. Contrairement a l'habilitation, ce refus est definitif.
+   */
+  @Test
+  void shouldNotDeletePosteDeTravailAlreadyPointed() {
+    PosteDeTravail cree = postes.create(posteDeTravailACreerTour1());
+    pointages.pointe(cree.id());
+
+    assertThatThrownBy(() -> postes.delete(cree.id())).isExactlyInstanceOf(PosteDeTravailPointeException.class);
   }
 
   @Test

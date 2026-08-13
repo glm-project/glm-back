@@ -57,7 +57,35 @@ Chaque événement porte deux dates :
 
 Une régularisation se reconnaît à l'écart entre les deux, exposé par le booléen `estUneRegularisation` — jamais à
 l'identité de l'auteur. Un affichage honnête montre l'heure métier, et signale la saisie différée (« pointé le 11/05
-à 9 h 15 pour le 10/05 à 17 h »). `estSaisiParUnTiers` dit, séparément, que l'auteur n'est pas l'opérateur.
+à 9 h 15 pour le 10/05 à 17 h »).
+
+Le booléen `estSaisiParUnTiers` **n'existe plus** : l'auteur est un identifiant de connexion et l'opérateur une fiche du
+référentiel, et rien ne relie encore les deux. Il reviendra le jour où l'authentification sera tranchée.
+
+### L'opérateur et le poste sont des identifiants
+
+En **entrée**, `operateur` et `poste` sont les **UUID** des fiches des référentiels
+(`GET /api/operateurs`, `GET /api/postes-de-travail`) — plus jamais du texte saisi. Un identifiant inconnu répond 404.
+
+En **sortie**, ils sont des objets résolus à la lecture :
+
+```json
+{ "operateur": { "id": "…", "nom": "Dupont", "prenom": "Jean" }, "poste": { "id": "…", "libelle": "Fraiseuse 1" } }
+```
+
+Ces libellés sont **relus à chaque appel**, jamais figés : une fiche corrigée s'affiche corrigée sur tout
+l'historique. Ne pas les mettre en cache côté front au-delà de la session d'écran.
+
+La `nature` fait exception : elle est **copiée au moment de la saisie**, et elle vient du **poste**, pas de la personne.
+Un poste requalifié plus tard ne requalifie pas les heures déjà passées.
+
+### L'habilitation est une règle dure
+
+Pointer sur un poste où l'opérateur n'est pas déclaré répond **409**. C'est vrai du pointage comme de la régularisation
+et de la correction. Un écran de pupitre doit donc **ne proposer que les postes de l'opérateur choisi**, lisibles dans
+`GET /api/operateurs/{id}`, plutôt que laisser le serveur refuser.
+
+La règle ne joue que si un poste est fourni : sans parc machine, il n'y a rien à habiliter.
 
 ### Un événement annulé reste au journal
 
@@ -97,13 +125,13 @@ rien. `debut`/`fin` ne servent qu'au back-office, et **une borne seule est ignor
 Prise de poste, puis travail :
 
 ```
-POST /api/atelier/journees                 { "operateur": "dupont" }
-POST /api/atelier/suivis/{id}/pointages    { "type": "DEBUT", "operateur": "dupont", "poste": "fraiseuse-1" }
-POST /api/atelier/suivis/{id}/pointages    { "type": "NON_CONFORMITE", "operateur": "dupont", "poste": "fraiseuse-1" }
-POST /api/atelier/journees/pointages       { "operateur": "dupont", "type": "PAUSE" }
-POST /api/atelier/journees/pointages       { "operateur": "dupont", "type": "REPRISE" }
-POST /api/atelier/suivis/{id}/pointages    { "type": "FIN", "operateur": "dupont", "poste": "fraiseuse-1" }
-POST /api/atelier/journees/pointages       { "operateur": "dupont", "type": "DEPART" }
+POST /api/atelier/journees                 { "operateur": "<uuid operateur>" }
+POST /api/atelier/suivis/{id}/pointages    { "type": "DEBUT", "operateur": "<uuid>", "poste": "<uuid poste>" }
+POST /api/atelier/suivis/{id}/pointages    { "type": "NON_CONFORMITE", "operateur": "<uuid>", "poste": "<uuid poste>" }
+POST /api/atelier/journees/pointages       { "operateur": "<uuid>", "type": "PAUSE" }
+POST /api/atelier/journees/pointages       { "operateur": "<uuid>", "type": "REPRISE" }
+POST /api/atelier/suivis/{id}/pointages    { "type": "FIN", "operateur": "<uuid>", "poste": "<uuid poste>" }
+POST /api/atelier/journees/pointages       { "operateur": "<uuid>", "type": "DEPART" }
 ```
 
 Trois pièges :
@@ -114,6 +142,8 @@ Trois pièges :
   c'est la `categorie` de l'activité, qui repasse de `NON_CONFORMITE` à `TRAVAIL`.
 - `poste` est **toujours facultatif**, comme la `nature`. Une entreprise sans parc machine les laisse vides et doit
   retrouver un comportement nominal, pas un cas dégradé. Ne jamais rendre le champ obligatoire côté formulaire.
+- Un poste fourni doit être **habilité pour cet opérateur**, sans quoi 409. Filtrer la liste des postes sur la fiche de
+  l'opérateur choisi évite d'avoir à traiter ce refus.
 
 Les états d'un élément :
 
@@ -204,7 +234,11 @@ tel quel est la bonne réaction — relire l'agrégat, et reproposer la saisie.
 
 ## 5. Limites de l'implémentation actuelle
 
-- **`nature` est toujours vide** : aucun référentiel des ressources n'existe encore, donc aucun profil d'opérateur.
-  Le champ est au contrat et se remplira sans changement d'API. Ne pas construire d'écran qui en dépende.
-- **`operateur` et `poste` sont des chaînes libres**, pas des références à un référentiel : à saisir ou à proposer
-  depuis une liste locale pour l'instant.
+- **`nature` est vide dès qu'aucun poste n'est pointé**, puisqu'elle vient du poste. Un pointage sans poste n'a pas de
+  nature, et c'est le comportement nominal d'une entreprise sans parc machine.
+- **Régulariser sur un poste dont l'opérateur a été dé-habilité depuis est refusé** (409), l'habilitation étant
+  vérifiée sur les trois actes de correction. Retirer une habilitation ferme donc aussi la porte au rattrapage des
+  saisies passées sur ce poste.
+- **Ni un opérateur ni un poste ayant servi à pointer ne se supprime** : `DELETE /api/operateurs/{id}` et
+  `DELETE /api/postes-de-travail/{id}` répondent 409. Un écran d'administration doit le prévoir plutôt que le
+  découvrir.

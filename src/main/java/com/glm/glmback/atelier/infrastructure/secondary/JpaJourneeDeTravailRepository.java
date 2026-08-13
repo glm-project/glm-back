@@ -7,7 +7,7 @@ import com.glm.glmback.atelier.domain.JourneeDeTravailDejaOuverteException;
 import com.glm.glmback.atelier.domain.JourneeDeTravailId;
 import com.glm.glmback.atelier.domain.JourneeDeTravailIntrouvableException;
 import com.glm.glmback.atelier.domain.JourneeDeTravailRepository;
-import com.glm.glmback.atelier.domain.Operateur;
+import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
@@ -67,14 +67,14 @@ class JpaJourneeDeTravailRepository implements JourneeDeTravailRepository {
   }
 
   @Override
-  public Optional<JourneeDeTravail> getEnCoursPour(Operateur operateur) {
+  public Optional<JourneeDeTravail> getEnCoursPour(OperateurId operateur) {
     return journees
-      .findFirstByOperateurAndEtatNotOrderByDebutDescIdAsc(operateur.value(), EtatDePresence.ABSENT)
+      .findFirstByOperateurIdAndEtatNotOrderByDebutDescIdAsc(operateur.uuid(), EtatDePresence.ABSENT)
       .map(JourneeDeTravailEntity::toDomain);
   }
 
   @Override
-  public Optional<JourneeDeTravail> journeeContenant(Operateur operateur, Instant instant) {
+  public Optional<JourneeDeTravail> journeeContenant(OperateurId operateur, Instant instant) {
     Optional<JourneeDeTravailEntity> trouvee = journees.findBy(contient(operateur, instant), requete ->
       requete.sortBy(PAR_DEBUT_DESCENDANT).first()
     );
@@ -98,10 +98,10 @@ class JpaJourneeDeTravailRepository implements JourneeDeTravailRepository {
    * encore ouverte n'ayant pas de borne haute. Un debut absent ne contient rien, ce dont la comparaison se charge
    * seule.
    */
-  private static Specification<JourneeDeTravailEntity> contient(Operateur operateur, Instant instant) {
+  private static Specification<JourneeDeTravailEntity> contient(OperateurId operateur, Instant instant) {
     return (racine, requete, constructeur) ->
       constructeur.and(
-        constructeur.equal(racine.get("operateur"), operateur.value()),
+        constructeur.equal(racine.get("operateurId"), operateur.uuid()),
         constructeur.lessThanOrEqualTo(racine.get("debut"), instant),
         constructeur.or(constructeur.isNull(racine.get("fin")), constructeur.greaterThanOrEqualTo(racine.get("fin"), instant))
       );
@@ -114,7 +114,7 @@ class JpaJourneeDeTravailRepository implements JourneeDeTravailRepository {
   private static Specification<JourneeDeTravailEntity> correspondA(JourneeDeTravailCriteria criteria) {
     return (racine, requete, constructeur) -> {
       List<Predicate> predicats = new ArrayList<>();
-      criteria.operateur().ifPresent(operateur -> predicats.add(constructeur.equal(racine.get("operateur"), operateur.value())));
+      criteria.operateur().ifPresent(operateur -> predicats.add(constructeur.equal(racine.get("operateurId"), operateur.uuid())));
       criteria.periode().ifPresent(periode -> predicats.add(constructeur.between(racine.get("debut"), periode.debut(), periode.fin())));
 
       return constructeur.and(predicats.toArray(Predicate[]::new));

@@ -2,12 +2,12 @@ package com.glm.glmback.atelier.infrastructure.primary;
 
 import com.glm.glmback.atelier.domain.ArriveeAEnregistrer;
 import com.glm.glmback.atelier.domain.Auteur;
-import com.glm.glmback.atelier.domain.Operateur;
+import com.glm.glmback.atelier.domain.OperateurId;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 @Schema(
   description = """
@@ -18,14 +18,11 @@ import java.util.Optional;
   """
 )
 record RestArrivee(
-  @Schema(description = "Operateur qui arrive.", example = "dupont", requiredMode = Schema.RequiredMode.REQUIRED)
-  @NotNull
-  @Size(max = 100)
-  String operateur,
+  @Schema(description = "Identifiant de l'operateur qui arrive.", requiredMode = Schema.RequiredMode.REQUIRED) @NotNull UUID operateur,
 
   @Schema(description = "Heure metier de l'arrivee. Absente, elle vaut l'instant present.") Instant dateDeSurvenue
 ) {
   ArriveeAEnregistrer toDomain(Auteur auteur) {
-    return new ArriveeAEnregistrer(new Operateur(operateur), auteur, Optional.ofNullable(dateDeSurvenue));
+    return new ArriveeAEnregistrer(new OperateurId(operateur), auteur, Optional.ofNullable(dateDeSurvenue));
   }
 }

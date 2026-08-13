@@ -12,7 +12,7 @@ import java.util.Optional;
  * que le client demande explicitement ce cas.
  * </p>
  */
-public record CleDActivite(Operateur operateur, Optional<PosteDeTravail> poste) {
+public record CleDActivite(OperateurId operateur, Optional<PosteDeTravailId> poste) {
   public CleDActivite {
     Assert.notNull("operateur", operateur);
     Assert.notNull("poste de travail", poste);

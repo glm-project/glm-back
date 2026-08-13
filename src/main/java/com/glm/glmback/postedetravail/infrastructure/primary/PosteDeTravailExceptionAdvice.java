@@ -2,6 +2,7 @@ package com.glm.glmback.postedetravail.infrastructure.primary;
 
 import com.glm.glmback.postedetravail.domain.LibelleDejaUtiliseException;
 import com.glm.glmback.postedetravail.domain.PosteDeTravailIntrouvableException;
+import com.glm.glmback.postedetravail.domain.PosteDeTravailPointeException;
 import com.glm.glmback.postedetravail.domain.PosteDeTravailUtiliseException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -29,6 +30,15 @@ class PosteDeTravailExceptionAdvice {
   ProblemDetail handleLibelleDejaUtilise(LibelleDejaUtiliseException e) {
     var detail = ProblemDetail.forStatus(HttpStatus.CONFLICT);
     detail.setTitle("libelle deja utilise");
+    detail.setProperty(MESSAGE_KEY, e.getMessage());
+
+    return detail;
+  }
+
+  @ExceptionHandler(PosteDeTravailPointeException.class)
+  ProblemDetail handlePosteDeTravailPointe(PosteDeTravailPointeException e) {
+    var detail = ProblemDetail.forStatus(HttpStatus.CONFLICT);
+    detail.setTitle("poste de travail pointe");
     detail.setProperty(MESSAGE_KEY, e.getMessage());
 
     return detail;

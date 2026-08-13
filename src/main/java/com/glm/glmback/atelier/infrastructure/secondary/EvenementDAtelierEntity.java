@@ -7,8 +7,8 @@ import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.Horodatage;
 import com.glm.glmback.atelier.domain.MotifDAnnulation;
 import com.glm.glmback.atelier.domain.NatureDOperation;
-import com.glm.glmback.atelier.domain.Operateur;
-import com.glm.glmback.atelier.domain.PosteDeTravail;
+import com.glm.glmback.atelier.domain.OperateurId;
+import com.glm.glmback.atelier.domain.PosteDeTravailId;
 import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -38,9 +38,11 @@ class EvenementDAtelierEntity {
   @Column(length = 20)
   private TypeDEvenementDAtelier type;
 
-  private String operateur;
+  @Column(name = "operateur_id")
+  private UUID operateurId;
 
-  private String poste;
+  @Column(name = "poste_id")
+  private UUID posteId;
 
   private String nature;
 
@@ -65,8 +67,8 @@ class EvenementDAtelierEntity {
     this.suivi = suivi;
     id = evenement.id().uuid();
     type = evenement.type();
-    operateur = evenement.operateur().value();
-    poste = evenement.poste().map(PosteDeTravail::value).orElse(null);
+    operateurId = evenement.operateur().uuid();
+    posteId = evenement.poste().map(PosteDeTravailId::uuid).orElse(null);
     nature = evenement.nature().map(NatureDOperation::value).orElse(null);
     auteur = evenement.auteur().value();
     dateDeSurvenue = evenement.dateDeSurvenue();
@@ -102,8 +104,8 @@ class EvenementDAtelierEntity {
     EvenementDAtelier evenement = EvenementDAtelier.builder()
       .id(new EvenementDAtelierId(id))
       .type(type)
-      .operateur(new Operateur(operateur))
-      .poste(Optional.ofNullable(poste).map(PosteDeTravail::new))
+      .operateur(new OperateurId(operateurId))
+      .poste(Optional.ofNullable(posteId).map(PosteDeTravailId::new))
       .nature(Optional.ofNullable(nature).map(NatureDOperation::new))
       .auteur(new Auteur(auteur))
       .horodatage(new Horodatage(dateDeSurvenue, dateDEnregistrement));

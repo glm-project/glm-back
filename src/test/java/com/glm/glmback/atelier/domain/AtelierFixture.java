@@ -16,14 +16,25 @@ public final class AtelierFixture {
   public static final Instant LE_10_MAI_2026_A_17H = Instant.parse("2026-05-10T17:00:00Z");
   public static final Instant LE_11_MAI_2026_A_9H15 = Instant.parse("2026-05-11T09:15:00Z");
 
-  public static final Operateur OPERATEUR_DUPONT = new Operateur("dupont");
-  public static final Operateur OPERATEUR_MARTIN = new Operateur("martin");
+  public static final OperateurId OPERATEUR_ID_DUPONT = new OperateurId(UUID.fromString("33333333-3333-3333-3333-333333333333"));
+  public static final OperateurId OPERATEUR_ID_MARTIN = new OperateurId(UUID.fromString("44444444-4444-4444-4444-444444444444"));
+  public static final PosteDeTravailId POSTE_ID_FRAISEUSE_1 = new PosteDeTravailId(UUID.fromString("55555555-5555-5555-5555-555555555555"));
+  public static final PosteDeTravailId POSTE_ID_FRAISEUSE_2 = new PosteDeTravailId(UUID.fromString("66666666-6666-6666-6666-666666666666"));
+  public static final Nom NOM_DUPONT = new Nom("Dupont");
+  public static final Nom NOM_MARTIN = new Nom("Martin");
+  public static final Prenom PRENOM_JEAN = new Prenom("Jean");
+  public static final Prenom PRENOM_PAUL = new Prenom("Paul");
+  public static final LibelleDePoste LIBELLE_FRAISEUSE_1 = new LibelleDePoste("Fraiseuse 1");
+  public static final LibelleDePoste LIBELLE_FRAISEUSE_2 = new LibelleDePoste("Fraiseuse 2");
   public static final Auteur AUTEUR_DUPONT = new Auteur("dupont");
+  public static final Auteur AUTEUR_MARTIN = new Auteur("martin");
   public static final Auteur AUTEUR_LEROY = new Auteur("leroy");
   public static final NatureDOperation NATURE_FRAISAGE = new NatureDOperation("fraisage");
   public static final NatureDOperation NATURE_TOURNAGE = new NatureDOperation("tournage");
-  public static final PosteDeTravail POSTE_FRAISEUSE_1 = new PosteDeTravail("fraiseuse 1");
-  public static final PosteDeTravail POSTE_FRAISEUSE_2 = new PosteDeTravail("fraiseuse 2");
+  public static final OperateurConnu OPERATEUR_CONNU_DUPONT = new OperateurConnu(OPERATEUR_ID_DUPONT, NOM_DUPONT, PRENOM_JEAN);
+  public static final OperateurConnu OPERATEUR_CONNU_MARTIN = new OperateurConnu(OPERATEUR_ID_MARTIN, NOM_MARTIN, PRENOM_PAUL);
+  public static final PosteConnu POSTE_CONNU_FRAISEUSE_1 = new PosteConnu(POSTE_ID_FRAISEUSE_1, LIBELLE_FRAISEUSE_1, NATURE_FRAISAGE);
+  public static final PosteConnu POSTE_CONNU_FRAISEUSE_2 = new PosteConnu(POSTE_ID_FRAISEUSE_2, LIBELLE_FRAISEUSE_2, NATURE_TOURNAGE);
   public static final NomDElement NOM_OF_2026_000042 = new NomDElement("OF-2026-000042");
   public static final NomDElement NOM_OF_2026_000043 = new NomDElement("OF-2026-000043");
   public static final MotifDAnnulation MOTIF_ERREUR_DE_SAISIE = new MotifDAnnulation("Erreur de saisie");
@@ -69,39 +80,39 @@ public final class AtelierFixture {
   }
 
   public static CleDActivite cleDeFraiseuse1DeDupont() {
-    return new CleDActivite(OPERATEUR_DUPONT, Optional.of(POSTE_FRAISEUSE_1));
+    return new CleDActivite(OPERATEUR_ID_DUPONT, Optional.of(POSTE_ID_FRAISEUSE_1));
   }
 
   public static EvenementDAtelier debutSurFraiseuse1ParDupontA(Instant date) {
-    return pointageDeDupont(TypeDEvenementDAtelier.DEBUT, POSTE_FRAISEUSE_1, date);
+    return pointageDeDupont(TypeDEvenementDAtelier.DEBUT, POSTE_ID_FRAISEUSE_1, date);
   }
 
   public static EvenementDAtelier nonConformiteSurFraiseuse1ParDupontA(Instant date) {
-    return pointageDeDupont(TypeDEvenementDAtelier.NON_CONFORMITE, POSTE_FRAISEUSE_1, date);
+    return pointageDeDupont(TypeDEvenementDAtelier.NON_CONFORMITE, POSTE_ID_FRAISEUSE_1, date);
   }
 
   public static EvenementDAtelier finSurFraiseuse1ParDupontA(Instant date) {
-    return pointageDeDupont(TypeDEvenementDAtelier.FIN, POSTE_FRAISEUSE_1, date);
+    return pointageDeDupont(TypeDEvenementDAtelier.FIN, POSTE_ID_FRAISEUSE_1, date);
   }
 
   public static EvenementDAtelier debutSurFraiseuse2ParDupontA(Instant date) {
-    return pointageDeDupont(TypeDEvenementDAtelier.DEBUT, POSTE_FRAISEUSE_2, date);
+    return pointageDeDupont(TypeDEvenementDAtelier.DEBUT, POSTE_ID_FRAISEUSE_2, date);
   }
 
   public static EvenementDAtelier finSurFraiseuse2ParDupontA(Instant date) {
-    return pointageDeDupont(TypeDEvenementDAtelier.FIN, POSTE_FRAISEUSE_2, date);
+    return pointageDeDupont(TypeDEvenementDAtelier.FIN, POSTE_ID_FRAISEUSE_2, date);
   }
 
   public static EvenementDAtelier debutSansPosteParDupontA(Instant date) {
-    return evenementDAtelier(TypeDEvenementDAtelier.DEBUT, OPERATEUR_DUPONT, Optional.empty(), AUTEUR_DUPONT, Horodatage.saisiA(date));
+    return evenementDAtelier(TypeDEvenementDAtelier.DEBUT, OPERATEUR_ID_DUPONT, Optional.empty(), AUTEUR_DUPONT, Horodatage.saisiA(date));
   }
 
   public static EvenementDAtelier debutSurFraiseuse1ParMartinA(Instant date) {
     return evenementDAtelier(
       TypeDEvenementDAtelier.DEBUT,
-      OPERATEUR_MARTIN,
-      Optional.of(POSTE_FRAISEUSE_1),
-      new Auteur(OPERATEUR_MARTIN.value()),
+      OPERATEUR_ID_MARTIN,
+      Optional.of(POSTE_ID_FRAISEUSE_1),
+      AUTEUR_MARTIN,
       Horodatage.saisiA(date)
     );
   }
@@ -115,7 +126,7 @@ public final class AtelierFixture {
   }
 
   public static JourneeDeTravail journeeDeDupontOuverteA7H() {
-    return JourneeDeTravail.ouverte(JourneeDeTravailId.newId(), OPERATEUR_DUPONT).enregistre(arriveeDeDupontA(LE_10_MAI_2026_A_7H));
+    return JourneeDeTravail.ouverte(JourneeDeTravailId.newId(), OPERATEUR_ID_DUPONT).enregistre(arriveeDeDupontA(LE_10_MAI_2026_A_7H));
   }
 
   public static JourneeDeTravail journeeDeDupontDe7HA17HAvecPauseDeMidi() {
@@ -157,15 +168,15 @@ public final class AtelierFixture {
       .horodatage(Horodatage.saisiA(date));
   }
 
-  private static EvenementDAtelier pointageDeDupont(TypeDEvenementDAtelier type, PosteDeTravail poste, Instant date) {
-    return evenementDAtelier(type, OPERATEUR_DUPONT, Optional.of(poste), AUTEUR_DUPONT, Horodatage.saisiA(date));
+  private static EvenementDAtelier pointageDeDupont(TypeDEvenementDAtelier type, PosteDeTravailId poste, Instant date) {
+    return evenementDAtelier(type, OPERATEUR_ID_DUPONT, Optional.of(poste), AUTEUR_DUPONT, Horodatage.saisiA(date));
   }
 
   private static EvenementDAtelier regularisationParLeroy(TypeDEvenementDAtelier type, Instant date) {
     return evenementDAtelier(
       type,
-      OPERATEUR_DUPONT,
-      Optional.of(POSTE_FRAISEUSE_1),
+      OPERATEUR_ID_DUPONT,
+      Optional.of(POSTE_ID_FRAISEUSE_1),
       AUTEUR_LEROY,
       new Horodatage(date, LE_11_MAI_2026_A_9H15)
     );
@@ -173,8 +184,8 @@ public final class AtelierFixture {
 
   private static EvenementDAtelier evenementDAtelier(
     TypeDEvenementDAtelier type,
-    Operateur operateur,
-    Optional<PosteDeTravail> poste,
+    OperateurId operateur,
+    Optional<PosteDeTravailId> poste,
     Auteur auteur,
     Horodatage horodatage
   ) {

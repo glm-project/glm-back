@@ -10,8 +10,11 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.beans.factory.annotation.Autowired;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
@@ -29,7 +32,16 @@ public class AtelierSteps {
   private static final String SUIVIS_URI = "/api/atelier/suivis";
   private static final String JOURNEES_URI = "/api/atelier/journees";
   private static final String ELEMENTS_URI = "/api/elements-de-fabrication";
+  private static final String POSTES_URI = "/api/postes-de-travail";
+  private static final String OPERATEURS_URI = "/api/operateurs";
   private static final ObjectMapper JSON = JsonMapper.builder().build();
+  private static final AtomicInteger SEQUENCE = new AtomicInteger();
+
+  /**
+   * Les postes sont declares une fois pour toute la campagne : leur libelle est unique par entreprise, et le garder
+   * litteral laisse les scenarios assurer leurs attentes sur « fraiseuse-1 » plutot que sur un identifiant.
+   */
+  private static final Map<String, String> POSTES_DECLARES = new ConcurrentHashMap<>();
 
   @Autowired
   private CucumberRestClient rest;
@@ -37,14 +49,52 @@ public class AtelierSteps {
   @Autowired
   private CucumberClock horloge;
 
-  private final Map<String, String> elements = new java.util.HashMap<>();
-  private final Map<String, String> suivis = new java.util.HashMap<>();
+  private final Map<String, String> elements = new HashMap<>();
+  private final Map<String, String> suivis = new HashMap<>();
+  private final Map<String, String> postes = new HashMap<>();
+  private final Map<String, String> operateurs = new HashMap<>();
 
   private String derniereJournee;
 
   @Given("il est {string}")
   public void ilEst(String instant) {
     horloge.ilEst(Instant.parse(instant));
+  }
+
+  /**
+   * Le referentiel se declare sous un nom metier, mais avec une identite rendue unique : deux scenarios peuvent ainsi
+   * parler du meme « dupont » sans se heurter a l'unicite de l'identite dans l'entreprise.
+   */
+  @Given("l'entreprise a declare le poste de travail {string} de nature {string}")
+  public void lEntrepriseADeclareLePosteDeTravail(String alias, String nature) {
+    postes.put(
+      alias,
+      POSTES_DECLARES.computeIfAbsent(alias, libelle -> {
+        rest.post(POSTES_URI, JSON.writeValueAsString(Map.of("libelle", libelle, "nature", nature)));
+
+        return idDeLaDerniereReponse();
+      })
+    );
+  }
+
+  @Given("l'entreprise a declare l'operateur {string} habilite sur {string}")
+  public void lEntrepriseADeclareLOperateurHabilite(String alias, String poste) {
+    declareLOperateur(alias, List.of(postes.get(poste)));
+  }
+
+  @Given("l'entreprise a declare l'operateur {string} habilite sur {string} et {string}")
+  public void lEntrepriseADeclareLOperateurHabiliteSurDeuxPostes(String alias, String premier, String second) {
+    declareLOperateur(alias, List.of(postes.get(premier), postes.get(second)));
+  }
+
+  @Given("l'entreprise a declare l'operateur {string}")
+  public void lEntrepriseADeclareLOperateur(String alias) {
+    declareLOperateur(alias, List.of());
+  }
+
+  @Given("l'entreprise a declare l'operateur {string} sans habilitation")
+  public void lEntrepriseADeclareLOperateurSansHabilitation(String alias) {
+    declareLOperateur(alias, List.of());
   }
 
   @Given("l'entreprise a cree l'element de fabrication {string}")
@@ -71,7 +121,7 @@ public class AtelierSteps {
 
   @When("je pointe sur {string}")
   public void jePointeSur(String alias, Map<String, String> donnees) {
-    rest.post(SUIVIS_URI + "/" + suivis.get(alias) + "/pointages", JSON.writeValueAsString(donnees));
+    rest.post(SUIVIS_URI + "/" + suivis.get(alias) + "/pointages", JSON.writeValueAsString(resolu(donnees)));
   }
 
   @Given("j'ai pointe sur {string}")
@@ -81,7 +131,7 @@ public class AtelierSteps {
 
   @When("je regularise sur {string}")
   public void jeRegulariseSur(String alias, Map<String, String> donnees) {
-    rest.post(SUIVIS_URI + "/" + suivis.get(alias) + "/regularisations", JSON.writeValueAsString(donnees));
+    rest.post(SUIVIS_URI + "/" + suivis.get(alias) + "/regularisations", JSON.writeValueAsString(resolu(donnees)));
   }
 
   @When("j'annule l'evenement {int} de {string}")
@@ -99,7 +149,10 @@ public class AtelierSteps {
 
   @When("je corrige l'evenement {int} de {string}")
   public void jeCorrigeLEvenementDe(int rang, String alias, Map<String, String> donnees) {
-    rest.put(SUIVIS_URI + "/" + suivis.get(alias) + "/evenements/" + evenementDAtelier(alias, rang), JSON.writeValueAsString(donnees));
+    rest.put(
+      SUIVIS_URI + "/" + suivis.get(alias) + "/evenements/" + evenementDAtelier(alias, rang),
+      JSON.writeValueAsString(resolu(donnees))
+    );
   }
 
   @When("je cloture {string}")
@@ -135,6 +188,16 @@ public class AtelierSteps {
   @When("je consulte le temps effectif de {string}")
   public void jeConsulteLeTempsEffectifDe(String alias) {
     rest.get(SUIVIS_URI + "/" + suivis.get(alias) + "/temps-effectif");
+  }
+
+  @When("je tente de supprimer le poste de travail declare {string}")
+  public void jeTenteDeSupprimerLePosteDeTravailDeclare(String alias) {
+    rest.delete(POSTES_URI + "/" + postes.get(alias));
+  }
+
+  @When("je tente de supprimer l'operateur declare {string}")
+  public void jeTenteDeSupprimerLOperateurDeclare(String alias) {
+    rest.delete(OPERATEURS_URI + "/" + operateurs.get(alias));
   }
 
   @When("je liste les elements engages")
@@ -188,16 +251,31 @@ public class AtelierSteps {
   }
 
   @Then("l'evenement {int} du suivi est une regularisation de {string} saisie par {string}")
-  public void lEvenementDuSuiviEstUneRegularisation(int rang, String auteur, String saisiPar) {
+  public void lEvenementDuSuiviEstUneRegularisation(int rang, String operateur, String saisiPar) {
     assertThatLastResponse()
       .hasElement("$.journal[" + rang + "].estUneRegularisation")
       .withValue(true)
       .and()
-      .hasElement("$.journal[" + rang + "].operateur")
-      .withValue(auteur)
+      .hasElement("$.journal[" + rang + "].operateur.id")
+      .withValue(idDeLOperateur(operateur))
       .and()
       .hasElement("$.journal[" + rang + "].auteur")
       .withValue(saisiPar);
+  }
+
+  @Then("l'evenement {int} du suivi porte l'operateur {string} et le poste {string}")
+  public void lEvenementDuSuiviPorteLeReferentiel(int rang, String operateur, String poste) {
+    assertThatLastResponse()
+      .hasElement("$.journal[" + rang + "].operateur.id")
+      .withValue(idDeLOperateur(operateur))
+      .and()
+      .hasElement("$.journal[" + rang + "].poste.id")
+      .withValue(postes.get(poste));
+  }
+
+  @Then("l'evenement {int} du suivi a la nature {string}")
+  public void lEvenementDuSuiviALaNature(int rang, String nature) {
+    assertThatLastResponse().hasElement("$.journal[" + rang + "].nature").withValue(nature);
   }
 
   @Then("le temps effectif contient")
@@ -222,7 +300,7 @@ public class AtelierSteps {
 
   @When("j'arrive")
   public void jArrive(Map<String, String> donnees) {
-    rest.post(JOURNEES_URI, JSON.writeValueAsString(donnees));
+    rest.post(JOURNEES_URI, JSON.writeValueAsString(resolu(donnees)));
   }
 
   @Given("je suis arrive")
@@ -233,7 +311,7 @@ public class AtelierSteps {
 
   @When("je pointe ma presence")
   public void jePointeMaPresence(Map<String, String> donnees) {
-    rest.post(JOURNEES_URI + "/pointages", JSON.writeValueAsString(donnees));
+    rest.post(JOURNEES_URI + "/pointages", JSON.writeValueAsString(resolu(donnees)));
   }
 
   @Given("j'ai pointe ma presence")
@@ -281,17 +359,17 @@ public class AtelierSteps {
 
   @When("je liste les journees de {string}")
   public void jeListeLesJourneesDe(String operateur) {
-    rest.get(JOURNEES_URI + "?operateur=" + operateur);
+    rest.get(JOURNEES_URI + "?operateur=" + idDeLOperateur(operateur));
   }
 
   @When("je liste les journees de {string} entre {string} et {string}")
   public void jeListeLesJourneesDeEntre(String operateur, String debut, String fin) {
-    rest.get(JOURNEES_URI + "?operateur=" + operateur + "&debut=" + debut + "&fin=" + fin);
+    rest.get(JOURNEES_URI + "?operateur=" + idDeLOperateur(operateur) + "&debut=" + debut + "&fin=" + fin);
   }
 
   @When("je liste les journees de {string} depuis {string} sans borne de fin")
   public void jeListeLesJourneesDeDepuis(String operateur, String debut) {
-    rest.get(JOURNEES_URI + "?operateur=" + operateur + "&debut=" + debut);
+    rest.get(JOURNEES_URI + "?operateur=" + idDeLOperateur(operateur) + "&debut=" + debut);
   }
 
   @When("je liste les journees")
@@ -362,6 +440,30 @@ public class AtelierSteps {
     rest.get(JOURNEES_URI + "/" + derniereJournee);
 
     return elementDeLaDerniereReponse("$.journal[" + rang + "].id");
+  }
+
+  /**
+   * Traduit les noms metier des features en identifiants du referentiel. Une valeur inconnue passe telle quelle : les
+   * scenarios de refus fournissent directement un identifiant qui n'existe pas.
+   */
+  private Map<String, String> resolu(Map<String, String> donnees) {
+    Map<String, String> corps = new HashMap<>(donnees);
+    corps.computeIfPresent("operateur", (cle, alias) -> operateurs.getOrDefault(alias, alias));
+    corps.computeIfPresent("poste", (cle, alias) -> postes.getOrDefault(alias, alias));
+
+    return corps;
+  }
+
+  private String idDeLOperateur(String alias) {
+    return operateurs.getOrDefault(alias, alias);
+  }
+
+  private void declareLOperateur(String alias, List<String> habilitations) {
+    rest.post(
+      OPERATEURS_URI,
+      JSON.writeValueAsString(Map.of("nom", alias, "prenom", "Operateur " + SEQUENCE.incrementAndGet(), "postes", habilitations))
+    );
+    operateurs.put(alias, idDeLaDerniereReponse());
   }
 
   private static String idDeLaDerniereReponse() {

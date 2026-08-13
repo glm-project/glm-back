@@ -78,7 +78,7 @@ class JournalDAtelierTest {
     assertThatThrownBy(() -> new JournalDAtelier(finSansDebut))
       .isExactlyInstanceOf(TransitionDAtelierInterditeException.class)
       .hasMessageContaining("FIN")
-      .hasMessageContaining("dupont")
+      .hasMessageContaining(OPERATEUR_ID_DUPONT.uuid().toString())
       .hasMessageContaining("ABSENTE");
   }
 
@@ -90,7 +90,7 @@ class JournalDAtelierTest {
 
     assertThat(journal.intervalles(Optional.empty()))
       .extracting(IntervalleDActivite::operateur)
-      .containsExactly(OPERATEUR_DUPONT, OPERATEUR_MARTIN);
+      .containsExactly(OPERATEUR_ID_DUPONT, OPERATEUR_ID_MARTIN);
   }
 
   /**
@@ -105,7 +105,7 @@ class JournalDAtelierTest {
 
     assertThat(journal.intervalles(Optional.empty()))
       .extracting(IntervalleDActivite::poste)
-      .containsExactly(Optional.of(POSTE_FRAISEUSE_1), Optional.of(POSTE_FRAISEUSE_2));
+      .containsExactly(Optional.of(POSTE_ID_FRAISEUSE_1), Optional.of(POSTE_ID_FRAISEUSE_2));
   }
 
   @Test
@@ -271,8 +271,8 @@ class JournalDAtelierTest {
     return EvenementDAtelier.builder()
       .id(id)
       .type(type)
-      .operateur(OPERATEUR_DUPONT)
-      .poste(Optional.of(POSTE_FRAISEUSE_1))
+      .operateur(OPERATEUR_ID_DUPONT)
+      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
       .nature(Optional.of(NATURE_FRAISAGE))
       .auteur(AUTEUR_DUPONT)
       .horodatage(Horodatage.saisiA(date));

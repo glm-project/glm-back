@@ -14,10 +14,12 @@ public final class OperateursService {
 
   private final OperateurRepository repository;
   private final PostesHabilitables postes;
+  private final OperateursQuiOntPointe pointages;
 
-  public OperateursService(OperateurRepository repository, PostesHabilitables postes) {
+  public OperateursService(OperateurRepository repository, PostesHabilitables postes, OperateursQuiOntPointe pointages) {
     this.repository = repository;
     this.postes = postes;
+    this.pointages = pointages;
   }
 
   public ProfilDOperateur create(OperateurACreer aCreer) {
@@ -55,7 +57,14 @@ public final class OperateursService {
     return new ProfilDOperateur(revise, habilitations);
   }
 
+  /**
+   * Un operateur qui a pointe ne se supprime pas : le journal d'atelier ne retient que son identifiant, et sa
+   * disparition laisserait des heures sans personne a payer.
+   */
   public void delete(OperateurId id) {
+    if (pointages.aPointe(id)) {
+      throw new OperateurAPointeException(id);
+    }
     repository.delete(id);
   }
 

@@ -109,7 +109,7 @@ class PosteDeTravailResource {
   )
   @ApiResponse(responseCode = "204", description = "Le poste est supprime.")
   @ApiResponse(responseCode = "404", description = "Poste de travail introuvable.")
-  @ApiResponse(responseCode = "409", description = "Des operateurs sont encore habilites sur ce poste.")
+  @ApiResponse(responseCode = "409", description = "Des operateurs sont encore habilites sur ce poste, ou du temps y a deja ete pointe.")
   void delete(@PathVariable UUID id) {
     applicationService.delete(new PosteDeTravailId(id));
   }
