@@ -1,7 +1,9 @@
 package com.glm.glmback.atelier.infrastructure.primary;
 
 import com.glm.glmback.atelier.application.SuivisDAtelierApplicationService;
+import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
 import com.glm.glmback.atelier.domain.EtatDAtelier;
+import com.glm.glmback.atelier.domain.IntervalleDActivite;
 import com.glm.glmback.atelier.domain.Periode;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
@@ -71,7 +73,7 @@ class SuiviDAtelierResource {
     Page<SuiviDAtelier> resultat = applicationService.list(periode(debut, fin), etats(etats), new Pageable(page, size));
 
     return Page.<RestSuiviDAtelier>builder()
-      .content(resultat.content().stream().map(RestSuiviDAtelier::from).toList())
+      .content(rendus(resultat.content()))
       .currentPage(resultat.currentPage())
       .pageSize(resultat.pageSize())
       .totalElementsCount(resultat.totalElementsCount());
@@ -92,14 +94,14 @@ class SuiviDAtelierResource {
   @ApiResponse(responseCode = "404", description = "Aucun element de fabrication ne porte cet identifiant.")
   @ApiResponse(responseCode = "409", description = "Cet element est deja engage et non cloture.")
   RestSuiviDAtelier engage(@RequestBody @Valid RestEngagement request) {
-    return RestSuiviDAtelier.from(applicationService.engage(request.toDomain(AuteurConnecte.get())));
+    return rendu(applicationService.engage(request.toDomain(AuteurConnecte.get())));
   }
 
   @GetMapping("/{id}")
   @Operation(summary = "Consulter un element engage")
   @ApiResponse(responseCode = "404", description = "Suivi introuvable.")
   RestSuiviDAtelier get(@PathVariable UUID id) {
-    return RestSuiviDAtelier.from(applicationService.get(new SuiviDAtelierId(id)));
+    return rendu(applicationService.get(new SuiviDAtelierId(id)));
   }
 
   @GetMapping("/{id}/temps-effectif")
@@ -115,7 +117,13 @@ class SuiviDAtelierResource {
   )
   @ApiResponse(responseCode = "404", description = "Suivi introuvable.")
   List<RestIntervalleDActivite> tempsEffectif(@PathVariable UUID id) {
-    return applicationService.tempsEffectif(new SuiviDAtelierId(id)).stream().map(RestIntervalleDActivite::from).toList();
+    List<IntervalleDActivite> intervalles = applicationService.tempsEffectif(new SuiviDAtelierId(id));
+    AnnuaireDAtelier annuaire = applicationService.annuairePourIntervalles(intervalles);
+
+    return intervalles
+      .stream()
+      .map(intervalle -> RestIntervalleDActivite.from(intervalle, annuaire))
+      .toList();
   }
 
   @PostMapping("/{id}/pointages")
@@ -130,20 +138,26 @@ class SuiviDAtelierResource {
     """
   )
   @ApiResponse(responseCode = "201", description = "Le pointage est enregistre.")
-  @ApiResponse(responseCode = "404", description = "Suivi introuvable.")
-  @ApiResponse(responseCode = "409", description = "Element cloture, ou transition impossible depuis l'etat courant.")
+  @ApiResponse(responseCode = "404", description = "Suivi, operateur ou poste de travail introuvable.")
+  @ApiResponse(
+    responseCode = "409",
+    description = "Operateur non habilite sur ce poste, element cloture, ou transition impossible depuis l'etat courant."
+  )
   RestSuiviDAtelier pointe(@PathVariable UUID id, @RequestBody @Valid RestPointage request) {
-    return RestSuiviDAtelier.from(applicationService.pointe(request.toDomain(new SuiviDAtelierId(id))));
+    return rendu(applicationService.pointe(request.toDomain(new SuiviDAtelierId(id), AuteurConnecte.get())));
   }
 
   @PostMapping("/{id}/regularisations")
   @ResponseStatus(HttpStatus.CREATED)
   @Operation(summary = "Rattraper une saisie oubliee", description = "Premier des trois actes de correction.")
   @ApiResponse(responseCode = "201", description = "La regularisation est enregistree.")
-  @ApiResponse(responseCode = "404", description = "Suivi introuvable.")
-  @ApiResponse(responseCode = "409", description = "Transition impossible, ou evenement anterieur a l'engagement.")
+  @ApiResponse(responseCode = "404", description = "Suivi, operateur ou poste de travail introuvable.")
+  @ApiResponse(
+    responseCode = "409",
+    description = "Operateur non habilite sur ce poste, transition impossible, ou evenement anterieur a l'engagement."
+  )
   RestSuiviDAtelier regularise(@PathVariable UUID id, @RequestBody @Valid RestRegularisation request) {
-    return RestSuiviDAtelier.from(applicationService.regularise(request.toDomain(new SuiviDAtelierId(id), AuteurConnecte.get())));
+    return rendu(applicationService.regularise(request.toDomain(new SuiviDAtelierId(id), AuteurConnecte.get())));
   }
 
   @PostMapping("/{id}/evenements/{evenementId}/annulation")
@@ -151,7 +165,7 @@ class SuiviDAtelierResource {
   @ApiResponse(responseCode = "404", description = "Suivi ou evenement introuvable.")
   @ApiResponse(responseCode = "409", description = "Evenement deja annule.")
   RestSuiviDAtelier annule(@PathVariable UUID id, @PathVariable UUID evenementId, @RequestBody @Valid RestAnnulationDEvenement request) {
-    return RestSuiviDAtelier.from(applicationService.annule(request.toDomain(new SuiviDAtelierId(id), evenementId, AuteurConnecte.get())));
+    return rendu(applicationService.annule(request.toDomain(new SuiviDAtelierId(id), evenementId, AuteurConnecte.get())));
   }
 
   @PutMapping("/{id}/evenements/{evenementId}")
@@ -159,10 +173,10 @@ class SuiviDAtelierResource {
     summary = "Corriger une saisie fausse",
     description = "Troisieme acte : une annulation et une regularisation en un seul appel."
   )
-  @ApiResponse(responseCode = "404", description = "Suivi ou evenement introuvable.")
-  @ApiResponse(responseCode = "409", description = "Evenement deja annule, ou transition impossible.")
+  @ApiResponse(responseCode = "404", description = "Suivi, evenement, operateur ou poste de travail introuvable.")
+  @ApiResponse(responseCode = "409", description = "Operateur non habilite sur ce poste, evenement deja annule, ou transition impossible.")
   RestSuiviDAtelier corrige(@PathVariable UUID id, @PathVariable UUID evenementId, @RequestBody @Valid RestCorrection request) {
-    return RestSuiviDAtelier.from(applicationService.corrige(request.toDomain(new SuiviDAtelierId(id), evenementId, AuteurConnecte.get())));
+    return rendu(applicationService.corrige(request.toDomain(new SuiviDAtelierId(id), evenementId, AuteurConnecte.get())));
   }
 
   @PutMapping("/{id}/cloture")
@@ -176,14 +190,33 @@ class SuiviDAtelierResource {
   @ApiResponse(responseCode = "404", description = "Suivi introuvable.")
   @ApiResponse(responseCode = "409", description = "Le journal porte un evenement posterieur a la date de cloture demandee.")
   RestSuiviDAtelier cloture(@PathVariable UUID id, @RequestBody @Valid RestCloture request) {
-    return RestSuiviDAtelier.from(applicationService.cloture(request.toDomain(new SuiviDAtelierId(id), AuteurConnecte.get())));
+    return rendu(applicationService.cloture(request.toDomain(new SuiviDAtelierId(id), AuteurConnecte.get())));
   }
 
   @DeleteMapping("/{id}/cloture")
   @Operation(summary = "Rouvrir un element cloture", description = "Retire la cloture. L'element redevient pointable.")
   @ApiResponse(responseCode = "404", description = "Suivi introuvable.")
   RestSuiviDAtelier annuleLaCloture(@PathVariable UUID id) {
-    return RestSuiviDAtelier.from(applicationService.annuleLaCloture(new SuiviDAtelierId(id)));
+    return rendu(applicationService.annuleLaCloture(new SuiviDAtelierId(id)));
+  }
+
+  /**
+   * Le suivi rendu avec ses ressources resolues : le journal ne stockant que des identifiants, l'affichage les relit.
+   */
+  private RestSuiviDAtelier rendu(SuiviDAtelier suivi) {
+    return RestSuiviDAtelier.from(suivi, applicationService.annuairePour(suivi));
+  }
+
+  /**
+   * Une page entiere resolue en un seul aller par port, jamais un par element.
+   */
+  private List<RestSuiviDAtelier> rendus(List<SuiviDAtelier> suivis) {
+    AnnuaireDAtelier annuaire = applicationService.annuairePourSuivis(suivis);
+
+    return suivis
+      .stream()
+      .map(suivi -> RestSuiviDAtelier.from(suivi, annuaire))
+      .toList();
   }
 
   private static Optional<Periode> periode(Instant debut, Instant fin) {

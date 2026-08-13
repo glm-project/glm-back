@@ -20,8 +20,8 @@ ne l'ait saisi deux fois.
 - **La nature de travail comme propriété d'une personne.** Elle appartient au poste. Déclarer un métier sur
   l'opérateur le stockerait deux fois, avec la possibilité qu'ils se contredisent.
 - **Le taux horaire**, et tout montant : lot « coût de revient ».
-- **Le pointage**, qui appartient à `atelier` — lequel continue de recevoir un `Operateur` en texte libre. Le
-  branchement des deux est un lot à part.
+- **Le pointage**, qui appartient à `atelier` — lequel ne connaît de ce contexte que l'identifiant, lu par port, et
+  n'en copie rien.
 - **L'identification à la borne** et l'authentification. Le matricule est un attribut d'identité, pas un moyen de
   connexion.
 
@@ -50,11 +50,14 @@ résolus.
   `ElementEngageableEntity`).
 - **Une page se résout en une requête.** `PostesHabilitables` n'expose que `parIds` : un accès unitaire coûterait
   autant de requêtes que d'habilitations sur la page.
+- **Un opérateur qui a pointé ne se supprime pas**, qu'il ait pointé sur un élément ou seulement sa présence : le
+  journal d'atelier ne retient que son identifiant, et sa disparition laisserait des heures sans personne à payer. La
+  règle vit dans `OperateursService`, derrière le port `OperateursQuiOntPointe`.
 - **Domaine immuable** : la révision passe par `Operateur.revise`, qui rend un nouvel agrégat de même identité.
 
 ## Ports sortants
 
-`OperateurRepository`, `PostesHabilitables`.
+`OperateurRepository`, `PostesHabilitables`, `OperateursQuiOntPointe`.
 
 ## Structure
 

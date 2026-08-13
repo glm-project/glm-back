@@ -11,7 +11,7 @@ import java.util.Optional;
  * consulte la sienne, et l'ecran temps reel ne filtre sur rien.
  * </p>
  */
-public record JourneeDeTravailCriteria(Optional<Periode> periode, Optional<Operateur> operateur) {
+public record JourneeDeTravailCriteria(Optional<Periode> periode, Optional<OperateurId> operateur) {
   public JourneeDeTravailCriteria {
     Assert.notNull("periode", periode);
     Assert.notNull("operateur", operateur);

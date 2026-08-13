@@ -13,18 +13,29 @@ import java.util.Optional;
  * Un pointage se date sur l'horloge, une regularisation sur la valeur fournie ; la date d'enregistrement vaut
  * l'instant present dans les deux cas. L'agregat, lui, ne voit qu'un evenement deja horodate.
  * </p>
+ *
+ * <p>
+ * La presence ne connait aucun poste de travail, donc aucune habilitation : seule l'existence de l'operateur est
+ * verifiee, et une seule fois, a l'ouverture de la journee.
+ * </p>
  */
 public final class JourneesDeTravailService {
 
   private final JourneeDeTravailRepository repository;
+  private final OperateursConnus operateurs;
   private final Clock clock;
 
-  public JourneesDeTravailService(JourneeDeTravailRepository repository, Clock clock) {
+  public JourneesDeTravailService(JourneeDeTravailRepository repository, OperateursConnus operateurs, Clock clock) {
     this.repository = repository;
+    this.operateurs = operateurs;
     this.clock = clock;
   }
 
   public JourneeDeTravail arrive(ArriveeAEnregistrer commande) {
+    if (!operateurs.existe(commande.operateur())) {
+      throw new OperateurDAtelierIntrouvableException(commande.operateur());
+    }
+
     if (repository.getEnCoursPour(commande.operateur()).isPresent()) {
       throw new JourneeDeTravailDejaOuverteException(commande.operateur());
     }
@@ -71,7 +82,7 @@ public final class JourneesDeTravailService {
     return repository.get(id).orElseThrow(() -> new JourneeDeTravailIntrouvableException(id));
   }
 
-  public Page<JourneeDeTravail> list(Optional<Periode> periode, Optional<Operateur> operateur, Pageable pageable) {
+  public Page<JourneeDeTravail> list(Optional<Periode> periode, Optional<OperateurId> operateur, Pageable pageable) {
     return repository.list(new JourneeDeTravailCriteria(periode, operateur), pageable);
   }
 

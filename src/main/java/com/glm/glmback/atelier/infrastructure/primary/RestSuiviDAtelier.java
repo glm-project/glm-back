@@ -1,5 +1,6 @@
 package com.glm.glmback.atelier.infrastructure.primary;
 
+import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
 import com.glm.glmback.atelier.domain.Cloture;
 import com.glm.glmback.atelier.domain.EtatDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
@@ -30,7 +31,7 @@ record RestSuiviDAtelier(
   @Schema(description = "Le journal complet, annules compris, du plus ancien au plus recent.") List<RestEvenementDAtelier> journal,
   @Schema(description = "Les activites ouvertes a cet instant.") List<RestActiviteEnCours> activitesEnCours
 ) {
-  static RestSuiviDAtelier from(SuiviDAtelier suivi) {
+  static RestSuiviDAtelier from(SuiviDAtelier suivi, AnnuaireDAtelier annuaire) {
     return new RestSuiviDAtelier(
       suivi.id().uuid(),
       suivi.element().id().uuid(),
@@ -44,8 +45,17 @@ record RestSuiviDAtelier(
         .map(cloture -> cloture.auteur().value())
         .orElse(null),
       suivi.cloture().map(Cloture::dateDeSurvenue).orElse(null),
-      suivi.journal().evenements().stream().map(RestEvenementDAtelier::from).toList(),
-      suivi.activitesEnCours().stream().map(RestActiviteEnCours::from).toList()
+      suivi
+        .journal()
+        .evenements()
+        .stream()
+        .map(evenement -> RestEvenementDAtelier.from(evenement, annuaire))
+        .toList(),
+      suivi
+        .activitesEnCours()
+        .stream()
+        .map(activite -> RestActiviteEnCours.from(activite, annuaire))
+        .toList()
     );
   }
 }

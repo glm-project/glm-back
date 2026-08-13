@@ -17,7 +17,7 @@ import com.glm.glmback.atelier.domain.Horodatage;
 import com.glm.glmback.atelier.domain.JournalDAtelier;
 import com.glm.glmback.atelier.domain.NatureDOperation;
 import com.glm.glmback.atelier.domain.Periode;
-import com.glm.glmback.atelier.domain.PosteDeTravail;
+import com.glm.glmback.atelier.domain.PosteDeTravailId;
 import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierCriteria;
@@ -297,27 +297,37 @@ class JpaSuiviDAtelierRepositoryIT {
   }
 
   private static EvenementDAtelier debutSurFraiseuse1A(Instant date) {
-    return evenement(TypeDEvenementDAtelier.DEBUT, Optional.of(POSTE_FRAISEUSE_1), Optional.of(NATURE_FRAISAGE), Horodatage.saisiA(date));
+    return evenement(
+      TypeDEvenementDAtelier.DEBUT,
+      Optional.of(POSTE_ID_FRAISEUSE_1),
+      Optional.of(NATURE_FRAISAGE),
+      Horodatage.saisiA(date)
+    );
   }
 
   private static EvenementDAtelier debutSurFraiseuse2A(Instant date) {
-    return evenement(TypeDEvenementDAtelier.DEBUT, Optional.of(POSTE_FRAISEUSE_2), Optional.of(NATURE_FRAISAGE), Horodatage.saisiA(date));
+    return evenement(
+      TypeDEvenementDAtelier.DEBUT,
+      Optional.of(POSTE_ID_FRAISEUSE_2),
+      Optional.of(NATURE_FRAISAGE),
+      Horodatage.saisiA(date)
+    );
   }
 
   private static EvenementDAtelier finSurFraiseuse1A(Instant date) {
-    return evenement(TypeDEvenementDAtelier.FIN, Optional.of(POSTE_FRAISEUSE_1), Optional.of(NATURE_FRAISAGE), Horodatage.saisiA(date));
+    return evenement(TypeDEvenementDAtelier.FIN, Optional.of(POSTE_ID_FRAISEUSE_1), Optional.of(NATURE_FRAISAGE), Horodatage.saisiA(date));
   }
 
   private static EvenementDAtelier evenement(
     TypeDEvenementDAtelier type,
-    Optional<PosteDeTravail> poste,
+    Optional<PosteDeTravailId> poste,
     Optional<NatureDOperation> nature,
     Horodatage horodatage
   ) {
     return EvenementDAtelier.builder()
       .id(EvenementDAtelierId.newId())
       .type(type)
-      .operateur(OPERATEUR_DUPONT)
+      .operateur(OPERATEUR_ID_DUPONT)
       .poste(poste)
       .nature(nature)
       .auteur(AUTEUR_DUPONT)

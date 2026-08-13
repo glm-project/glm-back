@@ -23,9 +23,8 @@ Ne rien ajouter ici qui relève de :
 - **le coût de revient monétaire** — taux horaire de l'opérateur, coût horaire du poste, temps réparti valorisé. Aucun
   montant n'entre dans ce contexte ;
 - **le référentiel des ressources** — opérateur → postes autorisés, taux ; poste → libellé, nature, coût horaire. Ces
-  données sont **lues par port**, jamais possédées ici. `Operateur` et `PosteDeTravail` sont des références opaques.
-  Les contextes `postedetravail` et `operateur` les portent désormais, mais **rien n'est encore branché** : l'atelier
-  ne les importe pas et ne les lit pas ;
+  données sont **lues par port** (`OperateursConnus`, `PostesConnus`, `Habilitations`), jamais possédées ici. Le
+  journal ne retient que `OperateurId` et `PosteDeTravailId` ;
 - **la paie** — le contexte expose `amplitude()` et `fenetres()`, il ne choisit pas laquelle compte ;
 - **le cycle de vie de l'élément de fabrication** lui-même, qui appartient à `elementdefabrication` ;
 - **le fuseau horaire et le jour calendaire** — une `JourneeDeTravail` est bornée par une arrivée et un départ, pas par
@@ -54,18 +53,26 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
 - **La pause et le départ sont des faits de l'opérateur, écrits une seule fois.** Ne jamais les recopier dans le journal
   des éléments : c'est ce qui donne au client son bouton unique, et ce qui permet à une seule régularisation de départ
   de refermer tous les éléments de la journée.
-- **`PosteDeTravail` et `NatureDOperation` sont toujours facultatifs.** L'application vise un maximum d'entreprises
-  clientes ; celles qui n'ont ni parc machine ni métiers distincts laissent les deux vides et retrouvent un
-  comportement cohérent, pas un cas dégradé.
-- **La nature ne bloque rien.** Elle n'est qu'un axe d'agrégation pour la synthèse. Un pointage refusé en atelier
-  coûterait plus cher qu'une ligne de synthèse mal rangée.
+- **Le poste de travail et la `NatureDOperation` sont toujours facultatifs.** L'application vise un maximum
+  d'entreprises clientes ; celles qui n'ont ni parc machine ni métiers distincts laissent les deux vides et retrouvent
+  un comportement cohérent, pas un cas dégradé.
+- **La nature ne bloque rien**, et elle vient **du poste**, jamais de la personne. Elle n'est qu'un axe d'agrégation
+  pour la synthèse ; c'est la seule chose que le journal copie du référentiel, pour qu'un poste requalifié ne
+  requalifie pas les heures déjà passées.
+- **L'habilitation, elle, bloque** : pointer sur un poste où l'opérateur n'est pas déclaré est refusé (409). C'est la
+  seule règle dure du contexte. Elle ne joue que lorsqu'un poste est fourni, et elle joue sur les **trois** écritures
+  du journal — pointage, régularisation, correction — sans quoi le back-office contournerait le pupitre.
+- **Rien d'autre n'est copié du référentiel des ressources.** Le journal ne stocke qu'un identifiant, et les libellés
+  sont relus à chaque lecture : une fiche corrigée doit s'afficher corrigée sur tout l'historique. La contrepartie vit
+  chez les voisins — ni un opérateur ni un poste ayant servi à pointer ne se supprime.
 - **Aucun import de `elementdefabrication`**, annoté `@BusinessContext`. L'atelier déclare sa propre identité
   `ElementEngage`, dont le nom et le type sont **copiés à l'engagement**.
 - **Domaine immuable** : toute transition rend un nouvel agrégat, suivie d'un `update` explicite sur le repository.
 
 ## Ports sortants
 
-`SuiviDAtelierRepository`, `JourneeDeTravailRepository`, `ElementsEngageables`, `FonctionsDesOperateurs`, `Clock`.
+`SuiviDAtelierRepository`, `JourneeDeTravailRepository`, `ElementsEngageables`, `OperateursConnus`, `PostesConnus`,
+`Habilitations`, `Clock`.
 
 Tout besoin d'une donnée de paramétrage passe par un nouveau port, jamais par une constante du domaine.
 
@@ -82,9 +89,10 @@ front — le tenir à jour avec le contrat.
   identifiant** côté persistance : un pointage coûte l'insertion d'une ligne, jamais la réécriture du journal ;
 - `ElementsDeFabricationEngageables` lit la table `element_de_fabrication` par une entité en lecture seule propre à
   l'atelier : aucun import de `elementdefabrication`, l'invariant tient ;
-- `FonctionsDesOperateursInconnues` rend toujours vide. La nature étant facultative par invariant, c'est un port en
-  attente de sa source, pas un cas dégradé. Cette source existe depuis que `postedetravail` porte la nature de chaque
-  poste — le branchement reste un lot à part, et il devra faire venir la nature **du poste**, pas de l'opérateur.
+- `OperateursDuReferentiel`, `PostesDeTravailDuReferentiel` et `HabilitationsDuReferentiel` lisent de la même façon
+  `operateur`, `poste_de_travail` et `operateur_poste`. L'écriture n'a besoin que de l'existence ; la lecture résout un
+  journal entier par `parIds`, jamais une requête par événement, et `AnnuaireDAtelier` matérialise ce résultat le temps
+  d'une lecture.
 
 ### Les colonnes de projection ne contredisent pas « le journal est la source de vérité »
 
@@ -106,8 +114,10 @@ charge donc l'agrégat sous verrou pessimiste, puis refuse par `SaisieConcurrent
 journal ignore un événement déjà stocké. Un `@Version` n'aurait rien protégé : la collection d'événements est le côté
 inverse de l'association, donc l'insertion d'un événement ne salit pas la ligne parente et n'incrémente aucune version.
 
-L'`Auteur` d'une saisie vient toujours du jeton (`AuteurConnecte`), jamais du corps de la requête ; l'`Operateur`, lui,
-reste dans le corps.
+L'`Auteur` d'une saisie vient toujours du jeton (`AuteurConnecte`), jamais du corps de la requête ; l'opérateur, lui,
+reste dans le corps, sous forme d'identifiant. Les deux ne sont pas comparables tant que rien ne relie un utilisateur
+authentifié à une fiche du référentiel : c'est pourquoi `estSaisiParUnTiers` a été retiré plutôt que rendu faux, et
+pourquoi il reviendra avec le lot « utilisateur connecté ».
 
 Deux scénarios métier de référence, à lire avant toute modification du modèle :
 

@@ -11,8 +11,8 @@ import java.util.Optional;
 public record RegularisationAEnregistrer(
   SuiviDAtelierId suivi,
   TypeDEvenementDAtelier type,
-  Operateur operateur,
-  Optional<PosteDeTravail> poste,
+  OperateurId operateur,
+  Optional<PosteDeTravailId> poste,
   Auteur auteur,
   Instant dateDeSurvenue
 ) {
@@ -41,11 +41,11 @@ public record RegularisationAEnregistrer(
   }
 
   public interface RegularisationAEnregistrerOperateurBuilder {
-    RegularisationAEnregistrerPosteBuilder operateur(Operateur operateur);
+    RegularisationAEnregistrerPosteBuilder operateur(OperateurId operateur);
   }
 
   public interface RegularisationAEnregistrerPosteBuilder {
-    RegularisationAEnregistrerAuteurBuilder poste(Optional<PosteDeTravail> poste);
+    RegularisationAEnregistrerAuteurBuilder poste(Optional<PosteDeTravailId> poste);
   }
 
   public interface RegularisationAEnregistrerAuteurBuilder {

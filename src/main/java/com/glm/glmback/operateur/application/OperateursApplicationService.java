@@ -4,6 +4,7 @@ import com.glm.glmback.operateur.domain.OperateurACreer;
 import com.glm.glmback.operateur.domain.OperateurAModifier;
 import com.glm.glmback.operateur.domain.OperateurId;
 import com.glm.glmback.operateur.domain.OperateurRepository;
+import com.glm.glmback.operateur.domain.OperateursQuiOntPointe;
 import com.glm.glmback.operateur.domain.OperateursService;
 import com.glm.glmback.operateur.domain.PosteHabilitableId;
 import com.glm.glmback.operateur.domain.PostesHabilitables;
@@ -20,8 +21,8 @@ public class OperateursApplicationService {
 
   private final OperateursService operateurs;
 
-  public OperateursApplicationService(OperateurRepository repository, PostesHabilitables postes) {
-    this.operateurs = new OperateursService(repository, postes);
+  public OperateursApplicationService(OperateurRepository repository, PostesHabilitables postes, OperateursQuiOntPointe pointages) {
+    this.operateurs = new OperateursService(repository, postes, pointages);
   }
 
   @Secured("ROLE_GESTIONNAIRE")

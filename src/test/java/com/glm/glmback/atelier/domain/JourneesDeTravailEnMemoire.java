@@ -39,7 +39,7 @@ class JourneesDeTravailEnMemoire implements JourneeDeTravailRepository {
   }
 
   @Override
-  public Optional<JourneeDeTravail> getEnCoursPour(Operateur operateur) {
+  public Optional<JourneeDeTravail> getEnCoursPour(OperateurId operateur) {
     return journees
       .values()
       .stream()
@@ -49,7 +49,7 @@ class JourneesDeTravailEnMemoire implements JourneeDeTravailRepository {
   }
 
   @Override
-  public Optional<JourneeDeTravail> journeeContenant(Operateur operateur, Instant instant) {
+  public Optional<JourneeDeTravail> journeeContenant(OperateurId operateur, Instant instant) {
     return journees
       .values()
       .stream()

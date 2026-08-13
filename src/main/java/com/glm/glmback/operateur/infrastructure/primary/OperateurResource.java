@@ -102,6 +102,7 @@ class OperateurResource {
   @Operation(summary = "Supprimer un operateur")
   @ApiResponse(responseCode = "204", description = "L'operateur est supprime.")
   @ApiResponse(responseCode = "404", description = "Operateur introuvable.")
+  @ApiResponse(responseCode = "409", description = "Du temps est pointe au nom de cet operateur.")
   void delete(@PathVariable UUID id) {
     applicationService.delete(new OperateurId(id));
   }

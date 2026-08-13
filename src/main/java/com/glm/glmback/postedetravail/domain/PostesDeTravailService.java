@@ -8,10 +8,12 @@ public final class PostesDeTravailService {
 
   private final PosteDeTravailRepository repository;
   private final PostesEnUsage usages;
+  private final PostesPointes pointages;
 
-  public PostesDeTravailService(PosteDeTravailRepository repository, PostesEnUsage usages) {
+  public PostesDeTravailService(PosteDeTravailRepository repository, PostesEnUsage usages, PostesPointes pointages) {
     this.repository = repository;
     this.usages = usages;
+    this.pointages = pointages;
   }
 
   public PosteDeTravail create(PosteDeTravailACreer aCreer) {
@@ -40,9 +42,17 @@ public final class PostesDeTravailService {
    * Supprimer un poste encore habilite laisserait des operateurs pointer sur du vide : le geste correct est de le
    * retirer de leurs habilitations d'abord.
    */
+  /**
+   * Deux raisons distinctes de refuser : une habilitation encore declaree, et du temps deja pointe. La seconde est
+   * definitive — retirer l'habilitation ne rendra jamais le poste supprimable, sous peine de laisser des heures de
+   * travail sans machine.
+   */
   public void delete(PosteDeTravailId id) {
     if (usages.estHabilite(id)) {
       throw new PosteDeTravailUtiliseException(id);
+    }
+    if (pointages.aServiAPointer(id)) {
+      throw new PosteDeTravailPointeException(id);
     }
     repository.delete(id);
   }

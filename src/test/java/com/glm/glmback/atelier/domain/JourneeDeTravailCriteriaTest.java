@@ -32,13 +32,15 @@ class JourneeDeTravailCriteriaTest {
 
   @Test
   void shouldMatchJourneeDeLOperateurDemande() {
-    assertThat(new JourneeDeTravailCriteria(Optional.empty(), Optional.of(OPERATEUR_DUPONT)).matches(journeeDeDupontOuverteA7H())).isTrue();
+    assertThat(
+      new JourneeDeTravailCriteria(Optional.empty(), Optional.of(OPERATEUR_ID_DUPONT)).matches(journeeDeDupontOuverteA7H())
+    ).isTrue();
   }
 
   @Test
   void shouldNotMatchJourneeDUnAutreOperateur() {
     assertThat(
-      new JourneeDeTravailCriteria(Optional.empty(), Optional.of(OPERATEUR_MARTIN)).matches(journeeDeDupontOuverteA7H())
+      new JourneeDeTravailCriteria(Optional.empty(), Optional.of(OPERATEUR_ID_MARTIN)).matches(journeeDeDupontOuverteA7H())
     ).isFalse();
   }
 
@@ -58,7 +60,7 @@ class JourneeDeTravailCriteriaTest {
 
   @Test
   void shouldNotMatchJourneeSansAucunPointageQuandUnePeriodeEstDemandee() {
-    JourneeDeTravail vide = JourneeDeTravail.ouverte(JourneeDeTravailId.newId(), OPERATEUR_DUPONT);
+    JourneeDeTravail vide = JourneeDeTravail.ouverte(JourneeDeTravailId.newId(), OPERATEUR_ID_DUPONT);
 
     assertThat(new JourneeDeTravailCriteria(Optional.of(journeeDu10Mai2026()), Optional.empty()).matches(vide)).isFalse();
   }

@@ -33,8 +33,8 @@ class JourneesDeTravailEnMemoireTest {
     JourneeDeTravail journee = journees.create(journeeDeDupontOuverteA7H());
 
     assertThat(journees.get(journee.id())).contains(journee);
-    assertThat(journees.getEnCoursPour(OPERATEUR_DUPONT)).contains(journee);
-    assertThat(journees.getEnCoursPour(OPERATEUR_MARTIN)).isEmpty();
+    assertThat(journees.getEnCoursPour(OPERATEUR_ID_DUPONT)).contains(journee);
+    assertThat(journees.getEnCoursPour(OPERATEUR_ID_MARTIN)).isEmpty();
   }
 
   @Test
@@ -42,16 +42,16 @@ class JourneesDeTravailEnMemoireTest {
     JourneeDeTravail journee = journees.create(journeeDeDupontOuverteA7H());
     journees.update(journee.enregistre(departDeDupontA(LE_10_MAI_2026_A_17H)));
 
-    assertThat(journees.getEnCoursPour(OPERATEUR_DUPONT)).isEmpty();
+    assertThat(journees.getEnCoursPour(OPERATEUR_ID_DUPONT)).isEmpty();
   }
 
   @Test
   void shouldGetJourneeContenantUnInstant() {
     JourneeDeTravail journee = journees.create(journeeDeDupontDe7HA17HAvecPauseDeMidi());
 
-    assertThat(journees.journeeContenant(OPERATEUR_DUPONT, LE_10_MAI_2026_A_9H)).contains(journee);
-    assertThat(journees.journeeContenant(OPERATEUR_DUPONT, LE_11_MAI_2026_A_9H15)).isEmpty();
-    assertThat(journees.journeeContenant(OPERATEUR_MARTIN, LE_10_MAI_2026_A_9H)).isEmpty();
+    assertThat(journees.journeeContenant(OPERATEUR_ID_DUPONT, LE_10_MAI_2026_A_9H)).contains(journee);
+    assertThat(journees.journeeContenant(OPERATEUR_ID_DUPONT, LE_11_MAI_2026_A_9H15)).isEmpty();
+    assertThat(journees.journeeContenant(OPERATEUR_ID_MARTIN, LE_10_MAI_2026_A_9H)).isEmpty();
   }
 
   @Test
@@ -60,7 +60,7 @@ class JourneesDeTravailEnMemoireTest {
 
     assertThat(
       journees
-        .list(new JourneeDeTravailCriteria(Optional.of(journeeDu10Mai2026()), Optional.of(OPERATEUR_DUPONT)), firstPageOfTen())
+        .list(new JourneeDeTravailCriteria(Optional.of(journeeDu10Mai2026()), Optional.of(OPERATEUR_ID_DUPONT)), firstPageOfTen())
         .content()
     ).containsExactly(journee);
   }

@@ -1,12 +1,12 @@
 package com.glm.glmback.atelier.infrastructure.primary;
 
 import com.glm.glmback.atelier.domain.Auteur;
-import com.glm.glmback.atelier.domain.Operateur;
+import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.PointageDePresenceAEnregistrer;
 import com.glm.glmback.atelier.domain.TypeDEvenementDePresence;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import java.util.UUID;
 
 @Schema(
   description = """
@@ -17,10 +17,7 @@ import jakarta.validation.constraints.Size;
   """
 )
 record RestPointageDePresence(
-  @Schema(description = "Operateur qui pointe.", example = "dupont", requiredMode = Schema.RequiredMode.REQUIRED)
-  @NotNull
-  @Size(max = 100)
-  String operateur,
+  @Schema(description = "Identifiant de l'operateur qui pointe.", requiredMode = Schema.RequiredMode.REQUIRED) @NotNull UUID operateur,
 
   @Schema(
     description = "PAUSE, REPRISE ou DEPART. ARRIVEE passe par POST /api/atelier/journees.",
@@ -30,6 +27,6 @@ record RestPointageDePresence(
   TypeDEvenementDePresence type
 ) {
   PointageDePresenceAEnregistrer toDomain(Auteur auteur) {
-    return new PointageDePresenceAEnregistrer(new Operateur(operateur), auteur, type);
+    return new PointageDePresenceAEnregistrer(new OperateurId(operateur), auteur, type);
   }
 }
