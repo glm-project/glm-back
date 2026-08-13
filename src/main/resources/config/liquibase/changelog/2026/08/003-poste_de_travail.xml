@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <changeSet id="poste_de_travail" author="glm">
+    <comment>
+      Ce sur quoi un operateur pointe : une machine, un etabli, un four, une salle. Le libelle est unique par
+      schema, donc par entreprise : c'est ce qui fait du referentiel un referentiel, et ce qui evite que
+      "Tour 1" designe deux choses. La nature est obligatoire ici, contrairement a l'atelier ou elle reste
+      facultative : un poste n'est declare que pour dire quel travail s'y fait, et c'est de lui que vient le
+      metier exerce a un instant donne. La regle vit dans le domaine, cette contrainte n'est que le filet de
+      dernier recours.
+    </comment>
+
+    <createTable tableName="poste_de_travail">
+      <column name="id" type="${uuidType}">
+        <constraints nullable="false" primaryKey="true" />
+      </column>
+
+      <column name="libelle" type="varchar(100)">
+        <constraints nullable="false" unique="true" uniqueConstraintName="ux_poste_de_travail_libelle" />
+      </column>
+
+      <column name="nature" type="varchar(50)">
+        <constraints nullable="false" />
+      </column>
+    </createTable>
+
+    <createIndex indexName="ix_poste_de_travail_nature" tableName="poste_de_travail">
+      <column name="nature" />
+      <column name="libelle" />
+      <column name="id" />
+    </createIndex>
+  </changeSet>
+</databaseChangeLog>

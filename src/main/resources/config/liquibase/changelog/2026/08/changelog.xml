@@ -6,4 +6,6 @@
 >
   <include file="001-element_de_fabrication.xml" relativeToChangelogFile="true" />
   <include file="002-atelier.xml" relativeToChangelogFile="true" />
+  <include file="003-poste_de_travail.xml" relativeToChangelogFile="true" />
+  <include file="004-operateur.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>
