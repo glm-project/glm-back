@@ -18,11 +18,11 @@ public record ActiviteEnCours(CleDActivite activite, CategorieDActivite categori
     return new ActiviteEnCours(intervalle.cle(), intervalle.categorie(), intervalle.debut());
   }
 
-  public Operateur operateur() {
+  public OperateurId operateur() {
     return activite.operateur();
   }
 
-  public Optional<PosteDeTravail> poste() {
+  public Optional<PosteDeTravailId> poste() {
     return activite.poste();
   }
 }

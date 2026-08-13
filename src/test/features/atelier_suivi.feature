@@ -5,8 +5,14 @@ Feature: Suivi des elements engages en atelier
   #
   # Rien de ce qui se deduit n'est stocke. L'etat, les activites en cours et le temps passe sont recalcules du journal
   # a chaque lecture : c'est ce qui permet a une saisie rattrapee de compter a l'heure ou elle a eu lieu.
+  # Le pointage designe l'operateur et le poste par leur identifiant dans les referentiels : deux orthographes ne
+  # peuvent plus compter pour deux personnes. La nature de l'operation, elle, vient du poste et non de la personne.
   Background:
     Given I am logged in as "gestionnaire" with role "GESTIONNAIRE"
+    And l'entreprise a declare le poste de travail "fraiseuse-1" de nature "fraisage"
+    And l'entreprise a declare le poste de travail "fraiseuse-2" de nature "tournage"
+    And l'entreprise a declare l'operateur "dupont" habilite sur "fraiseuse-1" et "fraiseuse-2"
+    And l'entreprise a declare l'operateur "martin" sans habilitation
 
   Scenario: Engager un element de fabrication le fait apparaitre en atelier
     Given il est "2026-05-10T06:00:00Z"
@@ -44,6 +50,10 @@ Feature: Suivi des elements engages en atelier
     Then la reponse a le statut http 201
     And le suivi a l'etat "EN_COURS"
     And le suivi a 1 activites en cours
+    # Le journal ne stocke que des identifiants : l'operateur et le poste sont resolus a la lecture.
+    And l'evenement 0 du suivi porte l'operateur "dupont" et le poste "fraiseuse-1"
+    # La nature vient du poste, jamais de la personne : personne ne l'a saisie sur la fiche de Dupont.
+    And l'evenement 0 du suivi a la nature "fraisage"
 
   Scenario: Une non conformite interrompt l'element, une reprise se pointe comme un debut
     Given il est "2026-05-10T08:00:00Z"
@@ -90,6 +100,42 @@ Feature: Suivi des elements engages en atelier
       | poste     | fraiseuse-1 |
     Then le suivi a l'etat "INTERROMPU"
     And le suivi a 0 activites en cours
+
+  Scenario: Pointer sur un poste ou l'operateur n'est pas habilite est refuse
+    # L'habilitation est la seule regle dure du contexte : le referentiel dit qui peut pointer ou.
+    Given il est "2026-05-10T08:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 2017"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 2017                 |
+    And j'ai engage l'element "OF 2017" en atelier
+    When je pointe sur "OF 2017"
+      | type      | DEBUT       |
+      | operateur | martin      |
+      | poste     | fraiseuse-1 |
+    Then la reponse a le statut http 409
+
+  Scenario: Pointer pour un operateur inconnu du referentiel renvoie 404
+    Given il est "2026-05-10T08:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 2018"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 2018                 |
+    And j'ai engage l'element "OF 2018" en atelier
+    When je pointe sur "OF 2018"
+      | type      | DEBUT                                |
+      | operateur | 9c1f4a67-0d38-4b52-8e91-6a7c5d4b3e20 |
+    Then la reponse a le statut http 404
+
+  Scenario: Pointer sur un poste inconnu du referentiel renvoie 404
+    Given il est "2026-05-10T08:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 2019"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 2019                 |
+    And j'ai engage l'element "OF 2019" en atelier
+    When je pointe sur "OF 2019"
+      | type      | DEBUT                                |
+      | operateur | dupont                               |
+      | poste     | 4b8e2d31-95c0-4f76-a1d3-7e6b0c5a9f42 |
+    Then la reponse a le statut http 404
 
   Scenario: Deux debuts consecutifs sur la meme activite sont refuses
     Given il est "2026-05-10T08:00:00Z"
@@ -228,6 +274,45 @@ Feature: Suivi des elements engages en atelier
       | dateDeSurvenue | 2026-05-10T06:00:00Z |
     Then la reponse a le statut http 409
 
+  Scenario: Un poste sur lequel du temps a ete pointe ne se supprime plus
+    # Le journal ne retient que l'identifiant du poste : le supprimer laisserait des heures de travail sans machine.
+    Given il est "2026-05-10T08:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 2020"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 2020                 |
+    And j'ai engage l'element "OF 2020" en atelier
+    And j'ai pointe sur "OF 2020"
+      | type      | DEBUT       |
+      | operateur | dupont      |
+      | poste     | fraiseuse-1 |
+    When je tente de supprimer le poste de travail declare "fraiseuse-1"
+    Then la reponse a le statut http 409
+
+  Scenario: Un operateur qui a pointe sur un element ne se supprime plus
+    Given il est "2026-05-10T08:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 2021"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 2021                 |
+    And j'ai engage l'element "OF 2021" en atelier
+    And j'ai pointe sur "OF 2021"
+      | type      | DEBUT       |
+      | operateur | dupont      |
+      | poste     | fraiseuse-1 |
+    When je tente de supprimer l'operateur declare "dupont"
+    Then la reponse a le statut http 409
+
+  Scenario: Un operateur qui n'a fait que pointer sa presence ne se supprime pas davantage
+    # La presence seule suffit : c'est elle qui porte les heures a payer.
+    Given il est "2026-05-10T07:00:00Z"
+    And je suis arrive
+      | operateur | dupont |
+    When je tente de supprimer l'operateur declare "dupont"
+    Then la reponse a le statut http 409
+
+  Scenario: Un operateur qui n'a jamais pointe se supprime
+    When je tente de supprimer l'operateur declare "martin"
+    Then la reponse a le statut http 204
+
   Scenario: Le tableau d'atelier se filtre par etat
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2010"
@@ -330,16 +415,16 @@ Feature: Suivi des elements engages en atelier
     When je consulte le temps effectif de "OF 42"
     Then la reponse a le statut http 200
     And le temps effectif contient
-      | poste       | debut                | fin                  |
-      | fraiseuse-1 | 2026-05-10T08:00:00Z | 2026-05-10T12:00:00Z |
-      | fraiseuse-1 | 2026-05-10T13:00:00Z | 2026-05-10T17:00:00Z |
+      | poste.libelle | debut                | fin                  |
+      | fraiseuse-1   | 2026-05-10T08:00:00Z | 2026-05-10T12:00:00Z |
+      | fraiseuse-1   | 2026-05-10T13:00:00Z | 2026-05-10T17:00:00Z |
 
     # L'OF 43 s'arrete a sa propre fin, sans attendre le depart.
     When je consulte le temps effectif de "OF 43"
     And le temps effectif contient
-      | poste       | debut                | fin                  |
-      | fraiseuse-2 | 2026-05-10T09:00:00Z | 2026-05-10T12:00:00Z |
-      | fraiseuse-2 | 2026-05-10T13:00:00Z | 2026-05-10T16:00:00Z |
+      | poste.libelle | debut                | fin                  |
+      | fraiseuse-2   | 2026-05-10T09:00:00Z | 2026-05-10T12:00:00Z |
+      | fraiseuse-2   | 2026-05-10T13:00:00Z | 2026-05-10T16:00:00Z |
 
     # Le journal de chaque ordre ne contient que ce que l'operateur y a pointe : jamais la pause.
     When je consulte "OF 42"

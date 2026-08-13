@@ -1,5 +1,7 @@
 package com.glm.glmback.atelier.application;
 
+import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
+import com.glm.glmback.atelier.domain.AnnuaireDAtelierService;
 import com.glm.glmback.atelier.domain.AnnulationDePresenceAEnregistrer;
 import com.glm.glmback.atelier.domain.ArriveeAEnregistrer;
 import com.glm.glmback.atelier.domain.CorrectionDePresenceAEnregistrer;
@@ -7,13 +9,16 @@ import com.glm.glmback.atelier.domain.JourneeDeTravail;
 import com.glm.glmback.atelier.domain.JourneeDeTravailId;
 import com.glm.glmback.atelier.domain.JourneeDeTravailRepository;
 import com.glm.glmback.atelier.domain.JourneesDeTravailService;
-import com.glm.glmback.atelier.domain.Operateur;
+import com.glm.glmback.atelier.domain.OperateurId;
+import com.glm.glmback.atelier.domain.OperateursConnus;
 import com.glm.glmback.atelier.domain.Periode;
 import com.glm.glmback.atelier.domain.PointageDePresenceAEnregistrer;
+import com.glm.glmback.atelier.domain.PostesConnus;
 import com.glm.glmback.atelier.domain.RegularisationDePresenceAEnregistrer;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import com.glm.glmback.shared.time.domain.Clock;
+import java.util.Collection;
 import java.util.Optional;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
@@ -31,9 +36,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class JourneesDeTravailApplicationService {
 
   private final JourneesDeTravailService journeesDeTravail;
+  private final AnnuaireDAtelierService annuaires;
 
-  public JourneesDeTravailApplicationService(JourneeDeTravailRepository repository, Clock clock) {
-    this.journeesDeTravail = new JourneesDeTravailService(repository, clock);
+  public JourneesDeTravailApplicationService(
+    JourneeDeTravailRepository repository,
+    OperateursConnus operateurs,
+    PostesConnus postes,
+    Clock clock
+  ) {
+    this.journeesDeTravail = new JourneesDeTravailService(repository, operateurs, clock);
+    this.annuaires = new AnnuaireDAtelierService(operateurs, postes);
   }
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
@@ -74,7 +86,19 @@ public class JourneesDeTravailApplicationService {
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
   @Transactional(readOnly = true)
-  public Page<JourneeDeTravail> list(Optional<Periode> periode, Optional<Operateur> operateur, Pageable pageable) {
+  public Page<JourneeDeTravail> list(Optional<Periode> periode, Optional<OperateurId> operateur, Pageable pageable) {
     return journeesDeTravail.list(periode, operateur, pageable);
+  }
+
+  @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
+  @Transactional(readOnly = true)
+  public AnnuaireDAtelier annuairePour(JourneeDeTravail journee) {
+    return annuaires.pour(journee);
+  }
+
+  @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
+  @Transactional(readOnly = true)
+  public AnnuaireDAtelier annuairePourJournees(Collection<JourneeDeTravail> journees) {
+    return annuaires.pourJournees(journees);
   }
 }

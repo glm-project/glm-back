@@ -17,32 +17,46 @@ import java.util.Set;
  * </p>
  *
  * <p>
- * C'est aussi ici que la nature de l'operation est recopiee du profil de l'operateur. Elle n'est jamais verifiee : le
- * client ne demande aucun blocage, et un pointage refuse en atelier couterait plus cher qu'une ligne de synthese mal
- * rangee.
+ * C'est aussi ici que les ressources sont resolues : l'operateur et le poste doivent exister, l'operateur doit etre
+ * habilite sur le poste, et la nature de l'operation est recopiee <b>du poste</b>. Un operateur polyvalent declenche
+ * un pointage par poste, et chacun sait de quel metier il releve parce que le poste le dit.
+ * </p>
+ *
+ * <p>
+ * La verification vaut pour les trois ecritures du journal — pointage, regularisation et correction. Sans quoi le
+ * back-office deviendrait un contournement de la regle que le pupitre applique.
  * </p>
  */
 public final class SuivisDAtelierService {
 
   private final SuiviDAtelierRepository repository;
   private final ElementsEngageables elements;
-  private final FonctionsDesOperateurs fonctions;
+  private final OperateursConnus operateurs;
+  private final PostesConnus postes;
+  private final Habilitations habilitations;
   private final Clock clock;
 
   private SuivisDAtelierService(
     SuiviDAtelierRepository repository,
     ElementsEngageables elements,
-    FonctionsDesOperateurs fonctions,
+    OperateursConnus operateurs,
+    PostesConnus postes,
+    Habilitations habilitations,
     Clock clock
   ) {
     this.repository = repository;
     this.elements = elements;
-    this.fonctions = fonctions;
+    this.operateurs = operateurs;
+    this.postes = postes;
+    this.habilitations = habilitations;
     this.clock = clock;
   }
 
   public static SuivisDAtelierServiceRepositoryBuilder builder() {
-    return repository -> elements -> fonctions -> clock -> new SuivisDAtelierService(repository, elements, fonctions, clock);
+    return repository ->
+      elements ->
+        operateurs ->
+          postes -> habilitations -> clock -> new SuivisDAtelierService(repository, elements, operateurs, postes, habilitations, clock);
   }
 
   /**
@@ -80,7 +94,7 @@ public final class SuivisDAtelierService {
     Horodatage horodatage = Horodatage.saisiA(clock.now());
 
     return repository.update(
-      suivi.enregistre(evenement(commande.type(), commande.operateur(), commande.poste(), auteurDe(commande.operateur()), horodatage))
+      suivi.enregistre(evenement(commande.type(), commande.operateur(), commande.poste(), commande.auteur(), horodatage))
     );
   }
 
@@ -139,23 +153,45 @@ public final class SuivisDAtelierService {
 
   private EvenementDAtelier evenement(
     TypeDEvenementDAtelier type,
-    Operateur operateur,
-    Optional<PosteDeTravail> poste,
+    OperateurId operateur,
+    Optional<PosteDeTravailId> poste,
     Auteur auteur,
     Horodatage horodatage
   ) {
+    verifieOperateurConnu(operateur);
+
     return EvenementDAtelier.builder()
       .id(EvenementDAtelierId.newId())
       .type(type)
       .operateur(operateur)
       .poste(poste)
-      .nature(fonctions.fonction(operateur))
+      .nature(poste.map(id -> posteHabilite(operateur, id)).map(PosteConnu::nature))
       .auteur(auteur)
       .horodatage(horodatage);
   }
 
-  private static Auteur auteurDe(Operateur operateur) {
-    return new Auteur(operateur.value());
+  private void verifieOperateurConnu(OperateurId operateur) {
+    if (!operateurs.existe(operateur)) {
+      throw new OperateurDAtelierIntrouvableException(operateur);
+    }
+  }
+
+  /**
+   * Le poste pointe, une fois etabli qu'il existe et que l'operateur y est habilite.
+   *
+   * <p>
+   * L'habilitation est la seule regle dure de ce contexte : la nature, elle, ne bloque toujours rien. La regle ne joue
+   * que lorsqu'un poste est fourni, une entreprise sans parc machine n'ayant aucune habilitation a declarer.
+   * </p>
+   */
+  private PosteConnu posteHabilite(OperateurId operateur, PosteDeTravailId poste) {
+    PosteConnu connu = postes.get(poste).orElseThrow(() -> new PosteDAtelierIntrouvableException(poste));
+
+    if (!habilitations.estHabilite(operateur, poste)) {
+      throw new OperateurNonHabiliteException(operateur, poste);
+    }
+
+    return connu;
   }
 
   public interface SuivisDAtelierServiceRepositoryBuilder {
@@ -163,11 +199,19 @@ public final class SuivisDAtelierService {
   }
 
   public interface SuivisDAtelierServiceElementsBuilder {
-    SuivisDAtelierServiceFonctionsBuilder elements(ElementsEngageables elements);
+    SuivisDAtelierServiceOperateursBuilder elements(ElementsEngageables elements);
   }
 
-  public interface SuivisDAtelierServiceFonctionsBuilder {
-    SuivisDAtelierServiceClockBuilder fonctions(FonctionsDesOperateurs fonctions);
+  public interface SuivisDAtelierServiceOperateursBuilder {
+    SuivisDAtelierServicePostesBuilder operateurs(OperateursConnus operateurs);
+  }
+
+  public interface SuivisDAtelierServicePostesBuilder {
+    SuivisDAtelierServiceHabilitationsBuilder postes(PostesConnus postes);
+  }
+
+  public interface SuivisDAtelierServiceHabilitationsBuilder {
+    SuivisDAtelierServiceClockBuilder habilitations(Habilitations habilitations);
   }
 
   public interface SuivisDAtelierServiceClockBuilder {

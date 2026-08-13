@@ -1,16 +1,20 @@
 package com.glm.glmback.atelier.application;
 
+import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
+import com.glm.glmback.atelier.domain.AnnuaireDAtelierService;
 import com.glm.glmback.atelier.domain.AnnulationAEnregistrer;
 import com.glm.glmback.atelier.domain.ClotureAEnregistrer;
 import com.glm.glmback.atelier.domain.CorrectionAEnregistrer;
 import com.glm.glmback.atelier.domain.ElementsEngageables;
 import com.glm.glmback.atelier.domain.EngagementAEnregistrer;
 import com.glm.glmback.atelier.domain.EtatDAtelier;
-import com.glm.glmback.atelier.domain.FonctionsDesOperateurs;
+import com.glm.glmback.atelier.domain.Habilitations;
 import com.glm.glmback.atelier.domain.IntervalleDActivite;
 import com.glm.glmback.atelier.domain.JourneeDeTravailRepository;
+import com.glm.glmback.atelier.domain.OperateursConnus;
 import com.glm.glmback.atelier.domain.Periode;
 import com.glm.glmback.atelier.domain.PointageAEnregistrer;
+import com.glm.glmback.atelier.domain.PostesConnus;
 import com.glm.glmback.atelier.domain.RegularisationAEnregistrer;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
@@ -20,6 +24,7 @@ import com.glm.glmback.atelier.domain.TempsDAtelierService;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import com.glm.glmback.shared.time.domain.Clock;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -40,16 +45,26 @@ public class SuivisDAtelierApplicationService {
 
   private final SuivisDAtelierService suivisDAtelier;
   private final TempsDAtelierService tempsDAtelier;
+  private final AnnuaireDAtelierService annuaires;
 
   public SuivisDAtelierApplicationService(
     SuiviDAtelierRepository repository,
     JourneeDeTravailRepository journees,
     ElementsEngageables elements,
-    FonctionsDesOperateurs fonctions,
+    OperateursConnus operateurs,
+    PostesConnus postes,
+    Habilitations habilitations,
     Clock clock
   ) {
-    this.suivisDAtelier = SuivisDAtelierService.builder().repository(repository).elements(elements).fonctions(fonctions).clock(clock);
+    this.suivisDAtelier = SuivisDAtelierService.builder()
+      .repository(repository)
+      .elements(elements)
+      .operateurs(operateurs)
+      .postes(postes)
+      .habilitations(habilitations)
+      .clock(clock);
     this.tempsDAtelier = new TempsDAtelierService(repository, journees);
+    this.annuaires = new AnnuaireDAtelierService(operateurs, postes);
   }
 
   @Secured("ROLE_GESTIONNAIRE")
@@ -110,5 +125,23 @@ public class SuivisDAtelierApplicationService {
   @Transactional(readOnly = true)
   public List<IntervalleDActivite> tempsEffectif(SuiviDAtelierId id) {
     return tempsDAtelier.tempsEffectif(id);
+  }
+
+  @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
+  @Transactional(readOnly = true)
+  public AnnuaireDAtelier annuairePour(SuiviDAtelier suivi) {
+    return annuaires.pour(suivi);
+  }
+
+  @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
+  @Transactional(readOnly = true)
+  public AnnuaireDAtelier annuairePourSuivis(Collection<SuiviDAtelier> suivis) {
+    return annuaires.pourSuivis(suivis);
+  }
+
+  @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
+  @Transactional(readOnly = true)
+  public AnnuaireDAtelier annuairePourIntervalles(Collection<IntervalleDActivite> intervalles) {
+    return annuaires.pourIntervalles(intervalles);
   }
 }

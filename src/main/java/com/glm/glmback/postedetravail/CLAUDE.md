@@ -18,8 +18,8 @@ l'atelier : une machine chez le client de référence, un établi, un four, une 
   encore habilité ne se supprime pas.
 - **Le coût horaire** du poste, et tout montant : lot « coût de revient ». La forme de l'agrégat est prête à le
   recevoir, il n'y est pas.
-- **Le pointage** lui-même, qui appartient à `atelier`. Celui-ci continue de recevoir un `PosteDeTravail` en texte
-  libre dans le corps de la requête : le branchement des deux est un lot à part.
+- **Le pointage** lui-même, qui appartient à `atelier`. Celui-ci ne connaît de ce contexte que l'identifiant, lu par
+  port, et n'en copie que la nature au moment de la saisie.
 
 ## Agrégat
 
@@ -37,6 +37,9 @@ règle ne s'applique qu'au-delà de trois.
   dire quel travail s'y fait — c'est de lui, et non de la personne, que vient le métier exercé à un instant donné.
 - **Un poste encore habilité ne se supprime pas** : cela laisserait des opérateurs pointer sur du vide. La règle vit
   dans le domaine, derrière le port `PostesEnUsage` ; la clé étrangère de `operateur_poste` n'est que le filet.
+- **Un poste sur lequel du temps a été pointé ne se supprime plus du tout**, et ce refus-là est définitif : le journal
+  d'atelier ne retient que l'identifiant du poste, donc le supprimer laisserait des heures de travail sans machine.
+  Port `PostesPointes`, sur `evenement_d_atelier`.
 - **Aucun import de `operateur`**, annoté `@BusinessContext`. Le contexte voisin n'est atteint que par la donnée, via
   une entité en lecture seule sur `operateur_poste` (patron `ElementEngageableEntity`).
 - **Domaine immuable** : la révision passe par `PosteDeTravail.revise`, qui rend un nouvel agrégat de même identité.
@@ -44,7 +47,7 @@ règle ne s'applique qu'au-delà de trois.
 
 ## Ports sortants
 
-`PosteDeTravailRepository`, `PostesEnUsage`.
+`PosteDeTravailRepository`, `PostesEnUsage`, `PostesPointes`.
 
 ## Structure
 

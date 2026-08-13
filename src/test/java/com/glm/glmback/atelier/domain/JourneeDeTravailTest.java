@@ -15,7 +15,7 @@ class JourneeDeTravailTest {
 
   @Test
   void shouldNotBuildWithoutId() {
-    assertThatThrownBy(() -> new JourneeDeTravail(null, OPERATEUR_DUPONT, JournalDePresence.vide()))
+    assertThatThrownBy(() -> new JourneeDeTravail(null, OPERATEUR_ID_DUPONT, JournalDePresence.vide()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("id");
   }
@@ -29,17 +29,17 @@ class JourneeDeTravailTest {
 
   @Test
   void shouldNotBuildWithoutJournal() {
-    assertThatThrownBy(() -> new JourneeDeTravail(ID, OPERATEUR_DUPONT, null))
+    assertThatThrownBy(() -> new JourneeDeTravail(ID, OPERATEUR_ID_DUPONT, null))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("journal");
   }
 
   @Test
   void shouldOuvrirUneJourneeVide() {
-    JourneeDeTravail journee = JourneeDeTravail.ouverte(ID, OPERATEUR_DUPONT);
+    JourneeDeTravail journee = JourneeDeTravail.ouverte(ID, OPERATEUR_ID_DUPONT);
 
     assertThat(journee.id()).isEqualTo(ID);
-    assertThat(journee.operateur()).isEqualTo(OPERATEUR_DUPONT);
+    assertThat(journee.operateur()).isEqualTo(OPERATEUR_ID_DUPONT);
     assertThat(journee.etat()).isEqualTo(EtatDePresence.ABSENT);
     assertThat(journee.estEnCours()).isFalse();
     assertThat(journee.debut()).isEmpty();
@@ -94,7 +94,7 @@ class JourneeDeTravailTest {
 
   @Test
   void shouldCorrigerUnEvenement() {
-    JourneeDeTravail journee = JourneeDeTravail.ouverte(ID, OPERATEUR_DUPONT).enregistre(arriveeDeDupontA(LE_10_MAI_2026_A_9H));
+    JourneeDeTravail journee = JourneeDeTravail.ouverte(ID, OPERATEUR_ID_DUPONT).enregistre(arriveeDeDupontA(LE_10_MAI_2026_A_9H));
     EvenementDePresenceId arrivee = journee.journal().evenements().getFirst().id();
 
     JourneeDeTravail corrigee = journee.corrige(arrivee, annulationParLeroy(), arriveeDeDupontA(LE_10_MAI_2026_A_7H));

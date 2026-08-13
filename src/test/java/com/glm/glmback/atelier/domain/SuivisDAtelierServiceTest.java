@@ -19,10 +19,13 @@ class SuivisDAtelierServiceTest {
 
   private final AtomicReference<Instant> maintenant = new AtomicReference<>(LE_10_MAI_2026_A_7H);
   private final SuivisDAtelierEnMemoire suivis = new SuivisDAtelierEnMemoire();
+  private final RessourcesDAtelierEnMemoire ressources = RessourcesDAtelierEnMemoire.deLAtelier();
   private final SuivisDAtelierService atelier = SuivisDAtelierService.builder()
     .repository(suivis)
     .elements(new ElementsEngageablesFiges())
-    .fonctions(new FonctionsFigees())
+    .operateurs(ressources.operateurs())
+    .postes(ressources.postes())
+    .habilitations(ressources.habilitations())
     .clock(maintenant::get);
 
   @Test
@@ -50,7 +53,7 @@ class SuivisDAtelierServiceTest {
   }
 
   @Test
-  void shouldDaterUnPointageSurLHorlogeEtEstampillerLaFonction() {
+  void shouldDaterUnPointageSurLHorlogeEtEstampillerLaNatureDuPoste() {
     SuiviDAtelier engage = engage();
     maintenant.set(LE_10_MAI_2026_A_9H);
 
@@ -62,7 +65,7 @@ class SuivisDAtelierServiceTest {
         assertThat(evenement.dateDeSurvenue()).isEqualTo(LE_10_MAI_2026_A_9H);
         assertThat(evenement.dateDEnregistrement()).isEqualTo(LE_10_MAI_2026_A_9H);
         assertThat(evenement.auteur()).isEqualTo(AUTEUR_DUPONT);
-        assertThat(evenement.poste()).contains(POSTE_FRAISEUSE_1);
+        assertThat(evenement.poste()).contains(POSTE_ID_FRAISEUSE_1);
         assertThat(evenement.nature()).contains(NATURE_FRAISAGE);
         assertThat(evenement.estUneRegularisation()).isFalse();
       });
@@ -72,7 +75,14 @@ class SuivisDAtelierServiceTest {
   void shouldPointerSansPosteDeTravail() {
     SuiviDAtelier engage = engage();
 
-    SuiviDAtelier pointe = atelier.pointe(new PointageAEnregistrer(engage.id(), TypeDEvenementDAtelier.DEBUT, OPERATEUR_DUPONT));
+    SuiviDAtelier pointe = atelier.pointe(
+      PointageAEnregistrer.builder()
+        .suivi(engage.id())
+        .type(TypeDEvenementDAtelier.DEBUT)
+        .operateur(OPERATEUR_ID_DUPONT)
+        .poste(Optional.empty())
+        .auteur(AUTEUR_DUPONT)
+    );
 
     assertThat(pointe.journal().actifs())
       .singleElement()
@@ -80,24 +90,108 @@ class SuivisDAtelierServiceTest {
   }
 
   /**
-   * Aucune fonction au profil : rien n'est estampille, et surtout rien n'est refuse. Le client ne demande aucun
-   * blocage, et toutes les entreprises clientes n'ont pas de specialites a distinguer.
+   * Sans poste, aucune nature : une entreprise sans parc machine retrouve son comportement nominal, et rien n'est
+   * refuse puisque aucune habilitation n'a de sens.
    */
   @Test
-  void shouldPointerSansFonctionAuProfil() {
+  void shouldPointerSansNatureFauteDePoste() {
     SuiviDAtelier engage = engage();
 
     SuiviDAtelier pointe = atelier.pointe(
       PointageAEnregistrer.builder()
         .suivi(engage.id())
         .type(TypeDEvenementDAtelier.DEBUT)
-        .operateur(OPERATEUR_MARTIN)
-        .poste(Optional.of(POSTE_FRAISEUSE_1))
+        .operateur(OPERATEUR_ID_MARTIN)
+        .poste(Optional.empty())
+        .auteur(AUTEUR_MARTIN)
     );
 
     assertThat(pointe.journal().actifs())
       .singleElement()
       .satisfies(evenement -> assertThat(evenement.nature()).isEmpty());
+  }
+
+  /**
+   * La nature vient du poste, jamais de la personne : le meme operateur, sur deux postes, produit deux natures.
+   */
+  @Test
+  void shouldReprendreLaNatureDuPosteEtNonDeLOperateur() {
+    SuiviDAtelier engage = engage();
+
+    SuiviDAtelier pointe = atelier.pointe(
+      PointageAEnregistrer.builder()
+        .suivi(engage.id())
+        .type(TypeDEvenementDAtelier.DEBUT)
+        .operateur(OPERATEUR_ID_DUPONT)
+        .poste(Optional.of(POSTE_ID_FRAISEUSE_2))
+        .auteur(AUTEUR_DUPONT)
+    );
+
+    assertThat(pointe.journal().actifs())
+      .singleElement()
+      .satisfies(evenement -> assertThat(evenement.nature()).contains(NATURE_TOURNAGE));
+  }
+
+  @Test
+  void shouldNotPointerPourUnOperateurInconnu() {
+    SuiviDAtelier engage = engage();
+    PointageAEnregistrer commande = PointageAEnregistrer.builder()
+      .suivi(engage.id())
+      .type(TypeDEvenementDAtelier.DEBUT)
+      .operateur(new OperateurId(UUID.randomUUID()))
+      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
+      .auteur(AUTEUR_LEROY);
+
+    assertThatThrownBy(() -> atelier.pointe(commande)).isExactlyInstanceOf(OperateurDAtelierIntrouvableException.class);
+  }
+
+  @Test
+  void shouldNotPointerSurUnPosteInconnu() {
+    SuiviDAtelier engage = engage();
+    PointageAEnregistrer commande = PointageAEnregistrer.builder()
+      .suivi(engage.id())
+      .type(TypeDEvenementDAtelier.DEBUT)
+      .operateur(OPERATEUR_ID_DUPONT)
+      .poste(Optional.of(new PosteDeTravailId(UUID.randomUUID())))
+      .auteur(AUTEUR_DUPONT);
+
+    assertThatThrownBy(() -> atelier.pointe(commande)).isExactlyInstanceOf(PosteDAtelierIntrouvableException.class);
+  }
+
+  /**
+   * L'habilitation est la seule regle dure de ce contexte : Martin n'est declare sur aucun poste, il ne peut pas y
+   * pointer.
+   */
+  @Test
+  void shouldNotPointerSurUnPosteNonHabilite() {
+    SuiviDAtelier engage = engage();
+    PointageAEnregistrer commande = PointageAEnregistrer.builder()
+      .suivi(engage.id())
+      .type(TypeDEvenementDAtelier.DEBUT)
+      .operateur(OPERATEUR_ID_MARTIN)
+      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
+      .auteur(AUTEUR_MARTIN);
+
+    assertThatThrownBy(() -> atelier.pointe(commande)).isExactlyInstanceOf(OperateurNonHabiliteException.class);
+  }
+
+  /**
+   * La regularisation ecrit le meme journal que le pointage : elle passe donc par les memes verifications, sans quoi
+   * le back-office contournerait la regle que le pupitre applique.
+   */
+  @Test
+  void shouldNotRegulariserSurUnPosteNonHabilite() {
+    SuiviDAtelier engage = engage();
+    maintenant.set(LE_11_MAI_2026_A_9H15);
+    RegularisationAEnregistrer commande = RegularisationAEnregistrer.builder()
+      .suivi(engage.id())
+      .type(TypeDEvenementDAtelier.DEBUT)
+      .operateur(OPERATEUR_ID_MARTIN)
+      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
+      .auteur(AUTEUR_LEROY)
+      .dateDeSurvenue(LE_10_MAI_2026_A_8H);
+
+    assertThatThrownBy(() -> atelier.regularise(commande)).isExactlyInstanceOf(OperateurNonHabiliteException.class);
   }
 
   @Test
@@ -109,13 +203,14 @@ class SuivisDAtelierServiceTest {
       PointageAEnregistrer.builder()
         .suivi(engage.id())
         .type(TypeDEvenementDAtelier.DEBUT)
-        .operateur(OPERATEUR_DUPONT)
-        .poste(Optional.of(POSTE_FRAISEUSE_2))
+        .operateur(OPERATEUR_ID_DUPONT)
+        .poste(Optional.of(POSTE_ID_FRAISEUSE_2))
+        .auteur(AUTEUR_DUPONT)
     );
 
     assertThat(pointe.activitesEnCours())
       .extracting(ActiviteEnCours::poste)
-      .containsExactlyInAnyOrder(Optional.of(POSTE_FRAISEUSE_1), Optional.of(POSTE_FRAISEUSE_2));
+      .containsExactlyInAnyOrder(Optional.of(POSTE_ID_FRAISEUSE_1), Optional.of(POSTE_ID_FRAISEUSE_2));
   }
 
   @Test
@@ -146,10 +241,9 @@ class SuivisDAtelierServiceTest {
       .satisfies(evenement -> {
         assertThat(evenement.dateDeSurvenue()).isEqualTo(LE_10_MAI_2026_A_8H);
         assertThat(evenement.dateDEnregistrement()).isEqualTo(LE_11_MAI_2026_A_9H15);
-        assertThat(evenement.operateur()).isEqualTo(OPERATEUR_DUPONT);
+        assertThat(evenement.operateur()).isEqualTo(OPERATEUR_ID_DUPONT);
         assertThat(evenement.auteur()).isEqualTo(AUTEUR_LEROY);
         assertThat(evenement.estUneRegularisation()).isTrue();
-        assertThat(evenement.estSaisiParUnTiers()).isTrue();
       });
   }
 
@@ -257,16 +351,17 @@ class SuivisDAtelierServiceTest {
     return PointageAEnregistrer.builder()
       .suivi(suivi)
       .type(TypeDEvenementDAtelier.DEBUT)
-      .operateur(OPERATEUR_DUPONT)
-      .poste(Optional.of(POSTE_FRAISEUSE_1));
+      .operateur(OPERATEUR_ID_DUPONT)
+      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
+      .auteur(AUTEUR_DUPONT);
   }
 
   private static RegularisationAEnregistrer regularisationDeDebutA(SuiviDAtelierId suivi, Instant date) {
     return RegularisationAEnregistrer.builder()
       .suivi(suivi)
       .type(TypeDEvenementDAtelier.DEBUT)
-      .operateur(OPERATEUR_DUPONT)
-      .poste(Optional.of(POSTE_FRAISEUSE_1))
+      .operateur(OPERATEUR_ID_DUPONT)
+      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
       .auteur(AUTEUR_LEROY)
       .dateDeSurvenue(date);
   }
@@ -276,14 +371,6 @@ class SuivisDAtelierServiceTest {
     @Override
     public Optional<ElementEngage> get(ElementEngageId id) {
       return id.equals(ELEMENT_OF_2026_000042) ? Optional.of(elementEngageOf2026000042()) : Optional.empty();
-    }
-  }
-
-  private static final class FonctionsFigees implements FonctionsDesOperateurs {
-
-    @Override
-    public Optional<NatureDOperation> fonction(Operateur operateur) {
-      return operateur.equals(OPERATEUR_DUPONT) ? Optional.of(NATURE_FRAISAGE) : Optional.empty();
     }
   }
 }

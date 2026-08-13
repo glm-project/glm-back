@@ -14,14 +14,14 @@ import java.util.Optional;
  * les heures de presence courant de l'arrivee dans la societe au depart, et non du premier au dernier element.
  * </p>
  */
-public record JourneeDeTravail(JourneeDeTravailId id, Operateur operateur, JournalDePresence journal) {
+public record JourneeDeTravail(JourneeDeTravailId id, OperateurId operateur, JournalDePresence journal) {
   public JourneeDeTravail {
     Assert.notNull("id", id);
     Assert.notNull("operateur", operateur);
     Assert.notNull("journal", journal);
   }
 
-  public static JourneeDeTravail ouverte(JourneeDeTravailId id, Operateur operateur) {
+  public static JourneeDeTravail ouverte(JourneeDeTravailId id, OperateurId operateur) {
     return new JourneeDeTravail(id, operateur, JournalDePresence.vide());
   }
 

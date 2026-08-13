@@ -10,6 +10,9 @@ import com.glm.glmback.atelier.domain.EvenementDePresenceIntrouvableException;
 import com.glm.glmback.atelier.domain.EvenementDejaAnnuleException;
 import com.glm.glmback.atelier.domain.JourneeDeTravailDejaOuverteException;
 import com.glm.glmback.atelier.domain.JourneeDeTravailIntrouvableException;
+import com.glm.glmback.atelier.domain.OperateurDAtelierIntrouvableException;
+import com.glm.glmback.atelier.domain.OperateurNonHabiliteException;
+import com.glm.glmback.atelier.domain.PosteDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierClotureException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
@@ -51,6 +54,21 @@ class AtelierExceptionAdvice {
   @ExceptionHandler(ElementEngageableIntrouvableException.class)
   ProblemDetail handleElementEngageableIntrouvable(ElementEngageableIntrouvableException e) {
     return introuvable("element de fabrication introuvable", e);
+  }
+
+  @ExceptionHandler(OperateurDAtelierIntrouvableException.class)
+  ProblemDetail handleOperateurDAtelierIntrouvable(OperateurDAtelierIntrouvableException e) {
+    return introuvable("operateur introuvable", e);
+  }
+
+  @ExceptionHandler(PosteDAtelierIntrouvableException.class)
+  ProblemDetail handlePosteDAtelierIntrouvable(PosteDAtelierIntrouvableException e) {
+    return introuvable("poste de travail introuvable", e);
+  }
+
+  @ExceptionHandler(OperateurNonHabiliteException.class)
+  ProblemDetail handleOperateurNonHabilite(OperateurNonHabiliteException e) {
+    return conflit("operateur non habilite", e);
   }
 
   @ExceptionHandler(AucuneJourneeDeTravailEnCoursException.class)

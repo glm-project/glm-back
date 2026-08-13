@@ -1,8 +1,8 @@
 package com.glm.glmback.atelier.infrastructure.primary;
 
+import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
 import com.glm.glmback.atelier.domain.EvenementDAtelier;
 import com.glm.glmback.atelier.domain.NatureDOperation;
-import com.glm.glmback.atelier.domain.PosteDeTravail;
 import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
@@ -19,28 +19,26 @@ import java.util.UUID;
 record RestEvenementDAtelier(
   @Schema(description = "Identifiant de l'evenement, a reprendre pour l'annuler ou le corriger.") UUID id,
   @Schema(description = "Nature du pointage. Une reprise apres non conformite se pointe comme un DEBUT.") TypeDEvenementDAtelier type,
-  @Schema(description = "Operateur dont le temps est affecte.", example = "dupont") String operateur,
-  @Schema(description = "Poste de travail, toujours facultatif.", example = "fraiseuse-1") String poste,
-  @Schema(description = "Nature de l'operation, recopiee du profil de l'operateur. Simple axe d'agregation.") String nature,
+  @Schema(description = "Operateur dont le temps est affecte.") RestOperateur operateur,
+  @Schema(description = "Poste de travail, toujours facultatif.") RestPosteDeTravail poste,
+  @Schema(description = "Nature de l'operation, recopiee du poste a la saisie. Simple axe d'agregation.") String nature,
   @Schema(description = "Utilisateur ayant saisi l'evenement.", example = "dupont") String auteur,
   @Schema(description = "Heure metier a laquelle le fait a eu lieu.") Instant dateDeSurvenue,
   @Schema(description = "Heure a laquelle la saisie a ete enregistree.") Instant dateDEnregistrement,
   @Schema(description = "Vrai lorsque la saisie a ete faite apres coup.") boolean estUneRegularisation,
-  @Schema(description = "Vrai lorsque l'auteur n'est pas l'operateur.") boolean estSaisiParUnTiers,
   @Schema(description = "Presente lorsque l'evenement a ete annule. L'evenement reste au journal.") RestAnnulation annulation
 ) {
-  static RestEvenementDAtelier from(EvenementDAtelier evenement) {
+  static RestEvenementDAtelier from(EvenementDAtelier evenement, AnnuaireDAtelier annuaire) {
     return new RestEvenementDAtelier(
       evenement.id().uuid(),
       evenement.type(),
-      evenement.operateur().value(),
-      evenement.poste().map(PosteDeTravail::value).orElse(null),
+      RestOperateur.resolu(annuaire, evenement.operateur()),
+      RestPosteDeTravail.resolu(annuaire, evenement.poste()),
       evenement.nature().map(NatureDOperation::value).orElse(null),
       evenement.auteur().value(),
       evenement.dateDeSurvenue(),
       evenement.dateDEnregistrement(),
       evenement.estUneRegularisation(),
-      evenement.estSaisiParUnTiers(),
       evenement.annulation().map(RestAnnulation::from).orElse(null)
     );
   }

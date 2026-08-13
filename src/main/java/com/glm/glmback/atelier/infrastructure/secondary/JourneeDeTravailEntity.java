@@ -5,7 +5,7 @@ import com.glm.glmback.atelier.domain.EvenementDePresence;
 import com.glm.glmback.atelier.domain.JournalDePresence;
 import com.glm.glmback.atelier.domain.JourneeDeTravail;
 import com.glm.glmback.atelier.domain.JourneeDeTravailId;
-import com.glm.glmback.atelier.domain.Operateur;
+import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.Periode;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -42,7 +42,8 @@ class JourneeDeTravailEntity {
   @Id
   private UUID id;
 
-  private String operateur;
+  @Column(name = "operateur_id")
+  private UUID operateurId;
 
   @Enumerated(EnumType.STRING)
   @Column(length = 20)
@@ -62,7 +63,7 @@ class JourneeDeTravailEntity {
 
   private JourneeDeTravailEntity(JourneeDeTravail journee) {
     id = journee.id().uuid();
-    operateur = journee.operateur().value();
+    operateurId = journee.operateur().uuid();
     reconcilie(journee);
   }
 
@@ -109,7 +110,7 @@ class JourneeDeTravailEntity {
   JourneeDeTravail toDomain() {
     return new JourneeDeTravail(
       new JourneeDeTravailId(id),
-      new Operateur(operateur),
+      new OperateurId(operateurId),
       new JournalDePresence(journal.stream().map(EvenementDePresenceEntity::toDomain).toList())
     );
   }
