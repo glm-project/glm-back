@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <changeSet id="operateur" author="glm">
+    <comment>
+      Les personnes qui pointent. Le matricule est l'identifiant que l'entreprise donne elle-meme a ses
+      collaborateurs : facultatif, car toutes n'en attribuent pas, et unique des qu'il est renseigne.
+      PostgreSQL considerant les NULL comme distincts, la contrainte laisse coexister autant d'operateurs
+      sans matricule que necessaire. Aucune nature n'est stockee ici : les metiers d'un operateur se
+      deduisent des postes auxquels il est habilite.
+    </comment>
+
+    <createTable tableName="operateur">
+      <column name="id" type="${uuidType}">
+        <constraints nullable="false" primaryKey="true" />
+      </column>
+
+      <column name="nom" type="varchar(100)">
+        <constraints nullable="false" />
+      </column>
+
+      <column name="prenom" type="varchar(100)">
+        <constraints nullable="false" />
+      </column>
+
+      <column name="matricule" type="varchar(50)">
+        <constraints unique="true" uniqueConstraintName="ux_operateur_matricule" />
+      </column>
+    </createTable>
+
+    <addUniqueConstraint tableName="operateur" columnNames="nom, prenom" constraintName="ux_operateur_identite" />
+  </changeSet>
+
+  <changeSet id="operateur_poste" author="glm">
+    <comment>
+      Les habilitations. L'operateur ne retient que l'identifiant du poste, jamais son libelle ni sa nature :
+      contrairement a l'atelier, qui copie a l'engagement pour ne pas reecrire l'histoire, rien d'historique
+      ne pend ici a un poste, et un poste renomme doit s'afficher renomme partout. La cle etrangere vers
+      poste_de_travail est le filet de dernier recours du refus de suppression, dont la regle vit dans le
+      domaine. L'index sur poste_id sert cette meme verification et la question du pupitre : qui est habilite
+      sur ce poste.
+    </comment>
+
+    <createTable tableName="operateur_poste">
+      <column name="operateur_id" type="${uuidType}">
+        <constraints nullable="false" foreignKeyName="fk_operateur_poste_operateur" references="operateur(id)" />
+      </column>
+
+      <column name="poste_id" type="${uuidType}">
+        <constraints nullable="false" foreignKeyName="fk_operateur_poste_poste" references="poste_de_travail(id)" />
+      </column>
+    </createTable>
+
+    <addPrimaryKey tableName="operateur_poste" columnNames="operateur_id, poste_id" constraintName="pk_operateur_poste" />
+
+    <createIndex indexName="ix_operateur_poste_poste" tableName="operateur_poste">
+      <column name="poste_id" />
+    </createIndex>
+  </changeSet>
+</databaseChangeLog>
