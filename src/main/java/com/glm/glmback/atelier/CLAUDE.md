@@ -22,9 +22,10 @@ Ne rien ajouter ici qui relève de :
 
 - **le coût de revient monétaire** — taux horaire de l'opérateur, coût horaire du poste, temps réparti valorisé. Aucun
   montant n'entre dans ce contexte ;
-- **le référentiel des ressources** — opérateur → fonction, postes autorisés, taux ; poste → libellé, nature, coût
-  horaire. Ces données sont **lues par port**, jamais possédées ici. `Operateur` et `PosteDeTravail` sont des
-  références opaques ;
+- **le référentiel des ressources** — opérateur → postes autorisés, taux ; poste → libellé, nature, coût horaire. Ces
+  données sont **lues par port**, jamais possédées ici. `Operateur` et `PosteDeTravail` sont des références opaques.
+  Les contextes `postedetravail` et `operateur` les portent désormais, mais **rien n'est encore branché** : l'atelier
+  ne les importe pas et ne les lit pas ;
 - **la paie** — le contexte expose `amplitude()` et `fenetres()`, il ne choisit pas laquelle compte ;
 - **le cycle de vie de l'élément de fabrication** lui-même, qui appartient à `elementdefabrication` ;
 - **le fuseau horaire et le jour calendaire** — une `JourneeDeTravail` est bornée par une arrivée et un départ, pas par
@@ -81,8 +82,9 @@ front — le tenir à jour avec le contrat.
   identifiant** côté persistance : un pointage coûte l'insertion d'une ligne, jamais la réécriture du journal ;
 - `ElementsDeFabricationEngageables` lit la table `element_de_fabrication` par une entité en lecture seule propre à
   l'atelier : aucun import de `elementdefabrication`, l'invariant tient ;
-- `FonctionsDesOperateursInconnues` rend toujours vide, faute de référentiel des ressources. La nature étant
-  facultative par invariant, c'est un port en attente de sa source, pas un cas dégradé.
+- `FonctionsDesOperateursInconnues` rend toujours vide. La nature étant facultative par invariant, c'est un port en
+  attente de sa source, pas un cas dégradé. Cette source existe depuis que `postedetravail` porte la nature de chaque
+  poste — le branchement reste un lot à part, et il devra faire venir la nature **du poste**, pas de l'opérateur.
 
 ### Les colonnes de projection ne contredisent pas « le journal est la source de vérité »
 

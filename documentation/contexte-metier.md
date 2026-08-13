@@ -125,3 +125,48 @@ L'API est décrite par OpenAPI (`/swagger-ui.html`) et par [atelier-api.md](atel
 5. **Le cycle de vie de l'élément lui-même.** La clôture existe côté atelier, sur le suivi. Reste à trancher si l'élément de fabrication porte en propre un statut, ou si son activité se lit entièrement par la présence ou l'absence d'un suivi non clôturé.
 6. **Aucune garde d'unicité en base** sur « un seul suivi non clôturé par élément » ni « une seule journée ouverte par opérateur », contrairement à ce que `elementdefabrication` fait pour la `Reference`. Les deux règles vivent dans les services, mais une contrainte partielle transformerait en 500 deux états que le domaine admet aujourd'hui : rouvrir la clôture d'un suivi dont l'élément a été réengagé depuis, ou annuler le `DEPART` d'une journée dont l'opérateur est déjà revenu. À trancher côté domaine avant de poser la contrainte.
 7. **L'écriture du journal rapproche par identifiant**, ce qui coûte une lecture indexée de la collection à chaque pointage. Si un journal devenait assez long pour que cette lecture pèse, la sortie est un upsert natif gardé (`on conflict (id) do update ... where ... is distinct from ...`), qui épargne à PostgreSQL toute version de tuple sur les lignes inchangées — au prix d'une scission permanente entre lecture JPA et écriture JDBC.
+
+## postedetravail
+
+Gère le **référentiel de ce sur quoi les opérateurs pointent**. Un `PosteDeTravail` porte un `Libelle` et une `NatureDeTravail` : « Tour 1 » sert à tourner, « Poste de soudure » à souder.
+
+Le terme reste volontairement générique, comme dans l'atelier : une machine chez le client de référence, un établi, un four, une salle ailleurs.
+
+**Le libellé est unique par entreprise.** C'est ce qui fait du référentiel un référentiel : sans lui, rien ne relierait le « Tour 1 » saisi par Dupont au « Tour 1 » saisi par Martin. La garde vit dans `PostesDeTravailService`, sur le patron de `ElementsDeFabricationService.verifierReferenceLibre` ; la contrainte du schéma est le filet de dernier recours.
+
+**La nature est obligatoire ici**, alors qu'elle reste facultative dans l'atelier. Ce n'est pas une contradiction : l'atelier doit fonctionner pour une entreprise sans parc machine ni métiers distincts, qui n'ouvrira simplement pas cet écran. Mais un poste qui serait déclaré sans dire quel travail s'y fait ne servirait à rien — c'est précisément ce que ce contexte apporte.
+
+**Un poste encore habilité ne se supprime pas** : cela laisserait des opérateurs pointer sur du vide. La règle vit dans le domaine, derrière le port `PostesEnUsage`, dont l'adapter lit la table `operateur_poste` par une entité en lecture seule — sans jamais importer `operateur`, annoté `@BusinessContext`.
+
+## operateur
+
+Gère le **référentiel des personnes qui pointent**. Un `Operateur` porte son nom, son prénom, un matricule facultatif, et l'ensemble des postes sur lesquels il est habilité.
+
+### Le métier vient du poste, jamais de la personne
+
+C'est le point décisif de ces deux contextes, et il est fondé sur ce que le client décrit.
+
+Un opérateur polyvalent — soudeur **et** tourneur — déclenche **deux démarrages** sur le pupitre : un sur le poste de soudure, l'autre sur le tour. Deux temps courent alors en parallèle, et chacun sait de quel métier il relève parce que le poste le dit. C'est exactement ce que l'atelier modélise déjà : sa `CleDActivite` est le couple (opérateur, poste), et son javadoc énonce que « c'est le poste, et non la nature de l'opération, qui distingue deux activités menées de front ». Le verbatim client le confirme sur un cas voisin : deux pièces du même OF sur deux machines différentes.
+
+Il s'ensuit que **la nature appartient au poste**. Déclarer un métier sur la personne stockerait la même information deux fois, avec la possibilité qu'elles se contredisent — un tourneur habilité sur une fraiseuse. Les métiers d'un opérateur se **déduisent** donc de ses postes : `ProfilDOperateur.natures()` rend les natures de ses habilitations, triées. Personne ne les saisit.
+
+La phrase du client « la machine est liée à l'opérateur, et l'opérateur a la fonction » dit **où se saisit** le paramétrage — sur la ligne de l'opérateur, on liste ses postes —, pas d'où la nature se déduit au moment du pointage.
+
+### Identité et matricule
+
+L'identité (nom, prénom) est **unique par entreprise**. Le **matricule** est l'identifiant que l'entreprise donne elle-même à ses collaborateurs : **facultatif**, car toutes n'en attribuent pas, et **unique dès qu'il est renseigné** — patron exact de `elementdefabrication.Reference`, `NULL` distincts compris, donc autant d'opérateurs sans matricule que nécessaire.
+
+### Frontière avec postedetravail
+
+`postedetravail` étant annoté `@BusinessContext`, ce contexte ne l'importe jamais : il déclare ses propres `PosteHabilitableId`, `LibelleDePoste` et `NatureDeTravail`, et lit la table voisine par une entité en lecture seule, sur le patron d'`ElementEngageableEntity`.
+
+**Rien n'est copié**, à la différence de l'atelier qui copie nom et type à l'engagement. La raison est symétrique : l'atelier copie parce qu'un élément renommé ne doit pas réécrire son histoire, alors qu'ici aucun historique ne pend à un poste — un poste renommé doit s'afficher renommé partout. L'opérateur ne stocke donc que l'identifiant, et le port `PostesHabilitables` n'expose que `parIds`, pour qu'une page entière se résolve en une requête.
+
+### Points ouverts
+
+1. **Branchement avec `atelier`.** `FonctionsDesOperateursInconnues` rend toujours vide, et `atelier.Operateur` comme `atelier.PosteDeTravail` restent des textes libres saisis dans le corps de la requête. Le lot de branchement devra choisir comment l'atelier atteint ces référentiels sans les importer, et ce qu'un renommage de poste fait à l'historique déjà écrit.
+2. **La `NatureDOperation` de l'atelier viendra du poste.** C'est le lot resté en suspens ; il est désormais alimentable, puisque le poste porte enfin sa nature.
+3. **Les gestionnaires ne sont pas déclarés.** Leur fiche n'aurait aucun usage tant que l'authentification n'est pas tranchée : l'`Auteur` d'une saisie vient du jeton, pas d'un référentiel. À rouvrir avec ce sujet.
+4. **Aucun plafond sur le nombre de postes par personne**, alors que le client énonce « maximum 4 machines par personne ». Une donnée de paramétrage ne s'écrit pas en constante du domaine, et GLM est une trame : une autre entreprise en habilitera six. Si le plafond doit être tenu, il viendra d'un port.
+5. **Montants.** Coût horaire du poste et taux horaire de l'opérateur n'existent nulle part : lot « coût de revient ». Les deux agrégats sont dimensionnés pour les recevoir.
+6. **Utilisateur connecté.** Non tranché. La continuité de service est envisagée par un serveur interne stockant les pointages et les remontant au cloud au retour du réseau. Point technique à verser au dossier : la **vérification** d'un jeton déjà émis est locale, signature contre le JWKS mis en cache ; ce qui exige le cloud, c'est son **émission** et son rafraîchissement.
