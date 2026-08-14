@@ -183,3 +183,57 @@ L'identité (nom, prénom) est **unique par entreprise**. Le **matricule** est l
 2. **Aucun plafond sur le nombre de postes par personne**, alors que le client énonce « maximum 4 machines par personne ». Une donnée de paramétrage ne s'écrit pas en constante du domaine, et GLM est une trame : une autre entreprise en habilitera six. Si le plafond doit être tenu, il viendra d'un port.
 3. **Montants.** Coût horaire du poste et taux horaire de l'opérateur existent sur les deux agrégats (facultatifs, strictement positifs), et `atelier` les copie désormais sur chaque événement du journal au moment de la saisie, sur le même patron que la nature de l'opération ; seul le calcul du coût de revient lui-même reste à faire, lot suivant.
 4. **Utilisateur connecté.** Non tranché. La continuité de service est envisagée par un serveur interne stockant les pointages et les remontant au cloud au retour du réseau. Point technique à verser au dossier : la **vérification** d'un jeton déjà émis est locale, signature contre le JWKS mis en cache ; ce qui exige le cloud, c'est son **émission** et son rafraîchissement.
+
+## feuilledetemps
+
+Première **projection transverse** du projet : un contexte purement lecteur, qui ne possède aucune table et
+recalcule tout à chaque appel. Il répond à une seule question — _qu'a fait cette personne cette semaine, jour par
+jour_ — et c'est ce qui le sépare d'`atelier`.
+
+### Pourquoi il n'est pas dans atelier
+
+`atelier` s'interdit explicitement le calendrier : une `JourneeDeTravail` y est bornée par une arrivée et un départ,
+jamais par une date, et aucun `ZoneId` ni `LocalDate` n'entre dans ce contexte. Une feuille de temps hebdomadaire
+n'est faite que de ça. C'est ici, et nulle part avant, que minuit existe — et c'est minuit qui décide à quel jour
+appartient une heure de travail. Une équipe de nuit compte sur deux jours ; l'atelier ne saurait pas le dire.
+
+Le découpage était annoncé : les index `(operateur, date_de_survenue)` et `(poste, date_de_survenue)` d'
+`evenement_d_atelier` sont commentés dans le changelog comme ne servant pas l'atelier lui-même, mais « les
+projections transverses des contextes à venir ». `feuilledetemps` est le premier de ces consommateurs.
+
+### La lecture passe par la base, jamais par un import
+
+`atelier`, `operateur` et `postedetravail` étant annotés `@BusinessContext`, ce contexte déclare ses propres entités
+JPA en lecture seule sur leurs tables — exactement ce que fait déjà `atelier` sur `element_de_fabrication`. Il
+rejoue donc **sa propre** version du repli de présence.
+
+Cette duplication est assumée : le partage passerait soit par un import interdit, soit par le shared kernel, qui est
+en anglais et ne peut pas accueillir du vocabulaire d'atelier. Le filet qui tient les deux implémentations alignées
+est le scénario Cucumber, qui pointe par l'API d'`atelier` et relit par celle de la feuille de temps — il échoue dès
+que les deux contextes cessent de lire les mêmes colonnes.
+
+### Ce que la feuille montre
+
+Sept jours toujours, du lundi au dimanche de la semaine ISO demandée, vides compris : un trou obligerait le lecteur
+à deviner s'il manque une journée ou si l'opérateur n'était pas là. L'année est celle des semaines ISO, qui diffère
+de l'année civile à ses bornes — la semaine 1 de 2026 commence le 29 décembre 2025.
+
+La semaine est toujours explicite, jamais « la semaine courante » : deux appels identiques rendent la même chose, et
+aucune horloge n'entre dans ce contexte.
+
+**Une plage encore ouverte ne dépasse pas son propre jour.** Sans départ pointé, rien ne dit que l'opérateur était
+encore là le lendemain ; l'étaler jusqu'à la fin de la semaine affirmerait une présence que personne n'a saisie.
+C'est la transposition de la règle qu'`atelier` applique déjà à un travail jamais arrêté.
+
+### Points ouverts
+
+1. **Le travail par élément reste à faire** (lot 2) : intervalles d'activité réduits aux fenêtres de présence,
+   découpés par jour, avec l'élément, le poste et la nature. La décision est prise — un pointage dont le début ne
+   tombe dans aucune journée de présence sera **écarté**, là où `TempsDAtelierService` le rend intact. Sans
+   présence, aucun jour ne peut l'accueillir sans arbitraire ; l'anomalie reste visible sur
+   `GET /api/atelier/suivis/{id}/temps-effectif`.
+2. **Le fuseau horaire est fixé à `Europe/Paris`** par un adapter, sur le patron des préfixes d'éléments de
+   fabrication. Il passe déjà par un port : le jour où une entreprise cliente vit ailleurs, seul l'adapter change.
+3. **Aucune restriction sur qui lit la feuille de qui.** `USER` et `GESTIONNAIRE` lisent l'historique de n'importe
+   quel opérateur, faute de lien entre un utilisateur authentifié et une fiche du référentiel. À rouvrir avec le lot
+   « utilisateur connecté », qui ramènera aussi `estSaisiParUnTiers` côté atelier.
