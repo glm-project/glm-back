@@ -34,6 +34,7 @@ public final class OperateursService {
         .nom(aCreer.nom())
         .prenom(aCreer.prenom())
         .matricule(aCreer.matricule().map(Matricule::value).orElse(null))
+        .tauxHoraire(aCreer.tauxHoraire().map(TauxHoraire::value).orElse(null))
         .postes(aCreer.postes())
     );
 
@@ -52,7 +53,9 @@ public final class OperateursService {
     verifierMatriculeLibre(existant.id(), aModifier.matricule());
     List<PosteHabilitable> habilitations = resoudre(aModifier.postes());
 
-    Operateur revise = repository.update(existant.revise(aModifier.nom(), aModifier.prenom(), aModifier.matricule(), aModifier.postes()));
+    Operateur revise = repository.update(
+      existant.revise(aModifier.nom(), aModifier.prenom(), aModifier.matricule(), aModifier.tauxHoraire(), aModifier.postes())
+    );
 
     return new ProfilDOperateur(revise, habilitations);
   }
