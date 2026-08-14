@@ -15,8 +15,8 @@ import java.util.Optional;
  * <p>
  * La nature de l'operation est recopiee du poste au moment de la saisie. Elle ne porte aucun invariant et ne
  * participe pas a l'identite de l'activite : elle n'est qu'un axe d'agregation, fige pour que la synthese d'un element
- * ne change pas le jour ou un poste est requalifie. C'est la seule chose que le journal copie du referentiel, tout le
- * reste n'y etant que reference.
+ * ne change pas le jour ou un poste est requalifie. C'est avec le cout horaire du poste et le taux horaire de
+ * l'operateur, sur le meme patron, tout ce que le journal copie du referentiel : tout le reste n'y est que reference.
  * </p>
  */
 public record EvenementDAtelier(
@@ -25,6 +25,8 @@ public record EvenementDAtelier(
   OperateurId operateur,
   Optional<PosteDeTravailId> poste,
   Optional<NatureDOperation> nature,
+  Optional<CoutHoraire> coutHoraire,
+  Optional<TauxHoraire> tauxHoraire,
   Auteur auteur,
   Horodatage horodatage,
   Optional<Annulation> annulation
@@ -35,13 +37,26 @@ public record EvenementDAtelier(
     Assert.notNull("operateur", operateur);
     Assert.notNull("poste de travail", poste);
     Assert.notNull("nature de l'operation", nature);
+    Assert.notNull("cout horaire", coutHoraire);
+    Assert.notNull("taux horaire", tauxHoraire);
     Assert.notNull("auteur", auteur);
     Assert.notNull("horodatage", horodatage);
     Assert.notNull("annulation", annulation);
   }
 
   private EvenementDAtelier(EvenementDAtelierBuilder builder) {
-    this(builder.id, builder.type, builder.operateur, builder.poste, builder.nature, builder.auteur, builder.horodatage, Optional.empty());
+    this(
+      builder.id,
+      builder.type,
+      builder.operateur,
+      builder.poste,
+      builder.nature,
+      builder.coutHoraire,
+      builder.tauxHoraire,
+      builder.auteur,
+      builder.horodatage,
+      Optional.empty()
+    );
   }
 
   /**
@@ -57,7 +72,7 @@ public record EvenementDAtelier(
       throw new EvenementDejaAnnuleException(id);
     }
 
-    return new EvenementDAtelier(id, type, operateur, poste, nature, auteur, horodatage, Optional.of(annulation));
+    return new EvenementDAtelier(id, type, operateur, poste, nature, coutHoraire, tauxHoraire, auteur, horodatage, Optional.of(annulation));
   }
 
   public boolean estAnnule() {
@@ -91,6 +106,8 @@ public record EvenementDAtelier(
       EvenementDAtelierOperateurBuilder,
       EvenementDAtelierPosteBuilder,
       EvenementDAtelierNatureBuilder,
+      EvenementDAtelierCoutHoraireBuilder,
+      EvenementDAtelierTauxHoraireBuilder,
       EvenementDAtelierAuteurBuilder,
       EvenementDAtelierHorodatageBuilder
   {
@@ -100,6 +117,8 @@ public record EvenementDAtelier(
     private OperateurId operateur;
     private Optional<PosteDeTravailId> poste;
     private Optional<NatureDOperation> nature;
+    private Optional<CoutHoraire> coutHoraire;
+    private Optional<TauxHoraire> tauxHoraire;
     private Auteur auteur;
     private Horodatage horodatage;
 
@@ -132,8 +151,22 @@ public record EvenementDAtelier(
     }
 
     @Override
-    public EvenementDAtelierAuteurBuilder nature(Optional<NatureDOperation> nature) {
+    public EvenementDAtelierCoutHoraireBuilder nature(Optional<NatureDOperation> nature) {
       this.nature = nature;
+
+      return this;
+    }
+
+    @Override
+    public EvenementDAtelierTauxHoraireBuilder coutHoraire(Optional<CoutHoraire> coutHoraire) {
+      this.coutHoraire = coutHoraire;
+
+      return this;
+    }
+
+    @Override
+    public EvenementDAtelierAuteurBuilder tauxHoraire(Optional<TauxHoraire> tauxHoraire) {
+      this.tauxHoraire = tauxHoraire;
 
       return this;
     }
@@ -170,7 +203,15 @@ public record EvenementDAtelier(
   }
 
   public interface EvenementDAtelierNatureBuilder {
-    EvenementDAtelierAuteurBuilder nature(Optional<NatureDOperation> nature);
+    EvenementDAtelierCoutHoraireBuilder nature(Optional<NatureDOperation> nature);
+  }
+
+  public interface EvenementDAtelierCoutHoraireBuilder {
+    EvenementDAtelierTauxHoraireBuilder coutHoraire(Optional<CoutHoraire> coutHoraire);
+  }
+
+  public interface EvenementDAtelierTauxHoraireBuilder {
+    EvenementDAtelierAuteurBuilder tauxHoraire(Optional<TauxHoraire> tauxHoraire);
   }
 
   public interface EvenementDAtelierAuteurBuilder {

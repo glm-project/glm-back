@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.shared.error.domain.MissingMandatoryValueException;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 @UnitTest
@@ -12,14 +13,14 @@ class PosteConnuTest {
 
   @Test
   void shouldNotBuildWithoutId() {
-    assertThatThrownBy(() -> new PosteConnu(null, LIBELLE_FRAISEUSE_1, NATURE_FRAISAGE))
+    assertThatThrownBy(() -> new PosteConnu(null, LIBELLE_FRAISEUSE_1, NATURE_FRAISAGE, Optional.empty()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("id du poste de travail");
   }
 
   @Test
   void shouldNotBuildWithoutLibelle() {
-    assertThatThrownBy(() -> new PosteConnu(POSTE_ID_FRAISEUSE_1, null, NATURE_FRAISAGE))
+    assertThatThrownBy(() -> new PosteConnu(POSTE_ID_FRAISEUSE_1, null, NATURE_FRAISAGE, Optional.empty()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("libelle du poste");
   }
@@ -30,9 +31,16 @@ class PosteConnuTest {
    */
   @Test
   void shouldNotBuildWithoutNature() {
-    assertThatThrownBy(() -> new PosteConnu(POSTE_ID_FRAISEUSE_1, LIBELLE_FRAISEUSE_1, null))
+    assertThatThrownBy(() -> new PosteConnu(POSTE_ID_FRAISEUSE_1, LIBELLE_FRAISEUSE_1, null, Optional.empty()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("nature de l'operation");
+  }
+
+  @Test
+  void shouldNotBuildWithoutCoutHoraire() {
+    assertThatThrownBy(() -> new PosteConnu(POSTE_ID_FRAISEUSE_1, LIBELLE_FRAISEUSE_1, NATURE_FRAISAGE, null))
+      .isExactlyInstanceOf(MissingMandatoryValueException.class)
+      .hasMessageContaining("cout horaire");
   }
 
   @Test
@@ -40,5 +48,11 @@ class PosteConnuTest {
     assertThat(POSTE_CONNU_FRAISEUSE_1.id()).isEqualTo(POSTE_ID_FRAISEUSE_1);
     assertThat(POSTE_CONNU_FRAISEUSE_1.libelle()).isEqualTo(LIBELLE_FRAISEUSE_1);
     assertThat(POSTE_CONNU_FRAISEUSE_1.nature()).isEqualTo(NATURE_FRAISAGE);
+    assertThat(POSTE_CONNU_FRAISEUSE_1.coutHoraire()).contains(COUT_HORAIRE_FRAISEUSE_1);
+  }
+
+  @Test
+  void shouldGetPosteSansCoutHoraireQuandLePosteNEnAPas() {
+    assertThat(POSTE_CONNU_FRAISEUSE_2.coutHoraire()).isEmpty();
   }
 }

@@ -65,6 +65,11 @@ final class RessourcesDAtelierEnMemoire {
     }
 
     @Override
+    public Optional<OperateurConnu> get(OperateurId id) {
+      return Optional.ofNullable(operateurs.get(id));
+    }
+
+    @Override
     public List<OperateurConnu> parIds(Set<OperateurId> ids) {
       return ids.stream().map(operateurs::get).filter(Objects::nonNull).toList();
     }
