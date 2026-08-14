@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <changeSet id="evenement_d_atelier_cout_taux_horaire" author="glm">
+    <comment>
+      Le cout horaire du poste et le taux horaire de l'operateur sont copies au moment de la saisie, sur
+      le meme patron que la nature de l'operation : figes pour que la synthese d'un element ne change pas
+      le jour ou le referentiel est requalifie. Facultatifs comme leurs sources sur poste_de_travail et
+      operateur.
+    </comment>
+
+    <addColumn tableName="evenement_d_atelier">
+      <column name="cout_horaire" type="decimal(10,2)" />
+      <column name="taux_horaire" type="decimal(10,2)" />
+    </addColumn>
+  </changeSet>
+</databaseChangeLog>

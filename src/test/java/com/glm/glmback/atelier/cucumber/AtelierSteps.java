@@ -67,34 +67,42 @@ public class AtelierSteps {
    */
   @Given("l'entreprise a declare le poste de travail {string} de nature {string}")
   public void lEntrepriseADeclareLePosteDeTravail(String alias, String nature) {
-    postes.put(
-      alias,
-      POSTES_DECLARES.computeIfAbsent(alias, libelle -> {
-        rest.post(POSTES_URI, JSON.writeValueAsString(Map.of("libelle", libelle, "nature", nature)));
+    declareLePosteDeTravail(alias, nature, null);
+  }
 
-        return idDeLaDerniereReponse();
-      })
-    );
+  @Given("l'entreprise a declare le poste de travail {string} de nature {string} et de cout horaire {string}")
+  public void lEntrepriseADeclareLePosteDeTravailAvecCoutHoraire(String alias, String nature, String coutHoraire) {
+    declareLePosteDeTravail(alias, nature, coutHoraire);
   }
 
   @Given("l'entreprise a declare l'operateur {string} habilite sur {string}")
   public void lEntrepriseADeclareLOperateurHabilite(String alias, String poste) {
-    declareLOperateur(alias, List.of(postes.get(poste)));
+    declareLOperateur(alias, List.of(postes.get(poste)), null);
   }
 
   @Given("l'entreprise a declare l'operateur {string} habilite sur {string} et {string}")
   public void lEntrepriseADeclareLOperateurHabiliteSurDeuxPostes(String alias, String premier, String second) {
-    declareLOperateur(alias, List.of(postes.get(premier), postes.get(second)));
+    declareLOperateur(alias, List.of(postes.get(premier), postes.get(second)), null);
+  }
+
+  @Given("l'entreprise a declare l'operateur {string} habilite sur {string} et {string} avec un taux horaire de {string}")
+  public void lEntrepriseADeclareLOperateurHabiliteSurDeuxPostesAvecTauxHoraire(
+    String alias,
+    String premier,
+    String second,
+    String tauxHoraire
+  ) {
+    declareLOperateur(alias, List.of(postes.get(premier), postes.get(second)), tauxHoraire);
   }
 
   @Given("l'entreprise a declare l'operateur {string}")
   public void lEntrepriseADeclareLOperateur(String alias) {
-    declareLOperateur(alias, List.of());
+    declareLOperateur(alias, List.of(), null);
   }
 
   @Given("l'entreprise a declare l'operateur {string} sans habilitation")
   public void lEntrepriseADeclareLOperateurSansHabilitation(String alias) {
-    declareLOperateur(alias, List.of());
+    declareLOperateur(alias, List.of(), null);
   }
 
   @Given("l'entreprise a cree l'element de fabrication {string}")
@@ -298,6 +306,16 @@ public class AtelierSteps {
     assertThatLastResponse().hasElement("$.journal[" + rang + "].nature").withValue(nature);
   }
 
+  @Then("l'evenement {int} du suivi a le cout horaire {string}")
+  public void lEvenementDuSuiviALeCoutHoraire(int rang, String coutHoraire) {
+    assertThatLastResponse().hasElement("$.journal[" + rang + "].coutHoraire").withValue(coutHoraire);
+  }
+
+  @Then("l'evenement {int} du suivi a le taux horaire {string}")
+  public void lEvenementDuSuiviALeTauxHoraire(int rang, String tauxHoraire) {
+    assertThatLastResponse().hasElement("$.journal[" + rang + "].tauxHoraire").withValue(tauxHoraire);
+  }
+
   @Then("le temps effectif contient")
   public void leTempsEffectifContient(List<Map<String, String>> attendus) {
     assertThatLastResponse().hasResponse().containingExactly(attendus);
@@ -478,11 +496,29 @@ public class AtelierSteps {
     return operateurs.getOrDefault(alias, alias);
   }
 
-  private void declareLOperateur(String alias, List<String> habilitations) {
-    rest.post(
-      OPERATEURS_URI,
-      JSON.writeValueAsString(Map.of("nom", alias, "prenom", "Operateur " + SEQUENCE.incrementAndGet(), "postes", habilitations))
+  private void declareLePosteDeTravail(String alias, String nature, String coutHoraire) {
+    postes.put(
+      alias,
+      POSTES_DECLARES.computeIfAbsent(alias, libelle -> {
+        Map<String, Object> corps = new HashMap<>(Map.of("libelle", libelle, "nature", nature));
+        if (coutHoraire != null) {
+          corps.put("coutHoraire", coutHoraire);
+        }
+        rest.post(POSTES_URI, JSON.writeValueAsString(corps));
+
+        return idDeLaDerniereReponse();
+      })
     );
+  }
+
+  private void declareLOperateur(String alias, List<String> habilitations, String tauxHoraire) {
+    Map<String, Object> corps = new HashMap<>(
+      Map.of("nom", alias, "prenom", "Operateur " + SEQUENCE.incrementAndGet(), "postes", habilitations)
+    );
+    if (tauxHoraire != null) {
+      corps.put("tauxHoraire", tauxHoraire);
+    }
+    rest.post(OPERATEURS_URI, JSON.writeValueAsString(corps));
     operateurs.put(alias, idDeLaDerniereReponse());
   }
 

@@ -138,6 +138,8 @@ class PariteDesRepositoriesDAtelierIT {
       .operateur(OPERATEUR_ID_DUPONT)
       .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
       .nature(Optional.of(NATURE_FRAISAGE))
+      .coutHoraire(Optional.of(COUT_HORAIRE_FRAISEUSE_1))
+      .tauxHoraire(Optional.of(TAUX_HORAIRE_DUPONT))
       .auteur(AUTEUR_DUPONT)
       .horodatage(Horodatage.saisiA(date));
   }

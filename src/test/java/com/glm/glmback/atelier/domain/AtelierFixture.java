@@ -1,5 +1,6 @@
 package com.glm.glmback.atelier.domain;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -31,10 +32,28 @@ public final class AtelierFixture {
   public static final Auteur AUTEUR_LEROY = new Auteur("leroy");
   public static final NatureDOperation NATURE_FRAISAGE = new NatureDOperation("fraisage");
   public static final NatureDOperation NATURE_TOURNAGE = new NatureDOperation("tournage");
-  public static final OperateurConnu OPERATEUR_CONNU_DUPONT = new OperateurConnu(OPERATEUR_ID_DUPONT, NOM_DUPONT, PRENOM_JEAN);
-  public static final OperateurConnu OPERATEUR_CONNU_MARTIN = new OperateurConnu(OPERATEUR_ID_MARTIN, NOM_MARTIN, PRENOM_PAUL);
-  public static final PosteConnu POSTE_CONNU_FRAISEUSE_1 = new PosteConnu(POSTE_ID_FRAISEUSE_1, LIBELLE_FRAISEUSE_1, NATURE_FRAISAGE);
-  public static final PosteConnu POSTE_CONNU_FRAISEUSE_2 = new PosteConnu(POSTE_ID_FRAISEUSE_2, LIBELLE_FRAISEUSE_2, NATURE_TOURNAGE);
+  public static final CoutHoraire COUT_HORAIRE_FRAISEUSE_1 = new CoutHoraire(new BigDecimal("45.50"));
+  public static final TauxHoraire TAUX_HORAIRE_DUPONT = new TauxHoraire(new BigDecimal("22.00"));
+  public static final OperateurConnu OPERATEUR_CONNU_DUPONT = OperateurConnu.builder()
+    .id(OPERATEUR_ID_DUPONT)
+    .nom(NOM_DUPONT)
+    .prenom(PRENOM_JEAN)
+    .tauxHoraire(TAUX_HORAIRE_DUPONT.value());
+  public static final OperateurConnu OPERATEUR_CONNU_MARTIN = OperateurConnu.builder()
+    .id(OPERATEUR_ID_MARTIN)
+    .nom(NOM_MARTIN)
+    .prenom(PRENOM_PAUL)
+    .tauxHoraire(null);
+  public static final PosteConnu POSTE_CONNU_FRAISEUSE_1 = PosteConnu.builder()
+    .id(POSTE_ID_FRAISEUSE_1)
+    .libelle(LIBELLE_FRAISEUSE_1)
+    .nature(NATURE_FRAISAGE)
+    .coutHoraire(COUT_HORAIRE_FRAISEUSE_1.value());
+  public static final PosteConnu POSTE_CONNU_FRAISEUSE_2 = PosteConnu.builder()
+    .id(POSTE_ID_FRAISEUSE_2)
+    .libelle(LIBELLE_FRAISEUSE_2)
+    .nature(NATURE_TOURNAGE)
+    .coutHoraire(null);
   public static final NomDElement NOM_OF_2026_000042 = new NomDElement("OF-2026-000042");
   public static final NomDElement NOM_OF_2026_000043 = new NomDElement("OF-2026-000043");
   public static final MotifDAnnulation MOTIF_ERREUR_DE_SAISIE = new MotifDAnnulation("Erreur de saisie");
@@ -195,6 +214,8 @@ public final class AtelierFixture {
       .operateur(operateur)
       .poste(poste)
       .nature(Optional.of(NATURE_FRAISAGE))
+      .coutHoraire(Optional.of(COUT_HORAIRE_FRAISEUSE_1))
+      .tauxHoraire(Optional.of(TAUX_HORAIRE_DUPONT))
       .auteur(auteur)
       .horodatage(horodatage);
   }

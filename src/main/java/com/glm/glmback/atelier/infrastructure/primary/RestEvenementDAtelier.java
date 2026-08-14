@@ -1,10 +1,13 @@
 package com.glm.glmback.atelier.infrastructure.primary;
 
 import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
+import com.glm.glmback.atelier.domain.CoutHoraire;
 import com.glm.glmback.atelier.domain.EvenementDAtelier;
 import com.glm.glmback.atelier.domain.NatureDOperation;
+import com.glm.glmback.atelier.domain.TauxHoraire;
 import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -22,6 +25,13 @@ record RestEvenementDAtelier(
   @Schema(description = "Operateur dont le temps est affecte.") RestOperateur operateur,
   @Schema(description = "Poste de travail, toujours facultatif.") RestPosteDeTravail poste,
   @Schema(description = "Nature de l'operation, recopiee du poste a la saisie. Simple axe d'agregation.") String nature,
+  @Schema(
+    description = "Cout horaire du poste, copie a la saisie. Absent si le poste n'est pas valorise ou si aucun poste n'est fourni.",
+    example = "45.50"
+  )
+  BigDecimal coutHoraire,
+  @Schema(description = "Taux horaire de l'operateur, copie a la saisie. Absent si l'operateur n'est pas valorise.", example = "22.00")
+  BigDecimal tauxHoraire,
   @Schema(description = "Utilisateur ayant saisi l'evenement.", example = "dupont") String auteur,
   @Schema(description = "Heure metier a laquelle le fait a eu lieu.") Instant dateDeSurvenue,
   @Schema(description = "Heure a laquelle la saisie a ete enregistree.") Instant dateDEnregistrement,
@@ -35,6 +45,8 @@ record RestEvenementDAtelier(
       RestOperateur.resolu(annuaire, evenement.operateur()),
       RestPosteDeTravail.resolu(annuaire, evenement.poste()),
       evenement.nature().map(NatureDOperation::value).orElse(null),
+      evenement.coutHoraire().map(CoutHoraire::value).orElse(null),
+      evenement.tauxHoraire().map(TauxHoraire::value).orElse(null),
       evenement.auteur().value(),
       evenement.dateDeSurvenue(),
       evenement.dateDEnregistrement(),
