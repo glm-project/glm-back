@@ -36,6 +36,13 @@ class PostesDeTravailServiceTest {
   }
 
   @Test
+  void shouldCreatePosteDeTravailWithCoutHoraire() {
+    PosteDeTravail cree = postes.create(posteDeTravailACreerTour1AvecCoutHoraire());
+
+    assertThat(cree.coutHoraire()).contains(COUT_HORAIRE_45_50);
+  }
+
+  @Test
   void shouldNotCreatePosteDeTravailWithAlreadyUsedLibelle() {
     postes.create(posteDeTravailACreerTour1());
 
@@ -60,6 +67,15 @@ class PostesDeTravailServiceTest {
     assertThat(revise.id()).isEqualTo(cree.id());
     assertThat(revise.libelle()).isEqualTo(LIBELLE_FRAISEUSE_1);
     assertThat(revise.nature()).isEqualTo(NATURE_FRAISAGE);
+  }
+
+  @Test
+  void shouldUpdatePosteDeTravailWithCoutHoraire() {
+    PosteDeTravail cree = postes.create(posteDeTravailACreerTour1());
+
+    PosteDeTravail revise = postes.update(posteDeTravailAModifierTour1AvecCoutHoraire(cree.id()));
+
+    assertThat(revise.coutHoraire()).contains(COUT_HORAIRE_60);
   }
 
   @Test

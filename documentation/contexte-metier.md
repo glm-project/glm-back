@@ -130,7 +130,7 @@ L'API est décrite par OpenAPI (`/swagger-ui.html`) et par [atelier-api.md](atel
 
 1. **Régulariser après une dé-habilitation est refusé.** L'habilitation étant vérifiée sur les trois écritures du journal, un gestionnaire ne peut plus rattraper une saisie oubliée sur un poste dont l'opérateur a été retiré depuis. Le cas est assumé pour ce lot — il ferme la porte au contournement —, mais il laisserait un trou dans la paie s'il se produisait : à rouvrir si le client le rencontre.
 2. **Quelle mesure alimente la paie ?** L'amplitude arrivée → départ, ou la somme des fenêtres de présence, pause de midi déduite ? Le client dit « les heures où il arrive à la société, il pointe et il part », mais pointe aussi sa pause déjeuner. Les deux mesures sont exposées, le choix reste à faire avec l'assistante.
-3. **Le coût de revient monétaire.** Le taux horaire de l'opérateur et le coût horaire du poste n'existent nulle part : aucune source de données, donc aucun port. Le lot suivant. À reprendre en même temps que l'objection de Nicolas sur la division du taux humain, restée sans conclusion en réunion.
+3. **Le coût de revient monétaire.** Le taux horaire de l'opérateur et le coût horaire du poste existent désormais sur leurs agrégats respectifs (facultatifs, strictement positifs), mais rien ne les exploite encore : `atelier` ne les lit pas, donc aucun port, aucun calcul de coût de revient. Le lot suivant. À reprendre en même temps que l'objection de Nicolas sur la division du taux humain, restée sans conclusion en réunion.
 4. **Le bouton de pause global n'a jamais été validé de première main.** Il ne vient que de la réunion d'équipe. Dans la réunion client, la pause est décrite au singulier, sur un seul élément. Le modèle retient le bouton global — à reconfirmer, c'est lui qui structure l'écran principal.
 5. **Le GLM comme résidu** (présence moins temps affecté) plutôt que comme élément fictif : cohérent avec ce que le client conclut, mais l'écran devra le rendre visible d'une façon ou d'une autre, puisqu'il tient au bouton.
 6. **Le cycle de vie de l'élément lui-même.** La clôture existe côté atelier, sur le suivi. Reste à trancher si l'élément de fabrication porte en propre un statut, ou si son activité se lit entièrement par la présence ou l'absence d'un suivi non clôturé.
@@ -139,7 +139,7 @@ L'API est décrite par OpenAPI (`/swagger-ui.html`) et par [atelier-api.md](atel
 
 ## postedetravail
 
-Gère le **référentiel de ce sur quoi les opérateurs pointent**. Un `PosteDeTravail` porte un `Libelle` et une `NatureDeTravail` : « Tour 1 » sert à tourner, « Poste de soudure » à souder.
+Gère le **référentiel de ce sur quoi les opérateurs pointent**. Un `PosteDeTravail` porte un `Libelle` et une `NatureDeTravail` : « Tour 1 » sert à tourner, « Poste de soudure » à souder. Il porte aussi, facultativement, un `CoutHoraire` : le contexte se contente de le stocker et de le restituer, le calcul du coût de revient restant un lot à part, sur lequel `atelier` n'est pas encore branché.
 
 Le terme reste volontairement générique, comme dans l'atelier : une machine chez le client de référence, un établi, un four, une salle ailleurs.
 
@@ -153,7 +153,7 @@ Le terme reste volontairement générique, comme dans l'atelier : une machine ch
 
 ## operateur
 
-Gère le **référentiel des personnes qui pointent**. Un `Operateur` porte son nom, son prénom, un matricule facultatif, et l'ensemble des postes sur lesquels il est habilité.
+Gère le **référentiel des personnes qui pointent**. Un `Operateur` porte son nom, son prénom, un matricule facultatif, un taux horaire facultatif, et l'ensemble des postes sur lesquels il est habilité.
 
 ### Le métier vient du poste, jamais de la personne
 
@@ -181,5 +181,5 @@ L'identité (nom, prénom) est **unique par entreprise**. Le **matricule** est l
 
 1. **Les gestionnaires ne sont pas déclarés.** Leur fiche n'aurait aucun usage tant que l'authentification n'est pas tranchée : l'`Auteur` d'une saisie vient du jeton, pas d'un référentiel. À rouvrir avec ce sujet.
 2. **Aucun plafond sur le nombre de postes par personne**, alors que le client énonce « maximum 4 machines par personne ». Une donnée de paramétrage ne s'écrit pas en constante du domaine, et GLM est une trame : une autre entreprise en habilitera six. Si le plafond doit être tenu, il viendra d'un port.
-3. **Montants.** Coût horaire du poste et taux horaire de l'opérateur n'existent nulle part : lot « coût de revient ». Les deux agrégats sont dimensionnés pour les recevoir.
+3. **Montants.** Coût horaire du poste et taux horaire de l'opérateur existent désormais sur les deux agrégats (facultatifs, strictement positifs) ; seul le calcul du coût de revient lui-même reste à faire, lot suivant.
 4. **Utilisateur connecté.** Non tranché. La continuité de service est envisagée par un serveur interne stockant les pointages et les remontant au cloud au retour du réseau. Point technique à verser au dossier : la **vérification** d'un jeton déjà émis est locale, signature contre le JWKS mis en cache ; ce qui exige le cloud, c'est son **émission** et son rafraîchissement.

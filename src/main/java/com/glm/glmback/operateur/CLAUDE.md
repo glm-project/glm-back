@@ -19,7 +19,9 @@ ne l'ait saisi deux fois.
   l'authentification n'est pas tranchée : l'`Auteur` d'une saisie vient du jeton, pas d'un référentiel.
 - **La nature de travail comme propriété d'une personne.** Elle appartient au poste. Déclarer un métier sur
   l'opérateur le stockerait deux fois, avec la possibilité qu'ils se contredisent.
-- **Le taux horaire**, et tout montant : lot « coût de revient ».
+- **Le calcul du coût de revient**. L'opérateur porte son `TauxHoraire` (facultatif, strictement positif), mais ce
+  contexte ne fait rien d'autre que le stocker et le restituer : aucun calcul, aucune répartition. `atelier` ne le lit
+  pas encore — c'est le lot « coût de revient » qui posera ce port.
 - **Le pointage**, qui appartient à `atelier` — lequel ne connaît de ce contexte que l'identifiant, lu par port, et
   n'en copie rien.
 - **L'identification à la borne** et l'authentification. Le matricule est un attribut d'identité, pas un moyen de
@@ -27,7 +29,7 @@ ne l'ait saisi deux fois.
 
 ## Agrégat
 
-`Operateur` — cinq composants, donc **step builder en chaîne de lambdas** : les cinq types d'étapes sont tous
+`Operateur` — six composants, donc **step builder en chaîne de lambdas** : les six types d'étapes sont tous
 distincts, aucune inversion ne compile, le constructeur privé prend la liste positionnelle sans risque. `builder()` est
 public parce que la relecture depuis la persistance se fait dans `infrastructure/secondary`.
 
@@ -40,6 +42,8 @@ résolus.
 - **Le matricule est unique quand il est renseigné**, et plusieurs opérateurs peuvent rester sans — patron
   `elementdefabrication.Reference`. PostgreSQL considérant les `NULL` comme distincts, l'index unique laisse coexister
   autant d'opérateurs sans matricule que nécessaire.
+- **Le taux horaire est facultatif et strictement positif** quand il est renseigné, sur le patron du matricule : un
+  taux à zéro n'a pas de sens métier — s'il est inconnu, le champ reste absent plutôt qu'à zéro.
 - **Tout poste référencé existe.** Invariant inter-contextes : il ne peut pas vivre dans le constructeur, qui ne voit
   que des identifiants. Il est porté par `OperateursService`, qui détient les deux ports.
 - **Rien n'est copié du poste**, à la différence de l'atelier qui copie nom et type à l'engagement. Aucun historique ne

@@ -10,7 +10,8 @@
       collaborateurs : facultatif, car toutes n'en attribuent pas, et unique des qu'il est renseigne.
       PostgreSQL considerant les NULL comme distincts, la contrainte laisse coexister autant d'operateurs
       sans matricule que necessaire. Aucune nature n'est stockee ici : les metiers d'un operateur se
-      deduisent des postes auxquels il est habilite.
+      deduisent des postes auxquels il est habilite. Le taux horaire est facultatif, au meme titre que le
+      matricule.
     </comment>
 
     <createTable tableName="operateur">
@@ -29,6 +30,8 @@
       <column name="matricule" type="varchar(50)">
         <constraints unique="true" uniqueConstraintName="ux_operateur_matricule" />
       </column>
+
+      <column name="taux_horaire" type="decimal(10,2)" />
     </createTable>
 
     <addUniqueConstraint tableName="operateur" columnNames="nom, prenom" constraintName="ux_operateur_identite" />

@@ -1,5 +1,6 @@
 package com.glm.glmback.postedetravail.infrastructure.secondary;
 
+import com.glm.glmback.postedetravail.domain.CoutHoraire;
 import com.glm.glmback.postedetravail.domain.Libelle;
 import com.glm.glmback.postedetravail.domain.NatureDeTravail;
 import com.glm.glmback.postedetravail.domain.PosteDeTravail;
@@ -8,6 +9,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Entity
@@ -23,6 +25,9 @@ class PosteDeTravailEntity {
   @Column(length = 50)
   private String nature;
 
+  @Column(name = "cout_horaire", precision = 10, scale = 2)
+  private BigDecimal coutHoraire;
+
   protected PosteDeTravailEntity() {
     // Constructeur requis par JPA.
   }
@@ -31,6 +36,7 @@ class PosteDeTravailEntity {
     id = poste.id().uuid();
     libelle = poste.libelle().value();
     nature = poste.nature().value();
+    coutHoraire = poste.coutHoraire().map(CoutHoraire::value).orElse(null);
   }
 
   static PosteDeTravailEntity from(PosteDeTravail poste) {
@@ -38,6 +44,10 @@ class PosteDeTravailEntity {
   }
 
   PosteDeTravail toDomain() {
-    return new PosteDeTravail(new PosteDeTravailId(id), new Libelle(libelle), new NatureDeTravail(nature));
+    return PosteDeTravail.builder()
+      .id(new PosteDeTravailId(id))
+      .libelle(new Libelle(libelle))
+      .nature(new NatureDeTravail(nature))
+      .coutHoraire(coutHoraire);
   }
 }

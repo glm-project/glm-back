@@ -195,6 +195,26 @@ public class AtelierSteps {
     rest.delete(POSTES_URI + "/" + postes.get(alias));
   }
 
+  /**
+   * Retire l'habilitation sans toucher au journal d'atelier : c'est ce qui laisse un test distinguer le refus par
+   * habilitation du refus, definitif, par pointage deja effectue.
+   */
+  @Given("l'operateur {string} n'est plus habilite sur {string}")
+  @SuppressWarnings("unchecked")
+  public void lOperateurNEstPlusHabiliteSur(String alias, String poste) {
+    rest.get(OPERATEURS_URI + "/" + operateurs.get(alias));
+    String nom = (String) CucumberRestTestContext.getElement("$.nom");
+    String prenom = (String) CucumberRestTestContext.getElement("$.prenom");
+    List<String> restants = ((List<String>) CucumberRestTestContext.getElement("$.postes[*].id")).stream()
+      .filter(id -> !id.equals(postes.get(poste)))
+      .toList();
+
+    rest.put(
+      OPERATEURS_URI + "/" + operateurs.get(alias),
+      JSON.writeValueAsString(Map.of("nom", nom, "prenom", prenom, "postes", restants))
+    );
+  }
+
   @When("je tente de supprimer l'operateur declare {string}")
   public void jeTenteDeSupprimerLOperateurDeclare(String alias) {
     rest.delete(OPERATEURS_URI + "/" + operateurs.get(alias));

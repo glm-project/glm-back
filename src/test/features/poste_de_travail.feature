@@ -12,6 +12,28 @@ Feature: Referentiel des postes de travail
       | libelle | Tour 1   |
       | nature  | tournage |
 
+  Scenario: Declaration d'un poste de travail avec son cout horaire
+    When je declare un poste de travail
+      | libelle     | Tour 18  |
+      | nature      | tournage |
+      | coutHoraire | 45.5     |
+    Then la reponse a le statut http 201
+    And la reponse de poste de travail contient
+      | coutHoraire | 45.5 |
+
+  Scenario: Revision du cout horaire d'un poste de travail
+    Given j'ai declare un poste de travail
+      | libelle     | Tour 19  |
+      | nature      | tournage |
+      | coutHoraire | 40       |
+    When je revise ce poste de travail
+      | libelle     | Tour 19  |
+      | nature      | tournage |
+      | coutHoraire | 55.5     |
+    Then la reponse a le statut http 200
+    And la reponse de poste de travail contient
+      | coutHoraire | 55.5 |
+
   Scenario: Declaration refusee si le libelle est deja utilise
     Given j'ai declare un poste de travail
       | libelle | Tour 2   |

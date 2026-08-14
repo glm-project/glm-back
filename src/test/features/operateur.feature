@@ -19,6 +19,28 @@ Feature: Referentiel des operateurs
     And la reponse d'operateur a les metiers "soudage, tournage"
     And la reponse d'operateur a les postes "Poste de soudure A, Tour A"
 
+  Scenario: Declaration d'un operateur avec son taux horaire
+    When je declare un operateur
+      | nom         | Perez |
+      | prenom      | Rosa  |
+      | tauxHoraire | 22.5  |
+    Then la reponse a le statut http 201
+    And la reponse d'operateur contient
+      | tauxHoraire | 22.5 |
+
+  Scenario: Revision du taux horaire d'un operateur
+    Given j'ai declare un operateur
+      | nom         | Faucher |
+      | prenom      | Elise   |
+      | tauxHoraire | 20      |
+    When je revise cet operateur
+      | nom         | Faucher |
+      | prenom      | Elise   |
+      | tauxHoraire | 27.5    |
+    Then la reponse a le statut http 200
+    And la reponse d'operateur contient
+      | tauxHoraire | 27.5 |
+
   Scenario: Declaration d'un operateur sans matricule ni habilitation
     When je declare un operateur
       | nom    | Martin |

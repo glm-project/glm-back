@@ -274,18 +274,23 @@ Feature: Suivi des elements engages en atelier
       | dateDeSurvenue | 2026-05-10T06:00:00Z |
     Then la reponse a le statut http 409
 
-  Scenario: Un poste sur lequel du temps a ete pointe ne se supprime plus
+  Scenario: Un poste sur lequel du temps a ete pointe ne se supprime plus, meme sans habilitation restante
     # Le journal ne retient que l'identifiant du poste : le supprimer laisserait des heures de travail sans machine.
+    # Poste et operateur dedies a ce scenario : "fraiseuse-1" est partage par toute la campagne, une habilitation
+    # laissee par un scenario precedent y masquerait ce refus-la derriere celui, revocable, du poste encore habilite.
     Given il est "2026-05-10T08:00:00Z"
+    And l'entreprise a declare le poste de travail "fraiseuse-solo" de nature "fraisage"
+    And l'entreprise a declare l'operateur "solo" habilite sur "fraiseuse-solo"
     And l'entreprise a cree l'element de fabrication "OF 2020"
       | type      | ORDRE_DE_FABRICATION |
       | reference | 2020                 |
     And j'ai engage l'element "OF 2020" en atelier
     And j'ai pointe sur "OF 2020"
-      | type      | DEBUT       |
-      | operateur | dupont      |
-      | poste     | fraiseuse-1 |
-    When je tente de supprimer le poste de travail declare "fraiseuse-1"
+      | type      | DEBUT          |
+      | operateur | solo           |
+      | poste     | fraiseuse-solo |
+    And l'operateur "solo" n'est plus habilite sur "fraiseuse-solo"
+    When je tente de supprimer le poste de travail declare "fraiseuse-solo"
     Then la reponse a le statut http 409
 
   Scenario: Un operateur qui a pointe sur un element ne se supprime plus

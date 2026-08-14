@@ -4,6 +4,7 @@ import static com.glm.glmback.shared.pagination.domain.PaginationFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.IntegrationTest;
+import com.glm.glmback.postedetravail.domain.CoutHoraire;
 import com.glm.glmback.postedetravail.domain.Libelle;
 import com.glm.glmback.postedetravail.domain.NatureDeTravail;
 import com.glm.glmback.postedetravail.domain.PosteDeTravail;
@@ -15,6 +16,7 @@ import com.glm.glmback.postedetravail.domain.PosteDeTravailRepository;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurityContexts;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.pagination.domain.Page;
+import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
@@ -56,6 +58,21 @@ class JpaPosteDeTravailRepositoryIT {
 
   @Test
   @WithTenant(IMPECCMOLD)
+  void shouldCreateAndGetPosteDeTravailWithCoutHoraire() {
+    PosteDeTravail poste = new PosteDeTravail(
+      PosteDeTravailId.newId(),
+      libelleDeTest(),
+      TOURNAGE,
+      Optional.of(new CoutHoraire(new BigDecimal("45.50")))
+    );
+
+    inTransaction(() -> postes.create(poste));
+
+    assertThat(inTransaction(() -> postes.get(poste.id()))).contains(poste);
+  }
+
+  @Test
+  @WithTenant(IMPECCMOLD)
   void shouldNotCreateAlreadyExistingPosteDeTravail() {
     PosteDeTravail poste = posteDeTournage();
     inTransaction(() -> postes.create(poste));
@@ -75,7 +92,7 @@ class JpaPosteDeTravailRepositoryIT {
     PosteDeTravail poste = posteDeTournage();
     inTransaction(() -> postes.create(poste));
 
-    PosteDeTravail revise = poste.revise(libelleDeTest(), SOUDAGE);
+    PosteDeTravail revise = poste.revise(libelleDeTest(), SOUDAGE, Optional.empty());
     inTransaction(() -> postes.update(revise));
 
     assertThat(inTransaction(() -> postes.get(poste.id()))).contains(revise);
@@ -137,7 +154,7 @@ class JpaPosteDeTravailRepositoryIT {
   @WithTenant(IMPECCMOLD)
   void shouldListPostesDeTravailOfExpectedNatureSortedByLibelle() {
     PosteDeTravail tournage = posteDeTournage();
-    PosteDeTravail soudage = new PosteDeTravail(PosteDeTravailId.newId(), libelleDeTest(), SOUDAGE);
+    PosteDeTravail soudage = new PosteDeTravail(PosteDeTravailId.newId(), libelleDeTest(), SOUDAGE, Optional.empty());
     inTransaction(() -> postes.create(tournage));
     inTransaction(() -> postes.create(soudage));
 
@@ -155,8 +172,18 @@ class JpaPosteDeTravailRepositoryIT {
   void shouldListPostesDeTravailSortedByLibelle() {
     long numero = COMPTEUR.incrementAndGet();
     NatureDeTravail natureDuTest = new NatureDeTravail("IT-tri-%06d".formatted(numero));
-    PosteDeTravail second = new PosteDeTravail(PosteDeTravailId.newId(), new Libelle("IT-tri-%06d-b".formatted(numero)), natureDuTest);
-    PosteDeTravail premier = new PosteDeTravail(PosteDeTravailId.newId(), new Libelle("IT-tri-%06d-a".formatted(numero)), natureDuTest);
+    PosteDeTravail second = new PosteDeTravail(
+      PosteDeTravailId.newId(),
+      new Libelle("IT-tri-%06d-b".formatted(numero)),
+      natureDuTest,
+      Optional.empty()
+    );
+    PosteDeTravail premier = new PosteDeTravail(
+      PosteDeTravailId.newId(),
+      new Libelle("IT-tri-%06d-a".formatted(numero)),
+      natureDuTest,
+      Optional.empty()
+    );
     inTransaction(() -> postes.create(second));
     inTransaction(() -> postes.create(premier));
 
@@ -180,8 +207,8 @@ class JpaPosteDeTravailRepositoryIT {
   @Test
   void shouldReuseSameLibelleInEachTenant() {
     Libelle partage = libelleDeTest();
-    PosteDeTravail chezImpeccMold = new PosteDeTravail(PosteDeTravailId.newId(), partage, TOURNAGE);
-    PosteDeTravail chezKatilys = new PosteDeTravail(PosteDeTravailId.newId(), partage, TOURNAGE);
+    PosteDeTravail chezImpeccMold = new PosteDeTravail(PosteDeTravailId.newId(), partage, TOURNAGE, Optional.empty());
+    PosteDeTravail chezKatilys = new PosteDeTravail(PosteDeTravailId.newId(), partage, TOURNAGE, Optional.empty());
 
     TenantSecurityContexts.authenticateOn(IMPECCMOLD);
     inTransaction(() -> postes.create(chezImpeccMold));
@@ -193,7 +220,7 @@ class JpaPosteDeTravailRepositoryIT {
   }
 
   private static PosteDeTravail posteDeTournage() {
-    return new PosteDeTravail(PosteDeTravailId.newId(), libelleDeTest(), TOURNAGE);
+    return new PosteDeTravail(PosteDeTravailId.newId(), libelleDeTest(), TOURNAGE, Optional.empty());
   }
 
   private static Libelle libelleDeTest() {

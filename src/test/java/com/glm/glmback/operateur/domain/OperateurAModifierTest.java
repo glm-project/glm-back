@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.shared.error.domain.MissingMandatoryValueException;
+import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -14,7 +15,7 @@ class OperateurAModifierTest {
 
   @Test
   void shouldNotBuildWithoutId() {
-    assertThatThrownBy(() -> new OperateurAModifier(null, NOM_DUPONT, PRENOM_JEAN, Optional.empty(), Set.of()))
+    assertThatThrownBy(() -> new OperateurAModifier(null, NOM_DUPONT, PRENOM_JEAN, Optional.empty(), Optional.empty(), Set.of()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("id");
   }
@@ -23,7 +24,7 @@ class OperateurAModifierTest {
   void shouldNotBuildWithoutNom() {
     OperateurId id = OperateurId.newId();
 
-    assertThatThrownBy(() -> new OperateurAModifier(id, null, PRENOM_JEAN, Optional.empty(), Set.of()))
+    assertThatThrownBy(() -> new OperateurAModifier(id, null, PRENOM_JEAN, Optional.empty(), Optional.empty(), Set.of()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("nom");
   }
@@ -32,7 +33,7 @@ class OperateurAModifierTest {
   void shouldNotBuildWithoutPrenom() {
     OperateurId id = OperateurId.newId();
 
-    assertThatThrownBy(() -> new OperateurAModifier(id, NOM_DUPONT, null, Optional.empty(), Set.of()))
+    assertThatThrownBy(() -> new OperateurAModifier(id, NOM_DUPONT, null, Optional.empty(), Optional.empty(), Set.of()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("prenom");
   }
@@ -41,16 +42,25 @@ class OperateurAModifierTest {
   void shouldNotBuildWithoutMatricule() {
     OperateurId id = OperateurId.newId();
 
-    assertThatThrownBy(() -> new OperateurAModifier(id, NOM_DUPONT, PRENOM_JEAN, null, Set.of()))
+    assertThatThrownBy(() -> new OperateurAModifier(id, NOM_DUPONT, PRENOM_JEAN, null, Optional.empty(), Set.of()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("matricule");
+  }
+
+  @Test
+  void shouldNotBuildWithoutTauxHoraire() {
+    OperateurId id = OperateurId.newId();
+
+    assertThatThrownBy(() -> new OperateurAModifier(id, NOM_DUPONT, PRENOM_JEAN, Optional.empty(), null, Set.of()))
+      .isExactlyInstanceOf(MissingMandatoryValueException.class)
+      .hasMessageContaining("taux horaire");
   }
 
   @Test
   void shouldNotBuildWithoutPostes() {
     OperateurId id = OperateurId.newId();
 
-    assertThatThrownBy(() -> new OperateurAModifier(id, NOM_DUPONT, PRENOM_JEAN, Optional.empty(), null))
+    assertThatThrownBy(() -> new OperateurAModifier(id, NOM_DUPONT, PRENOM_JEAN, Optional.empty(), Optional.empty(), null))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("postes");
   }
@@ -59,12 +69,13 @@ class OperateurAModifierTest {
   void shouldWrapRawValuesInValueObjects() {
     OperateurId id = OperateurId.newId();
 
-    OperateurAModifier aModifier = new OperateurAModifier(id, "Dupont", "Jean", "049", habilitationDeTournage());
+    OperateurAModifier aModifier = new OperateurAModifier(id, "Dupont", "Jean", "049", new BigDecimal("22.00"), habilitationDeTournage());
 
     assertThat(aModifier.id()).isEqualTo(id);
     assertThat(aModifier.nom()).isEqualTo(NOM_DUPONT);
     assertThat(aModifier.prenom()).isEqualTo(PRENOM_JEAN);
     assertThat(aModifier.matricule()).contains(MATRICULE_049);
+    assertThat(aModifier.tauxHoraire()).contains(TAUX_HORAIRE_22);
     assertThat(aModifier.postes()).containsExactly(ID_TOUR_1);
   }
 
@@ -72,8 +83,17 @@ class OperateurAModifierTest {
   void shouldRemoveMatriculeWhenBlank() {
     OperateurId id = OperateurId.newId();
 
-    OperateurAModifier aModifier = new OperateurAModifier(id, "Dupont", "Jean", " ", Set.of());
+    OperateurAModifier aModifier = new OperateurAModifier(id, "Dupont", "Jean", " ", null, Set.of());
 
     assertThat(aModifier.matricule()).isEmpty();
+  }
+
+  @Test
+  void shouldRemoveTauxHoraireWhenAbsent() {
+    OperateurId id = OperateurId.newId();
+
+    OperateurAModifier aModifier = new OperateurAModifier(id, "Dupont", "Jean", "049", null, Set.of());
+
+    assertThat(aModifier.tauxHoraire()).isEmpty();
   }
 }
