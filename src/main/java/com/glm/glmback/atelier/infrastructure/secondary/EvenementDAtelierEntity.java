@@ -2,6 +2,7 @@ package com.glm.glmback.atelier.infrastructure.secondary;
 
 import com.glm.glmback.atelier.domain.Annulation;
 import com.glm.glmback.atelier.domain.Auteur;
+import com.glm.glmback.atelier.domain.CoutHoraire;
 import com.glm.glmback.atelier.domain.EvenementDAtelier;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.Horodatage;
@@ -9,6 +10,7 @@ import com.glm.glmback.atelier.domain.MotifDAnnulation;
 import com.glm.glmback.atelier.domain.NatureDOperation;
 import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.PosteDeTravailId;
+import com.glm.glmback.atelier.domain.TauxHoraire;
 import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -19,6 +21,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -46,6 +49,12 @@ class EvenementDAtelierEntity {
 
   private String nature;
 
+  @Column(name = "cout_horaire", precision = 10, scale = 2)
+  private BigDecimal coutHoraire;
+
+  @Column(name = "taux_horaire", precision = 10, scale = 2)
+  private BigDecimal tauxHoraire;
+
   private String auteur;
 
   private Instant dateDeSurvenue;
@@ -70,6 +79,8 @@ class EvenementDAtelierEntity {
     operateurId = evenement.operateur().uuid();
     posteId = evenement.poste().map(PosteDeTravailId::uuid).orElse(null);
     nature = evenement.nature().map(NatureDOperation::value).orElse(null);
+    coutHoraire = evenement.coutHoraire().map(CoutHoraire::value).orElse(null);
+    tauxHoraire = evenement.tauxHoraire().map(TauxHoraire::value).orElse(null);
     auteur = evenement.auteur().value();
     dateDeSurvenue = evenement.dateDeSurvenue();
     dateDEnregistrement = evenement.dateDEnregistrement();
@@ -107,6 +118,8 @@ class EvenementDAtelierEntity {
       .operateur(new OperateurId(operateurId))
       .poste(Optional.ofNullable(posteId).map(PosteDeTravailId::new))
       .nature(Optional.ofNullable(nature).map(NatureDOperation::new))
+      .coutHoraire(Optional.ofNullable(coutHoraire).map(CoutHoraire::new))
+      .tauxHoraire(Optional.ofNullable(tauxHoraire).map(TauxHoraire::new))
       .auteur(new Auteur(auteur))
       .horodatage(new Horodatage(dateDeSurvenue, dateDEnregistrement));
 

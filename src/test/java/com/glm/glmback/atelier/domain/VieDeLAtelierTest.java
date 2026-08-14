@@ -125,6 +125,27 @@ class VieDeLAtelierTest {
   }
 
   /**
+   * Le cout horaire du poste et le taux horaire de l'operateur sont figes a la saisie, sur le meme patron que la
+   * nature : la fraiseuse 1 est valorisee et Dupont aussi, mais la fraiseuse 2 ne l'est pas — l'evenement du second
+   * ordre porte donc le taux de Dupont sans aucun cout de poste.
+   */
+  @Test
+  void shouldEstampillerLeCoutEtLeTauxHoraireALaSaisie() {
+    assertThat(atelier.get(premierOrdre).journal().actifs())
+      .singleElement()
+      .satisfies(evenement -> {
+        assertThat(evenement.coutHoraire()).contains(COUT_HORAIRE_FRAISEUSE_1);
+        assertThat(evenement.tauxHoraire()).contains(TAUX_HORAIRE_DUPONT);
+      });
+    assertThat(atelier.get(secondOrdre).journal().actifs())
+      .element(0)
+      .satisfies(evenement -> {
+        assertThat(evenement.coutHoraire()).isEmpty();
+        assertThat(evenement.tauxHoraire()).contains(TAUX_HORAIRE_DUPONT);
+      });
+  }
+
+  /**
    * « Ne mettez qu'un bouton pas trois » : un seul geste de pause, et aucune recopie dans les ordres en cours. Le
    * journal de chaque ordre ne contient que ce que l'operateur y a pointe.
    */

@@ -4,6 +4,7 @@ import com.glm.glmback.atelier.domain.OperateurConnu;
 import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.OperateursConnus;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Repository;
@@ -23,6 +24,11 @@ class OperateursDuReferentiel implements OperateursConnus {
   @Override
   public boolean existe(OperateurId id) {
     return operateurs.existsById(id.uuid());
+  }
+
+  @Override
+  public Optional<OperateurConnu> get(OperateurId id) {
+    return operateurs.findById(id.uuid()).map(OperateurConnuEntity::toDomain);
   }
 
   @Override

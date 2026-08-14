@@ -9,9 +9,9 @@ Feature: Suivi des elements engages en atelier
   # peuvent plus compter pour deux personnes. La nature de l'operation, elle, vient du poste et non de la personne.
   Background:
     Given I am logged in as "gestionnaire" with role "GESTIONNAIRE"
-    And l'entreprise a declare le poste de travail "fraiseuse-1" de nature "fraisage"
+    And l'entreprise a declare le poste de travail "fraiseuse-1" de nature "fraisage" et de cout horaire "45.5"
     And l'entreprise a declare le poste de travail "fraiseuse-2" de nature "tournage"
-    And l'entreprise a declare l'operateur "dupont" habilite sur "fraiseuse-1" et "fraiseuse-2"
+    And l'entreprise a declare l'operateur "dupont" habilite sur "fraiseuse-1" et "fraiseuse-2" avec un taux horaire de "22.5"
     And l'entreprise a declare l'operateur "martin" sans habilitation
 
   Scenario: Engager un element de fabrication le fait apparaitre en atelier
@@ -54,6 +54,9 @@ Feature: Suivi des elements engages en atelier
     And l'evenement 0 du suivi porte l'operateur "dupont" et le poste "fraiseuse-1"
     # La nature vient du poste, jamais de la personne : personne ne l'a saisie sur la fiche de Dupont.
     And l'evenement 0 du suivi a la nature "fraisage"
+    # Le cout horaire du poste et le taux horaire de l'operateur sont figes a la saisie, sur le meme patron.
+    And l'evenement 0 du suivi a le cout horaire "45.5"
+    And l'evenement 0 du suivi a le taux horaire "22.5"
 
   Scenario: Une non conformite interrompt l'element, une reprise se pointe comme un debut
     Given il est "2026-05-10T08:00:00Z"

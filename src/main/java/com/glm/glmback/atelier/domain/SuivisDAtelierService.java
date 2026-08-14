@@ -158,22 +158,23 @@ public final class SuivisDAtelierService {
     Auteur auteur,
     Horodatage horodatage
   ) {
-    verifieOperateurConnu(operateur);
+    OperateurConnu operateurConnu = operateurConnu(operateur);
+    Optional<PosteConnu> posteConnu = poste.map(id -> posteHabilite(operateur, id));
 
     return EvenementDAtelier.builder()
       .id(EvenementDAtelierId.newId())
       .type(type)
       .operateur(operateur)
       .poste(poste)
-      .nature(poste.map(id -> posteHabilite(operateur, id)).map(PosteConnu::nature))
+      .nature(posteConnu.map(PosteConnu::nature))
+      .coutHoraire(posteConnu.flatMap(PosteConnu::coutHoraire))
+      .tauxHoraire(operateurConnu.tauxHoraire())
       .auteur(auteur)
       .horodatage(horodatage);
   }
 
-  private void verifieOperateurConnu(OperateurId operateur) {
-    if (!operateurs.existe(operateur)) {
-      throw new OperateurDAtelierIntrouvableException(operateur);
-    }
+  private OperateurConnu operateurConnu(OperateurId operateur) {
+    return operateurs.get(operateur).orElseThrow(() -> new OperateurDAtelierIntrouvableException(operateur));
   }
 
   /**

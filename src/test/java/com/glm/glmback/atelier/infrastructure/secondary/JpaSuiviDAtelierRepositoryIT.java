@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.*;
 import com.glm.glmback.IntegrationTest;
 import com.glm.glmback.atelier.domain.Annulation;
 import com.glm.glmback.atelier.domain.Cloture;
+import com.glm.glmback.atelier.domain.CoutHoraire;
 import com.glm.glmback.atelier.domain.ElementEngage;
 import com.glm.glmback.atelier.domain.ElementEngageId;
 import com.glm.glmback.atelier.domain.Engagement;
@@ -25,6 +26,7 @@ import com.glm.glmback.atelier.domain.SuiviDAtelierDejaExistantException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
+import com.glm.glmback.atelier.domain.TauxHoraire;
 import com.glm.glmback.atelier.domain.TypeDElementEngage;
 import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurityContexts;
@@ -85,12 +87,57 @@ class JpaSuiviDAtelierRepositoryIT {
     assertThat(relu.etat()).isEqualTo(EtatDAtelier.EN_COURS);
   }
 
+  /**
+   * Le cout horaire du poste et le taux horaire de l'operateur survivent au round-trip base, sur le meme patron que
+   * la nature : figes a la saisie, jamais relus depuis le referentiel.
+   */
+  @Test
+  @WithTenant(IMPECCMOLD)
+  void shouldRelireLeCoutEtLeTauxHorairesDUnEvenement() {
+    Instant engagement = Instant.parse("2040-01-06T08:00:00Z");
+    SuiviDAtelier engage = suiviEngageA(engagement).enregistre(debutSurFraiseuse1A(engagement.plusSeconds(3600)));
+
+    inTransaction(() -> suivis.create(engage));
+
+    SuiviDAtelier relu = inTransaction(() -> suivis.get(engage.id())).orElseThrow();
+    assertThat(relu.journal().actifs())
+      .singleElement()
+      .satisfies(evenement -> {
+        assertThat(evenement.coutHoraire()).contains(COUT_HORAIRE_FRAISEUSE_1);
+        assertThat(evenement.tauxHoraire()).contains(TAUX_HORAIRE_DUPONT);
+      });
+  }
+
+  /**
+   * Un poste non valorise doit relire une absence, pas un montant reconstitue a partir de rien.
+   */
+  @Test
+  @WithTenant(IMPECCMOLD)
+  void shouldRelireUnEvenementSansCoutHoraireQuandLePosteNEnAPas() {
+    Instant engagement = Instant.parse("2040-01-06T09:00:00Z");
+    SuiviDAtelier engage = suiviEngageA(engagement).enregistre(debutSurFraiseuse2A(engagement.plusSeconds(3600)));
+
+    inTransaction(() -> suivis.create(engage));
+
+    SuiviDAtelier relu = inTransaction(() -> suivis.get(engage.id())).orElseThrow();
+    assertThat(relu.journal().actifs())
+      .singleElement()
+      .satisfies(evenement -> assertThat(evenement.coutHoraire()).isEmpty());
+  }
+
   @Test
   @WithTenant(IMPECCMOLD)
   void shouldRelireUnEvenementSansPosteNiNature() {
     Instant engagement = Instant.parse("2040-01-07T07:00:00Z");
     SuiviDAtelier engage = suiviEngageA(engagement).enregistre(
-      evenement(TypeDEvenementDAtelier.DEBUT, Optional.empty(), Optional.empty(), Horodatage.saisiA(engagement.plusSeconds(3600)))
+      evenement(
+        TypeDEvenementDAtelier.DEBUT,
+        Optional.empty(),
+        Optional.empty(),
+        Optional.empty(),
+        Optional.empty(),
+        Horodatage.saisiA(engagement.plusSeconds(3600))
+      )
     );
 
     inTransaction(() -> suivis.create(engage));
@@ -301,27 +348,44 @@ class JpaSuiviDAtelierRepositoryIT {
       TypeDEvenementDAtelier.DEBUT,
       Optional.of(POSTE_ID_FRAISEUSE_1),
       Optional.of(NATURE_FRAISAGE),
+      Optional.of(COUT_HORAIRE_FRAISEUSE_1),
+      Optional.of(TAUX_HORAIRE_DUPONT),
       Horodatage.saisiA(date)
     );
   }
 
+  /**
+   * Fraiseuse 2 n'est pas valorisee : de quoi prouver, par le round-trip base, que l'absence de cout horaire survit
+   * elle aussi a la persistance, pas seulement sa presence.
+   */
   private static EvenementDAtelier debutSurFraiseuse2A(Instant date) {
     return evenement(
       TypeDEvenementDAtelier.DEBUT,
       Optional.of(POSTE_ID_FRAISEUSE_2),
       Optional.of(NATURE_FRAISAGE),
+      Optional.empty(),
+      Optional.of(TAUX_HORAIRE_DUPONT),
       Horodatage.saisiA(date)
     );
   }
 
   private static EvenementDAtelier finSurFraiseuse1A(Instant date) {
-    return evenement(TypeDEvenementDAtelier.FIN, Optional.of(POSTE_ID_FRAISEUSE_1), Optional.of(NATURE_FRAISAGE), Horodatage.saisiA(date));
+    return evenement(
+      TypeDEvenementDAtelier.FIN,
+      Optional.of(POSTE_ID_FRAISEUSE_1),
+      Optional.of(NATURE_FRAISAGE),
+      Optional.of(COUT_HORAIRE_FRAISEUSE_1),
+      Optional.of(TAUX_HORAIRE_DUPONT),
+      Horodatage.saisiA(date)
+    );
   }
 
   private static EvenementDAtelier evenement(
     TypeDEvenementDAtelier type,
     Optional<PosteDeTravailId> poste,
     Optional<NatureDOperation> nature,
+    Optional<CoutHoraire> coutHoraire,
+    Optional<TauxHoraire> tauxHoraire,
     Horodatage horodatage
   ) {
     return EvenementDAtelier.builder()
@@ -330,6 +394,8 @@ class JpaSuiviDAtelierRepositoryIT {
       .operateur(OPERATEUR_ID_DUPONT)
       .poste(poste)
       .nature(nature)
+      .coutHoraire(coutHoraire)
+      .tauxHoraire(tauxHoraire)
       .auteur(AUTEUR_DUPONT)
       .horodatage(horodatage);
   }

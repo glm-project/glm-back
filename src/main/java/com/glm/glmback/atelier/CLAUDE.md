@@ -20,8 +20,10 @@ Il en déduit, à la lecture seulement, les intervalles de temps passé — jama
 
 Ne rien ajouter ici qui relève de :
 
-- **le coût de revient monétaire** — taux horaire de l'opérateur, coût horaire du poste, temps réparti valorisé. Aucun
-  montant n'entre dans ce contexte ;
+- **le calcul du coût de revient monétaire** — temps réparti valorisé, agrégation par élément ou par période. Le
+  contexte capture, sans les calculer, le coût horaire du poste et le taux horaire de l'opérateur : copiés du
+  référentiel sur chaque événement du journal, exactement comme la nature de l'opération, ils ne servent qu'à figer
+  une valeur qui pourrait changer chez le voisin — aucune arithmétique ne les combine ici ;
 - **le référentiel des ressources** — opérateur → postes autorisés, taux ; poste → libellé, nature, coût horaire. Ces
   données sont **lues par port** (`OperateursConnus`, `PostesConnus`, `Habilitations`), jamais possédées ici. Le
   journal ne retient que `OperateurId` et `PosteDeTravailId` ;
@@ -57,8 +59,12 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
   d'entreprises clientes ; celles qui n'ont ni parc machine ni métiers distincts laissent les deux vides et retrouvent
   un comportement cohérent, pas un cas dégradé.
 - **La nature ne bloque rien**, et elle vient **du poste**, jamais de la personne. Elle n'est qu'un axe d'agrégation
-  pour la synthèse ; c'est la seule chose que le journal copie du référentiel, pour qu'un poste requalifié ne
-  requalifie pas les heures déjà passées.
+  pour la synthèse ; avec le coût horaire du poste et le taux horaire de l'opérateur, c'est tout ce que le journal
+  copie du référentiel, pour qu'un poste requalifié ou un tarif révisé ne réécrivent pas les heures déjà passées.
+- **Le coût horaire du poste et le taux horaire de l'opérateur sont copiés au moment de la saisie**, sur le même
+  patron que la nature : jamais relus depuis le référentiel après coup. Ils restent, comme la nature, entièrement
+  facultatifs, et ne servent qu'à figer une valeur qui pourrait changer chez le voisin — le calcul lui-même n'entre
+  pas dans ce contexte.
 - **L'habilitation, elle, bloque** : pointer sur un poste où l'opérateur n'est pas déclaré est refusé (409). C'est la
   seule règle dure du contexte. Elle ne joue que lorsqu'un poste est fourni, et elle joue sur les **trois** écritures
   du journal — pointage, régularisation, correction — sans quoi le back-office contournerait le pupitre.
@@ -73,6 +79,10 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
 
 `SuiviDAtelierRepository`, `JourneeDeTravailRepository`, `ElementsEngageables`, `OperateursConnus`, `PostesConnus`,
 `Habilitations`, `Clock`.
+
+`OperateursConnus` expose `get(OperateurId)` en plus de `existe` et `parIds` : la présence (`JourneesDeTravailService`)
+n'a toujours besoin que de l'existence, mais le journal d'atelier (`SuivisDAtelierService`) résout désormais la fiche
+entière pour y recopier le taux horaire, sur le patron déjà en place pour `PostesConnus.get`.
 
 Tout besoin d'une donnée de paramétrage passe par un nouveau port, jamais par une constante du domaine.
 
@@ -90,9 +100,10 @@ front — le tenir à jour avec le contrat.
 - `ElementsDeFabricationEngageables` lit la table `element_de_fabrication` par une entité en lecture seule propre à
   l'atelier : aucun import de `elementdefabrication`, l'invariant tient ;
 - `OperateursDuReferentiel`, `PostesDeTravailDuReferentiel` et `HabilitationsDuReferentiel` lisent de la même façon
-  `operateur`, `poste_de_travail` et `operateur_poste`. L'écriture n'a besoin que de l'existence ; la lecture résout un
-  journal entier par `parIds`, jamais une requête par événement, et `AnnuaireDAtelier` matérialise ce résultat le temps
-  d'une lecture.
+  `operateur`, `poste_de_travail` et `operateur_poste`. La présence n'a besoin que de l'existence ; le journal
+  d'atelier resout la fiche entière pour recopier coût et taux horaires ; la lecture d'une page, elle, résout un
+  journal entier par `parIds`, jamais une requête par événement, et `AnnuaireDAtelier` matérialise ce résultat le
+  temps d'une lecture.
 
 ### Les colonnes de projection ne contredisent pas « le journal est la source de vérité »
 

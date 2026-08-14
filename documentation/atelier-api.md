@@ -79,6 +79,10 @@ l'historique. Ne pas les mettre en cache côté front au-delà de la session d'�
 La `nature` fait exception : elle est **copiée au moment de la saisie**, et elle vient du **poste**, pas de la personne.
 Un poste requalifié plus tard ne requalifie pas les heures déjà passées.
 
+`coutHoraire` et `tauxHoraire` suivent exactement la même règle : copiés sur l'événement au moment du pointage
+(coût du poste, taux de l'opérateur), jamais recalculés à la lecture. Ils sont absents quand la source du référentiel
+n'est pas valorisée, ou quand aucun poste n'est fourni pour `coutHoraire`.
+
 ### L'habilitation est une règle dure
 
 Pointer sur un poste où l'opérateur n'est pas déclaré répond **409**. C'est vrai du pointage comme de la régularisation
@@ -236,6 +240,9 @@ tel quel est la bonne réaction — relire l'agrégat, et reproposer la saisie.
 
 - **`nature` est vide dès qu'aucun poste n'est pointé**, puisqu'elle vient du poste. Un pointage sans poste n'a pas de
   nature, et c'est le comportement nominal d'une entreprise sans parc machine.
+- **`coutHoraire` et `tauxHoraire` ne sont exposés que sur les événements du journal**, pas sur `temps-effectif`
+  (les intervalles rendus par `GET /api/atelier/suivis/{id}/temps-effectif`) : la valorisation du temps réparti est un
+  lot à part, distinct de la capture.
 - **Régulariser sur un poste dont l'opérateur a été dé-habilité depuis est refusé** (409), l'habilitation étant
   vérifiée sur les trois actes de correction. Retirer une habilitation ferme donc aussi la porte au rattrapage des
   saisies passées sur ce poste.

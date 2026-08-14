@@ -132,6 +132,90 @@ class SuivisDAtelierServiceTest {
       .satisfies(evenement -> assertThat(evenement.nature()).contains(NATURE_TOURNAGE));
   }
 
+  /**
+   * Le cout horaire du poste est copie a la saisie, sur le meme patron que la nature : fige pour qu'une
+   * revalorisation ulterieure du poste ne reecrive pas l'histoire d'un pointage deja fait.
+   */
+  @Test
+  void shouldEstampillerLeCoutHoraireDuPoste() {
+    SuiviDAtelier engage = engage();
+
+    SuiviDAtelier pointe = atelier.pointe(debutSurFraiseuse1(engage.id()));
+
+    assertThat(pointe.journal().actifs())
+      .singleElement()
+      .satisfies(evenement -> assertThat(evenement.coutHoraire()).contains(COUT_HORAIRE_FRAISEUSE_1));
+  }
+
+  @Test
+  void shouldPointerSansCoutHoraireFauteDePoste() {
+    SuiviDAtelier engage = engage();
+
+    SuiviDAtelier pointe = atelier.pointe(
+      PointageAEnregistrer.builder()
+        .suivi(engage.id())
+        .type(TypeDEvenementDAtelier.DEBUT)
+        .operateur(OPERATEUR_ID_DUPONT)
+        .poste(Optional.empty())
+        .auteur(AUTEUR_DUPONT)
+    );
+
+    assertThat(pointe.journal().actifs())
+      .singleElement()
+      .satisfies(evenement -> assertThat(evenement.coutHoraire()).isEmpty());
+  }
+
+  /**
+   * Fraiseuse 2 n'est pas valorisee : distinct du cas "pas de poste", sans quoi une regression qui confondrait les
+   * deux resterait invisible.
+   */
+  @Test
+  void shouldPointerSansCoutHoraireQuandLePosteNEnAPas() {
+    SuiviDAtelier engage = engage();
+
+    SuiviDAtelier pointe = atelier.pointe(
+      PointageAEnregistrer.builder()
+        .suivi(engage.id())
+        .type(TypeDEvenementDAtelier.DEBUT)
+        .operateur(OPERATEUR_ID_DUPONT)
+        .poste(Optional.of(POSTE_ID_FRAISEUSE_2))
+        .auteur(AUTEUR_DUPONT)
+    );
+
+    assertThat(pointe.journal().actifs())
+      .singleElement()
+      .satisfies(evenement -> assertThat(evenement.coutHoraire()).isEmpty());
+  }
+
+  @Test
+  void shouldEstampillerLeTauxHoraireDeLOperateur() {
+    SuiviDAtelier engage = engage();
+
+    SuiviDAtelier pointe = atelier.pointe(debutSurFraiseuse1(engage.id()));
+
+    assertThat(pointe.journal().actifs())
+      .singleElement()
+      .satisfies(evenement -> assertThat(evenement.tauxHoraire()).contains(TAUX_HORAIRE_DUPONT));
+  }
+
+  @Test
+  void shouldPointerSansTauxHoraireQuandLOperateurNEnAPas() {
+    SuiviDAtelier engage = engage();
+
+    SuiviDAtelier pointe = atelier.pointe(
+      PointageAEnregistrer.builder()
+        .suivi(engage.id())
+        .type(TypeDEvenementDAtelier.DEBUT)
+        .operateur(OPERATEUR_ID_MARTIN)
+        .poste(Optional.empty())
+        .auteur(AUTEUR_MARTIN)
+    );
+
+    assertThat(pointe.journal().actifs())
+      .singleElement()
+      .satisfies(evenement -> assertThat(evenement.tauxHoraire()).isEmpty());
+  }
+
   @Test
   void shouldNotPointerPourUnOperateurInconnu() {
     SuiviDAtelier engage = engage();
@@ -244,6 +328,25 @@ class SuivisDAtelierServiceTest {
         assertThat(evenement.operateur()).isEqualTo(OPERATEUR_ID_DUPONT);
         assertThat(evenement.auteur()).isEqualTo(AUTEUR_LEROY);
         assertThat(evenement.estUneRegularisation()).isTrue();
+      });
+  }
+
+  /**
+   * La regularisation ecrit le meme evenement que le pointage : le cout et le taux horaires y sont donc figes de la
+   * meme facon, sans quoi le back-office contournerait la capture que le pupitre applique.
+   */
+  @Test
+  void shouldEstampillerLeCoutEtLeTauxHoraireALaRegularisation() {
+    SuiviDAtelier engage = engage();
+    maintenant.set(LE_11_MAI_2026_A_9H15);
+
+    SuiviDAtelier regularise = atelier.regularise(regularisationDeDebutA(engage.id(), LE_10_MAI_2026_A_8H));
+
+    assertThat(regularise.journal().actifs())
+      .singleElement()
+      .satisfies(evenement -> {
+        assertThat(evenement.coutHoraire()).contains(COUT_HORAIRE_FRAISEUSE_1);
+        assertThat(evenement.tauxHoraire()).contains(TAUX_HORAIRE_DUPONT);
       });
   }
 
