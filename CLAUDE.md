@@ -127,3 +127,4 @@ Ne pas dupliquer ce qui est déjà documenté — s'y référer :
 - `documentation/multitenancy.md` — isolation par entreprise, schéma par tenant, utilisateurs de développement.
 - `documentation/cucumber.md` — écriture des scénarios et du glue code Cucumber.
 - `documentation/atelier-api.md` — guide d'intégration de l'API atelier pour le développeur front.
+- `documentation/strategie/authentification-pointage.md` — stratégie retenue pour identifier l'opérateur au pupitre, sécuriser le poste et survivre à une coupure réseau.
