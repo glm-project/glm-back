@@ -11,7 +11,8 @@
       "Tour 1" designe deux choses. La nature est obligatoire ici, contrairement a l'atelier ou elle reste
       facultative : un poste n'est declare que pour dire quel travail s'y fait, et c'est de lui que vient le
       metier exerce a un instant donne. La regle vit dans le domaine, cette contrainte n'est que le filet de
-      dernier recours.
+      dernier recours. Le cout horaire est facultatif : toutes les entreprises ne valorisent pas encore leurs
+      postes, et GLM reste une trame.
     </comment>
 
     <createTable tableName="poste_de_travail">
@@ -26,6 +27,8 @@
       <column name="nature" type="varchar(50)">
         <constraints nullable="false" />
       </column>
+
+      <column name="cout_horaire" type="decimal(10,2)" />
     </createTable>
 
     <createIndex indexName="ix_poste_de_travail_nature" tableName="poste_de_travail">

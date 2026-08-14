@@ -42,6 +42,13 @@ class OperateursServiceTest {
   }
 
   @Test
+  void shouldCreateOperateurWithTauxHoraire() {
+    ProfilDOperateur profil = operateurs.create(operateurACreerDupontAvecTauxHoraire());
+
+    assertThat(profil.operateur().tauxHoraire()).contains(TAUX_HORAIRE_22);
+  }
+
+  @Test
   void shouldCreateOperateurWithoutMatriculeNorPoste() {
     ProfilDOperateur profil = operateurs.create(operateurACreerMartinSansMatricule());
 
@@ -70,7 +77,13 @@ class OperateursServiceTest {
   @Test
   void shouldNotCreateOperateurWithAlreadyUsedMatricule() {
     operateurs.create(operateurACreerDupont());
-    OperateurACreer homonymeDeMatricule = new OperateurACreer(NOM_MARTIN, PRENOM_SOPHIE, Optional.of(MATRICULE_049), Set.of());
+    OperateurACreer homonymeDeMatricule = new OperateurACreer(
+      NOM_MARTIN,
+      PRENOM_SOPHIE,
+      Optional.of(MATRICULE_049),
+      Optional.empty(),
+      Set.of()
+    );
 
     assertThatThrownBy(() -> operateurs.create(homonymeDeMatricule))
       .isExactlyInstanceOf(MatriculeDejaUtiliseException.class)
@@ -80,7 +93,7 @@ class OperateursServiceTest {
   @Test
   void shouldNotCreateOperateurReferencingUnknownPoste() {
     PosteHabilitableId inconnu = new PosteHabilitableId(java.util.UUID.fromString("99999999-9999-9999-9999-999999999999"));
-    OperateurACreer aCreer = new OperateurACreer(NOM_DUPONT, PRENOM_JEAN, Optional.empty(), Set.of(inconnu));
+    OperateurACreer aCreer = new OperateurACreer(NOM_DUPONT, PRENOM_JEAN, Optional.empty(), Optional.empty(), Set.of(inconnu));
 
     assertThatThrownBy(() -> operateurs.create(aCreer)).isExactlyInstanceOf(PosteHabilitableIntrouvableException.class);
   }
@@ -112,6 +125,15 @@ class OperateursServiceTest {
   }
 
   @Test
+  void shouldUpdateOperateurWithTauxHoraire() {
+    ProfilDOperateur cree = operateurs.create(operateurACreerDupont());
+
+    ProfilDOperateur revise = operateurs.update(operateurAModifierDupontAvecTauxHoraire(cree.operateur().id()));
+
+    assertThat(revise.operateur().tauxHoraire()).contains(TAUX_HORAIRE_25);
+  }
+
+  @Test
   void shouldUpdateOperateurKeepingHisOwnIdentiteAndMatricule() {
     ProfilDOperateur cree = operateurs.create(operateurACreerDupont());
 
@@ -131,6 +153,7 @@ class OperateursServiceTest {
       NOM_DUPONT,
       PRENOM_JEAN,
       Optional.of(MATRICULE_050),
+      Optional.empty(),
       Set.of()
     );
 
@@ -147,6 +170,7 @@ class OperateursServiceTest {
       NOM_MARTIN,
       PRENOM_SOPHIE,
       Optional.of(MATRICULE_049),
+      Optional.empty(),
       Set.of()
     );
 

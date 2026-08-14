@@ -20,7 +20,13 @@ public final class PostesDeTravailService {
     PosteDeTravailId id = PosteDeTravailId.newId();
     verifierLibelleLibre(id, aCreer.libelle());
 
-    return repository.create(new PosteDeTravail(id, aCreer.libelle(), aCreer.nature()));
+    return repository.create(
+      PosteDeTravail.builder()
+        .id(id)
+        .libelle(aCreer.libelle())
+        .nature(aCreer.nature())
+        .coutHoraire(aCreer.coutHoraire().map(CoutHoraire::value).orElse(null))
+    );
   }
 
   public PosteDeTravail get(PosteDeTravailId id) {
@@ -35,7 +41,7 @@ public final class PostesDeTravailService {
     PosteDeTravail existant = get(aModifier.id());
     verifierLibelleLibre(existant.id(), aModifier.libelle());
 
-    return repository.update(existant.revise(aModifier.libelle(), aModifier.nature()));
+    return repository.update(existant.revise(aModifier.libelle(), aModifier.nature(), aModifier.coutHoraire()));
   }
 
   /**

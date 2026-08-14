@@ -1,5 +1,6 @@
 package com.glm.glmback.operateur.domain;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -13,6 +14,9 @@ public final class OperateursFixture {
 
   public static final Matricule MATRICULE_049 = new Matricule("049");
   public static final Matricule MATRICULE_050 = new Matricule("050");
+
+  public static final TauxHoraire TAUX_HORAIRE_22 = new TauxHoraire(new BigDecimal("22.00"));
+  public static final TauxHoraire TAUX_HORAIRE_25 = new TauxHoraire(new BigDecimal("25.00"));
 
   public static final LibelleDePoste LIBELLE_TOUR_1 = new LibelleDePoste("Tour 1");
   public static final LibelleDePoste LIBELLE_POSTE_DE_SOUDURE = new LibelleDePoste("Poste de soudure");
@@ -52,35 +56,63 @@ public final class OperateursFixture {
       .nom(NOM_DUPONT)
       .prenom(PRENOM_JEAN)
       .matricule(MATRICULE_049.value())
+      .tauxHoraire(null)
       .postes(habilitationsDeSoudureEtDeTournage());
   }
 
   public static Operateur operateurMartinSansMatricule() {
-    return Operateur.builder().id(OperateurId.newId()).nom(NOM_MARTIN).prenom(PRENOM_SOPHIE).matricule(null).postes(Set.of());
+    return Operateur.builder()
+      .id(OperateurId.newId())
+      .nom(NOM_MARTIN)
+      .prenom(PRENOM_SOPHIE)
+      .matricule(null)
+      .tauxHoraire(null)
+      .postes(Set.of());
   }
 
   public static OperateurACreer operateurACreerDupont() {
-    return new OperateurACreer(NOM_DUPONT, PRENOM_JEAN, Optional.of(MATRICULE_049), habilitationsDeSoudureEtDeTournage());
+    return new OperateurACreer(NOM_DUPONT, PRENOM_JEAN, Optional.of(MATRICULE_049), Optional.empty(), habilitationsDeSoudureEtDeTournage());
+  }
+
+  public static OperateurACreer operateurACreerDupontAvecTauxHoraire() {
+    return new OperateurACreer(
+      NOM_DUPONT,
+      PRENOM_JEAN,
+      Optional.of(MATRICULE_049),
+      Optional.of(TAUX_HORAIRE_22),
+      habilitationsDeSoudureEtDeTournage()
+    );
   }
 
   public static OperateurACreer operateurACreerMartin() {
-    return new OperateurACreer(NOM_MARTIN, PRENOM_SOPHIE, Optional.of(MATRICULE_050), habilitationDeTournage());
+    return new OperateurACreer(NOM_MARTIN, PRENOM_SOPHIE, Optional.of(MATRICULE_050), Optional.empty(), habilitationDeTournage());
   }
 
   public static OperateurACreer operateurACreerMartinSansMatricule() {
-    return new OperateurACreer(NOM_MARTIN, PRENOM_SOPHIE, Optional.empty(), Set.of());
+    return new OperateurACreer(NOM_MARTIN, PRENOM_SOPHIE, Optional.empty(), Optional.empty(), Set.of());
   }
 
   public static OperateurACreer operateurACreerDupontSansMatricule() {
-    return new OperateurACreer(NOM_DUPONT, PRENOM_JEAN, Optional.empty(), Set.of());
+    return new OperateurACreer(NOM_DUPONT, PRENOM_JEAN, Optional.empty(), Optional.empty(), Set.of());
   }
 
   public static OperateurAModifier operateurAModifierDupont(OperateurId id) {
-    return new OperateurAModifier(id, NOM_DUPONT, PRENOM_JEAN, Optional.of(MATRICULE_049), habilitationDeTournage());
+    return new OperateurAModifier(id, NOM_DUPONT, PRENOM_JEAN, Optional.of(MATRICULE_049), Optional.empty(), habilitationDeTournage());
+  }
+
+  public static OperateurAModifier operateurAModifierDupontAvecTauxHoraire(OperateurId id) {
+    return new OperateurAModifier(
+      id,
+      NOM_DUPONT,
+      PRENOM_JEAN,
+      Optional.of(MATRICULE_049),
+      Optional.of(TAUX_HORAIRE_25),
+      habilitationDeTournage()
+    );
   }
 
   public static OperateurAModifier operateurAModifierMartin(OperateurId id) {
-    return new OperateurAModifier(id, NOM_MARTIN, PRENOM_SOPHIE, Optional.of(MATRICULE_050), habilitationDeTournage());
+    return new OperateurAModifier(id, NOM_MARTIN, PRENOM_SOPHIE, Optional.of(MATRICULE_050), Optional.empty(), habilitationDeTournage());
   }
 
   public static ProfilDOperateur profilDeDupont() {

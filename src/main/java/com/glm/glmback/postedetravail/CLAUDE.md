@@ -16,15 +16,18 @@ l'atelier : une machine chez le client de référence, un établi, un four, une 
 
 - **Qui est habilité dessus** — cela appartient à `operateur`. Ce contexte n'en connaît que la conséquence : un poste
   encore habilité ne se supprime pas.
-- **Le coût horaire** du poste, et tout montant : lot « coût de revient ». La forme de l'agrégat est prête à le
-  recevoir, il n'y est pas.
+- **Le calcul du coût de revient**. Le poste porte son `CoutHoraire` (facultatif, strictement positif), mais ce
+  contexte ne fait rien d'autre que le stocker et le restituer : aucun calcul, aucune répartition. `atelier` ne le lit
+  pas encore — c'est le lot « coût de revient » qui posera ce port.
 - **Le pointage** lui-même, qui appartient à `atelier`. Celui-ci ne connaît de ce contexte que l'identifiant, lu par
   port, et n'en copie que la nature au moment de la saisie.
 
 ## Agrégat
 
-`PosteDeTravail` — trois composants (`PosteDeTravailId`, `Libelle`, `NatureDeTravail`), donc pas de step builder : la
-règle ne s'applique qu'au-delà de trois.
+`PosteDeTravail` — quatre composants (`PosteDeTravailId`, `Libelle`, `NatureDeTravail`, `Optional<CoutHoraire>`), donc
+**step builder en chaîne de lambdas** depuis l'ajout du coût horaire : les quatre types d'étapes sont tous distincts,
+aucune inversion ne compile. `builder()` est public parce que la relecture depuis la persistance se fait dans
+`infrastructure/secondary`.
 
 ## Invariants à ne pas casser
 
@@ -35,6 +38,9 @@ règle ne s'applique qu'au-delà de trois.
   la règle.
 - **La nature est obligatoire**, contrairement à l'atelier où elle reste facultative. Un poste n'est déclaré que pour
   dire quel travail s'y fait — c'est de lui, et non de la personne, que vient le métier exercé à un instant donné.
+- **Le coût horaire est facultatif et strictement positif** quand il est renseigné, sur le patron de `Matricule` :
+  toutes les entreprises ne valorisent pas encore leurs postes, et un coût à zéro n'a pas de sens métier — s'il est
+  inconnu, le champ reste absent plutôt qu'à zéro.
 - **Un poste encore habilité ne se supprime pas** : cela laisserait des opérateurs pointer sur du vide. La règle vit
   dans le domaine, derrière le port `PostesEnUsage` ; la clé étrangère de `operateur_poste` n'est que le filet.
 - **Un poste sur lequel du temps a été pointé ne se supprime plus du tout**, et ce refus-là est définitif : le journal

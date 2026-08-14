@@ -22,6 +22,7 @@ import com.glm.glmback.postedetravail.domain.PosteDeTravailRepository;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurityContexts;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.pagination.domain.Page;
+import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -64,6 +65,23 @@ class JpaOperateurRepositoryIT {
   void shouldCreateAndGetOperateurWithHisHabilitations() {
     PosteHabilitableId poste = posteDeclare();
     Operateur operateur = operateurHabiliteSur(Set.of(poste));
+
+    inTransaction(() -> operateurs.create(operateur));
+
+    assertThat(inTransaction(() -> operateurs.get(operateur.id()))).contains(operateur);
+  }
+
+  @Test
+  @WithTenant(IMPECCMOLD)
+  void shouldCreateAndGetOperateurWithTauxHoraire() {
+    long numero = COMPTEUR.incrementAndGet();
+    Operateur operateur = Operateur.builder()
+      .id(OperateurId.newId())
+      .nom(new Nom("IT-nom-taux-%06d".formatted(numero)))
+      .prenom(new Prenom("IT-prenom-taux-%06d".formatted(numero)))
+      .matricule("IT-mat-taux-%06d".formatted(numero))
+      .tauxHoraire(new BigDecimal("22.00"))
+      .postes(Set.of());
 
     inTransaction(() -> operateurs.create(operateur));
 
@@ -116,7 +134,13 @@ class JpaOperateurRepositoryIT {
     Operateur operateur = operateurHabiliteSur(Set.of(retire, conserve));
     inTransaction(() -> operateurs.create(operateur));
 
-    Operateur revise = operateur.revise(operateur.nom(), operateur.prenom(), operateur.matricule(), Set.of(conserve, ajoute));
+    Operateur revise = operateur.revise(
+      operateur.nom(),
+      operateur.prenom(),
+      operateur.matricule(),
+      operateur.tauxHoraire(),
+      Set.of(conserve, ajoute)
+    );
     inTransaction(() -> operateurs.update(revise));
 
     assertThat(
@@ -132,7 +156,7 @@ class JpaOperateurRepositoryIT {
     Operateur operateur = operateurHabiliteSur(Set.of());
     inTransaction(() -> operateurs.create(operateur));
 
-    Operateur revise = operateur.revise(operateur.nom(), operateur.prenom(), Optional.empty(), Set.of());
+    Operateur revise = operateur.revise(operateur.nom(), operateur.prenom(), Optional.empty(), operateur.tauxHoraire(), Set.of());
     inTransaction(() -> operateurs.update(revise));
 
     assertThat(
@@ -254,7 +278,8 @@ class JpaOperateurRepositoryIT {
     PosteDeTravail poste = new PosteDeTravail(
       PosteDeTravailId.newId(),
       new Libelle("IT-poste-operateur-%06d".formatted(COMPTEUR.incrementAndGet())),
-      TOURNAGE
+      TOURNAGE,
+      Optional.empty()
     );
     inTransaction(() -> postes.create(poste));
 
@@ -273,6 +298,7 @@ class JpaOperateurRepositoryIT {
       .nom(new Nom("IT-nom-%06d".formatted(numero)))
       .prenom(new Prenom("IT-prenom-%06d".formatted(numero)))
       .matricule(matricule)
+      .tauxHoraire(null)
       .postes(habilitations);
   }
 
@@ -282,6 +308,7 @@ class JpaOperateurRepositoryIT {
       .nom(nom)
       .prenom(prenom)
       .matricule("IT-mat-%06d".formatted(COMPTEUR.incrementAndGet()))
+      .tauxHoraire(null)
       .postes(Set.of());
   }
 

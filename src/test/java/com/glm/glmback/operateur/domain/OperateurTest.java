@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.*;
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.shared.error.domain.MissingMandatoryValueException;
 import com.glm.glmback.shared.error.domain.NullElementInCollectionException;
+import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -16,7 +17,7 @@ class OperateurTest {
 
   @Test
   void shouldNotBuildWithoutId() {
-    assertThatThrownBy(() -> new Operateur(null, NOM_DUPONT, PRENOM_JEAN, Optional.empty(), Set.of()))
+    assertThatThrownBy(() -> new Operateur(null, NOM_DUPONT, PRENOM_JEAN, Optional.empty(), Optional.empty(), Set.of()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("id");
   }
@@ -25,7 +26,7 @@ class OperateurTest {
   void shouldNotBuildWithoutNom() {
     OperateurId id = OperateurId.newId();
 
-    assertThatThrownBy(() -> new Operateur(id, null, PRENOM_JEAN, Optional.empty(), Set.of()))
+    assertThatThrownBy(() -> new Operateur(id, null, PRENOM_JEAN, Optional.empty(), Optional.empty(), Set.of()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("nom");
   }
@@ -34,7 +35,7 @@ class OperateurTest {
   void shouldNotBuildWithoutPrenom() {
     OperateurId id = OperateurId.newId();
 
-    assertThatThrownBy(() -> new Operateur(id, NOM_DUPONT, null, Optional.empty(), Set.of()))
+    assertThatThrownBy(() -> new Operateur(id, NOM_DUPONT, null, Optional.empty(), Optional.empty(), Set.of()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("prenom");
   }
@@ -43,16 +44,25 @@ class OperateurTest {
   void shouldNotBuildWithoutMatricule() {
     OperateurId id = OperateurId.newId();
 
-    assertThatThrownBy(() -> new Operateur(id, NOM_DUPONT, PRENOM_JEAN, null, Set.of()))
+    assertThatThrownBy(() -> new Operateur(id, NOM_DUPONT, PRENOM_JEAN, null, Optional.empty(), Set.of()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("matricule");
+  }
+
+  @Test
+  void shouldNotBuildWithoutTauxHoraire() {
+    OperateurId id = OperateurId.newId();
+
+    assertThatThrownBy(() -> new Operateur(id, NOM_DUPONT, PRENOM_JEAN, Optional.empty(), null, Set.of()))
+      .isExactlyInstanceOf(MissingMandatoryValueException.class)
+      .hasMessageContaining("taux horaire");
   }
 
   @Test
   void shouldNotBuildWithoutPostes() {
     OperateurId id = OperateurId.newId();
 
-    assertThatThrownBy(() -> new Operateur(id, NOM_DUPONT, PRENOM_JEAN, Optional.empty(), null))
+    assertThatThrownBy(() -> new Operateur(id, NOM_DUPONT, PRENOM_JEAN, Optional.empty(), Optional.empty(), null))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("postes");
   }
@@ -63,7 +73,7 @@ class OperateurTest {
     Set<PosteHabilitableId> avecNull = new HashSet<>();
     avecNull.add(null);
 
-    assertThatThrownBy(() -> new Operateur(id, NOM_DUPONT, PRENOM_JEAN, Optional.empty(), avecNull))
+    assertThatThrownBy(() -> new Operateur(id, NOM_DUPONT, PRENOM_JEAN, Optional.empty(), Optional.empty(), avecNull))
       .isExactlyInstanceOf(NullElementInCollectionException.class)
       .hasMessageContaining("postes");
   }
@@ -77,12 +87,14 @@ class OperateurTest {
       .nom(NOM_DUPONT)
       .prenom(PRENOM_JEAN)
       .matricule("049")
+      .tauxHoraire(new BigDecimal("22.00"))
       .postes(habilitationsDeSoudureEtDeTournage());
 
     assertThat(operateur.id()).isEqualTo(id);
     assertThat(operateur.nom()).isEqualTo(NOM_DUPONT);
     assertThat(operateur.prenom()).isEqualTo(PRENOM_JEAN);
     assertThat(operateur.matricule()).contains(MATRICULE_049);
+    assertThat(operateur.tauxHoraire()).contains(TAUX_HORAIRE_22);
     assertThat(operateur.postes()).containsExactlyInAnyOrder(ID_TOUR_1, ID_POSTE_DE_SOUDURE);
   }
 
@@ -93,16 +105,18 @@ class OperateurTest {
       .nom(NOM_MARTIN)
       .prenom(PRENOM_SOPHIE)
       .matricule(null)
+      .tauxHoraire(null)
       .postes(Set.of());
 
     assertThat(operateur.matricule()).isEmpty();
+    assertThat(operateur.tauxHoraire()).isEmpty();
     assertThat(operateur.postes()).isEmpty();
   }
 
   @Test
   void shouldNotLetCallerChangePostesAfterBuild() {
     Set<PosteHabilitableId> modifiable = new HashSet<>(habilitationDeTournage());
-    Operateur operateur = new Operateur(OperateurId.newId(), NOM_DUPONT, PRENOM_JEAN, Optional.empty(), modifiable);
+    Operateur operateur = new Operateur(OperateurId.newId(), NOM_DUPONT, PRENOM_JEAN, Optional.empty(), Optional.empty(), modifiable);
 
     modifiable.add(ID_POSTE_DE_SOUDURE);
 
@@ -113,12 +127,19 @@ class OperateurTest {
   void shouldKeepIdentityWhenRevising() {
     Operateur operateur = operateurDupont();
 
-    Operateur revise = operateur.revise(NOM_MARTIN, PRENOM_SOPHIE, Optional.of(MATRICULE_050), habilitationDeTournage());
+    Operateur revise = operateur.revise(
+      NOM_MARTIN,
+      PRENOM_SOPHIE,
+      Optional.of(MATRICULE_050),
+      Optional.of(TAUX_HORAIRE_25),
+      habilitationDeTournage()
+    );
 
     assertThat(revise.id()).isEqualTo(operateur.id());
     assertThat(revise.nom()).isEqualTo(NOM_MARTIN);
     assertThat(revise.prenom()).isEqualTo(PRENOM_SOPHIE);
     assertThat(revise.matricule()).contains(MATRICULE_050);
+    assertThat(revise.tauxHoraire()).contains(TAUX_HORAIRE_25);
     assertThat(revise.postes()).containsExactly(ID_TOUR_1);
   }
 }
