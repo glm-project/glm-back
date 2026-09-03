@@ -14,38 +14,15 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
-/**
- * The two sides of the specification — the one the application serves and the one committed for the front — in the
- * single form they can be compared in.
- *
- * <p>
- * Both go through the same canonicalisation, so only a change of contract can tell them apart: property order is
- * imposed, indentation is fixed, and {@code servers} is dropped because springdoc derives it from the request
- * ({@code http://localhost} under MockMvc) — a value that would make the committed file tremble for nothing.
- * {@code openapi-typescript} ignores it anyway.
- * </p>
- *
- * <p>
- * The committed side is canonicalised too, rather than compared byte for byte: a re-indentation or a hand edit that
- * moves nothing but whitespace is not a contract break, and reporting it as one would teach the team to regenerate on
- * noise. The file's layout belongs to whatever writes it — which is why {@code .prettierignore} keeps Prettier off it.
- * </p>
- *
- * <p>
- * The file is resolved against the working directory, which Failsafe sets to the project root. A run started from
- * somewhere else — an IDE configuration, typically — will not find it, so the failure prints the path it actually
- * looked at rather than the relative one.
- * </p>
- */
 final class OpenApiSpecification {
 
   static final String REGENERATION_FLAG = "openapi.regenerate";
 
   private static final Path FILE = Path.of("documentation", "openapi.json");
   private static final String REGENERATION_COMMAND = "mvn --batch-mode -ntp verify -D" + REGENERATION_FLAG + "=true";
-  private static final String SERVERS = "servers";
+  private static final String SERVER_URL_SPRINGDOC_DERIVES_FROM_THE_REQUEST = "servers";
   private static final TypeReference<Map<String, Object>> JSON_OBJECT = new TypeReference<>() {};
-  private static final ObjectMapper CANONICAL = JsonMapper.builder()
+  private static final ObjectMapper SORTED_KEYS_AND_FIXED_INDENTATION = JsonMapper.builder()
     .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
     .enable(SerializationFeature.INDENT_OUTPUT)
     .build();
@@ -73,15 +50,7 @@ final class OpenApiSpecification {
   }
 
   static String outOfDateMessage() {
-    return (
-      "The served specification no longer matches "
-      + FILE
-      + ". "
-      + regenerationHint()
-      + " Then read `git diff "
-      + FILE
-      + "`: that diff, not the dump below, is what tells you which route or schema moved."
-    );
+    return "The served specification no longer matches " + FILE + ". " + regenerationHint() + " Then read `git diff " + FILE + "`.";
   }
 
   private static String regenerationHint() {
@@ -89,9 +58,9 @@ final class OpenApiSpecification {
   }
 
   private static String canonical(String specification) {
-    Map<String, Object> description = CANONICAL.readValue(specification, JSON_OBJECT);
-    description.remove(SERVERS);
+    Map<String, Object> description = SORTED_KEYS_AND_FIXED_INDENTATION.readValue(specification, JSON_OBJECT);
+    description.remove(SERVER_URL_SPRINGDOC_DERIVES_FROM_THE_REQUEST);
 
-    return CANONICAL.writeValueAsString(description);
+    return SORTED_KEYS_AND_FIXED_INDENTATION.writeValueAsString(description);
   }
 }

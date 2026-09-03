@@ -7,10 +7,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Hidden from the description : this controller exists only to make the advices throw, and the committed
- * documentation/openapi.json is a deliverable read by the front — a route it could never call has no place in it.
- */
 @Hidden
 @RestController
 @RequestMapping("/api/account-exceptions")
