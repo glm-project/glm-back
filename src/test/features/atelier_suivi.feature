@@ -32,10 +32,12 @@ Feature: Suivi des elements engages en atelier
     And j'ai engage l'element "OF 2002" en atelier
     When j'engage l'element "OF 2002" en atelier
     Then la reponse a le statut http 409
+    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:element-deja-engage"
 
   Scenario: Engager un element inexistant renvoie 404
     When j'engage l'element inconnu "8b5f3d02-7c94-4e16-af28-0315b7c9d2e4" en atelier
     Then la reponse a le statut http 404
+    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:element-de-fabrication-introuvable"
 
   Scenario: Un debut de travail met l'element en cours
     Given il est "2026-05-10T08:00:00Z"

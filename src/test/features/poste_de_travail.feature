@@ -42,6 +42,7 @@ Feature: Referentiel des postes de travail
       | libelle | Tour 2  |
       | nature  | soudage |
     Then la reponse a le statut http 409
+    And la reponse porte le code d'erreur "urn:glm:erreur:poste-de-travail:libelle-deja-utilise"
 
   Scenario: Declaration refusee sans libelle
     When je declare un poste de travail
@@ -66,6 +67,7 @@ Feature: Referentiel des postes de travail
   Scenario: Lecture d'un poste de travail inexistant renvoie 404
     When je consulte le poste de travail "11111111-1111-1111-1111-111111111111"
     Then la reponse a le statut http 404
+    And la reponse porte le code d'erreur "urn:glm:erreur:poste-de-travail:poste-de-travail-introuvable"
 
   Scenario: Revision d'un poste de travail
     Given j'ai declare un poste de travail
