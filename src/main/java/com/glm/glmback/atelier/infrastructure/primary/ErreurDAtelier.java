@@ -32,6 +32,11 @@ enum ErreurDAtelier implements ProblemCode {
   }
 
   @Override
+  public String context() {
+    return "atelier";
+  }
+
+  @Override
   public HttpStatus status() {
     return status;
   }

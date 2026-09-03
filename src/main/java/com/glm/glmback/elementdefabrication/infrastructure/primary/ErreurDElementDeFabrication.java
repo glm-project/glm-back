@@ -16,6 +16,11 @@ enum ErreurDElementDeFabrication implements ProblemCode {
   }
 
   @Override
+  public String context() {
+    return "element-de-fabrication";
+  }
+
+  @Override
   public HttpStatus status() {
     return status;
   }

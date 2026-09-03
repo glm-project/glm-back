@@ -18,6 +18,11 @@ enum ErreurDePosteDeTravail implements ProblemCode {
   }
 
   @Override
+  public String context() {
+    return "poste-de-travail";
+  }
+
+  @Override
   public HttpStatus status() {
     return status;
   }

@@ -19,6 +19,11 @@ enum ErreurDOperateur implements ProblemCode {
   }
 
   @Override
+  public String context() {
+    return "operateur";
+  }
+
+  @Override
   public HttpStatus status() {
     return status;
   }

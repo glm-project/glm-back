@@ -18,4 +18,9 @@ public class ReponseSteps {
   public void laReponseALeStatutHttp(int status) {
     assertThatLastResponse().hasHttpStatus(status);
   }
+
+  @Then("la reponse porte le code d'erreur {string}")
+  public void laReponsePorteLeCodeDErreur(String code) {
+    assertThatLastResponse().hasElement("$.type").withValue(code);
+  }
 }

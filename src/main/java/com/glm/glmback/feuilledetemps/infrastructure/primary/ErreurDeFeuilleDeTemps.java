@@ -15,6 +15,11 @@ enum ErreurDeFeuilleDeTemps implements ProblemCode {
   }
 
   @Override
+  public String context() {
+    return "feuille-de-temps";
+  }
+
+  @Override
   public HttpStatus status() {
     return status;
   }
