@@ -10,10 +10,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Hidden from the description : this controller exists only to make bean validation fail, and the committed
- * documentation/openapi.json is a deliverable read by the front — a route it could never call has no place in it.
- */
 @Hidden
 @Validated
 @RestController
