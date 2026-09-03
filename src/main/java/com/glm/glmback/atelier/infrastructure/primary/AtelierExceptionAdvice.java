@@ -20,7 +20,6 @@ import com.glm.glmback.atelier.domain.TransitionDAtelierInterditeException;
 import com.glm.glmback.atelier.domain.TransitionDePresenceInterditeException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -29,111 +28,93 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 @Order(Ordered.LOWEST_PRECEDENCE - 20_000)
 class AtelierExceptionAdvice {
 
-  private static final String MESSAGE_KEY = "message";
-
   @ExceptionHandler(SuiviDAtelierIntrouvableException.class)
   ProblemDetail handleSuiviDAtelierIntrouvable(SuiviDAtelierIntrouvableException e) {
-    return introuvable("suivi d'atelier introuvable", e);
+    return ErreurDAtelier.SUIVI_D_ATELIER_INTROUVABLE.problem(e);
   }
 
   @ExceptionHandler(JourneeDeTravailIntrouvableException.class)
   ProblemDetail handleJourneeDeTravailIntrouvable(JourneeDeTravailIntrouvableException e) {
-    return introuvable("journee de travail introuvable", e);
+    return ErreurDAtelier.JOURNEE_DE_TRAVAIL_INTROUVABLE.problem(e);
   }
 
   @ExceptionHandler(EvenementDAtelierIntrouvableException.class)
   ProblemDetail handleEvenementDAtelierIntrouvable(EvenementDAtelierIntrouvableException e) {
-    return introuvable("evenement d'atelier introuvable", e);
+    return ErreurDAtelier.EVENEMENT_D_ATELIER_INTROUVABLE.problem(e);
   }
 
   @ExceptionHandler(EvenementDePresenceIntrouvableException.class)
   ProblemDetail handleEvenementDePresenceIntrouvable(EvenementDePresenceIntrouvableException e) {
-    return introuvable("evenement de presence introuvable", e);
+    return ErreurDAtelier.EVENEMENT_DE_PRESENCE_INTROUVABLE.problem(e);
   }
 
   @ExceptionHandler(ElementEngageableIntrouvableException.class)
   ProblemDetail handleElementEngageableIntrouvable(ElementEngageableIntrouvableException e) {
-    return introuvable("element de fabrication introuvable", e);
+    return ErreurDAtelier.ELEMENT_DE_FABRICATION_INTROUVABLE.problem(e);
   }
 
   @ExceptionHandler(OperateurDAtelierIntrouvableException.class)
   ProblemDetail handleOperateurDAtelierIntrouvable(OperateurDAtelierIntrouvableException e) {
-    return introuvable("operateur introuvable", e);
+    return ErreurDAtelier.OPERATEUR_INTROUVABLE.problem(e);
   }
 
   @ExceptionHandler(PosteDAtelierIntrouvableException.class)
   ProblemDetail handlePosteDAtelierIntrouvable(PosteDAtelierIntrouvableException e) {
-    return introuvable("poste de travail introuvable", e);
+    return ErreurDAtelier.POSTE_DE_TRAVAIL_INTROUVABLE.problem(e);
   }
 
   @ExceptionHandler(OperateurNonHabiliteException.class)
   ProblemDetail handleOperateurNonHabilite(OperateurNonHabiliteException e) {
-    return conflit("operateur non habilite", e);
+    return ErreurDAtelier.OPERATEUR_NON_HABILITE.problem(e);
   }
 
   @ExceptionHandler(AucuneJourneeDeTravailEnCoursException.class)
   ProblemDetail handleAucuneJourneeDeTravailEnCours(AucuneJourneeDeTravailEnCoursException e) {
-    return introuvable("aucune journee de travail en cours", e);
+    return ErreurDAtelier.AUCUNE_JOURNEE_DE_TRAVAIL_EN_COURS.problem(e);
   }
 
   @ExceptionHandler(ElementDejaEngageException.class)
   ProblemDetail handleElementDejaEngage(ElementDejaEngageException e) {
-    return conflit("element deja engage", e);
+    return ErreurDAtelier.ELEMENT_DEJA_ENGAGE.problem(e);
   }
 
   @ExceptionHandler(JourneeDeTravailDejaOuverteException.class)
   ProblemDetail handleJourneeDeTravailDejaOuverte(JourneeDeTravailDejaOuverteException e) {
-    return conflit("journee de travail deja ouverte", e);
+    return ErreurDAtelier.JOURNEE_DE_TRAVAIL_DEJA_OUVERTE.problem(e);
   }
 
   @ExceptionHandler(EvenementDejaAnnuleException.class)
   ProblemDetail handleEvenementDejaAnnule(EvenementDejaAnnuleException e) {
-    return conflit("evenement deja annule", e);
+    return ErreurDAtelier.EVENEMENT_DEJA_ANNULE.problem(e);
   }
 
   @ExceptionHandler(EvenementDePresenceDejaAnnuleException.class)
   ProblemDetail handleEvenementDePresenceDejaAnnule(EvenementDePresenceDejaAnnuleException e) {
-    return conflit("evenement de presence deja annule", e);
+    return ErreurDAtelier.EVENEMENT_DE_PRESENCE_DEJA_ANNULE.problem(e);
   }
 
   @ExceptionHandler(SuiviDAtelierClotureException.class)
   ProblemDetail handleSuiviDAtelierCloture(SuiviDAtelierClotureException e) {
-    return conflit("suivi d'atelier cloture", e);
+    return ErreurDAtelier.SUIVI_D_ATELIER_CLOTURE.problem(e);
   }
 
   @ExceptionHandler(TransitionDAtelierInterditeException.class)
   ProblemDetail handleTransitionDAtelierInterdite(TransitionDAtelierInterditeException e) {
-    return conflit("transition d'atelier interdite", e);
+    return ErreurDAtelier.TRANSITION_D_ATELIER_INTERDITE.problem(e);
   }
 
   @ExceptionHandler(TransitionDePresenceInterditeException.class)
   ProblemDetail handleTransitionDePresenceInterdite(TransitionDePresenceInterditeException e) {
-    return conflit("transition de presence interdite", e);
+    return ErreurDAtelier.TRANSITION_DE_PRESENCE_INTERDITE.problem(e);
   }
 
   @ExceptionHandler(EvenementAvantEngagementException.class)
   ProblemDetail handleEvenementAvantEngagement(EvenementAvantEngagementException e) {
-    return conflit("evenement anterieur a l'engagement", e);
+    return ErreurDAtelier.EVENEMENT_ANTERIEUR_A_L_ENGAGEMENT.problem(e);
   }
 
   @ExceptionHandler(SaisieConcurrenteException.class)
   ProblemDetail handleSaisieConcurrente(SaisieConcurrenteException e) {
-    return conflit("saisie concurrente", e);
-  }
-
-  private static ProblemDetail introuvable(String titre, RuntimeException e) {
-    return probleme(HttpStatus.NOT_FOUND, titre, e);
-  }
-
-  private static ProblemDetail conflit(String titre, RuntimeException e) {
-    return probleme(HttpStatus.CONFLICT, titre, e);
-  }
-
-  private static ProblemDetail probleme(HttpStatus status, String titre, RuntimeException e) {
-    var detail = ProblemDetail.forStatus(status);
-    detail.setTitle(titre);
-    detail.setProperty(MESSAGE_KEY, e.getMessage());
-
-    return detail;
+    return ErreurDAtelier.SAISIE_CONCURRENTE.problem(e);
   }
 }

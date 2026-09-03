@@ -217,8 +217,15 @@ client en supposant l'inverse.
 
 ## 4. Erreurs
 
-Toutes les erreurs métier sont des `ProblemDetail` (RFC 7807) portant `title`, `status` et une propriété `message`
-lisible.
+Toutes les erreurs métier sont des `ProblemDetail` (RFC 7807) portant un `type`, un `title`, un `status` et une
+propriété `message` lisible.
+
+Le `type` est un **code stable** de la forme `urn:glm:erreur:<contexte>:<code>` — c'est **lui** qu'on teste pour
+brancher, jamais le couple `status` + `title` : le titre est une phrase française qui se reformule, et le même titre
+sort de plusieurs contextes. Le catalogue complet est dans [documentation/codes-erreur.md](codes-erreur.md).
+
+Deux statuts du tableau ci-dessous n'en portent pas : le **400** de Bean Validation, qui se lit par son `errors`
+(`Map<champ, message>`), et le **403**, qui vient de la chaîne de filtres sans corps du tout.
 
 | Statut | Cas                                                                                                                                                                   |
 | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

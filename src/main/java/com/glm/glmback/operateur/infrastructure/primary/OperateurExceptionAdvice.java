@@ -7,7 +7,6 @@ import com.glm.glmback.operateur.domain.OperateurIntrouvableException;
 import com.glm.glmback.operateur.domain.PosteHabilitableIntrouvableException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -16,50 +15,28 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 @Order(Ordered.LOWEST_PRECEDENCE - 20_000)
 class OperateurExceptionAdvice {
 
-  private static final String MESSAGE_KEY = "message";
-
   @ExceptionHandler(OperateurIntrouvableException.class)
   ProblemDetail handleOperateurIntrouvable(OperateurIntrouvableException e) {
-    var detail = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
-    detail.setTitle("operateur introuvable");
-    detail.setProperty(MESSAGE_KEY, e.getMessage());
-
-    return detail;
+    return ErreurDOperateur.OPERATEUR_INTROUVABLE.problem(e);
   }
 
   @ExceptionHandler(PosteHabilitableIntrouvableException.class)
   ProblemDetail handlePosteHabilitableIntrouvable(PosteHabilitableIntrouvableException e) {
-    var detail = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
-    detail.setTitle("poste de travail introuvable");
-    detail.setProperty(MESSAGE_KEY, e.getMessage());
-
-    return detail;
+    return ErreurDOperateur.POSTE_DE_TRAVAIL_INTROUVABLE.problem(e);
   }
 
   @ExceptionHandler(OperateurAPointeException.class)
   ProblemDetail handleOperateurAPointe(OperateurAPointeException e) {
-    var detail = ProblemDetail.forStatus(HttpStatus.CONFLICT);
-    detail.setTitle("operateur ayant pointe");
-    detail.setProperty(MESSAGE_KEY, e.getMessage());
-
-    return detail;
+    return ErreurDOperateur.OPERATEUR_AYANT_POINTE.problem(e);
   }
 
   @ExceptionHandler(IdentiteDejaUtiliseeException.class)
   ProblemDetail handleIdentiteDejaUtilisee(IdentiteDejaUtiliseeException e) {
-    var detail = ProblemDetail.forStatus(HttpStatus.CONFLICT);
-    detail.setTitle("identite deja utilisee");
-    detail.setProperty(MESSAGE_KEY, e.getMessage());
-
-    return detail;
+    return ErreurDOperateur.IDENTITE_DEJA_UTILISEE.problem(e);
   }
 
   @ExceptionHandler(MatriculeDejaUtiliseException.class)
   ProblemDetail handleMatriculeDejaUtilise(MatriculeDejaUtiliseException e) {
-    var detail = ProblemDetail.forStatus(HttpStatus.CONFLICT);
-    detail.setTitle("matricule deja utilise");
-    detail.setProperty(MESSAGE_KEY, e.getMessage());
-
-    return detail;
+    return ErreurDOperateur.MATRICULE_DEJA_UTILISE.problem(e);
   }
 }
