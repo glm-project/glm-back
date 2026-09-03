@@ -41,12 +41,16 @@ voulu : l'identifiant vit dans le fichier de contrat, dont la seule raison de ch
 piège écarté est `e.getClass().getSimpleName()`, qui aurait fait d'un refactoring d'exception une rupture d'API
 silencieuse.
 
-Chaque URN est épinglé caractère par caractère par un `*ExceptionAdviceTest`, et un test d'exhaustivité par advice
-compare l'ensemble des exceptions traduites à l'ensemble des exceptions éprouvées : **ajouter un handler sans ligne de
-table passe le build au rouge**. Quatre scénarios Cucumber vérifient en plus la forme sérialisée, sur un 404 et un 409
-de deux contextes différents — les tests unitaires appellent le handler, eux seuls prouvent que le `type` arrive bien
-dans le corps JSON. Les codes n'entrent pas dans `openapi.json` (les `@ApiResponse` d'erreur ne portent pas de
-schéma) : ces tests sont le seul endroit qui les tient.
+Chaque URN est épinglé caractère par caractère par un `*ExceptionAdviceTest`, qui n'apporte que sa table `(exception,
+URN, statut)` et hérite ses deux vérifications d'`ExceptionAdviceContract` : l'épinglage ligne à ligne, et un test
+d'exhaustivité comparant l'ensemble des exceptions traduites à l'ensemble des exceptions éprouvées — **ajouter un
+handler sans ligne de table passe le build au rouge**. La table ne porte pas de colonne `title` : le titre n'est pas
+un contrat, l'épingler ferait échouer le build sur une reformulation que ce document autorise. Ce que la mécanique
+elle-même produit — composition de l'URN, report du statut, du titre et du `message` — est éprouvé une fois par
+`ProblemCodeTest`. Quatre scénarios Cucumber vérifient en plus la forme sérialisée, sur un 404 et un 409 de deux
+contextes différents — les tests unitaires appellent le handler, eux seuls prouvent que le `type` arrive bien dans le
+corps JSON. Les codes n'entrent pas dans `openapi.json` (les `@ApiResponse` d'erreur ne portent pas de schéma) : ces
+tests sont le seul endroit qui les tient.
 
 ## Ce que le catalogue ne couvre pas
 
@@ -127,7 +131,7 @@ segment de contexte, et lui seul, qui les distingue.
 
 1. Une constante dans l'`enum` du contexte — le nom est le code, choisi une fois pour toutes.
 2. Le handler dans l'advice : `return ErreurDXxx.MA_CONSTANTE.problem(e);`.
-3. Une ligne dans la table de l'`*ExceptionAdviceTest`, avec l'URN écrit en toutes lettres. Sans elle, le test
-   d'exhaustivité échoue.
+3. Une ligne `new PublishedProblem(exception, URN, statut)` dans la table de l'`*ExceptionAdviceTest`, avec l'URN
+   écrite en toutes lettres. Sans elle, le test d'exhaustivité échoue.
 4. Une ligne dans le catalogue ci-dessus. Celle-là, aucun test ne la réclame : le catalogue est tenu à la main, et
    c'est la seule pièce du contrat qui puisse se démoder en silence.
