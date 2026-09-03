@@ -1,5 +1,6 @@
 target
 build
 package-lock.json
+documentation/openapi.json
 gradle
 .gradle
