@@ -1,9 +1,14 @@
 # API atelier — guide d'intégration front
 
-Ce document accompagne la spécification OpenAPI (`/swagger-ui.html`, `/v3/api-docs`). La spec dit **ce que** chaque
-route accepte et rend ; ce guide dit **pourquoi**, et dans quel ordre les appeler. Les deux sont nécessaires : le
-modèle de l'atelier a trois ou quatre partis pris qui rendent une implémentation naïve fausse sans jamais lever
-d'erreur.
+Ce document accompagne la spécification OpenAPI ([`openapi.json`](openapi.json), servie sur `/swagger-ui.html` et
+`/v3/api-docs`). La spec dit **ce que** chaque route accepte et rend ; ce guide dit **pourquoi**, et dans quel ordre
+les appeler. Les deux sont nécessaires : le modèle de l'atelier a trois ou quatre partis pris qui rendent une
+implémentation naïve fausse sans jamais lever d'erreur.
+
+`openapi.json` est le livrable : il est commité, et la CI du back échoue tant qu'il ne décrit pas l'API telle qu'elle
+est servie — c'est ce qui permet au front de générer ses types depuis ce fichier sans jamais appeler le back. **Le
+renommer ou le déplacer casse la synchronisation d'en face, en silence.** Il ne décrit que les routes réelles : les
+contrôleurs qui n'existent qu'en test en sont exclus.
 
 Le détail métier et sa justification par le verbatim client sont dans
 [contexte-metier.md](contexte-metier.md) ; les règles de code, dans [glm-back/CLAUDE.md](../CLAUDE.md).
