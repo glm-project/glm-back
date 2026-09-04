@@ -64,14 +64,13 @@ public class JourneesDeTravailApplicationService {
   public ResultatDEcriture<JourneeDeTravail> arriveDuPupitre(ArriveeAEnregistrer commande) {
     ReservationDEvenement reservation = identites.reserve(
       commande.evenement().uuid(),
-      new EmpreinteDEvenement(
-        NatureDeGesteDuPupitre.ARRIVEE,
-        Optional.empty(),
-        commande.operateur().uuid(),
-        commande.type().name(),
-        Optional.empty(),
-        commande.dateDeSurvenue()
-      )
+      EmpreinteDEvenement.builder()
+        .nature(NatureDeGesteDuPupitre.ARRIVEE)
+        .cible(Optional.empty())
+        .operateur(commande.operateur().uuid())
+        .type(commande.type().name())
+        .poste(Optional.empty())
+        .dateDeSurvenue(commande.dateDeSurvenue())
     );
     if (reservation.estUnRejeu()) {
       return new ResultatDEcriture<>(journeesDeTravail.get(new JourneeDeTravailId(reservation.agregat().orElseThrow().id())), true);
@@ -92,14 +91,13 @@ public class JourneesDeTravailApplicationService {
   public ResultatDEcriture<JourneeDeTravail> pointeDuPupitre(PointageDePresenceAEnregistrer commande) {
     ReservationDEvenement reservation = identites.reserve(
       commande.evenement().uuid(),
-      new EmpreinteDEvenement(
-        NatureDeGesteDuPupitre.POINTAGE_DE_PRESENCE,
-        Optional.empty(),
-        commande.operateur().uuid(),
-        commande.type().name(),
-        Optional.empty(),
-        commande.dateDeSurvenue()
-      )
+      EmpreinteDEvenement.builder()
+        .nature(NatureDeGesteDuPupitre.POINTAGE_DE_PRESENCE)
+        .cible(Optional.empty())
+        .operateur(commande.operateur().uuid())
+        .type(commande.type().name())
+        .poste(Optional.empty())
+        .dateDeSurvenue(commande.dateDeSurvenue())
     );
     if (reservation.estUnRejeu()) {
       return new ResultatDEcriture<>(journeesDeTravail.get(new JourneeDeTravailId(reservation.agregat().orElseThrow().id())), true);

@@ -12,11 +12,18 @@ import com.glm.glmback.atelier.application.TypeDAgregatDEvenement;
 import com.glm.glmback.atelier.domain.IdentifiantDEvenementReutiliseException;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.context.request.RequestContextHolder;
 
 @IntegrationTest
 class JpaIdentitesDEvenementsIT {
@@ -32,7 +39,7 @@ class JpaIdentitesDEvenementsIT {
   void shouldReserveThenReplayTheSameFingerprint() {
     UUID evenement = UUID.randomUUID();
     UUID journee = UUID.randomUUID();
-    EmpreinteDEvenement empreinte = arrivee(Optional.of(Instant.parse("2042-01-01T08:00:00Z")));
+    EmpreinteDEvenement empreinte = arrivee(Optional.of(Instant.parse("2042-01-01T08:00:00.123456789Z")));
 
     ReservationDEvenement premiere = inTransaction(() -> {
       ReservationDEvenement reservation = identites.reserve(evenement, empreinte);
@@ -43,6 +50,42 @@ class JpaIdentitesDEvenementsIT {
 
     assertThat(premiere.estUnRejeu()).isFalse();
     assertThat(rejeu.agregat()).contains(new AgregatDEvenement(TypeDAgregatDEvenement.JOURNEE_DE_TRAVAIL, journee));
+  }
+
+  @Test
+  @WithTenant("impeccmold")
+  void shouldArbitrateConcurrentReservationsAtomically() throws Exception {
+    UUID evenement = UUID.randomUUID();
+    UUID journee = UUID.randomUUID();
+    EmpreinteDEvenement empreinte = arrivee(Optional.empty());
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    var attributsDeRequete = RequestContextHolder.getRequestAttributes();
+    Callable<ReservationDEvenement> reservation = () -> {
+      var contexte = SecurityContextHolder.createEmptyContext();
+      contexte.setAuthentication(authentication);
+      SecurityContextHolder.setContext(contexte);
+      RequestContextHolder.setRequestAttributes(attributsDeRequete);
+      try {
+        return inTransaction(() -> {
+          ReservationDEvenement resultat = identites.reserve(evenement, empreinte);
+          if (!resultat.estUnRejeu()) {
+            identites.associe(evenement, new AgregatDEvenement(TypeDAgregatDEvenement.JOURNEE_DE_TRAVAIL, journee));
+          }
+          return resultat;
+        });
+      } finally {
+        SecurityContextHolder.clearContext();
+        RequestContextHolder.resetRequestAttributes();
+      }
+    };
+
+    try (var delegate = Executors.newFixedThreadPool(2)) {
+      List<Future<ReservationDEvenement>> resultats = delegate.invokeAll(java.util.List.of(reservation, reservation));
+
+      assertThat(resultats)
+        .extracting(resultat -> resultat.get().estUnRejeu())
+        .containsExactlyInAnyOrder(false, true);
+    }
   }
 
   @Test
@@ -75,14 +118,13 @@ class JpaIdentitesDEvenementsIT {
   }
 
   private static EmpreinteDEvenement arrivee(Optional<Instant> date) {
-    return new EmpreinteDEvenement(
-      NatureDeGesteDuPupitre.ARRIVEE,
-      Optional.empty(),
-      UUID.fromString("00000000-0000-0000-0000-000000000001"),
-      "ARRIVEE",
-      Optional.empty(),
-      date
-    );
+    return EmpreinteDEvenement.builder()
+      .nature(NatureDeGesteDuPupitre.ARRIVEE)
+      .cible(Optional.empty())
+      .operateur(UUID.fromString("00000000-0000-0000-0000-000000000001"))
+      .type("ARRIVEE")
+      .poste(Optional.empty())
+      .dateDeSurvenue(date);
   }
 
   private <T> T inTransaction(java.util.function.Supplier<T> action) {

@@ -80,14 +80,13 @@ class JpaIdentitesDEvenementsTest {
   }
 
   private static EmpreinteDEvenement empreinte(Optional<Instant> date) {
-    return new EmpreinteDEvenement(
-      NatureDeGesteDuPupitre.ARRIVEE,
-      Optional.empty(),
-      UUID.fromString("00000000-0000-0000-0000-000000000001"),
-      "ARRIVEE",
-      Optional.empty(),
-      date
-    );
+    return EmpreinteDEvenement.builder()
+      .nature(NatureDeGesteDuPupitre.ARRIVEE)
+      .cible(Optional.empty())
+      .operateur(UUID.fromString("00000000-0000-0000-0000-000000000001"))
+      .type("ARRIVEE")
+      .poste(Optional.empty())
+      .dateDeSurvenue(date);
   }
 
   private static Object[] ligne(boolean rejouable, Instant date, UUID agregat) {
@@ -101,7 +100,7 @@ class JpaIdentitesDEvenementsTest {
       true,
       "JOURNEE_DE_TRAVAIL",
       agregat,
-      date,
+      date.toString(),
     };
   }
 }

@@ -139,34 +139,8 @@ class ReservationDIdentiteServeurTest {
         )
         .agregat()
     ).isSameAs(journee);
-    assertThat(
-      atelier
-        .pointeDuPupitre(
-          PointageAEnregistrer.of(
-            new SuiviDAtelierId(suiviId),
-            TypeDEvenementDAtelier.DEBUT,
-            operateur,
-            Optional.empty(),
-            auteur,
-            Optional.empty(),
-            new EvenementDAtelierId(UUID.randomUUID())
-          )
-        )
-        .agregat()
-    ).isSameAs(suivi);
-    assertThat(
-      atelier.pointe(
-        PointageAEnregistrer.of(
-          new SuiviDAtelierId(suiviId),
-          TypeDEvenementDAtelier.DEBUT,
-          operateur,
-          Optional.empty(),
-          auteur,
-          Optional.empty(),
-          new EvenementDAtelierId(UUID.randomUUID())
-        )
-      )
-    ).isSameAs(suivi);
+    assertThat(atelier.pointeDuPupitre(pointage(suiviId, operateur, auteur)).agregat()).isSameAs(suivi);
+    assertThat(atelier.pointe(pointage(suiviId, operateur, auteur))).isSameAs(suivi);
     then(journees).should(never()).create(any());
     then(journees).should(never()).update(any());
     then(suivis).should(never()).update(any());
@@ -176,5 +150,16 @@ class ReservationDIdentiteServeurTest {
     Method methode = service.getClass().getDeclaredMethod("reserveIdentiteServeur");
     methode.setAccessible(true);
     return methode.invoke(service);
+  }
+
+  private static PointageAEnregistrer pointage(UUID suivi, OperateurId operateur, Auteur auteur) {
+    return PointageAEnregistrer.pupitreBuilder()
+      .suivi(new SuiviDAtelierId(suivi))
+      .type(TypeDEvenementDAtelier.DEBUT)
+      .operateur(operateur)
+      .poste(Optional.empty())
+      .auteur(auteur)
+      .dateDeSurvenue(Optional.empty())
+      .evenement(new EvenementDAtelierId(UUID.randomUUID()));
   }
 }

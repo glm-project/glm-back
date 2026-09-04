@@ -78,7 +78,7 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
 ## Ports sortants
 
 `SuiviDAtelierRepository`, `JourneeDeTravailRepository`, `ElementsEngageables`, `OperateursConnus`, `PostesConnus`,
-`Habilitations`, `Clock`.
+`Habilitations`, `IdentitesDEvenements`, `Clock`.
 
 `OperateursConnus` expose `get(OperateurId)` en plus de `existe` et `parIds` : la présence (`JourneesDeTravailService`)
 n'a toujours besoin que de l'existence, mais le journal d'atelier (`SuivisDAtelierService`) résout désormais la fiche

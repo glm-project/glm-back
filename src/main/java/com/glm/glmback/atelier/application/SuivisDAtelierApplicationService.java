@@ -89,14 +89,13 @@ public class SuivisDAtelierApplicationService {
   public ResultatDEcriture<SuiviDAtelier> pointeDuPupitre(PointageAEnregistrer commande) {
     ReservationDEvenement reservation = identites.reserve(
       commande.evenement().uuid(),
-      new EmpreinteDEvenement(
-        NatureDeGesteDuPupitre.POINTAGE_D_ATELIER,
-        Optional.of(commande.suivi().uuid()),
-        commande.operateur().uuid(),
-        commande.type().name(),
-        commande.poste().map(poste -> poste.uuid()),
-        commande.dateDeSurvenue()
-      )
+      EmpreinteDEvenement.builder()
+        .nature(NatureDeGesteDuPupitre.POINTAGE_D_ATELIER)
+        .cible(Optional.of(commande.suivi().uuid()))
+        .operateur(commande.operateur().uuid())
+        .type(commande.type().name())
+        .poste(commande.poste().map(poste -> poste.uuid()))
+        .dateDeSurvenue(commande.dateDeSurvenue())
     );
     if (reservation.estUnRejeu()) {
       return new ResultatDEcriture<>(suivisDAtelier.get(new SuiviDAtelierId(reservation.agregat().orElseThrow().id())), true);

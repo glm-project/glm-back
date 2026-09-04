@@ -7,6 +7,7 @@ import com.glm.glmback.atelier.application.ReservationDEvenement;
 import com.glm.glmback.atelier.application.TypeDAgregatDEvenement;
 import com.glm.glmback.atelier.domain.IdentifiantDEvenementReutiliseException;
 import jakarta.persistence.EntityManager;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -73,7 +74,7 @@ class JpaIdentitesDEvenements implements IdentitesDEvenements {
         .setParameter(5, empreinte.type())
         .setParameter(6, empreinte.poste().orElse(null))
         .setParameter(7, empreinte.dateDeSurvenue().isPresent())
-        .setParameter(8, empreinte.dateDeSurvenue().orElse(null))
+        .setParameter(8, empreinte.dateDeSurvenue().map(Instant::toString).orElse(null))
         .executeUpdate()
       == 1
     );
@@ -96,14 +97,13 @@ class JpaIdentitesDEvenements implements IdentitesDEvenements {
 
   private static boolean correspond(Object[] ligne, EmpreinteDEvenement empreinte) {
     return empreinte.equals(
-      new EmpreinteDEvenement(
-        com.glm.glmback.atelier.application.NatureDeGesteDuPupitre.valueOf((String) ligne[1]),
-        Optional.ofNullable((UUID) ligne[2]),
-        (UUID) ligne[3],
-        (String) ligne[4],
-        Optional.ofNullable((UUID) ligne[5]),
-        Optional.ofNullable((java.time.Instant) ligne[9])
-      )
+      EmpreinteDEvenement.builder()
+        .nature(com.glm.glmback.atelier.application.NatureDeGesteDuPupitre.valueOf((String) ligne[1]))
+        .cible(Optional.ofNullable((UUID) ligne[2]))
+        .operateur((UUID) ligne[3])
+        .type((String) ligne[4])
+        .poste(Optional.ofNullable((UUID) ligne[5]))
+        .dateDeSurvenue(Optional.ofNullable((String) ligne[9]).map(Instant::parse))
     );
   }
 }

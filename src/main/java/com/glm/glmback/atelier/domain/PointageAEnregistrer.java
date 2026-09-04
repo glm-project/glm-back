@@ -5,7 +5,8 @@ import java.time.Instant;
 import java.util.Optional;
 
 /**
- * Un pointage d'operateur : sa date de survenue est l'instant present, decide par le service.
+ * Un pointage d'operateur : sa date de survenue vient du pupitre quand il la fournit, sinon le service prend l'instant
+ * present.
  *
  * <p>
  * Le poste de travail est facultatif : un operateur mono-poste, ou une entreprise sans parc machine, garde un seul
@@ -43,16 +44,13 @@ public record PointageAEnregistrer(
           poste -> auteur -> new PointageAEnregistrer(suivi, type, operateur, poste, auteur, Optional.empty(), EvenementDAtelierId.newId());
   }
 
-  public static PointageAEnregistrer of(
-    SuiviDAtelierId suivi,
-    TypeDEvenementDAtelier type,
-    OperateurId operateur,
-    Optional<PosteDeTravailId> poste,
-    Auteur auteur,
-    Optional<Instant> dateDeSurvenue,
-    EvenementDAtelierId evenement
-  ) {
-    return new PointageAEnregistrer(suivi, type, operateur, poste, auteur, dateDeSurvenue, evenement);
+  public static PointageDuPupitreSuiviBuilder pupitreBuilder() {
+    return suivi ->
+      type ->
+        operateur ->
+          poste ->
+            auteur ->
+              dateDeSurvenue -> evenement -> new PointageAEnregistrer(suivi, type, operateur, poste, auteur, dateDeSurvenue, evenement);
   }
 
   public interface PointageAEnregistrerSuiviBuilder {
@@ -73,5 +71,33 @@ public record PointageAEnregistrer(
 
   public interface PointageAEnregistrerAuteurBuilder {
     PointageAEnregistrer auteur(Auteur auteur);
+  }
+
+  public interface PointageDuPupitreSuiviBuilder {
+    PointageDuPupitreTypeBuilder suivi(SuiviDAtelierId suivi);
+  }
+
+  public interface PointageDuPupitreTypeBuilder {
+    PointageDuPupitreOperateurBuilder type(TypeDEvenementDAtelier type);
+  }
+
+  public interface PointageDuPupitreOperateurBuilder {
+    PointageDuPupitrePosteBuilder operateur(OperateurId operateur);
+  }
+
+  public interface PointageDuPupitrePosteBuilder {
+    PointageDuPupitreAuteurBuilder poste(Optional<PosteDeTravailId> poste);
+  }
+
+  public interface PointageDuPupitreAuteurBuilder {
+    PointageDuPupitreDateDeSurvenueBuilder auteur(Auteur auteur);
+  }
+
+  public interface PointageDuPupitreDateDeSurvenueBuilder {
+    PointageDuPupitreEvenementBuilder dateDeSurvenue(Optional<Instant> dateDeSurvenue);
+  }
+
+  public interface PointageDuPupitreEvenementBuilder {
+    PointageAEnregistrer evenement(EvenementDAtelierId evenement);
   }
 }

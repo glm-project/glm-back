@@ -36,14 +36,13 @@ record RestPointage(
   @Schema(description = "Heure metier du geste. Absente, elle vaut l'instant de reception initial.") Instant dateDeSurvenue
 ) {
   PointageAEnregistrer toDomain(SuiviDAtelierId suivi, Auteur auteur) {
-    return PointageAEnregistrer.of(
-      suivi,
-      type,
-      new OperateurId(operateur),
-      Optional.ofNullable(poste).map(PosteDeTravailId::new),
-      auteur,
-      Optional.ofNullable(dateDeSurvenue),
-      new EvenementDAtelierId(id)
-    );
+    return PointageAEnregistrer.pupitreBuilder()
+      .suivi(suivi)
+      .type(type)
+      .operateur(new OperateurId(operateur))
+      .poste(Optional.ofNullable(poste).map(PosteDeTravailId::new))
+      .auteur(auteur)
+      .dateDeSurvenue(Optional.ofNullable(dateDeSurvenue))
+      .evenement(new EvenementDAtelierId(id));
   }
 }
