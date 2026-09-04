@@ -73,6 +73,7 @@ out/
 # Maven
 ######################
 /target/
+/.mvn/repository/
 
 ######################
 # Package Files

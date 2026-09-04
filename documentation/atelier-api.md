@@ -11,7 +11,7 @@ renommer ou le déplacer casse la synchronisation d'en face, en silence.** Il ne
 contrôleurs qui n'existent qu'en test en sont exclus.
 
 Le détail métier et sa justification par le verbatim client sont dans
-[contexte-metier.md](contexte-metier.md) ; les règles de code, dans [glm-back/CLAUDE.md](../CLAUDE.md).
+[contexte-metier.md](contexte-metier.md) ; les règles de code, dans [glm-back/AGENTS.md](../AGENTS.md).
 
 ---
 
