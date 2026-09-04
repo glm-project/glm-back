@@ -19,6 +19,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -127,7 +128,6 @@ class SuiviDAtelierResource {
   }
 
   @PostMapping("/{id}/pointages")
-  @ResponseStatus(HttpStatus.CREATED)
   @Operation(
     summary = "Pointer un debut, une non conformite ou une fin",
     description = """
@@ -138,13 +138,16 @@ class SuiviDAtelierResource {
     """
   )
   @ApiResponse(responseCode = "201", description = "Le pointage est enregistre.")
+  @ApiResponse(responseCode = "200", description = "Le geste identique est rejoue.")
+  @ApiResponse(responseCode = "400", description = "Le corps est invalide ou la date de survenue est future.")
   @ApiResponse(responseCode = "404", description = "Suivi, operateur ou poste de travail introuvable.")
   @ApiResponse(
     responseCode = "409",
-    description = "Operateur non habilite sur ce poste, element cloture, ou transition impossible depuis l'etat courant."
+    description = "Operateur non habilite sur ce poste, element cloture, transition impossible ou identifiant reutilise."
   )
-  RestSuiviDAtelier pointe(@PathVariable UUID id, @RequestBody @Valid RestPointage request) {
-    return rendu(applicationService.pointe(request.toDomain(new SuiviDAtelierId(id), AuteurConnecte.get())));
+  ResponseEntity<RestSuiviDAtelier> pointe(@PathVariable UUID id, @RequestBody @Valid RestPointage request) {
+    var resultat = applicationService.pointeDuPupitre(request.toDomain(new SuiviDAtelierId(id), AuteurConnecte.get()));
+    return ResponseEntity.status(resultat.rejeu() ? HttpStatus.OK : HttpStatus.CREATED).body(rendu(resultat.agregat()));
   }
 
   @PostMapping("/{id}/regularisations")

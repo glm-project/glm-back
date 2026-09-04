@@ -18,6 +18,55 @@ Feature: Presence des operateurs en atelier
     And la journee a l'etat "PRESENT"
     And la journee n'a pas d'amplitude
 
+  Scenario: L'arrivee du pupitre conserve son identifiant et son heure de geste
+    Given il est "2026-05-10T14:00:00Z"
+    When j'arrive
+      | id             | 00000000-0000-0000-0000-000000000021 |
+      | operateur      | dupont                               |
+      | dateDeSurvenue | 2026-05-10T08:00:00Z                 |
+    Then la reponse a le statut http 201
+    And l'evenement 0 de la journee a l'identifiant "00000000-0000-0000-0000-000000000021"
+    And l'evenement 0 de la journee a survenu a "2026-05-10T08:00:00Z" et a ete saisi a "2026-05-10T14:00:00Z" par "gestionnaire"
+
+  Scenario: Une arrivee identique rejouee ne cree pas un second evenement
+    Given il est "2026-05-10T08:00:00Z"
+    When j'arrive
+      | id        | 00000000-0000-0000-0000-000000000031 |
+      | operateur | dupont                               |
+    Then la reponse a le statut http 201
+    When j'arrive
+      | id        | 00000000-0000-0000-0000-000000000031 |
+      | operateur | dupont                               |
+    Then la reponse a le statut http 200
+    And le journal de la journee contient 1 evenements
+
+  Scenario: Un UUID reutilise avec un autre contenu est refuse
+    Given il est "2026-05-10T08:00:00Z"
+    When j'arrive
+      | id        | 00000000-0000-0000-0000-000000000032 |
+      | operateur | dupont                               |
+    Then la reponse a le statut http 201
+    When je pointe ma presence
+      | id        | 00000000-0000-0000-0000-000000000032 |
+      | operateur | dupont                               |
+      | type      | PAUSE                                |
+    Then la reponse a le statut http 409
+    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:identifiant-evenement-reutilise"
+
+  Scenario: Une date future ne reserve pas l'identifiant du pupitre
+    Given il est "2026-05-10T08:00:00Z"
+    When j'arrive
+      | id             | 00000000-0000-0000-0000-000000000033 |
+      | operateur      | dupont                               |
+      | dateDeSurvenue | 2026-05-10T09:00:00Z                 |
+    Then la reponse a le statut http 400
+    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:date-de-survenue-future"
+    When j'arrive
+      | id             | 00000000-0000-0000-0000-000000000033 |
+      | operateur      | dupont                               |
+      | dateDeSurvenue | 2026-05-10T08:00:00Z                 |
+    Then la reponse a le statut http 201
+
   Scenario: Une journee complete, de l'arrivee au depart, avec une pause de midi
     Given il est "2026-05-10T07:00:00Z"
     And je suis arrive
@@ -44,6 +93,37 @@ Feature: Presence des operateurs en atelier
       | debut                | fin                  |
       | 2026-05-10T07:00:00Z | 2026-05-10T12:00:00Z |
       | 2026-05-10T13:00:00Z | 2026-05-10T17:00:00Z |
+
+  Scenario: Le pointage de presence du pupitre conserve son identifiant et son heure de geste
+    Given il est "2026-05-10T07:00:00Z"
+    And je suis arrive
+      | operateur | dupont |
+    Given il est "2026-05-10T14:00:00Z"
+    When je pointe ma presence
+      | id             | 00000000-0000-0000-0000-000000000022 |
+      | operateur      | dupont                               |
+      | type           | PAUSE                                |
+      | dateDeSurvenue | 2026-05-10T12:00:00Z                 |
+    Then la reponse a le statut http 201
+    And l'evenement 1 de la journee a l'identifiant "00000000-0000-0000-0000-000000000022"
+    And l'evenement 1 de la journee a survenu a "2026-05-10T12:00:00Z" et a ete saisi a "2026-05-10T14:00:00Z" par "gestionnaire"
+
+  Scenario: Un pointage de presence identique est rejoue sur sa journee d'origine
+    Given il est "2026-05-10T07:00:00Z"
+    And je suis arrive
+      | operateur | dupont |
+    Given il est "2026-05-10T08:00:00Z"
+    When je pointe ma presence
+      | id        | 00000000-0000-0000-0000-000000000034 |
+      | operateur | dupont                               |
+      | type      | PAUSE                                |
+    Then la reponse a le statut http 201
+    When je pointe ma presence
+      | id        | 00000000-0000-0000-0000-000000000034 |
+      | operateur | dupont                               |
+      | type      | PAUSE                                |
+    Then la reponse a le statut http 200
+    And le journal de la journee contient 2 evenements
 
   Scenario: Un operateur ne peut pas ouvrir deux journees a la fois
     Given il est "2026-05-10T07:00:00Z"

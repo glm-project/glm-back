@@ -28,6 +28,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Stream;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +48,7 @@ public class SuivisDAtelierApplicationService {
   private final SuivisDAtelierService suivisDAtelier;
   private final TempsDAtelierService tempsDAtelier;
   private final AnnuaireDAtelierService annuaires;
+  private final IdentitesDEvenements identites;
 
   public SuivisDAtelierApplicationService(
     SuiviDAtelierRepository repository,
@@ -54,7 +57,8 @@ public class SuivisDAtelierApplicationService {
     OperateursConnus operateurs,
     PostesConnus postes,
     Habilitations habilitations,
-    Clock clock
+    Clock clock,
+    IdentitesDEvenements identites
   ) {
     this.suivisDAtelier = SuivisDAtelierService.builder()
       .repository(repository)
@@ -65,6 +69,7 @@ public class SuivisDAtelierApplicationService {
       .clock(clock);
     this.tempsDAtelier = new TempsDAtelierService(repository, journees);
     this.annuaires = new AnnuaireDAtelierService(operateurs, postes);
+    this.identites = identites;
   }
 
   @Secured("ROLE_GESTIONNAIRE")
@@ -76,13 +81,38 @@ public class SuivisDAtelierApplicationService {
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
   @Transactional
   public SuiviDAtelier pointe(PointageAEnregistrer commande) {
-    return suivisDAtelier.pointe(commande);
+    return pointeDuPupitre(commande).agregat();
+  }
+
+  @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
+  @Transactional
+  public ResultatDEcriture<SuiviDAtelier> pointeDuPupitre(PointageAEnregistrer commande) {
+    ReservationDEvenement reservation = identites.reserve(
+      commande.evenement().uuid(),
+      new EmpreinteDEvenement(
+        NatureDeGesteDuPupitre.POINTAGE_D_ATELIER,
+        Optional.of(commande.suivi().uuid()),
+        commande.operateur().uuid(),
+        commande.type().name(),
+        commande.poste().map(poste -> poste.uuid()),
+        commande.dateDeSurvenue()
+      )
+    );
+    if (reservation.estUnRejeu()) {
+      return new ResultatDEcriture<>(suivisDAtelier.get(new SuiviDAtelierId(reservation.agregat().orElseThrow().id())), true);
+    }
+    SuiviDAtelier suivi = suivisDAtelier.pointe(commande);
+    identites.associe(commande.evenement().uuid(), new AgregatDEvenement(TypeDAgregatDEvenement.SUIVI_D_ATELIER, suivi.id().uuid()));
+    return new ResultatDEcriture<>(suivi, false);
   }
 
   @Secured("ROLE_GESTIONNAIRE")
   @Transactional
   public SuiviDAtelier regularise(RegularisationAEnregistrer commande) {
-    return suivisDAtelier.regularise(commande);
+    UUID evenement = reserveIdentiteServeur();
+    SuiviDAtelier suivi = suivisDAtelier.regularise(commande, new com.glm.glmback.atelier.domain.EvenementDAtelierId(evenement));
+    identites.associe(evenement, new AgregatDEvenement(TypeDAgregatDEvenement.SUIVI_D_ATELIER, suivi.id().uuid()));
+    return suivi;
   }
 
   @Secured("ROLE_GESTIONNAIRE")
@@ -94,7 +124,10 @@ public class SuivisDAtelierApplicationService {
   @Secured("ROLE_GESTIONNAIRE")
   @Transactional
   public SuiviDAtelier corrige(CorrectionAEnregistrer commande) {
-    return suivisDAtelier.corrige(commande);
+    UUID evenement = reserveIdentiteServeur();
+    SuiviDAtelier suivi = suivisDAtelier.corrige(commande, new com.glm.glmback.atelier.domain.EvenementDAtelierId(evenement));
+    identites.associe(evenement, new AgregatDEvenement(TypeDAgregatDEvenement.SUIVI_D_ATELIER, suivi.id().uuid()));
+    return suivi;
   }
 
   @Secured("ROLE_GESTIONNAIRE")
@@ -143,5 +176,9 @@ public class SuivisDAtelierApplicationService {
   @Transactional(readOnly = true)
   public AnnuaireDAtelier annuairePourIntervalles(Collection<IntervalleDActivite> intervalles) {
     return annuaires.pourIntervalles(intervalles);
+  }
+
+  private UUID reserveIdentiteServeur() {
+    return Stream.generate(UUID::randomUUID).filter(identites::reserveHorsPupitre).findFirst().orElseThrow();
   }
 }

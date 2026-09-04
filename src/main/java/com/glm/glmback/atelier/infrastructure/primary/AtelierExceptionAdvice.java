@@ -1,6 +1,7 @@
 package com.glm.glmback.atelier.infrastructure.primary;
 
 import com.glm.glmback.atelier.domain.AucuneJourneeDeTravailEnCoursException;
+import com.glm.glmback.atelier.domain.DateDeSurvenueFutureException;
 import com.glm.glmback.atelier.domain.ElementDejaEngageException;
 import com.glm.glmback.atelier.domain.ElementEngageableIntrouvableException;
 import com.glm.glmback.atelier.domain.EvenementAvantEngagementException;
@@ -8,6 +9,7 @@ import com.glm.glmback.atelier.domain.EvenementDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.EvenementDePresenceDejaAnnuleException;
 import com.glm.glmback.atelier.domain.EvenementDePresenceIntrouvableException;
 import com.glm.glmback.atelier.domain.EvenementDejaAnnuleException;
+import com.glm.glmback.atelier.domain.IdentifiantDEvenementReutiliseException;
 import com.glm.glmback.atelier.domain.JourneeDeTravailDejaOuverteException;
 import com.glm.glmback.atelier.domain.JourneeDeTravailIntrouvableException;
 import com.glm.glmback.atelier.domain.OperateurDAtelierIntrouvableException;
@@ -116,5 +118,15 @@ class AtelierExceptionAdvice {
   @ExceptionHandler(SaisieConcurrenteException.class)
   ProblemDetail handleSaisieConcurrente(SaisieConcurrenteException e) {
     return ErreurDAtelier.SAISIE_CONCURRENTE.problem(e);
+  }
+
+  @ExceptionHandler(IdentifiantDEvenementReutiliseException.class)
+  ProblemDetail handleIdentifiantDEvenementReutilise(IdentifiantDEvenementReutiliseException e) {
+    return ErreurDAtelier.IDENTIFIANT_EVENEMENT_REUTILISE.problem(e);
+  }
+
+  @ExceptionHandler(DateDeSurvenueFutureException.class)
+  ProblemDetail handleDateDeSurvenueFuture(DateDeSurvenueFutureException e) {
+    return ErreurDAtelier.DATE_DE_SURVENUE_FUTURE.problem(e);
   }
 }

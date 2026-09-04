@@ -20,6 +20,8 @@ import com.glm.glmback.shared.pagination.domain.Pageable;
 import com.glm.glmback.shared.time.domain.Clock;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Stream;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,33 +39,83 @@ public class JourneesDeTravailApplicationService {
 
   private final JourneesDeTravailService journeesDeTravail;
   private final AnnuaireDAtelierService annuaires;
+  private final IdentitesDEvenements identites;
 
   public JourneesDeTravailApplicationService(
     JourneeDeTravailRepository repository,
     OperateursConnus operateurs,
     PostesConnus postes,
-    Clock clock
+    Clock clock,
+    IdentitesDEvenements identites
   ) {
     this.journeesDeTravail = new JourneesDeTravailService(repository, operateurs, clock);
     this.annuaires = new AnnuaireDAtelierService(operateurs, postes);
+    this.identites = identites;
   }
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
   @Transactional
   public JourneeDeTravail arrive(ArriveeAEnregistrer commande) {
-    return journeesDeTravail.arrive(commande);
+    return arriveDuPupitre(commande).agregat();
+  }
+
+  @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
+  @Transactional
+  public ResultatDEcriture<JourneeDeTravail> arriveDuPupitre(ArriveeAEnregistrer commande) {
+    ReservationDEvenement reservation = identites.reserve(
+      commande.evenement().uuid(),
+      new EmpreinteDEvenement(
+        NatureDeGesteDuPupitre.ARRIVEE,
+        Optional.empty(),
+        commande.operateur().uuid(),
+        commande.type().name(),
+        Optional.empty(),
+        commande.dateDeSurvenue()
+      )
+    );
+    if (reservation.estUnRejeu()) {
+      return new ResultatDEcriture<>(journeesDeTravail.get(new JourneeDeTravailId(reservation.agregat().orElseThrow().id())), true);
+    }
+    JourneeDeTravail journee = journeesDeTravail.arrive(commande);
+    identites.associe(commande.evenement().uuid(), new AgregatDEvenement(TypeDAgregatDEvenement.JOURNEE_DE_TRAVAIL, journee.id().uuid()));
+    return new ResultatDEcriture<>(journee, false);
   }
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
   @Transactional
   public JourneeDeTravail pointe(PointageDePresenceAEnregistrer commande) {
-    return journeesDeTravail.pointe(commande);
+    return pointeDuPupitre(commande).agregat();
+  }
+
+  @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
+  @Transactional
+  public ResultatDEcriture<JourneeDeTravail> pointeDuPupitre(PointageDePresenceAEnregistrer commande) {
+    ReservationDEvenement reservation = identites.reserve(
+      commande.evenement().uuid(),
+      new EmpreinteDEvenement(
+        NatureDeGesteDuPupitre.POINTAGE_DE_PRESENCE,
+        Optional.empty(),
+        commande.operateur().uuid(),
+        commande.type().name(),
+        Optional.empty(),
+        commande.dateDeSurvenue()
+      )
+    );
+    if (reservation.estUnRejeu()) {
+      return new ResultatDEcriture<>(journeesDeTravail.get(new JourneeDeTravailId(reservation.agregat().orElseThrow().id())), true);
+    }
+    JourneeDeTravail journee = journeesDeTravail.pointe(commande);
+    identites.associe(commande.evenement().uuid(), new AgregatDEvenement(TypeDAgregatDEvenement.JOURNEE_DE_TRAVAIL, journee.id().uuid()));
+    return new ResultatDEcriture<>(journee, false);
   }
 
   @Secured("ROLE_GESTIONNAIRE")
   @Transactional
   public JourneeDeTravail regularise(RegularisationDePresenceAEnregistrer commande) {
-    return journeesDeTravail.regularise(commande);
+    UUID evenement = reserveIdentiteServeur();
+    JourneeDeTravail journee = journeesDeTravail.regularise(commande, new com.glm.glmback.atelier.domain.EvenementDePresenceId(evenement));
+    identites.associe(evenement, new AgregatDEvenement(TypeDAgregatDEvenement.JOURNEE_DE_TRAVAIL, journee.id().uuid()));
+    return journee;
   }
 
   @Secured("ROLE_GESTIONNAIRE")
@@ -75,7 +127,10 @@ public class JourneesDeTravailApplicationService {
   @Secured("ROLE_GESTIONNAIRE")
   @Transactional
   public JourneeDeTravail corrige(CorrectionDePresenceAEnregistrer commande) {
-    return journeesDeTravail.corrige(commande);
+    UUID evenement = reserveIdentiteServeur();
+    JourneeDeTravail journee = journeesDeTravail.corrige(commande, new com.glm.glmback.atelier.domain.EvenementDePresenceId(evenement));
+    identites.associe(evenement, new AgregatDEvenement(TypeDAgregatDEvenement.JOURNEE_DE_TRAVAIL, journee.id().uuid()));
+    return journee;
   }
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
@@ -100,5 +155,9 @@ public class JourneesDeTravailApplicationService {
   @Transactional(readOnly = true)
   public AnnuaireDAtelier annuairePourJournees(Collection<JourneeDeTravail> journees) {
     return annuaires.pourJournees(journees);
+  }
+
+  private UUID reserveIdentiteServeur() {
+    return Stream.generate(UUID::randomUUID).filter(identites::reserveHorsPupitre).findFirst().orElseThrow();
   }
 }

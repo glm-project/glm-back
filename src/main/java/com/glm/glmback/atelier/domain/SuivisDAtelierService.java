@@ -91,15 +91,23 @@ public final class SuivisDAtelierService {
       throw new SuiviDAtelierClotureException(suivi.id());
     }
 
-    Horodatage horodatage = Horodatage.saisiA(clock.now());
+    Instant maintenant = clock.now();
+    refuseDateFuture(commande.dateDeSurvenue(), maintenant);
+    Horodatage horodatage = new Horodatage(commande.dateDeSurvenue().orElse(maintenant), maintenant);
 
     return repository.update(
-      suivi.enregistre(evenement(commande.type(), commande.operateur(), commande.poste(), commande.auteur(), horodatage))
+      suivi.enregistre(
+        evenement(commande.evenement(), commande.type(), commande.operateur(), commande.poste(), commande.auteur(), horodatage)
+      )
     );
   }
 
   public SuiviDAtelier regularise(RegularisationAEnregistrer commande) {
-    return repository.update(get(commande.suivi()).enregistre(regularisation(commande)));
+    return regularise(commande, EvenementDAtelierId.newId());
+  }
+
+  public SuiviDAtelier regularise(RegularisationAEnregistrer commande, EvenementDAtelierId evenement) {
+    return repository.update(get(commande.suivi()).enregistre(regularisation(commande, evenement)));
   }
 
   public SuiviDAtelier annule(AnnulationAEnregistrer commande) {
@@ -107,13 +115,17 @@ public final class SuivisDAtelierService {
   }
 
   public SuiviDAtelier corrige(CorrectionAEnregistrer commande) {
+    return corrige(commande, EvenementDAtelierId.newId());
+  }
+
+  public SuiviDAtelier corrige(CorrectionAEnregistrer commande, EvenementDAtelierId remplacementId) {
     RegularisationAEnregistrer remplacement = commande.remplacement();
 
     return repository.update(
       get(remplacement.suivi()).corrige(
         commande.evenement(),
         annulation(remplacement.auteur(), commande.motif()),
-        regularisation(remplacement)
+        regularisation(remplacement, remplacementId)
       )
     );
   }
@@ -137,8 +149,9 @@ public final class SuivisDAtelierService {
     return repository.list(new SuiviDAtelierCriteria(periode, etats), pageable);
   }
 
-  private EvenementDAtelier regularisation(RegularisationAEnregistrer commande) {
+  private EvenementDAtelier regularisation(RegularisationAEnregistrer commande, EvenementDAtelierId evenement) {
     return evenement(
+      evenement,
       commande.type(),
       commande.operateur(),
       commande.poste(),
@@ -151,7 +164,14 @@ public final class SuivisDAtelierService {
     return new Annulation(auteur, clock.now(), motif);
   }
 
+  private static void refuseDateFuture(Optional<Instant> dateDeSurvenue, Instant maintenant) {
+    if (dateDeSurvenue.filter(date -> date.isAfter(maintenant)).isPresent()) {
+      throw new DateDeSurvenueFutureException(dateDeSurvenue.orElseThrow());
+    }
+  }
+
   private EvenementDAtelier evenement(
+    EvenementDAtelierId evenement,
     TypeDEvenementDAtelier type,
     OperateurId operateur,
     Optional<PosteDeTravailId> poste,
@@ -162,7 +182,7 @@ public final class SuivisDAtelierService {
     Optional<PosteConnu> posteConnu = poste.map(id -> posteHabilite(operateur, id));
 
     return EvenementDAtelier.builder()
-      .id(EvenementDAtelierId.newId())
+      .id(evenement)
       .type(type)
       .operateur(operateur)
       .poste(poste)

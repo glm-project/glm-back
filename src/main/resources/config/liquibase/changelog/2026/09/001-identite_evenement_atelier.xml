@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <changeSet id="identite_evenement_atelier" author="glm">
+    <createTable tableName="identite_evenement_atelier">
+      <column name="id" type="uuid">
+        <constraints primaryKey="true" nullable="false" />
+      </column>
+      <column name="rejouable" type="boolean">
+        <constraints nullable="false" />
+      </column>
+      <column name="nature" type="varchar(32)" />
+      <column name="cible_id" type="uuid" />
+      <column name="operateur_id" type="uuid" />
+      <column name="type_evenement" type="varchar(32)" />
+      <column name="poste_id" type="uuid" />
+      <column name="date_de_survenue_fournie" type="boolean" />
+      <column name="date_de_survenue" type="timestamp with time zone" />
+      <column name="type_agregat" type="varchar(32)" />
+      <column name="agregat_id" type="uuid" />
+    </createTable>
+  </changeSet>
+</databaseChangeLog>
