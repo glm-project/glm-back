@@ -5,6 +5,7 @@ import static org.springframework.http.HttpStatus.*;
 
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.atelier.domain.AucuneJourneeDeTravailEnCoursException;
+import com.glm.glmback.atelier.domain.DateDeSurvenueFutureException;
 import com.glm.glmback.atelier.domain.ElementDejaEngageException;
 import com.glm.glmback.atelier.domain.ElementEngageableIntrouvableException;
 import com.glm.glmback.atelier.domain.EtatDActivite;
@@ -16,6 +17,7 @@ import com.glm.glmback.atelier.domain.EvenementDePresenceDejaAnnuleException;
 import com.glm.glmback.atelier.domain.EvenementDePresenceId;
 import com.glm.glmback.atelier.domain.EvenementDePresenceIntrouvableException;
 import com.glm.glmback.atelier.domain.EvenementDejaAnnuleException;
+import com.glm.glmback.atelier.domain.IdentifiantDEvenementReutiliseException;
 import com.glm.glmback.atelier.domain.JourneeDeTravailDejaOuverteException;
 import com.glm.glmback.atelier.domain.JourneeDeTravailId;
 import com.glm.glmback.atelier.domain.JourneeDeTravailIntrouvableException;
@@ -124,7 +126,17 @@ class AtelierExceptionAdviceTest extends ExceptionAdviceContract {
         "urn:glm:erreur:atelier:evenement-anterieur-a-l-engagement",
         CONFLICT
       ),
-      new PublishedProblem(new SaisieConcurrenteException(SuiviDAtelierId.newId()), "urn:glm:erreur:atelier:saisie-concurrente", CONFLICT)
+      new PublishedProblem(new SaisieConcurrenteException(SuiviDAtelierId.newId()), "urn:glm:erreur:atelier:saisie-concurrente", CONFLICT),
+      new PublishedProblem(
+        new IdentifiantDEvenementReutiliseException(java.util.UUID.randomUUID()),
+        "urn:glm:erreur:atelier:identifiant-evenement-reutilise",
+        CONFLICT
+      ),
+      new PublishedProblem(
+        new DateDeSurvenueFutureException(LE_10_MAI_2026_A_8H),
+        "urn:glm:erreur:atelier:date-de-survenue-future",
+        BAD_REQUEST
+      )
     );
   }
 }

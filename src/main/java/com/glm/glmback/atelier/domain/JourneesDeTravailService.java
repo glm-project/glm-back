@@ -41,11 +41,12 @@ public final class JourneesDeTravailService {
     }
 
     Instant maintenant = clock.now();
+    refuseDateFuture(commande.dateDeSurvenue(), maintenant);
     Horodatage horodatage = new Horodatage(commande.dateDeSurvenue().orElse(maintenant), maintenant);
 
     return repository.create(
       JourneeDeTravail.ouverte(JourneeDeTravailId.newId(), commande.operateur()).enregistre(
-        evenement(TypeDEvenementDePresence.ARRIVEE, commande.auteur(), horodatage)
+        evenement(commande.evenement(), TypeDEvenementDePresence.ARRIVEE, commande.auteur(), horodatage)
       )
     );
   }
@@ -55,11 +56,18 @@ public final class JourneesDeTravailService {
       .getEnCoursPour(commande.operateur())
       .orElseThrow(() -> new AucuneJourneeDeTravailEnCoursException(commande.operateur()));
 
-    return repository.update(journee.enregistre(evenement(commande.type(), commande.auteur(), Horodatage.saisiA(clock.now()))));
+    Instant maintenant = clock.now();
+    refuseDateFuture(commande.dateDeSurvenue(), maintenant);
+    Horodatage horodatage = new Horodatage(commande.dateDeSurvenue().orElse(maintenant), maintenant);
+    return repository.update(journee.enregistre(evenement(commande.evenement(), commande.type(), commande.auteur(), horodatage)));
   }
 
   public JourneeDeTravail regularise(RegularisationDePresenceAEnregistrer commande) {
-    return repository.update(get(commande.journee()).enregistre(regularisation(commande)));
+    return regularise(commande, EvenementDePresenceId.newId());
+  }
+
+  public JourneeDeTravail regularise(RegularisationDePresenceAEnregistrer commande, EvenementDePresenceId evenement) {
+    return repository.update(get(commande.journee()).enregistre(regularisation(commande, evenement)));
   }
 
   public JourneeDeTravail annule(AnnulationDePresenceAEnregistrer commande) {
@@ -67,13 +75,17 @@ public final class JourneesDeTravailService {
   }
 
   public JourneeDeTravail corrige(CorrectionDePresenceAEnregistrer commande) {
+    return corrige(commande, EvenementDePresenceId.newId());
+  }
+
+  public JourneeDeTravail corrige(CorrectionDePresenceAEnregistrer commande, EvenementDePresenceId remplacementId) {
     RegularisationDePresenceAEnregistrer remplacement = commande.remplacement();
 
     return repository.update(
       get(remplacement.journee()).corrige(
         commande.evenement(),
         annulation(remplacement.auteur(), commande.motif()),
-        regularisation(remplacement)
+        regularisation(remplacement, remplacementId)
       )
     );
   }
@@ -86,15 +98,26 @@ public final class JourneesDeTravailService {
     return repository.list(new JourneeDeTravailCriteria(periode, operateur), pageable);
   }
 
-  private EvenementDePresence regularisation(RegularisationDePresenceAEnregistrer commande) {
-    return evenement(commande.type(), commande.auteur(), new Horodatage(commande.dateDeSurvenue(), clock.now()));
+  private EvenementDePresence regularisation(RegularisationDePresenceAEnregistrer commande, EvenementDePresenceId evenement) {
+    return evenement(evenement, commande.type(), commande.auteur(), new Horodatage(commande.dateDeSurvenue(), clock.now()));
   }
 
   private Annulation annulation(Auteur auteur, MotifDAnnulation motif) {
     return new Annulation(auteur, clock.now(), motif);
   }
 
-  private static EvenementDePresence evenement(TypeDEvenementDePresence type, Auteur auteur, Horodatage horodatage) {
-    return EvenementDePresence.builder().id(EvenementDePresenceId.newId()).type(type).auteur(auteur).horodatage(horodatage);
+  private static void refuseDateFuture(Optional<Instant> dateDeSurvenue, Instant maintenant) {
+    if (dateDeSurvenue.filter(date -> date.isAfter(maintenant)).isPresent()) {
+      throw new DateDeSurvenueFutureException(dateDeSurvenue.orElseThrow());
+    }
+  }
+
+  private static EvenementDePresence evenement(
+    EvenementDePresenceId id,
+    TypeDEvenementDePresence type,
+    Auteur auteur,
+    Horodatage horodatage
+  ) {
+    return EvenementDePresence.builder().id(id).type(type).auteur(auteur).horodatage(horodatage);
   }
 }

@@ -1,10 +1,12 @@
 package com.glm.glmback.atelier.domain;
 
 import com.glm.glmback.shared.error.domain.Assert;
+import java.time.Instant;
 import java.util.Optional;
 
 /**
- * Un pointage d'operateur : sa date de survenue est l'instant present, decide par le service.
+ * Un pointage d'operateur : sa date de survenue vient du pupitre quand il la fournit, sinon le service prend l'instant
+ * present.
  *
  * <p>
  * Le poste de travail est facultatif : un operateur mono-poste, ou une entreprise sans parc machine, garde un seul
@@ -21,7 +23,9 @@ public record PointageAEnregistrer(
   TypeDEvenementDAtelier type,
   OperateurId operateur,
   Optional<PosteDeTravailId> poste,
-  Auteur auteur
+  Auteur auteur,
+  Optional<Instant> dateDeSurvenue,
+  EvenementDAtelierId evenement
 ) {
   public PointageAEnregistrer {
     Assert.notNull("suivi", suivi);
@@ -29,10 +33,24 @@ public record PointageAEnregistrer(
     Assert.notNull("operateur", operateur);
     Assert.notNull("poste de travail", poste);
     Assert.notNull("auteur", auteur);
+    Assert.notNull("dateDeSurvenue", dateDeSurvenue);
+    Assert.notNull("id de l'evenement", evenement);
   }
 
   public static PointageAEnregistrerSuiviBuilder builder() {
-    return suivi -> type -> operateur -> poste -> auteur -> new PointageAEnregistrer(suivi, type, operateur, poste, auteur);
+    return suivi ->
+      type ->
+        operateur ->
+          poste -> auteur -> new PointageAEnregistrer(suivi, type, operateur, poste, auteur, Optional.empty(), EvenementDAtelierId.newId());
+  }
+
+  public static PointageDuPupitreSuiviBuilder pupitreBuilder() {
+    return suivi ->
+      type ->
+        operateur ->
+          poste ->
+            auteur ->
+              dateDeSurvenue -> evenement -> new PointageAEnregistrer(suivi, type, operateur, poste, auteur, dateDeSurvenue, evenement);
   }
 
   public interface PointageAEnregistrerSuiviBuilder {
@@ -53,5 +71,33 @@ public record PointageAEnregistrer(
 
   public interface PointageAEnregistrerAuteurBuilder {
     PointageAEnregistrer auteur(Auteur auteur);
+  }
+
+  public interface PointageDuPupitreSuiviBuilder {
+    PointageDuPupitreTypeBuilder suivi(SuiviDAtelierId suivi);
+  }
+
+  public interface PointageDuPupitreTypeBuilder {
+    PointageDuPupitreOperateurBuilder type(TypeDEvenementDAtelier type);
+  }
+
+  public interface PointageDuPupitreOperateurBuilder {
+    PointageDuPupitrePosteBuilder operateur(OperateurId operateur);
+  }
+
+  public interface PointageDuPupitrePosteBuilder {
+    PointageDuPupitreAuteurBuilder poste(Optional<PosteDeTravailId> poste);
+  }
+
+  public interface PointageDuPupitreAuteurBuilder {
+    PointageDuPupitreDateDeSurvenueBuilder auteur(Auteur auteur);
+  }
+
+  public interface PointageDuPupitreDateDeSurvenueBuilder {
+    PointageDuPupitreEvenementBuilder dateDeSurvenue(Optional<Instant> dateDeSurvenue);
+  }
+
+  public interface PointageDuPupitreEvenementBuilder {
+    PointageAEnregistrer evenement(EvenementDAtelierId evenement);
   }
 }

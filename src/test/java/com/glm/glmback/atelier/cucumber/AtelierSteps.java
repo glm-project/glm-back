@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -129,7 +130,7 @@ public class AtelierSteps {
 
   @When("je pointe sur {string}")
   public void jePointeSur(String alias, Map<String, String> donnees) {
-    rest.post(SUIVIS_URI + "/" + suivis.get(alias) + "/pointages", JSON.writeValueAsString(resolu(donnees)));
+    rest.post(SUIVIS_URI + "/" + suivis.get(alias) + "/pointages", JSON.writeValueAsString(resoluAvecIdentifiant(donnees)));
   }
 
   @Given("j'ai pointe sur {string}")
@@ -338,7 +339,7 @@ public class AtelierSteps {
 
   @When("j'arrive")
   public void jArrive(Map<String, String> donnees) {
-    rest.post(JOURNEES_URI, JSON.writeValueAsString(resolu(donnees)));
+    rest.post(JOURNEES_URI, JSON.writeValueAsString(resoluAvecIdentifiant(donnees)));
   }
 
   @Given("je suis arrive")
@@ -349,7 +350,7 @@ public class AtelierSteps {
 
   @When("je pointe ma presence")
   public void jePointeMaPresence(Map<String, String> donnees) {
-    rest.post(JOURNEES_URI + "/pointages", JSON.writeValueAsString(resolu(donnees)));
+    rest.post(JOURNEES_URI + "/pointages", JSON.writeValueAsString(resoluAvecIdentifiant(donnees)));
   }
 
   @Given("j'ai pointe ma presence")
@@ -458,6 +459,29 @@ public class AtelierSteps {
       .withValue(auteur);
   }
 
+  @Then("l'evenement {int} de la journee a l'identifiant {string}")
+  public void lEvenementDeLaJourneeALIdentifiant(int rang, String id) {
+    assertThatLastResponse().hasElement("$.journal[" + rang + "].id").withValue(id);
+  }
+
+  @Then("l'evenement {int} du suivi a l'identifiant {string}")
+  public void lEvenementDuSuiviALIdentifiant(int rang, String id) {
+    assertThatLastResponse().hasElement("$.journal[" + rang + "].id").withValue(id);
+  }
+
+  @Then("l'evenement {int} du suivi a survenu a {string} et a ete saisi a {string} par {string}")
+  public void lEvenementDuSuiviEstBitemporel(int rang, String survenue, String enregistrement, String auteur) {
+    assertThatLastResponse()
+      .hasElement("$.journal[" + rang + "].dateDeSurvenue")
+      .withValue(survenue)
+      .and()
+      .hasElement("$.journal[" + rang + "].dateDEnregistrement")
+      .withValue(enregistrement)
+      .and()
+      .hasElement("$.journal[" + rang + "].auteur")
+      .withValue(auteur);
+  }
+
   @Then("la liste des journees contient {int} journees")
   public void laListeDesJourneesContient(int count) {
     assertThatLastResponse().hasElement("$.content").withElementsCount(count);
@@ -489,6 +513,12 @@ public class AtelierSteps {
     corps.computeIfPresent("operateur", (cle, alias) -> operateurs.getOrDefault(alias, alias));
     corps.computeIfPresent("poste", (cle, alias) -> postes.getOrDefault(alias, alias));
 
+    return corps;
+  }
+
+  private Map<String, String> resoluAvecIdentifiant(Map<String, String> donnees) {
+    Map<String, String> corps = resolu(donnees);
+    corps.putIfAbsent("id", UUID.randomUUID().toString());
     return corps;
   }
 

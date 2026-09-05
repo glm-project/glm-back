@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -73,7 +74,6 @@ class JourneeDeTravailResource {
   }
 
   @PostMapping
-  @ResponseStatus(HttpStatus.CREATED)
   @Operation(
     summary = "Enregistrer une arrivee",
     description = """
@@ -84,14 +84,16 @@ class JourneeDeTravailResource {
     """
   )
   @ApiResponse(responseCode = "201", description = "La journee est ouverte.")
+  @ApiResponse(responseCode = "200", description = "Le geste identique est rejoue.")
+  @ApiResponse(responseCode = "400", description = "Le corps est invalide ou la date de survenue est future.")
   @ApiResponse(responseCode = "404", description = "Aucun operateur ne porte cet identifiant.")
-  @ApiResponse(responseCode = "409", description = "Cet operateur a deja une journee ouverte.")
-  RestJourneeDeTravail arrive(@RequestBody @Valid RestArrivee request) {
-    return rendu(applicationService.arrive(request.toDomain(AuteurConnecte.get())));
+  @ApiResponse(responseCode = "409", description = "Cet operateur a deja une journee ouverte ou l'identifiant est reutilise.")
+  ResponseEntity<RestJourneeDeTravail> arrive(@RequestBody @Valid RestArrivee request) {
+    var resultat = applicationService.arriveDuPupitre(request.toDomain(AuteurConnecte.get()));
+    return ResponseEntity.status(resultat.rejeu() ? HttpStatus.OK : HttpStatus.CREATED).body(rendu(resultat.agregat()));
   }
 
   @PostMapping("/pointages")
-  @ResponseStatus(HttpStatus.CREATED)
   @Operation(
     summary = "Pointer une pause, une reprise ou un depart",
     description = """
@@ -102,10 +104,13 @@ class JourneeDeTravailResource {
     """
   )
   @ApiResponse(responseCode = "201", description = "Le pointage est enregistre.")
+  @ApiResponse(responseCode = "200", description = "Le geste identique est rejoue.")
+  @ApiResponse(responseCode = "400", description = "Le corps est invalide ou la date de survenue est future.")
   @ApiResponse(responseCode = "404", description = "Cet operateur n'a aucune journee ouverte.")
-  @ApiResponse(responseCode = "409", description = "Transition impossible depuis l'etat de presence courant.")
-  RestJourneeDeTravail pointe(@RequestBody @Valid RestPointageDePresence request) {
-    return rendu(applicationService.pointe(request.toDomain(AuteurConnecte.get())));
+  @ApiResponse(responseCode = "409", description = "Transition impossible depuis l'etat de presence courant ou identifiant reutilise.")
+  ResponseEntity<RestJourneeDeTravail> pointe(@RequestBody @Valid RestPointageDePresence request) {
+    var resultat = applicationService.pointeDuPupitre(request.toDomain(AuteurConnecte.get()));
+    return ResponseEntity.status(resultat.rejeu() ? HttpStatus.OK : HttpStatus.CREATED).body(rendu(resultat.agregat()));
   }
 
   @GetMapping("/{id}")

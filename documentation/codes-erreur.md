@@ -86,6 +86,8 @@ tests sont le seul endroit qui les tient.
 | `transition-de-presence-interdite`   | 409    | transition de presence interdite   | `TransitionDePresenceInterditeException`  |
 | `evenement-anterieur-a-l-engagement` | 409    | evenement anterieur a l'engagement | `EvenementAvantEngagementException`       |
 | `saisie-concurrente`                 | 409    | saisie concurrente                 | `SaisieConcurrenteException`              |
+| `identifiant-evenement-reutilise`    | 409    | identifiant d'evenement reutilise  | `IdentifiantDEvenementReutiliseException` |
+| `date-de-survenue-future`            | 400    | date de survenue future            | `DateDeSurvenueFutureException`           |
 
 `saisie-concurrente` est le seul code sur lequel **rejouer** l'appel est la bonne réaction : la saisie était valide,
 un autre pointage s'est glissé entre la lecture et l'écriture.
