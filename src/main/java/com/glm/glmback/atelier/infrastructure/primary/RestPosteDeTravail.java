@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Schema(
+  name = "RestPosteDAtelier",
   description = """
   Un poste de travail du referentiel, resolu a la lecture.
 
@@ -16,8 +17,8 @@ import java.util.UUID;
   """
 )
 record RestPosteDeTravail(
-  @Schema(description = "Identifiant du poste dans le referentiel.") UUID id,
-  @Schema(description = "Libelle du poste.", example = "Fraiseuse 1") String libelle
+  @Schema(description = "Identifiant du poste dans le referentiel.", requiredMode = Schema.RequiredMode.REQUIRED) UUID id,
+  @Schema(description = "Libelle du poste.", example = "Fraiseuse 1", requiredMode = Schema.RequiredMode.REQUIRED) String libelle
 ) {
   static RestPosteDeTravail resolu(AnnuaireDAtelier annuaire, Optional<PosteDeTravailId> id) {
     return id.flatMap(annuaire::poste).map(RestPosteDeTravail::from).orElse(null);

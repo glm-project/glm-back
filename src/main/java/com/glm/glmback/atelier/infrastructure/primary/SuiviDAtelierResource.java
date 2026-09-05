@@ -9,6 +9,7 @@ import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
+import com.glm.glmback.shared.pagination.infrastructure.primary.RestPage;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -67,7 +68,7 @@ class SuiviDAtelierResource {
     """
   )
   @ApiResponse(responseCode = "200", description = "La page demandee sans les journaux, triee par date d'engagement descendante.")
-  Page<RestSyntheseDeSuiviDAtelier> list(
+  RestPage<RestSyntheseDeSuiviDAtelier> list(
     @RequestParam(required = false) Instant debut,
     @RequestParam(required = false) Instant fin,
     @RequestParam(required = false) Set<EtatDAtelier> etats,
@@ -75,12 +76,9 @@ class SuiviDAtelierResource {
     @RequestParam(defaultValue = "20") int size
   ) {
     Page<SuiviDAtelier> resultat = applicationService.list(periode(debut, fin), etats(etats), new Pageable(page, size));
+    AnnuaireDAtelier annuaire = applicationService.annuairePourSuivis(resultat.content());
 
-    return Page.<RestSyntheseDeSuiviDAtelier>builder()
-      .content(rendus(resultat.content()))
-      .currentPage(resultat.currentPage())
-      .pageSize(resultat.pageSize())
-      .totalElementsCount(resultat.totalElementsCount());
+    return RestPage.from(resultat, suivi -> RestSyntheseDeSuiviDAtelier.from(suivi, annuaire));
   }
 
   @PostMapping
@@ -211,18 +209,6 @@ class SuiviDAtelierResource {
    */
   private RestSuiviDAtelier rendu(SuiviDAtelier suivi) {
     return RestSuiviDAtelier.from(suivi, applicationService.annuairePour(suivi));
-  }
-
-  /**
-   * Une page entiere resolue en un seul aller par port, jamais un par element.
-   */
-  private List<RestSyntheseDeSuiviDAtelier> rendus(List<SuiviDAtelier> suivis) {
-    AnnuaireDAtelier annuaire = applicationService.annuairePourSuivis(suivis);
-
-    return suivis
-      .stream()
-      .map(suivi -> RestSyntheseDeSuiviDAtelier.from(suivi, annuaire))
-      .toList();
   }
 
   private static Optional<Periode> periode(Instant debut, Instant fin) {

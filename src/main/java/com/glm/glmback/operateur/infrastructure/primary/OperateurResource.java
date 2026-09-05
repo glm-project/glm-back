@@ -6,6 +6,7 @@ import com.glm.glmback.operateur.domain.PosteHabilitableId;
 import com.glm.glmback.operateur.domain.ProfilDOperateur;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
+import com.glm.glmback.shared.pagination.infrastructure.primary.RestPage;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -55,18 +56,14 @@ class OperateurResource {
     """
   )
   @ApiResponse(responseCode = "200", description = "La page demandee, triee par nom puis prenom.")
-  Page<RestOperateur> list(
+  RestPage<RestOperateur> list(
     @RequestParam(required = false) UUID poste,
     @RequestParam(defaultValue = "0") int page,
     @RequestParam(defaultValue = "20") int size
   ) {
     Page<ProfilDOperateur> resultat = applicationService.list(poste(poste), new Pageable(page, size));
 
-    return Page.<RestOperateur>builder()
-      .content(resultat.content().stream().map(RestOperateur::from).toList())
-      .currentPage(resultat.currentPage())
-      .pageSize(resultat.pageSize())
-      .totalElementsCount(resultat.totalElementsCount());
+    return RestPage.from(resultat, RestOperateur::from);
   }
 
   @PostMapping

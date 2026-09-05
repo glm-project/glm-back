@@ -20,9 +20,18 @@ import java.util.UUID;
   """
 )
 record RestEvenementDAtelier(
-  @Schema(description = "Identifiant de l'evenement, a reprendre pour l'annuler ou le corriger.") UUID id,
-  @Schema(description = "Nature du pointage. Une reprise apres non conformite se pointe comme un DEBUT.") TypeDEvenementDAtelier type,
-  @Schema(description = "Operateur dont le temps est affecte.") RestOperateur operateur,
+  @Schema(
+    description = "Identifiant de l'evenement, a reprendre pour l'annuler ou le corriger.",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  UUID id,
+  @Schema(
+    description = "Nature du pointage. Une reprise apres non conformite se pointe comme un DEBUT.",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  TypeDEvenementDAtelier type,
+  @Schema(description = "Operateur dont le temps est affecte, absent si la fiche n'est plus resolue au referentiel.")
+  RestOperateur operateur,
   @Schema(description = "Poste de travail, toujours facultatif.") RestPosteDeTravail poste,
   @Schema(description = "Nature de l'operation, recopiee du poste a la saisie. Simple axe d'agregation.") String nature,
   @Schema(
@@ -32,10 +41,13 @@ record RestEvenementDAtelier(
   BigDecimal coutHoraire,
   @Schema(description = "Taux horaire de l'operateur, copie a la saisie. Absent si l'operateur n'est pas valorise.", example = "22.00")
   BigDecimal tauxHoraire,
-  @Schema(description = "Utilisateur ayant saisi l'evenement.", example = "dupont") String auteur,
-  @Schema(description = "Heure metier a laquelle le fait a eu lieu.") Instant dateDeSurvenue,
-  @Schema(description = "Heure a laquelle la saisie a ete enregistree.") Instant dateDEnregistrement,
-  @Schema(description = "Vrai lorsque la saisie a ete faite apres coup.") boolean estUneRegularisation,
+  @Schema(description = "Utilisateur ayant saisi l'evenement.", example = "dupont", requiredMode = Schema.RequiredMode.REQUIRED)
+  String auteur,
+  @Schema(description = "Heure metier a laquelle le fait a eu lieu.", requiredMode = Schema.RequiredMode.REQUIRED) Instant dateDeSurvenue,
+  @Schema(description = "Heure a laquelle la saisie a ete enregistree.", requiredMode = Schema.RequiredMode.REQUIRED)
+  Instant dateDEnregistrement,
+  @Schema(description = "Vrai lorsque la saisie a ete faite apres coup.", requiredMode = Schema.RequiredMode.REQUIRED)
+  boolean estUneRegularisation,
   @Schema(description = "Presente lorsque l'evenement a ete annule. L'evenement reste au journal.") RestAnnulation annulation
 ) {
   static RestEvenementDAtelier from(EvenementDAtelier evenement, AnnuaireDAtelier annuaire) {

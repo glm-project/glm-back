@@ -8,10 +8,10 @@ import java.time.Instant;
 
 @Schema(description = "Ce que l'ecran d'atelier affiche : qui fait quoi, dans quel etat, depuis quand.")
 record RestActiviteEnCours(
-  @Schema(description = "Operateur en activite.") RestOperateur operateur,
+  @Schema(description = "Operateur en activite, absent si la fiche n'est plus resolue au referentiel.") RestOperateur operateur,
   @Schema(description = "Poste de travail, facultatif.") RestPosteDeTravail poste,
-  @Schema(description = "TRAVAIL ou NON_CONFORMITE.") CategorieDActivite categorie,
-  @Schema(description = "Instant depuis lequel cette activite dure.") Instant depuis
+  @Schema(description = "TRAVAIL ou NON_CONFORMITE.", requiredMode = Schema.RequiredMode.REQUIRED) CategorieDActivite categorie,
+  @Schema(description = "Instant depuis lequel cette activite dure.", requiredMode = Schema.RequiredMode.REQUIRED) Instant depuis
 ) {
   static RestActiviteEnCours from(ActiviteEnCours activite, AnnuaireDAtelier annuaire) {
     return new RestActiviteEnCours(

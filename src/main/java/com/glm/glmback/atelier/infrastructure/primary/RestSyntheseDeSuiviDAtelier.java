@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Schema(
+  name = "RestSuiviDAtelierEnGrille",
   description = """
   Une ligne du tableau d'atelier, sans le journal des evenements.
   L'etat et les activites en cours restent deduits du journal a chaque lecture.
@@ -21,31 +22,38 @@ import java.util.UUID;
 final class RestSyntheseDeSuiviDAtelier {
 
   @JsonProperty
-  @Schema(description = "Identifiant du suivi. C'est lui, et non celui de l'element, que portent les URLs.")
+  @Schema(
+    description = "Identifiant du suivi. C'est lui, et non celui de l'element, que portent les URLs.",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
   private final UUID id;
 
   @JsonProperty
-  @Schema(description = "Identifiant de l'element de fabrication engage.")
+  @Schema(description = "Identifiant de l'element de fabrication engage.", requiredMode = Schema.RequiredMode.REQUIRED)
   private final UUID element;
 
   @JsonProperty
-  @Schema(description = "Nom de l'element, copie a l'engagement.", example = "OF-2026-000042")
+  @Schema(description = "Nom de l'element, copie a l'engagement.", example = "OF-2026-000042", requiredMode = Schema.RequiredMode.REQUIRED)
   private final String nom;
 
   @JsonProperty
-  @Schema(description = "Type de l'element, copie a l'engagement.")
+  @Schema(description = "Type de l'element, copie a l'engagement.", requiredMode = Schema.RequiredMode.REQUIRED)
   private final TypeDElementEngage type;
 
   @JsonProperty
-  @Schema(description = "Utilisateur ayant engage l'element.", example = "gestionnaire.impeccmold")
+  @Schema(
+    description = "Utilisateur ayant engage l'element.",
+    example = "gestionnaire.impeccmold",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
   private final String engagePar;
 
   @JsonProperty
-  @Schema(description = "Instant de l'engagement.")
+  @Schema(description = "Instant de l'engagement.", requiredMode = Schema.RequiredMode.REQUIRED)
   private final Instant engageLe;
 
   @JsonProperty
-  @Schema(description = "EN_ATTENTE, EN_COURS, INTERROMPU ou CLOTURE. Deduit du journal.")
+  @Schema(description = "EN_ATTENTE, EN_COURS, INTERROMPU ou CLOTURE. Deduit du journal.", requiredMode = Schema.RequiredMode.REQUIRED)
   private final EtatDAtelier etat;
 
   @JsonProperty
@@ -57,7 +65,7 @@ final class RestSyntheseDeSuiviDAtelier {
   private final Instant clotureLe;
 
   @JsonProperty
-  @Schema(description = "Les activites ouvertes a cet instant.")
+  @Schema(description = "Les activites ouvertes a cet instant.", requiredMode = Schema.RequiredMode.REQUIRED)
   private final List<RestActiviteEnCours> activitesEnCours;
 
   private RestSyntheseDeSuiviDAtelier(SuiviDAtelier suivi, AnnuaireDAtelier annuaire) {

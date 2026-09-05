@@ -8,12 +8,12 @@ import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.Periode;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
+import com.glm.glmback.shared.pagination.infrastructure.primary.RestPage;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -57,7 +57,7 @@ class JourneeDeTravailResource {
     description = "Filtres facultatifs. La periode, quand elle est fournie, porte sur l'heure d'arrivee."
   )
   @ApiResponse(responseCode = "200", description = "La page demandee, triee par debut descendant.")
-  Page<RestJourneeDeTravail> list(
+  RestPage<RestJourneeDeTravail> list(
     @RequestParam(required = false) Instant debut,
     @RequestParam(required = false) Instant fin,
     @RequestParam(required = false) UUID operateur,
@@ -65,12 +65,9 @@ class JourneeDeTravailResource {
     @RequestParam(defaultValue = "20") int size
   ) {
     Page<JourneeDeTravail> resultat = applicationService.list(periode(debut, fin), operateur(operateur), new Pageable(page, size));
+    AnnuaireDAtelier annuaire = applicationService.annuairePourJournees(resultat.content());
 
-    return Page.<RestJourneeDeTravail>builder()
-      .content(rendus(resultat.content()))
-      .currentPage(resultat.currentPage())
-      .pageSize(resultat.pageSize())
-      .totalElementsCount(resultat.totalElementsCount());
+    return RestPage.from(resultat, journee -> RestJourneeDeTravail.from(journee, annuaire));
   }
 
   @PostMapping
@@ -164,18 +161,6 @@ class JourneeDeTravailResource {
    */
   private RestJourneeDeTravail rendu(JourneeDeTravail journee) {
     return RestJourneeDeTravail.from(journee, applicationService.annuairePour(journee));
-  }
-
-  /**
-   * Une page entiere resolue en un seul aller par port, jamais un par journee.
-   */
-  private List<RestJourneeDeTravail> rendus(List<JourneeDeTravail> journees) {
-    AnnuaireDAtelier annuaire = applicationService.annuairePourJournees(journees);
-
-    return journees
-      .stream()
-      .map(journee -> RestJourneeDeTravail.from(journee, annuaire))
-      .toList();
   }
 
   private static Optional<Periode> periode(Instant debut, Instant fin) {
