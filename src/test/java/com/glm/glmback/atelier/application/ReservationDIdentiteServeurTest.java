@@ -1,5 +1,6 @@
 package com.glm.glmback.atelier.application;
 
+import static com.glm.glmback.atelier.domain.AtelierFixture.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
@@ -8,6 +9,8 @@ import com.glm.glmback.UnitTest;
 import com.glm.glmback.atelier.domain.ArriveeAEnregistrer;
 import com.glm.glmback.atelier.domain.Auteur;
 import com.glm.glmback.atelier.domain.ElementsEngageables;
+import com.glm.glmback.atelier.domain.EtatDAtelier;
+import com.glm.glmback.atelier.domain.EtatDePresence;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.EvenementDePresenceId;
 import com.glm.glmback.atelier.domain.Habilitations;
@@ -19,15 +22,17 @@ import com.glm.glmback.atelier.domain.OperateursConnus;
 import com.glm.glmback.atelier.domain.PointageAEnregistrer;
 import com.glm.glmback.atelier.domain.PointageDePresenceAEnregistrer;
 import com.glm.glmback.atelier.domain.PostesConnus;
+import com.glm.glmback.atelier.domain.RegularisationAEnregistrer;
+import com.glm.glmback.atelier.domain.RegularisationDePresenceAEnregistrer;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
 import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
 import com.glm.glmback.atelier.domain.TypeDEvenementDePresence;
 import com.glm.glmback.shared.time.domain.Clock;
-import java.lang.reflect.Method;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -35,48 +40,95 @@ import org.mockito.Mockito;
 class ReservationDIdentiteServeurTest {
 
   @Test
-  void shouldRetryTheServerIdentityReservationForPresenceAndWorkshop() throws Exception {
-    IdentitesDEvenements identites = Mockito.mock(IdentitesDEvenements.class);
-    given(identites.reserveHorsPupitre(any())).willReturn(false, true, false, true);
+  void shouldRegulariseADepartureWithAFreshIdentityAfterACollision() {
+    AtomicReference<UUID> refusee = new AtomicReference<>();
+    IdentitesDEvenements identites = identitesAvecCollision(refusee);
+    JourneeDeTravail journee = journeeDeDupontOuverteA7H();
+    JourneeDeTravailRepository repository = Mockito.mock(JourneeDeTravailRepository.class);
+    given(repository.get(journee.id())).willReturn(Optional.of(journee));
+    given(repository.update(any())).willAnswer(invocation -> invocation.getArgument(0));
+    JourneesDeTravailApplicationService service = new JourneesDeTravailApplicationService(
+      repository,
+      Mockito.mock(OperateursConnus.class),
+      Mockito.mock(PostesConnus.class),
+      () -> LE_11_MAI_2026_A_9H15,
+      identites
+    );
 
-    assertThat(
-      reserve(
-        new JourneesDeTravailApplicationService(
-          Mockito.mock(JourneeDeTravailRepository.class),
-          Mockito.mock(OperateursConnus.class),
-          Mockito.mock(PostesConnus.class),
-          Mockito.mock(Clock.class),
-          identites
-        )
-      )
-    ).isInstanceOf(UUID.class);
-    assertThat(
-      reserve(
-        new SuivisDAtelierApplicationService(
-          Mockito.mock(SuiviDAtelierRepository.class),
-          Mockito.mock(JourneeDeTravailRepository.class),
-          Mockito.mock(ElementsEngageables.class),
-          Mockito.mock(OperateursConnus.class),
-          Mockito.mock(PostesConnus.class),
-          Mockito.mock(Habilitations.class),
-          Mockito.mock(Clock.class),
-          identites
-        )
-      )
-    ).isInstanceOf(UUID.class);
+    JourneeDeTravail resultat = service.regularise(
+      RegularisationDePresenceAEnregistrer.builder()
+        .journee(journee.id())
+        .type(TypeDEvenementDePresence.DEPART)
+        .auteur(AUTEUR_LEROY)
+        .dateDeSurvenue(LE_10_MAI_2026_A_17H)
+    );
 
-    then(identites).should(times(4)).reserveHorsPupitre(any());
+    assertThat(resultat.etat()).isEqualTo(EtatDePresence.ABSENT);
+    assertThat(resultat.journal().evenements()).hasSize(2);
+    var depart = resultat.journal().evenements().getLast();
+    assertThat(refusee.get()).isNotNull();
+    assertThat(depart.id().uuid()).isNotEqualTo(refusee.get());
+    assertThat(depart.dateDeSurvenue()).isEqualTo(LE_10_MAI_2026_A_17H);
+    assertThat(depart.dateDEnregistrement()).isEqualTo(LE_11_MAI_2026_A_9H15);
   }
 
   @Test
-  void shouldReadTheOriginalAggregateForAReplayWithoutCallingTheDomainTransition() {
+  void shouldRegulariseWorkWithAFreshIdentityAfterACollision() {
+    AtomicReference<UUID> refusee = new AtomicReference<>();
+    IdentitesDEvenements identites = identitesAvecCollision(refusee);
+    SuiviDAtelier suivi = suiviDAtelierEngage();
+    SuiviDAtelierRepository repository = Mockito.mock(SuiviDAtelierRepository.class);
+    given(repository.get(suivi.id())).willReturn(Optional.of(suivi));
+    given(repository.update(any())).willAnswer(invocation -> invocation.getArgument(0));
+    OperateursConnus operateurs = Mockito.mock(OperateursConnus.class);
+    given(operateurs.get(OPERATEUR_ID_DUPONT)).willReturn(Optional.of(OPERATEUR_CONNU_DUPONT));
+    SuivisDAtelierApplicationService service = new SuivisDAtelierApplicationService(
+      repository,
+      Mockito.mock(JourneeDeTravailRepository.class),
+      Mockito.mock(ElementsEngageables.class),
+      operateurs,
+      Mockito.mock(PostesConnus.class),
+      Mockito.mock(Habilitations.class),
+      () -> LE_11_MAI_2026_A_9H15,
+      identites
+    );
+
+    SuiviDAtelier resultat = service.regularise(
+      RegularisationAEnregistrer.builder()
+        .suivi(suivi.id())
+        .type(TypeDEvenementDAtelier.DEBUT)
+        .operateur(OPERATEUR_ID_DUPONT)
+        .poste(Optional.empty())
+        .auteur(AUTEUR_LEROY)
+        .dateDeSurvenue(LE_10_MAI_2026_A_8H)
+    );
+
+    assertThat(resultat.etat()).isEqualTo(EtatDAtelier.EN_COURS);
+    assertThat(resultat.journal().evenements())
+      .singleElement()
+      .satisfies(debut -> {
+        assertThat(refusee.get()).isNotNull();
+        assertThat(debut.id().uuid()).isNotEqualTo(refusee.get());
+        assertThat(debut.dateDeSurvenue()).isEqualTo(LE_10_MAI_2026_A_8H);
+        assertThat(debut.dateDEnregistrement()).isEqualTo(LE_11_MAI_2026_A_9H15);
+      });
+  }
+
+  private static IdentitesDEvenements identitesAvecCollision(AtomicReference<UUID> refusee) {
+    IdentitesDEvenements identites = Mockito.mock(IdentitesDEvenements.class);
+    given(identites.reserveHorsPupitre(any())).willAnswer(invocation -> !refusee.compareAndSet(null, invocation.getArgument(0)));
+    return identites;
+  }
+
+  @Test
+  void shouldReplayCompletedDaysAndClosedFollowUpsWithoutWritingAgain() {
     IdentitesDEvenements identites = Mockito.mock(IdentitesDEvenements.class);
     JourneeDeTravailRepository journees = Mockito.mock(JourneeDeTravailRepository.class);
     SuiviDAtelierRepository suivis = Mockito.mock(SuiviDAtelierRepository.class);
-    JourneeDeTravail journee = Mockito.mock(JourneeDeTravail.class);
-    SuiviDAtelier suivi = Mockito.mock(SuiviDAtelier.class);
-    UUID journeeId = UUID.randomUUID();
-    UUID suiviId = UUID.randomUUID();
+    JourneeDeTravail journee = journeeDeDupontDe7HA17HAvecPauseDeMidi();
+    SuiviDAtelier suivi = suiviDAtelierEngage().cloture(clotureParLeroyA(LE_10_MAI_2026_A_17H));
+    UUID journeeId = journee.id().uuid();
+    UUID suiviId = suivi.id().uuid();
     given(journees.get(new JourneeDeTravailId(journeeId))).willReturn(Optional.of(journee));
     given(suivis.get(new SuiviDAtelierId(suiviId))).willReturn(Optional.of(suivi));
     given(identites.reserve(any(), any())).willReturn(
@@ -104,17 +156,17 @@ class ReservationDIdentiteServeurTest {
       Mockito.mock(Clock.class),
       identites
     );
-    OperateurId operateur = new OperateurId(UUID.randomUUID());
-    Auteur auteur = new Auteur("pupitre");
+    OperateurId operateur = OPERATEUR_ID_DUPONT;
+    Auteur auteur = AUTEUR_DUPONT;
 
     assertThat(
       presence
         .arriveDuPupitre(new ArriveeAEnregistrer(operateur, auteur, Optional.empty(), new EvenementDePresenceId(UUID.randomUUID())))
         .agregat()
-    ).isSameAs(journee);
+    ).isEqualTo(journee);
     assertThat(
       presence.arrive(new ArriveeAEnregistrer(operateur, auteur, Optional.empty(), new EvenementDePresenceId(UUID.randomUUID())))
-    ).isSameAs(journee);
+    ).isEqualTo(journee);
     assertThat(
       presence.pointe(
         new PointageDePresenceAEnregistrer(
@@ -125,7 +177,7 @@ class ReservationDIdentiteServeurTest {
           new EvenementDePresenceId(UUID.randomUUID())
         )
       )
-    ).isSameAs(journee);
+    ).isEqualTo(journee);
     assertThat(
       presence
         .pointeDuPupitre(
@@ -138,18 +190,12 @@ class ReservationDIdentiteServeurTest {
           )
         )
         .agregat()
-    ).isSameAs(journee);
-    assertThat(atelier.pointeDuPupitre(pointage(suiviId, operateur, auteur)).agregat()).isSameAs(suivi);
-    assertThat(atelier.pointe(pointage(suiviId, operateur, auteur))).isSameAs(suivi);
+    ).isEqualTo(journee);
+    assertThat(atelier.pointeDuPupitre(pointage(suiviId, operateur, auteur)).agregat()).isEqualTo(suivi);
+    assertThat(atelier.pointe(pointage(suiviId, operateur, auteur))).isEqualTo(suivi);
     then(journees).should(never()).create(any());
     then(journees).should(never()).update(any());
     then(suivis).should(never()).update(any());
-  }
-
-  private static Object reserve(Object service) throws Exception {
-    Method methode = service.getClass().getDeclaredMethod("reserveIdentiteServeur");
-    methode.setAccessible(true);
-    return methode.invoke(service);
   }
 
   private static PointageAEnregistrer pointage(UUID suivi, OperateurId operateur, Auteur auteur) {

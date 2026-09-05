@@ -56,6 +56,9 @@ public class AtelierSteps {
   private final Map<String, String> operateurs = new HashMap<>();
 
   private String derniereJournee;
+  private String dernierGesteUri;
+  private String dernierGesteCorps;
+  private final Map<String, String> journees = new HashMap<>();
 
   @Given("il est {string}")
   public void ilEst(String instant) {
@@ -130,7 +133,7 @@ public class AtelierSteps {
 
   @When("je pointe sur {string}")
   public void jePointeSur(String alias, Map<String, String> donnees) {
-    rest.post(SUIVIS_URI + "/" + suivis.get(alias) + "/pointages", JSON.writeValueAsString(resoluAvecIdentifiant(donnees)));
+    envoieGeste(SUIVIS_URI + "/" + suivis.get(alias) + "/pointages", resoluAvecIdentifiant(donnees));
   }
 
   @Given("j'ai pointe sur {string}")
@@ -337,9 +340,45 @@ public class AtelierSteps {
     assertThatLastResponse().hasElement("$.content").withMoreThanElementsCount(count);
   }
 
+  @When("je rejoue le dernier geste du pupitre")
+  public void jeRejoueLeDernierGesteDuPupitre() {
+    rest.post(dernierGesteUri, dernierGesteCorps);
+  }
+
+  @When("j'arrive sans identifiant de geste")
+  public void jArriveSansIdentifiant(Map<String, String> donnees) {
+    rest.post(JOURNEES_URI, JSON.writeValueAsString(resolu(donnees)));
+  }
+
+  @When("je pointe ma presence sans identifiant de geste")
+  public void jePointeMaPresenceSansIdentifiant(Map<String, String> donnees) {
+    rest.post(JOURNEES_URI + "/pointages", JSON.writeValueAsString(resolu(donnees)));
+  }
+
+  @When("je pointe sur {string} sans identifiant de geste")
+  public void jePointeSansIdentifiant(String alias, Map<String, String> donnees) {
+    rest.post(SUIVIS_URI + "/" + suivis.get(alias) + "/pointages", JSON.writeValueAsString(resolu(donnees)));
+  }
+
+  @Given("je retiens la journee sous le nom {string}")
+  public void jeRetiensLaJournee(String alias) {
+    journees.put(alias, idDeLaDerniereReponse());
+  }
+
+  @Then("la reponse designe la journee {string}")
+  public void laReponseDesigneLaJournee(String alias) {
+    assertThatLastResponse().hasElement("$.id").withValue(journees.get(alias));
+  }
+
+  private void envoieGeste(String uri, Map<String, String> corps) {
+    dernierGesteUri = uri;
+    dernierGesteCorps = JSON.writeValueAsString(corps);
+    rest.post(uri, dernierGesteCorps);
+  }
+
   @When("j'arrive")
   public void jArrive(Map<String, String> donnees) {
-    rest.post(JOURNEES_URI, JSON.writeValueAsString(resoluAvecIdentifiant(donnees)));
+    envoieGeste(JOURNEES_URI, resoluAvecIdentifiant(donnees));
   }
 
   @Given("je suis arrive")
@@ -350,7 +389,7 @@ public class AtelierSteps {
 
   @When("je pointe ma presence")
   public void jePointeMaPresence(Map<String, String> donnees) {
-    rest.post(JOURNEES_URI + "/pointages", JSON.writeValueAsString(resoluAvecIdentifiant(donnees)));
+    envoieGeste(JOURNEES_URI + "/pointages", resoluAvecIdentifiant(donnees));
   }
 
   @Given("j'ai pointe ma presence")
