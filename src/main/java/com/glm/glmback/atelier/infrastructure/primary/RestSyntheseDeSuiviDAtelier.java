@@ -18,7 +18,7 @@ import java.util.UUID;
   Le journal complet, annules compris, se consulte via GET /api/atelier/suivis/{id}.
   """
 )
-final class RestSuiviDAtelierEnGrille {
+final class RestSyntheseDeSuiviDAtelier {
 
   @JsonProperty
   @Schema(description = "Identifiant du suivi. C'est lui, et non celui de l'element, que portent les URLs.")
@@ -60,7 +60,7 @@ final class RestSuiviDAtelierEnGrille {
   @Schema(description = "Les activites ouvertes a cet instant.")
   private final List<RestActiviteEnCours> activitesEnCours;
 
-  private RestSuiviDAtelierEnGrille(SuiviDAtelier suivi, AnnuaireDAtelier annuaire) {
+  private RestSyntheseDeSuiviDAtelier(SuiviDAtelier suivi, AnnuaireDAtelier annuaire) {
     id = suivi.id().uuid();
     element = suivi.element().id().uuid();
     nom = suivi.element().nom().value();
@@ -80,7 +80,7 @@ final class RestSuiviDAtelierEnGrille {
       .toList();
   }
 
-  static RestSuiviDAtelierEnGrille from(SuiviDAtelier suivi, AnnuaireDAtelier annuaire) {
-    return new RestSuiviDAtelierEnGrille(suivi, annuaire);
+  static RestSyntheseDeSuiviDAtelier from(SuiviDAtelier suivi, AnnuaireDAtelier annuaire) {
+    return new RestSyntheseDeSuiviDAtelier(suivi, annuaire);
   }
 }

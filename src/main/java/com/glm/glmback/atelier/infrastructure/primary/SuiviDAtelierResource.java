@@ -67,7 +67,7 @@ class SuiviDAtelierResource {
     """
   )
   @ApiResponse(responseCode = "200", description = "La page demandee sans les journaux, triee par date d'engagement descendante.")
-  Page<RestSuiviDAtelierEnGrille> list(
+  Page<RestSyntheseDeSuiviDAtelier> list(
     @RequestParam(required = false) Instant debut,
     @RequestParam(required = false) Instant fin,
     @RequestParam(required = false) Set<EtatDAtelier> etats,
@@ -76,7 +76,7 @@ class SuiviDAtelierResource {
   ) {
     Page<SuiviDAtelier> resultat = applicationService.list(periode(debut, fin), etats(etats), new Pageable(page, size));
 
-    return Page.<RestSuiviDAtelierEnGrille>builder()
+    return Page.<RestSyntheseDeSuiviDAtelier>builder()
       .content(rendus(resultat.content()))
       .currentPage(resultat.currentPage())
       .pageSize(resultat.pageSize())
@@ -216,12 +216,12 @@ class SuiviDAtelierResource {
   /**
    * Une page entiere resolue en un seul aller par port, jamais un par element.
    */
-  private List<RestSuiviDAtelierEnGrille> rendus(List<SuiviDAtelier> suivis) {
+  private List<RestSyntheseDeSuiviDAtelier> rendus(List<SuiviDAtelier> suivis) {
     AnnuaireDAtelier annuaire = applicationService.annuairePourSuivis(suivis);
 
     return suivis
       .stream()
-      .map(suivi -> RestSuiviDAtelierEnGrille.from(suivi, annuaire))
+      .map(suivi -> RestSyntheseDeSuiviDAtelier.from(suivi, annuaire))
       .toList();
   }
 

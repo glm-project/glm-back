@@ -17,7 +17,7 @@ import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
 
 @UnitTest
-class RestSuiviDAtelierEnGrilleTest {
+class RestSyntheseDeSuiviDAtelierTest {
 
   private static final JsonMapper JSON = JsonMapper.builder().build();
 
@@ -29,7 +29,7 @@ class RestSuiviDAtelierEnGrilleTest {
     assertThat(detail.has("journal")).isTrue();
     detail.remove("journal");
 
-    ObjectNode grille = (ObjectNode) JSON.valueToTree(RestSuiviDAtelierEnGrille.from(suivi, annuaire));
+    ObjectNode grille = (ObjectNode) JSON.valueToTree(RestSyntheseDeSuiviDAtelier.from(suivi, annuaire));
     assertThat(grille).isEqualTo(detail);
   }
 
@@ -53,11 +53,11 @@ class RestSuiviDAtelierEnGrilleTest {
       .currentPage(0)
       .pageSize(100)
       .totalElementsCount(100);
-    var grille = Page.<RestSuiviDAtelierEnGrille>builder()
+    var grille = Page.<RestSyntheseDeSuiviDAtelier>builder()
       .content(
         suivis
           .stream()
-          .map(suivi -> RestSuiviDAtelierEnGrille.from(suivi, annuaire))
+          .map(suivi -> RestSyntheseDeSuiviDAtelier.from(suivi, annuaire))
           .toList()
       )
       .currentPage(0)

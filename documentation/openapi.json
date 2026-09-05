@@ -93,11 +93,11 @@
         },
         "type" : "object"
       },
-      "PageRestSuiviDAtelierEnGrille" : {
+      "PageRestSyntheseDeSuiviDAtelier" : {
         "properties" : {
           "content" : {
             "items" : {
-              "$ref" : "#/components/schemas/RestSuiviDAtelierEnGrille"
+              "$ref" : "#/components/schemas/RestSyntheseDeSuiviDAtelier"
             },
             "type" : "array"
           },
@@ -1019,7 +1019,7 @@
         },
         "type" : "object"
       },
-      "RestSuiviDAtelierEnGrille" : {
+      "RestSyntheseDeSuiviDAtelier" : {
         "description" : "Une ligne du tableau d'atelier, sans le journal des evenements.\nL'etat et les activites en cours restent deduits du journal a chaque lecture.\nLe journal complet, annules compris, se consulte via GET /api/atelier/suivis/{id}.\n",
         "properties" : {
           "activitesEnCours" : {
@@ -1556,7 +1556,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/PageRestSuiviDAtelierEnGrille"
+                  "$ref" : "#/components/schemas/PageRestSyntheseDeSuiviDAtelier"
                 }
               }
             },
