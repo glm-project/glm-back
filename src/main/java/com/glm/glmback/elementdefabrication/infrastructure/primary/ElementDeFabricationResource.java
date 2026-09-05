@@ -6,6 +6,7 @@ import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationId;
 import com.glm.glmback.elementdefabrication.domain.Periode;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
+import com.glm.glmback.shared.pagination.infrastructure.primary.RestPage;
 import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.UUID;
@@ -54,7 +55,7 @@ class ElementDeFabricationResource {
   }
 
   @GetMapping
-  Page<RestElementDeFabrication> list(
+  RestPage<RestElementDeFabrication> list(
     @RequestParam Instant debut,
     @RequestParam Instant fin,
     @RequestParam(defaultValue = "0") int page,
@@ -62,10 +63,6 @@ class ElementDeFabricationResource {
   ) {
     Page<ElementDeFabrication> resultat = applicationService.list(new Periode(debut, fin), new Pageable(page, size));
 
-    return Page.<RestElementDeFabrication>builder()
-      .content(resultat.content().stream().map(RestElementDeFabrication::from).toList())
-      .currentPage(resultat.currentPage())
-      .pageSize(resultat.pageSize())
-      .totalElementsCount(resultat.totalElementsCount());
+    return RestPage.from(resultat, RestElementDeFabrication::from);
   }
 }

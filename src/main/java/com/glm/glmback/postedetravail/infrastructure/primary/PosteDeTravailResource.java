@@ -6,6 +6,7 @@ import com.glm.glmback.postedetravail.domain.PosteDeTravail;
 import com.glm.glmback.postedetravail.domain.PosteDeTravailId;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
+import com.glm.glmback.shared.pagination.infrastructure.primary.RestPage;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -54,18 +55,14 @@ class PosteDeTravailResource {
     """
   )
   @ApiResponse(responseCode = "200", description = "La page demandee, triee par libelle.")
-  Page<RestPosteDeTravail> list(
+  RestPage<RestPosteDeTravail> list(
     @RequestParam(required = false) String nature,
     @RequestParam(defaultValue = "0") int page,
     @RequestParam(defaultValue = "20") int size
   ) {
     Page<PosteDeTravail> resultat = applicationService.list(nature(nature), new Pageable(page, size));
 
-    return Page.<RestPosteDeTravail>builder()
-      .content(resultat.content().stream().map(RestPosteDeTravail::from).toList())
-      .currentPage(resultat.currentPage())
-      .pageSize(resultat.pageSize())
-      .totalElementsCount(resultat.totalElementsCount());
+    return RestPage.from(resultat, RestPosteDeTravail::from);
   }
 
   @PostMapping
