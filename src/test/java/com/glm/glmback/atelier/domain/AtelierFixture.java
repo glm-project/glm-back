@@ -2,6 +2,7 @@ package com.glm.glmback.atelier.domain;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -92,6 +93,59 @@ public final class AtelierFixture {
       .element(elementEngageOf2026000042())
       .engagement(engagementParLeroy())
       .journal(JournalDAtelier.vide());
+  }
+
+  public static AnnuaireDAtelier annuaireDeDupontEtMartin() {
+    return AnnuaireDAtelier.de(
+      List.of(OPERATEUR_CONNU_DUPONT, OPERATEUR_CONNU_MARTIN),
+      List.of(POSTE_CONNU_FRAISEUSE_1, POSTE_CONNU_FRAISEUSE_2)
+    );
+  }
+
+  public static List<SuiviDAtelier> suivisDAtelierEnAttenteEnCoursInterrompuEtCloture() {
+    SuiviDAtelier enCours = suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H));
+    return List.of(
+      suiviDAtelierEngage(),
+      enCours,
+      enCours.enregistre(nonConformiteSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H)),
+      enCours.enregistre(finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H)),
+      enCours.cloture(clotureParLeroyA(LE_10_MAI_2026_A_9H)),
+      suiviDAtelierEngage().enregistre(debutSansPosteParDupontA(LE_10_MAI_2026_A_8H))
+    );
+  }
+
+  public static SuiviDAtelier suiviDAtelierAvecCentEvenements() {
+    SuiviDAtelier suivi = suiviDAtelierEngage();
+    for (int jour = 0; jour < 24; jour++) {
+      Instant debut = LE_10_MAI_2026_A_8H.plusSeconds(jour * 86400L);
+      suivi = suivi
+        .enregistre(debutSurFraiseuse1ParDupontA(debut))
+        .enregistre(debutSurFraiseuse1ParMartinA(debut.plusSeconds(60)))
+        .enregistre(finSurFraiseuse1ParDupontA(debut.plusSeconds(28800)))
+        .enregistre(
+          evenementDAtelier(
+            TypeDEvenementDAtelier.FIN,
+            OPERATEUR_ID_MARTIN,
+            Optional.of(POSTE_ID_FRAISEUSE_1),
+            AUTEUR_MARTIN,
+            Horodatage.saisiA(debut.plusSeconds(28860))
+          )
+        );
+    }
+    Instant debut = LE_10_MAI_2026_A_8H.plusSeconds(24 * 86400L);
+    return suivi
+      .enregistre(debutSurFraiseuse1ParDupontA(debut))
+      .enregistre(debutSurFraiseuse1ParMartinA(debut.plusSeconds(60)))
+      .enregistre(nonConformiteSurFraiseuse1ParDupontA(debut.plusSeconds(120)))
+      .enregistre(
+        evenementDAtelier(
+          TypeDEvenementDAtelier.NON_CONFORMITE,
+          OPERATEUR_ID_MARTIN,
+          Optional.of(POSTE_ID_FRAISEUSE_1),
+          AUTEUR_MARTIN,
+          Horodatage.saisiA(debut.plusSeconds(180))
+        )
+      );
   }
 
   public static Annulation annulationParLeroy() {

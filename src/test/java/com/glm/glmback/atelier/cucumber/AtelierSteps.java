@@ -51,6 +51,8 @@ public class AtelierSteps {
   private CucumberClock horloge;
 
   private final Map<String, String> elements = new HashMap<>();
+  private Map<String, Object> suiviSansJournal;
+
   private final Map<String, String> suivis = new HashMap<>();
   private final Map<String, String> postes = new HashMap<>();
   private final Map<String, String> operateurs = new HashMap<>();
@@ -328,6 +330,22 @@ public class AtelierSteps {
   @Then("le temps effectif ne contient aucun intervalle ouvert")
   public void leTempsEffectifNeContientAucunIntervalleOuvert() {
     assertThat(CucumberRestTestContext.countEntries("$[?(!@.fin)]")).isZero();
+  }
+
+  @Then("je retiens les informations du suivi hors journal")
+  @SuppressWarnings("unchecked")
+  public void jeRetiensLesInformationsDuSuiviHorsJournal() {
+    suiviSansJournal = new HashMap<>((Map<String, Object>) CucumberRestTestContext.getElement("$"));
+    suiviSansJournal.remove("journal");
+  }
+
+  @Then("la grille contient les memes informations sans aucun journal")
+  public void laGrilleContientLesMemesInformationsSansAucunJournal() {
+    assertThatLastResponse()
+      .hasOkStatus()
+      .hasElement("$.content[?(@.id == '" + suiviSansJournal.get("id") + "')]")
+      .withValue(List.of(suiviSansJournal));
+    assertThatLastResponse().hasElement("$.content[*].journal").withElementsCount(0);
   }
 
   @Then("la liste des elements engages contient {int} elements")

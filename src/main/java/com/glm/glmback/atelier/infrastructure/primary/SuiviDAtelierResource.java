@@ -61,10 +61,13 @@ class SuiviDAtelierResource {
     Tous les filtres sont facultatifs : l'ecran des operateurs veut tous les elements actifs d'un coup, sans notion de
     date. Le parametre etats accepte plusieurs valeurs (?etats=EN_ATTENTE&etats=EN_COURS) ; absent, il ne filtre rien.
     La periode, quand elle est fournie, porte sur la date d'engagement.
+
+    Chaque ligne conserve l'etat et les activites en cours, mais ne contient pas de journal.
+    Le journal complet, annules compris, se consulte via GET /api/atelier/suivis/{id}.
     """
   )
-  @ApiResponse(responseCode = "200", description = "La page demandee, triee par date d'engagement descendante.")
-  Page<RestSuiviDAtelier> list(
+  @ApiResponse(responseCode = "200", description = "La page demandee sans les journaux, triee par date d'engagement descendante.")
+  Page<RestSuiviDAtelierEnGrille> list(
     @RequestParam(required = false) Instant debut,
     @RequestParam(required = false) Instant fin,
     @RequestParam(required = false) Set<EtatDAtelier> etats,
@@ -73,7 +76,7 @@ class SuiviDAtelierResource {
   ) {
     Page<SuiviDAtelier> resultat = applicationService.list(periode(debut, fin), etats(etats), new Pageable(page, size));
 
-    return Page.<RestSuiviDAtelier>builder()
+    return Page.<RestSuiviDAtelierEnGrille>builder()
       .content(rendus(resultat.content()))
       .currentPage(resultat.currentPage())
       .pageSize(resultat.pageSize())
@@ -99,7 +102,7 @@ class SuiviDAtelierResource {
   }
 
   @GetMapping("/{id}")
-  @Operation(summary = "Consulter un element engage")
+  @Operation(summary = "Consulter un element engage", description = "Le suivi complet, avec son journal, evenements annules compris.")
   @ApiResponse(responseCode = "404", description = "Suivi introuvable.")
   RestSuiviDAtelier get(@PathVariable UUID id) {
     return rendu(applicationService.get(new SuiviDAtelierId(id)));
@@ -213,12 +216,12 @@ class SuiviDAtelierResource {
   /**
    * Une page entiere resolue en un seul aller par port, jamais un par element.
    */
-  private List<RestSuiviDAtelier> rendus(List<SuiviDAtelier> suivis) {
+  private List<RestSuiviDAtelierEnGrille> rendus(List<SuiviDAtelier> suivis) {
     AnnuaireDAtelier annuaire = applicationService.annuairePourSuivis(suivis);
 
     return suivis
       .stream()
-      .map(suivi -> RestSuiviDAtelier.from(suivi, annuaire))
+      .map(suivi -> RestSuiviDAtelierEnGrille.from(suivi, annuaire))
       .toList();
   }
 

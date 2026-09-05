@@ -93,11 +93,11 @@
         },
         "type" : "object"
       },
-      "PageRestSuiviDAtelier" : {
+      "PageRestSuiviDAtelierEnGrille" : {
         "properties" : {
           "content" : {
             "items" : {
-              "$ref" : "#/components/schemas/RestSuiviDAtelier"
+              "$ref" : "#/components/schemas/RestSuiviDAtelierEnGrille"
             },
             "type" : "array"
           },
@@ -1018,6 +1018,63 @@
           }
         },
         "type" : "object"
+      },
+      "RestSuiviDAtelierEnGrille" : {
+        "description" : "Une ligne du tableau d'atelier, sans le journal des evenements.\nL'etat et les activites en cours restent deduits du journal a chaque lecture.\nLe journal complet, annules compris, se consulte via GET /api/atelier/suivis/{id}.\n",
+        "properties" : {
+          "activitesEnCours" : {
+            "description" : "Les activites ouvertes a cet instant.",
+            "items" : {
+              "$ref" : "#/components/schemas/RestActiviteEnCours"
+            },
+            "type" : "array"
+          },
+          "clotureLe" : {
+            "description" : "Instant metier de la cloture, absent tant que l'element n'est pas cloture.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "cloturePar" : {
+            "description" : "Utilisateur ayant cloture l'element, absent tant qu'il ne l'est pas.",
+            "type" : "string"
+          },
+          "element" : {
+            "description" : "Identifiant de l'element de fabrication engage.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "engageLe" : {
+            "description" : "Instant de l'engagement.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "engagePar" : {
+            "description" : "Utilisateur ayant engage l'element.",
+            "example" : "gestionnaire.impeccmold",
+            "type" : "string"
+          },
+          "etat" : {
+            "description" : "EN_ATTENTE, EN_COURS, INTERROMPU ou CLOTURE. Deduit du journal.",
+            "enum" : [ "EN_ATTENTE", "EN_COURS", "INTERROMPU", "CLOTURE" ],
+            "type" : "string"
+          },
+          "id" : {
+            "description" : "Identifiant du suivi. C'est lui, et non celui de l'element, que portent les URLs.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "nom" : {
+            "description" : "Nom de l'element, copie a l'engagement.",
+            "example" : "OF-2026-000042",
+            "type" : "string"
+          },
+          "type" : {
+            "description" : "Type de l'element, copie a l'engagement.",
+            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
       }
     },
     "securitySchemes" : {
@@ -1445,7 +1502,7 @@
     },
     "/api/atelier/suivis" : {
       "get" : {
-        "description" : "Le tableau de l'atelier.\n\nTous les filtres sont facultatifs : l'ecran des operateurs veut tous les elements actifs d'un coup, sans notion de\ndate. Le parametre etats accepte plusieurs valeurs (?etats=EN_ATTENTE&etats=EN_COURS) ; absent, il ne filtre rien.\nLa periode, quand elle est fournie, porte sur la date d'engagement.\n",
+        "description" : "Le tableau de l'atelier.\n\nTous les filtres sont facultatifs : l'ecran des operateurs veut tous les elements actifs d'un coup, sans notion de\ndate. Le parametre etats accepte plusieurs valeurs (?etats=EN_ATTENTE&etats=EN_COURS) ; absent, il ne filtre rien.\nLa periode, quand elle est fournie, porte sur la date d'engagement.\n\nChaque ligne conserve l'etat et les activites en cours, mais ne contient pas de journal.\nLe journal complet, annules compris, se consulte via GET /api/atelier/suivis/{id}.\n",
         "operationId" : "list_3",
         "parameters" : [ {
           "in" : "query",
@@ -1499,11 +1556,11 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/PageRestSuiviDAtelier"
+                  "$ref" : "#/components/schemas/PageRestSuiviDAtelierEnGrille"
                 }
               }
             },
-            "description" : "La page demandee, triee par date d'engagement descendante."
+            "description" : "La page demandee sans les journaux, triee par date d'engagement descendante."
           }
         },
         "summary" : "Lister les elements engages",
@@ -1560,6 +1617,7 @@
     },
     "/api/atelier/suivis/{id}" : {
       "get" : {
+        "description" : "Le suivi complet, avec son journal, evenements annules compris.",
         "operationId" : "get_4",
         "parameters" : [ {
           "in" : "path",
