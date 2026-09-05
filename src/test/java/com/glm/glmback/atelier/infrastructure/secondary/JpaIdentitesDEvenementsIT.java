@@ -64,14 +64,17 @@ class JpaIdentitesDEvenementsIT {
   @Test
   @WithTenant("impeccmold")
   void shouldReserveThenReplayTheSameFingerprint() {
+    // GIVEN
     UUID evenement = UUID.randomUUID();
     UUID journee = UUID.randomUUID();
     EmpreinteDEvenement empreinte = arrivee(Optional.of(Instant.parse("2042-01-01T08:00:00.123456789Z")));
 
     AgregatDEvenement agregat = journeeIdentifieePar(journee);
+    // WHEN
     ReservationDEvenement premiere = reserveEtAssocie(evenement, empreinte, agregat);
     ReservationDEvenement rejeu = inTransaction(() -> identites.reserve(evenement, empreinte));
 
+    // THEN
     assertThat(premiere.estUnRejeu()).isFalse();
     assertThat(rejeu.agregat()).contains(agregat);
   }
@@ -79,17 +82,21 @@ class JpaIdentitesDEvenementsIT {
   @Test
   @WithTenant("impeccmold")
   void shouldPersistOnlyOneDepartureWhenItsRetryOverlapsTheFirstTransaction() throws Exception {
+    // GIVEN
     given(clock.now()).willReturn(LE_11_MAI_2026_A_9H15);
     JourneeDeTravail journee = prepareJourneeOuverte();
     PointageDePresenceAEnregistrer depart = departA17H(journee);
 
     try (RejeuConcurrent envois = new RejeuConcurrent()) {
+      // WHEN
       var premiere = envois.enregistreSansValider(depart);
       var seconde = envois.rejouePendantLaPremiereTransaction(depart);
       envois.validePremiereTransaction();
 
       var initial = premiere.get(5, TimeUnit.SECONDS);
       var rejeu = seconde.get(5, TimeUnit.SECONDS);
+
+      // THEN
       assertThat(rejeu.agregat().id()).isEqualTo(journee.id());
       assertUnSeulDepartPersiste(initial, rejeu, depart);
     }
@@ -203,51 +210,68 @@ class JpaIdentitesDEvenementsIT {
   @Test
   @WithTenant("impeccmold")
   void shouldRejectAnotherFingerprintAndANonReplayableIdentity() {
+    // GIVEN
     UUID evenement = UUID.randomUUID();
     inTransaction(() -> {
       identites.reserveHorsPupitre(evenement);
       return null;
     });
 
-    assertThatThrownBy(() -> inTransaction(() -> identites.reserve(evenement, arrivee(Optional.empty())))).isExactlyInstanceOf(
-      IdentifiantDEvenementReutiliseException.class
-    );
+    // WHEN
+    Throwable refus = catchThrowable(() -> inTransaction(() -> identites.reserve(evenement, arrivee(Optional.empty()))));
+
+    // THEN
+    assertThat(refus).isExactlyInstanceOf(IdentifiantDEvenementReutiliseException.class);
   }
 
   @Test
   @WithTenant("impeccmold")
   void shouldDistinguishAnAbsentDateFromAPresentDate() {
+    // GIVEN
     UUID evenement = UUID.randomUUID();
     reserveEtAssocie(evenement, arrivee(Optional.empty()), journeeIdentifieePar(UUID.randomUUID()));
 
-    assertThatThrownBy(() -> inTransaction(() -> identites.reserve(evenement, arrivee(Optional.of(Instant.EPOCH))))).isExactlyInstanceOf(
-      IdentifiantDEvenementReutiliseException.class
-    );
+    // WHEN
+    Throwable refus = catchThrowable(() -> inTransaction(() -> identites.reserve(evenement, arrivee(Optional.of(Instant.EPOCH)))));
+
+    // THEN
+    assertThat(refus).isExactlyInstanceOf(IdentifiantDEvenementReutiliseException.class);
   }
 
   @Test
   @WithTenant("impeccmold")
   void shouldNeverAllocateAServerIdentityTwice() {
+    // GIVEN
     UUID evenement = UUID.randomUUID();
 
-    assertThat(inTransaction(() -> identites.reserveHorsPupitre(evenement))).isTrue();
-    assertThat(inTransaction(() -> identites.reserveHorsPupitre(evenement))).isFalse();
+    // WHEN
+    boolean premiere = inTransaction(() -> identites.reserveHorsPupitre(evenement));
+    boolean seconde = inTransaction(() -> identites.reserveHorsPupitre(evenement));
+
+    // THEN
+    assertThat(premiere).isTrue();
+    assertThat(seconde).isFalse();
   }
 
   @Test
   @WithTenant("impeccmold")
   void shouldKeepTheSameIdentityIndependentBetweenTenants() {
+    // GIVEN
     UUID evenement = UUID.randomUUID();
     AgregatDEvenement premier = journeeIdentifieePar(UUID.randomUUID());
     AgregatDEvenement second = journeeIdentifieePar(UUID.randomUUID());
     EmpreinteDEvenement empreinte = arrivee(Optional.empty());
     reserveEtAssocie(evenement, empreinte, premier);
 
+    // WHEN
     TenantSecurityContexts.authenticateOn("katilys");
     try {
       ReservationDEvenement reservation = reserveEtAssocie(evenement, empreinte, second);
+      ReservationDEvenement rejeu = inTransaction(() -> identites.reserve(evenement, empreinte));
+
+      // THEN
       assertThat(reservation.estUnRejeu()).isFalse();
-      assertThat(inTransaction(() -> identites.reserve(evenement, empreinte)).agregat()).contains(second);
+      assertThat(rejeu.agregat()).contains(second);
     } finally {
       TenantSecurityContexts.authenticateOn("impeccmold");
     }

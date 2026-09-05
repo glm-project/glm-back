@@ -29,6 +29,7 @@ import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
 import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
 import com.glm.glmback.atelier.domain.TypeDEvenementDePresence;
 import com.glm.glmback.shared.time.domain.Clock;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -40,25 +41,31 @@ class ReservationDIdentiteServeurTest {
 
   @Test
   void shouldRegulariseADepartureWithAFreshIdentityAfterACollision() {
+    // GIVEN
     AtomicReference<UUID> refusee = new AtomicReference<>();
     IdentitesDEvenements identites = identitesAvecCollision(refusee);
     JourneeDeTravail journee = journeeDeDupontOuverteA7H();
     JourneesDeTravailApplicationService service = preparePresence(journee, identites);
 
+    // WHEN
     JourneeDeTravail resultat = regulariseDepart(service, journee);
 
+    // THEN
     assertDepartRegularise(resultat, refusee.get());
   }
 
   @Test
   void shouldRegulariseWorkWithAFreshIdentityAfterACollision() {
+    // GIVEN
     AtomicReference<UUID> refusee = new AtomicReference<>();
     IdentitesDEvenements identites = identitesAvecCollision(refusee);
     SuiviDAtelier suivi = suiviDAtelierEngage();
     SuivisDAtelierApplicationService service = prepareAtelier(suivi, identites);
 
+    // WHEN
     SuiviDAtelier resultat = regulariseTravail(service, suivi);
 
+    // THEN
     assertTravailRegularise(resultat, refusee.get());
   }
 
@@ -70,6 +77,7 @@ class ReservationDIdentiteServeurTest {
 
   @Test
   void shouldReplayCompletedDaysAndClosedFollowUpsWithoutWritingAgain() {
+    // GIVEN
     IdentitesDEvenements identites = Mockito.mock(IdentitesDEvenements.class);
     JourneeDeTravailRepository journees = Mockito.mock(JourneeDeTravailRepository.class);
     SuiviDAtelierRepository suivis = Mockito.mock(SuiviDAtelierRepository.class);
@@ -82,8 +90,14 @@ class ReservationDIdentiteServeurTest {
     given(suivis.get(suivi.id())).willReturn(Optional.of(suivi));
     JourneesDeTravailApplicationService presence = serviceDePresence(journees, identites);
     SuivisDAtelierApplicationService atelier = serviceDAtelier(suivis, journees, identites);
-    assertRejeuxDePresence(presence, journee);
-    assertRejeuxDAtelier(atelier, suivi);
+
+    // WHEN
+    List<JourneeDeTravail> presencesRejouees = rejouePresence(presence);
+    List<SuiviDAtelier> suivisRejoues = rejoueAtelier(atelier, suivi);
+
+    // THEN
+    assertThat(presencesRejouees).containsExactly(journee, journee, journee, journee);
+    assertThat(suivisRejoues).containsExactly(suivi, suivi);
     then(journees).should(never()).create(any());
     then(journees).should(never()).update(any());
     then(suivis).should(never()).update(any());
@@ -213,7 +227,7 @@ class ReservationDIdentiteServeurTest {
     );
   }
 
-  private static void assertRejeuxDePresence(JourneesDeTravailApplicationService presence, JourneeDeTravail journee) {
+  private static List<JourneeDeTravail> rejouePresence(JourneesDeTravailApplicationService presence) {
     ArriveeAEnregistrer arrivee = new ArriveeAEnregistrer(
       OPERATEUR_ID_DUPONT,
       AUTEUR_DUPONT,
@@ -228,14 +242,18 @@ class ReservationDIdentiteServeurTest {
       EvenementDePresenceId.newId()
     );
 
-    assertThat(presence.arriveDuPupitre(arrivee).agregat()).isEqualTo(journee);
-    assertThat(presence.arrive(arrivee)).isEqualTo(journee);
-    assertThat(presence.pointe(pause)).isEqualTo(journee);
-    assertThat(presence.pointeDuPupitre(pause).agregat()).isEqualTo(journee);
+    return List.of(
+      presence.arriveDuPupitre(arrivee).agregat(),
+      presence.arrive(arrivee),
+      presence.pointe(pause),
+      presence.pointeDuPupitre(pause).agregat()
+    );
   }
 
-  private static void assertRejeuxDAtelier(SuivisDAtelierApplicationService atelier, SuiviDAtelier suivi) {
-    assertThat(atelier.pointeDuPupitre(pointage(suivi.id().uuid(), OPERATEUR_ID_DUPONT, AUTEUR_DUPONT)).agregat()).isEqualTo(suivi);
-    assertThat(atelier.pointe(pointage(suivi.id().uuid(), OPERATEUR_ID_DUPONT, AUTEUR_DUPONT))).isEqualTo(suivi);
+  private static List<SuiviDAtelier> rejoueAtelier(SuivisDAtelierApplicationService atelier, SuiviDAtelier suivi) {
+    return List.of(
+      atelier.pointeDuPupitre(pointage(suivi.id().uuid(), OPERATEUR_ID_DUPONT, AUTEUR_DUPONT)).agregat(),
+      atelier.pointe(pointage(suivi.id().uuid(), OPERATEUR_ID_DUPONT, AUTEUR_DUPONT))
+    );
   }
 }
