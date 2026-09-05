@@ -25,6 +25,31 @@ Feature: Suivi des elements engages en atelier
     And le suivi a l'etat "EN_ATTENTE"
     And le journal du suivi contient 0 evenements
 
+  Scenario: La grille conserve les informations du suivi sans son journal
+    Given il est "2026-07-02T08:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 2962"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 2962                 |
+    And j'ai engage l'element "OF 2962" en atelier
+    And j'ai pointe sur "OF 2962"
+      | type      | DEBUT       |
+      | operateur | dupont      |
+      | poste     | fraiseuse-1 |
+    Given il est "2026-07-02T09:00:00Z"
+    And j'ai pointe sur "OF 2962"
+      | type      | NON_CONFORMITE |
+      | operateur | dupont         |
+      | poste     | fraiseuse-1    |
+    When j'annule l'evenement 1 de "OF 2962"
+      | motif | Pointe sur le mauvais ordre |
+    Then le journal du suivi contient 2 evenements
+    And je retiens les informations du suivi hors journal
+    When je liste les elements engages entre "2026-07-02T00:00:00Z" et "2026-07-03T00:00:00Z"
+    Then la grille contient les memes informations sans aucun journal
+    When je consulte "OF 2962"
+    Then le journal du suivi contient 2 evenements
+    And l'evenement 1 du suivi est annule avec le motif "Pointe sur le mauvais ordre"
+
   Scenario: Un element deja engage ne peut pas l'etre deux fois
     Given l'entreprise a cree l'element de fabrication "OF 2002"
       | type      | ORDRE_DE_FABRICATION |
