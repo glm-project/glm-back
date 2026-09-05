@@ -22,9 +22,13 @@ record RestOperateur(
   @Schema(description = "Taux horaire de l'operateur, absent si l'entreprise ne le valorise pas.", example = "22.00")
   BigDecimal tauxHoraire,
 
-  @Schema(description = "Postes habilites, tries par libelle.") List<RestPosteHabilite> postes,
+  @Schema(description = "Postes habilites, tries par libelle.", requiredMode = Schema.RequiredMode.REQUIRED) List<RestPosteHabilite> postes,
 
-  @Schema(description = "Metiers de l'operateur, deduits des natures de ses postes. Jamais saisis.", example = "[\"soudage\",\"tournage\"]")
+  @Schema(
+    description = "Metiers de l'operateur, deduits des natures de ses postes. Jamais saisis.",
+    example = "[\"soudage\",\"tournage\"]",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
   List<String> natures
 ) {
   static RestOperateur from(ProfilDOperateur profil) {
