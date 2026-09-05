@@ -28,7 +28,9 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
@@ -66,77 +68,113 @@ class JpaIdentitesDEvenementsIT {
     UUID journee = UUID.randomUUID();
     EmpreinteDEvenement empreinte = arrivee(Optional.of(Instant.parse("2042-01-01T08:00:00.123456789Z")));
 
-    ReservationDEvenement premiere = inTransaction(() -> {
-      ReservationDEvenement reservation = identites.reserve(evenement, empreinte);
-      identites.associe(evenement, new AgregatDEvenement(TypeDAgregatDEvenement.JOURNEE_DE_TRAVAIL, journee));
-      return reservation;
-    });
+    AgregatDEvenement agregat = journeeIdentifieePar(journee);
+    ReservationDEvenement premiere = reserveEtAssocie(evenement, empreinte, agregat);
     ReservationDEvenement rejeu = inTransaction(() -> identites.reserve(evenement, empreinte));
 
     assertThat(premiere.estUnRejeu()).isFalse();
-    assertThat(rejeu.agregat()).contains(new AgregatDEvenement(TypeDAgregatDEvenement.JOURNEE_DE_TRAVAIL, journee));
+    assertThat(rejeu.agregat()).contains(agregat);
   }
 
   @Test
   @WithTenant("impeccmold")
   void shouldPersistOnlyOneDepartureWhenItsRetryOverlapsTheFirstTransaction() throws Exception {
     given(clock.now()).willReturn(LE_11_MAI_2026_A_9H15);
-    OperateurId operateur = new OperateurId(UUID.randomUUID());
-    JourneeDeTravail journee = JourneeDeTravail.ouverte(JourneeDeTravailId.newId(), operateur).enregistre(
+    JourneeDeTravail journee = prepareJourneeOuverte();
+    PointageDePresenceAEnregistrer depart = departA17H(journee);
+
+    try (RejeuConcurrent envois = new RejeuConcurrent()) {
+      var premiere = envois.enregistreSansValider(depart);
+      var seconde = envois.rejouePendantLaPremiereTransaction(depart);
+      envois.validePremiereTransaction();
+
+      var initial = premiere.get(5, TimeUnit.SECONDS);
+      var rejeu = seconde.get(5, TimeUnit.SECONDS);
+      assertThat(rejeu.agregat().id()).isEqualTo(journee.id());
+      assertUnSeulDepartPersiste(initial, rejeu, depart);
+    }
+  }
+
+  private JourneeDeTravail prepareJourneeOuverte() {
+    JourneeDeTravail journee = JourneeDeTravail.ouverte(JourneeDeTravailId.newId(), new OperateurId(UUID.randomUUID())).enregistre(
       arriveeDeDupontA(LE_10_MAI_2026_A_7H)
     );
-    inTransaction(() -> journees.create(journee));
-    PointageDePresenceAEnregistrer depart = new PointageDePresenceAEnregistrer(
-      operateur,
+    return inTransaction(() -> journees.create(journee));
+  }
+
+  private static PointageDePresenceAEnregistrer departA17H(JourneeDeTravail journee) {
+    return new PointageDePresenceAEnregistrer(
+      journee.operateur(),
       AUTEUR_DUPONT,
       TypeDEvenementDePresence.DEPART,
       Optional.of(LE_10_MAI_2026_A_17H),
       EvenementDePresenceId.newId()
     );
-    CountDownLatch ecriture = new CountDownLatch(1);
-    CountDownLatch validation = new CountDownLatch(1);
-    CountDownLatch tentative = new CountDownLatch(1);
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    RequestAttributes requete = RequestContextHolder.getRequestAttributes();
+  }
 
-    try (var executor = Executors.newFixedThreadPool(2)) {
-      var premiere = executor.submit(() ->
-        avecAuthentification(authentication, requete, () ->
-          inTransaction(() -> {
-            ResultatDEcriture<JourneeDeTravail> resultat = presence.pointeDuPupitre(depart);
-            ecriture.countDown();
-            attend(validation);
-            return resultat;
-          })
-        )
+  private void assertUnSeulDepartPersiste(
+    ResultatDEcriture<JourneeDeTravail> initial,
+    ResultatDEcriture<JourneeDeTravail> rejeu,
+    PointageDePresenceAEnregistrer depart
+  ) {
+    assertThat(initial.rejeu()).isFalse();
+    assertThat(rejeu.rejeu()).isTrue();
+    JourneeDeTravail relue = presence.get(initial.agregat().id());
+    assertThat(relue.journal().evenements()).hasSize(2);
+    var evenement = relue.journal().evenements().getLast();
+    assertThat(evenement.id()).isEqualTo(depart.evenement());
+    assertThat(evenement.dateDeSurvenue()).isEqualTo(LE_10_MAI_2026_A_17H);
+    assertThat(evenement.dateDEnregistrement()).isEqualTo(initial.agregat().journal().evenements().getLast().dateDEnregistrement());
+    assertThat(rejeu.agregat()).isEqualTo(relue);
+  }
+
+  private final class RejeuConcurrent implements AutoCloseable {
+
+    private final CountDownLatch ecriture = new CountDownLatch(1);
+    private final CountDownLatch validation = new CountDownLatch(1);
+    private final CountDownLatch tentative = new CountDownLatch(1);
+    private final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    private final RequestAttributes requete = RequestContextHolder.getRequestAttributes();
+    private final ExecutorService executor = Executors.newFixedThreadPool(2);
+
+    Future<ResultatDEcriture<JourneeDeTravail>> enregistreSansValider(PointageDePresenceAEnregistrer depart) {
+      return executor.submit(() ->
+        avecAuthentification(authentication, requete, () -> inTransaction(() -> pointeEtAttendValidation(depart)))
       );
-      try {
-        attend(ecriture);
-        var seconde = executor.submit(() ->
-          avecAuthentification(authentication, requete, () -> {
-            tentative.countDown();
-            return presence.pointeDuPupitre(depart);
-          })
-        );
-        attend(tentative);
-        assertThatThrownBy(() -> seconde.get(200, TimeUnit.MILLISECONDS)).isInstanceOf(TimeoutException.class);
-        validation.countDown();
+    }
 
-        ResultatDEcriture<JourneeDeTravail> initial = premiere.get(5, TimeUnit.SECONDS);
-        ResultatDEcriture<JourneeDeTravail> rejeu = seconde.get(5, TimeUnit.SECONDS);
-        assertThat(initial.rejeu()).isFalse();
-        assertThat(rejeu.rejeu()).isTrue();
-        assertThat(rejeu.agregat().id()).isEqualTo(journee.id());
-        JourneeDeTravail relue = presence.get(journee.id());
-        assertThat(relue.journal().evenements()).hasSize(2);
-        var evenement = relue.journal().evenements().getLast();
-        assertThat(evenement.id()).isEqualTo(depart.evenement());
-        assertThat(evenement.dateDeSurvenue()).isEqualTo(LE_10_MAI_2026_A_17H);
-        assertThat(evenement.dateDEnregistrement()).isEqualTo(initial.agregat().journal().evenements().getLast().dateDEnregistrement());
-        assertThat(rejeu.agregat()).isEqualTo(relue);
-      } finally {
-        validation.countDown();
-      }
+    Future<ResultatDEcriture<JourneeDeTravail>> rejouePendantLaPremiereTransaction(PointageDePresenceAEnregistrer depart) {
+      attend(ecriture);
+      var rejeu = executor.submit(() -> avecAuthentification(authentication, requete, () -> tenteRejeu(depart)));
+      attend(tentative);
+      assertAttendLaValidation(rejeu);
+      return rejeu;
+    }
+
+    void validePremiereTransaction() {
+      validation.countDown();
+    }
+
+    private ResultatDEcriture<JourneeDeTravail> pointeEtAttendValidation(PointageDePresenceAEnregistrer depart) {
+      var resultat = presence.pointeDuPupitre(depart);
+      ecriture.countDown();
+      attend(validation);
+      return resultat;
+    }
+
+    private ResultatDEcriture<JourneeDeTravail> tenteRejeu(PointageDePresenceAEnregistrer depart) {
+      tentative.countDown();
+      return presence.pointeDuPupitre(depart);
+    }
+
+    private void assertAttendLaValidation(Future<ResultatDEcriture<JourneeDeTravail>> rejeu) {
+      assertThatThrownBy(() -> rejeu.get(200, TimeUnit.MILLISECONDS)).isInstanceOf(TimeoutException.class);
+    }
+
+    @Override
+    public void close() {
+      validePremiereTransaction();
+      executor.close();
     }
   }
 
@@ -180,11 +218,7 @@ class JpaIdentitesDEvenementsIT {
   @WithTenant("impeccmold")
   void shouldDistinguishAnAbsentDateFromAPresentDate() {
     UUID evenement = UUID.randomUUID();
-    inTransaction(() -> {
-      identites.reserve(evenement, arrivee(Optional.empty()));
-      identites.associe(evenement, new AgregatDEvenement(TypeDAgregatDEvenement.JOURNEE_DE_TRAVAIL, UUID.randomUUID()));
-      return null;
-    });
+    reserveEtAssocie(evenement, arrivee(Optional.empty()), journeeIdentifieePar(UUID.randomUUID()));
 
     assertThatThrownBy(() -> inTransaction(() -> identites.reserve(evenement, arrivee(Optional.of(Instant.EPOCH))))).isExactlyInstanceOf(
       IdentifiantDEvenementReutiliseException.class
@@ -204,28 +238,32 @@ class JpaIdentitesDEvenementsIT {
   @WithTenant("impeccmold")
   void shouldKeepTheSameIdentityIndependentBetweenTenants() {
     UUID evenement = UUID.randomUUID();
-    AgregatDEvenement premier = new AgregatDEvenement(TypeDAgregatDEvenement.JOURNEE_DE_TRAVAIL, UUID.randomUUID());
-    AgregatDEvenement second = new AgregatDEvenement(TypeDAgregatDEvenement.JOURNEE_DE_TRAVAIL, UUID.randomUUID());
+    AgregatDEvenement premier = journeeIdentifieePar(UUID.randomUUID());
+    AgregatDEvenement second = journeeIdentifieePar(UUID.randomUUID());
     EmpreinteDEvenement empreinte = arrivee(Optional.empty());
-    inTransaction(() -> {
-      identites.reserve(evenement, empreinte);
-      identites.associe(evenement, premier);
-      return null;
-    });
+    reserveEtAssocie(evenement, empreinte, premier);
 
     TenantSecurityContexts.authenticateOn("katilys");
     try {
-      ReservationDEvenement reservation = inTransaction(() -> {
-        ReservationDEvenement resultat = identites.reserve(evenement, empreinte);
-        identites.associe(evenement, second);
-        return resultat;
-      });
+      ReservationDEvenement reservation = reserveEtAssocie(evenement, empreinte, second);
       assertThat(reservation.estUnRejeu()).isFalse();
       assertThat(inTransaction(() -> identites.reserve(evenement, empreinte)).agregat()).contains(second);
     } finally {
       TenantSecurityContexts.authenticateOn("impeccmold");
     }
     assertThat(inTransaction(() -> identites.reserve(evenement, empreinte)).agregat()).contains(premier);
+  }
+
+  private ReservationDEvenement reserveEtAssocie(UUID evenement, EmpreinteDEvenement empreinte, AgregatDEvenement agregat) {
+    return inTransaction(() -> {
+      ReservationDEvenement reservation = identites.reserve(evenement, empreinte);
+      identites.associe(evenement, agregat);
+      return reservation;
+    });
+  }
+
+  private static AgregatDEvenement journeeIdentifieePar(UUID id) {
+    return new AgregatDEvenement(TypeDAgregatDEvenement.JOURNEE_DE_TRAVAIL, id);
   }
 
   private static EmpreinteDEvenement arrivee(Optional<Instant> date) {
