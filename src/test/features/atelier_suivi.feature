@@ -60,6 +60,59 @@ Feature: Suivi des elements engages en atelier
     And l'evenement 0 du suivi a le cout horaire "45.5"
     And l'evenement 0 du suivi a le taux horaire "22.5"
 
+  Scenario: Le pointage d'atelier du pupitre conserve son identifiant et son heure de geste
+    Given il est "2026-05-10T06:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 2999"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 2999                 |
+    And j'ai engage l'element "OF 2999" en atelier
+    Given il est "2026-05-10T14:00:00Z"
+    When je pointe sur "OF 2999"
+      | id             | 00000000-0000-0000-0000-000000000023 |
+      | type           | DEBUT                                |
+      | operateur      | dupont                               |
+      | poste          | fraiseuse-1                          |
+      | dateDeSurvenue | 2026-05-10T08:00:00Z                 |
+    Then la reponse a le statut http 201
+    And l'evenement 0 du suivi a l'identifiant "00000000-0000-0000-0000-000000000023"
+    And l'evenement 0 du suivi a survenu a "2026-05-10T08:00:00Z" et a ete saisi a "2026-05-10T14:00:00Z" par "gestionnaire"
+
+  Scenario: Un pointage d'atelier identique est rejoue sans second evenement
+    Given il est "2026-05-10T06:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 2998"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 2998                 |
+    And j'ai engage l'element "OF 2998" en atelier
+    Given il est "2026-05-10T08:00:00Z"
+    When je pointe sur "OF 2998"
+      | id        | 00000000-0000-0000-0000-000000000035 |
+      | type      | DEBUT                                |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
+    Then la reponse a le statut http 201
+    When je pointe sur "OF 2998"
+      | id        | 00000000-0000-0000-0000-000000000035 |
+      | type      | DEBUT                                |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
+    Then la reponse a le statut http 200
+    And le journal du suivi contient 1 evenements
+
+  Scenario: Un pointage d'atelier futur est refuse
+    Given il est "2026-05-10T06:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 2997"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 2997                 |
+    And j'ai engage l'element "OF 2997" en atelier
+    When je pointe sur "OF 2997"
+      | id             | 00000000-0000-0000-0000-000000000036 |
+      | type           | DEBUT                                |
+      | operateur      | dupont                               |
+      | poste          | fraiseuse-1                          |
+      | dateDeSurvenue | 2026-05-10T07:00:00Z                 |
+    Then la reponse a le statut http 400
+    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:date-de-survenue-future"
+
   Scenario: Une non conformite interrompt l'element, une reprise se pointe comme un debut
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2004"

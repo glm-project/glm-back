@@ -12,14 +12,23 @@ import java.util.Optional;
  * posteriori une arrivee jamais pointee passent par le meme acte, seul l'instant change.
  * </p>
  */
-public record ArriveeAEnregistrer(OperateurId operateur, Auteur auteur, Optional<Instant> dateDeSurvenue) {
+public record ArriveeAEnregistrer(OperateurId operateur, Auteur auteur, Optional<Instant> dateDeSurvenue, EvenementDePresenceId evenement) {
   public ArriveeAEnregistrer {
     Assert.notNull("operateur", operateur);
     Assert.notNull("auteur", auteur);
     Assert.notNull("dateDeSurvenue", dateDeSurvenue);
+    Assert.notNull("id de l'evenement", evenement);
   }
 
   public ArriveeAEnregistrer(OperateurId operateur, Auteur auteur) {
-    this(operateur, auteur, Optional.empty());
+    this(operateur, auteur, Optional.empty(), EvenementDePresenceId.newId());
+  }
+
+  public ArriveeAEnregistrer(OperateurId operateur, Auteur auteur, Optional<Instant> dateDeSurvenue) {
+    this(operateur, auteur, dateDeSurvenue, EvenementDePresenceId.newId());
+  }
+
+  public TypeDEvenementDePresence type() {
+    return TypeDEvenementDePresence.ARRIVEE;
   }
 }

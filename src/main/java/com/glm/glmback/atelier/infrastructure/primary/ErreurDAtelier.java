@@ -21,7 +21,9 @@ enum ErreurDAtelier implements ProblemCode {
   TRANSITION_D_ATELIER_INTERDITE(HttpStatus.CONFLICT, "transition d'atelier interdite"),
   TRANSITION_DE_PRESENCE_INTERDITE(HttpStatus.CONFLICT, "transition de presence interdite"),
   EVENEMENT_ANTERIEUR_A_L_ENGAGEMENT(HttpStatus.CONFLICT, "evenement anterieur a l'engagement"),
-  SAISIE_CONCURRENTE(HttpStatus.CONFLICT, "saisie concurrente");
+  SAISIE_CONCURRENTE(HttpStatus.CONFLICT, "saisie concurrente"),
+  IDENTIFIANT_EVENEMENT_REUTILISE(HttpStatus.CONFLICT, "identifiant d'evenement reutilise"),
+  DATE_DE_SURVENUE_FUTURE(HttpStatus.BAD_REQUEST, "date de survenue future");
 
   private final HttpStatus status;
   private final String title;

@@ -131,16 +131,17 @@ GET /api/atelier/suivis?etats=EN_ATTENTE&etats=EN_COURS&etats=INTERROMPU
 Les filtres sont **tous facultatifs** — cet écran ne défile pas et n'a aucune notion de date. `etats` absent ne filtre
 rien. `debut`/`fin` ne servent qu'au back-office, et **une borne seule est ignorée** : il faut les deux.
 
-Prise de poste, puis travail :
+Prise de poste, puis travail : chaque geste du pupitre porte un `id` UUID créé une fois par le front. Il peut aussi
+porter `dateDeSurvenue`, l'heure réelle conservée quand le pupitre a été hors ligne.
 
 ```
-POST /api/atelier/journees                 { "operateur": "<uuid operateur>" }
-POST /api/atelier/suivis/{id}/pointages    { "type": "DEBUT", "operateur": "<uuid>", "poste": "<uuid poste>" }
-POST /api/atelier/suivis/{id}/pointages    { "type": "NON_CONFORMITE", "operateur": "<uuid>", "poste": "<uuid poste>" }
-POST /api/atelier/journees/pointages       { "operateur": "<uuid>", "type": "PAUSE" }
-POST /api/atelier/journees/pointages       { "operateur": "<uuid>", "type": "REPRISE" }
-POST /api/atelier/suivis/{id}/pointages    { "type": "FIN", "operateur": "<uuid>", "poste": "<uuid poste>" }
-POST /api/atelier/journees/pointages       { "operateur": "<uuid>", "type": "DEPART" }
+POST /api/atelier/journees                 { "id": "<uuid geste>", "operateur": "<uuid operateur>" }
+POST /api/atelier/suivis/{id}/pointages    { "id": "<uuid geste>", "type": "DEBUT", "operateur": "<uuid>", "poste": "<uuid poste>" }
+POST /api/atelier/suivis/{id}/pointages    { "id": "<uuid geste>", "type": "NON_CONFORMITE", "operateur": "<uuid>", "poste": "<uuid poste>" }
+POST /api/atelier/journees/pointages       { "id": "<uuid geste>", "operateur": "<uuid>", "type": "PAUSE" }
+POST /api/atelier/journees/pointages       { "id": "<uuid geste>", "operateur": "<uuid>", "type": "REPRISE" }
+POST /api/atelier/suivis/{id}/pointages    { "id": "<uuid geste>", "type": "FIN", "operateur": "<uuid>", "poste": "<uuid poste>" }
+POST /api/atelier/journees/pointages       { "id": "<uuid geste>", "operateur": "<uuid>", "type": "DEPART" }
 ```
 
 Trois pièges :
@@ -153,6 +154,9 @@ Trois pièges :
   retrouver un comportement nominal, pas un cas dégradé. Ne jamais rendre le champ obligatoire côté formulaire.
 - Un poste fourni doit être **habilité pour cet opérateur**, sans quoi 409. Filtrer la liste des postes sur la fiche de
   l'opérateur choisi évite d'avoir à traiter ce refus.
+- Un envoi accepté répond **201**. Rejouer exactement le même corps répond **200**, sans créer de second événement ;
+  conserver donc l'UUID dans la file offline jusqu'à l'acquittement. Réutiliser cet UUID avec un autre contenu répond
+  409 (`identifiant-evenement-reutilise`). Une date future répond 400 et ne réserve pas l'UUID.
 
 Les états d'un élément :
 
@@ -227,12 +231,12 @@ sort de plusieurs contextes. Le catalogue complet est dans [documentation/codes-
 Deux statuts du tableau ci-dessous n'en portent pas : le **400** de Bean Validation, qui se lit par son `errors`
 (`Map<champ, message>`), et le **403**, qui vient de la chaîne de filtres sans corps du tout.
 
-| Statut | Cas                                                                                                                                                                   |
-| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 400    | Corps invalide (Bean Validation) — détail par champ dans `errors`.                                                                                                    |
-| 403    | Jeton sans entreprise connue, ou rôle insuffisant.                                                                                                                    |
-| 404    | Suivi, journée, événement ou élément de fabrication introuvable ; ou aucune journée ouverte pour cet opérateur.                                                       |
-| 409    | Élément déjà engagé, journée déjà ouverte, élément clôturé, événement déjà annulé, transition impossible, événement antérieur à l'engagement, **saisie concurrente**. |
+| Statut | Cas                                                                                                                                                                                   |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 400    | Corps invalide (Bean Validation) — détail par champ dans `errors` — ou date de survenue future.                                                                                       |
+| 403    | Jeton sans entreprise connue, ou rôle insuffisant.                                                                                                                                    |
+| 404    | Suivi, journée, événement ou élément de fabrication introuvable ; ou aucune journée ouverte pour cet opérateur.                                                                       |
+| 409    | Élément déjà engagé, journée déjà ouverte, élément clôturé, événement déjà annulé, transition impossible, événement antérieur à l'engagement, UUID réutilisé, **saisie concurrente**. |
 
 Les **409 de transition** sont les plus fréquents à l'usage : une `REPRISE` sans `PAUSE`, deux `DEBUT` consécutifs sur
 la même activité, un `DEPART` sur une journée déjà fermée. Ils portent un `message` explicite — l'afficher plutôt que
@@ -242,9 +246,8 @@ La **saisie concurrente** est le seul 409 qui ne dit rien de la saisie elle-mêm
 pointé sur le même élément ou la même journée entre la lecture et l'écriture. C'est le seul cas où **rejouer** l'appel
 tel quel est la bonne réaction — relire l'agrégat, et reproposer la saisie.
 
-> Limite connue : une `dateDeSurvenue` postérieure à l'instant courant (corriger un événement « dans le futur »)
-> viole un invariant du domaine et ressort aujourd'hui en **500**, faute de mapping pour `AssertionException`. Côté
-> front, borner les sélecteurs de date à l'instant présent.
+Une `dateDeSurvenue` strictement postérieure à l'instant courant répond 400 avec le code stable
+`date-de-survenue-future`. Le pupitre peut alors corriger son contenu et réutiliser le même UUID.
 
 ---
 

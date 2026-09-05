@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.beans.factory.annotation.Autowired;
 import tools.jackson.databind.ObjectMapper;
@@ -52,13 +53,16 @@ public class FeuilleDeTempsSteps {
   @Given("{string} est arrive a {string}")
   public void estArriveA(String alias, String instant) {
     horloge.ilEst(Instant.parse(instant));
-    rest.post(JOURNEES_URI, JSON.writeValueAsString(Map.of("operateur", operateurs.get(alias))));
+    rest.post(JOURNEES_URI, JSON.writeValueAsString(Map.of("id", UUID.randomUUID(), "operateur", operateurs.get(alias))));
   }
 
   @Given("{string} a pointe {string} a {string}")
   public void aPointeA(String alias, String type, String instant) {
     horloge.ilEst(Instant.parse(instant));
-    rest.post(JOURNEES_URI + "/pointages", JSON.writeValueAsString(Map.of("operateur", operateurs.get(alias), "type", type)));
+    rest.post(
+      JOURNEES_URI + "/pointages",
+      JSON.writeValueAsString(Map.of("id", UUID.randomUUID(), "operateur", operateurs.get(alias), "type", type))
+    );
   }
 
   @When("je consulte la feuille de temps de {string} pour la semaine {int} de {int}")
