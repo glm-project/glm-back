@@ -266,8 +266,11 @@ Une `dateDeSurvenue` strictement postérieure à l'instant courant répond 400 a
 - **`nature` est vide dès qu'aucun poste n'est pointé**, puisqu'elle vient du poste. Un pointage sans poste n'a pas de
   nature, et c'est le comportement nominal d'une entreprise sans parc machine.
 - **`coutHoraire` et `tauxHoraire` ne sont exposés que sur les événements du journal**, pas sur `temps-effectif`
-  (les intervalles rendus par `GET /api/atelier/suivis/{id}/temps-effectif`) : la valorisation du temps réparti est un
-  lot à part, distinct de la capture.
+  (les intervalles rendus par `GET /api/atelier/suivis/{id}/temps-effectif`) : l'atelier capture ces valeurs, il ne
+  les combine jamais. La valorisation vit dans un autre contexte, `GET /api/couts-de-revient/{elementId}`, qui rend
+  une ligne par nature d'opération avec le temps passé, le temps de non conformité daté, et le coût séparé en machine
+  et main d'œuvre. Deux différences à connaître avant de brancher un écran dessus : il s'appelle avec l'identifiant
+  de l'**élément de fabrication**, pas celui du suivi, et il est réservé au rôle `GESTIONNAIRE`.
 - **Régulariser sur un poste dont l'opérateur a été dé-habilité depuis est refusé** (409), l'habilitation étant
   vérifiée sur les trois actes de correction. Retirer une habilitation ferme donc aussi la porte au rattrapage des
   saisies passées sur ce poste.
