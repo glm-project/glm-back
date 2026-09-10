@@ -20,7 +20,7 @@ class SyntheseDesHeuresServiceTest {
 
   @Test
   void shouldNotLireLaSyntheseDUnOperateurInconnu() {
-    SyntheseDesHeuresService service = new SyntheseDesHeuresService(PresencesEnMemoire.sansJournee(), REFERENTIEL, A_PARIS);
+    SynthesesDesHeuresService service = new SynthesesDesHeuresService(PresencesEnMemoire.sansJournee(), REFERENTIEL, A_PARIS);
 
     assertThatThrownBy(() -> service.synthese(OPERATEUR_ID_MARTIN, SEMAINE_20_DE_2026))
       .isExactlyInstanceOf(OperateurInconnuException.class)
@@ -160,7 +160,7 @@ class SyntheseDesHeuresServiceTest {
   }
 
   private static SyntheseDesHeures syntheseDeDupont(PresencesEnMemoire presences) {
-    return new SyntheseDesHeuresService(presences, REFERENTIEL, A_PARIS).synthese(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
+    return new SynthesesDesHeuresService(presences, REFERENTIEL, A_PARIS).synthese(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
   }
 
   private static JourDeSynthese jourDe(SyntheseDesHeures synthese, LocalDate jour) {

@@ -35,7 +35,7 @@ persistance — l'objet naît et meurt dans l'appel.
 Chaque `JourDeSynthese` porte ses `Pointage` (un `EvenementDePresence` et un booléen `valide`) et sa `duree`
 (`java.time.Duration`, somme des fenêtres de présence closes de ce jour, pauses exclues).
 
-`SyntheseDesHeuresService` est la fabrique : elle demande les journées qui **recouvrent** la semaine, replie chacune
+`SynthesesDesHeuresService` est la fabrique : elle demande les journées qui **recouvrent** la semaine, replie chacune
 en pointages classés et en fenêtres de présence via `JourneeDeTravail`, puis ramène le tout aux jours du calendrier
 avec `DecoupageCalendaire`.
 
@@ -67,6 +67,14 @@ C'est le même automate dupliqué deux fois (`feuilledetemps` et ce contexte), a
 le même cas limite. Rien n'oblige les deux implémentations à rester identiques passé la frontière de contexte —
 c'est même tout l'intérêt de la frontière : chacune répond au besoin de son propre rapport.
 
+**Ce cas n'est aujourd'hui pas atteignable par l'API réelle.** `atelier` rejoue et valide **tout** le journal à
+chaque écriture, y compris une annulation — vérifié en pratique : annuler une pause qui laisserait une reprise
+orpheline est refusé par `atelier` lui-même (`409 transition-de-presence-interdite`), avant même d'atteindre ce
+contexte. La résilience reste une défense en profondeur légitime (données migrées, évolution future de la validation
+d'`atelier`, accès direct à la base) et reste vérifiée par les tests unitaires du domaine, qui construisent
+l'incohérence directement sans passer par `atelier` — mais `src/test/features/synthese_des_heures.feature` ne porte
+aucun scénario pour ce cas, faute de moyen de le déclencher via l'API.
+
 ## Ports sortants
 
 `PresenceDeLOperateur`, `OperateursConnus`, `FuseauHoraireDeLEntreprise`, implémentés par
@@ -86,14 +94,21 @@ quatrième nom.
 
 ## État d'avancement
 
-`domain` et `infrastructure/secondary` livrés (adapters JPA en lecture seule, entièrement vérifiés au démarrage du
-contexte Spring complet — aucune collision de bean ni d'entité). `application`, `infrastructure/primary`
-(contrôleur REST, OpenAPI) et le scénario Cucumber qui tiendrait ce repli aligné avec celui d'`atelier` restent à
-faire, sur le patron de `feuilledetemps`.
+Les quatre couches sont livrées : `domain`, `infrastructure/secondary` (adapters JPA en lecture seule),
+`application` (`SynthesesDesHeuresApplicationService`, ouvert à `USER` et `GESTIONNAIRE` — ce relevé affiche du
+temps, pas un montant, rien ne justifie de le réserver au gestionnaire comme `coutderevient`) et
+`infrastructure/primary` (`GET /api/syntheses-des-heures/{operateurId}?annee=&semaine=`).
 
-**Point d'attention** : à la différence de `domain`, les adapters `infrastructure/secondary` n'ont **aucun test
-dédié** — ni unitaire, ni d'intégration. C'est le patron déjà suivi par `feuilledetemps` et `coutderevient` : leur
-correction est vérifiée par le scénario Cucumber qui traverse toute la pile (écriture côté `atelier`, lecture par ce
-contexte), pas par un test isolé. Tant que ce scénario n'existe pas, ces classes restent à 0 % de couverture — la
-vérification stricte de `mvn verify` (`jacoco:check`) échouera sur ce lot pris isolément, ce qui est attendu : elle
-ne redeviendra verte qu'une fois `application`, `infrastructure/primary` et le scénario Cucumber ajoutés.
+`infrastructure/secondary` n'a **aucun test dédié** — ni unitaire, ni d'intégration : c'est le patron déjà suivi par
+`feuilledetemps` et `coutderevient`, leur correction étant vérifiée par le scénario Cucumber qui traverse toute la
+pile (écriture côté `atelier`, lecture par ce contexte). `src/test/features/synthese_des_heures.feature` tient ce
+rôle ici, sur le même principe que `feuille_de_temps.feature` : il pointe par l'API d'`atelier` et relit par celle
+de ce contexte, donc échoue dès que les deux cessent de lire les mêmes colonnes.
+
+**Piège de nommage Cucumber rencontré** : le glue Cucumber est scanné depuis la racine `com.glm.glmback` — un même
+texte de step défini dans deux classes lève une erreur de démarrage (`DuplicateStepDefinition`) qui fait échouer
+**toute** la suite, pas seulement ce fichier. `feuilledetemps` avait déjà pris « `{string} est arrive a {string}` »
+et « `{string} a pointe {string} a {string}` » ; ce contexte a dû inventer son propre phrasé (« pointe son arrivee
+a », « enregistre le pointage ... a »), sur le même principe que `CoutDeRevientSteps` (« prend son poste a »,
+« pointe sa presence ... a »). Un texte de step générique se choisit donc en vérifiant d'abord qu'aucune autre
+classe de `src/test/java` ne le porte déjà.

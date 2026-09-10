@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
  * jamais la lecture — voir {@link JourneeDeTravail}, dont le repli est tolerant.
  * </p>
  */
-public final class SyntheseDesHeuresService {
+public final class SynthesesDesHeuresService {
 
   private static final Comparator<Pointage> PAR_HEURE = Comparator.comparing(pointage -> pointage.evenement().dateDeSurvenue());
 
@@ -24,7 +24,7 @@ public final class SyntheseDesHeuresService {
   private final OperateursConnus operateurs;
   private final FuseauHoraireDeLEntreprise fuseau;
 
-  public SyntheseDesHeuresService(PresenceDeLOperateur presences, OperateursConnus operateurs, FuseauHoraireDeLEntreprise fuseau) {
+  public SynthesesDesHeuresService(PresenceDeLOperateur presences, OperateursConnus operateurs, FuseauHoraireDeLEntreprise fuseau) {
     this.presences = presences;
     this.operateurs = operateurs;
     this.fuseau = fuseau;
