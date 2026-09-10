@@ -20,8 +20,7 @@ record RestSyntheseDesHeures(
   int annee,
   @Schema(description = "Numero de la semaine ISO.", example = "20") int semaine,
   @Schema(description = "Les sept jours, du lundi au dimanche.") List<RestJourDeSynthese> jours,
-  @Schema(description = "Duree travaillee de la semaine, somme des sept jours.", example = "PT38H") Duration dureeTotale,
-  @Schema(description = "Vrai des qu'un jour de la semaine porte une anomalie.") boolean aUneAnomalie
+  @Schema(description = "Duree travaillee de la semaine, somme des sept jours.", example = "PT38H") Duration dureeTotale
 ) {
   static RestSyntheseDesHeures from(SyntheseDesHeures synthese) {
     return new RestSyntheseDesHeures(
@@ -29,8 +28,7 @@ record RestSyntheseDesHeures(
       synthese.semaine().annee(),
       synthese.semaine().numero(),
       synthese.jours().stream().map(RestJourDeSynthese::from).toList(),
-      synthese.dureeTotale(),
-      synthese.aUneAnomalie()
+      synthese.dureeTotale()
     );
   }
 }

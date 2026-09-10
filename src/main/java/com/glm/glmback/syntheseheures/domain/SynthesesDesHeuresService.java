@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
  */
 public final class SynthesesDesHeuresService {
 
-  private static final Comparator<Pointage> PAR_HEURE = Comparator.comparing(pointage -> pointage.evenement().dateDeSurvenue());
+  private static final Comparator<EvenementDePresence> PAR_HEURE = Comparator.comparing(EvenementDePresence::dateDeSurvenue);
 
   private final PresenceDeLOperateur presences;
   private final OperateursConnus operateurs;
@@ -35,17 +35,17 @@ public final class SynthesesDesHeuresService {
     DecoupageCalendaire decoupage = new DecoupageCalendaire(semaine, fuseau.zone());
     List<JourneeDeTravail> journees = presences.journeesRecouvrant(operateur, decoupage.debut(), decoupage.finExclusive());
 
-    Map<LocalDate, List<Pointage>> pointagesParJour = pointagesParJour(journees, decoupage);
+    Map<LocalDate, List<EvenementDePresence>> pointagesParJour = pointagesParJour(journees, decoupage);
     Map<LocalDate, Duration> dureeParJour = dureeParJour(journees, decoupage);
 
     return new SyntheseDesHeures(connu, semaine, jours(decoupage, pointagesParJour, dureeParJour));
   }
 
-  private Map<LocalDate, List<Pointage>> pointagesParJour(List<JourneeDeTravail> journees, DecoupageCalendaire decoupage) {
+  private Map<LocalDate, List<EvenementDePresence>> pointagesParJour(List<JourneeDeTravail> journees, DecoupageCalendaire decoupage) {
     return journees
       .stream()
       .flatMap(journee -> journee.pointages().stream())
-      .filter(pointage -> decoupage.jours().contains(jourDe(pointage)))
+      .filter(evenement -> decoupage.jours().contains(jourDe(evenement)))
       .sorted(PAR_HEURE)
       .collect(Collectors.groupingBy(this::jourDe));
   }
@@ -68,8 +68,8 @@ public final class SynthesesDesHeuresService {
     return Duration.between(plageDUnJour.plage().debut(), plageDUnJour.plage().fin().orElseThrow());
   }
 
-  private LocalDate jourDe(Pointage pointage) {
-    return LocalDate.ofInstant(pointage.evenement().dateDeSurvenue(), fuseau.zone());
+  private LocalDate jourDe(EvenementDePresence evenement) {
+    return LocalDate.ofInstant(evenement.dateDeSurvenue(), fuseau.zone());
   }
 
   /**
@@ -77,7 +77,7 @@ public final class SynthesesDesHeuresService {
    */
   private static List<JourDeSynthese> jours(
     DecoupageCalendaire decoupage,
-    Map<LocalDate, List<Pointage>> pointagesParJour,
+    Map<LocalDate, List<EvenementDePresence>> pointagesParJour,
     Map<LocalDate, Duration> dureeParJour
   ) {
     return decoupage

@@ -13,18 +13,10 @@ import java.util.List;
  * manque une journee ou si l'operateur n'etait pas la.
  * </p>
  */
-public record JourDeSynthese(LocalDate jour, List<Pointage> pointages, Duration duree) {
+public record JourDeSynthese(LocalDate jour, List<EvenementDePresence> pointages, Duration duree) {
   public JourDeSynthese {
     Assert.notNull("jour", jour);
     Assert.field("pointages", pointages).notNull().noNullElement();
     Assert.notNull("duree", duree);
-  }
-
-  /**
-   * Vrai des qu'un pointage de ce jour casse l'automate de presence — le signal, pour le gestionnaire, qu'une
-   * correction est attendue sur le journal d'atelier.
-   */
-  public boolean aUneAnomalie() {
-    return pointages.stream().anyMatch(pointage -> !pointage.valide());
   }
 }

@@ -12,7 +12,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 @UnitTest
-class SyntheseDesHeuresServiceTest {
+class SynthesesDesHeuresServiceTest {
 
   private static final OperateursConnus REFERENTIEL = id ->
     Optional.of(OPERATEUR_CONNU_DUPONT).filter(operateur -> operateur.id().equals(id));
@@ -85,9 +85,8 @@ class SyntheseDesHeuresServiceTest {
     SyntheseDesHeures synthese = syntheseDeDupont(PresencesEnMemoire.avec(List.of(journeeDuLundiDe8HA17HAvecPauseDeMidi())));
 
     assertThat(jourDe(synthese, LUNDI_11_MAI_2026).pointages())
-      .extracting(pointage -> pointage.evenement().dateDeSurvenue())
+      .extracting(EvenementDePresence::dateDeSurvenue)
       .containsExactly(LE_LUNDI_11_MAI_2026_A_8H, LE_LUNDI_11_MAI_2026_A_12H, LE_LUNDI_11_MAI_2026_A_13H, LE_LUNDI_11_MAI_2026_A_17H);
-    assertThat(jourDe(synthese, LUNDI_11_MAI_2026).pointages()).allSatisfy(pointage -> assertThat(pointage.valide()).isTrue());
   }
 
   @Test
@@ -107,12 +106,12 @@ class SyntheseDesHeuresServiceTest {
 
     assertThat(jourDe(synthese, LUNDI_11_MAI_2026).duree()).isEqualTo(Duration.ofHours(2));
     assertThat(jourDe(synthese, MARDI_12_MAI_2026).duree()).isEqualTo(Duration.ofHours(2));
-    assertThat(jourDe(synthese, LUNDI_11_MAI_2026).pointages())
-      .extracting(pointage -> pointage.evenement().dateDeSurvenue())
-      .containsExactly(LE_LUNDI_11_MAI_2026_A_22H);
-    assertThat(jourDe(synthese, MARDI_12_MAI_2026).pointages())
-      .extracting(pointage -> pointage.evenement().dateDeSurvenue())
-      .containsExactly(LE_MARDI_12_MAI_2026_A_2H);
+    assertThat(jourDe(synthese, LUNDI_11_MAI_2026).pointages()).extracting(EvenementDePresence::dateDeSurvenue).containsExactly(
+      LE_LUNDI_11_MAI_2026_A_22H
+    );
+    assertThat(jourDe(synthese, MARDI_12_MAI_2026).pointages()).extracting(EvenementDePresence::dateDeSurvenue).containsExactly(
+      LE_MARDI_12_MAI_2026_A_2H
+    );
   }
 
   /**
@@ -124,30 +123,22 @@ class SyntheseDesHeuresServiceTest {
     SyntheseDesHeures synthese = syntheseDeDupont(PresencesEnMemoire.avec(List.of(journeeDuMardiOuverteA8H())));
 
     assertThat(jourDe(synthese, MARDI_12_MAI_2026).duree()).isZero();
-    assertThat(jourDe(synthese, MARDI_12_MAI_2026).pointages())
-      .extracting(pointage -> pointage.evenement().dateDeSurvenue())
-      .containsExactly(LE_MARDI_12_MAI_2026_A_8H);
+    assertThat(jourDe(synthese, MARDI_12_MAI_2026).pointages()).extracting(EvenementDePresence::dateDeSurvenue).containsExactly(
+      LE_MARDI_12_MAI_2026_A_8H
+    );
   }
 
   /**
-   * Un pointage fautif ne bloque jamais la generation du releve : il reste visible, marque invalide, et le jour
-   * signale l'anomalie sans que la duree n'en tienne compte.
+   * Un pointage fautif ne bloque jamais la generation du releve : il est ignore silencieusement, absent du jour
+   * qui le portait, sans que la duree n'en tienne compte.
    */
   @Test
-  void shouldSignalerUneAnomalieSansCompterLePointageFautifDansLaDuree() {
+  void shouldIgnorerLePointageFautifSansLeCompterDansLaDuree() {
     SyntheseDesHeures synthese = syntheseDeDupont(PresencesEnMemoire.avec(List.of(journeeDuMercrediAvecPauseSansArrivee())));
 
     JourDeSynthese mercredi = jourDe(synthese, MERCREDI_13_MAI_2026);
-    assertThat(mercredi.aUneAnomalie()).isTrue();
+    assertThat(mercredi.pointages()).isEmpty();
     assertThat(mercredi.duree()).isZero();
-    assertThat(mercredi.pointages()).extracting(Pointage::valide).containsExactly(false);
-  }
-
-  @Test
-  void shouldNotSignalerDAnomalieSurUnJourSansPointageFautif() {
-    SyntheseDesHeures synthese = syntheseDeDupont(PresencesEnMemoire.avec(List.of(journeeDuLundiDe8HA17HAvecPauseDeMidi())));
-
-    assertThat(jourDe(synthese, LUNDI_11_MAI_2026).aUneAnomalie()).isFalse();
   }
 
   @Test

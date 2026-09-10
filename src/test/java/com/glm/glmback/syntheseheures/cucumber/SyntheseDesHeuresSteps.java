@@ -95,14 +95,7 @@ public class SyntheseDesHeuresSteps {
     List<Map<String, String>> pointages = pointagesDu(jour)
       .stream()
       .map(pointage ->
-        Map.of(
-          "type",
-          String.valueOf(pointage.get("type")),
-          "dateDeSurvenue",
-          String.valueOf(pointage.get("dateDeSurvenue")),
-          "valide",
-          String.valueOf(pointage.get("valide"))
-        )
+        Map.of("type", String.valueOf(pointage.get("type")), "dateDeSurvenue", String.valueOf(pointage.get("dateDeSurvenue")))
       )
       .toList();
 
@@ -114,19 +107,9 @@ public class SyntheseDesHeuresSteps {
     assertThat(jourDe(jour).get("duree")).isEqualTo(duree);
   }
 
-  @Then("le jour {string} ne porte aucune anomalie")
-  public void leJourNePorteAucuneAnomalie(String jour) {
-    assertThat(jourDe(jour).get("aUneAnomalie")).isEqualTo(false);
-  }
-
   @Then("la duree totale de la semaine est {string}")
   public void laDureeTotaleDeLaSemaineEst(String duree) {
     assertThat(CucumberRestTestContext.getElement("$.dureeTotale")).isEqualTo(duree);
-  }
-
-  @Then("la synthese ne porte aucune anomalie")
-  public void laSyntheseNePorteAucuneAnomalie() {
-    assertThat(CucumberRestTestContext.getElement("$.aUneAnomalie")).isEqualTo(false);
   }
 
   private void consulte(String operateur, int semaine, int annee) {

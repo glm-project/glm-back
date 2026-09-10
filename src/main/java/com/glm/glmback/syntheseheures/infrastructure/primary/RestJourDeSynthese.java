@@ -17,15 +17,9 @@ import java.util.List;
 record RestJourDeSynthese(
   @Schema(description = "Date du jour, dans le fuseau de l'entreprise.", example = "2026-05-11") LocalDate jour,
   @Schema(description = "Les pointages de ce jour, dans l'ordre des heures.") List<RestPointage> pointages,
-  @Schema(description = "Duree travaillee du jour, pauses exclues. Ignore tout pointage invalide.", example = "PT8H") Duration duree,
-  @Schema(description = "Vrai des qu'un pointage de ce jour casse l'automate de presence.") boolean aUneAnomalie
+  @Schema(description = "Duree travaillee du jour, pauses exclues.", example = "PT8H") Duration duree
 ) {
   static RestJourDeSynthese from(JourDeSynthese jour) {
-    return new RestJourDeSynthese(
-      jour.jour(),
-      jour.pointages().stream().map(RestPointage::from).toList(),
-      jour.duree(),
-      jour.aUneAnomalie()
-    );
+    return new RestJourDeSynthese(jour.jour(), jour.pointages().stream().map(RestPointage::from).toList(), jour.duree());
   }
 }

@@ -17,15 +17,10 @@ class SyntheseDesHeuresTest {
 
   private static final JourDeSynthese LUNDI_8H = new JourDeSynthese(
     LocalDate.of(2026, 5, 11),
-    List.of(new Pointage(arriveeA(LE_LUNDI_11_MAI_2026_A_8H), true)),
+    List.of(arriveeA(LE_LUNDI_11_MAI_2026_A_8H)),
     Duration.ofHours(8)
   );
   private static final JourDeSynthese MARDI_SANS_PRESENCE = new JourDeSynthese(LocalDate.of(2026, 5, 12), List.of(), Duration.ZERO);
-  private static final JourDeSynthese MERCREDI_AVEC_ANOMALIE = new JourDeSynthese(
-    LocalDate.of(2026, 5, 13),
-    List.of(new Pointage(pauseA(LE_LUNDI_11_MAI_2026_A_12H), false)),
-    Duration.ZERO
-  );
 
   @Test
   void shouldNotBuildWithoutOperateur() {
@@ -75,23 +70,5 @@ class SyntheseDesHeuresTest {
     );
 
     assertThat(synthese.dureeTotale()).isEqualTo(Duration.ofHours(8));
-  }
-
-  @Test
-  void shouldNotSignalerDAnomalieQuandAucunJourNEnPorte() {
-    SyntheseDesHeures synthese = new SyntheseDesHeures(OPERATEUR_CONNU_DUPONT, SEMAINE_20_DE_2026, List.of(LUNDI_8H, MARDI_SANS_PRESENCE));
-
-    assertThat(synthese.aUneAnomalie()).isFalse();
-  }
-
-  @Test
-  void shouldSignalerUneAnomalieDesQuUnJourEnPorteUne() {
-    SyntheseDesHeures synthese = new SyntheseDesHeures(
-      OPERATEUR_CONNU_DUPONT,
-      SEMAINE_20_DE_2026,
-      List.of(LUNDI_8H, MERCREDI_AVEC_ANOMALIE)
-    );
-
-    assertThat(synthese.aUneAnomalie()).isTrue();
   }
 }

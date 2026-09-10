@@ -41,14 +41,11 @@ class JourneeDeTravailTest {
    */
   @Test
   void shouldScinderLaJourneeSurLaPause() {
-    JourneeDeTravail journee = new JourneeDeTravail(
-      List.of(
-        arriveeA(LE_LUNDI_11_MAI_2026_A_8H),
-        pauseA(LE_LUNDI_11_MAI_2026_A_12H),
-        repriseA(LE_LUNDI_11_MAI_2026_A_13H),
-        departA(LE_LUNDI_11_MAI_2026_A_17H)
-      )
-    );
+    EvenementDePresence arrivee = arriveeA(LE_LUNDI_11_MAI_2026_A_8H);
+    EvenementDePresence pause = pauseA(LE_LUNDI_11_MAI_2026_A_12H);
+    EvenementDePresence reprise = repriseA(LE_LUNDI_11_MAI_2026_A_13H);
+    EvenementDePresence depart = departA(LE_LUNDI_11_MAI_2026_A_17H);
+    JourneeDeTravail journee = new JourneeDeTravail(List.of(arrivee, pause, reprise, depart));
 
     List<Plage> fenetres = journee.fenetres();
 
@@ -57,7 +54,7 @@ class JourneeDeTravailTest {
     assertThat(fenetres.getFirst().fin()).contains(LE_LUNDI_11_MAI_2026_A_12H);
     assertThat(fenetres.getLast().debut()).isEqualTo(LE_LUNDI_11_MAI_2026_A_13H);
     assertThat(fenetres.getLast().fin()).contains(LE_LUNDI_11_MAI_2026_A_17H);
-    assertThat(journee.pointages()).allSatisfy(pointage -> assertThat(pointage.valide()).isTrue());
+    assertThat(journee.pointages()).containsExactly(arrivee, pause, reprise, depart);
   }
 
   /**
@@ -111,21 +108,21 @@ class JourneeDeTravailTest {
   }
 
   /**
-   * Une transition impossible ne doit jamais empecher la generation du releve : le pointage fautif reste visible,
-   * marque invalide, et n'entre pour rien dans le calcul des fenetres.
+   * Une transition impossible ne doit jamais empecher la generation du releve : le pointage fautif est ignore
+   * silencieusement, absent aussi bien des pointages que des fenetres.
    */
   @Test
-  void shouldMarquerUnPointageFautifSansLeCompterDansLesFenetres() {
+  void shouldIgnorerUnPointageFautifSansLeCompterNiDansLesPointagesNiDansLesFenetres() {
     EvenementDePresence pauseSansArrivee = pauseA(LE_LUNDI_11_MAI_2026_A_12H);
     JourneeDeTravail journee = new JourneeDeTravail(List.of(pauseSansArrivee));
 
-    assertThat(journee.pointages()).containsExactly(new Pointage(pauseSansArrivee, false));
+    assertThat(journee.pointages()).isEmpty();
     assertThat(journee.fenetres()).isEmpty();
   }
 
   /**
-   * Les pointages valides qui encadrent une anomalie construisent quand meme leurs fenetres correctement : l'
-   * anomalie est ignoree, pas propagee au reste de la journee.
+   * Les pointages valides qui encadrent une anomalie construisent quand meme leurs fenetres correctement : le
+   * pointage fautif est ignore, pas propage au reste de la journee.
    */
   @Test
   void shouldIgnorerLePointageFautifSansCasserLaSuiteDeLaJournee() {
@@ -134,11 +131,7 @@ class JourneeDeTravailTest {
     EvenementDePresence depart = departA(LE_LUNDI_11_MAI_2026_A_17H);
     JourneeDeTravail journee = new JourneeDeTravail(List.of(arrivee, arriveeFautive, depart));
 
-    assertThat(journee.pointages()).containsExactly(
-      new Pointage(arrivee, true),
-      new Pointage(arriveeFautive, false),
-      new Pointage(depart, true)
-    );
+    assertThat(journee.pointages()).containsExactly(arrivee, depart);
     assertThat(journee.fenetres()).containsExactly(new Plage(LE_LUNDI_11_MAI_2026_A_8H, Optional.of(LE_LUNDI_11_MAI_2026_A_17H)));
   }
 
@@ -152,7 +145,7 @@ class JourneeDeTravailTest {
     EvenementDePresence repriseOrpheline = repriseA(LE_LUNDI_11_MAI_2026_A_13H);
     JourneeDeTravail journee = new JourneeDeTravail(List.of(arrivee, repriseOrpheline));
 
-    assertThat(journee.pointages()).containsExactly(new Pointage(arrivee, true), new Pointage(repriseOrpheline, false));
+    assertThat(journee.pointages()).containsExactly(arrivee);
     assertThat(journee.fenetres()).containsExactly(new Plage(LE_LUNDI_11_MAI_2026_A_8H, Optional.empty()));
   }
 }

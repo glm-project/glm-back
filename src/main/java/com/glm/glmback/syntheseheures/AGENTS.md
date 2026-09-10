@@ -32,8 +32,8 @@ ne possède aucune table, n'écrit rien, et recalcule tout à chaque appel.
 `SyntheseDesHeures` : un opérateur résolu, une `SemaineCalendaire`, sept `JourDeSynthese`. Aucune identité, aucune
 persistance — l'objet naît et meurt dans l'appel.
 
-Chaque `JourDeSynthese` porte ses `Pointage` (un `EvenementDePresence` et un booléen `valide`) et sa `duree`
-(`java.time.Duration`, somme des fenêtres de présence closes de ce jour, pauses exclues).
+Chaque `JourDeSynthese` porte ses pointages (`List<EvenementDePresence>`) et sa `duree` (`java.time.Duration`, somme
+des fenêtres de présence closes de ce jour, pauses exclues).
 
 `SynthesesDesHeuresService` est la fabrique : elle demande les journées qui **recouvrent** la semaine, replie chacune
 en pointages classés et en fenêtres de présence via `JourneeDeTravail`, puis ramène le tout aux jours du calendrier
@@ -43,10 +43,10 @@ avec `DecoupageCalendaire`.
 
 - **Le journal reste la source de vérité.** La présence se rejoue toujours depuis `evenement_de_presence`.
 - **Les sept jours sont toujours rendus**, vides compris.
-- **Un pointage fautif ne bloque jamais la lecture.** `JourneeDeTravail.pointages()` rend **tous** les pointages,
-  valides ou non ; `JourneeDeTravail.fenetres()` n'utilise que les valides. `JourDeSynthese.aUneAnomalie()` et
-  `SyntheseDesHeures.aUneAnomalie()` sont des méthodes **dérivées** des `Pointage` — jamais un champ stocké à part,
-  qui pourrait diverger de ce qu'ils portent réellement.
+- **Un pointage fautif ne bloque jamais la lecture.** `JourneeDeTravail.pointages()` et `.fenetres()` l'ignorent
+  tous deux, silencieusement — ni exception, ni marqueur exposé. Aucun flag `valide`/anomalie n'existe dans ce
+  contexte : il aurait toujours valu vrai, ce cas étant prouvé inatteignable par l'API (voir plus bas), donc aucune
+  information à porter.
 - **Une fenêtre encore ouverte ne contribue rien à la durée.** Sans départ pointé et sans horloge dans ce contexte,
   aucune extrapolation jusqu'à « maintenant » n'est possible — transposition de la règle que `feuilledetemps`
   applique déjà à l'affichage d'une plage ouverte.
@@ -59,22 +59,26 @@ avec `DecoupageCalendaire`.
 
 `feuilledetemps.JourneeDeTravail` lève `TransitionDePresenceInterditeException` sur une transition impossible : le
 repli échoue plutôt que de mentir sur la présence affichée. Ici, la même situation ne doit **jamais** empêcher la
-génération du relevé — le gestionnaire doit pouvoir voir le pointage fautif pour le corriger côté `atelier`, pas
-recevoir une erreur 500. `JourneeDeTravail` de ce contexte n'a donc **pas** cette exception : son repli est total,
-il classe chaque pointage valide/invalide au lieu d'échouer dessus.
+génération du relevé. `JourneeDeTravail` de ce contexte n'a donc **pas** cette exception : son repli est total, il
+**ignore silencieusement** un pointage fautif, aussi bien dans `pointages()` que dans `fenetres()`.
 
 C'est le même automate dupliqué deux fois (`feuilledetemps` et ce contexte), avec des comportements différents sur
 le même cas limite. Rien n'oblige les deux implémentations à rester identiques passé la frontière de contexte —
 c'est même tout l'intérêt de la frontière : chacune répond au besoin de son propre rapport.
 
-**Ce cas n'est aujourd'hui pas atteignable par l'API réelle.** `atelier` rejoue et valide **tout** le journal à
-chaque écriture, y compris une annulation — vérifié en pratique : annuler une pause qui laisserait une reprise
-orpheline est refusé par `atelier` lui-même (`409 transition-de-presence-interdite`), avant même d'atteindre ce
-contexte. La résilience reste une défense en profondeur légitime (données migrées, évolution future de la validation
-d'`atelier`, accès direct à la base) et reste vérifiée par les tests unitaires du domaine
-(`JourneeDeTravailTest.shouldOuvrirLaFenetreALArriveeMemeAvecUneRepriseOrphelineApres`), qui construisent
-l'incohérence directement sans passer par `atelier` — mais `src/test/features/synthese_des_heures.feature` ne porte
-aucun scénario pour ce cas, faute de moyen de le déclencher via l'API.
+**Ce cas n'est pas atteignable par l'API réelle.** `atelier` rejoue et valide **tout** le journal à chaque écriture,
+y compris une annulation — vérifié en pratique : annuler une pause qui laisserait une reprise orpheline est refusé
+par `atelier` lui-même (`409 transition-de-presence-interdite`), avant même d'atteindre ce contexte. Conséquence
+assumée (YAGNI) : ce contexte n'a **jamais porté de champ `valide`/anomalie**, ni domaine ni API — un flag qui
+vaudrait toujours vrai ne porte aucune information, et l'exposer aurait ajouté une surface d'API et de tests sans
+justification. Le pointage fautif est donc simplement absent du relevé, comme s'il n'existait pas.
+
+La résilience elle-même (ne jamais lever d'exception) reste une défense en profondeur légitime (données migrées,
+évolution future de la validation d'`atelier`, accès direct à la base) et reste vérifiée par les tests unitaires du
+domaine (`JourneeDeTravailTest.shouldIgnorerUnPointageFautifSansLeCompterNiDansLesPointagesNiDansLesFenetres` et les
+cas voisins), qui construisent l'incohérence directement sans passer par `atelier` — mais
+`src/test/features/synthese_des_heures.feature` ne porte aucun scénario pour ce cas, faute de moyen de le déclencher
+via l'API.
 
 Un test d'intégration insérant l'incohérence par SQL brut (`JdbcTemplate`) a été tenté puis abandonné : le pool est
 configuré `auto-commit=false` (comme en production), et le binding JDBC d'un horodatage hors session Hibernate s'est

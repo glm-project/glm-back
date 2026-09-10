@@ -18,10 +18,11 @@ import java.util.Optional;
  *
  * <p>
  * <strong>Le repli est tolerant, a la difference de son jumeau {@code feuilledetemps}</strong> : un pointage qui ne
- * s'enchaine pas selon l'automate de presence ne fait jamais echouer la lecture. Le releve doit rester genere quoi
- * qu'il arrive — c'est le gestionnaire qui corrigera le journal depuis l'ecran d'atelier, pas ce contexte qui
- * refusera de produire une synthese. Le pointage fautif reste visible dans {@link #pointages()}, marque invalide, et
- * ignore par {@link #fenetres()}.
+ * s'enchaine pas selon l'automate de presence ne fait jamais echouer la lecture — le releve doit rester genere quoi
+ * qu'il arrive. Ce pointage est simplement ignore, silencieusement, comme s'il n'existait pas : ni retenu dans
+ * {@link #pointages()}, ni compte dans {@link #fenetres()}. En pratique ce cas ne se produit jamais via l'API —
+ * {@code atelier} valide tout le journal a chaque ecriture — donc ce repli tolerant ne joue qu'en defense en
+ * profondeur, sur une donnee qui existerait hors du chemin applicatif normal.
  * </p>
  */
 public record JourneeDeTravail(List<EvenementDePresence> journal) {
@@ -33,33 +34,34 @@ public record JourneeDeTravail(List<EvenementDePresence> journal) {
   }
 
   /**
-   * Tous les pointages du journal, valides ou non, dans l'ordre chronologique.
+   * Les pointages valides du journal, dans l'ordre chronologique. Un pointage dont l'enchainement casse l'automate
+   * de presence n'y figure pas.
    */
-  public List<Pointage> pointages() {
+  public List<EvenementDePresence> pointages() {
     return repli().pointages();
   }
 
   /**
-   * Les intervalles ou l'operateur etait present et non en pause, dans l'ordre — construits uniquement a partir des
-   * pointages valides.
+   * Les intervalles ou l'operateur etait present et non en pause, dans l'ordre.
    */
   public List<Plage> fenetres() {
     return repli().fenetres();
   }
 
   private Repli repli() {
-    List<Pointage> pointages = new ArrayList<>();
+    List<EvenementDePresence> pointages = new ArrayList<>();
     List<Plage> fenetres = new ArrayList<>();
     EtatDePresence etat = EtatDePresence.ABSENT;
     Instant debutFenetre = null;
 
     for (EvenementDePresence evenement : journal) {
       Optional<EtatDePresence> apres = etat.apres(evenement.type());
-      pointages.add(new Pointage(evenement, apres.isPresent()));
 
       if (apres.isEmpty()) {
-        continue;
+        continue; // pointage fautif : ignore silencieusement, n'entre dans aucun des deux resultats
       }
+
+      pointages.add(evenement);
 
       EtatDePresence nouvelEtat = apres.get();
       // L'automate ne mappe jamais PRESENT sur PRESENT (voir EtatDePresence) : verifier l'etat d'arrivee suffit,
@@ -79,5 +81,5 @@ public record JourneeDeTravail(List<EvenementDePresence> journal) {
     return new Repli(List.copyOf(pointages), List.copyOf(fenetres));
   }
 
-  private record Repli(List<Pointage> pointages, List<Plage> fenetres) {}
+  private record Repli(List<EvenementDePresence> pointages, List<Plage> fenetres) {}
 }

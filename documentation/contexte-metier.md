@@ -356,23 +356,22 @@ jours.
 
 ### La résilience face aux anomalies du journal
 
-**Un pointage qui casse l'automate de présence n'empêche jamais la génération du relevé.** Il reste visible, marqué
-invalide, et n'entre pour rien dans le calcul de la durée — seuls les pointages dont l'enchaînement est valide
-comptent. Chaque jour expose s'il porte une anomalie, comme signal pour le gestionnaire.
+**Un pointage qui casse l'automate de présence n'empêche jamais la génération du relevé.** Contrairement à
+`feuilledetemps`, qui lève une exception sur la même situation, ce contexte l'**ignore silencieusement** — ni
+exception, ni marqueur exposé : le pointage fautif est simplement absent du relevé, comme s'il n'existait pas.
 
-C'est un écart assumé par rapport à `feuilledetemps`, qui lève une exception sur la même situation : les deux
-contextes dupliquent le même automate, rien n'oblige leurs replis à rester identiques passé la frontière.
+Ce cas n'est en pratique **pas atteignable par l'API** : `atelier` valide tout le journal à chaque écriture, y
+compris une annulation, et refuse déjà celle qui laisserait un pointage orphelin
+(`409 transition-de-presence-interdite`). Conséquence assumée (YAGNI) : ce contexte ne porte **aucun champ
+`valide`/anomalie**, ni domaine ni API — un flag qui vaudrait toujours vrai ne porte aucune information. La
+résilience elle-même (ne jamais lever d'exception) reste une défense en profondeur légitime — donnée migrée,
+validation d'`atelier` amenée à évoluer, accès direct à la base — vérifiée par les tests unitaires du domaine, qui
+construisent l'incohérence directement ; aucun scénario Cucumber ne la couvre, faute de moyen de la déclencher.
 
 Le **catalogue transverse des anomalies** (toutes semaines, tous opérateurs confondus) et l'écran récapitulatif du
 gestionnaire ne vivent pas ici : une anomalie de transition est une propriété du **journal** lui-même, pas d'une
 semaine ni d'un rapport demandé. `atelier` possède déjà l'écran de correction du journal de présence
 (régularisation, annulation, correction) — c'est lui qui portera, plus tard, ce catalogue.
-
-Ce cas n'est en pratique **pas atteignable par l'API aujourd'hui** : `atelier` valide tout le journal à chaque
-écriture, y compris une annulation, et refuse déjà celle qui laisserait un pointage orphelin
-(`409 transition-de-presence-interdite`). La résilience reste une défense en profondeur légitime — donnée migrée,
-validation d'`atelier` amenée à évoluer, accès direct à la base — vérifiée par les tests unitaires du domaine, qui
-construisent l'incohérence directement ; aucun scénario Cucumber ne la couvre, faute de moyen de la déclencher.
 
 ### La lecture passe par la base, jamais par un import
 

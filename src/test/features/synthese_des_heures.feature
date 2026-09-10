@@ -5,11 +5,11 @@ Feature: Synthese des heures hebdomadaire d'un operateur
   # par jour. La difference porte sur ce que ce contexte ajoute a la feuille de temps : le journal brut des
   # pointages plutot que des fenetres repliees, et une duree travaillee calculee par jour et pour la semaine.
   #
-  # Le releve sait aussi absorber un pointage qui casse l'automate de presence (il reste visible, marque invalide,
-  # sans jamais empecher la lecture) — mais ce cas n'a pas de scenario ici : atelier valide tout le journal a
-  # chaque ecriture, y compris une annulation, et refuse deja celle qui laisserait un pointage orphelin. Cette
-  # resilience reste donc verifiee uniquement au niveau domaine (SyntheseDesHeuresServiceTest,
-  # JourneeDeTravailTest), en defense en profondeur plutot que sur un cas atteignable aujourd'hui par l'API.
+  # Un pointage qui casserait l'automate de presence n'apparaitrait pas dans le releve, sans jamais empecher sa
+  # lecture — mais ce cas n'a pas de scenario ici : atelier valide tout le journal a chaque ecriture, y compris une
+  # annulation, et refuse deja celle qui laisserait un pointage orphelin. Cette resilience n'est donc atteignable par
+  # aucune sequence d'appels API ; elle reste verifiee au niveau domaine (SynthesesDesHeuresServiceTest,
+  # JourneeDeTravailTest), en pure defense en profondeur.
   #
   # Les heures des scenarios sont en UTC, l'entreprise lit ses jours a Paris : en mai, 8h locales font 06:00Z.
   Background:
@@ -29,7 +29,6 @@ Feature: Synthese des heures hebdomadaire d'un operateur
       | 2026-05-17 |
     And chaque jour de la synthese ne porte aucun pointage et une duree de "PT0S"
     And la duree totale de la semaine est "PT0S"
-    And la synthese ne porte aucune anomalie
 
   Scenario: Une journee avec pause de midi porte son journal brut et sa duree
     Given "dupont" pointe son arrivee a "2026-05-11T06:00:00Z"
@@ -39,14 +38,13 @@ Feature: Synthese des heures hebdomadaire d'un operateur
     When je consulte la synthese des heures de "dupont" pour la semaine 20 de 2026
     Then la reponse a le statut http 200
     And les pointages du "2026-05-11" sont
-      | type    | dateDeSurvenue       | valide |
-      | ARRIVEE | 2026-05-11T06:00:00Z | true   |
-      | PAUSE   | 2026-05-11T10:00:00Z | true   |
-      | REPRISE | 2026-05-11T11:00:00Z | true   |
-      | DEPART  | 2026-05-11T15:00:00Z | true   |
+      | type    | dateDeSurvenue       |
+      | ARRIVEE | 2026-05-11T06:00:00Z |
+      | PAUSE   | 2026-05-11T10:00:00Z |
+      | REPRISE | 2026-05-11T11:00:00Z |
+      | DEPART  | 2026-05-11T15:00:00Z |
     # La pause de midi n'ote que son propre creux : 4h + 4h, jamais l'amplitude de 9h.
     And le jour "2026-05-11" a une duree de "PT8H"
-    And le jour "2026-05-11" ne porte aucune anomalie
 
   Scenario: Une equipe de nuit repartit sa duree sur les deux jours qu'elle traverse
     Given "dupont" pointe son arrivee a "2026-05-13T20:00:00Z"
@@ -63,8 +61,8 @@ Feature: Synthese des heures hebdomadaire d'un operateur
     When je consulte la synthese des heures de "dupont" pour la semaine 20 de 2026
     Then la reponse a le statut http 200
     And les pointages du "2026-05-15" sont
-      | type    | dateDeSurvenue       | valide |
-      | ARRIVEE | 2026-05-15T06:00:00Z | true   |
+      | type    | dateDeSurvenue       |
+      | ARRIVEE | 2026-05-15T06:00:00Z |
     And le jour "2026-05-15" a une duree de "PT0S"
 
   Scenario: Une synthese ne se lit pas pour un operateur inconnu

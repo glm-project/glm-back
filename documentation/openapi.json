@@ -677,12 +677,8 @@
       "RestJourDeSynthese" : {
         "description" : "Un jour du calendrier de l'entreprise, ses pointages et la duree travaillee qui lui revient.\n\nLes sept jours sont toujours rendus, meme vides : un trou obligerait le lecteur a deviner s'il manque une journee\nou si l'operateur n'etait pas la.\n",
         "properties" : {
-          "aUneAnomalie" : {
-            "description" : "Vrai des qu'un pointage de ce jour casse l'automate de presence.",
-            "type" : "boolean"
-          },
           "duree" : {
-            "description" : "Duree travaillee du jour, pauses exclues. Ignore tout pointage invalide.",
+            "description" : "Duree travaillee du jour, pauses exclues.",
             "example" : "PT8H",
             "type" : "string"
           },
@@ -1061,7 +1057,7 @@
         "type" : "object"
       },
       "RestPointageDeSyntheseDesHeures" : {
-        "description" : "Un pointage du journal de presence, tel qu'il figure dans le releve.\n\nUn pointage dont l'enchainement casse l'automate de presence (deux arrivees sans depart entre les deux, par\nexemple) reste visible, marque invalide : il n'empeche jamais la generation du releve, mais n'entre pour rien\ndans le calcul de la duree du jour. C'est le signal qu'une correction est attendue sur le journal d'atelier.\n",
+        "description" : "Un pointage du journal de presence, tel qu'il figure dans le releve.",
         "properties" : {
           "dateDeSurvenue" : {
             "description" : "Heure metier a laquelle le pointage a eu lieu.",
@@ -1072,13 +1068,9 @@
             "description" : "Nature du pointage.",
             "enum" : [ "ARRIVEE", "PAUSE", "REPRISE", "DEPART" ],
             "type" : "string"
-          },
-          "valide" : {
-            "description" : "Faux si ce pointage ne s'enchaine pas selon l'automate de presence — une correction est attendue.",
-            "type" : "boolean"
           }
         },
-        "required" : [ "dateDeSurvenue", "type", "valide" ],
+        "required" : [ "dateDeSurvenue", "type" ],
         "type" : "object"
       },
       "RestPosteDAtelier" : {
@@ -1317,10 +1309,6 @@
       "RestSyntheseDesHeures" : {
         "description" : "Le releve des heures d'un operateur sur une semaine ISO.\n\nRien n'est stocke : le releve est recalcule a chaque lecture depuis les journaux de l'atelier, pour qu'une saisie\nregularisee apres coup compte a l'heure ou le travail a eu lieu. Ce n'est ni une feuille de paie ni un rapport de\npaie : il expose du temps travaille, il ne calcule aucun montant.\n",
         "properties" : {
-          "aUneAnomalie" : {
-            "description" : "Vrai des qu'un jour de la semaine porte une anomalie.",
-            "type" : "boolean"
-          },
           "annee" : {
             "description" : "Annee ISO de la semaine. Attention, elle differe de l'annee civile aux changements d'annee.",
             "example" : 2026,
@@ -2964,7 +2952,7 @@
     },
     "/api/syntheses-des-heures/{operateurId}" : {
       "get" : {
-        "description" : "Rend les sept jours de la semaine ISO demandee. Chaque jour porte le journal brut des pointages (arrivee, pause,\nreprise, depart) et la duree travaillee, calculee sur les fenetres de presence, pauses exclues.\n\nUn pointage qui casse l'automate de presence n'empeche jamais la lecture : il reste visible, marque invalide, et\nn'entre pour rien dans le calcul de la duree. Le jour, puis la semaine, signalent alors une anomalie — le signal\nqu'une correction est attendue sur le journal d'atelier.\n\nLa semaine est toujours explicite : aucune semaine courante implicite, pour que deux appels identiques rendent\ntoujours la meme chose. L'annee est celle des semaines ISO, qui differe de l'annee civile a ses bornes — la\nsemaine 1 de 2026 commence le 29 decembre 2025.\n\nCe releve n'est ni une feuille de paie ni un rapport de paie : il expose du temps travaille pour l'alimenter,\nsans en etre une piece.\n",
+        "description" : "Rend les sept jours de la semaine ISO demandee. Chaque jour porte le journal brut des pointages (arrivee, pause,\nreprise, depart) et la duree travaillee, calculee sur les fenetres de presence, pauses exclues.\n\nLa semaine est toujours explicite : aucune semaine courante implicite, pour que deux appels identiques rendent\ntoujours la meme chose. L'annee est celle des semaines ISO, qui differe de l'annee civile a ses bornes — la\nsemaine 1 de 2026 commence le 29 decembre 2025.\n\nCe releve n'est ni une feuille de paie ni un rapport de paie : il expose du temps travaille pour l'alimenter,\nsans en etre une piece.\n",
         "operationId" : "get_3",
         "parameters" : [ {
           "description" : "Identifiant de l'operateur dans le referentiel.",

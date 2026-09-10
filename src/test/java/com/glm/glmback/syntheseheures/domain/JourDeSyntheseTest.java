@@ -16,8 +16,7 @@ import org.junit.jupiter.api.Test;
 class JourDeSyntheseTest {
 
   private static final LocalDate LUNDI_11_MAI_2026 = LocalDate.of(2026, 5, 11);
-  private static final Pointage ARRIVEE_VALIDE = new Pointage(arriveeA(LE_LUNDI_11_MAI_2026_A_8H), true);
-  private static final Pointage PAUSE_INVALIDE = new Pointage(pauseA(LE_LUNDI_11_MAI_2026_A_12H), false);
+  private static final EvenementDePresence ARRIVEE = arriveeA(LE_LUNDI_11_MAI_2026_A_8H);
 
   @Test
   void shouldNotBuildWithoutJour() {
@@ -35,7 +34,7 @@ class JourDeSyntheseTest {
 
   @Test
   void shouldNotBuildWithNullPointage() {
-    List<Pointage> pointages = Arrays.asList(ARRIVEE_VALIDE, null);
+    List<EvenementDePresence> pointages = Arrays.asList(ARRIVEE, null);
 
     assertThatThrownBy(() -> new JourDeSynthese(LUNDI_11_MAI_2026, pointages, Duration.ZERO))
       .isExactlyInstanceOf(NullElementInCollectionException.class)
@@ -51,24 +50,10 @@ class JourDeSyntheseTest {
 
   @Test
   void shouldPorterSonJourSesPointagesEtSaDuree() {
-    JourDeSynthese jour = new JourDeSynthese(LUNDI_11_MAI_2026, List.of(ARRIVEE_VALIDE), Duration.ofHours(8));
+    JourDeSynthese jour = new JourDeSynthese(LUNDI_11_MAI_2026, List.of(ARRIVEE), Duration.ofHours(8));
 
     assertThat(jour.jour()).isEqualTo(LUNDI_11_MAI_2026);
-    assertThat(jour.pointages()).containsExactly(ARRIVEE_VALIDE);
+    assertThat(jour.pointages()).containsExactly(ARRIVEE);
     assertThat(jour.duree()).isEqualTo(Duration.ofHours(8));
-  }
-
-  @Test
-  void shouldNotSignalerDAnomalieQuandTousLesPointagesSontValides() {
-    JourDeSynthese jour = new JourDeSynthese(LUNDI_11_MAI_2026, List.of(ARRIVEE_VALIDE), Duration.ofHours(4));
-
-    assertThat(jour.aUneAnomalie()).isFalse();
-  }
-
-  @Test
-  void shouldSignalerUneAnomalieQuandUnPointageEstInvalide() {
-    JourDeSynthese jour = new JourDeSynthese(LUNDI_11_MAI_2026, List.of(ARRIVEE_VALIDE, PAUSE_INVALIDE), Duration.ofHours(4));
-
-    assertThat(jour.aUneAnomalie()).isTrue();
   }
 }

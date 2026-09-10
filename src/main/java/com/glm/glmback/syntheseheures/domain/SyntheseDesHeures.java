@@ -25,12 +25,4 @@ public record SyntheseDesHeures(OperateurConnu operateur, SemaineCalendaire sema
   public Duration dureeTotale() {
     return jours.stream().map(JourDeSynthese::duree).reduce(Duration.ZERO, Duration::plus);
   }
-
-  /**
-   * Vrai des qu'un jour de la semaine porte une anomalie — le signal transmis au lecteur du releve qu'une
-   * correction est attendue quelque part dans la semaine.
-   */
-  public boolean aUneAnomalie() {
-    return jours.stream().anyMatch(JourDeSynthese::aUneAnomalie);
-  }
 }
