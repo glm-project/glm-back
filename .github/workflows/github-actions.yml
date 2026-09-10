@@ -47,6 +47,9 @@ jobs:
       - name: 'Test: run tests'
         run: |
           mvn --batch-mode -ntp clean verify
+      - name: 'Verify: openapi.json is committed and up to date'
+        run: |
+          git diff --exit-code -- documentation/openapi.json
       - name: 'Setup: save postgres image to cache'
         if: steps.postgres-image-cache.outputs.cache-hit != 'true'
         continue-on-error: true
