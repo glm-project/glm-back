@@ -272,6 +272,52 @@
         "required" : [ "dateDeSurvenue", "motif", "type" ],
         "type" : "object"
       },
+      "RestCout" : {
+        "description" : "Un cout, separe en ce que coute la machine et en ce que coute la personne.\n\nLes deux ne s'agregent pas de la meme facon : le cout horaire de chaque poste actif court en entier, alors que le\ntaux horaire de l'operateur est divise par le nombre de postes qu'il occupait simultanement, tous elements\nconfondus. Les afficher separement est ce qui rend la regle lisible.\n",
+        "properties" : {
+          "machine" : {
+            "description" : "Cout des postes de travail, jamais divise.",
+            "example" : 90.0,
+            "type" : "number"
+          },
+          "mainDOeuvre" : {
+            "description" : "Cout des operateurs, divise par le parallelisme.",
+            "example" : 40.0,
+            "type" : "number"
+          },
+          "total" : {
+            "description" : "Somme des deux.",
+            "example" : 130.0,
+            "type" : "number"
+          }
+        },
+        "type" : "object"
+      },
+      "RestCoutDeRevient" : {
+        "description" : "Le cout de revient d'un element de fabrication, une ligne par nature d'operation.\n\nRien n'est stocke : le rapport est recalcule a chaque lecture depuis les journaux de l'atelier, pour qu'une saisie\nregularisee apres coup compte a l'heure ou le travail a eu lieu.\n\nLe total est la somme des lignes deja arrondies : il vaut donc exactement ce que l'ecran affiche.\n",
+        "properties" : {
+          "cout" : {
+            "$ref" : "#/components/schemas/RestCout",
+            "description" : "Cout total de l'element."
+          },
+          "element" : {
+            "$ref" : "#/components/schemas/RestElement",
+            "description" : "L'element de fabrication, tous ses passages en atelier confondus."
+          },
+          "lignes" : {
+            "description" : "Une ligne par nature, la ligne sans nature en dernier.",
+            "items" : {
+              "$ref" : "#/components/schemas/RestLigneDeCout"
+            },
+            "type" : "array"
+          },
+          "temps" : {
+            "$ref" : "#/components/schemas/RestTempsPasse",
+            "description" : "Temps total passe sur l'element."
+          }
+        },
+        "type" : "object"
+      },
       "RestCreationElementDeFabrication" : {
         "properties" : {
           "description" : {
@@ -360,6 +406,27 @@
           }
         },
         "required" : [ "libelle", "nature" ],
+        "type" : "object"
+      },
+      "RestElement" : {
+        "description" : "L'element de fabrication dont le cout de revient est lu, relu au referentiel a chaque appel.",
+        "properties" : {
+          "id" : {
+            "description" : "Identifiant de l'element de fabrication.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "nom" : {
+            "description" : "Nom de l'element, produit par la numerotation automatique.",
+            "example" : "OF-2026-000001",
+            "type" : "string"
+          },
+          "type" : {
+            "description" : "Type de l'element.",
+            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
+            "type" : "string"
+          }
+        },
         "type" : "object"
       },
       "RestElementDeFabrication" : {
@@ -641,6 +708,36 @@
           "operateur" : {
             "$ref" : "#/components/schemas/RestOperateurDAtelier",
             "description" : "Operateur concerne."
+          }
+        },
+        "type" : "object"
+      },
+      "RestLigneDeCout" : {
+        "description" : "Une ligne du rapport : tout ce qui a ete fait sur l'element a une meme nature d'operation.\n\nLa nature vient du poste de travail, jamais de la personne, et elle a ete copiee au moment de la saisie : un poste\nrequalifie depuis ne requalifie pas les heures deja passees. Elle est absente quand le pointage n'a engage aucun\nposte, ce qui est le comportement nominal d'une entreprise sans parc machine.\n",
+        "properties" : {
+          "cout" : {
+            "$ref" : "#/components/schemas/RestCout",
+            "description" : "Cout de la ligne, arrondi au centime."
+          },
+          "nature" : {
+            "description" : "Nature de l'operation, absente pour un pointage sans poste.",
+            "example" : "Fraisage",
+            "type" : "string"
+          },
+          "nonConformites" : {
+            "description" : "Les periodes de reprise, datees, dans l'ordre.",
+            "items" : {
+              "$ref" : "#/components/schemas/RestPeriode"
+            },
+            "type" : "array"
+          },
+          "periode" : {
+            "$ref" : "#/components/schemas/RestPeriode",
+            "description" : "Du premier debut a la derniere fin de cette nature."
+          },
+          "temps" : {
+            "$ref" : "#/components/schemas/RestTempsPasse",
+            "description" : "Temps passe, bon travail et non conformite separes."
           }
         },
         "type" : "object"
@@ -1145,6 +1242,27 @@
         },
         "required" : [ "activitesEnCours", "element", "engageLe", "engagePar", "etat", "id", "nom", "type" ],
         "type" : "object"
+      },
+      "RestTempsPasse" : {
+        "description" : "Le temps passe, separe en bon travail et en reprise de non conformite.\n\nUne piece ratee se refait sur le meme element et au meme tarif, mais comptee a part : c'est ce que le client veut\nsavoir a la cloture.\n",
+        "properties" : {
+          "nonConformite" : {
+            "description" : "Duree ISO-8601 passee en non conformite.",
+            "example" : "PT30M",
+            "type" : "string"
+          },
+          "total" : {
+            "description" : "Somme des deux.",
+            "example" : "PT2H30M",
+            "type" : "string"
+          },
+          "travail" : {
+            "description" : "Duree ISO-8601 du bon travail.",
+            "example" : "PT2H",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
       }
     },
     "securitySchemes" : {
@@ -1371,7 +1489,7 @@
     "/api/atelier/journees/{id}" : {
       "get" : {
         "description" : "Expose a la fois l'amplitude et les fenetres : le contexte ne choisit pas laquelle compte pour la paie.",
-        "operationId" : "get_5",
+        "operationId" : "get_6",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -1688,7 +1806,7 @@
     "/api/atelier/suivis/{id}" : {
       "get" : {
         "description" : "Le suivi complet, avec son journal, evenements annules compris.",
-        "operationId" : "get_4",
+        "operationId" : "get_5",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -2072,6 +2190,56 @@
         },
         "summary" : "Lire le temps effectivement passe sur un element",
         "tags" : [ "Atelier - elements engages" ]
+      }
+    },
+    "/api/couts-de-revient/{elementId}" : {
+      "get" : {
+        "description" : "Rend une ligne par nature d'operation — fraisage, tournage, erosion —, chacune portant le temps de bon travail,\nle temps passe en non conformite avec ses periodes datees, et le cout separe en machine et main d'oeuvre.\n\nL'entree se fait par l'element, non par son suivi d'atelier : un element reengage apres cloture additionne ses\npassages.\n\nDeux regles a connaitre avant d'afficher les montants. Le cout horaire de chaque poste actif court **en entier**,\nmeme quand l'operateur en mene plusieurs de front ; son taux horaire, lui, est **divise** par le nombre de postes\nqu'il occupait a cet instant, tous elements confondus. Un operateur sur trois elements avec une seule machine\nn'est donc pas divise. Le decoupage se fait aux bornes de chaque pointage, si bien que seul le chevauchement reel\nest divise.\n\nUn travail encore en cours est arrete a l'instant de la lecture : deux appels espaces ne rendent donc pas la meme\nchose sur un element en cours, ce qui est le seul moyen de chiffrer ce qui n'est pas termine.\n",
+        "operationId" : "get_4",
+        "parameters" : [ {
+          "description" : "Identifiant de l'element de fabrication.",
+          "in" : "path",
+          "name" : "elementId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestCoutDeRevient"
+                }
+              }
+            },
+            "description" : "Le rapport de l'element. Vide s'il n'a jamais ete engage en atelier."
+          },
+          "403" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestCoutDeRevient"
+                }
+              }
+            },
+            "description" : "Jeton sans entreprise connue, ou role autre que GESTIONNAIRE."
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestCoutDeRevient"
+                }
+              }
+            },
+            "description" : "Element de fabrication inconnu."
+          }
+        },
+        "summary" : "Lire le cout de revient d'un element de fabrication",
+        "tags" : [ "Couts de revient" ]
       }
     },
     "/api/elements-de-fabrication" : {
@@ -2695,6 +2863,9 @@
   }, {
     "description" : "La presence des operateurs : arrivee, pause, reprise, depart.\n\nUne journee de travail est une venue, bornee par une arrivee et un depart. Ce n'est pas un jour calendaire : le\ncontexte ne connait ni fuseau horaire ni date.\n\nLa presence est ecrite une seule fois, ici, et jamais recopiee dans le journal des elements. C'est ce qui permet a un\nseul bouton de pause de scinder tout ce que l'operateur avait en cours, et a une seule regularisation de depart de\nrefermer tous ses elements de la journee.\n",
     "name" : "Atelier - presence des operateurs"
+  }, {
+    "description" : "Le temps passe sur un element de fabrication, valorise par nature d'operation.",
+    "name" : "Couts de revient"
   }, {
     "description" : "Le referentiel de ce sur quoi les operateurs pointent : une machine, un etabli, un four, une salle.\n\nChaque poste porte la nature du travail qui s'y fait. C'est de la que vient le metier exerce a un instant donne :\nl'operateur qui demarre sur le poste de soudure soude, celui qui demarre sur un tour tourne. Rien de tout cela n'est\ndeclare sur la personne.\n\nLe gestionnaire declare et revise les postes ; l'operateur (role USER) les consulte.\n",
     "name" : "Postes de travail"

@@ -130,7 +130,7 @@ L'API est décrite par OpenAPI (`/swagger-ui.html`) et par [atelier-api.md](atel
 
 1. **Régulariser après une dé-habilitation est refusé.** L'habilitation étant vérifiée sur les trois écritures du journal, un gestionnaire ne peut plus rattraper une saisie oubliée sur un poste dont l'opérateur a été retiré depuis. Le cas est assumé pour ce lot — il ferme la porte au contournement —, mais il laisserait un trou dans la paie s'il se produisait : à rouvrir si le client le rencontre.
 2. **Quelle mesure alimente la paie ?** L'amplitude arrivée → départ, ou la somme des fenêtres de présence, pause de midi déduite ? Le client dit « les heures où il arrive à la société, il pointe et il part », mais pointe aussi sa pause déjeuner. Les deux mesures sont exposées, le choix reste à faire avec l'assistante.
-3. **Le coût de revient monétaire.** Le taux horaire de l'opérateur et le coût horaire du poste sont désormais copiés sur l'événement du journal au moment de la saisie, sur le même patron que la nature de l'opération — ni recalculés ni relus depuis le référentiel après coup. Ce qui reste un lot à part entière : le **calcul** lui-même (temps réparti valorisé, coût de revient par élément ou par période), envisagé comme un futur bounded context séparé qui lira le journal d'`atelier` par port en lecture seule, plutôt que d'être mélangé au pointage. À reprendre en même temps que l'objection de Nicolas sur la division du taux humain, restée sans conclusion en réunion.
+3. **Le coût de revient monétaire est sorti du contexte**, comme prévu : il vit dans `coutderevient`, qui lit le journal d'`atelier` par port en lecture seule. `atelier` continue de ne rien calculer — il copie le coût horaire du poste et le taux horaire de l'opérateur sur l'événement, et s'arrête là. Reste ouvert le **coût par période** (par opérateur, par poste, par mois), qui n'a pas de demande client formulée, et l'objection de Nicolas sur la division du taux humain : le modèle retient le verbatim client — taux divisé par le nombre de postes, coût machine jamais divisé —, elle n'a jamais été reprise en réunion.
 4. **Le bouton de pause global n'a jamais été validé de première main.** Il ne vient que de la réunion d'équipe. Dans la réunion client, la pause est décrite au singulier, sur un seul élément. Le modèle retient le bouton global — à reconfirmer, c'est lui qui structure l'écran principal.
 5. **Le GLM comme résidu** (présence moins temps affecté) plutôt que comme élément fictif : cohérent avec ce que le client conclut, mais l'écran devra le rendre visible d'une façon ou d'une autre, puisqu'il tient au bouton.
 6. **Le cycle de vie de l'élément lui-même.** La clôture existe côté atelier, sur le suivi. Reste à trancher si l'élément de fabrication porte en propre un statut, ou si son activité se lit entièrement par la présence ou l'absence d'un suivi non clôturé.
@@ -181,7 +181,7 @@ L'identité (nom, prénom) est **unique par entreprise**. Le **matricule** est l
 
 1. **Les gestionnaires ne sont pas déclarés.** Leur fiche n'aurait aucun usage tant que l'authentification n'est pas tranchée : l'`Auteur` d'une saisie vient du jeton, pas d'un référentiel. À rouvrir avec ce sujet.
 2. **Aucun plafond sur le nombre de postes par personne**, alors que le client énonce « maximum 4 machines par personne ». Une donnée de paramétrage ne s'écrit pas en constante du domaine, et GLM est une trame : une autre entreprise en habilitera six. Si le plafond doit être tenu, il viendra d'un port.
-3. **Montants.** Coût horaire du poste et taux horaire de l'opérateur existent sur les deux agrégats (facultatifs, strictement positifs), et `atelier` les copie désormais sur chaque événement du journal au moment de la saisie, sur le même patron que la nature de l'opération ; seul le calcul du coût de revient lui-même reste à faire, lot suivant.
+3. **Montants.** Coût horaire du poste et taux horaire de l'opérateur existent sur les deux agrégats (facultatifs, strictement positifs), `atelier` les copie sur chaque événement du journal au moment de la saisie, et `coutderevient` les valorise. La boucle est fermée : un opérateur sans taux horaire ne coûte rien en main d'œuvre, et le rapport ne l'invente pas.
 4. **Utilisateur connecté.** Tranché sur le principe, dans [strategie/authentification-pointage.md](strategie/authentification-pointage.md) : le pupitre porte une **identité d'appareil** et aucune session humaine, l'opérateur est **identifié** au geste — par un code, qui désigne sans prouver, ou par une signature, qui prouve. L'`Auteur` du jeton cessant dès lors de désigner une personne, c'est la **qualité de l'identification** portée par l'événement qui vaudra pour la paie, et c'est elle qui rouvrira `estSaisiParUnTiers`. Restent ouverts le régime du code — ouvert à tous ou réservé à l'exception —, le matériel des pupitres, et la validation juridique de l'empreinte.
 
 ## feuilledetemps
@@ -237,3 +237,98 @@ C'est la transposition de la règle qu'`atelier` applique déjà à un travail j
 3. **Aucune restriction sur qui lit la feuille de qui.** `USER` et `GESTIONNAIRE` lisent l'historique de n'importe
    quel opérateur, faute de lien entre un utilisateur authentifié et une fiche du référentiel. À rouvrir avec le lot
    « utilisateur connecté », qui ramènera aussi `estSaisiParUnTiers` côté atelier.
+
+## coutderevient
+
+Seconde **projection transverse** du projet, après `feuilledetemps` : un contexte purement lecteur, qui ne possède
+aucune table et recalcule tout à chaque appel. Il répond à une seule question — _combien cet élément a-t-il coûté,
+et en quoi_ — et c'est ce qui le sépare d'`atelier`.
+
+### Pourquoi il n'est pas dans atelier
+
+`atelier` s'interdit explicitement le calcul du coût de revient. Il **capture** : il copie sur chaque événement du
+journal la nature de l'opération, le coût horaire du poste et le taux horaire de l'opérateur, exactement pour que
+ces valeurs soient figées au moment de la saisie — mais aucune arithmétique ne les combine chez lui. Le découpage
+était annoncé dès le lot des montants ; c'est ici qu'il se réalise.
+
+La séparation n'est pas cosmétique. Le coût **traverse les agrégats** : un nouveau pointage sur un second élément
+change la part de main d'œuvre déjà attribuée au premier. Un agrégat d'atelier ne peut pas porter une valeur que le
+journal d'un autre agrégat modifie ; seule une projection le peut.
+
+### Ce que le rapport montre
+
+Une ligne par nature d'opération — fraisage, tournage, érosion —, plus une ligne sans nature pour ce qui a été
+pointé sans poste. Chaque ligne porte le temps de bon travail, le temps de reprise de non conformité **avec ses
+périodes datées**, et le coût séparé en machine et main d'œuvre.
+
+L'entrée se fait par l'**élément de fabrication**, non par son suivi d'atelier : un élément réengagé après clôture
+additionne ses passages. Un élément connu mais jamais engagé rend un rapport vide, ce qui est une réponse et non une
+erreur.
+
+### Les deux règles de valorisation
+
+Le client les énonce deux fois de suite, et elles ne se ressemblent pas :
+
+- le **coût horaire de chaque poste actif court en entier**, même quand l'opérateur en mène plusieurs de front —
+  deux machines pendant une heure coûtent deux heures de machine ;
+- le **taux horaire de l'opérateur est divisé** par le nombre de postes qu'il occupait à cet instant, tous éléments
+  confondus — une personne ne peut pas être payée deux fois la même heure.
+
+Le diviseur compte donc des **postes**, jamais des éléments ni des activités. Un opérateur sur trois éléments avec
+une seule machine n'est pas divisé ; un pointage sans poste compte pour un poste, ce qui redonne un diviseur de un à
+une entreprise sans parc machine.
+
+**Le découpage se fait aux bornes de tous les pointages de l'opérateur.** Un diviseur pris sur l'intervalle entier
+serait faux dès que deux pointages ne commencent pas ensemble : sur une fraiseuse lancée à 9 h et un tour lancé à
+10 h, seule l'heure commune se divise. C'est ce que `ChargeDeLOperateur` produit — des sous-périodes où le nombre de
+postes occupés ne change pas.
+
+### L'arrondi est une décision, pas un détail
+
+Les tranches se somment à l'échelle de travail, la **ligne** arrondit au centime une seule fois, et le total du
+rapport est la somme de lignes **déjà arrondies**. Sans cette discipline, l'écran afficherait un total qui n'est pas
+la somme de ce qu'il montre — ce qu'aucun gestionnaire n'accepte d'un rapport de coût.
+
+### Ce contexte porte une horloge, contrairement à la feuille de temps
+
+C'est l'écart assumé entre les deux projections. La feuille de temps s'interdit toute horloge pour que deux appels
+identiques rendent la même chose. Ici, un travail non terminé n'a pas de durée : le coût de revient d'un élément en
+cours n'a de sens qu'arrêté à l'instant de la lecture. Deux appels espacés sur un élément en cours ne rendent donc
+pas la même chose, et la description OpenAPI de la route le dit.
+
+Le reste suit les règles d'`atelier` à la lettre : le temps brut est ramené aux fenêtres de présence de **la journée
+où il a commencé**, si bien qu'une pause de midi le scinde et qu'un départ referme ce que personne n'a arrêté. Un
+début qui ne tombe dans aucune journée connue est **rendu intact** — c'est le choix d'`atelier`, et non celui de la
+feuille de temps qui l'écarte : ici, l'anomalie doit rester chiffrée plutôt que disparaître du coût.
+
+### La lecture passe par la base, jamais par un import
+
+`atelier`, `elementdefabrication`, `operateur` et `postedetravail` étant annotés `@BusinessContext`, ce contexte
+déclare ses propres entités JPA en lecture seule sur leurs tables. Il rejoue donc **sa propre** version du repli du
+journal d'atelier, et — pour la troisième fois du projet — du repli de présence.
+
+Cette duplication est assumée, pour la même raison que dans `feuilledetemps` : le partage passerait soit par un
+import interdit, soit par le shared kernel, qui est en anglais. Le filet est le scénario Cucumber, qui pointe par
+l'API d'`atelier` et relit par celle du coût de revient.
+
+Aucun changelog n'a été nécessaire : les index `(operateur, date_de_survenue)` et `(poste, date_de_survenue)`
+d'`evenement_d_atelier`, posés dès l'origine pour « les projections transverses des contextes à venir », servent
+exactement ce lot.
+
+### Le rapport est réservé au gestionnaire
+
+Il dérive des taux horaires des opérateurs, que le pupitre n'a aucune raison de voir. `USER` reçoit 403.
+
+### Points ouverts
+
+1. **Le coût par période reste à faire** — par opérateur, par poste, par mois. La même couture le porterait, mais
+   aucune demande client n'a été formulée.
+2. **La lecture d'occupation n'a pas de borne basse.** Toute activité recouvrant l'élément ayant commencé avant sa
+   fin, la borne haute suffit à la correction ; mais la requête reste peu sélective sur un opérateur au long
+   historique. La sortie, si elle pèse, est une borne basse calculée sur la plus ancienne activité encore ouverte,
+   ce qui suppose une colonne que le journal n'a pas.
+3. **Aucune restriction sur quel élément un gestionnaire peut chiffrer**, faute de notion d'équipe ou de périmètre.
+   Même point ouvert que sur la feuille de temps, à rouvrir avec le lot « utilisateur connecté ».
+4. **Le rapport ne dit pas ce qui n'a pas de présence.** Un pointage dont le début ne tombe dans aucune journée est
+   valorisé comme les autres, sans que rien ne le signale sur la ligne. L'anomalie reste visible sur
+   `GET /api/atelier/suivis/{id}/temps-effectif` ; l'exposer ici demanderait un indicateur par ligne.
