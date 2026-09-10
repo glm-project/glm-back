@@ -69,10 +69,31 @@ c'est même tout l'intérêt de la frontière : chacune répond au besoin de son
 
 ## Ports sortants
 
-`PresenceDeLOperateur`, `OperateursConnus`, `FuseauHoraireDeLEntreprise`.
+`PresenceDeLOperateur`, `OperateursConnus`, `FuseauHoraireDeLEntreprise`, implémentés par
+`infrastructure/secondary` sur les mêmes tables que `feuilledetemps` (`evenement_de_presence`, `journee_de_travail`,
+`operateur`) — troisième lecteur de ces tables après `atelier` (propriétaire) et `feuilledetemps`.
+
+## Les adapters ne peuvent porter ni le nom de ceux d'atelier, ni ceux de feuilledetemps
+
+Même contrainte que documentée côté `feuilledetemps` : Spring nomme un bean d'après le nom **simple** de sa classe,
+et Hibernate enregistre une entité JPA sous son nom simple par défaut — deux classes homonymes dans des packages
+différents refusent de démarrer ensemble (`ConflictingBeanDefinitionException`, ou collision de nom d'entité JPA).
+`feuilledetemps` a déjà pris `ReferentielDesOperateurs`, `FuseauHoraireFixe`, `JourneesDeTravailDAtelier` et leurs
+entités `*LectureEntity` ; `coutderevient` a pris ses `*ValoriseEntity`. Ce contexte prend donc son propre
+vocabulaire, distinct des deux : `OperateursDeLaSynthese`, `FuseauHoraireDeLaSynthese`,
+`JourneesDeTravailPourLaSynthese`, entités `*SyntheseEntity`. Un quatrième lecteur des mêmes tables devra choisir un
+quatrième nom.
 
 ## État d'avancement
 
-Domaine seul livré pour l'instant (`syntheseheures/domain`, entièrement testé). `application`, `infrastructure`
-(adapters JPA en lecture seule, contrôleur REST, OpenAPI) et le scénario Cucumber qui tiendrait ce repli aligné avec
-celui d'`atelier` restent à faire — sur le patron de `feuilledetemps`.
+`domain` et `infrastructure/secondary` livrés (adapters JPA en lecture seule, entièrement vérifiés au démarrage du
+contexte Spring complet — aucune collision de bean ni d'entité). `application`, `infrastructure/primary`
+(contrôleur REST, OpenAPI) et le scénario Cucumber qui tiendrait ce repli aligné avec celui d'`atelier` restent à
+faire, sur le patron de `feuilledetemps`.
+
+**Point d'attention** : à la différence de `domain`, les adapters `infrastructure/secondary` n'ont **aucun test
+dédié** — ni unitaire, ni d'intégration. C'est le patron déjà suivi par `feuilledetemps` et `coutderevient` : leur
+correction est vérifiée par le scénario Cucumber qui traverse toute la pile (écriture côté `atelier`, lecture par ce
+contexte), pas par un test isolé. Tant que ce scénario n'existe pas, ces classes restent à 0 % de couverture — la
+vérification stricte de `mvn verify` (`jacoco:check`) échouera sur ce lot pris isolément, ce qui est attendu : elle
+ne redeviendra verte qu'une fois `application`, `infrastructure/primary` et le scénario Cucumber ajoutés.
