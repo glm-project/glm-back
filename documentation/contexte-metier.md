@@ -332,3 +332,55 @@ Il dérive des taux horaires des opérateurs, que le pupitre n'a aucune raison d
 4. **Le rapport ne dit pas ce qui n'a pas de présence.** Un pointage dont le début ne tombe dans aucune journée est
    valorisé comme les autres, sans que rien ne le signale sur la ligne. L'anomalie reste visible sur
    `GET /api/atelier/suivis/{id}/temps-effectif` ; l'exposer ici demanderait un indicateur par ligne.
+
+## syntheseheures
+
+Troisième **projection transverse** du projet, après `feuilledetemps` et `coutderevient` : un contexte purement
+lecteur, qui ne possède aucune table et recalcule tout à chaque appel. Il répond à une seule question — _combien
+d'heures cette personne a-t-elle travaillées cette semaine, jour par jour_ — pour alimenter la paie, sans en être
+une pièce : ni feuille de paie, ni valorisation en euros, ni heures supplémentaires pour l'instant (règle non
+fournie par le client).
+
+### Pourquoi il n'est pas dans atelier
+
+Même raison que `feuilledetemps` : `atelier` s'interdit le calendrier, une `JourneeDeTravail` y est bornée par une
+arrivée et un départ, jamais par une date. C'est ici, et nulle part avant, que minuit décide à quel jour appartient
+une heure de travail.
+
+### Ce que le relevé montre
+
+Sept jours toujours, du lundi au dimanche de la semaine ISO demandée, vides compris. Pour chaque jour : le **journal
+brut des pointages** horodatés (arrivée, pause, reprise, départ), et la **durée travaillée** — la somme des fenêtres
+de présence closes, pauses exclues, jamais l'amplitude arrivée→départ. Le total de la semaine est la somme des sept
+jours.
+
+### La résilience face aux anomalies du journal
+
+**Un pointage qui casse l'automate de présence n'empêche jamais la génération du relevé.** Il reste visible, marqué
+invalide, et n'entre pour rien dans le calcul de la durée — seuls les pointages dont l'enchaînement est valide
+comptent. Chaque jour expose s'il porte une anomalie, comme signal pour le gestionnaire.
+
+C'est un écart assumé par rapport à `feuilledetemps`, qui lève une exception sur la même situation : les deux
+contextes dupliquent le même automate, rien n'oblige leurs replis à rester identiques passé la frontière.
+
+Le **catalogue transverse des anomalies** (toutes semaines, tous opérateurs confondus) et l'écran récapitulatif du
+gestionnaire ne vivent pas ici : une anomalie de transition est une propriété du **journal** lui-même, pas d'une
+semaine ni d'un rapport demandé. `atelier` possède déjà l'écran de correction du journal de présence
+(régularisation, annulation, correction) — c'est lui qui portera, plus tard, ce catalogue.
+
+### La lecture passe par la base, jamais par un import
+
+`atelier` étant annoté `@BusinessContext`, ce contexte déclare ses propres entités JPA en lecture seule sur ses
+tables — pour la troisième fois du projet, il rejoue **sa propre** version du repli de présence, tolérante aux
+anomalies.
+
+### Points ouverts
+
+1. **Seul le domaine est livré pour l'instant.** `application`, `infrastructure` (adapters JPA, contrôleur REST,
+   OpenAPI) et le scénario Cucumber qui tiendrait ce repli aligné avec celui d'`atelier` restent à faire.
+2. **La mesure d'heures retenue** (fenêtres de présence, pauses exclues) reste à confirmer avec le client : le même
+   point ouvert que celui documenté dans `atelier` (« quelle mesure alimente la paie ? ») — l'amplitude
+   arrivée→départ n'a pas été retenue ici, mais rien n'exclut qu'elle le soit un jour à côté de l'autre mesure.
+3. **Les heures supplémentaires ne sont pas calculées**, faute de règle fournie par le client.
+4. **Le catalogue transverse des anomalies et l'écran récapitulatif du gestionnaire restent à concevoir**, côté
+   `atelier` (voir ci-dessus).
