@@ -56,12 +56,7 @@ public final class SynthesesDesHeuresService {
       .flatMap(journee -> journee.fenetres().stream())
       .flatMap(fenetre -> decoupage.plages(fenetre).stream())
       .filter(plageDUnJour -> !plageDUnJour.plage().estOuverte())
-      .collect(
-        Collectors.groupingBy(
-          PlageDUnJour::jour,
-          Collectors.reducing(Duration.ZERO, this::duree, Duration::plus)
-        )
-      );
+      .collect(Collectors.groupingBy(PlageDUnJour::jour, Collectors.reducing(Duration.ZERO, this::duree, Duration::plus)));
   }
 
   private Duration duree(PlageDUnJour plageDUnJour) {

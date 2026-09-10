@@ -106,12 +106,12 @@ class SynthesesDesHeuresServiceTest {
 
     assertThat(jourDe(synthese, LUNDI_11_MAI_2026).duree()).isEqualTo(Duration.ofHours(2));
     assertThat(jourDe(synthese, MARDI_12_MAI_2026).duree()).isEqualTo(Duration.ofHours(2));
-    assertThat(jourDe(synthese, LUNDI_11_MAI_2026).pointages()).extracting(EvenementDePresence::dateDeSurvenue).containsExactly(
-      LE_LUNDI_11_MAI_2026_A_22H
-    );
-    assertThat(jourDe(synthese, MARDI_12_MAI_2026).pointages()).extracting(EvenementDePresence::dateDeSurvenue).containsExactly(
-      LE_MARDI_12_MAI_2026_A_2H
-    );
+    assertThat(jourDe(synthese, LUNDI_11_MAI_2026).pointages())
+      .extracting(EvenementDePresence::dateDeSurvenue)
+      .containsExactly(LE_LUNDI_11_MAI_2026_A_22H);
+    assertThat(jourDe(synthese, MARDI_12_MAI_2026).pointages())
+      .extracting(EvenementDePresence::dateDeSurvenue)
+      .containsExactly(LE_MARDI_12_MAI_2026_A_2H);
   }
 
   /**
@@ -123,9 +123,9 @@ class SynthesesDesHeuresServiceTest {
     SyntheseDesHeures synthese = syntheseDeDupont(PresencesEnMemoire.avec(List.of(journeeDuMardiOuverteA8H())));
 
     assertThat(jourDe(synthese, MARDI_12_MAI_2026).duree()).isZero();
-    assertThat(jourDe(synthese, MARDI_12_MAI_2026).pointages()).extracting(EvenementDePresence::dateDeSurvenue).containsExactly(
-      LE_MARDI_12_MAI_2026_A_8H
-    );
+    assertThat(jourDe(synthese, MARDI_12_MAI_2026).pointages())
+      .extracting(EvenementDePresence::dateDeSurvenue)
+      .containsExactly(LE_MARDI_12_MAI_2026_A_8H);
   }
 
   /**
@@ -155,6 +155,11 @@ class SynthesesDesHeuresServiceTest {
   }
 
   private static JourDeSynthese jourDe(SyntheseDesHeures synthese, LocalDate jour) {
-    return synthese.jours().stream().filter(jourDeSynthese -> jourDeSynthese.jour().equals(jour)).findFirst().orElseThrow();
+    return synthese
+      .jours()
+      .stream()
+      .filter(jourDeSynthese -> jourDeSynthese.jour().equals(jour))
+      .findFirst()
+      .orElseThrow();
   }
 }

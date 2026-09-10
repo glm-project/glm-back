@@ -122,7 +122,11 @@ public class SyntheseDesHeuresSteps {
   }
 
   private static Map<String, Object> jourDe(String jour) {
-    return jours().stream().filter(jourDeSynthese -> jour.equals(jourDeSynthese.get("jour"))).findFirst().orElseThrow();
+    return jours()
+      .stream()
+      .filter(jourDeSynthese -> jour.equals(jourDeSynthese.get("jour")))
+      .findFirst()
+      .orElseThrow();
   }
 
   @SuppressWarnings("unchecked")

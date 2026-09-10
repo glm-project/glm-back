@@ -63,11 +63,7 @@ class SyntheseDesHeuresTest {
 
   @Test
   void shouldSommerLaDureeDeChaqueJourPourLaDureeTotale() {
-    SyntheseDesHeures synthese = new SyntheseDesHeures(
-      OPERATEUR_CONNU_DUPONT,
-      SEMAINE_20_DE_2026,
-      List.of(LUNDI_8H, MARDI_SANS_PRESENCE)
-    );
+    SyntheseDesHeures synthese = new SyntheseDesHeures(OPERATEUR_CONNU_DUPONT, SEMAINE_20_DE_2026, List.of(LUNDI_8H, MARDI_SANS_PRESENCE));
 
     assertThat(synthese.dureeTotale()).isEqualTo(Duration.ofHours(8));
   }
