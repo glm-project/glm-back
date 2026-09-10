@@ -71,9 +71,15 @@ c'est même tout l'intérêt de la frontière : chacune répond au besoin de son
 chaque écriture, y compris une annulation — vérifié en pratique : annuler une pause qui laisserait une reprise
 orpheline est refusé par `atelier` lui-même (`409 transition-de-presence-interdite`), avant même d'atteindre ce
 contexte. La résilience reste une défense en profondeur légitime (données migrées, évolution future de la validation
-d'`atelier`, accès direct à la base) et reste vérifiée par les tests unitaires du domaine, qui construisent
+d'`atelier`, accès direct à la base) et reste vérifiée par les tests unitaires du domaine
+(`JourneeDeTravailTest.shouldOuvrirLaFenetreALArriveeMemeAvecUneRepriseOrphelineApres`), qui construisent
 l'incohérence directement sans passer par `atelier` — mais `src/test/features/synthese_des_heures.feature` ne porte
 aucun scénario pour ce cas, faute de moyen de le déclencher via l'API.
+
+Un test d'intégration insérant l'incohérence par SQL brut (`JdbcTemplate`) a été tenté puis abandonné : le pool est
+configuré `auto-commit=false` (comme en production), et le binding JDBC d'un horodatage hors session Hibernate s'est
+révélé décalé de façon non triviale dans cet environnement — un début d'étude disproportionné pour un cas déjà
+prouvé au niveau domaine. Le test unitaire reste la bonne échelle pour ce cas précis.
 
 ## Ports sortants
 

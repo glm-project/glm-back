@@ -141,4 +141,18 @@ class JourneeDeTravailTest {
     );
     assertThat(journee.fenetres()).containsExactly(new Plage(LE_LUNDI_11_MAI_2026_A_8H, Optional.of(LE_LUNDI_11_MAI_2026_A_17H)));
   }
+
+  /**
+   * Une reprise sans pause au prealable dans ce journal : l'automate la refuse. La fenetre ouverte a l'arrivee
+   * reste ouverte, sans que la reprise orpheline n'y touche.
+   */
+  @Test
+  void shouldOuvrirLaFenetreALArriveeMemeAvecUneRepriseOrphelineApres() {
+    EvenementDePresence arrivee = arriveeA(LE_LUNDI_11_MAI_2026_A_8H);
+    EvenementDePresence repriseOrpheline = repriseA(LE_LUNDI_11_MAI_2026_A_13H);
+    JourneeDeTravail journee = new JourneeDeTravail(List.of(arrivee, repriseOrpheline));
+
+    assertThat(journee.pointages()).containsExactly(new Pointage(arrivee, true), new Pointage(repriseOrpheline, false));
+    assertThat(journee.fenetres()).containsExactly(new Plage(LE_LUNDI_11_MAI_2026_A_8H, Optional.empty()));
+  }
 }
