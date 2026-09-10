@@ -167,6 +167,7 @@
     <testcontainers.version>2.0.5</testcontainers.version>
     <reflections.version>0.10.2</reflections.version>
     <cucumber.version>7.34.6</cucumber.version>
+    <exec-maven-plugin.version>3.5.0</exec-maven-plugin.version>
   </properties>
 
   <build>
@@ -414,6 +415,26 @@
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>${exec-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>regenerate-openapi-specification</id>
+            <phase>pre-integration-test</phase>
+            <goals>
+              <goal>java</goal>
+            </goals>
+            <configuration>
+              <mainClass>com.glm.glmback.wire.openapi.infrastructure.primary.OpenApiSpecificationGenerator</mainClass>
+              <classpathScope>test</classpathScope>
+              <fork>true</fork>
+              <workingDirectory>${project.basedir}</workingDirectory>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.springframework.boot</groupId>

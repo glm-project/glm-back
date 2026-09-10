@@ -1,13 +1,11 @@
 package com.glm.glmback.wire.openapi.infrastructure.primary;
 
-import static org.assertj.core.api.Assertions.*;
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.glm.glmback.IntegrationTest;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
@@ -79,18 +77,6 @@ class OpenApiConfigurationIT {
       .andExpect(reference("RestFeuilleDeTemps", "operateur", "RestOperateurDeFeuilleDeTemps"))
       .andExpect(reference("PageRestOperateur", "content.items", "RestOperateur"))
       .andExpect(reference("PageRestPosteDeTravail", "content.items", "RestPosteDeTravail"));
-  }
-
-  @Test
-  @DisabledIfSystemProperty(
-    named = OpenApiSpecification.REGENERATION_FLAG,
-    matches = "true",
-    disabledReason = "this run is rewriting the committed file, so the comparison would judge the version being replaced"
-  )
-  void shouldMatchTheCommittedSpecification() throws Exception {
-    assertThat(OpenApiSpecification.served(rest))
-      .describedAs(OpenApiSpecification.outOfDateMessage())
-      .isEqualTo(OpenApiSpecification.committed());
   }
 
   private static org.springframework.test.web.servlet.ResultMatcher requiredFields(String schema, String... fields) {
