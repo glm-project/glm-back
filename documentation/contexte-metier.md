@@ -332,3 +332,60 @@ Il dérive des taux horaires des opérateurs, que le pupitre n'a aucune raison d
 4. **Le rapport ne dit pas ce qui n'a pas de présence.** Un pointage dont le début ne tombe dans aucune journée est
    valorisé comme les autres, sans que rien ne le signale sur la ligne. L'anomalie reste visible sur
    `GET /api/atelier/suivis/{id}/temps-effectif` ; l'exposer ici demanderait un indicateur par ligne.
+
+## syntheseheures
+
+Troisième **projection transverse** du projet, après `feuilledetemps` et `coutderevient` : un contexte purement
+lecteur, qui ne possède aucune table et recalcule tout à chaque appel. Il répond à une seule question — _combien
+d'heures cette personne a-t-elle travaillées cette semaine, jour par jour_ — pour alimenter la paie, sans en être
+une pièce : ni feuille de paie, ni valorisation en euros, ni heures supplémentaires pour l'instant (règle non
+fournie par le client).
+
+### Pourquoi il n'est pas dans atelier
+
+Même raison que `feuilledetemps` : `atelier` s'interdit le calendrier, une `JourneeDeTravail` y est bornée par une
+arrivée et un départ, jamais par une date. C'est ici, et nulle part avant, que minuit décide à quel jour appartient
+une heure de travail.
+
+### Ce que le relevé montre
+
+Sept jours toujours, du lundi au dimanche de la semaine ISO demandée, vides compris. Pour chaque jour : le **journal
+brut des pointages** horodatés (arrivée, pause, reprise, départ), et la **durée travaillée** — la somme des fenêtres
+de présence closes, pauses exclues, jamais l'amplitude arrivée→départ. Le total de la semaine est la somme des sept
+jours.
+
+### La résilience face aux anomalies du journal
+
+**Un pointage qui casse l'automate de présence n'empêche jamais la génération du relevé.** Contrairement à
+`feuilledetemps`, qui lève une exception sur la même situation, ce contexte l'**ignore silencieusement** — ni
+exception, ni marqueur exposé : le pointage fautif est simplement absent du relevé, comme s'il n'existait pas.
+
+Ce cas n'est en pratique **pas atteignable par l'API** : `atelier` valide tout le journal à chaque écriture, y
+compris une annulation, et refuse déjà celle qui laisserait un pointage orphelin
+(`409 transition-de-presence-interdite`). Conséquence assumée (YAGNI) : ce contexte ne porte **aucun champ
+`valide`/anomalie**, ni domaine ni API — un flag qui vaudrait toujours vrai ne porte aucune information. La
+résilience elle-même (ne jamais lever d'exception) reste une défense en profondeur légitime — donnée migrée,
+validation d'`atelier` amenée à évoluer, accès direct à la base — vérifiée par les tests unitaires du domaine, qui
+construisent l'incohérence directement ; aucun scénario Cucumber ne la couvre, faute de moyen de la déclencher.
+
+Le **catalogue transverse des anomalies** (toutes semaines, tous opérateurs confondus) et l'écran récapitulatif du
+gestionnaire ne vivent pas ici : une anomalie de transition est une propriété du **journal** lui-même, pas d'une
+semaine ni d'un rapport demandé. `atelier` possède déjà l'écran de correction du journal de présence
+(régularisation, annulation, correction) — c'est lui qui portera, plus tard, ce catalogue.
+
+### La lecture passe par la base, jamais par un import
+
+`atelier` étant annoté `@BusinessContext`, ce contexte déclare ses propres entités JPA en lecture seule sur ses
+tables — pour la troisième fois du projet, il rejoue **sa propre** version du repli de présence, tolérante aux
+anomalies.
+
+### Points ouverts
+
+1. **La mesure d'heures retenue** (fenêtres de présence, pauses exclues) reste à confirmer avec le client : le même
+   point ouvert que celui documenté dans `atelier` (« quelle mesure alimente la paie ? ») — l'amplitude
+   arrivée→départ n'a pas été retenue ici, mais rien n'exclut qu'elle le soit un jour à côté de l'autre mesure.
+2. **Les heures supplémentaires ne sont pas calculées**, faute de règle fournie par le client.
+3. **Le catalogue transverse des anomalies et l'écran récapitulatif du gestionnaire restent à concevoir**, côté
+   `atelier` (voir ci-dessus).
+4. **Aucune restriction sur qui lit le relevé de qui**, comme `feuilledetemps`, faute de lien entre un utilisateur
+   authentifié et une fiche du référentiel. À rouvrir avec le lot « utilisateur connecté ».
