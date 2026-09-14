@@ -181,6 +181,55 @@ Attention : une non conformité **ne fait pas** passer à `INTERROMPU`. L'activi
 aussi —, seule sa `categorie` change. Pour signaler visuellement une non conformité, lire
 `activitesEnCours[].categorie`, pas `etat`.
 
+### Le référentiel du pupitre, en un seul appel (rôle `USER`)
+
+```
+GET /api/pupitre/referentiel
+```
+
+Un pupitre hors ligne ne reconstitue plus son cache en paginant `GET /api/operateurs` puis
+`GET /api/atelier/suivis`. Cette route rend **tout d'un coup** : les opérateurs désignables avec leur matricule et
+leurs postes habilités, et les éléments encore pointables avec leurs activités en cours.
+
+```json
+{
+  "genereLe": "2026-09-14T09:31:02.418Z",
+  "operateurs": [{ "id": "…", "nom": "Dupont", "prenom": "Jean", "matricule": "049", "postes": [{ "id": "…", "libelle": "Fraiseuse 1" }] }],
+  "suivis": [
+    {
+      "id": "…",
+      "nom": "OF-2026-000042",
+      "reference": "M-1187",
+      "type": "ORDRE_DE_FABRICATION",
+      "etat": "EN_COURS",
+      "activites": [{ "operateur": "…", "poste": "…", "categorie": "TRAVAIL", "depuis": "2026-09-14T08:02:00Z" }]
+    }
+  ]
+}
+```
+
+Cinq choses à savoir avant de brancher un cache dessus :
+
+- **Elle n'est pas paginée, et c'est le point.** La pagination est exactement ce qui empêchait de prouver que les
+  deux collections venaient du même état de la base. Tout est lu ici dans une transaction unique, en lecture
+  répétable : la réponse est un instantané, pas un assemblage. Il n'y a donc plus de boucle de pages à écrire, ni de
+  gardes sur les totaux, les doublons ou les pages vides.
+- **`genereLe` est la version, et c'est une date.** Elle dit quand le serveur a produit la réponse — de quoi
+  afficher « référentiel du 14/09 à 09:31 » et mesurer un retard. Elle **change à chaque appel**, y compris quand
+  rien n'a bougé : ce n'est pas la date du dernier changement, et s'en servir pour décider d'un rafraîchissement
+  n'aurait aucun sens. Il n'y a ni `ETag` ni `304`.
+- **Aucun montant.** Ni `tauxHoraire` d'opérateur, ni `coutHoraire` de poste : un écran d'atelier partagé n'a pas à
+  les recevoir, et `GET /api/couts-de-revient/{elementId}` reste réservé au `GESTIONNAIRE`.
+- **Aucun élément clôturé, aucun journal.** `etat` ne vaut donc jamais `CLOTURE` ici. Le journal complet, événements
+  annulés compris, se lit toujours par `GET /api/atelier/suivis/{id}` — c'est aussi lui qu'on relit après un
+  `saisie-concurrente`.
+- **`nom` et `reference` ne suivent pas la même règle.** `nom` est celui copié à l'engagement, figé ; `reference`
+  est celle du référentiel, relue à chaque appel. Un élément supprimé du référentiel garde sa tuile et perd sa seule
+  référence.
+
+L'écriture, elle, ne change pas : ce sont toujours les `POST` de l'écran d'atelier ci-dessus, avec l'UUID de geste
+créé par le pupitre et la `dateDeSurvenue` conservée hors ligne.
+
 ### Écran back-office (rôle `GESTIONNAIRE`)
 
 ```

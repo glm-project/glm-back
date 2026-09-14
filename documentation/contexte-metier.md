@@ -389,3 +389,83 @@ anomalies.
    `atelier` (voir ci-dessus).
 4. **Aucune restriction sur qui lit le relevé de qui**, comme `feuilledetemps`, faute de lien entre un utilisateur
    authentifié et une fiche du référentiel. À rouvrir avec le lot « utilisateur connecté ».
+
+## pupitre
+
+Quatrième **projection transverse** du projet : un contexte purement lecteur, qui ne possède aucune table et
+recalcule tout à chaque appel. Il répond à une seule question — _que doit garder sur disque le poste d'atelier pour
+continuer à collecter sans réseau_ — et rend la réponse en un seul appel, `GET /api/pupitre/referentiel`.
+
+### Pourquoi une route à part
+
+Le pupitre de `glm-front` est offline-first : journal IndexedDB par entreprise, file d'attente FIFO, rejeu à
+l'identique. Le chemin d'**écriture** est servi depuis longtemps par `atelier` — l'identifiant de chaque geste naît
+au pupitre, `identite_evenement_atelier` le réserve, un rejeu strict rend 200 sans dupliquer. Le chemin de
+**lecture**, lui, se reconstituait en traversant deux collections paginées, `GET /api/operateurs` puis
+`GET /api/atelier/suivis`, cent par cent, à chaque synchronisation — au démarrage, sur l'événement réseau, toutes
+les trente secondes, après chaque capture, à la fermeture d'une fenêtre opérateur.
+
+Quatre défauts en découlaient, tous du ressort du back :
+
+- **aucun instantané.** Rien ne garantissait que deux pages venaient du même état de la base ; le front compensait
+  par des gardes — total stable, pas de doublon, pas de page vide — qui ne rattrapent pas un remplacement de même
+  taille entre deux pages ;
+- **aucune date.** Le pupitre ne savait pas de quand datait ce qu'il affichait, seulement s'il était connecté ;
+- **des montants sur un écran d'atelier partagé.** `RestOperateur` porte le taux horaire ; le pupitre le recevait et
+  le jetait, alors que `coutderevient` le réserve au gestionnaire ;
+- **N requêtes là où une suffit**, avec un plafond de page à cent.
+
+### Ce que la route rend, et ce qu'elle ne rend pas
+
+Les opérateurs désignables — identité, matricule, postes habilités —, les éléments encore pointables — identité, nom
+d'atelier, référence, type, état, activités en cours —, et `genereLe`.
+
+Elle ne rend **ni montant** (taux horaire, coût horaire : les entités de lecture ne les mappent même pas), **ni
+journal d'événements**, **ni élément clôturé**, et ne porte **aucune métadonnée d'engagement ou de clôture** : rien
+de tout cela n'est lu par un écran d'atelier.
+
+### `genereLe` est la version, et c'est une date
+
+Le pupitre peut donc dire « référentiel du 14/09 à 09:31 » et mesurer son retard. Elle change à chaque appel, y
+compris quand rien n'a bougé : elle dit quand le serveur a produit la réponse, pas quand le référentiel a changé
+pour la dernière fois. Dater le dernier changement supposerait d'horodater les modifications d'`operateur`,
+`poste_de_travail` et `operateur_poste` — trois tables sans colonne de modification, et une date de modification est
+une donnée du domaine, qui ouvrirait deux agrégats voisins. Écarté tant que rien ne le demande.
+
+### La non-pagination est le choix, pas un oubli
+
+C'est la pagination qui empêchait de prouver une version instantanée. Tout est ici lu dans une **transaction unique
+en lecture répétable** : sous `READ COMMITTED`, chaque requête prendrait son propre instantané, et la lecture des
+opérateurs pourrait ignorer un opérateur qu'une activité de la lecture suivante désigne. Le volume est borné par la
+taille de l'atelier.
+
+### La lecture passe par la base, jamais par un import
+
+`atelier`, `operateur`, `postedetravail` et `elementdefabrication` étant annotés `@BusinessContext`, ce contexte
+déclare ses propres entités JPA en lecture seule sur leurs tables. Il rejoue donc — pour la **quatrième** fois du
+projet — sa propre version du repli du journal d'atelier, avec une différence assumée : un pointage que l'automate
+refuse est **ignoré** plutôt que refusé, comme `syntheseheures` le fait de la présence. Un écran d'atelier ne doit
+jamais s'éteindre parce qu'un journal est bizarre.
+
+Le filet est le scénario Cucumber, qui engage, pointe, annule et clôture par l'API d'`atelier` puis relit par celle
+du pupitre — il échoue dès que les deux contextes cessent de lire les mêmes colonnes.
+
+### Le nom vient du suivi, la référence du référentiel
+
+Le nom de l'élément est celui copié à l'engagement : un élément renommé ne réécrit pas l'histoire de l'atelier. La
+`Reference`, elle, est un libellé courant, relu à chaque lecture comme les identités d'opérateurs — c'est ce que le
+front préfère afficher sur sa tuile quand l'entreprise en attribue une. Un élément **supprimé** du référentiel
+laisse donc sa tuile intacte, privée de sa seule référence.
+
+### Points ouverts
+
+1. **Aucune lecture conditionnelle.** Le rafraîchissement toutes les trente secondes renvoie le corps entier. Un
+   `ETag` supposerait une version qui ne bouge qu'au changement, donc les colonnes de modification écartées
+   ci-dessus. À rouvrir si le volume le justifie.
+2. **La quarantaine des gestes refusés reste à faire**, côté serveur : un rejeu refusé pour raison métier —
+   habilitation retirée, suivi clôturé — ne vit aujourd'hui que dans le journal local du pupitre.
+   `strategie/authentification-pointage.md` en fait une exigence.
+3. **Le client Keycloak du pupitre n'existe pas dans le realm.** `glm-front` attend `pupitre_device`, avec le
+   device grant activé et le client scope `glmproject` — sans lui, le jeton ne porte pas de claim `tenant` et toute
+   la surface `/api/**` répond 403. C'est la dernière pièce d'infrastructure avant qu'un pupitre déployé puisse
+   s'enrôler.
