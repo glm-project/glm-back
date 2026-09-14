@@ -121,6 +121,33 @@
         "required" : [ "content", "currentPage", "pageSize", "totalElementsCount" ],
         "type" : "object"
       },
+      "RestActiviteDuPupitre" : {
+        "description" : "Une activite ouverte sur cet element : qui travaille, sur quel poste, dans quel etat, depuis quand.\n\nUne non conformite ne ferme pas l'activite — ce temps-la se compte aussi. C'est la categorie qui change, pas\nl'etat de l'element.\n",
+        "properties" : {
+          "categorie" : {
+            "description" : "TRAVAIL ou NON_CONFORMITE.",
+            "enum" : [ "TRAVAIL", "NON_CONFORMITE" ],
+            "type" : "string"
+          },
+          "depuis" : {
+            "description" : "Instant depuis lequel cette activite dure.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "operateur" : {
+            "description" : "Identifiant de l'operateur en activite.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "poste" : {
+            "description" : "Identifiant du poste de travail, absent si aucun n'a ete pointe.",
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "required" : [ "categorie", "depuis", "operateur" ],
+        "type" : "object"
+      },
       "RestActiviteEnCours" : {
         "description" : "Ce que l'ecran d'atelier affiche : qui fait quoi, dans quel etat, depuis quand.",
         "properties" : {
@@ -964,6 +991,40 @@
         "required" : [ "id", "nom", "prenom" ],
         "type" : "object"
       },
+      "RestOperateurDuPupitre" : {
+        "description" : "Un operateur designable au pupitre, et les postes sur lesquels il peut pointer.\n\nPas de taux horaire, contrairement a GET /api/operateurs : un ecran d'atelier partage n'a aucune raison de recevoir\nce que le rapport de cout de revient reserve au gestionnaire. Le matricule, lui, est ce que l'operateur tape : il\ndesigne, il ne prouve rien, et un operateur qui n'en a pas n'est pas designable.\n",
+        "properties" : {
+          "id" : {
+            "description" : "Identifiant de l'operateur. C'est lui, et lui seul, que le pupitre renvoie en pointant.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "matricule" : {
+            "description" : "Code tape au pupitre pour se designer, absent si l'entreprise n'en attribue pas.",
+            "example" : "049",
+            "type" : "string"
+          },
+          "nom" : {
+            "description" : "Nom de famille.",
+            "example" : "Dupont",
+            "type" : "string"
+          },
+          "postes" : {
+            "description" : "Postes habilites, tries par libelle.",
+            "items" : {
+              "$ref" : "#/components/schemas/RestPosteDuPupitre"
+            },
+            "type" : "array"
+          },
+          "prenom" : {
+            "description" : "Prenom.",
+            "example" : "Jean",
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "nom", "postes", "prenom" ],
+        "type" : "object"
+      },
       "RestPeriode" : {
         "description" : "Un intervalle de temps borne a ses deux extremites.",
         "properties" : {
@@ -1117,6 +1178,23 @@
         "required" : [ "id", "libelle", "nature" ],
         "type" : "object"
       },
+      "RestPosteDuPupitre" : {
+        "description" : "Un poste sur lequel l'operateur est habilite, tel que le pupitre le propose au choix.\n\nNi nature ni cout horaire : le pupitre offre le poste, il ne le qualifie ni ne le valorise. Proposer cette seule\nliste evite d'avoir a traiter le 409 d'habilitation que le serveur renverrait autrement.\n",
+        "properties" : {
+          "id" : {
+            "description" : "Identifiant du poste de travail.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "libelle" : {
+            "description" : "Nom du poste tel que l'atelier le designe.",
+            "example" : "Fraiseuse 1",
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "libelle" ],
+        "type" : "object"
+      },
       "RestPosteHabilite" : {
         "description" : "Un poste sur lequel l'operateur est habilite, resolu au moment de la lecture.",
         "properties" : {
@@ -1137,6 +1215,32 @@
           }
         },
         "required" : [ "id", "libelle", "nature" ],
+        "type" : "object"
+      },
+      "RestReferentielDuPupitre" : {
+        "description" : "Tout ce que le pupitre met en cache pour continuer a fonctionner sans reseau, en un seul instantane.\n\nRien n'est stocke : operateurs, habilitations, elements pointables et activites en cours sont relus et replies a\nchaque appel, dans une transaction unique. C'est cette unicite qui fait de la reponse une version instantanee,\nqu'une lecture paginee ne pourrait pas garantir.\n",
+        "properties" : {
+          "genereLe" : {
+            "description" : "Instant ou le serveur a produit cet instantane. C'est la version : elle dit de quand date ce que l'ecran affiche.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "operateurs" : {
+            "description" : "Les operateurs designables, tries par nom puis prenom.",
+            "items" : {
+              "$ref" : "#/components/schemas/RestOperateurDuPupitre"
+            },
+            "type" : "array"
+          },
+          "suivis" : {
+            "description" : "Les elements pointables, tries par nom.",
+            "items" : {
+              "$ref" : "#/components/schemas/RestSuiviDuPupitre"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "genereLe", "operateurs", "suivis" ],
         "type" : "object"
       },
       "RestRegularisation" : {
@@ -1304,6 +1408,45 @@
           }
         },
         "required" : [ "activitesEnCours", "element", "engageLe", "engagePar", "etat", "id", "nom", "type" ],
+        "type" : "object"
+      },
+      "RestSuiviDuPupitre" : {
+        "description" : "Une tuile de l'ecran d'atelier : un element sur lequel on peut pointer, et ce qui s'y passe.\n\nLes elements clotures sont absents : ils n'acceptent plus de pointage. Le journal ne figure pas ici — il se\nconsulte via GET /api/atelier/suivis/{id}.\n",
+        "properties" : {
+          "activites" : {
+            "description" : "Les activites ouvertes a cet instant.",
+            "items" : {
+              "$ref" : "#/components/schemas/RestActiviteDuPupitre"
+            },
+            "type" : "array"
+          },
+          "etat" : {
+            "description" : "EN_ATTENTE, EN_COURS ou INTERROMPU. Deduit du journal.",
+            "enum" : [ "EN_ATTENTE", "EN_COURS", "INTERROMPU" ],
+            "type" : "string"
+          },
+          "id" : {
+            "description" : "Identifiant du suivi. C'est lui, et non celui de l'element, que portent les URLs de pointage.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "nom" : {
+            "description" : "Nom de l'element, copie a l'engagement.",
+            "example" : "OF-2026-000042",
+            "type" : "string"
+          },
+          "reference" : {
+            "description" : "Reference que l'entreprise donne elle-meme a l'element, relue a chaque lecture. Absente si elle n'en attribue pas.",
+            "example" : "M-1187",
+            "type" : "string"
+          },
+          "type" : {
+            "description" : "ORDRE_DE_FABRICATION ou PRODUIT, copie a l'engagement.",
+            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "activites", "etat", "id", "nom", "type" ],
         "type" : "object"
       },
       "RestSyntheseDesHeures" : {
@@ -2950,6 +3093,26 @@
         "tags" : [ "Postes de travail" ]
       }
     },
+    "/api/pupitre/referentiel" : {
+      "get" : {
+        "description" : "Rend en une seule reponse les operateurs designables avec leurs habilitations, et les elements sur lesquels on\npeut encore pointer avec leurs activites en cours. C'est la lecture que le pupitre rejoue a chaque\nsynchronisation pour rafraichir son cache local.\n\nVolontairement non paginee : la pagination est exactement ce qui empeche de prouver une version instantanee du\nreferentiel, puisque rien ne garantit que deux pages viennent du meme etat de la base. Tout est ici lu dans une\ntransaction unique, en lecture repetable.\n\n`genereLe` est la version de cet instantane. Elle change a chaque appel, y compris quand rien n'a bouge : elle\ndit quand le serveur a produit la reponse, pas quand le referentiel a change pour la derniere fois.\n\nCe que la reponse ne porte pas, et n'a pas a porter : aucun montant — ni taux horaire d'operateur, ni cout\nhoraire de poste —, aucun journal d'evenements, et aucun element cloture.\n",
+        "operationId" : "referentiel",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestReferentielDuPupitre"
+                }
+              }
+            },
+            "description" : "L'instantane du referentiel, date de l'instant de sa lecture."
+          }
+        },
+        "summary" : "Lire tout le referentiel du pupitre en un appel",
+        "tags" : [ "Pupitre" ]
+      }
+    },
     "/api/syntheses-des-heures/{operateurId}" : {
       "get" : {
         "description" : "Rend les sept jours de la semaine ISO demandee. Chaque jour porte le journal brut des pointages (arrivee, pause,\nreprise, depart) et la duree travaillee, calculee sur les fenetres de presence, pauses exclues.\n\nLa semaine est toujours explicite : aucune semaine courante implicite, pour que deux appels identiques rendent\ntoujours la meme chose. L'annee est celle des semaines ISO, qui differe de l'annee civile a ses bornes — la\nsemaine 1 de 2026 commence le 29 decembre 2025.\n\nCe releve n'est ni une feuille de paie ni un rapport de paie : il expose du temps travaille pour l'alimenter,\nsans en etre une piece.\n",
@@ -3040,6 +3203,9 @@
   }, {
     "description" : "Le referentiel de ce sur quoi les operateurs pointent : une machine, un etabli, un four, une salle.\n\nChaque poste porte la nature du travail qui s'y fait. C'est de la que vient le metier exerce a un instant donne :\nl'operateur qui demarre sur le poste de soudure soude, celui qui demarre sur un tour tourne. Rien de tout cela n'est\ndeclare sur la personne.\n\nLe gestionnaire declare et revise les postes ; l'operateur (role USER) les consulte.\n",
     "name" : "Postes de travail"
+  }, {
+    "description" : "Ce que le poste d'atelier met en cache pour continuer a collecter sans reseau.",
+    "name" : "Pupitre"
   }, {
     "description" : "Le releve horodate des pointages et la duree travaillee d'un operateur, semaine par semaine.",
     "name" : "Syntheses des heures"
