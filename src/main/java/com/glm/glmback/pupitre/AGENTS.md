@@ -45,9 +45,16 @@ activités encore ouvertes ; `SuiviDuPupitre.etat()` en déduit `EN_ATTENTE`, `E
   instantanée du référentiel : rien ne garantirait que deux pages viennent du même état de la base, et c'est le
   défaut que cette route existe pour supprimer. Le volume est borné par la taille de l'atelier. Ne pas « rétablir la
   cohérence » avec les autres lectures du projet en ajoutant une pagination ici.
-- **L'instantané tient à l'isolation, pas à la transaction.** `ReferentielsDuPupitreApplicationService` demande
-  `Isolation.REPEATABLE_READ` : sous `READ COMMITTED`, chaque requête prend son propre instantané, et la lecture des
-  opérateurs pourrait ignorer un opérateur qu'une activité de la lecture suivante désigne.
+- **La réponse n'est pas un instantané, et c'est assumé.** `ReferentielsDuPupitreApplicationService` a demandé
+  `Isolation.REPEATABLE_READ` de sa livraison à la correction de #36. Sous `READ COMMITTED`, chaque requête prend son
+  propre instantané : la lecture des opérateurs peut ignorer un opérateur qu'une activité de la lecture suivante
+  désigne. L'écart est réel, il se résorbe au rafraîchissement suivant du cache, et il est préféré au prix de la
+  garantie — voir la javadoc de la méthode. En deux mots : Hibernate pose le schéma du tenant par
+  `Connection.setSchema` dès l'acquisition de la connexion, ce qui prend un instantané, après quoi PostgreSQL refuse
+  tout changement d'isolation ; la route répondait donc `500` **à chaque appel**. Seul l'ordre inverse fonctionne, et
+  il exige un `MultiTenantConnectionProvider` maison dans le chemin qui garantit l'étanchéité entre entreprises
+  clientes. **Ne pas remettre `isolation =` ici sans corriger d'abord cette chaîne** : `pupitre_referentiel.feature`
+  rougirait aussitôt — c'est aujourd'hui le seul filet sur ce point.
 - **`genereLe` vient du port `Clock`**, jamais d'un `Instant.now()` : c'est ce qui rend le scénario Cucumber capable
   de le figer. Cette date **change à chaque appel**, y compris quand rien n'a bougé — elle dit quand le serveur a
   produit la réponse, pas quand le référentiel a changé pour la dernière fois. Dater le dernier changement

@@ -407,9 +407,10 @@ les trente secondes, après chaque capture, à la fermeture d'une fenêtre opér
 
 Quatre défauts en découlaient, tous du ressort du back :
 
-- **aucun instantané.** Rien ne garantissait que deux pages venaient du même état de la base ; le front compensait
-  par des gardes — total stable, pas de doublon, pas de page vide — qui ne rattrapent pas un remplacement de même
-  taille entre deux pages ;
+- **un assemblage de pages.** Rien ne garantissait que deux pages venaient du même état de la base ; le front
+  compensait par des gardes — total stable, pas de doublon, pas de page vide — qui ne rattrapent pas un remplacement
+  de même taille entre deux pages. La route supprime les pages, donc ces gardes ; elle ne rend pas pour autant un
+  instantané, voir plus bas ;
 - **aucune date.** Le pupitre ne savait pas de quand datait ce qu'il affichait, seulement s'il était connecté ;
 - **des montants sur un écran d'atelier partagé.** `RestOperateur` porte le taux horaire ; le pupitre le recevait et
   le jetait, alors que `coutderevient` le réserve au gestionnaire ;
@@ -434,10 +435,19 @@ une donnée du domaine, qui ouvrirait deux agrégats voisins. Écarté tant que 
 
 ### La non-pagination est le choix, pas un oubli
 
-C'est la pagination qui empêchait de prouver une version instantanée. Tout est ici lu dans une **transaction unique
-en lecture répétable** : sous `READ COMMITTED`, chaque requête prendrait son propre instantané, et la lecture des
-opérateurs pourrait ignorer un opérateur qu'une activité de la lecture suivante désigne. Le volume est borné par la
-taille de l'atelier.
+C'est la pagination qui imposait au front ses gardes sur les totaux, les doublons et les pages vides. Tout est ici lu
+en **un appel et une transaction unique** : il n'y a plus de pages à recoudre. Le volume est borné par la taille de
+l'atelier.
+
+La transaction ne fait pas pour autant de la réponse un instantané. La route a demandé une **lecture répétable** de
+sa livraison au 21/09/2026, précisément pour cela — sous `READ COMMITTED`, chaque requête prend son propre
+instantané, et la lecture des opérateurs peut ignorer un opérateur qu'une activité de la lecture suivante désigne.
+Cette demande n'a jamais pu être honorée : Hibernate pose le schéma du tenant dès l'acquisition de la connexion, ce
+qui prend un instantané, et PostgreSQL refuse ensuite tout changement d'isolation. La route répondait `500` à chaque
+appel. L'isolation a donc été retirée et l'écart assumé — il porte sur deux collections lues à quelques
+millisecondes d'intervalle, et se résorbe au rafraîchissement suivant du cache. La récupérer supposerait de
+s'approprier l'acquisition de connexion du multi-tenant ; le détail est dans le
+[AGENTS.md du contexte `pupitre`](../src/main/java/com/glm/glmback/pupitre/AGENTS.md).
 
 ### La lecture passe par la base, jamais par un import
 

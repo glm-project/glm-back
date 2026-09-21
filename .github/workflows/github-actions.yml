@@ -47,6 +47,14 @@ jobs:
       - name: 'Test: run tests'
         run: |
           mvn --batch-mode -ntp clean verify
+      - name: 'Verify: Failsafe really ran integration tests and Cucumber'
+        run: |
+          reports=$(find target/failsafe-reports -name '*.xml' 2>/dev/null | wc -l)
+          if [ "$reports" -eq 0 ]; then
+            echo "::error::Aucun rapport Failsafe : mvn verify n'a execute ni IT ni scenario Cucumber."
+            exit 1
+          fi
+          echo "$reports rapports Failsafe produits."
       - name: 'Verify: openapi.json is committed and up to date'
         run: |
           git diff --exit-code -- documentation/openapi.json

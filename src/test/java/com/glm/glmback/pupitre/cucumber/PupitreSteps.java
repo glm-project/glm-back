@@ -45,6 +45,12 @@ public class PupitreSteps {
   private static final String REFERENTIEL_URI = "/api/pupitre/referentiel";
   private static final ObjectMapper JSON = JsonMapper.builder().build();
   private static final AtomicInteger SEQUENCE = new AtomicInteger();
+  /**
+   * Les scenarios de tous les contextes peuplent le meme schema d'entreprise, et chaque classe de steps porte son
+   * propre compteur reparti de zero : {@code cout_de_revient.feature} emploie les memes alias « fraiseuse » et
+   * « tour », donc produirait les memes libelles, qui doivent rester uniques. Ce prefixe est ce qui separe les deux.
+   */
+  private static final String PREFIXE = "pupitre ";
 
   @Autowired
   private CucumberRestClient rest;
@@ -63,7 +69,7 @@ public class PupitreSteps {
 
   @Given("le pupitre connait le poste {string}")
   public void lePupitreConnaitLePoste(String alias) {
-    String libelle = alias + " " + SEQUENCE.incrementAndGet();
+    String libelle = PREFIXE + alias + " " + SEQUENCE.incrementAndGet();
     rest.post(POSTES_URI, JSON.writeValueAsString(Map.of("libelle", libelle, "nature", "Fraisage")));
     postes.put(alias, id());
     libelles.put(alias, libelle);
@@ -89,7 +95,7 @@ public class PupitreSteps {
 
   @Given("le pupitre fabrique {string}")
   public void lePupitreFabrique(String alias) {
-    String reference = alias + " " + SEQUENCE.incrementAndGet();
+    String reference = PREFIXE + alias + " " + SEQUENCE.incrementAndGet();
     rest.post(ELEMENTS_URI, JSON.writeValueAsString(Map.of("type", "ORDRE_DE_FABRICATION", "reference", reference)));
     elements.put(alias, id());
     references.put(alias, reference);
