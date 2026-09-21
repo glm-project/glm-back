@@ -7,7 +7,6 @@ import com.glm.glmback.pupitre.domain.SuivisOuvertsDuPupitre;
 import com.glm.glmback.shared.time.domain.Clock;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -27,13 +26,23 @@ public class ReferentielsDuPupitreApplicationService {
   }
 
   /**
-   * L'instantane tient a l'isolation, pas a la transaction.
+   * La lecture se fait a l'isolation par defaut, {@code READ COMMITTED}.
    *
    * <p>
-   * Sous {@code READ COMMITTED}, chaque requete prend son propre instantane : la lecture des operateurs pourrait
-   * ignorer un operateur que la lecture suivante des suivis designe dans une activite en cours. {@code REPEATABLE
-   * READ} est ce qui fait de cette reponse la version instantanee unique que le cache du pupitre vient chercher, et
-   * c'est la seule raison pour laquelle il est demande ici.
+   * Cette methode a demande {@code REPEATABLE_READ} de sa livraison a la correction de #36 : chaque requete prenant
+   * son propre instantane sous {@code READ COMMITTED}, la lecture des operateurs peut ignorer un operateur que la
+   * lecture suivante des suivis designe dans une activite en cours. L'ecart est reel, il est desormais assume : la
+   * demande d'isolation ne pouvait pas etre honoree, et elle rendait la route inutilisable.
+   * </p>
+   *
+   * <p>
+   * Hibernate pose le schema du tenant par {@code Connection.setSchema} des l'acquisition de la connexion. Ce
+   * dialogue passe par le protocole etendu, donc prend un instantane : PostgreSQL refuse ensuite tout {@code SET
+   * TRANSACTION ISOLATION LEVEL} par un {@code must be called before any query}, et la route repondait {@code 500} a
+   * chaque appel. Seul l'ordre inverse fonctionne -- isolation d'abord, schema ensuite --, ce qui exige de
+   * s'approprier l'acquisition de connexion par un {@code MultiTenantConnectionProvider} maison, dans le chemin meme
+   * qui garantit l'etancheite entre entreprises clientes. Un defaut de {@code search_path} y couterait bien plus
+   * cher que l'ecart qu'on evite.
    * </p>
    *
    * <p>
@@ -42,7 +51,7 @@ public class ReferentielsDuPupitreApplicationService {
    * </p>
    */
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
-  @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+  @Transactional(readOnly = true)
   public ReferentielDuPupitre referentiel() {
     return referentiels.referentiel();
   }

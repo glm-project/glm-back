@@ -210,10 +210,14 @@ leurs postes habilités, et les éléments encore pointables avec leurs activit�
 
 Cinq choses à savoir avant de brancher un cache dessus :
 
-- **Elle n'est pas paginée, et c'est le point.** La pagination est exactement ce qui empêchait de prouver que les
-  deux collections venaient du même état de la base. Tout est lu ici dans une transaction unique, en lecture
-  répétable : la réponse est un instantané, pas un assemblage. Il n'y a donc plus de boucle de pages à écrire, ni de
-  gardes sur les totaux, les doublons ou les pages vides.
+- **Elle n'est pas paginée, et c'est le point.** Tout est lu en un appel et une transaction unique : plus de boucle
+  de pages à écrire, ni de gardes sur les totaux, les doublons ou les pages vides — ces trois gardes existaient
+  contre le recousage de pages, qui n'existe plus. En revanche la réponse **n'est pas un instantané strict** : les
+  opérateurs et les suivis sont lus par deux requêtes successives sous l'isolation par défaut de PostgreSQL, et un
+  changement validé entre les deux se voit dans la seconde. Concrètement, une activité en cours peut désigner un
+  opérateur absent de la liste jointe — afficher l'identifiant brut plutôt que planter, l'appel suivant recollera.
+  Une version antérieure de ce document annonçait une lecture répétable : elle n'a jamais fonctionné et a été
+  retirée, la route répondait `500` à chaque appel.
 - **`genereLe` est la version, et c'est une date.** Elle dit quand le serveur a produit la réponse — de quoi
   afficher « référentiel du 14/09 à 09:31 » et mesurer un retard. Elle **change à chaque appel**, y compris quand
   rien n'a bougé : ce n'est pas la date du dernier changement, et s'en servir pour décider d'un rafraîchissement
