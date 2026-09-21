@@ -425,13 +425,18 @@
             <id>regenerate-openapi-specification</id>
             <phase>pre-integration-test</phase>
             <goals>
-              <goal>java</goal>
+              <goal>exec</goal>
             </goals>
             <configuration>
-              <mainClass>com.glm.glmback.wire.openapi.infrastructure.primary.OpenApiSpecificationGenerator</mainClass>
+              <!-- exec:exec, et non exec:java : le generateur se termine par System.exit, qui tuerait la JVM Maven -->
+              <executable>${java.home}/bin/java</executable>
               <classpathScope>test</classpathScope>
-              <fork>true</fork>
               <workingDirectory>${project.basedir}</workingDirectory>
+              <arguments>
+                <argument>-classpath</argument>
+                <classpath />
+                <argument>com.glm.glmback.wire.openapi.infrastructure.primary.OpenApiSpecificationGenerator</argument>
+              </arguments>
             </configuration>
           </execution>
         </executions>
