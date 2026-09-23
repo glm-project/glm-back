@@ -173,7 +173,7 @@ La dégradation n'est pas uniforme, et c'est ce qui rend le problème tenable.
 
 **Réponse retenue : l'engagement par anticipation.** Le back-office met les éléments à l'atelier à l'avance, le cache du pupitre les porte déjà. C'est une contrainte d'organisation, pas de logiciel, et elle est cohérente avec ce que le client décrit : engager est un geste de préparation, pas une réaction à l'urgence.
 
-**Filet de dernier recours**, si le cas se produit quand même : la présence continue de courir, le travail non rattachable tombe dans le résidu — le « bouton GLM », déjà défini comme la présence moins le temps affecté —, et le gestionnaire l'affecte après coup par `regularise` ou `corrige`. Ces trois actes existent exactement pour ça ; rien à ajouter au modèle.
+**Filet de dernier recours**, si le cas se produit quand même : la présence continue de courir, le travail non rattachable tombe dans la présence sans affectation — la présence moins le temps affecté, définie dans [contexte-metier.md](../contexte-metier.md#la-présence-base-de-la-paie) —, et le gestionnaire l'affecte après coup par `regularise` ou `corrige`. Ces trois actes existent exactement pour ça ; rien à ajouter au modèle.
 
 ## Le rejeu
 
