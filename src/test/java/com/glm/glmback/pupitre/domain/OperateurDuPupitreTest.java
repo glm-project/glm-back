@@ -14,9 +14,18 @@ class OperateurDuPupitreTest {
 
   @Test
   void shouldNotBuildWithoutPostes() {
-    assertThatThrownBy(() -> new OperateurDuPupitre(OPERATEUR_ID_DUPONT, NOM_DUPONT, PRENOM_JEAN, Optional.empty(), null))
+    assertThatThrownBy(() ->
+      new OperateurDuPupitre(OPERATEUR_ID_DUPONT, NOM_DUPONT, PRENOM_JEAN, Optional.empty(), EtatDePresence.ABSENT, null)
+    )
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("postes");
+  }
+
+  @Test
+  void shouldNotBuildWithoutEtatDePresence() {
+    assertThatThrownBy(() -> new OperateurDuPupitre(OPERATEUR_ID_DUPONT, NOM_DUPONT, PRENOM_JEAN, Optional.empty(), null, List.of()))
+      .isExactlyInstanceOf(MissingMandatoryValueException.class)
+      .hasMessageContaining("etat de presence");
   }
 
   @Test
@@ -26,6 +35,7 @@ class OperateurDuPupitreTest {
       .nom(new Nom("Dupont"))
       .prenom(new Prenom("Jean"))
       .matricule("049")
+      .etat(EtatDePresence.PRESENT)
       .postes(List.of(POSTE_HABILITE_FRAISEUSE_1));
 
     assertThat(operateur.id()).isEqualTo(OPERATEUR_ID_DUPONT);
@@ -33,6 +43,23 @@ class OperateurDuPupitreTest {
     assertThat(operateur.prenom()).isEqualTo(PRENOM_JEAN);
     assertThat(operateur.matricule()).contains(MATRICULE_049);
     assertThat(operateur.postes()).containsExactly(POSTE_HABILITE_FRAISEUSE_1);
+  }
+
+  /**
+   * L'etat de presence entre au referentiel avec l'operateur : sans lui, le pupitre offrirait ses trois commandes de
+   * presence en aveugle, et ne decouvrirait qu'a la reconnexion que le serveur a refuse la transition impossible.
+   */
+  @Test
+  void shouldPorterSonEtatDePresence() {
+    OperateurDuPupitre operateur = OperateurDuPupitre.builder()
+      .id(OPERATEUR_ID_DUPONT)
+      .nom(NOM_DUPONT)
+      .prenom(PRENOM_JEAN)
+      .matricule(MATRICULE_049.value())
+      .etat(EtatDePresence.EN_PAUSE)
+      .postes(List.of(POSTE_HABILITE_FRAISEUSE_1));
+
+    assertThat(operateur.etat()).isEqualTo(EtatDePresence.EN_PAUSE);
   }
 
   /**
@@ -46,6 +73,7 @@ class OperateurDuPupitreTest {
       .nom(NOM_DUPONT)
       .prenom(PRENOM_JEAN)
       .matricule(null)
+      .etat(EtatDePresence.ABSENT)
       .postes(List.of());
 
     assertThat(operateur.matricule()).isEmpty();

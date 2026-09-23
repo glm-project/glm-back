@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.*;
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.pupitre.domain.ActiviteEnCours;
 import com.glm.glmback.pupitre.domain.CategorieDActivite;
+import com.glm.glmback.pupitre.domain.EtatDePresence;
 import com.glm.glmback.pupitre.domain.EtatDuSuivi;
 import com.glm.glmback.pupitre.domain.JournalDuPupitre;
 import com.glm.glmback.pupitre.domain.OperateurDuPupitre;
@@ -37,6 +38,7 @@ class RestReferentielDuPupitreTest {
     assertThat(operateur.nom()).isEqualTo("Dupont");
     assertThat(operateur.prenom()).isEqualTo("Jean");
     assertThat(operateur.matricule()).isEqualTo("049");
+    assertThat(operateur.etat()).isEqualTo(EtatDePresence.PRESENT);
     assertThat(operateur.postes()).containsExactly(
       new RestPosteDuPupitre(POSTE_ID_FRAISEUSE_1.uuid(), "Fraiseuse 1"),
       new RestPosteDuPupitre(POSTE_ID_FRAISEUSE_2.uuid(), "Fraiseuse 2")
@@ -50,6 +52,7 @@ class RestReferentielDuPupitreTest {
       .nom(NOM_DUPONT)
       .prenom(PRENOM_JEAN)
       .matricule(null)
+      .etat(EtatDePresence.ABSENT)
       .postes(List.of());
 
     assertThat(RestOperateurDuPupitre.from(sansMatricule).matricule()).isNull();

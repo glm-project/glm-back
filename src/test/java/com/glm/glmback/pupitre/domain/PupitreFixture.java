@@ -39,14 +39,19 @@ public final class PupitreFixture {
   public static final PosteHabilite POSTE_HABILITE_FRAISEUSE_1 = new PosteHabilite(POSTE_ID_FRAISEUSE_1, LIBELLE_FRAISEUSE_1);
   public static final PosteHabilite POSTE_HABILITE_FRAISEUSE_2 = new PosteHabilite(POSTE_ID_FRAISEUSE_2, LIBELLE_FRAISEUSE_2);
 
-  public static final OperateurDuPupitre OPERATEUR_DUPONT = OperateurDuPupitre.builder()
-    .id(OPERATEUR_ID_DUPONT)
-    .nom(NOM_DUPONT)
-    .prenom(PRENOM_JEAN)
-    .matricule(MATRICULE_049.value())
-    .postes(List.of(POSTE_HABILITE_FRAISEUSE_1, POSTE_HABILITE_FRAISEUSE_2));
+  public static final OperateurDuPupitre OPERATEUR_DUPONT = operateurDupont(EtatDePresence.PRESENT);
 
   private PupitreFixture() {}
+
+  public static OperateurDuPupitre operateurDupont(EtatDePresence etat) {
+    return OperateurDuPupitre.builder()
+      .id(OPERATEUR_ID_DUPONT)
+      .nom(NOM_DUPONT)
+      .prenom(PRENOM_JEAN)
+      .matricule(MATRICULE_049.value())
+      .etat(etat)
+      .postes(List.of(POSTE_HABILITE_FRAISEUSE_1, POSTE_HABILITE_FRAISEUSE_2));
+  }
 
   public static EvenementDuPupitre debut(Instant dateDeSurvenue) {
     return new EvenementDuPupitre(TypeDePointage.DEBUT, ACTIVITE_DUPONT_SUR_FRAISEUSE_1, dateDeSurvenue);

@@ -418,12 +418,20 @@ Quatre défauts en découlaient, tous du ressort du back :
 
 ### Ce que la route rend, et ce qu'elle ne rend pas
 
-Les opérateurs désignables — identité, matricule, postes habilités —, les éléments encore pointables — identité, nom
-d'atelier, référence, type, état, activités en cours —, et `genereLe`.
+Les opérateurs désignables — identité, matricule, postes habilités, **état de présence** —, les éléments encore
+pointables — identité, nom d'atelier, référence, type, état, activités en cours —, et `genereLe`.
+
+L'**état de présence** est ce qui permet à l'écran d'atelier de n'offrir, hors ligne compris, que les commandes que
+l'atelier acceptera : sans lui, le pupitre proposait ses trois gestes en aveugle et le serveur refusait la
+transition impossible. C'est l'état de la journée en cours de l'opérateur, choisie comme l'atelier la choisit et
+**sans borne de date** — une journée ouverte la veille et jamais fermée compte encore. Un opérateur sans journée en
+cours vaut `ABSENT` et reste rendu : la liste est celle des opérateurs _désignables_, pas des opérateurs présents.
 
 Elle ne rend **ni montant** (taux horaire, coût horaire : les entités de lecture ne les mappent même pas), **ni
-journal d'événements**, **ni élément clôturé**, et ne porte **aucune métadonnée d'engagement ou de clôture** : rien
-de tout cela n'est lu par un écran d'atelier.
+journal d'événements**, **ni élément clôturé**, **aucun instant de présence** — « en pause depuis 10 h 12 »
+supposerait de replier le journal de présence de tous les opérateurs à chaque appel, et donnerait une seconde source
+de durée en désaccord visible avec celles que le pupitre fige déjà —, et **aucune métadonnée d'engagement ou de
+clôture** : rien de tout cela n'est lu par un écran d'atelier.
 
 ### `genereLe` est la version, et c'est une date
 
@@ -457,8 +465,13 @@ projet — sa propre version du repli du journal d'atelier, avec une différence
 refuse est **ignoré** plutôt que refusé, comme `syntheseheures` le fait de la présence. Un écran d'atelier ne doit
 jamais s'éteindre parce qu'un journal est bizarre.
 
-Le filet est le scénario Cucumber, qui engage, pointe, annule et clôture par l'API d'`atelier` puis relit par celle
-du pupitre — il échoue dès que les deux contextes cessent de lire les mêmes colonnes.
+Une exception, et une seule : l'**état de présence** se lit sur la colonne de projection `journee_de_travail.etat`
+plutôt qu'en repliant le journal. Ce qu'on demande ici est l'état courant de tous les opérateurs à la fois ; le
+replier supposerait de rapporter tous les journaux de présence ouverts à chaque synchronisation pour n'en garder que
+la dernière valeur.
+
+Le filet est le scénario Cucumber, qui engage, pointe, annule et clôture par l'API d'`atelier` — présence comprise —
+puis relit par celle du pupitre : il échoue dès que les deux contextes cessent de lire les mêmes colonnes.
 
 ### Le nom vient du suivi, la référence du référentiel
 

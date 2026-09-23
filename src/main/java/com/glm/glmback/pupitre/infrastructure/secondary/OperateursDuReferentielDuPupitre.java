@@ -2,6 +2,7 @@ package com.glm.glmback.pupitre.infrastructure.secondary;
 
 import com.glm.glmback.pupitre.domain.OperateurDuPupitre;
 import com.glm.glmback.pupitre.domain.OperateursDuPupitre;
+import com.glm.glmback.pupitre.domain.PresencesDesOperateurs;
 import java.util.List;
 import org.springframework.stereotype.Repository;
 
@@ -23,7 +24,11 @@ class OperateursDuReferentielDuPupitre implements OperateursDuPupitre {
   }
 
   @Override
-  public List<OperateurDuPupitre> tous() {
-    return operateurs.tous().stream().map(OperateurDuPupitreEntity::toDomain).toList();
+  public List<OperateurDuPupitre> tous(PresencesDesOperateurs presences) {
+    return operateurs
+      .tous()
+      .stream()
+      .map(operateur -> operateur.toDomain(presences))
+      .toList();
   }
 }

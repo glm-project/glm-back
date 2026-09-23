@@ -194,7 +194,16 @@ leurs postes habilités, et les éléments encore pointables avec leurs activit�
 ```json
 {
   "genereLe": "2026-09-14T09:31:02.418Z",
-  "operateurs": [{ "id": "…", "nom": "Dupont", "prenom": "Jean", "matricule": "049", "postes": [{ "id": "…", "libelle": "Fraiseuse 1" }] }],
+  "operateurs": [
+    {
+      "id": "…",
+      "nom": "Dupont",
+      "prenom": "Jean",
+      "matricule": "049",
+      "etat": "PRESENT",
+      "postes": [{ "id": "…", "libelle": "Fraiseuse 1" }]
+    }
+  ],
   "suivis": [
     {
       "id": "…",
@@ -208,7 +217,7 @@ leurs postes habilités, et les éléments encore pointables avec leurs activit�
 }
 ```
 
-Cinq choses à savoir avant de brancher un cache dessus :
+Six choses à savoir avant de brancher un cache dessus :
 
 - **Elle n'est pas paginée, et c'est le point.** Tout est lu en un appel et une transaction unique : plus de boucle
   de pages à écrire, ni de gardes sur les totaux, les doublons ou les pages vides — ces trois gardes existaient
@@ -222,6 +231,14 @@ Cinq choses à savoir avant de brancher un cache dessus :
   afficher « référentiel du 14/09 à 09:31 » et mesurer un retard. Elle **change à chaque appel**, y compris quand
   rien n'a bougé : ce n'est pas la date du dernier changement, et s'en servir pour décider d'un rafraîchissement
   n'aurait aucun sens. Il n'y a ni `ETag` ni `304`.
+- **`etat` dit quelles commandes de présence proposer.** `ABSENT`, `PRESENT` ou `EN_PAUSE` : c'est l'état de la
+  journée en cours de l'opérateur, sans borne de date — une journée ouverte hier et jamais fermée compte encore, et
+  l'opérateur y est toujours `PRESENT`. `ABSENT` vaut pour qui n'a aucune journée en cours ; il reste dans la liste,
+  qui rend les opérateurs **désignables**, pas les opérateurs présents. C'est ce champ qui évite d'offrir hors ligne
+  une transition que le serveur refusera (`409`, une pause ne suit pas `EN_PAUSE`).
+  Ce que le champ ne porte pas, volontairement : **aucun instant** — pas de « en pause depuis 10 h 12 », l'écran
+  n'affiche que l'état — et **aucun marqueur d'idempotence** : les gestes locaux pas encore reflétés se replient avec
+  le marqueur que le pupitre tient déjà lui-même, comme pour les pointages.
 - **Aucun montant.** Ni `tauxHoraire` d'opérateur, ni `coutHoraire` de poste : un écran d'atelier partagé n'a pas à
   les recevoir, et `GET /api/couts-de-revient/{elementId}` reste réservé au `GESTIONNAIRE`.
 - **Aucun élément clôturé, aucun journal.** `etat` ne vaut donc jamais `CLOTURE` ici. Le journal complet, événements

@@ -24,6 +24,37 @@ Feature: Le referentiel que le pupitre met en cache
       | fraiseuse |
       | tour      |
 
+  # L'etat de presence entre au referentiel pour que l'ecran d'atelier n'offre, meme hors ligne, que les gestes que
+  # l'atelier acceptera : sans lui, le pupitre proposerait une pause a un operateur deja en pause, et ne decouvrirait
+  # qu'a la reconnexion que le serveur l'a refusee.
+  Scenario: Un operateur sans journee en cours est absent
+    When je lis le referentiel du pupitre a "2026-05-11T07:00:00Z"
+    Then "dupont" est "ABSENT" au referentiel du pupitre
+
+  Scenario: Une arrivee rend l'operateur present
+    Given au pupitre, "dupont" prend son poste a "2026-05-11T08:00:00Z"
+    When je lis le referentiel du pupitre a "2026-05-11T09:00:00Z"
+    Then "dupont" est "PRESENT" au referentiel du pupitre
+
+  Scenario: Une pause suspend la presence sans y mettre fin
+    Given au pupitre, "dupont" prend son poste a "2026-05-11T08:00:00Z"
+    And au pupitre, "dupont" pointe sa presence "PAUSE" a "2026-05-11T12:00:00Z"
+    When je lis le referentiel du pupitre a "2026-05-11T12:30:00Z"
+    Then "dupont" est "EN_PAUSE" au referentiel du pupitre
+
+  Scenario: Un depart referme la journee et rend l'operateur absent
+    Given au pupitre, "dupont" prend son poste a "2026-05-11T08:00:00Z"
+    And au pupitre, "dupont" pointe sa presence "DEPART" a "2026-05-11T17:00:00Z"
+    When je lis le referentiel du pupitre a "2026-05-11T18:00:00Z"
+    Then "dupont" est "ABSENT" au referentiel du pupitre
+
+  Scenario: Une journee ouverte la veille et jamais fermee reste la journee en cours
+    Given au pupitre, "dupont" prend son poste a "2026-05-10T08:00:00Z"
+    When je lis le referentiel du pupitre a "2026-05-11T07:00:00Z"
+    # Aucune borne de date : l'operateur qui a oublie de pointer son depart est toujours present le lendemain, et le
+    # pupitre doit lui offrir le depart, pas l'arrivee.
+    Then "dupont" est "PRESENT" au referentiel du pupitre
+
   Scenario: Un element mis en atelier apparait en attente, avec sa reference relue au referentiel
     Given le pupitre fabrique "OF 4001"
     And "OF 4001" est engage au pupitre a "2026-05-11T07:00:00Z"

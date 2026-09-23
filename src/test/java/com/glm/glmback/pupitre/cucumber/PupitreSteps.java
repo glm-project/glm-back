@@ -120,6 +120,15 @@ public class PupitreSteps {
     rest.post(JOURNEES_URI, JSON.writeValueAsString(Map.of("id", UUID.randomUUID(), "operateur", operateurs.get(operateur))));
   }
 
+  @Given("au pupitre, {string} pointe sa presence {string} a {string}")
+  public void pointeSaPresence(String operateur, String type, String instant) {
+    horloge.ilEst(Instant.parse(instant));
+    rest.post(
+      JOURNEES_URI + "/pointages",
+      JSON.writeValueAsString(Map.of("id", UUID.randomUUID(), "operateur", operateurs.get(operateur), "type", type))
+    );
+  }
+
   @Given("au pupitre, {string} pointe {string} sur {string} au poste {string} a {string}")
   public void pointeAuPoste(String operateur, String type, String element, String poste, String instant) {
     pointe(
@@ -168,6 +177,11 @@ public class PupitreSteps {
   @Then("le referentiel du pupitre porte l'operateur {string} avec son matricule")
   public void leReferentielPorteLOperateur(String alias) {
     assertThat(operateur(alias)).containsEntry("nom", alias).containsEntry("matricule", matricules.get(alias));
+  }
+
+  @Then("{string} est {string} au referentiel du pupitre")
+  public void estDansLEtatDePresence(String alias, String etat) {
+    assertThat(operateur(alias)).containsEntry("etat", etat);
   }
 
   @Then("les postes proposes a {string} sont")
