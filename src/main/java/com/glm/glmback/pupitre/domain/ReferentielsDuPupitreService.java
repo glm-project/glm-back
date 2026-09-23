@@ -9,11 +9,6 @@ import com.glm.glmback.shared.time.domain.Clock;
  * La date vient du port {@link Clock}, jamais d'un appel direct a l'horloge de la machine : c'est ce qui rend le
  * scenario Cucumber capable de la figer.
  * </p>
- *
- * <p>
- * Les presences sont relevees une fois, puis remises a la lecture des operateurs : c'est ici, et nulle part ailleurs,
- * que les deux lectures se rejoignent — l'adapter des operateurs ne fait qu'interroger le releve.
- * </p>
  */
 public final class ReferentielsDuPupitreService {
 

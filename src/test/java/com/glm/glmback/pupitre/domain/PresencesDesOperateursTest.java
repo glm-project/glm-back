@@ -25,10 +25,6 @@ class PresencesDesOperateursTest {
     assertThat(presences.de(OPERATEUR_ID_DUPONT)).isEqualTo(EtatDePresence.EN_PAUSE);
   }
 
-  /**
-   * Un operateur qu'aucune journee en cours ne nomme est absent, et le referentiel le rend quand meme : c'est la liste
-   * des operateurs designables, pas celle des operateurs presents.
-   */
   @Test
   void shouldTenirPourAbsentUnOperateurSansJourneeEnCours() {
     PresencesDesOperateurs presences = new PresencesDesOperateurs(Map.of(OPERATEUR_ID_DUPONT, EtatDePresence.PRESENT));

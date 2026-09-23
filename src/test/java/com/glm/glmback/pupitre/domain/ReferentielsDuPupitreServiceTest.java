@@ -29,10 +29,6 @@ class ReferentielsDuPupitreServiceTest {
     assertThat(referentiel.suivis()).containsExactly(suiviOf42(JournalDuPupitre.vide()));
   }
 
-  /**
-   * Les presences sont relevees une fois et remises a la lecture des operateurs : c'est ce qui fait entrer l'etat au
-   * referentiel sans une requete de presence par operateur.
-   */
   @Test
   void shouldRemettreLesPresencesReleveesALaLectureDesOperateurs() {
     ReferentielsDuPupitreService service = ReferentielsDuPupitreService.builder()

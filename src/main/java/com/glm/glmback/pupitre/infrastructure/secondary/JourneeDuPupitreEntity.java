@@ -12,17 +12,6 @@ import java.time.Instant;
 import java.util.UUID;
 import org.hibernate.annotations.Immutable;
 
-/**
- * Vue en lecture seule d'une journee de travail, reduite a l'etat de presence qu'elle porte.
- *
- * <p>
- * {@code etat} et {@code debut} sont les colonnes de projection ecrites par l'atelier. Le pupitre les relit plutot que
- * de rejouer le journal de presence, contrairement a ce qu'il fait du journal d'atelier : l'etat courant est ici la
- * seule chose demandee, pour tous les operateurs a la fois, et le replier supposerait de rapporter tous les journaux
- * ouverts a chaque synchronisation. Le journal reste la source de verite de qui le lit — {@code feuilledetemps} et
- * {@code syntheseheures}, qui comptent des durees.
- * </p>
- */
 @Entity
 @Immutable
 @Table(name = "journee_de_travail")
@@ -40,9 +29,7 @@ class JourneeDuPupitreEntity {
 
   private Instant debut;
 
-  protected JourneeDuPupitreEntity() {
-    // Constructeur requis par JPA.
-  }
+  protected JourneeDuPupitreEntity() {}
 
   OperateurId operateur() {
     return new OperateurId(operateurId);

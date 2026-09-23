@@ -8,11 +8,6 @@ import java.util.Optional;
  * Ce que le pupitre retient d'un operateur : de quoi le designer, et sur quoi il peut pointer.
  *
  * <p>
- * L'etat de presence en fait partie : le pupitre n'offre que les gestes de presence que l'atelier acceptera, et il
- * doit pouvoir le faire hors ligne, sur le seul contenu de son cache.
- * </p>
- *
- * <p>
  * Pas de taux horaire, contrairement a {@code GET /api/operateurs} : un ecran d'atelier partage n'a aucune raison de
  * recevoir ce que {@code coutderevient} reserve au gestionnaire. Pas de natures non plus, le pupitre n'agrege rien.
  * </p>

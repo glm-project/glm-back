@@ -45,10 +45,6 @@ class OperateurDuPupitreTest {
     assertThat(operateur.postes()).containsExactly(POSTE_HABILITE_FRAISEUSE_1);
   }
 
-  /**
-   * L'etat de presence entre au referentiel avec l'operateur : sans lui, le pupitre offrirait ses trois commandes de
-   * presence en aveugle, et ne decouvrirait qu'a la reconnexion que le serveur a refuse la transition impossible.
-   */
   @Test
   void shouldPorterSonEtatDePresence() {
     OperateurDuPupitre operateur = OperateurDuPupitre.builder()
