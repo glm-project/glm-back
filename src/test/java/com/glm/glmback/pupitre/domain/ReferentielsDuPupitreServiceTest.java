@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 @UnitTest
@@ -15,11 +16,11 @@ class ReferentielsDuPupitreServiceTest {
    */
   @Test
   void shouldDaterLInstantaneDeLHeureDuPort() {
-    ReferentielsDuPupitreService service = new ReferentielsDuPupitreService(
-      () -> List.of(OPERATEUR_DUPONT),
-      () -> List.of(suiviOf42(JournalDuPupitre.vide())),
-      () -> LE_10_MAI_2026_A_9H
-    );
+    ReferentielsDuPupitreService service = ReferentielsDuPupitreService.builder()
+      .operateurs(presences -> List.of(OPERATEUR_DUPONT))
+      .suivis(() -> List.of(suiviOf42(JournalDuPupitre.vide())))
+      .presences(() -> new PresencesDesOperateurs(Map.of()))
+      .clock(() -> LE_10_MAI_2026_A_9H);
 
     ReferentielDuPupitre referentiel = service.referentiel();
 
@@ -29,8 +30,25 @@ class ReferentielsDuPupitreServiceTest {
   }
 
   @Test
+  void shouldRemettreLesPresencesReleveesALaLectureDesOperateurs() {
+    ReferentielsDuPupitreService service = ReferentielsDuPupitreService.builder()
+      .operateurs(presences -> List.of(operateurDupont(presences.de(OPERATEUR_ID_DUPONT))))
+      .suivis(List::of)
+      .presences(() -> new PresencesDesOperateurs(Map.of(OPERATEUR_ID_DUPONT, EtatDePresence.EN_PAUSE)))
+      .clock(() -> LE_10_MAI_2026_A_9H);
+
+    ReferentielDuPupitre referentiel = service.referentiel();
+
+    assertThat(referentiel.operateurs()).extracting(OperateurDuPupitre::etat).containsExactly(EtatDePresence.EN_PAUSE);
+  }
+
+  @Test
   void shouldRendreUnReferentielVideQuandLEntrepriseNAEncoreRienDeclare() {
-    ReferentielsDuPupitreService service = new ReferentielsDuPupitreService(List::of, List::of, () -> LE_10_MAI_2026_A_7H);
+    ReferentielsDuPupitreService service = ReferentielsDuPupitreService.builder()
+      .operateurs(presences -> List.of())
+      .suivis(List::of)
+      .presences(() -> new PresencesDesOperateurs(Map.of()))
+      .clock(() -> LE_10_MAI_2026_A_7H);
 
     ReferentielDuPupitre referentiel = service.referentiel();
 

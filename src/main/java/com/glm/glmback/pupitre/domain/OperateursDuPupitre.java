@@ -12,5 +12,5 @@ import java.util.List;
  */
 @FunctionalInterface
 public interface OperateursDuPupitre {
-  List<OperateurDuPupitre> tous();
+  List<OperateurDuPupitre> tous(PresencesDesOperateurs presences);
 }
