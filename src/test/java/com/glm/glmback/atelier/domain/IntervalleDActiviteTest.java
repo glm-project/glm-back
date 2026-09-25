@@ -46,7 +46,8 @@ class IntervalleDActiviteTest {
         Optional.of(NATURE_FRAISAGE),
         CategorieDActivite.TRAVAIL,
         LE_10_MAI_2026_A_8H,
-        Optional.empty()
+        Optional.empty(),
+        false
       )
     )
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
@@ -63,7 +64,8 @@ class IntervalleDActiviteTest {
         null,
         CategorieDActivite.TRAVAIL,
         LE_10_MAI_2026_A_8H,
-        Optional.empty()
+        Optional.empty(),
+        false
       )
     )
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
@@ -80,7 +82,8 @@ class IntervalleDActiviteTest {
         Optional.of(NATURE_FRAISAGE),
         CategorieDActivite.TRAVAIL,
         LE_10_MAI_2026_A_8H,
-        Optional.empty()
+        Optional.empty(),
+        false
       )
     )
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
@@ -97,7 +100,8 @@ class IntervalleDActiviteTest {
         Optional.of(NATURE_FRAISAGE),
         null,
         LE_10_MAI_2026_A_8H,
-        Optional.empty()
+        Optional.empty(),
+        false
       )
     )
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
@@ -149,6 +153,44 @@ class IntervalleDActiviteTest {
     FenetreDePresence apresMidi = new FenetreDePresence(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_17H));
 
     assertThat(intervalleFerme().reduitA(apresMidi)).isEmpty();
+  }
+
+  @Test
+  void shouldNaitreNonPresume() {
+    assertThat(intervalleFerme().presume()).isFalse();
+  }
+
+  @Test
+  void shouldDevenirPresumeDansUneFenetrePresumee() {
+    FenetreDePresence presumee = new FenetreDePresence(LE_10_MAI_2026_A_9H, Optional.of(LE_10_MAI_2026_A_12H), true);
+
+    IntervalleDActivite reduit = intervalleFerme().reduitA(presumee).orElseThrow();
+
+    assertThat(reduit.presume()).isTrue();
+    assertThat(reduit.debut()).isEqualTo(LE_10_MAI_2026_A_9H);
+    assertThat(reduit.fin()).contains(LE_10_MAI_2026_A_12H);
+  }
+
+  @Test
+  void shouldResterPresumeDansUneFenetrePointee() {
+    IntervalleDActivite presume = intervalleFerme()
+      .reduitA(new FenetreDePresence(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H), true))
+      .orElseThrow();
+
+    IntervalleDActivite reduit = presume
+      .reduitA(new FenetreDePresence(LE_10_MAI_2026_A_9H, Optional.of(LE_10_MAI_2026_A_12H)))
+      .orElseThrow();
+
+    assertThat(reduit.presume()).isTrue();
+  }
+
+  @Test
+  void shouldResterPointeDansUneFenetrePointee() {
+    IntervalleDActivite reduit = intervalleFerme()
+      .reduitA(new FenetreDePresence(LE_10_MAI_2026_A_9H, Optional.of(LE_10_MAI_2026_A_12H)))
+      .orElseThrow();
+
+    assertThat(reduit.presume()).isFalse();
   }
 
   private static IntervalleDActivite intervalleFerme() {

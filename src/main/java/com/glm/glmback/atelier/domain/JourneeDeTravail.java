@@ -74,6 +74,42 @@ public record JourneeDeTravail(JourneeDeTravailId id, OperateurId operateur, Jou
     return journal.etendue();
   }
 
+  /**
+   * De l'arrivee a l'arrivee plus le seuil : la ou se cherche le dernier fait connu d'une journee abandonnee.
+   */
+  public Optional<Periode> fenetreDeRecherche(AmplitudeMaximale seuil) {
+    return debut().map(arrivee -> new Periode(arrivee, arrivee.plus(seuil.value())));
+  }
+
+  /**
+   * Les fenetres de presence lues a cet instant. Une journee abandonnee se ferme a sa fin presumee, le dernier fait
+   * connu : son dernier evenement, ou le dernier pointage d'OF de l'operateur s'il est plus tardif et reste dans la
+   * fenetre de recherche. La fenetre ainsi fermee est presumee ; une journee restee en pause n'en a aucune a fermer.
+   * Une journee encore sous le seuil reste ouverte : c'est du travail en cours.
+   */
+  public List<FenetreDePresence> fenetresA(Instant maintenant, AmplitudeMaximale seuil, Optional<Instant> dernierPointage) {
+    if (!estAbandonneePour(maintenant, seuil)) {
+      return fenetres();
+    }
+
+    Instant finPresumee = finPresumee(seuil, dernierPointage);
+
+    return fenetres()
+      .stream()
+      .map(fenetre -> fenetre.estOuverte() ? new FenetreDePresence(fenetre.debut(), Optional.of(finPresumee), true) : fenetre)
+      .toList();
+  }
+
+  private Instant finPresumee(AmplitudeMaximale seuil, Optional<Instant> dernierPointage) {
+    Instant dernierFait = etendue().orElseThrow().fin();
+    Periode recherche = fenetreDeRecherche(seuil).orElseThrow();
+
+    return dernierPointage
+      .filter(recherche::contains)
+      .filter(pointage -> pointage.isAfter(dernierFait))
+      .orElse(dernierFait);
+  }
+
   public boolean estEnCours() {
     return etat() != EtatDePresence.ABSENT;
   }

@@ -29,6 +29,7 @@ public final class CoutsDeRevientService {
   private final TravailDeLElement travaux;
   private final OccupationDesOperateurs occupations;
   private final PresenceDesOperateurs presences;
+  private final SeuilDuCout seuil;
   private final Clock clock;
 
   private CoutsDeRevientService(
@@ -36,23 +37,27 @@ public final class CoutsDeRevientService {
     TravailDeLElement travaux,
     OccupationDesOperateurs occupations,
     PresenceDesOperateurs presences,
+    SeuilDuCout seuil,
     Clock clock
   ) {
     this.elements = elements;
     this.travaux = travaux;
     this.occupations = occupations;
     this.presences = presences;
+    this.seuil = seuil;
     this.clock = clock;
   }
 
   public static CoutsDeRevientServiceElementsBuilder builder() {
     return elements ->
-      travaux -> occupations -> presences -> clock -> new CoutsDeRevientService(elements, travaux, occupations, presences, clock);
+      travaux ->
+        occupations -> presences -> seuil -> clock -> new CoutsDeRevientService(elements, travaux, occupations, presences, seuil, clock);
   }
 
   public CoutDeRevient rapport(ElementId id) {
     ElementValorise element = elements.get(id).orElseThrow(() -> new ElementInconnuException(id));
-    List<IntervalleDActivite> bruts = intervalles(travaux.suivis(id));
+    List<SuiviDuTravail> suivis = travaux.suivis(id);
+    List<IntervalleDActivite> bruts = intervalles(suivis);
 
     if (bruts.isEmpty()) {
       return new CoutDeRevient(element, List.of());
@@ -60,9 +65,15 @@ public final class CoutsDeRevientService {
 
     Instant maintenant = clock.now();
     Set<OperateurId> operateurs = operateurs(bruts);
-    List<IntervalleDActivite> occupation = intervalles(occupations.suivis(operateurs, finDe(bruts, maintenant)));
+    List<SuiviDuTravail> menes = occupations.suivis(operateurs, finDe(bruts, maintenant));
+    List<IntervalleDActivite> occupation = intervalles(menes);
 
-    ReductionALaPresence reduction = reduction(operateurs, Stream.concat(bruts.stream(), occupation.stream()).toList(), maintenant);
+    ReductionALaPresence reduction = reduction(
+      operateurs,
+      Stream.concat(bruts.stream(), occupation.stream()).toList(),
+      Stream.concat(suivis.stream(), menes.stream()).toList(),
+      maintenant
+    );
     List<TrancheDActivite> tranches = tranches(reduction, bruts, maintenant);
     List<TrancheDActivite> menees = tranches(reduction, occupation, maintenant);
 
@@ -72,9 +83,36 @@ public final class CoutsDeRevientService {
   /**
    * Les charges sont baties sur l'union de ce qui est valorise et de ce qui a ete lu : c'est ce qui garantit qu'aucune
    * tranche de l'element ne se retrouve sans diviseur, sans avoir a supposer que la lecture d'occupation la recouvre.
+   *
+   * <p>
+   * Chaque venue abandonnee y recoit sa fin presumee, a partir des pointages deja lus : aucune requete de plus, et la
+   * nuit d'une journee sans depart n'est jamais valorisee.
+   * </p>
    */
-  private ReductionALaPresence reduction(Set<OperateurId> operateurs, List<IntervalleDActivite> tout, Instant maintenant) {
-    return ReductionALaPresence.de(presences.presences(operateurs, couverture(tout, maintenant)));
+  private ReductionALaPresence reduction(
+    Set<OperateurId> operateurs,
+    List<IntervalleDActivite> tout,
+    List<SuiviDuTravail> journaux,
+    Instant maintenant
+  ) {
+    AmplitudeMaximale amplitude = seuil.amplitudeMaximale();
+
+    return ReductionALaPresence.de(
+      presences
+        .presences(operateurs, couverture(tout, maintenant))
+        .stream()
+        .map(presence -> presence.presumee(maintenant, amplitude, pointagesDe(presence.operateur(), journaux)))
+        .toList()
+    );
+  }
+
+  private static List<Instant> pointagesDe(OperateurId operateur, List<SuiviDuTravail> journaux) {
+    return journaux
+      .stream()
+      .flatMap(suivi -> suivi.journal().evenements().stream())
+      .filter(evenement -> evenement.operateur().equals(operateur))
+      .map(EvenementDAtelier::dateDeSurvenue)
+      .toList();
   }
 
   private static List<IntervalleDActivite> intervalles(List<SuiviDuTravail> suivis) {
@@ -131,7 +169,11 @@ public final class CoutsDeRevientService {
   }
 
   public interface CoutsDeRevientServicePresencesBuilder {
-    CoutsDeRevientServiceClockBuilder presences(PresenceDesOperateurs presences);
+    CoutsDeRevientServiceSeuilBuilder presences(PresenceDesOperateurs presences);
+  }
+
+  public interface CoutsDeRevientServiceSeuilBuilder {
+    CoutsDeRevientServiceClockBuilder seuil(SeuilDuCout seuil);
   }
 
   public interface CoutsDeRevientServiceClockBuilder {

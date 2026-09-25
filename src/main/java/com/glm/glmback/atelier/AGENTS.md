@@ -89,6 +89,10 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
 `SeuilDAmplitude` lit l'amplitude maximale dans la table `parametrage`, par une entité en lecture seule, sans
 importer le contexte voisin. Le seuil est lu à chaque geste : un changement vaut pour les gestes qui suivent.
 
+`SuiviDAtelierRepository.dernierPointageDe` rend le dernier pointage actif d'un opérateur sur une période, tous
+éléments confondus : c'est la matière de la fin présumée d'une journée abandonnée, que `TempsDAtelierService` ne
+demande que pour une telle journée.
+
 `OperateursConnus` expose `get(OperateurId)` en plus de `existe` et `parIds` : la présence (`JourneesDeTravailService`)
 n'a toujours besoin que de l'existence, mais le journal d'atelier (`SuivisDAtelierService`) résout désormais la fiche
 entière pour y recopier le taux horaire, sur le patron déjà en place pour `PostesConnus.get`.

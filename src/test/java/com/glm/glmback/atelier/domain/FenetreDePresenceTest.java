@@ -86,6 +86,20 @@ class FenetreDePresenceTest {
     assertThat(matinee().intersection(LE_10_MAI_2026_A_12H, Optional.empty())).isEmpty();
   }
 
+  @Test
+  void shouldNaitrePointeeParDefaut() {
+    assertThat(new FenetreDePresence(LE_10_MAI_2026_A_8H, Optional.empty()).presumee()).isFalse();
+  }
+
+  @Test
+  void shouldGarderLaPresomptionALIntersection() {
+    FenetreDePresence presumee = new FenetreDePresence(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_16H), true);
+
+    assertThat(presumee.intersection(LE_10_MAI_2026_A_8H, Optional.empty())).contains(
+      new FenetreDePresence(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_16H), true)
+    );
+  }
+
   private static FenetreDePresence matinee() {
     return new FenetreDePresence(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H));
   }

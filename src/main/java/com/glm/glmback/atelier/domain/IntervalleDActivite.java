@@ -19,7 +19,8 @@ public record IntervalleDActivite(
   Optional<NatureDOperation> nature,
   CategorieDActivite categorie,
   Instant debut,
-  Optional<Instant> fin
+  Optional<Instant> fin,
+  boolean presume
 ) {
   public IntervalleDActivite {
     Assert.notNull("evenement", evenement);
@@ -35,16 +36,20 @@ public record IntervalleDActivite(
   static IntervalleDActiviteEvenementBuilder builder() {
     return evenement ->
       operateur ->
-        poste -> nature -> categorie -> debut -> fin -> new IntervalleDActivite(evenement, operateur, poste, nature, categorie, debut, fin);
+        poste ->
+          nature -> categorie -> debut -> fin -> new IntervalleDActivite(evenement, operateur, poste, nature, categorie, debut, fin, false);
   }
 
   /**
-   * Le meme intervalle reduit a la fenetre de presence donnee, s'il en reste quelque chose.
+   * Le meme intervalle reduit a la fenetre de presence donnee, s'il en reste quelque chose. Pris dans une fenetre
+   * presumee, il devient presume : il repose sur une fin de journee que personne n'a pointee.
    */
   public Optional<IntervalleDActivite> reduitA(FenetreDePresence fenetre) {
     return fenetre
       .intersection(debut, fin)
-      .map(part -> new IntervalleDActivite(evenement, operateur, poste, nature, categorie, part.debut(), part.fin()));
+      .map(part ->
+        new IntervalleDActivite(evenement, operateur, poste, nature, categorie, part.debut(), part.fin(), presume || part.presumee())
+      );
   }
 
   public boolean estOuvert() {

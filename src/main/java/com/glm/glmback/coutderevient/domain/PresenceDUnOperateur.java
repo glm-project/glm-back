@@ -15,6 +15,20 @@ public record PresenceDUnOperateur(OperateurId operateur, List<JourneeDeTravail>
   }
 
   /**
+   * Les memes venues lues a cet instant : celles qui sont abandonnees recoivent leur fin presumee, a partir des
+   * pointages d'OF de l'operateur.
+   */
+  public PresenceDUnOperateur presumee(Instant maintenant, AmplitudeMaximale seuil, List<Instant> pointages) {
+    return new PresenceDUnOperateur(
+      operateur,
+      journees
+        .stream()
+        .map(journee -> journee.presumee(maintenant, seuil, pointages))
+        .toList()
+    );
+  }
+
+  /**
    * La venue pendant laquelle cet instant tombe, s'il y en a une.
    */
   public Optional<JourneeDeTravail> journeeContenant(Instant instant) {

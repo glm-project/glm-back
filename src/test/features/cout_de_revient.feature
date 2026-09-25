@@ -100,6 +100,28 @@ Feature: Cout de revient d'un element de fabrication
       | nature   | travail | nonConformite | machine | mainDOeuvre |
       | Fraisage | PT3H    | PT0S          | 135.00  | 60.00       |
 
+  Scenario: Une journee abandonnee n'est valorisee que jusqu'a sa fin presumee
+    # Lot 4 : lundi, Dupont ne pointe pas son depart. Sa journee s'arrete au dernier fait connu, son debut sur l'OF
+    # 3015 a 15:00. Mardi, sa relance sur l'OF 3014 compte dans mardi, jamais dans la nuit de lundi.
+    Given l'entreprise fabrique "OF 3014"
+    And l'entreprise fabrique "OF 3015"
+    And "OF 3014" est mis en atelier a "2026-05-11T07:00:00Z"
+    And "OF 3015" est mis en atelier a "2026-05-11T07:00:00Z"
+    And "dupont" prend son poste a "2026-05-11T08:00:00Z"
+    And "dupont" pointe "DEBUT" sur "OF 3014" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
+    And "dupont" pointe sa presence "PAUSE" a "2026-05-11T12:00:00Z"
+    And "dupont" pointe sa presence "REPRISE" a "2026-05-11T13:00:00Z"
+    And "dupont" pointe "DEBUT" sur "OF 3015" au poste "tour" a "2026-05-11T15:00:00Z"
+    And "dupont" prend son poste a "2026-05-12T08:00:00Z"
+    And "dupont" pointe "DEBUT" sur "OF 3014" au poste "fraiseuse" a "2026-05-12T09:00:00Z"
+    And "dupont" pointe "FIN" sur "OF 3014" au poste "fraiseuse" a "2026-05-12T10:00:00Z"
+    When je consulte le cout de revient de "OF 3014" a "2026-05-12T18:00:00Z"
+    Then la reponse a le statut http 200
+    # Lundi 9-12 et 13-15, mardi 9-10 : six heures, la nuit n'est pas valorisee.
+    And le rapport porte les lignes
+      | nature   | travail | nonConformite | machine | mainDOeuvre |
+      | Fraisage | PT6H    | PT0S          | 270.00  | 120.00      |
+
   Scenario: Deux machines menees de front divisent l'operateur, jamais les machines
     Given l'entreprise fabrique "OF 3005"
     And "OF 3005" est mis en atelier a "2026-05-11T07:00:00Z"

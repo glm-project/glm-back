@@ -13,11 +13,19 @@ import java.util.Optional;
  * deux faits ait eu besoin d'etre recopie dans le journal de l'element.
  * </p>
  */
-public record FenetreDePresence(Instant debut, Optional<Instant> fin) {
+public record FenetreDePresence(Instant debut, Optional<Instant> fin, boolean presumee) {
   public FenetreDePresence {
     Assert.notNull("debut", debut);
     Assert.notNull("fin", fin);
     fin.ifPresent(date -> Assert.field("fin", date).afterOrAt(debut));
+  }
+
+  /**
+   * Une fenetre pointee : ses bornes sont des faits de presence. Seule la fin presumee d'une journee abandonnee en
+   * produit une presumee.
+   */
+  public FenetreDePresence(Instant debut, Optional<Instant> fin) {
+    this(debut, fin, false);
   }
 
   public boolean estOuverte() {
@@ -40,7 +48,7 @@ public record FenetreDePresence(Instant debut, Optional<Instant> fin) {
       return Optional.empty();
     }
 
-    return Optional.of(new FenetreDePresence(debutCommun, finCommune));
+    return Optional.of(new FenetreDePresence(debutCommun, finCommune, presumee));
   }
 
   private static Optional<Instant> plusTot(Optional<Instant> une, Optional<Instant> autre) {

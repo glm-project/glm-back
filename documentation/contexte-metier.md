@@ -69,6 +69,8 @@ La **présence sans affectation** — le temps de présence sans élément ratta
 
 Borner l'intervalle à sa journée est aussi ce qui empêche un travail jamais arrêté de courir jusqu'au lendemain : l'opérateur reclique sur l'élément à son retour, ce qui est exactement le geste que le client décrit. Un début qui ne tombe dans aucune journée connue est **rendu intact** : c'est la présence qui manque, et le domaine ne masque pas l'anomalie derrière un temps amputé.
 
+**Une journée abandonnée se ferme à sa fin présumée**, calculée à la lecture et jamais stockée : le dernier fait connu, qu'il soit son dernier événement de présence ou le dernier pointage d'OF de l'opérateur (tous éléments confondus) survenu entre l'arrivée et l'arrivée plus le seuil. La fenêtre ainsi fermée est **présumée**, et les intervalles qui s'y réduisent portent `presume` : le temps effectif distingue ce qui a été pointé de ce qui reste à confirmer. Dans l'exemple de référence, l'OF 42 de lundi vaut 7 h, dont 3 h présumées, et la nuit n'est plus comptée. Un travail commencé dans une journée abandonnée après sa fin présumée ne vaut rien : la fin présumée n'invente jamais d'heures. Une journée encore sous le seuil reste ouverte, c'est du travail en cours ; une régularisation du départ remplace le présumé par le pointé.
+
 ### L'activité, un opérateur sur un poste de travail
 
 `CleDActivite` est le couple (`OperateurId`, `Optional<PosteDeTravailId>`). Le poste de travail est ce que l'opérateur engage en pointant : une machine chez le client de référence, un établi, un four, une salle ailleurs.
@@ -145,7 +147,7 @@ L'API est décrite par OpenAPI (`/swagger-ui.html`) et par [atelier-api.md](atel
 6. **Le cycle de vie de l'élément lui-même.** La clôture existe côté atelier, sur le suivi. Reste à trancher si l'élément de fabrication porte en propre un statut, ou si son activité se lit entièrement par la présence ou l'absence d'un suivi non clôturé.
 7. **Aucune garde d'unicité en base** sur « un seul suivi non clôturé par élément », contrairement à ce que `elementdefabrication` fait pour la `Reference`. La règle vit dans le service, mais une contrainte partielle transformerait en 500 un état que le domaine admet aujourd'hui : rouvrir la clôture d'un suivi dont l'élément a été réengagé depuis. À trancher côté domaine avant de poser la contrainte. « Une seule journée ouverte par opérateur » n'est plus une règle : une journée abandonnée reste sans départ pendant que la suivante est ouverte.
 8. **L'écriture du journal rapproche par identifiant**, ce qui coûte une lecture indexée de la collection à chaque pointage. Si un journal devenait assez long pour que cette lecture pèse, la sortie est un upsert natif gardé (`on conflict (id) do update ... where ... is distinct from ...`), qui épargne à PostgreSQL toute version de tuple sur les lignes inchangées — au prix d'une scission permanente entre lecture JPA et écriture JDBC.
-9. **Départ oublié, poste de nuit, pointages jamais refusés.** Une journée sans départ n'a aujourd'hui pas de borne haute : elle absorbe la nuit, bloque l'arrivée du lendemain et fausse le coût de revient. Les décisions — amplitude maximale paramétrable, journée abandonnée, fin présumée, relance d'un OF, aucun pointage d'opérateur refusé sauf sur un OF clôturé — et leur découpage en huit lots sont dans [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md). Elles touchent aussi `feuilledetemps`, `syntheseheures`, `coutderevient` et `pupitre`. Lots livrés : 1, la relance d'une activité en cours ; 2, le paramétrage de l'amplitude maximale (contexte `parametrage`) ; 3, la journée abandonnée, l'arrivée absorbée et le refus du chevauchement.
+9. **Départ oublié, poste de nuit, pointages jamais refusés.** Une journée sans départ n'a aujourd'hui pas de borne haute : elle absorbe la nuit, bloque l'arrivée du lendemain et fausse le coût de revient. Les décisions — amplitude maximale paramétrable, journée abandonnée, fin présumée, relance d'un OF, aucun pointage d'opérateur refusé sauf sur un OF clôturé — et leur découpage en huit lots sont dans [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md). Elles touchent aussi `feuilledetemps`, `syntheseheures`, `coutderevient` et `pupitre`. Lots livrés : 1, la relance d'une activité en cours ; 2, le paramétrage de l'amplitude maximale (contexte `parametrage`) ; 3, la journée abandonnée, l'arrivée absorbée et le refus du chevauchement ; 4, la fin présumée dans le temps effectif et le coût de revient.
 
 ## postedetravail
 
@@ -268,7 +270,9 @@ journal d'un autre agrégat modifie ; seule une projection le peut.
 ### Ce que le rapport montre
 
 Une ligne par nature d'opération — fraisage, tournage, érosion —, plus une ligne sans nature pour ce qui a été
-pointé sans poste. Chaque ligne porte le temps de bon travail, le temps de reprise de non conformité **avec ses
+pointé sans poste. **La nuit d'une journée abandonnée n'est jamais valorisée** : chaque venue sans départ au-delà du
+seuil reçoit la même fin présumée que dans l'atelier, calculée sur les pointages déjà lus pour le rapport. La forme du
+rapport ne change pas ; la part présumée se lit dans le temps effectif de l'atelier. Chaque ligne porte le temps de bon travail, le temps de reprise de non conformité **avec ses
 périodes datées**, et le coût séparé en machine et main d'œuvre.
 
 L'entrée se fait par l'**élément de fabrication**, non par son suivi d'atelier : un élément réengagé après clôture

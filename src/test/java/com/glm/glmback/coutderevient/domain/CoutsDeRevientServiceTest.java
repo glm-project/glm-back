@@ -280,13 +280,65 @@ class CoutsDeRevientServiceTest {
     assertThat(rapport.cout()).isEqualTo(new Cout(new Montant(new BigDecimal("90.00")), new Montant(new BigDecimal("40.00"))));
   }
 
+  /**
+   * Lot 4 : lundi sans depart, lu mardi. La journee s'arrete au dernier fait connu, un debut sur un autre element a
+   * 15:00 ; la relance de mardi compte dans mardi. 9-12, 13-15 et 9-10 : six heures, jamais la nuit.
+   */
+  @Test
+  void shouldNeValoriserUneJourneeAbandonneeQueJusquASaFinPresumee() {
+    AtelierEnMemoire atelier = new AtelierEnMemoire()
+      .connait(ELEMENT_VALORISE_OF)
+      .aTravaille(ELEMENT_ID_OF, suivi(fraisage(DEBUT, LE_11_MAI_A_9H), fraisage(DEBUT, LE_12_MAI_A_9H), fraisage(FIN, LE_12_MAI_A_10H)))
+      .aMeneDeFront(suivi(tournage(DEBUT, LE_11_MAI_A_15H)))
+      .aEtePresent(
+        new PresenceDUnOperateur(
+          OPERATEUR_ID_DUPONT,
+          List.of(journeeDe8HSansDepart(), new JourneeDeTravail(List.of(arriveeA(LE_12_MAI_A_8H))))
+        )
+      );
+
+    CoutDeRevient rapport = service(atelier, LE_12_MAI_A_18H).rapport(ELEMENT_ID_OF);
+
+    assertThat(rapport.temps().travail()).isEqualTo(Duration.ofHours(6));
+    assertThat(rapport.cout()).isEqualTo(new Cout(new Montant(new BigDecimal("270.00")), new Montant(new BigDecimal("120.00"))));
+  }
+
+  @Test
+  void shouldValoriserLePointeApresRegularisationDuDepart() {
+    AtelierEnMemoire atelier = new AtelierEnMemoire()
+      .connait(ELEMENT_VALORISE_OF)
+      .aTravaille(ELEMENT_ID_OF, suivi(fraisage(DEBUT, LE_11_MAI_A_9H)))
+      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17HAvecPauseDeMidi())));
+
+    CoutDeRevient rapport = service(atelier, LE_12_MAI_A_18H).rapport(ELEMENT_ID_OF);
+
+    assertThat(rapport.temps().travail()).isEqualTo(Duration.ofHours(7));
+  }
+
+  @Test
+  void shouldNeRienValoriserApresLaFinPresumee() {
+    AtelierEnMemoire atelier = new AtelierEnMemoire()
+      .connait(ELEMENT_VALORISE_OF)
+      .aTravaille(ELEMENT_ID_OF, suivi(fraisage(DEBUT, LE_11_MAI_A_17H), fraisage(FIN, LE_12_MAI_A_7H)))
+      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HSansDepart())));
+
+    CoutDeRevient rapport = service(atelier, LE_12_MAI_A_18H).rapport(ELEMENT_ID_OF);
+
+    assertThat(rapport.temps().travail()).isEqualTo(Duration.ZERO);
+  }
+
   private static CoutsDeRevientService service(AtelierEnMemoire atelier) {
+    return service(atelier, MAINTENANT);
+  }
+
+  private static CoutsDeRevientService service(AtelierEnMemoire atelier, Instant maintenant) {
     return CoutsDeRevientService.builder()
       .elements(atelier)
       .travaux(atelier)
       .occupations(atelier)
       .presences(atelier)
-      .clock(() -> MAINTENANT);
+      .seuil(() -> AMPLITUDE_MAXIMALE_13H)
+      .clock(() -> maintenant);
   }
 
   private static SuiviDuTravail suivi(EvenementDAtelier... evenements) {
