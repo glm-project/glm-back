@@ -173,6 +173,18 @@
         "required" : [ "categorie", "depuis" ],
         "type" : "object"
       },
+      "RestAmplitudeMaximale" : {
+        "description" : "La nouvelle amplitude maximale d'une journee de travail.",
+        "properties" : {
+          "valeur" : {
+            "description" : "Duree ISO 8601, a la minute, strictement comprise entre 0 et 24 h.",
+            "example" : "PT13H",
+            "type" : "string"
+          }
+        },
+        "required" : [ "valeur" ],
+        "type" : "object"
+      },
       "RestAnnulation" : {
         "description" : "L'annulation d'un evenement. L'evenement reste au journal, porteur de cette annulation.",
         "properties" : {
@@ -793,6 +805,23 @@
         },
         "type" : "object"
       },
+      "RestModification" : {
+        "description" : "La derniere modification du parametrage.",
+        "properties" : {
+          "auteur" : {
+            "description" : "Utilisateur qui l'a faite, lu dans son jeton.",
+            "example" : "gestionnaire",
+            "type" : "string"
+          },
+          "date" : {
+            "description" : "Instant de la modification.",
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "auteur", "date" ],
+        "type" : "object"
+      },
       "RestModificationElementDeFabrication" : {
         "properties" : {
           "description" : {
@@ -1028,6 +1057,22 @@
           }
         },
         "required" : [ "etat", "id", "nom", "postes", "prenom" ],
+        "type" : "object"
+      },
+      "RestParametrage" : {
+        "description" : "Le parametrage de l'entreprise.",
+        "properties" : {
+          "amplitudeMaximale" : {
+            "description" : "Au-dela de cette duree depuis l'arrivee, une journee de travail sans depart est abandonnee. Duree ISO 8601.",
+            "example" : "PT13H",
+            "type" : "string"
+          },
+          "derniereModification" : {
+            "$ref" : "#/components/schemas/RestModification",
+            "description" : "Absente tant que le parametrage n'a jamais ete modifie depuis sa creation."
+          }
+        },
+        "required" : [ "amplitudeMaximale" ],
         "type" : "object"
       },
       "RestPeriode" : {
@@ -1734,7 +1779,7 @@
     "/api/atelier/journees/{id}" : {
       "get" : {
         "description" : "Expose a la fois l'amplitude et les fenetres : le contexte ne choisit pas laquelle compte pour la paie.",
-        "operationId" : "get_7",
+        "operationId" : "get_8",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -2051,7 +2096,7 @@
     "/api/atelier/suivis/{id}" : {
       "get" : {
         "description" : "Le suivi complet, avec son journal, evenements annules compris.",
-        "operationId" : "get_6",
+        "operationId" : "get_7",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -2440,7 +2485,7 @@
     "/api/couts-de-revient/{elementId}" : {
       "get" : {
         "description" : "Rend une ligne par nature d'operation — fraisage, tournage, erosion —, chacune portant le temps de bon travail,\nle temps passe en non conformite avec ses periodes datees, et le cout separe en machine et main d'oeuvre.\n\nL'entree se fait par l'element, non par son suivi d'atelier : un element reengage apres cloture additionne ses\npassages.\n\nDeux regles a connaitre avant d'afficher les montants. Le cout horaire de chaque poste actif court **en entier**,\nmeme quand l'operateur en mene plusieurs de front ; son taux horaire, lui, est **divise** par le nombre de postes\nqu'il occupait a cet instant, tous elements confondus. Un operateur sur trois elements avec une seule machine\nn'est donc pas divise. Le decoupage se fait aux bornes de chaque pointage, si bien que seul le chevauchement reel\nest divise.\n\nUn travail encore en cours est arrete a l'instant de la lecture : deux appels espaces ne rendent donc pas la meme\nchose sur un element en cours, ce qui est le seul moyen de chiffrer ce qui n'est pas termine.\n",
-        "operationId" : "get_5",
+        "operationId" : "get_6",
         "parameters" : [ {
           "description" : "Identifiant de l'element de fabrication.",
           "in" : "path",
@@ -2649,7 +2694,7 @@
     "/api/feuilles-de-temps/{operateurId}" : {
       "get" : {
         "description" : "Rend les sept jours de la semaine ISO demandee, chacun portant les fenetres de presence qui lui reviennent dans\nle fuseau horaire de l'entreprise.\n\nLa semaine est toujours explicite : aucune semaine courante implicite, pour que deux appels identiques rendent\ntoujours la meme chose. L'annee est celle des semaines ISO, qui differe de l'annee civile a ses bornes — la\nsemaine 1 de 2026 commence le 29 decembre 2025.\n",
-        "operationId" : "get_4",
+        "operationId" : "get_5",
         "parameters" : [ {
           "description" : "Identifiant de l'operateur dans le referentiel.",
           "in" : "path",
@@ -2912,6 +2957,65 @@
         },
         "summary" : "Reviser un operateur",
         "tags" : [ "Operateurs" ]
+      }
+    },
+    "/api/parametrage" : {
+      "get" : {
+        "operationId" : "get_4",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestParametrage"
+                }
+              }
+            },
+            "description" : "Le parametrage, avec sa derniere modification s'il en a eu une."
+          }
+        },
+        "summary" : "Consulter le parametrage de l'entreprise",
+        "tags" : [ "Parametrage" ]
+      }
+    },
+    "/api/parametrage/amplitude-maximale" : {
+      "put" : {
+        "description" : "Au-dela de cette duree depuis l'arrivee, pauses comprises, une journee sans depart est abandonnee. 13 h par\ndefaut. La valeur se compte a la minute et reste strictement sous 24 h, pour qu'un retour le lendemain a la meme\nheure soit toujours une nouvelle arrivee.\n",
+        "operationId" : "fixeLAmplitudeMaximale",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RestAmplitudeMaximale"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestParametrage"
+                }
+              }
+            },
+            "description" : "Le parametrage modifie."
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestParametrage"
+                }
+              }
+            },
+            "description" : "Valeur absente, illisible, hors de ]0, 24 h[ ou plus fine que la minute."
+          }
+        },
+        "summary" : "Fixer l'amplitude maximale d'une journee de travail",
+        "tags" : [ "Parametrage" ]
       }
     },
     "/api/postes-de-travail" : {
@@ -3202,6 +3306,9 @@
   }, {
     "description" : "La presence des operateurs : arrivee, pause, reprise, depart.\n\nUne journee de travail est une venue, bornee par une arrivee et un depart. Ce n'est pas un jour calendaire : le\ncontexte ne connait ni fuseau horaire ni date.\n\nLa presence est ecrite une seule fois, ici, et jamais recopiee dans le journal des elements. C'est ce qui permet a un\nseul bouton de pause de scinder tout ce que l'operateur avait en cours, et a une seule regularisation de depart de\nrefermer tous ses elements de la journee.\n",
     "name" : "Atelier - presence des operateurs"
+  }, {
+    "description" : "Le parametrage de l'entreprise, seme a sa creation avec des valeurs par defaut.\n\nLe gestionnaire le modifie ; l'operateur (role USER) le consulte. Seule la derniere modification est tracee.\n",
+    "name" : "Parametrage"
   }, {
     "description" : "Le temps passe sur un element de fabrication, valorise par nature d'operation.",
     "name" : "Couts de revient"

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <!--
+    Le parametrage de l'entreprise : une seule ligne par schema, semee avec les valeurs par defaut. La valeur par
+    defaut n'est jamais une constante du code, c'est cette ligne qui la porte.
+  -->
+  <changeSet id="parametrage" author="glm">
+    <createTable tableName="parametrage">
+      <column name="id" type="smallint">
+        <constraints primaryKey="true" nullable="false" />
+      </column>
+      <column name="amplitude_maximale_minutes" type="integer">
+        <constraints nullable="false" />
+      </column>
+      <column name="modifie_par" type="varchar(255)" />
+      <column name="modifie_le" type="${datetimeType}" />
+    </createTable>
+
+    <sql>
+      alter table parametrage add constraint parametrage_ligne_unique check (id = 1);
+      alter table parametrage add constraint parametrage_amplitude_maximale_bornee
+        check (amplitude_maximale_minutes &gt; 0 and amplitude_maximale_minutes &lt; 1440);
+      alter table parametrage add constraint parametrage_modification_complete
+        check ((modifie_par is null) = (modifie_le is null));
+      insert into parametrage (id, amplitude_maximale_minutes) values (1, 780);
+    </sql>
+  </changeSet>
+</databaseChangeLog>
