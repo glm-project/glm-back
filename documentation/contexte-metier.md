@@ -138,7 +138,7 @@ L'API est décrite par OpenAPI (`/swagger-ui.html`) et par [atelier-api.md](atel
 6. **Le cycle de vie de l'élément lui-même.** La clôture existe côté atelier, sur le suivi. Reste à trancher si l'élément de fabrication porte en propre un statut, ou si son activité se lit entièrement par la présence ou l'absence d'un suivi non clôturé.
 7. **Aucune garde d'unicité en base** sur « un seul suivi non clôturé par élément » ni « une seule journée ouverte par opérateur », contrairement à ce que `elementdefabrication` fait pour la `Reference`. Les deux règles vivent dans les services, mais une contrainte partielle transformerait en 500 deux états que le domaine admet aujourd'hui : rouvrir la clôture d'un suivi dont l'élément a été réengagé depuis, ou annuler le `DEPART` d'une journée dont l'opérateur est déjà revenu. À trancher côté domaine avant de poser la contrainte.
 8. **L'écriture du journal rapproche par identifiant**, ce qui coûte une lecture indexée de la collection à chaque pointage. Si un journal devenait assez long pour que cette lecture pèse, la sortie est un upsert natif gardé (`on conflict (id) do update ... where ... is distinct from ...`), qui épargne à PostgreSQL toute version de tuple sur les lignes inchangées — au prix d'une scission permanente entre lecture JPA et écriture JDBC.
-9. **Départ oublié, poste de nuit, pointages jamais refusés.** Une journée sans départ n'a aujourd'hui pas de borne haute : elle absorbe la nuit, bloque l'arrivée du lendemain et fausse le coût de revient. Les décisions — amplitude maximale paramétrable, journée abandonnée, fin présumée, relance d'un OF, aucun pointage d'opérateur refusé sauf sur un OF clôturé — et leur découpage en huit lots sont dans [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md). Elles touchent aussi `feuilledetemps`, `syntheseheures`, `coutderevient` et `pupitre`. Lot 1 livré : la relance d'une activité en cours.
+9. **Départ oublié, poste de nuit, pointages jamais refusés.** Une journée sans départ n'a aujourd'hui pas de borne haute : elle absorbe la nuit, bloque l'arrivée du lendemain et fausse le coût de revient. Les décisions — amplitude maximale paramétrable, journée abandonnée, fin présumée, relance d'un OF, aucun pointage d'opérateur refusé sauf sur un OF clôturé — et leur découpage en huit lots sont dans [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md). Elles touchent aussi `feuilledetemps`, `syntheseheures`, `coutderevient` et `pupitre`. Lots livrés : 1, la relance d'une activité en cours ; 2, le paramétrage de l'amplitude maximale (contexte `parametrage`).
 
 ## postedetravail
 
@@ -498,3 +498,17 @@ laisse donc sa tuile intacte, privée de sa seule référence.
    device grant activé et le client scope `glmproject` — sans lui, le jeton ne porte pas de claim `tenant` et toute
    la surface `/api/**` répond 403. C'est la dernière pièce d'infrastructure avant qu'un pupitre déployé puisse
    s'enrôler.
+
+## parametrage
+
+Porte le **paramétrage d'une entreprise** : pour l'instant, la seule **amplitude maximale** d'une journée de travail (décision D1 de [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md)). Au-delà de cette durée depuis l'arrivée, pauses comprises, une journée sans départ sera abandonnée (lot 3). Le gestionnaire la fixe ; l'opérateur la lit.
+
+**La valeur par défaut n'est pas une constante du code.** Elle est semée en base, 13 h, par le changelog qui crée la table, dans chaque schéma d'entreprise. C'est la règle du dépôt pour toute donnée de paramétrage : le domaine la reçoit par un port. Une entreprise neuve reçoit donc sa ligne en même temps que son schéma, et aucune lecture ne tombe jamais sur une valeur absente.
+
+**L'amplitude se compte à la minute et reste strictement sous 24 h.** C'est ce qui garantit qu'un retour le lendemain à la même heure soit toujours une nouvelle arrivée, même pour un poste de nuit. La règle vit dans `AmplitudeMaximale` ; la validation de la requête la répète pour répondre 400 plutôt que 500, et deux contraintes du schéma servent de filet.
+
+**Seule la dernière modification est tracée** — auteur, lu dans le jeton, et instant. Changer le seuil peut déplacer la fin présumée d'une journée non régularisée (exemple E8) : savoir qui l'a changé, et quand, suffit à l'expliquer. Un historique complet n'est pas demandé.
+
+### Points ouverts
+
+1. **Les autres paramètres de l'entreprise** — fuseau horaire des relevés, préfixes des éléments de fabrication — vivent encore en configuration ou en constante. Ils ont vocation à rejoindre ce contexte.

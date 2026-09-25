@@ -274,6 +274,17 @@ et la clôture elle-même se déplace (`PUT`) ou s'annule (`DELETE`). Ne pas gri
 `PUT .../evenements/{evtId}` est une **correction** : une annulation et une régularisation en un seul appel. Le journal
 en ressort avec deux événements de plus, pas un — l'ancien annulé, le nouveau à l'heure corrigée.
 
+### Paramétrage de l'entreprise
+
+```
+GET /api/parametrage                          USER, GESTIONNAIRE   { "amplitudeMaximale": "PT13H", "derniereModification": { "auteur", "date" } }
+PUT /api/parametrage/amplitude-maximale       GESTIONNAIRE         { "valeur": "PT12H30M" }
+```
+
+L'**amplitude maximale** est la durée, depuis l'arrivée, au-delà de laquelle une journée sans départ sera abandonnée.
+Elle vaut 13 h par défaut, se saisit à la minute et reste strictement sous 24 h : toute autre valeur répond 400.
+`derniereModification` est absente tant que personne ne l'a changée.
+
 ### Lire le temps passé
 
 ```
