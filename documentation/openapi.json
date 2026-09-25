@@ -1054,6 +1054,11 @@
             "description" : "Prenom.",
             "example" : "Jean",
             "type" : "string"
+          },
+          "presentJusqua" : {
+            "description" : "Instant jusqu'auquel l'operateur reste present sans nouveau geste : son arrivee plus l'amplitude maximale de\nl'entreprise. Au-dela, sa journee est abandonnee et il redevient ABSENT : le pupitre hors ligne bascule seul a cet\ninstant, et ne propose plus que l'arrivee. Absent quand l'operateur est ABSENT.\n",
+            "format" : "date-time",
+            "type" : "string"
           }
         },
         "required" : [ "etat", "id", "nom", "postes", "prenom" ],
@@ -1638,7 +1643,7 @@
         "tags" : [ "Atelier - presence des operateurs" ]
       },
       "post" : {
-        "description" : "Ouvre la journee de travail de l'operateur.\n\nSans dateDeSurvenue, l'arrivee est datee a l'instant present : c'est le geste du matin. Avec, c'est le\ngestionnaire qui saisit apres coup une arrivee jamais pointee.\n",
+        "description" : "Ouvre la journee de travail de l'operateur.\n\nSans dateDeSurvenue, l'arrivee est datee a l'instant present : c'est le geste du matin. Avec, c'est le\ngestionnaire qui saisit apres coup une arrivee jamais pointee, ou le pupitre qui rejoue un geste hors ligne.\n\nUne arrivee n'est jamais refusee parce qu'une journee est deja ouverte. Sous l'amplitude maximale de l'entreprise,\nl'operateur est deja la : l'arrivee est absorbee, rien n'est ajoute et la journee en cours est rendue. Au-dela, la\njournee en cours est abandonnee et l'arrivee en ouvre une nouvelle.\n",
         "operationId" : "arrive",
         "requestBody" : {
           "content" : {
@@ -1659,7 +1664,7 @@
                 }
               }
             },
-            "description" : "Le geste identique est rejoue."
+            "description" : "Le geste identique est rejoue, ou l'arrivee est absorbee dans la journee en cours."
           },
           "201" : {
             "content" : {
@@ -1669,7 +1674,7 @@
                 }
               }
             },
-            "description" : "La journee est ouverte."
+            "description" : "Une journee est ouverte."
           },
           "400" : {
             "content" : {
@@ -1699,7 +1704,7 @@
                 }
               }
             },
-            "description" : "Cet operateur a deja une journee ouverte ou l'identifiant est reutilise."
+            "description" : "L'identifiant est reutilise avec un autre contenu."
           }
         },
         "summary" : "Enregistrer une arrivee",
@@ -1708,7 +1713,7 @@
     },
     "/api/atelier/journees/pointages" : {
       "post" : {
-        "description" : "Vise la journee ouverte de l'operateur, retrouvee par le serveur : aucun identifiant de journee n'est a fournir.\n\nUn seul appel, quel que soit le nombre d'elements en cours. Ne jamais boucler sur les elements pour repercuter une\npause : le croisement est fait a la lecture du temps effectif.\n",
+        "description" : "Vise la journee ouverte de l'operateur, retrouvee par le serveur : aucun identifiant de journee n'est a fournir.\n\nUn seul appel, quel que soit le nombre d'elements en cours. Ne jamais boucler sur les elements pour repercuter une\npause : le croisement est fait a la lecture du temps effectif.\n\nSi la journee ouverte a depasse l'amplitude maximale a l'heure du geste, elle est abandonnee : le geste ouvre une\nnouvelle journee par une arrivee implicite a son heure, puis s'y applique. Une reprise s'y reduit a l'arrivee.\n",
         "operationId" : "pointe_1",
         "requestBody" : {
           "content" : {
@@ -1739,7 +1744,7 @@
                 }
               }
             },
-            "description" : "Le pointage est enregistre."
+            "description" : "Le pointage est enregistre, le cas echeant dans une nouvelle journee."
           },
           "400" : {
             "content" : {
@@ -1855,7 +1860,7 @@
                 }
               }
             },
-            "description" : "Evenement deja annule, ou transition impossible."
+            "description" : "Evenement deja annule, transition impossible, ou chevauchement avec une autre journee de l'operateur."
           }
         },
         "summary" : "Corriger une presence fausse",
@@ -1971,7 +1976,7 @@
                 }
               }
             },
-            "description" : "Transition impossible depuis l'etat de presence a cet instant."
+            "description" : "Transition impossible depuis l'etat de presence a cet instant, ou chevauchement avec une autre journee de l'operateur."
           }
         },
         "summary" : "Rattraper une presence oubliee",

@@ -1,6 +1,7 @@
 package com.glm.glmback.atelier.infrastructure.primary;
 
 import com.glm.glmback.atelier.domain.AucuneJourneeDeTravailEnCoursException;
+import com.glm.glmback.atelier.domain.ChevauchementDeJourneesException;
 import com.glm.glmback.atelier.domain.DateDeSurvenueFutureException;
 import com.glm.glmback.atelier.domain.ElementDejaEngageException;
 import com.glm.glmback.atelier.domain.ElementEngageableIntrouvableException;
@@ -83,6 +84,11 @@ class AtelierExceptionAdvice {
   @ExceptionHandler(JourneeDeTravailDejaOuverteException.class)
   ProblemDetail handleJourneeDeTravailDejaOuverte(JourneeDeTravailDejaOuverteException e) {
     return ErreurDAtelier.JOURNEE_DE_TRAVAIL_DEJA_OUVERTE.problem(e);
+  }
+
+  @ExceptionHandler(ChevauchementDeJourneesException.class)
+  ProblemDetail handleChevauchementDeJournees(ChevauchementDeJourneesException e) {
+    return ErreurDAtelier.CHEVAUCHEMENT_DE_JOURNEES.problem(e);
   }
 
   @ExceptionHandler(EvenementDejaAnnuleException.class)

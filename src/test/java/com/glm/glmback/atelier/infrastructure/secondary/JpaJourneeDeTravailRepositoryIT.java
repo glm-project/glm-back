@@ -24,6 +24,7 @@ import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurity
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.pagination.domain.Page;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
@@ -276,6 +277,52 @@ class JpaJourneeDeTravailRepositoryIT {
 
     assertThat(chezKatilys).isEmpty();
     assertThat(pageChezKatilys.content()).isEmpty();
+  }
+
+  /**
+   * L'etendue va du premier au dernier fait connu : une journee sans depart s'arrete a son dernier geste, elle ne
+   * deborde pas indefiniment sur la suite.
+   */
+  @Test
+  @WithTenant(IMPECCMOLD)
+  void shouldTrouverLesJourneesDontLEtendueToucheLaPeriode() {
+    OperateurId operateur = operateurDeTest();
+    Instant lundi = Instant.parse("2041-02-04T07:00:00Z");
+    Instant mardi = Instant.parse("2041-02-05T07:00:00Z");
+    JourneeDeTravail abandonnee = journeeOuverteA(operateur, lundi).enregistre(
+      presence(TypeDEvenementDePresence.PAUSE, lundi.plusSeconds(18000))
+    );
+    JourneeDeTravail complete = journeeCompleteA(operateur, mardi);
+    inTransaction(() -> journees.create(abandonnee));
+    inTransaction(() -> journees.create(complete));
+
+    assertThat(surPeriode(operateur, lundi.plusSeconds(3600), lundi.plusSeconds(5400))).containsExactly(abandonnee);
+    assertThat(surPeriode(operateur, lundi.plusSeconds(18000), lundi.plusSeconds(18000))).containsExactly(abandonnee);
+    assertThat(surPeriode(operateur, lundi.plusSeconds(18001), mardi.minusSeconds(1))).isEmpty();
+    assertThat(surPeriode(operateur, mardi, mardi)).containsExactly(complete);
+    assertThat(surPeriode(operateur, lundi, mardi.plusSeconds(36000))).containsExactlyInAnyOrder(abandonnee, complete);
+    assertThat(surPeriode(operateurDeTest(), lundi, mardi.plusSeconds(36000))).isEmpty();
+  }
+
+  @Test
+  @WithTenant(IMPECCMOLD)
+  void shouldTenirLeDernierFaitAJourALaMiseAJour() {
+    OperateurId operateur = operateurDeTest();
+    Instant arrivee = Instant.parse("2041-02-06T07:00:00Z");
+    JourneeDeTravail ouverte = journeeOuverteA(operateur, arrivee);
+    inTransaction(() -> journees.create(ouverte));
+    assertThat(surPeriode(operateur, arrivee.plusSeconds(3600), arrivee.plusSeconds(3600))).isEmpty();
+
+    inTransaction(() -> journees.update(ouverte.enregistre(presence(TypeDEvenementDePresence.DEPART, arrivee.plusSeconds(7200)))));
+
+    assertThat(surPeriode(operateur, arrivee.plusSeconds(3600), arrivee.plusSeconds(3600)))
+      .singleElement()
+      .extracting(JourneeDeTravail::id)
+      .isEqualTo(ouverte.id());
+  }
+
+  private List<JourneeDeTravail> surPeriode(OperateurId operateur, Instant debut, Instant fin) {
+    return inTransaction(() -> journees.journeesDeLOperateurSur(operateur, new Periode(debut, fin)));
   }
 
   private static JourneeDeTravailCriteria criteres(Optional<Periode> periode, OperateurId operateur) {

@@ -1,5 +1,6 @@
 package com.glm.glmback.pupitre.domain;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -11,6 +12,13 @@ public final class PupitreFixture {
   public static final Instant LE_10_MAI_2026_A_8H = Instant.parse("2026-05-10T08:00:00Z");
   public static final Instant LE_10_MAI_2026_A_9H = Instant.parse("2026-05-10T09:00:00Z");
   public static final Instant LE_10_MAI_2026_A_12H = Instant.parse("2026-05-10T12:00:00Z");
+  public static final Instant LE_10_MAI_2026_A_20H = Instant.parse("2026-05-10T20:00:00Z");
+  public static final Instant LE_10_MAI_2026_A_21H = Instant.parse("2026-05-10T21:00:00Z");
+  public static final AmplitudeMaximale AMPLITUDE_MAXIMALE_13H = new AmplitudeMaximale(Duration.ofHours(13));
+  public static final PresenceDuPupitre PRESENCE_PRESENTE_JUSQU_A_20H = new PresenceDuPupitre(
+    EtatDePresence.PRESENT,
+    Optional.of(Instant.parse("2026-05-10T20:00:00Z"))
+  );
 
   public static final OperateurId OPERATEUR_ID_DUPONT = new OperateurId(UUID.fromString("33333333-3333-3333-3333-333333333333"));
   public static final OperateurId OPERATEUR_ID_MARTIN = new OperateurId(UUID.fromString("44444444-4444-4444-4444-444444444444"));
@@ -39,17 +47,18 @@ public final class PupitreFixture {
   public static final PosteHabilite POSTE_HABILITE_FRAISEUSE_1 = new PosteHabilite(POSTE_ID_FRAISEUSE_1, LIBELLE_FRAISEUSE_1);
   public static final PosteHabilite POSTE_HABILITE_FRAISEUSE_2 = new PosteHabilite(POSTE_ID_FRAISEUSE_2, LIBELLE_FRAISEUSE_2);
 
-  public static final OperateurDuPupitre OPERATEUR_DUPONT = operateurDupont(EtatDePresence.PRESENT);
+  public static final OperateurDuPupitre OPERATEUR_DUPONT = operateurDupont(PRESENCE_PRESENTE_JUSQU_A_20H);
 
   private PupitreFixture() {}
 
-  public static OperateurDuPupitre operateurDupont(EtatDePresence etat) {
+  public static OperateurDuPupitre operateurDupont(PresenceDuPupitre presence) {
     return OperateurDuPupitre.builder()
       .id(OPERATEUR_ID_DUPONT)
       .nom(NOM_DUPONT)
       .prenom(PRENOM_JEAN)
       .matricule(MATRICULE_049.value())
-      .etat(etat)
+      .etat(presence.etat())
+      .presentJusqua(presence.presentJusqua())
       .postes(List.of(POSTE_HABILITE_FRAISEUSE_1, POSTE_HABILITE_FRAISEUSE_2));
   }
 

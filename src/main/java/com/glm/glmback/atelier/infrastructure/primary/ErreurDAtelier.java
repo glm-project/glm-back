@@ -15,6 +15,7 @@ enum ErreurDAtelier implements ProblemCode {
   OPERATEUR_NON_HABILITE(HttpStatus.CONFLICT, "operateur non habilite"),
   ELEMENT_DEJA_ENGAGE(HttpStatus.CONFLICT, "element deja engage"),
   JOURNEE_DE_TRAVAIL_DEJA_OUVERTE(HttpStatus.CONFLICT, "journee de travail deja ouverte"),
+  CHEVAUCHEMENT_DE_JOURNEES(HttpStatus.CONFLICT, "chevauchement de journees"),
   EVENEMENT_DEJA_ANNULE(HttpStatus.CONFLICT, "evenement deja annule"),
   EVENEMENT_DE_PRESENCE_DEJA_ANNULE(HttpStatus.CONFLICT, "evenement de presence deja annule"),
   SUIVI_D_ATELIER_CLOTURE(HttpStatus.CONFLICT, "suivi d'atelier cloture"),

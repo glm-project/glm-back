@@ -8,6 +8,7 @@ import com.glm.glmback.atelier.domain.JourneeDeTravailId;
 import com.glm.glmback.atelier.domain.JourneeDeTravailIntrouvableException;
 import com.glm.glmback.atelier.domain.JourneeDeTravailRepository;
 import com.glm.glmback.atelier.domain.OperateurId;
+import com.glm.glmback.atelier.domain.Periode;
 import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
@@ -83,6 +84,15 @@ class JpaJourneeDeTravailRepository implements JourneeDeTravailRepository {
   }
 
   @Override
+  public List<JourneeDeTravail> journeesDeLOperateurSur(OperateurId operateur, Periode periode) {
+    return journees
+      .findAll(etendueTouchant(operateur, periode), PAR_DEBUT_DESCENDANT)
+      .stream()
+      .map(JourneeDeTravailEntity::toDomain)
+      .toList();
+  }
+
+  @Override
   public Page<JourneeDeTravail> list(JourneeDeTravailCriteria criteria, Pageable pageable) {
     var page = journees.findAll(correspondA(criteria), PageRequest.of(pageable.page(), pageable.size(), PAR_DEBUT_DESCENDANT));
 
@@ -91,6 +101,19 @@ class JpaJourneeDeTravailRepository implements JourneeDeTravailRepository {
       .currentPage(pageable.page())
       .pageSize(pageable.size())
       .totalElementsCount(page.getTotalElements());
+  }
+
+  /**
+   * Traduit {@link JourneeDeTravail#etendue()} : du premier au dernier fait connu, bornes comprises. Une journee sans
+   * aucun evenement n'a pas d'etendue, ce dont la comparaison a des colonnes nulles se charge seule.
+   */
+  private static Specification<JourneeDeTravailEntity> etendueTouchant(OperateurId operateur, Periode periode) {
+    return (racine, requete, constructeur) ->
+      constructeur.and(
+        constructeur.equal(racine.get("operateurId"), operateur.uuid()),
+        constructeur.lessThanOrEqualTo(racine.get("debut"), periode.fin()),
+        constructeur.greaterThanOrEqualTo(racine.get("dernierFait"), periode.debut())
+      );
   }
 
   /**

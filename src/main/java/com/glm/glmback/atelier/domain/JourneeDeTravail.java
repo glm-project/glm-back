@@ -53,6 +53,27 @@ public record JourneeDeTravail(JourneeDeTravailId id, OperateurId operateur, Jou
     return journal.etat();
   }
 
+  /**
+   * Vrai si la journee, toujours sans depart, a depasse le seuil a cet instant : son amplitude depuis l'arrivee,
+   * pauses comprises, est strictement superieure au seuil. Un geste recu a ce moment ouvre une nouvelle journee.
+   */
+  public boolean estAbandonneePour(Instant instant, AmplitudeMaximale seuil) {
+    return (
+      estEnCours()
+      && debut()
+        .filter(arrivee -> instant.isAfter(arrivee.plus(seuil.value())))
+        .isPresent()
+    );
+  }
+
+  /**
+   * Du premier au dernier fait connu : c'est sur elle que se juge le chevauchement de deux journees. Une journee
+   * abandonnee sans depart s'arrete a son dernier geste, elle ne deborde pas sur la suivante.
+   */
+  public Optional<Periode> etendue() {
+    return journal.etendue();
+  }
+
   public boolean estEnCours() {
     return etat() != EtatDePresence.ABSENT;
   }

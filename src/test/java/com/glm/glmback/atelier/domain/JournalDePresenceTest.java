@@ -9,6 +9,7 @@ import com.glm.glmback.shared.error.domain.NullElementInCollectionException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 @UnitTest
@@ -49,6 +50,21 @@ class JournalDePresenceTest {
       TypeDEvenementDePresence.ARRIVEE,
       TypeDEvenementDePresence.DEPART
     );
+  }
+
+  /**
+   * Une arrivee implicite et le geste qu'elle precede partagent leur heure de survenue et d'enregistrement : a instant
+   * egal, l'arrivee passe devant, quel que soit l'ordre des identifiants.
+   */
+  @Test
+  void shouldFairePasserLArriveeDevantUnGesteSimultane() {
+    EvenementDePresence arrivee = presenceSimultanee(new UUID(0, 2), TypeDEvenementDePresence.ARRIVEE);
+    EvenementDePresence depart = presenceSimultanee(new UUID(0, 1), TypeDEvenementDePresence.DEPART);
+
+    JournalDePresence journal = new JournalDePresence(List.of(depart, arrivee));
+
+    assertThat(journal.evenements()).containsExactly(arrivee, depart);
+    assertThat(journal.etat()).isEqualTo(EtatDePresence.ABSENT);
   }
 
   @Test
@@ -137,5 +153,13 @@ class JournalDePresenceTest {
     assertThatThrownBy(() -> journal.corrige(inconnu, annulation, remplacant)).isExactlyInstanceOf(
       EvenementDePresenceIntrouvableException.class
     );
+  }
+
+  private static EvenementDePresence presenceSimultanee(UUID id, TypeDEvenementDePresence type) {
+    return EvenementDePresence.builder()
+      .id(new EvenementDePresenceId(id))
+      .type(type)
+      .auteur(AUTEUR_DUPONT)
+      .horodatage(Horodatage.saisiA(LE_11_MAI_2026_A_8H30));
   }
 }

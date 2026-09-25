@@ -4,7 +4,9 @@ import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelierService;
 import com.glm.glmback.atelier.domain.AnnulationDePresenceAEnregistrer;
 import com.glm.glmback.atelier.domain.ArriveeAEnregistrer;
+import com.glm.glmback.atelier.domain.ArriveeTraitee;
 import com.glm.glmback.atelier.domain.CorrectionDePresenceAEnregistrer;
+import com.glm.glmback.atelier.domain.EvenementDePresenceId;
 import com.glm.glmback.atelier.domain.JourneeDeTravail;
 import com.glm.glmback.atelier.domain.JourneeDeTravailId;
 import com.glm.glmback.atelier.domain.JourneeDeTravailRepository;
@@ -15,6 +17,7 @@ import com.glm.glmback.atelier.domain.Periode;
 import com.glm.glmback.atelier.domain.PointageDePresenceAEnregistrer;
 import com.glm.glmback.atelier.domain.PostesConnus;
 import com.glm.glmback.atelier.domain.RegularisationDePresenceAEnregistrer;
+import com.glm.glmback.atelier.domain.SeuilDAmplitude;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import com.glm.glmback.shared.time.domain.Clock;
@@ -45,10 +48,11 @@ public class JourneesDeTravailApplicationService {
     JourneeDeTravailRepository repository,
     OperateursConnus operateurs,
     PostesConnus postes,
+    SeuilDAmplitude seuil,
     Clock clock,
     IdentitesDEvenements identites
   ) {
-    this.journeesDeTravail = new JourneesDeTravailService(repository, operateurs, clock);
+    this.journeesDeTravail = JourneesDeTravailService.builder().repository(repository).operateurs(operateurs).seuil(seuil).clock(clock);
     this.annuaires = new AnnuaireDAtelierService(operateurs, postes);
     this.identites = identites;
   }
@@ -75,9 +79,12 @@ public class JourneesDeTravailApplicationService {
     if (reservation.estUnRejeu()) {
       return new ResultatDEcriture<>(journeesDeTravail.get(new JourneeDeTravailId(reservation.agregat().orElseThrow().id())), true);
     }
-    JourneeDeTravail journee = journeesDeTravail.arrive(commande);
-    identites.associe(commande.evenement().uuid(), new AgregatDEvenement(TypeDAgregatDEvenement.JOURNEE_DE_TRAVAIL, journee.id().uuid()));
-    return new ResultatDEcriture<>(journee, false);
+    ArriveeTraitee arrivee = journeesDeTravail.arrive(commande);
+    identites.associe(
+      commande.evenement().uuid(),
+      new AgregatDEvenement(TypeDAgregatDEvenement.JOURNEE_DE_TRAVAIL, arrivee.journee().id().uuid())
+    );
+    return new ResultatDEcriture<>(arrivee.journee(), arrivee.absorbee());
   }
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
@@ -102,7 +109,7 @@ public class JourneesDeTravailApplicationService {
     if (reservation.estUnRejeu()) {
       return new ResultatDEcriture<>(journeesDeTravail.get(new JourneeDeTravailId(reservation.agregat().orElseThrow().id())), true);
     }
-    JourneeDeTravail journee = journeesDeTravail.pointe(commande);
+    JourneeDeTravail journee = journeesDeTravail.pointe(commande, () -> new EvenementDePresenceId(reserveIdentiteServeur()));
     identites.associe(commande.evenement().uuid(), new AgregatDEvenement(TypeDAgregatDEvenement.JOURNEE_DE_TRAVAIL, journee.id().uuid()));
     return new ResultatDEcriture<>(journee, false);
   }
@@ -111,7 +118,7 @@ public class JourneesDeTravailApplicationService {
   @Transactional
   public JourneeDeTravail regularise(RegularisationDePresenceAEnregistrer commande) {
     UUID evenement = reserveIdentiteServeur();
-    JourneeDeTravail journee = journeesDeTravail.regularise(commande, new com.glm.glmback.atelier.domain.EvenementDePresenceId(evenement));
+    JourneeDeTravail journee = journeesDeTravail.regularise(commande, new EvenementDePresenceId(evenement));
     identites.associe(evenement, new AgregatDEvenement(TypeDAgregatDEvenement.JOURNEE_DE_TRAVAIL, journee.id().uuid()));
     return journee;
   }
@@ -126,7 +133,7 @@ public class JourneesDeTravailApplicationService {
   @Transactional
   public JourneeDeTravail corrige(CorrectionDePresenceAEnregistrer commande) {
     UUID evenement = reserveIdentiteServeur();
-    JourneeDeTravail journee = journeesDeTravail.corrige(commande, new com.glm.glmback.atelier.domain.EvenementDePresenceId(evenement));
+    JourneeDeTravail journee = journeesDeTravail.corrige(commande, new EvenementDePresenceId(evenement));
     identites.associe(evenement, new AgregatDEvenement(TypeDAgregatDEvenement.JOURNEE_DE_TRAVAIL, journee.id().uuid()));
     return journee;
   }

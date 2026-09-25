@@ -1,6 +1,7 @@
 package com.glm.glmback.pupitre.domain;
 
 import com.glm.glmback.shared.time.domain.Clock;
+import java.time.Instant;
 
 /**
  * Assemble le referentiel du pupitre et le date.
@@ -15,26 +16,36 @@ public final class ReferentielsDuPupitreService {
   private final OperateursDuPupitre operateurs;
   private final SuivisOuvertsDuPupitre suivis;
   private final PresencesDuPupitre presences;
+  private final SeuilDuPupitre seuil;
   private final Clock clock;
 
   private ReferentielsDuPupitreService(
     OperateursDuPupitre operateurs,
     SuivisOuvertsDuPupitre suivis,
     PresencesDuPupitre presences,
+    SeuilDuPupitre seuil,
     Clock clock
   ) {
     this.operateurs = operateurs;
     this.suivis = suivis;
     this.presences = presences;
+    this.seuil = seuil;
     this.clock = clock;
   }
 
   public static ReferentielsDuPupitreServiceOperateursBuilder builder() {
-    return operateurs -> suivis -> presences -> clock -> new ReferentielsDuPupitreService(operateurs, suivis, presences, clock);
+    return operateurs ->
+      suivis -> presences -> seuil -> clock -> new ReferentielsDuPupitreService(operateurs, suivis, presences, seuil, clock);
   }
 
   public ReferentielDuPupitre referentiel() {
-    return new ReferentielDuPupitre(clock.now(), operateurs.tous(presences.toutes()), suivis.tous());
+    Instant maintenant = clock.now();
+
+    return new ReferentielDuPupitre(
+      maintenant,
+      operateurs.tous(presences.toutes().a(maintenant, seuil.amplitudeMaximale())),
+      suivis.tous()
+    );
   }
 
   public interface ReferentielsDuPupitreServiceOperateursBuilder {
@@ -46,7 +57,11 @@ public final class ReferentielsDuPupitreService {
   }
 
   public interface ReferentielsDuPupitreServicePresencesBuilder {
-    ReferentielsDuPupitreServiceClockBuilder presences(PresencesDuPupitre presences);
+    ReferentielsDuPupitreServiceSeuilBuilder presences(PresencesDuPupitre presences);
+  }
+
+  public interface ReferentielsDuPupitreServiceSeuilBuilder {
+    ReferentielsDuPupitreServiceClockBuilder seuil(SeuilDuPupitre seuil);
   }
 
   public interface ReferentielsDuPupitreServiceClockBuilder {

@@ -4,6 +4,7 @@ import com.glm.glmback.pupitre.domain.EtatDePresence;
 import com.glm.glmback.pupitre.domain.Matricule;
 import com.glm.glmback.pupitre.domain.OperateurDuPupitre;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -39,6 +40,14 @@ record RestOperateurDuPupitre(
     requiredMode = Schema.RequiredMode.REQUIRED
   )
   EtatDePresence etat,
+  @Schema(
+    description = """
+    Instant jusqu'auquel l'operateur reste present sans nouveau geste : son arrivee plus l'amplitude maximale de
+    l'entreprise. Au-dela, sa journee est abandonnee et il redevient ABSENT : le pupitre hors ligne bascule seul a cet
+    instant, et ne propose plus que l'arrivee. Absent quand l'operateur est ABSENT.
+    """
+  )
+  Instant presentJusqua,
   @Schema(description = "Postes habilites, tries par libelle.", requiredMode = Schema.RequiredMode.REQUIRED) List<RestPosteDuPupitre> postes
 ) {
   static RestOperateurDuPupitre from(OperateurDuPupitre operateur) {
@@ -48,6 +57,7 @@ record RestOperateurDuPupitre(
       operateur.prenom().value(),
       operateur.matricule().map(Matricule::value).orElse(null),
       operateur.etat(),
+      operateur.presentJusqua().orElse(null),
       operateur.postes().stream().map(RestPosteDuPupitre::from).toList()
     );
   }

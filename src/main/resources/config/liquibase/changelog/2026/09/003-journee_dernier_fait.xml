@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <!--
+    Le dernier fait connu d'une journee, depart ou non : une projection, comme debut et fin, qui rend exprimable en SQL
+    la recherche des journees dont l'etendue touche une periode. C'est elle qui garde du chevauchement de deux
+    journees d'un meme operateur.
+  -->
+  <changeSet id="journee_dernier_fait" author="glm">
+    <addColumn tableName="journee_de_travail">
+      <column name="dernier_fait" type="${datetimeType}" />
+    </addColumn>
+
+    <sql>
+      update journee_de_travail journee
+      set dernier_fait = (
+        select max(evenement.date_de_survenue)
+        from evenement_de_presence evenement
+        where evenement.journee_id = journee.id and evenement.annulation_date is null
+      );
+    </sql>
+
+    <createIndex indexName="ix_journee_de_travail_operateur_etendue" tableName="journee_de_travail">
+      <column name="operateur_id" />
+      <column name="debut" />
+      <column name="dernier_fait" />
+    </createIndex>
+  </changeSet>
+</databaseChangeLog>

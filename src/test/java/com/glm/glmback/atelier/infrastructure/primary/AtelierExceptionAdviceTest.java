@@ -5,6 +5,7 @@ import static org.springframework.http.HttpStatus.*;
 
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.atelier.domain.AucuneJourneeDeTravailEnCoursException;
+import com.glm.glmback.atelier.domain.ChevauchementDeJourneesException;
 import com.glm.glmback.atelier.domain.DateDeSurvenueFutureException;
 import com.glm.glmback.atelier.domain.ElementDejaEngageException;
 import com.glm.glmback.atelier.domain.ElementEngageableIntrouvableException;
@@ -45,6 +46,11 @@ class AtelierExceptionAdviceTest extends ExceptionAdviceContract {
   @Override
   protected Stream<PublishedProblem> erreursPubliees() {
     return Stream.of(
+      new PublishedProblem(
+        new ChevauchementDeJourneesException(journeeDeDupontDe7HA17HAvecPauseDeMidi(), journeeDeDupontOuverteA7H()),
+        "urn:glm:erreur:atelier:chevauchement-de-journees",
+        CONFLICT
+      ),
       new PublishedProblem(
         new SuiviDAtelierIntrouvableException(SuiviDAtelierId.newId()),
         "urn:glm:erreur:atelier:suivi-d-atelier-introuvable",

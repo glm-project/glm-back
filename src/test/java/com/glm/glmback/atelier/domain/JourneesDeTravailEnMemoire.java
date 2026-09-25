@@ -45,7 +45,7 @@ class JourneesDeTravailEnMemoire implements JourneeDeTravailRepository {
       .stream()
       .filter(journee -> journee.operateur().equals(operateur))
       .filter(JourneeDeTravail::estEnCours)
-      .findFirst();
+      .min(parDebutDescendant());
   }
 
   @Override
@@ -56,6 +56,26 @@ class JourneesDeTravailEnMemoire implements JourneeDeTravailRepository {
       .filter(journee -> journee.operateur().equals(operateur))
       .filter(journee -> journee.contient(instant))
       .findFirst();
+  }
+
+  @Override
+  public List<JourneeDeTravail> journeesDeLOperateurSur(OperateurId operateur, Periode periode) {
+    return journees
+      .values()
+      .stream()
+      .filter(journee -> journee.operateur().equals(operateur))
+      .filter(journee ->
+        journee
+          .etendue()
+          .filter(etendue -> touche(etendue, periode))
+          .isPresent()
+      )
+      .sorted(parDebutDescendant())
+      .toList();
+  }
+
+  private static boolean touche(Periode etendue, Periode periode) {
+    return !etendue.debut().isAfter(periode.fin()) && !etendue.fin().isBefore(periode.debut());
   }
 
   @Override

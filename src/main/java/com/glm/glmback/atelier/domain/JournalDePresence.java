@@ -19,8 +19,13 @@ import java.util.stream.Stream;
  * </p>
  */
 public record JournalDePresence(List<EvenementDePresence> evenements) {
+  /**
+   * A instant egal, l'arrivee passe devant : l'arrivee implicite d'un geste tardif partage son heure de survenue et
+   * d'enregistrement, et l'identifiant seul la rangerait au hasard.
+   */
   private static final Comparator<EvenementDePresence> PAR_ORDRE_CHRONOLOGIQUE = Comparator.comparing(EvenementDePresence::dateDeSurvenue)
     .thenComparing(EvenementDePresence::dateDEnregistrement)
+    .thenComparing(EvenementDePresence::type)
     .thenComparing(EvenementDePresence::id);
 
   public JournalDePresence {
@@ -76,6 +81,19 @@ public record JournalDePresence(List<EvenementDePresence> evenements) {
 
   public Optional<Instant> debut() {
     return actifs(evenements).stream().findFirst().map(EvenementDePresence::dateDeSurvenue);
+  }
+
+  /**
+   * Du premier au dernier evenement actif, depart ou non.
+   */
+  public Optional<Periode> etendue() {
+    List<EvenementDePresence> actifs = actifs(evenements);
+
+    if (actifs.isEmpty()) {
+      return Optional.empty();
+    }
+
+    return Optional.of(new Periode(actifs.getFirst().dateDeSurvenue(), actifs.getLast().dateDeSurvenue()));
   }
 
   /**

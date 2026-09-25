@@ -125,13 +125,226 @@ Feature: Presence des operateurs en atelier
     Then la reponse a le statut http 200
     And le journal de la journee contient 2 evenements
 
-  Scenario: Un operateur ne peut pas ouvrir deux journees a la fois
+  Scenario: Une arrivee redondante est absorbee dans la journee en cours
+    # D4 : sous le seuil, l'operateur est deja la. Rien n'est ajoute, et le pupitre recoit la journee en cours.
     Given il est "2026-05-10T07:00:00Z"
     And je suis arrive
       | operateur | dupont |
+    And je retiens la journee sous le nom "matin"
+    Given il est "2026-05-10T09:00:00Z"
     When j'arrive
       | operateur | dupont |
+    Then la reponse a le statut http 200
+    And la reponse designe la journee "matin"
+    And le journal de la journee contient 1 evenements
+    # Le geste absorbe reste reserve : rejoue, il rend la meme journee.
+    When je rejoue le dernier geste du pupitre
+    Then la reponse a le statut http 200
+    And la reponse designe la journee "matin"
+    And le journal de la journee contient 1 evenements
+
+  Scenario: Le poste de nuit se reidentifie a 3 h sans ouvrir de seconde journee
+    # E1 de la strategie « bornes de fin de journee ».
+    Given il est "2026-05-10T20:00:00Z"
+    And je suis arrive
+      | operateur | dupont |
+    And je retiens la journee sous le nom "nuit"
+    Given il est "2026-05-11T03:00:00Z"
+    When j'arrive
+      | operateur | dupont |
+    Then la reponse a le statut http 200
+    And la reponse designe la journee "nuit"
+    Given il est "2026-05-11T08:00:00Z"
+    When je pointe ma presence
+      | operateur | dupont |
+      | type      | DEPART |
+    Then la reponse a le statut http 201
+    And la reponse designe la journee "nuit"
+    And la journee a l'amplitude de "2026-05-10T20:00:00Z" a "2026-05-11T08:00:00Z"
+
+  Scenario: Une arrivee au seuil pile reste dans la journee
+    Given il est "2026-05-10T07:00:00Z"
+    And je suis arrive
+      | operateur | dupont |
+    And je retiens la journee sous le nom "lundi"
+    Given il est "2026-05-10T20:00:00Z"
+    When j'arrive
+      | operateur | dupont |
+    Then la reponse a le statut http 200
+    And la reponse designe la journee "lundi"
+
+  Scenario: Le lendemain d'un depart oublie, l'arrivee ouvre une nouvelle journee
+    # E2 : lundi, Dupont part sans rien pointer. Mardi, son arrivee n'est plus perdue.
+    Given il est "2026-05-10T07:00:00Z"
+    And je suis arrive
+      | operateur | dupont |
+    And je retiens la journee sous le nom "lundi"
+    Given il est "2026-05-11T07:00:00Z"
+    When j'arrive
+      | operateur | dupont |
+    Then la reponse a le statut http 201
+    And la reponse ne designe pas la journee "lundi"
+    And je retiens la journee sous le nom "mardi"
+    And la journee a l'etat "PRESENT"
+    Given il est "2026-05-11T12:00:00Z"
+    When je pointe ma presence
+      | operateur | dupont |
+      | type      | PAUSE  |
+    Then la reponse a le statut http 201
+    And la reponse designe la journee "mardi"
+    # La journee de lundi reste telle quelle : sans depart, en attente de regularisation.
+    When je consulte la journee "lundi"
+    Then la journee a l'etat "PRESENT"
+    And le journal de la journee contient 1 evenements
+
+  Scenario: Un depart recu d'un pupitre en retard ouvre et ferme une journee sans rien refuser
+    # E5 : le pupitre hors ligne depuis lundi envoie un depart mardi a 08:30. L'arrivee implicite porte une identite
+    # du serveur, jamais celle du geste.
+    Given il est "2026-05-10T07:00:00Z"
+    And je suis arrive
+      | operateur | dupont |
+    And je retiens la journee sous le nom "lundi"
+    Given il est "2026-05-11T09:00:00Z"
+    When je pointe ma presence
+      | id             | 00000000-0000-0000-0000-000000000051 |
+      | operateur      | dupont                               |
+      | type           | DEPART                               |
+      | dateDeSurvenue | 2026-05-11T08:30:00Z                 |
+    Then la reponse a le statut http 201
+    And la reponse ne designe pas la journee "lundi"
+    And je retiens la journee sous le nom "mardi"
+    And la journee a l'etat "ABSENT"
+    And la journee a l'amplitude de "2026-05-11T08:30:00Z" a "2026-05-11T08:30:00Z"
+    And le journal du suivi ne contient que les types
+      | ARRIVEE |
+      | DEPART  |
+    And l'evenement 0 de la journee n'a pas l'identifiant "00000000-0000-0000-0000-000000000051"
+    And l'evenement 1 de la journee a l'identifiant "00000000-0000-0000-0000-000000000051"
+    # Rejoue, le meme geste rend la meme journee : pas de troisieme journee.
+    When je rejoue le dernier geste du pupitre
+    Then la reponse a le statut http 200
+    And la reponse designe la journee "mardi"
+
+  Scenario: Une pause tardive ouvre une journee qui commence en pause
+    Given il est "2026-05-10T07:00:00Z"
+    And je suis arrive
+      | operateur | dupont |
+    Given il est "2026-05-11T08:30:00Z"
+    When je pointe ma presence
+      | operateur | dupont |
+      | type      | PAUSE  |
+    Then la reponse a le statut http 201
+    And la journee a l'etat "EN_PAUSE"
+    And le journal du suivi ne contient que les types
+      | ARRIVEE |
+      | PAUSE   |
+
+  Scenario: Une reprise tardive n'ouvre qu'une arrivee
+    # Une reprise suppose une pause : sur une journee abandonnee, seule l'arrivee a un sens.
+    Given il est "2026-05-10T07:00:00Z"
+    And je suis arrive
+      | operateur | dupont |
+    Given il est "2026-05-10T12:00:00Z"
+    And j'ai pointe ma presence
+      | operateur | dupont |
+      | type      | PAUSE  |
+    Given il est "2026-05-11T08:30:00Z"
+    When je pointe ma presence
+      | operateur | dupont  |
+      | type      | REPRISE |
+    Then la reponse a le statut http 201
+    And la journee a l'etat "PRESENT"
+    And le journal du suivi ne contient que les types
+      | ARRIVEE |
+
+  Scenario: Un geste rejoue hors ligne est juge a son heure, pas a sa reception
+    Given il est "2026-05-10T07:00:00Z"
+    And je suis arrive
+      | operateur | dupont |
+    And je retiens la journee sous le nom "lundi"
+    Given il est "2026-05-11T09:00:00Z"
+    When je pointe ma presence
+      | operateur      | dupont               |
+      | type           | PAUSE                |
+      | dateDeSurvenue | 2026-05-10T12:00:00Z |
+    Then la reponse a le statut http 201
+    And la reponse designe la journee "lundi"
+    And la journee a l'etat "EN_PAUSE"
+
+  @parametrage
+  Scenario: Le seuil fixe par le gestionnaire vaut pour les gestes suivants
+    # E8 : le seuil passe a 10 h. Une arrivee a 17:30 ouvre une nouvelle journee la ou 13 h l'aurait absorbee.
+    Given il est "2026-05-10T06:00:00Z"
+    And je fixe l'amplitude maximale a "PT10H"
+    Given il est "2026-05-10T07:00:00Z"
+    And je suis arrive
+      | operateur | dupont |
+    And je retiens la journee sous le nom "matin"
+    Given il est "2026-05-10T16:59:00Z"
+    When j'arrive
+      | operateur | dupont |
+    Then la reponse a le statut http 200
+    And la reponse designe la journee "matin"
+    Given il est "2026-05-10T17:30:00Z"
+    When j'arrive
+      | operateur | dupont |
+    Then la reponse a le statut http 201
+    And la reponse ne designe pas la journee "matin"
+
+  Scenario: Regulariser le depart oublie de la veille est accepte avant la journee suivante
+    # E6 : mardi est ouvert a 07:00. Le depart de lundi a 17:00 ne touche pas mardi.
+    Given il est "2026-05-10T07:00:00Z"
+    And je suis arrive
+      | operateur | dupont |
+    And je retiens la journee sous le nom "lundi"
+    Given il est "2026-05-11T07:00:00Z"
+    And je suis arrive
+      | operateur | dupont |
+    Given il est "2026-05-11T09:15:00Z"
+    When je regularise la journee "lundi"
+      | type           | DEPART               |
+      | dateDeSurvenue | 2026-05-10T17:00:00Z |
+    Then la reponse a le statut http 201
+    And la journee a l'amplitude de "2026-05-10T07:00:00Z" a "2026-05-10T17:00:00Z"
+
+  Scenario: Une regularisation qui ferait chevaucher deux journees est refusee au gestionnaire
+    # E6 : le depart de lundi saisi a mardi 08:00 recouvrirait la journee de mardi.
+    Given il est "2026-05-10T07:00:00Z"
+    And je suis arrive
+      | operateur | dupont |
+    And je retiens la journee sous le nom "lundi"
+    Given il est "2026-05-11T07:00:00Z"
+    And je suis arrive
+      | operateur | dupont |
+    Given il est "2026-05-11T09:15:00Z"
+    When je regularise la journee "lundi"
+      | type           | DEPART               |
+      | dateDeSurvenue | 2026-05-11T08:00:00Z |
     Then la reponse a le statut http 409
+    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:chevauchement-de-journees"
+    When je consulte la journee "lundi"
+    Then la journee a l'etat "PRESENT"
+    And le journal de la journee contient 1 evenements
+
+  Scenario: Une correction qui ferait chevaucher deux journees est refusee au gestionnaire
+    Given il est "2026-05-10T07:00:00Z"
+    And je suis arrive
+      | operateur | dupont |
+    And je retiens la journee sous le nom "lundi"
+    Given il est "2026-05-10T17:00:00Z"
+    And j'ai pointe ma presence
+      | operateur | dupont |
+      | type      | DEPART |
+    Given il est "2026-05-11T07:00:00Z"
+    And je suis arrive
+      | operateur | dupont |
+    Given il est "2026-05-11T09:15:00Z"
+    When je corrige l'evenement 1 de la journee "lundi"
+      | motif          | Depart saisi a tort  |
+      | type           | DEPART               |
+      | dateDeSurvenue | 2026-05-11T08:00:00Z |
+    Then la reponse a le statut http 409
+    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:chevauchement-de-journees"
 
   Scenario: Pointer une pause sans journee ouverte est refuse
     When je pointe ma presence

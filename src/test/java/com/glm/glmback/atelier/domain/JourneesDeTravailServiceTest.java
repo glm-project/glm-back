@@ -17,11 +17,16 @@ class JourneesDeTravailServiceTest {
   private final AtomicReference<Instant> maintenant = new AtomicReference<>(LE_10_MAI_2026_A_7H);
   private final JourneesDeTravailEnMemoire journees = new JourneesDeTravailEnMemoire();
   private final RessourcesDAtelierEnMemoire ressources = RessourcesDAtelierEnMemoire.deLAtelier();
-  private final JourneesDeTravailService service = new JourneesDeTravailService(journees, ressources.operateurs(), maintenant::get);
+  private final AtomicReference<AmplitudeMaximale> seuil = new AtomicReference<>(AMPLITUDE_MAXIMALE_13H);
+  private final JourneesDeTravailService service = JourneesDeTravailService.builder()
+    .repository(journees)
+    .operateurs(ressources.operateurs())
+    .seuil(seuil::get)
+    .clock(maintenant::get);
 
   @Test
   void shouldOuvrirLaJourneeALArrivee() {
-    JourneeDeTravail journee = service.arrive(new ArriveeAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT));
+    JourneeDeTravail journee = service.arrive(new ArriveeAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT)).journee();
 
     assertThat(journee.operateur()).isEqualTo(OPERATEUR_ID_DUPONT);
     assertThat(journee.debut()).contains(LE_10_MAI_2026_A_7H);
@@ -33,20 +38,12 @@ class JourneesDeTravailServiceTest {
   void shouldOuvrirLaJourneeAUneHeureRegularisee() {
     maintenant.set(LE_11_MAI_2026_A_9H15);
 
-    JourneeDeTravail journee = service.arrive(new ArriveeAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_LEROY, Optional.of(LE_10_MAI_2026_A_7H)));
+    JourneeDeTravail journee = service
+      .arrive(new ArriveeAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_LEROY, Optional.of(LE_10_MAI_2026_A_7H)))
+      .journee();
 
     assertThat(journee.debut()).contains(LE_10_MAI_2026_A_7H);
     assertThat(journee.journal().evenements().getFirst().dateDEnregistrement()).isEqualTo(LE_11_MAI_2026_A_9H15);
-  }
-
-  @Test
-  void shouldNotOuvrirDeuxJourneesEnMemeTemps() {
-    service.arrive(new ArriveeAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT));
-    ArriveeAEnregistrer seconde = new ArriveeAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT);
-
-    assertThatThrownBy(() -> service.arrive(seconde))
-      .isExactlyInstanceOf(JourneeDeTravailDejaOuverteException.class)
-      .hasMessageContaining(OPERATEUR_ID_DUPONT.uuid().toString());
   }
 
   /**
@@ -98,7 +95,7 @@ class JourneesDeTravailServiceTest {
 
   @Test
   void shouldRegulariserUnDepartOublie() {
-    JourneeDeTravail ouverte = service.arrive(new ArriveeAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT));
+    JourneeDeTravail ouverte = service.arrive(new ArriveeAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT)).journee();
     maintenant.set(LE_11_MAI_2026_A_9H15);
 
     JourneeDeTravail journee = service.regularise(
@@ -126,7 +123,7 @@ class JourneesDeTravailServiceTest {
 
   @Test
   void shouldAnnulerUnPointageEnTrop() {
-    JourneeDeTravail ouverte = service.arrive(new ArriveeAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT));
+    JourneeDeTravail ouverte = service.arrive(new ArriveeAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT)).journee();
     maintenant.set(LE_10_MAI_2026_A_12H);
     JourneeDeTravail avecPause = service.pointe(
       new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.PAUSE)
@@ -144,7 +141,7 @@ class JourneesDeTravailServiceTest {
   @Test
   void shouldCorrigerUneHeureDArriveeFausse() {
     maintenant.set(LE_10_MAI_2026_A_9H);
-    JourneeDeTravail ouverte = service.arrive(new ArriveeAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT));
+    JourneeDeTravail ouverte = service.arrive(new ArriveeAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT)).journee();
     EvenementDePresenceId arrivee = ouverte.journal().evenements().getFirst().id();
     maintenant.set(LE_11_MAI_2026_A_9H15);
 
@@ -173,7 +170,7 @@ class JourneesDeTravailServiceTest {
 
   @Test
   void shouldListerLesJourneesDUnOperateurSurUnePeriode() {
-    JourneeDeTravail journee = service.arrive(new ArriveeAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT));
+    JourneeDeTravail journee = service.arrive(new ArriveeAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT)).journee();
 
     assertThat(
       service.list(Optional.of(journeeDu10Mai2026()), Optional.of(OPERATEUR_ID_DUPONT), firstPageOfTen()).content()

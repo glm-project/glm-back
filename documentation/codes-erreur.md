@@ -79,6 +79,7 @@ tests sont le seul endroit qui les tient.
 | `operateur-non-habilite`             | 409    | operateur non habilite             | `OperateurNonHabiliteException`           |
 | `element-deja-engage`                | 409    | element deja engage                | `ElementDejaEngageException`              |
 | `journee-de-travail-deja-ouverte`    | 409    | journee de travail deja ouverte    | `JourneeDeTravailDejaOuverteException`    |
+| `chevauchement-de-journees`          | 409    | chevauchement de journees          | `ChevauchementDeJourneesException`        |
 | `evenement-deja-annule`              | 409    | evenement deja annule              | `EvenementDejaAnnuleException`            |
 | `evenement-de-presence-deja-annule`  | 409    | evenement de presence deja annule  | `EvenementDePresenceDejaAnnuleException`  |
 | `suivi-d-atelier-cloture`            | 409    | suivi d'atelier cloture            | `SuiviDAtelierClotureException`           |
@@ -137,3 +138,8 @@ segment de contexte, et lui seul, qui les distingue.
    écrite en toutes lettres. Sans elle, le test d'exhaustivité échoue.
 4. Une ligne dans le catalogue ci-dessus. Celle-là, aucun test ne la réclame : le catalogue est tenu à la main, et
    c'est la seule pièce du contrat qui puisse se démoder en silence.
+
+`journee-de-travail-deja-ouverte` ne sort plus d'une arrivée : depuis le lot 3 de
+[strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md), une arrivée redondante est absorbée
+et une journée abandonnée en fait ouvrir une nouvelle. Le code reste publié pour le seul cas d'une identité de journée
+créée deux fois. `chevauchement-de-journees` ne répond qu'aux actes du gestionnaire (régularisation, correction).

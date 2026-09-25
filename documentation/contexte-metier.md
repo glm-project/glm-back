@@ -46,6 +46,13 @@ Le client décrit son besoin comme « une pointeuse à laquelle on rajoute une o
 - `amplitude()` — de l'arrivée au départ, pauses comprises ;
 - `fenetres()` — les périodes de présence effective, pauses exclues.
 
+**Une journée sans départ est abandonnée** quand son amplitude depuis l'arrivée, pauses comprises, dépasse le seuil paramétré par l'entreprise (contexte `parametrage`, 13 h par défaut) — strictement : un geste au seuil pile reste dans la journée. Aucune règle calendaire ne peut fermer une journée, puisqu'un poste de nuit court de 20 h à 8 h ; le seuil, lui, reste sous 24 h, ce qui garantit qu'un retour le lendemain à la même heure soit une nouvelle arrivée. L'abandon se juge sur l'heure du geste, jamais sur sa réception : un pupitre hors ligne qui rejoue un geste de la veille le voit rangé dans la bonne journée.
+
+- **Une arrivée sous le seuil est absorbée** : l'opérateur est déjà là, rien n'est ajouté, la journée en cours est rendue comme un rejeu. C'est ce qui permet à l'opérateur de nuit de se réidentifier à 3 h.
+- **Un geste reçu pour une journée abandonnée en ouvre une nouvelle** : une arrivée implicite à l'heure du geste, sous un identifiant du serveur réservé comme celui d'une régularisation, puis le geste lui-même. Une reprise s'y réduit à l'arrivée ; un départ tardif donne une journée de durée nulle. La journée abandonnée reste telle quelle, sans départ, à régulariser.
+- **Deux journées d'un même opérateur ne se chevauchent jamais.** L'étendue d'une journée va de son premier à son dernier fait connu ; une régularisation ou une correction qui ferait toucher deux étendues est refusée au gestionnaire (`chevauchement-de-journees`). Les gestes de l'opérateur ne sont jamais refusés pour cette raison. La recherche passe par la projection `dernier_fait`, écrite comme `debut` et `fin`.
+- À instant égal, dans le journal de présence, **l'arrivée passe devant** : l'arrivée implicite partage l'heure du geste qu'elle précède.
+
 **La pause et le départ sont des faits de l'opérateur, écrits une seule fois.** Ils ne sont jamais recopiés dans le journal des éléments. C'est ce qui donne au client son bouton de pause unique et son bouton d'arrêt de fin de journée — « ne mettez qu'un bouton, pas trois » — sans jamais N clics pour N tâches, et sans qu'aucun code de diffusion n'ait à maintenir la cohérence de N journaux.
 
 La **présence sans affectation** — le temps de présence sans élément rattaché — n'est pas un élément fictif : c'est le résidu de la présence moins le temps affecté, calculé à la lecture. La présence est comptée dès l'identification, que l'opérateur ait ou non pointé sur un élément.
@@ -136,9 +143,9 @@ L'API est décrite par OpenAPI (`/swagger-ui.html`) et par [atelier-api.md](atel
 4. **Le bouton de pause global n'a jamais été validé de première main.** Il ne vient que de la réunion d'équipe. Dans la réunion client, la pause est décrite au singulier, sur un seul élément. Le modèle retient le bouton global — à reconfirmer, c'est lui qui structure l'écran principal.
 5. **La déclaration du travail non facturable.** Le client veut son bouton GLM, placé en bas de l'écran, pour déclarer à la main le travail qu'il ne facture pas. Rien ne le modélise encore : le mode de déclaration, le rattachement éventuel à un projet interne et la coexistence avec d'autres activités feront l'objet d'une spec à part. La présence sans affectation n'y répond pas : ce n'est pas un travail déclaré.
 6. **Le cycle de vie de l'élément lui-même.** La clôture existe côté atelier, sur le suivi. Reste à trancher si l'élément de fabrication porte en propre un statut, ou si son activité se lit entièrement par la présence ou l'absence d'un suivi non clôturé.
-7. **Aucune garde d'unicité en base** sur « un seul suivi non clôturé par élément » ni « une seule journée ouverte par opérateur », contrairement à ce que `elementdefabrication` fait pour la `Reference`. Les deux règles vivent dans les services, mais une contrainte partielle transformerait en 500 deux états que le domaine admet aujourd'hui : rouvrir la clôture d'un suivi dont l'élément a été réengagé depuis, ou annuler le `DEPART` d'une journée dont l'opérateur est déjà revenu. À trancher côté domaine avant de poser la contrainte.
+7. **Aucune garde d'unicité en base** sur « un seul suivi non clôturé par élément », contrairement à ce que `elementdefabrication` fait pour la `Reference`. La règle vit dans le service, mais une contrainte partielle transformerait en 500 un état que le domaine admet aujourd'hui : rouvrir la clôture d'un suivi dont l'élément a été réengagé depuis. À trancher côté domaine avant de poser la contrainte. « Une seule journée ouverte par opérateur » n'est plus une règle : une journée abandonnée reste sans départ pendant que la suivante est ouverte.
 8. **L'écriture du journal rapproche par identifiant**, ce qui coûte une lecture indexée de la collection à chaque pointage. Si un journal devenait assez long pour que cette lecture pèse, la sortie est un upsert natif gardé (`on conflict (id) do update ... where ... is distinct from ...`), qui épargne à PostgreSQL toute version de tuple sur les lignes inchangées — au prix d'une scission permanente entre lecture JPA et écriture JDBC.
-9. **Départ oublié, poste de nuit, pointages jamais refusés.** Une journée sans départ n'a aujourd'hui pas de borne haute : elle absorbe la nuit, bloque l'arrivée du lendemain et fausse le coût de revient. Les décisions — amplitude maximale paramétrable, journée abandonnée, fin présumée, relance d'un OF, aucun pointage d'opérateur refusé sauf sur un OF clôturé — et leur découpage en huit lots sont dans [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md). Elles touchent aussi `feuilledetemps`, `syntheseheures`, `coutderevient` et `pupitre`. Lots livrés : 1, la relance d'une activité en cours ; 2, le paramétrage de l'amplitude maximale (contexte `parametrage`).
+9. **Départ oublié, poste de nuit, pointages jamais refusés.** Une journée sans départ n'a aujourd'hui pas de borne haute : elle absorbe la nuit, bloque l'arrivée du lendemain et fausse le coût de revient. Les décisions — amplitude maximale paramétrable, journée abandonnée, fin présumée, relance d'un OF, aucun pointage d'opérateur refusé sauf sur un OF clôturé — et leur découpage en huit lots sont dans [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md). Elles touchent aussi `feuilledetemps`, `syntheseheures`, `coutderevient` et `pupitre`. Lots livrés : 1, la relance d'une activité en cours ; 2, le paramétrage de l'amplitude maximale (contexte `parametrage`) ; 3, la journée abandonnée, l'arrivée absorbée et le refus du chevauchement.
 
 ## postedetravail
 
@@ -426,9 +433,11 @@ pointables — identité, nom d'atelier, référence, type, état, activités en
 
 L'**état de présence** est ce qui permet à l'écran d'atelier de n'offrir, hors ligne compris, que les commandes que
 l'atelier acceptera : sans lui, le pupitre proposait ses trois gestes en aveugle et le serveur refusait la
-transition impossible. C'est l'état de la journée en cours de l'opérateur, choisie comme l'atelier la choisit et
-**sans borne de date** — une journée ouverte la veille et jamais fermée compte encore. Un opérateur sans journée en
-cours vaut `ABSENT` et reste rendu : la liste est celle des opérateurs _désignables_, pas des opérateurs présents.
+transition impossible. C'est l'état de la journée en cours de l'opérateur, choisie comme l'atelier la choisit, **tant
+qu'elle n'est pas abandonnée** : au-delà du seuil d'amplitude, lu dans la table du paramétrage, l'opérateur redevient
+`ABSENT`. Chaque opérateur présent porte `presentJusqua`, son arrivée plus le seuil, pour que le pupitre hors ligne le
+bascule seul. Un opérateur sans journée en cours vaut `ABSENT` et reste rendu : la liste est celle des opérateurs
+_désignables_, pas des opérateurs présents.
 
 Elle ne rend **ni montant** (taux horaire, coût horaire : les entités de lecture ne les mappent même pas), **ni
 journal d'événements**, **ni élément clôturé**, **aucun instant de présence** — « en pause depuis 10 h 12 »
