@@ -43,13 +43,15 @@ class EtatDActiviteTest {
       Arguments.of(ABSENTE, NON_CONFORMITE, EN_NON_CONFORMITE),
       Arguments.of(EN_COURS, NON_CONFORMITE, EN_NON_CONFORMITE),
       Arguments.of(EN_COURS, FIN, ABSENTE),
+      Arguments.of(EN_COURS, DEBUT, EN_COURS),
       Arguments.of(EN_NON_CONFORMITE, DEBUT, EN_COURS),
+      Arguments.of(EN_NON_CONFORMITE, NON_CONFORMITE, EN_NON_CONFORMITE),
       Arguments.of(EN_NON_CONFORMITE, FIN, ABSENTE)
     );
   }
 
   private static Stream<Arguments> transitionsRefusees() {
-    return Stream.of(Arguments.of(ABSENTE, FIN), Arguments.of(EN_COURS, DEBUT), Arguments.of(EN_NON_CONFORMITE, NON_CONFORMITE));
+    return Stream.of(Arguments.of(ABSENTE, FIN));
   }
 
   private static Stream<Arguments> categories() {

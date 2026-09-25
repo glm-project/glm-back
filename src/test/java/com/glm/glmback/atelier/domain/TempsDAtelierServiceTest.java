@@ -119,6 +119,46 @@ class TempsDAtelierServiceTest {
     assertThat(temps.tempsEffectif(suivi)).isEmpty();
   }
 
+  /**
+   * Une relance pointee pendant la pause ne fait pas compter la pause : le temps effectif reste l'intersection avec la
+   * presence.
+   */
+  @Test
+  void shouldAmputerDeLaPauseUneActiviteRelanceePendantLaPause() {
+    journees.create(journeeDeDupontDe7HA17HAvecPauseDeMidi());
+    SuiviDAtelierId suivi = enAtelier(
+      suiviDAtelierEngage()
+        .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))
+        .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H.plusSeconds(1800)))
+        .enregistre(finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_17H))
+    );
+
+    assertThat(temps.tempsEffectif(suivi))
+      .extracting(IntervalleDActivite::debut, IntervalleDActivite::fin)
+      .containsExactly(
+        tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H)),
+        tuple(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_17H))
+      );
+  }
+
+  @Test
+  void shouldNeRienAjouterAuTempsEffectifSurUnDoubleAppui() {
+    journees.create(journeeDeDupontDe7HA17HAvecPauseDeMidi());
+    SuiviDAtelierId suivi = enAtelier(
+      suiviDAtelierEngage()
+        .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))
+        .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H.plusSeconds(3)))
+        .enregistre(finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H))
+    );
+
+    assertThat(temps.tempsEffectif(suivi))
+      .extracting(IntervalleDActivite::debut, IntervalleDActivite::fin)
+      .containsExactly(
+        tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_8H.plusSeconds(3))),
+        tuple(LE_10_MAI_2026_A_8H.plusSeconds(3), Optional.of(LE_10_MAI_2026_A_12H))
+      );
+  }
+
   private SuiviDAtelierId enAtelier(SuiviDAtelier suivi) {
     return suivis.create(suivi).id();
   }

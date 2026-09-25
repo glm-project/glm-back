@@ -182,6 +182,43 @@ class SuiviDAtelierTest {
     assertThat(suivi.etat()).isEqualTo(EtatDAtelier.INTERROMPU);
   }
 
+  @Test
+  void shouldGarderUneSeuleActiviteEnCoursApresUneRelance() {
+    SuiviDAtelier suivi = suiviDAtelierEngage()
+      .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))
+      .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H));
+
+    assertThat(suivi.etat()).isEqualTo(EtatDAtelier.EN_COURS);
+    assertThat(suivi.activitesEnCours())
+      .singleElement()
+      .satisfies(activite -> {
+        assertThat(activite.activite()).isEqualTo(cleDeFraiseuse1DeDupont());
+        assertThat(activite.categorie()).isEqualTo(CategorieDActivite.TRAVAIL);
+        assertThat(activite.depuis()).isEqualTo(LE_10_MAI_2026_A_13H);
+      });
+  }
+
+  @Test
+  void shouldEtreInterrompuQuandUneActiviteRelanceeEstArretee() {
+    SuiviDAtelier suivi = suiviDAtelierEngage()
+      .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))
+      .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H))
+      .enregistre(finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_17H));
+
+    assertThat(suivi.etat()).isEqualTo(EtatDAtelier.INTERROMPU);
+    assertThat(suivi.activitesEnCours()).isEmpty();
+  }
+
+  @Test
+  void shouldRefuserUneRelanceApresLaCloture() {
+    SuiviDAtelier suivi = suiviDAtelierEngage()
+      .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))
+      .cloture(clotureParLeroyA(LE_10_MAI_2026_A_12H));
+    EvenementDAtelier relance = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H);
+
+    assertThatThrownBy(() -> suivi.enregistre(relance)).isExactlyInstanceOf(SuiviDAtelierClotureException.class);
+  }
+
   private static Stream<Arguments> composantsManquants() {
     SuiviDAtelierId id = SuiviDAtelierId.newId();
 

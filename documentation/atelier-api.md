@@ -160,6 +160,9 @@ Trois pièges :
   ouverte de l'opérateur. Sans journée ouverte, il répond 404.
 - **Une reprise après non conformité se pointe comme un `DEBUT`.** Il n'existe pas de type « reprise ». Ce qui change,
   c'est la `categorie` de l'activité, qui repasse de `NON_CONFORMITE` à `TRAVAIL`.
+- **Un `DEBUT` sur une activité déjà en cours la relance** au lieu d'être refusé, de même qu'une `NON_CONFORMITE` sur
+  une non conformité en cours : la période précédente s'arrête à l'heure du geste, une nouvelle commence. L'opérateur
+  qui revient sur un élément resté ouvert la veille n'est jamais bloqué, et un double appui n'ajoute aucun temps.
 - `poste` est **toujours facultatif**, comme la `nature`. Une entreprise sans parc machine les laisse vides et doit
   retrouver un comportement nominal, pas un cas dégradé. Ne jamais rendre le champ obligatoire côté formulaire.
 - Un poste fourni doit être **habilité pour cet opérateur**, sans quoi 409. Filtrer la liste des postes sur la fiche de
@@ -318,8 +321,8 @@ Deux statuts du tableau ci-dessous n'en portent pas : le **400** de Bean Validat
 | 404    | Suivi, journée, événement ou élément de fabrication introuvable ; ou aucune journée ouverte pour cet opérateur.                                                                       |
 | 409    | Élément déjà engagé, journée déjà ouverte, élément clôturé, événement déjà annulé, transition impossible, événement antérieur à l'engagement, UUID réutilisé, **saisie concurrente**. |
 
-Les **409 de transition** sont les plus fréquents à l'usage : une `REPRISE` sans `PAUSE`, deux `DEBUT` consécutifs sur
-la même activité, un `DEPART` sur une journée déjà fermée. Ils portent un `message` explicite — l'afficher plutôt que
+Les **409 de transition** sont les plus fréquents à l'usage : une `REPRISE` sans `PAUSE`, une `FIN` sans activité en
+cours, un `DEPART` sur une journée déjà fermée. Ils portent un `message` explicite — l'afficher plutôt que
 le remplacer par un texte générique.
 
 La **saisie concurrente** est le seul 409 qui ne dit rien de la saisie elle-même : elle était valide, mais quelqu'un a

@@ -126,13 +126,35 @@ class JournalDuPupitreTest {
     );
   }
 
+  /**
+   * Demarrer une activite deja en cours la relance : elle reste unique, et repart de l'instant de la relance, comme
+   * dans l'atelier.
+   */
   @Test
-  void shouldGarderLInstantDEntreeQuandUnPointageEstIgnore() {
+  void shouldRelancerUneActiviteDejaEnCours() {
     JournalDuPupitre journal = new JournalDuPupitre(List.of(debut(LE_10_MAI_2026_A_8H), debut(LE_10_MAI_2026_A_12H)));
 
     assertThat(journal.activitesEnCours()).containsExactly(
-      new ActiviteEnCours(ACTIVITE_DUPONT_SUR_FRAISEUSE_1, CategorieDActivite.TRAVAIL, LE_10_MAI_2026_A_8H)
+      new ActiviteEnCours(ACTIVITE_DUPONT_SUR_FRAISEUSE_1, CategorieDActivite.TRAVAIL, LE_10_MAI_2026_A_12H)
     );
+  }
+
+  @Test
+  void shouldRelancerUneNonConformiteDejaEnCours() {
+    JournalDuPupitre journal = new JournalDuPupitre(List.of(nonConformite(LE_10_MAI_2026_A_8H), nonConformite(LE_10_MAI_2026_A_12H)));
+
+    assertThat(journal.activitesEnCours()).containsExactly(
+      new ActiviteEnCours(ACTIVITE_DUPONT_SUR_FRAISEUSE_1, CategorieDActivite.NON_CONFORMITE, LE_10_MAI_2026_A_12H)
+    );
+  }
+
+  @Test
+  void shouldFermerUneActiviteRelancee() {
+    JournalDuPupitre journal = new JournalDuPupitre(
+      List.of(debut(LE_10_MAI_2026_A_8H), debut(LE_10_MAI_2026_A_9H), fin(LE_10_MAI_2026_A_12H))
+    );
+
+    assertThat(journal.activitesEnCours()).isEmpty();
   }
 
   @Test

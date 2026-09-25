@@ -33,9 +33,13 @@ class EtatDActiviteTest {
     assertThat(EtatDActivite.EN_COURS.apres(TypeDePointage.FIN)).contains(EtatDActivite.ABSENTE);
   }
 
+  /**
+   * Demarrer une activite deja en cours la relance : l'operateur qui revient sur un element reste ouvert n'est jamais
+   * bloque.
+   */
   @Test
-  void shouldRefuserDeuxDebutsConsecutifs() {
-    assertThat(EtatDActivite.EN_COURS.apres(TypeDePointage.DEBUT)).isEmpty();
+  void shouldRelancerUneActiviteEnCours() {
+    assertThat(EtatDActivite.EN_COURS.apres(TypeDePointage.DEBUT)).contains(EtatDActivite.EN_COURS);
   }
 
   /**
@@ -52,8 +56,8 @@ class EtatDActiviteTest {
   }
 
   @Test
-  void shouldRefuserDeuxNonConformitesConsecutives() {
-    assertThat(EtatDActivite.EN_NON_CONFORMITE.apres(TypeDePointage.NON_CONFORMITE)).isEmpty();
+  void shouldRelancerUneNonConformiteEnCours() {
+    assertThat(EtatDActivite.EN_NON_CONFORMITE.apres(TypeDePointage.NON_CONFORMITE)).contains(EtatDActivite.EN_NON_CONFORMITE);
   }
 
   @Test

@@ -143,6 +143,38 @@ class JournalDAtelierTest {
       });
   }
 
+  /**
+   * Demarrer une activite deja en cours la relance : deux intervalles contigus, sans trou ni recouvrement, relus comme
+   * l'atelier les a acceptes.
+   */
+  @Test
+  void shouldSplitAtRelanceOfAnActiviteEnCours() {
+    List<IntervalleDActivite> intervalles = new JournalDAtelier(
+      List.of(surFraiseuse(DEBUT, LE_11_MAI_A_9H), surFraiseuse(DEBUT, LE_11_MAI_A_10H), surFraiseuse(FIN, LE_11_MAI_A_11H))
+    ).intervalles(Optional.empty());
+
+    assertThat(intervalles)
+      .extracting(IntervalleDActivite::plage)
+      .containsExactly(new Plage(LE_11_MAI_A_9H, Optional.of(LE_11_MAI_A_10H)), new Plage(LE_11_MAI_A_10H, Optional.of(LE_11_MAI_A_11H)));
+    assertThat(intervalles)
+      .extracting(intervalle -> intervalle.activite().categorie())
+      .containsOnly(CategorieDActivite.TRAVAIL);
+  }
+
+  @Test
+  void shouldSplitAtRelanceOfANonConformiteEnCours() {
+    List<IntervalleDActivite> intervalles = new JournalDAtelier(
+      List.of(surFraiseuse(NON_CONFORMITE, LE_11_MAI_A_9H), surFraiseuse(NON_CONFORMITE, LE_11_MAI_A_10H))
+    ).intervalles(Optional.empty());
+
+    assertThat(intervalles)
+      .extracting(IntervalleDActivite::plage)
+      .containsExactly(new Plage(LE_11_MAI_A_9H, Optional.of(LE_11_MAI_A_10H)), new Plage(LE_11_MAI_A_10H, Optional.empty()));
+    assertThat(intervalles)
+      .extracting(intervalle -> intervalle.activite().categorie())
+      .containsOnly(CategorieDActivite.NON_CONFORMITE);
+  }
+
   private static EvenementDAtelier surFraiseuse(TypeDEvenementDAtelier type, Instant date) {
     return sur(type, POSTE_ID_FRAISEUSE, NATURE_FRAISAGE, date);
   }
