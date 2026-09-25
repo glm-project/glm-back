@@ -1,5 +1,7 @@
 package com.glm.glmback.atelier.domain;
 
+import com.glm.glmback.shared.time.domain.Clock;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,10 +19,18 @@ public final class TempsDAtelierService {
 
   private final SuiviDAtelierRepository suivis;
   private final JourneeDeTravailRepository journees;
+  private final SeuilDAmplitude seuil;
+  private final Clock clock;
 
-  public TempsDAtelierService(SuiviDAtelierRepository suivis, JourneeDeTravailRepository journees) {
+  private TempsDAtelierService(SuiviDAtelierRepository suivis, JourneeDeTravailRepository journees, SeuilDAmplitude seuil, Clock clock) {
     this.suivis = suivis;
     this.journees = journees;
+    this.seuil = seuil;
+    this.clock = clock;
+  }
+
+  public static TempsDAtelierServiceSuivisBuilder builder() {
+    return suivis -> journees -> seuil -> clock -> new TempsDAtelierService(suivis, journees, seuil, clock);
   }
 
   public List<IntervalleDActivite> tempsEffectif(SuiviDAtelierId id) {
@@ -48,11 +58,44 @@ public final class TempsDAtelierService {
       return List.of(intervalle);
     }
 
-    return journee
-      .orElseThrow()
-      .fenetres()
+    return fenetres(journee.orElseThrow())
       .stream()
       .flatMap(fenetre -> intervalle.reduitA(fenetre).stream())
       .toList();
+  }
+
+  /**
+   * Le dernier pointage d'OF de l'operateur n'est cherche que pour une journee abandonnee, la seule qui ait besoin d'une
+   * fin presumee.
+   */
+  private List<FenetreDePresence> fenetres(JourneeDeTravail journee) {
+    Instant maintenant = clock.now();
+    AmplitudeMaximale amplitude = seuil.amplitudeMaximale();
+
+    if (!journee.estAbandonneePour(maintenant, amplitude)) {
+      return journee.fenetres();
+    }
+
+    Optional<Instant> dernierPointage = journee
+      .fenetreDeRecherche(amplitude)
+      .flatMap(recherche -> suivis.dernierPointageDe(journee.operateur(), recherche));
+
+    return journee.fenetresA(maintenant, amplitude, dernierPointage);
+  }
+
+  public interface TempsDAtelierServiceSuivisBuilder {
+    TempsDAtelierServiceJourneesBuilder suivis(SuiviDAtelierRepository suivis);
+  }
+
+  public interface TempsDAtelierServiceJourneesBuilder {
+    TempsDAtelierServiceSeuilBuilder journees(JourneeDeTravailRepository journees);
+  }
+
+  public interface TempsDAtelierServiceSeuilBuilder {
+    TempsDAtelierServiceClockBuilder seuil(SeuilDAmplitude seuil);
+  }
+
+  public interface TempsDAtelierServiceClockBuilder {
+    TempsDAtelierService clock(Clock clock);
   }
 }

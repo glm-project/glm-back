@@ -6,6 +6,7 @@ import com.glm.glmback.coutderevient.domain.ElementId;
 import com.glm.glmback.coutderevient.domain.ElementsValorisables;
 import com.glm.glmback.coutderevient.domain.OccupationDesOperateurs;
 import com.glm.glmback.coutderevient.domain.PresenceDesOperateurs;
+import com.glm.glmback.coutderevient.domain.SeuilDuCout;
 import com.glm.glmback.coutderevient.domain.TravailDeLElement;
 import com.glm.glmback.shared.time.domain.Clock;
 import org.springframework.security.access.annotation.Secured;
@@ -31,6 +32,7 @@ public class CoutsDeRevientApplicationService {
     TravailDeLElement travaux,
     OccupationDesOperateurs occupations,
     PresenceDesOperateurs presences,
+    SeuilDuCout seuil,
     Clock clock
   ) {
     this.coutsDeRevient = CoutsDeRevientService.builder()
@@ -38,6 +40,7 @@ public class CoutsDeRevientApplicationService {
       .travaux(travaux)
       .occupations(occupations)
       .presences(presences)
+      .seuil(seuil)
       .clock(clock);
   }
 

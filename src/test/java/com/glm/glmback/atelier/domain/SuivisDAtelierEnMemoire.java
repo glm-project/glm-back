@@ -49,6 +49,18 @@ class SuivisDAtelierEnMemoire implements SuiviDAtelierRepository {
   }
 
   @Override
+  public Optional<Instant> dernierPointageDe(OperateurId operateur, Periode periode) {
+    return suivis
+      .values()
+      .stream()
+      .flatMap(suivi -> suivi.journal().actifs().stream())
+      .filter(evenement -> evenement.operateur().equals(operateur))
+      .map(EvenementDAtelier::dateDeSurvenue)
+      .filter(periode::contains)
+      .max(Comparator.naturalOrder());
+  }
+
+  @Override
   public Page<SuiviDAtelier> list(SuiviDAtelierCriteria criteria, Pageable pageable) {
     List<SuiviDAtelier> retenus = suivis.values().stream().filter(criteria::matches).sorted(parDateDEngagementDescendante()).toList();
 

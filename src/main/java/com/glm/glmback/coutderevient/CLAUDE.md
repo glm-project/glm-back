@@ -98,7 +98,12 @@ Deux filets tiennent les implémentations alignées :
 
 ## Ports sortants
 
-`ElementsValorisables`, `TravailDeLElement`, `OccupationDesOperateurs`, `PresenceDesOperateurs`, `Clock`.
+`ElementsValorisables`, `TravailDeLElement`, `OccupationDesOperateurs`, `PresenceDesOperateurs`, `SeuilDuCout`,
+`Clock`.
+
+`SeuilDuCout` lit l'amplitude maximale dans la table `parametrage`, par une entité en lecture seule. Avec l'horloge,
+il décide quelles venues sans départ sont abandonnées : elles reçoivent une fin présumée, calculée sur les pointages
+déjà lus pour le rapport, et la nuit n'est jamais valorisée.
 
 `OccupationDesOperateurs` est celui qui n'a pas d'équivalent ailleurs : il rend ce que les opérateurs menaient de
 front **tous éléments confondus**, ce qu'aucune lecture par élément ne pourrait donner. Sa borne est haute

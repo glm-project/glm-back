@@ -690,8 +690,13 @@
           "poste" : {
             "$ref" : "#/components/schemas/RestPosteDAtelier",
             "description" : "Poste de travail, facultatif."
+          },
+          "presume" : {
+            "description" : "Vrai si l'intervalle repose sur une fin de journee presumee : l'operateur n'a pas pointe son depart, et sa\njournee, abandonnee au-dela de l'amplitude maximale, a ete fermee a son dernier fait connu. A confirmer par une\nregularisation du depart.\n",
+            "type" : "boolean"
           }
         },
+        "required" : [ "presume" ],
         "type" : "object"
       },
       "RestJourDeLaSemaine" : {

@@ -1,6 +1,7 @@
 package com.glm.glmback.coutderevient.domain;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -24,6 +25,13 @@ public final class CoutDeRevientFixture {
   public static final Instant LE_11_MAI_A_14H = Instant.parse("2026-05-11T14:00:00Z");
   public static final Instant LE_11_MAI_A_17H = Instant.parse("2026-05-11T17:00:00Z");
   public static final Instant LE_12_MAI_A_8H = Instant.parse("2026-05-12T08:00:00Z");
+  public static final Instant LE_11_MAI_A_15H = Instant.parse("2026-05-11T15:00:00Z");
+  public static final Instant LE_11_MAI_A_21H = Instant.parse("2026-05-11T21:00:00Z");
+  public static final Instant LE_12_MAI_A_7H = Instant.parse("2026-05-12T07:00:00Z");
+  public static final Instant LE_12_MAI_A_9H = Instant.parse("2026-05-12T09:00:00Z");
+  public static final Instant LE_12_MAI_A_10H = Instant.parse("2026-05-12T10:00:00Z");
+  public static final Instant LE_12_MAI_A_18H = Instant.parse("2026-05-12T18:00:00Z");
+  public static final AmplitudeMaximale AMPLITUDE_MAXIMALE_13H = new AmplitudeMaximale(Duration.ofHours(13));
 
   public static final ElementId ELEMENT_ID_OF = new ElementId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
   public static final NomDElement NOM_D_ELEMENT_OF_2026_000001 = new NomDElement("OF-2026-000001");
@@ -72,5 +80,12 @@ public final class CoutDeRevientFixture {
 
   public static JourneeDeTravail journeeOuverteDepuis8H() {
     return new JourneeDeTravail(List.of(arriveeA(LE_11_MAI_A_8H)));
+  }
+
+  /**
+   * Lundi, Dupont arrive a 8 h, prend sa pause de midi et ne pointe jamais son depart.
+   */
+  public static JourneeDeTravail journeeDe8HSansDepart() {
+    return new JourneeDeTravail(List.of(arriveeA(LE_11_MAI_A_8H), pauseA(LE_11_MAI_A_12H), repriseA(LE_11_MAI_A_13H)));
   }
 }

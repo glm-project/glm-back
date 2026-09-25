@@ -47,7 +47,11 @@ class VieDeLAtelierTest {
     .operateurs(ressources.operateurs())
     .seuil(() -> AMPLITUDE_MAXIMALE_13H)
     .clock(maintenant::get);
-  private final TempsDAtelierService temps = new TempsDAtelierService(suivis, journees);
+  private final TempsDAtelierService temps = TempsDAtelierService.builder()
+    .suivis(suivis)
+    .journees(journees)
+    .seuil(() -> AMPLITUDE_MAXIMALE_13H)
+    .clock(maintenant::get);
 
   private SuiviDAtelierId premierOrdre;
   private SuiviDAtelierId secondOrdre;

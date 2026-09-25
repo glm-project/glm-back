@@ -305,6 +305,10 @@ Rend les intervalles bruts **ramenés aux fenêtres de présence** des opérateu
 midi et d'une reprise à 13 h produit **deux** intervalles, alors qu'un seul pointage a eu lieu. Un intervalle sans
 `fin` est encore en cours — c'est un affichage « depuis 8 h 00 », pas une donnée manquante.
 
+Un intervalle **`presume: true`** repose sur une fin de journée présumée : l'opérateur n'a pas pointé son départ, et sa
+journée, abandonnée au-delà de l'amplitude maximale, a été fermée à son dernier fait connu. L'afficher comme « à
+confirmer » ; il redevient pointé dès que le gestionnaire régularise le départ.
+
 ### Présence et paie
 
 `GET /api/atelier/journees/{id}` expose **à la fois** :

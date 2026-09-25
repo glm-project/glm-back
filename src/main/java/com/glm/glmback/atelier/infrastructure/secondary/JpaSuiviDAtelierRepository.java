@@ -1,6 +1,8 @@
 package com.glm.glmback.atelier.infrastructure.secondary;
 
 import com.glm.glmback.atelier.domain.ElementEngageId;
+import com.glm.glmback.atelier.domain.OperateurId;
+import com.glm.glmback.atelier.domain.Periode;
 import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierCriteria;
@@ -11,6 +13,7 @@ import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import jakarta.persistence.criteria.Predicate;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -64,6 +67,11 @@ class JpaSuiviDAtelierRepository implements SuiviDAtelierRepository {
     return suivis
       .findFirstByElementIdAndClotureDateDeSurvenueIsNullOrderByEngagementDateDescIdAsc(element.uuid())
       .map(SuiviDAtelierEntity::toDomain);
+  }
+
+  @Override
+  public Optional<Instant> dernierPointageDe(OperateurId operateur, Periode periode) {
+    return suivis.dernierPointageDe(operateur.uuid(), periode.debut(), periode.fin());
   }
 
   @Override

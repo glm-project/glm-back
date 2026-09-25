@@ -55,7 +55,7 @@ class JourneesDeTravailEnMemoire implements JourneeDeTravailRepository {
       .stream()
       .filter(journee -> journee.operateur().equals(operateur))
       .filter(journee -> journee.contient(instant))
-      .findFirst();
+      .min(parDebutDescendant());
   }
 
   @Override

@@ -327,6 +327,11 @@ public class AtelierSteps {
     assertThatLastResponse().hasResponse().containingExactly(attendus);
   }
 
+  @Then("le temps effectif ne contient aucun intervalle ferme")
+  public void leTempsEffectifNeContientAucunIntervalleFerme() {
+    assertThat(CucumberRestTestContext.countEntries("$[?(@.fin)]")).isZero();
+  }
+
   @Then("le temps effectif ne contient aucun intervalle ouvert")
   public void leTempsEffectifNeContientAucunIntervalleOuvert() {
     assertThat(CucumberRestTestContext.countEntries("$[?(!@.fin)]")).isZero();

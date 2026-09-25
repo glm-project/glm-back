@@ -677,3 +677,80 @@ Feature: Suivi des elements engages en atelier
       | fraiseuse-1   | 2026-05-10T08:00:00Z | 2026-05-10T12:00:00Z |
       | fraiseuse-1   | 2026-05-10T13:00:00Z | 2026-05-10T17:00:00Z |
       | fraiseuse-1   | 2026-05-11T07:05:00Z | 2026-05-11T10:00:00Z |
+
+  Scenario: Le temps d'un ordre s'arrete a la fin presumee d'une journee abandonnee
+    # E2 de la strategie « bornes de fin de journee », lot 4 : Dupont part lundi sans rien pointer. Lu mardi, l'OF 47
+    # s'arrete au dernier fait connu de lundi, la fin de l'OF 48 a 16:00. La nuit n'est plus comptee, et ce qui repose
+    # sur la presomption est marque comme tel.
+    Given il est "2026-05-10T07:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 47"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 2047                 |
+    And l'entreprise a cree l'element de fabrication "OF 48"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 2048                 |
+    And j'ai engage l'element "OF 47" en atelier
+    And j'ai engage l'element "OF 48" en atelier
+    And je suis arrive
+      | operateur | dupont |
+    Given il est "2026-05-10T08:00:00Z"
+    And j'ai pointe sur "OF 47"
+      | type      | DEBUT       |
+      | operateur | dupont      |
+      | poste     | fraiseuse-1 |
+    Given il est "2026-05-10T09:00:00Z"
+    And j'ai pointe sur "OF 48"
+      | type      | DEBUT       |
+      | operateur | dupont      |
+      | poste     | fraiseuse-2 |
+    Given il est "2026-05-10T12:00:00Z"
+    And j'ai pointe ma presence
+      | operateur | dupont |
+      | type      | PAUSE  |
+    Given il est "2026-05-10T13:00:00Z"
+    And j'ai pointe ma presence
+      | operateur | dupont  |
+      | type      | REPRISE |
+    Given il est "2026-05-10T16:00:00Z"
+    And j'ai pointe sur "OF 48"
+      | type      | FIN         |
+      | operateur | dupont      |
+      | poste     | fraiseuse-2 |
+
+    Given il est "2026-05-11T06:00:00Z"
+    When je consulte le temps effectif de "OF 47"
+    Then le temps effectif contient
+      | poste.libelle | debut                | fin                  | presume |
+      | fraiseuse-1   | 2026-05-10T08:00:00Z | 2026-05-10T12:00:00Z | false   |
+      | fraiseuse-1   | 2026-05-10T13:00:00Z | 2026-05-10T16:00:00Z | true    |
+
+    # Le gestionnaire regularise le depart : le pointe remplace le presume.
+    Given il est "2026-05-11T09:15:00Z"
+    And j'ai regularise ma journee
+      | type           | DEPART               |
+      | dateDeSurvenue | 2026-05-10T17:00:00Z |
+    When je consulte le temps effectif de "OF 47"
+    Then le temps effectif contient
+      | poste.libelle | debut                | fin                  | presume |
+      | fraiseuse-1   | 2026-05-10T08:00:00Z | 2026-05-10T12:00:00Z | false   |
+      | fraiseuse-1   | 2026-05-10T13:00:00Z | 2026-05-10T17:00:00Z | false   |
+
+  Scenario: Une journee encore sous le seuil laisse le travail en cours
+    Given il est "2026-05-10T07:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 49"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 2049                 |
+    And j'ai engage l'element "OF 49" en atelier
+    And je suis arrive
+      | operateur | dupont |
+    Given il est "2026-05-10T08:00:00Z"
+    And j'ai pointe sur "OF 49"
+      | type      | DEBUT       |
+      | operateur | dupont      |
+      | poste     | fraiseuse-1 |
+    Given il est "2026-05-10T19:00:00Z"
+    When je consulte le temps effectif de "OF 49"
+    Then le temps effectif contient
+      | poste.libelle | debut                | presume |
+      | fraiseuse-1   | 2026-05-10T08:00:00Z | false   |
+    And le temps effectif ne contient aucun intervalle ferme
