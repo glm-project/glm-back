@@ -47,11 +47,14 @@ avec `DecoupageCalendaire`.
   tous deux, silencieusement — ni exception, ni marqueur exposé. Aucun flag `valide`/anomalie n'existe dans ce
   contexte : il aurait toujours valu vrai, ce cas étant prouvé inatteignable par l'API (voir plus bas), donc aucune
   information à porter.
-- **Une fenêtre encore ouverte ne contribue rien à la durée.** Sans départ pointé et sans horloge dans ce contexte,
-  aucune extrapolation jusqu'à « maintenant » n'est possible — transposition de la règle que `feuilledetemps`
-  applique déjà à l'affichage d'une plage ouverte.
-- **La semaine est toujours explicite.** Aucune « semaine courante » implicite, donc **aucune horloge** dans ce
-  contexte : deux appels identiques rendent toujours la même chose.
+- **Une fenêtre encore ouverte ne contribue rien à la durée.** Une journée sans départ sous le seuil est en cours :
+  aucune extrapolation jusqu'à « maintenant ».
+- **Une journée abandonnée compte jusqu'à sa fin présumée, à part.** Au-delà du seuil, sa dernière fenêtre se ferme
+  au dernier fait connu et sa durée va dans `dureePresumee`, jamais dans `duree`. Le seuil vient de `SeuilDAmplitude`
+  (table `parametrage`), le dernier pointage d'OF de `PointagesDAtelier` (table `evenement_d_atelier`), interrogé
+  pour une journée abandonnée seulement.
+- **La semaine est toujours explicite.** Aucune « semaine courante » implicite. L'horloge ne sert qu'à juger
+  l'abandon d'une journée : deux appels espacés peuvent donc différer.
 - **Aucun import de `atelier`, `feuilledetemps`, `operateur` ni `postedetravail`**, tous annotés `@BusinessContext`.
   Ce contexte déclare ses propres entités JPA `@Immutable` sur leurs tables.
 
@@ -87,7 +90,8 @@ prouvé au niveau domaine. Le test unitaire reste la bonne échelle pour ce cas 
 
 ## Ports sortants
 
-`PresenceDeLOperateur`, `OperateursConnus`, `FuseauHoraireDeLEntreprise`, implémentés par
+`PresenceDeLOperateur`, `OperateursConnus`, `FuseauHoraireDeLEntreprise`, `SeuilDAmplitude`, `PointagesDAtelier`,
+`Clock`, implémentés par
 `infrastructure/secondary` sur les mêmes tables que `feuilledetemps` (`evenement_de_presence`, `journee_de_travail`,
 `operateur`) — troisième lecteur de ces tables après `atelier` (propriétaire) et `feuilledetemps`.
 

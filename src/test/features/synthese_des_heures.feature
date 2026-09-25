@@ -65,6 +65,47 @@ Feature: Synthese des heures hebdomadaire d'un operateur
       | ARRIVEE | 2026-05-15T06:00:00Z |
     And le jour "2026-05-15" a une duree de "PT0S"
 
+  Scenario: Une journee abandonnee separe ses heures pointees de ses heures presumees
+    # E2 de la strategie « bornes de fin de journee », lot 5 : lundi, Dupont part sans pointer son depart. Lu mardi,
+    # sa journee s'arrete a son dernier fait connu, un ordre demarre a 16 h : 5 h pointees, 3 h presumees.
+    Given "dupont" pointe son arrivee a "2026-05-11T05:00:00Z"
+    And "dupont" enregistre le pointage "PAUSE" a "2026-05-11T10:00:00Z"
+    And "dupont" enregistre le pointage "REPRISE" a "2026-05-11T11:00:00Z"
+    And "dupont" demarre un ordre de fabrication a "2026-05-11T14:00:00Z"
+    And il est "2026-05-12T08:00:00Z"
+    When je consulte la synthese des heures de "dupont" pour la semaine 20 de 2026
+    Then la reponse a le statut http 200
+    And le jour "2026-05-11" a une duree de "PT5H"
+    And le jour "2026-05-11" a une duree presumee de "PT3H"
+    And la duree totale de la semaine est "PT5H"
+    And la duree presumee totale de la semaine est "PT3H"
+    # Le gestionnaire regularise le depart a 17 h : le pointe remplace le presume.
+    Given le gestionnaire regularise le depart de "dupont" a "2026-05-11T15:00:00Z"
+    When je consulte la synthese des heures de "dupont" pour la semaine 20 de 2026
+    Then le jour "2026-05-11" a une duree de "PT9H"
+    And le jour "2026-05-11" a une duree presumee de "PT0S"
+    And la duree presumee totale de la semaine est "PT0S"
+
+  Scenario: Un poste de nuit oublie ne presume que ses cinq premieres minutes
+    # E3 : arrive a 20 h, un ordre demarre a 20 h 05, rien d'autre. La fin presumee n'invente aucune heure.
+    Given "dupont" pointe son arrivee a "2026-05-11T18:00:00Z"
+    And "dupont" demarre un ordre de fabrication a "2026-05-11T18:05:00Z"
+    And il est "2026-05-12T18:00:00Z"
+    When je consulte la synthese des heures de "dupont" pour la semaine 20 de 2026
+    Then le jour "2026-05-11" a une duree de "PT0S"
+    And le jour "2026-05-11" a une duree presumee de "PT5M"
+
+  Scenario: Un poste de nuit du dimanche au lundi se partage entre deux semaines
+    # E7 : minuit a Paris, 22:00Z, coupe la venue ; le dimanche releve de la semaine 19, le lundi de la semaine 20.
+    Given "dupont" pointe son arrivee a "2026-05-10T18:00:00Z"
+    And "dupont" enregistre le pointage "DEPART" a "2026-05-11T06:00:00Z"
+    When je consulte la synthese des heures de "dupont" pour la semaine 19 de 2026
+    Then le jour "2026-05-10" a une duree de "PT4H"
+    And la duree totale de la semaine est "PT4H"
+    When je consulte la synthese des heures de "dupont" pour la semaine 20 de 2026
+    Then le jour "2026-05-11" a une duree de "PT8H"
+    And la duree totale de la semaine est "PT8H"
+
   Scenario: Une synthese ne se lit pas pour un operateur inconnu
     When je consulte la synthese des heures de l'operateur "11111111-2222-3333-4444-555555555555" pour la semaine 20 de 2026
     Then la reponse a le statut http 404

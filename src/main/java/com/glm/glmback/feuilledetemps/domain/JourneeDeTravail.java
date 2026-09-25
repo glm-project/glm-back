@@ -21,20 +21,95 @@ import java.util.Optional;
  * la requete, jamais a reconstruire la presence.
  * </p>
  */
-public record JourneeDeTravail(List<EvenementDePresence> journal) {
-  private static final Comparator<EvenementDePresence> PAR_ORDRE_CHRONOLOGIQUE = Comparator.comparing(EvenementDePresence::dateDeSurvenue);
+public record JourneeDeTravail(List<EvenementDePresence> journal, Optional<Instant> finPresumee) {
+  /**
+   * A instant egal, l'arrivee passe devant : l'arrivee implicite d'un geste tardif partage l'heure de ce geste, et la
+   * base les rend sans les departager.
+   */
+  private static final Comparator<EvenementDePresence> PAR_ORDRE_CHRONOLOGIQUE = Comparator.comparing(
+    EvenementDePresence::dateDeSurvenue
+  ).thenComparing(EvenementDePresence::type);
 
   public JourneeDeTravail {
     Assert.field("journal", journal).notNull().noNullElement();
+    Assert.notNull("fin presumee", finPresumee);
     journal = journal.stream().sorted(PAR_ORDRE_CHRONOLOGIQUE).toList();
     fenetres(journal);
+  }
+
+  public JourneeDeTravail(List<EvenementDePresence> journal) {
+    this(journal, Optional.empty());
+  }
+
+  /**
+   * Vrai si la journee, toujours sans depart, a depasse le seuil a cet instant : son amplitude depuis l'arrivee,
+   * pauses comprises, est strictement superieure au seuil.
+   */
+  public boolean estAbandonneePour(Instant instant, AmplitudeMaximale seuil) {
+    return !estFermee() && fenetreDeRecherche(seuil).flatMap(Plage::fin).filter(instant::isAfter).isPresent();
+  }
+
+  /**
+   * De l'arrivee a l'arrivee plus le seuil : la ou se cherche le dernier fait connu d'une journee abandonnee.
+   */
+  public Optional<Plage> fenetreDeRecherche(AmplitudeMaximale seuil) {
+    return premierFait().map(arrivee -> new Plage(arrivee, Optional.of(arrivee.plus(seuil.value()))));
+  }
+
+  /**
+   * La meme journee, fermee a sa fin presumee : son dernier fait de presence, ou le dernier pointage d'OF s'il est
+   * plus tardif et tombe dans la fenetre de recherche. Sa derniere fenetre ouverte, s'il y en a une, devient presumee.
+   */
+  public JourneeDeTravail presumee(AmplitudeMaximale seuil, Optional<Instant> dernierPointage) {
+    Optional<Plage> recherche = fenetreDeRecherche(seuil);
+    if (recherche.isEmpty()) {
+      return this;
+    }
+
+    Instant dernierFait = dernierFait().orElseThrow();
+    Instant fin = dernierPointage
+      .filter(recherche.orElseThrow()::contient)
+      .filter(pointage -> pointage.isAfter(dernierFait))
+      .orElse(dernierFait);
+
+    return new JourneeDeTravail(journal, Optional.of(fin));
   }
 
   /**
    * Les intervalles ou l'operateur etait present et non en pause, dans l'ordre.
    */
   public List<Plage> fenetres() {
-    return fenetres(journal);
+    return presumees(fenetres(journal));
+  }
+
+  private List<Plage> presumees(List<Plage> fenetres) {
+    return fenetres
+      .stream()
+      .map(fenetre ->
+        finPresumee
+          .filter(fin -> fenetre.estOuverte())
+          .map(fin -> new Plage(fenetre.debut(), Optional.of(fin), true))
+          .orElse(fenetre)
+      )
+      .toList();
+  }
+
+  private boolean estFermee() {
+    return dernier()
+      .filter(evenement -> evenement.type() == TypeDEvenementDePresence.DEPART)
+      .isPresent();
+  }
+
+  private Optional<Instant> premierFait() {
+    return journal.stream().findFirst().map(EvenementDePresence::dateDeSurvenue);
+  }
+
+  private Optional<Instant> dernierFait() {
+    return dernier().map(EvenementDePresence::dateDeSurvenue);
+  }
+
+  private Optional<EvenementDePresence> dernier() {
+    return journal.stream().reduce((precedent, suivant) -> suivant);
   }
 
   private static List<Plage> fenetres(List<EvenementDePresence> evenements) {

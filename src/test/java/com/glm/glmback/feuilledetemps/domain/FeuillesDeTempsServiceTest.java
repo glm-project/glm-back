@@ -16,10 +16,11 @@ class FeuillesDeTempsServiceTest {
   private static final OperateursConnus REFERENTIEL = id ->
     Optional.of(OPERATEUR_CONNU_DUPONT).filter(operateur -> operateur.id().equals(id));
   private static final FuseauHoraireDeLEntreprise A_PARIS = () -> ZONE_PARIS;
+  private static final PointagesDAtelier AUCUN_POINTAGE = (operateur, periode) -> Optional.empty();
 
   @Test
   void shouldNotLireLHistoriqueDUnOperateurInconnu() {
-    FeuillesDeTempsService service = new FeuillesDeTempsService(PresencesEnMemoire.sansJournee(), REFERENTIEL, A_PARIS);
+    FeuillesDeTempsService service = service(PresencesEnMemoire.sansJournee(), AUCUN_POINTAGE, LE_MARDI_12_MAI_2026_A_10H);
 
     assertThatThrownBy(() -> service.historique(OPERATEUR_ID_MARTIN, SEMAINE_20_DE_2026))
       .isExactlyInstanceOf(OperateurInconnuException.class)
@@ -128,8 +129,64 @@ class FeuillesDeTempsServiceTest {
       .containsExactly(LE_MARDI_12_MAI_2026_A_MINUIT, LE_MARDI_12_MAI_2026_A_8H);
   }
 
+  /**
+   * E2 : lundi sans depart, lu mardi. La journee s'arrete a la fin de l'OF 43 a 16:00, et la derniere plage le dit.
+   */
+  @Test
+  void shouldSignalerLaPlagePresumeeDUneJourneeAbandonnee() {
+    FeuilleDeTemps feuille = service(
+      PresencesEnMemoire.avec(List.of(journeeDuLundiDe7HSansDepart())),
+      (operateur, periode) -> Optional.of(LE_LUNDI_11_MAI_2026_A_16H),
+      LE_MARDI_12_MAI_2026_A_10H
+    ).historique(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
+
+    assertThat(presenceDu(feuille, LUNDI_11_MAI_2026)).containsExactly(
+      new Plage(LE_LUNDI_11_MAI_2026_A_7H, Optional.of(LE_LUNDI_11_MAI_2026_A_12H)),
+      new Plage(LE_LUNDI_11_MAI_2026_A_13H, Optional.of(LE_LUNDI_11_MAI_2026_A_16H), true)
+    );
+  }
+
+  @Test
+  void shouldLaisserOuverteSurSonJourUneJourneeEncoreSousLeSeuil() {
+    FeuilleDeTemps feuille = service(
+      PresencesEnMemoire.avec(List.of(journeeDuLundiDe7HSansDepart())),
+      (operateur, periode) -> {
+        throw new AssertionError("aucun pointage ne doit etre cherche pour une journee en cours");
+      },
+      LE_LUNDI_11_MAI_2026_A_20H
+    ).historique(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
+
+    assertThat(presenceDu(feuille, LUNDI_11_MAI_2026)).last().isEqualTo(new Plage(LE_LUNDI_11_MAI_2026_A_13H, Optional.empty()));
+  }
+
+  /**
+   * E7 : le poste de nuit du dimanche au lundi se lit sur deux semaines, coupe a minuit a Paris.
+   */
+  @Test
+  void shouldDecouperUnPosteDeNuitSurDeuxSemaines() {
+    PresencesEnMemoire presences = PresencesEnMemoire.avec(List.of(journeeDuDimanche20HAuLundi8H()));
+    FeuillesDeTempsService service = service(presences, AUCUN_POINTAGE, LE_MARDI_12_MAI_2026_A_10H);
+
+    assertThat(presenceDu(service.historique(OPERATEUR_ID_DUPONT, SEMAINE_19_DE_2026), DIMANCHE_10_MAI_2026)).containsExactly(
+      new Plage(LE_DIMANCHE_10_MAI_2026_A_20H, Optional.of(LE_LUNDI_11_MAI_2026_A_MINUIT))
+    );
+    assertThat(presenceDu(service.historique(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026), LUNDI_11_MAI_2026)).containsExactly(
+      new Plage(LE_LUNDI_11_MAI_2026_A_MINUIT, Optional.of(LE_LUNDI_11_MAI_2026_A_8H))
+    );
+  }
+
   private static FeuilleDeTemps historiqueDeDupont(PresencesEnMemoire presences) {
-    return new FeuillesDeTempsService(presences, REFERENTIEL, A_PARIS).historique(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
+    return service(presences, AUCUN_POINTAGE, LE_MARDI_12_MAI_2026_A_10H).historique(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
+  }
+
+  private static FeuillesDeTempsService service(PresencesEnMemoire presences, PointagesDAtelier pointages, Instant maintenant) {
+    return FeuillesDeTempsService.builder()
+      .presences(presences)
+      .operateurs(REFERENTIEL)
+      .fuseau(A_PARIS)
+      .seuil(() -> AMPLITUDE_MAXIMALE_13H)
+      .pointages(pointages)
+      .clock(() -> maintenant);
   }
 
   private static List<Plage> presenceDu(FeuilleDeTemps feuille, LocalDate jour) {

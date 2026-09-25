@@ -1,5 +1,7 @@
 package com.glm.glmback.feuilledetemps.domain;
 
+import com.glm.glmback.shared.time.domain.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
@@ -22,11 +24,30 @@ public final class FeuillesDeTempsService {
   private final PresenceDeLOperateur presences;
   private final OperateursConnus operateurs;
   private final FuseauHoraireDeLEntreprise fuseau;
+  private final SeuilDAmplitude seuil;
+  private final PointagesDAtelier pointages;
+  private final Clock clock;
 
-  public FeuillesDeTempsService(PresenceDeLOperateur presences, OperateursConnus operateurs, FuseauHoraireDeLEntreprise fuseau) {
+  private FeuillesDeTempsService(
+    PresenceDeLOperateur presences,
+    OperateursConnus operateurs,
+    FuseauHoraireDeLEntreprise fuseau,
+    SeuilDAmplitude seuil,
+    PointagesDAtelier pointages,
+    Clock clock
+  ) {
     this.presences = presences;
     this.operateurs = operateurs;
     this.fuseau = fuseau;
+    this.seuil = seuil;
+    this.pointages = pointages;
+    this.clock = clock;
+  }
+
+  public static FeuillesDeTempsServicePresencesBuilder builder() {
+    return presences ->
+      operateurs ->
+        fuseau -> seuil -> pointages -> clock -> new FeuillesDeTempsService(presences, operateurs, fuseau, seuil, pointages, clock);
   }
 
   public FeuilleDeTemps historique(OperateurId operateur, SemaineCalendaire semaine) {
@@ -37,13 +58,29 @@ public final class FeuillesDeTempsService {
   }
 
   private List<PlageDUnJour> presenceDeLaSemaine(OperateurId operateur, DecoupageCalendaire decoupage) {
+    Instant maintenant = clock.now();
+    AmplitudeMaximale amplitude = seuil.amplitudeMaximale();
+
     return presences
       .journeesRecouvrant(operateur, decoupage.debut(), decoupage.finExclusive())
       .stream()
+      .map(journee -> lue(operateur, journee, maintenant, amplitude))
       .flatMap(journee -> journee.fenetres().stream())
       .flatMap(fenetre -> decoupage.plages(fenetre).stream())
       .sorted(PAR_HEURE)
       .toList();
+  }
+
+  /**
+   * La journee telle qu'on la lit maintenant : une journee abandonnee est fermee a sa fin presumee, et le dernier
+   * pointage d'OF de l'operateur n'est demande que pour elle.
+   */
+  private JourneeDeTravail lue(OperateurId operateur, JourneeDeTravail journee, Instant maintenant, AmplitudeMaximale amplitude) {
+    if (!journee.estAbandonneePour(maintenant, amplitude)) {
+      return journee;
+    }
+
+    return journee.presumee(amplitude, pointages.dernierPointage(operateur, journee.fenetreDeRecherche(amplitude).orElseThrow()));
   }
 
   /**
@@ -59,5 +96,29 @@ public final class FeuillesDeTempsService {
       .stream()
       .map(jour -> new JourDeLaSemaine(jour, parJour.getOrDefault(jour, List.of())))
       .toList();
+  }
+
+  public interface FeuillesDeTempsServicePresencesBuilder {
+    FeuillesDeTempsServiceOperateursBuilder presences(PresenceDeLOperateur presences);
+  }
+
+  public interface FeuillesDeTempsServiceOperateursBuilder {
+    FeuillesDeTempsServiceFuseauBuilder operateurs(OperateursConnus operateurs);
+  }
+
+  public interface FeuillesDeTempsServiceFuseauBuilder {
+    FeuillesDeTempsServiceSeuilBuilder fuseau(FuseauHoraireDeLEntreprise fuseau);
+  }
+
+  public interface FeuillesDeTempsServiceSeuilBuilder {
+    FeuillesDeTempsServicePointagesBuilder seuil(SeuilDAmplitude seuil);
+  }
+
+  public interface FeuillesDeTempsServicePointagesBuilder {
+    FeuillesDeTempsServiceClockBuilder pointages(PointagesDAtelier pointages);
+  }
+
+  public interface FeuillesDeTempsServiceClockBuilder {
+    FeuillesDeTempsService clock(Clock clock);
   }
 }

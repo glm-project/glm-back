@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 @UnitTest
@@ -17,10 +18,11 @@ class SynthesesDesHeuresServiceTest {
   private static final OperateursConnus REFERENTIEL = id ->
     Optional.of(OPERATEUR_CONNU_DUPONT).filter(operateur -> operateur.id().equals(id));
   private static final FuseauHoraireDeLEntreprise A_PARIS = () -> ZONE_PARIS;
+  private static final PointagesDAtelier AUCUN_POINTAGE = (operateur, periode) -> Optional.empty();
 
   @Test
   void shouldNotLireLaSyntheseDUnOperateurInconnu() {
-    SynthesesDesHeuresService service = new SynthesesDesHeuresService(PresencesEnMemoire.sansJournee(), REFERENTIEL, A_PARIS);
+    SynthesesDesHeuresService service = service(PresencesEnMemoire.sansJournee(), AUCUN_POINTAGE, LE_MARDI_12_MAI_2026_A_10H);
 
     assertThatThrownBy(() -> service.synthese(OPERATEUR_ID_MARTIN, SEMAINE_20_DE_2026))
       .isExactlyInstanceOf(OperateurInconnuException.class)
@@ -150,8 +152,111 @@ class SynthesesDesHeuresServiceTest {
     assertThat(synthese.dureeTotale()).isEqualTo(Duration.ofHours(8));
   }
 
+  /**
+   * E2 : lundi sans depart, lu mardi. La journee est abandonnee et fermee a sa fin presumee, la fin de l'OF 43 a
+   * 16:00 : 5 h pointees, 3 h presumees.
+   */
+  @Test
+  void shouldSeparerLesHeuresPointeesDesHeuresPresumees() {
+    AtomicReference<Plage> recherche = new AtomicReference<>();
+    PointagesDAtelier finDeLOf43 = (operateur, periode) -> {
+      recherche.set(periode);
+      return Optional.of(LE_LUNDI_11_MAI_2026_A_16H);
+    };
+
+    SyntheseDesHeures synthese = service(
+      PresencesEnMemoire.avec(List.of(journeeDuLundiDe7HSansDepart())),
+      finDeLOf43,
+      LE_MARDI_12_MAI_2026_A_10H
+    ).synthese(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
+
+    JourDeSynthese lundi = jourDe(synthese, LUNDI_11_MAI_2026);
+    assertThat(lundi.duree()).isEqualTo(Duration.ofHours(5));
+    assertThat(lundi.dureePresumee()).isEqualTo(Duration.ofHours(3));
+    assertThat(synthese.dureeTotale()).isEqualTo(Duration.ofHours(5));
+    assertThat(synthese.dureePresumeeTotale()).isEqualTo(Duration.ofHours(3));
+    assertThat(recherche.get()).isEqualTo(new Plage(LE_LUNDI_11_MAI_2026_A_7H, Optional.of(LE_LUNDI_11_MAI_2026_A_20H)));
+  }
+
+  /**
+   * E3 : le poste de nuit oublie ne laisse que son arrivee et un debut d'OF cinq minutes plus tard.
+   */
+  @Test
+  void shouldPresumerCinqMinutesAUnPosteDeNuitOublie() {
+    JourneeDeTravail nuit = new JourneeDeTravail(List.of(arriveeA(LE_LUNDI_11_MAI_2026_A_20H)));
+
+    SyntheseDesHeures synthese = service(
+      PresencesEnMemoire.avec(List.of(nuit)),
+      (operateur, periode) -> Optional.of(LE_LUNDI_11_MAI_2026_A_20H05),
+      LE_MARDI_12_MAI_2026_A_20H
+    ).synthese(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
+
+    assertThat(jourDe(synthese, LUNDI_11_MAI_2026).duree()).isZero();
+    assertThat(jourDe(synthese, LUNDI_11_MAI_2026).dureePresumee()).isEqualTo(Duration.ofMinutes(5));
+  }
+
+  @Test
+  void shouldNeRienPresumerDUneJourneeEncoreSousLeSeuil() {
+    SyntheseDesHeures synthese = service(
+      PresencesEnMemoire.avec(List.of(journeeDuLundiDe7HSansDepart())),
+      (operateur, periode) -> {
+        throw new AssertionError("aucun pointage ne doit etre cherche pour une journee en cours");
+      },
+      LE_LUNDI_11_MAI_2026_A_20H
+    ).synthese(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
+
+    assertThat(jourDe(synthese, LUNDI_11_MAI_2026).duree()).isEqualTo(Duration.ofHours(5));
+    assertThat(jourDe(synthese, LUNDI_11_MAI_2026).dureePresumee()).isZero();
+  }
+
+  @Test
+  void shouldNeRienPresumerDUneJourneeFermee() {
+    SyntheseDesHeures synthese = service(
+      PresencesEnMemoire.avec(List.of(journeeDuLundiDe8HA17HAvecPauseDeMidi())),
+      (operateur, periode) -> {
+        throw new AssertionError("aucun pointage ne doit etre cherche pour une journee fermee");
+      },
+      LE_MARDI_12_MAI_2026_A_20H
+    ).synthese(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
+
+    assertThat(synthese.dureeTotale()).isEqualTo(Duration.ofHours(8));
+    assertThat(synthese.dureePresumeeTotale()).isZero();
+  }
+
+  /**
+   * E7 : le poste de nuit du dimanche au lundi se partage entre deux semaines de releve, a minuit a Paris.
+   */
+  @Test
+  void shouldDecouperUnPosteDeNuitSurDeuxSemaines() {
+    PresencesEnMemoire presences = PresencesEnMemoire.avec(List.of(journeeDuDimanche20HAuLundi8H()));
+
+    SyntheseDesHeures semaine19 = service(presences, AUCUN_POINTAGE, LE_MARDI_12_MAI_2026_A_10H).synthese(
+      OPERATEUR_ID_DUPONT,
+      SEMAINE_19_DE_2026
+    );
+    SyntheseDesHeures semaine20 = service(presences, AUCUN_POINTAGE, LE_MARDI_12_MAI_2026_A_10H).synthese(
+      OPERATEUR_ID_DUPONT,
+      SEMAINE_20_DE_2026
+    );
+
+    assertThat(jourDe(semaine19, DIMANCHE_10_MAI_2026).duree()).isEqualTo(Duration.ofHours(4));
+    assertThat(semaine19.dureeTotale()).isEqualTo(Duration.ofHours(4));
+    assertThat(jourDe(semaine20, LUNDI_11_MAI_2026).duree()).isEqualTo(Duration.ofHours(8));
+    assertThat(semaine20.dureeTotale()).isEqualTo(Duration.ofHours(8));
+  }
+
   private static SyntheseDesHeures syntheseDeDupont(PresencesEnMemoire presences) {
-    return new SynthesesDesHeuresService(presences, REFERENTIEL, A_PARIS).synthese(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
+    return service(presences, AUCUN_POINTAGE, LE_MARDI_12_MAI_2026_A_10H).synthese(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
+  }
+
+  private static SynthesesDesHeuresService service(PresencesEnMemoire presences, PointagesDAtelier pointages, Instant maintenant) {
+    return SynthesesDesHeuresService.builder()
+      .presences(presences)
+      .operateurs(REFERENTIEL)
+      .fuseau(A_PARIS)
+      .seuil(() -> AMPLITUDE_MAXIMALE_13H)
+      .pointages(pointages)
+      .clock(() -> maintenant);
   }
 
   private static JourDeSynthese jourDe(SyntheseDesHeures synthese, LocalDate jour) {

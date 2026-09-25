@@ -32,6 +32,8 @@ public class SyntheseDesHeuresSteps {
   private static final String OPERATEURS_URI = "/api/operateurs";
   private static final String JOURNEES_URI = "/api/atelier/journees";
   private static final String SYNTHESES_URI = "/api/syntheses-des-heures";
+  private static final String ELEMENTS_URI = "/api/elements-de-fabrication";
+  private static final String SUIVIS_URI = "/api/atelier/suivis";
   private static final ObjectMapper JSON = JsonMapper.builder().build();
   private static final AtomicInteger SEQUENCE = new AtomicInteger();
 
@@ -42,6 +44,7 @@ public class SyntheseDesHeuresSteps {
   private CucumberClock horloge;
 
   private final Map<String, String> operateurs = new HashMap<>();
+  private final Map<String, String> journees = new HashMap<>();
 
   @Given("la synthese des heures suit l'operateur {string}")
   public void laSyntheseDesHeuresSuitLOperateur(String alias) {
@@ -54,6 +57,33 @@ public class SyntheseDesHeuresSteps {
   public void pointeSonArriveeA(String alias, String instant) {
     horloge.ilEst(Instant.parse(instant));
     rest.post(JOURNEES_URI, JSON.writeValueAsString(Map.of("id", UUID.randomUUID(), "operateur", operateurs.get(alias))));
+    journees.put(alias, String.valueOf(CucumberRestTestContext.getElement("$.id")));
+  }
+
+  /**
+   * Un ordre cree, engage et demarre a cet instant par l'operateur : de quoi donner a une journee abandonnee un
+   * dernier fait connu d'atelier, que le releve doit retrouver pour presumer sa fin.
+   */
+  @Given("{string} demarre un ordre de fabrication a {string}")
+  public void demarreUnOrdreDeFabricationA(String alias, String instant) {
+    horloge.ilEst(Instant.parse(instant));
+    Map<String, Object> element = Map.of("type", "ORDRE_DE_FABRICATION", "reference", "SYNTHESE-" + SEQUENCE.incrementAndGet());
+    rest.post(ELEMENTS_URI, JSON.writeValueAsString(element));
+    rest.post(SUIVIS_URI, JSON.writeValueAsString(Map.of("element", String.valueOf(CucumberRestTestContext.getElement("$.id")))));
+    String suivi = String.valueOf(CucumberRestTestContext.getElement("$.id"));
+    rest.post(
+      SUIVIS_URI + "/" + suivi + "/pointages",
+      JSON.writeValueAsString(Map.of("id", UUID.randomUUID(), "type", "DEBUT", "operateur", operateurs.get(alias)))
+    );
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage de l'ordre doit etre accepte").isTrue();
+  }
+
+  @Given("le gestionnaire regularise le depart de {string} a {string}")
+  public void leGestionnaireRegulariseLeDepartDeA(String alias, String instant) {
+    rest.post(
+      JOURNEES_URI + "/" + journees.get(alias) + "/regularisations",
+      JSON.writeValueAsString(Map.of("type", "DEPART", "dateDeSurvenue", instant))
+    );
   }
 
   @Given("{string} enregistre le pointage {string} a {string}")
@@ -105,6 +135,16 @@ public class SyntheseDesHeuresSteps {
   @Then("le jour {string} a une duree de {string}")
   public void leJourADuneDureeDe(String jour, String duree) {
     assertThat(jourDe(jour).get("duree")).isEqualTo(duree);
+  }
+
+  @Then("le jour {string} a une duree presumee de {string}")
+  public void leJourAUneDureePresumeeDe(String jour, String duree) {
+    assertThat(jourDe(jour).get("dureePresumee")).isEqualTo(duree);
+  }
+
+  @Then("la duree presumee totale de la semaine est {string}")
+  public void laDureePresumeeTotaleDeLaSemaineEst(String duree) {
+    assertThat(CucumberRestTestContext.getElement("$.dureePresumeeTotale")).isEqualTo(duree);
   }
 
   @Then("la duree totale de la semaine est {string}")

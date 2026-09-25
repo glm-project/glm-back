@@ -13,11 +13,26 @@ import java.util.Optional;
  * n'est simplement pas encore parti.
  * </p>
  */
-public record Plage(Instant debut, Optional<Instant> fin) {
+public record Plage(Instant debut, Optional<Instant> fin, boolean presumee) {
   public Plage {
     Assert.notNull("debut", debut);
     Assert.notNull("fin", fin);
     fin.ifPresent(date -> Assert.field("fin", date).afterOrAt(debut));
+  }
+
+  /**
+   * Une plage pointee : ses bornes sont des faits de presence. Seule la fin presumee d'une journee abandonnee en
+   * produit une presumee.
+   */
+  public Plage(Instant debut, Optional<Instant> fin) {
+    this(debut, fin, false);
+  }
+
+  /**
+   * Vrai si l'instant tombe dans la plage, bornes comprises. Une plage ouverte n'a pas de borne haute.
+   */
+  public boolean contient(Instant instant) {
+    return !instant.isBefore(debut) && fin.filter(instant::isAfter).isEmpty();
   }
 
   public boolean estOuverte() {

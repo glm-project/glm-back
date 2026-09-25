@@ -5,8 +5,11 @@ import com.glm.glmback.feuilledetemps.domain.FeuillesDeTempsService;
 import com.glm.glmback.feuilledetemps.domain.FuseauHoraireDeLEntreprise;
 import com.glm.glmback.feuilledetemps.domain.OperateurId;
 import com.glm.glmback.feuilledetemps.domain.OperateursConnus;
+import com.glm.glmback.feuilledetemps.domain.PointagesDAtelier;
 import com.glm.glmback.feuilledetemps.domain.PresenceDeLOperateur;
 import com.glm.glmback.feuilledetemps.domain.SemaineCalendaire;
+import com.glm.glmback.feuilledetemps.domain.SeuilDAmplitude;
+import com.glm.glmback.shared.time.domain.Clock;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,8 +28,21 @@ public class FeuillesDeTempsApplicationService {
 
   private final FeuillesDeTempsService feuillesDeTemps;
 
-  public FeuillesDeTempsApplicationService(PresenceDeLOperateur presences, OperateursConnus operateurs, FuseauHoraireDeLEntreprise fuseau) {
-    this.feuillesDeTemps = new FeuillesDeTempsService(presences, operateurs, fuseau);
+  public FeuillesDeTempsApplicationService(
+    PresenceDeLOperateur presences,
+    OperateursConnus operateurs,
+    FuseauHoraireDeLEntreprise fuseau,
+    SeuilDAmplitude seuil,
+    PointagesDAtelier pointages,
+    Clock clock
+  ) {
+    this.feuillesDeTemps = FeuillesDeTempsService.builder()
+      .presences(presences)
+      .operateurs(operateurs)
+      .fuseau(fuseau)
+      .seuil(seuil)
+      .pointages(pointages)
+      .clock(clock);
   }
 
   /**

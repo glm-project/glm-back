@@ -1,5 +1,6 @@
 package com.glm.glmback.feuilledetemps.domain;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -19,6 +20,16 @@ public final class FeuilleDeTempsFixture {
   public static final LocalDate MARDI_12_MAI_2026 = LocalDate.of(2026, 5, 12);
   public static final LocalDate MERCREDI_13_MAI_2026 = LocalDate.of(2026, 5, 13);
 
+  public static final SemaineCalendaire SEMAINE_19_DE_2026 = new SemaineCalendaire(2026, 19);
+  public static final LocalDate DIMANCHE_10_MAI_2026 = LocalDate.of(2026, 5, 10);
+  public static final AmplitudeMaximale AMPLITUDE_MAXIMALE_13H = new AmplitudeMaximale(Duration.ofHours(13));
+  public static final Instant LE_DIMANCHE_10_MAI_2026_A_20H = aParis(10, 20);
+  public static final Instant LE_LUNDI_11_MAI_2026_A_MINUIT = aParis(11, 0);
+  public static final Instant LE_LUNDI_11_MAI_2026_A_7H = aParis(11, 7);
+  public static final Instant LE_LUNDI_11_MAI_2026_A_16H = aParis(11, 16);
+  public static final Instant LE_LUNDI_11_MAI_2026_A_20H = aParis(11, 20);
+  public static final Instant LE_MARDI_12_MAI_2026_A_10H = aParis(12, 10);
+  public static final Instant LE_MARDI_12_MAI_2026_A_20H = aParis(12, 20);
   public static final Instant LE_DIMANCHE_10_MAI_2026_A_8H = aParis(10, 8);
   public static final Instant LE_DIMANCHE_10_MAI_2026_A_17H = aParis(10, 17);
   public static final Instant LE_LUNDI_11_MAI_2026_A_8H = aParis(11, 8);
@@ -76,6 +87,22 @@ public final class FeuilleDeTempsFixture {
 
   public static JourneeDeTravail journeeDuMardiOuverteA8H() {
     return new JourneeDeTravail(List.of(arriveeA(LE_MARDI_12_MAI_2026_A_8H)));
+  }
+
+  /**
+   * E2 : lundi, Dupont arrive a 7 h, prend sa pause de midi et part sans pointer son depart.
+   */
+  public static JourneeDeTravail journeeDuLundiDe7HSansDepart() {
+    return new JourneeDeTravail(
+      List.of(arriveeA(LE_LUNDI_11_MAI_2026_A_7H), pauseA(LE_LUNDI_11_MAI_2026_A_12H), repriseA(LE_LUNDI_11_MAI_2026_A_13H))
+    );
+  }
+
+  /**
+   * E7 : un poste de nuit du dimanche 20 h au lundi 8 h, a cheval sur deux semaines.
+   */
+  public static JourneeDeTravail journeeDuDimanche20HAuLundi8H() {
+    return new JourneeDeTravail(List.of(arriveeA(LE_DIMANCHE_10_MAI_2026_A_20H), departA(LE_LUNDI_11_MAI_2026_A_8H)));
   }
 
   private static Instant aParis(int jourDeMai, int heure) {

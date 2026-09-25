@@ -13,10 +13,11 @@ import java.util.List;
  * manque une journee ou si l'operateur n'etait pas la.
  * </p>
  */
-public record JourDeSynthese(LocalDate jour, List<EvenementDePresence> pointages, Duration duree) {
+public record JourDeSynthese(LocalDate jour, List<EvenementDePresence> pointages, Duration duree, Duration dureePresumee) {
   public JourDeSynthese {
     Assert.notNull("jour", jour);
     Assert.field("pointages", pointages).notNull().noNullElement();
     Assert.notNull("duree", duree);
+    Assert.notNull("duree presumee", dureePresumee);
   }
 }

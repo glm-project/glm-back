@@ -1,10 +1,13 @@
 package com.glm.glmback.syntheseheures.application;
 
+import com.glm.glmback.shared.time.domain.Clock;
 import com.glm.glmback.syntheseheures.domain.FuseauHoraireDeLEntreprise;
 import com.glm.glmback.syntheseheures.domain.OperateurId;
 import com.glm.glmback.syntheseheures.domain.OperateursConnus;
+import com.glm.glmback.syntheseheures.domain.PointagesDAtelier;
 import com.glm.glmback.syntheseheures.domain.PresenceDeLOperateur;
 import com.glm.glmback.syntheseheures.domain.SemaineCalendaire;
+import com.glm.glmback.syntheseheures.domain.SeuilDAmplitude;
 import com.glm.glmback.syntheseheures.domain.SyntheseDesHeures;
 import com.glm.glmback.syntheseheures.domain.SynthesesDesHeuresService;
 import org.springframework.security.access.annotation.Secured;
@@ -28,9 +31,18 @@ public class SynthesesDesHeuresApplicationService {
   public SynthesesDesHeuresApplicationService(
     PresenceDeLOperateur presences,
     OperateursConnus operateurs,
-    FuseauHoraireDeLEntreprise fuseau
+    FuseauHoraireDeLEntreprise fuseau,
+    SeuilDAmplitude seuil,
+    PointagesDAtelier pointages,
+    Clock clock
   ) {
-    this.synthesesDesHeures = new SynthesesDesHeuresService(presences, operateurs, fuseau);
+    this.synthesesDesHeures = SynthesesDesHeuresService.builder()
+      .presences(presences)
+      .operateurs(operateurs)
+      .fuseau(fuseau)
+      .seuil(seuil)
+      .pointages(pointages)
+      .clock(clock);
   }
 
   /**

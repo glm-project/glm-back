@@ -147,7 +147,7 @@ L'API est décrite par OpenAPI (`/swagger-ui.html`) et par [atelier-api.md](atel
 6. **Le cycle de vie de l'élément lui-même.** La clôture existe côté atelier, sur le suivi. Reste à trancher si l'élément de fabrication porte en propre un statut, ou si son activité se lit entièrement par la présence ou l'absence d'un suivi non clôturé.
 7. **Aucune garde d'unicité en base** sur « un seul suivi non clôturé par élément », contrairement à ce que `elementdefabrication` fait pour la `Reference`. La règle vit dans le service, mais une contrainte partielle transformerait en 500 un état que le domaine admet aujourd'hui : rouvrir la clôture d'un suivi dont l'élément a été réengagé depuis. À trancher côté domaine avant de poser la contrainte. « Une seule journée ouverte par opérateur » n'est plus une règle : une journée abandonnée reste sans départ pendant que la suivante est ouverte.
 8. **L'écriture du journal rapproche par identifiant**, ce qui coûte une lecture indexée de la collection à chaque pointage. Si un journal devenait assez long pour que cette lecture pèse, la sortie est un upsert natif gardé (`on conflict (id) do update ... where ... is distinct from ...`), qui épargne à PostgreSQL toute version de tuple sur les lignes inchangées — au prix d'une scission permanente entre lecture JPA et écriture JDBC.
-9. **Départ oublié, poste de nuit, pointages jamais refusés.** Une journée sans départ n'a aujourd'hui pas de borne haute : elle absorbe la nuit, bloque l'arrivée du lendemain et fausse le coût de revient. Les décisions — amplitude maximale paramétrable, journée abandonnée, fin présumée, relance d'un OF, aucun pointage d'opérateur refusé sauf sur un OF clôturé — et leur découpage en huit lots sont dans [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md). Elles touchent aussi `feuilledetemps`, `syntheseheures`, `coutderevient` et `pupitre`. Lots livrés : 1, la relance d'une activité en cours ; 2, le paramétrage de l'amplitude maximale (contexte `parametrage`) ; 3, la journée abandonnée, l'arrivée absorbée et le refus du chevauchement ; 4, la fin présumée dans le temps effectif et le coût de revient.
+9. **Départ oublié, poste de nuit, pointages jamais refusés.** Une journée sans départ n'a aujourd'hui pas de borne haute : elle absorbe la nuit, bloque l'arrivée du lendemain et fausse le coût de revient. Les décisions — amplitude maximale paramétrable, journée abandonnée, fin présumée, relance d'un OF, aucun pointage d'opérateur refusé sauf sur un OF clôturé — et leur découpage en huit lots sont dans [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md). Elles touchent aussi `feuilledetemps`, `syntheseheures`, `coutderevient` et `pupitre`. Lots livrés : 1, la relance d'une activité en cours ; 2, le paramétrage de l'amplitude maximale (contexte `parametrage`) ; 3, la journée abandonnée, l'arrivée absorbée et le refus du chevauchement ; 4, la fin présumée dans le temps effectif et le coût de revient ; 5, les heures pointées et présumées des relevés.
 
 ## postedetravail
 
@@ -230,12 +230,15 @@ Sept jours toujours, du lundi au dimanche de la semaine ISO demandée, vides com
 à deviner s'il manque une journée ou si l'opérateur n'était pas là. L'année est celle des semaines ISO, qui diffère
 de l'année civile à ses bornes — la semaine 1 de 2026 commence le 29 décembre 2025.
 
-La semaine est toujours explicite, jamais « la semaine courante » : deux appels identiques rendent la même chose, et
-aucune horloge n'entre dans ce contexte.
+La semaine est toujours explicite, jamais « la semaine courante ».
 
-**Une plage encore ouverte ne dépasse pas son propre jour.** Sans départ pointé, rien ne dit que l'opérateur était
-encore là le lendemain ; l'étaler jusqu'à la fin de la semaine affirmerait une présence que personne n'a saisie.
-C'est la transposition de la règle qu'`atelier` applique déjà à un travail jamais arrêté.
+**Une plage encore ouverte ne dépasse pas son propre jour.** Sans départ pointé et sous le seuil, rien ne dit que
+l'opérateur était encore là le lendemain ; l'étaler jusqu'à la fin de la semaine affirmerait une présence que personne
+n'a saisie. C'est la transposition de la règle qu'`atelier` applique déjà à un travail jamais arrêté.
+
+**Une journée abandonnée est fermée à sa fin présumée** (lot 5 de [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md)) : sans départ et au-delà du seuil d'amplitude, lu dans la table du paramétrage, sa dernière fenêtre ouverte se ferme au dernier fait connu — son dernier pointage de présence, ou le dernier pointage d'OF de l'opérateur s'il est plus tardif et tombe entre l'arrivée et l'arrivée plus le seuil. Ce qui en découle est marqué **présumé**, à confirmer par une régularisation du départ. Juger l'abandon suppose de savoir quand on lit : ce contexte reçoit donc une horloge, comme `coutderevient`, et deux appels espacés ne rendent plus forcément la même chose. La semaine, elle, reste toujours explicite.
+
+À instant égal, l'arrivée passe devant dans le repli : l'arrivée implicite d'un geste tardif partage l'heure de ce geste. Chaque plage de la feuille porte `presumee`.
 
 ### Points ouverts
 
@@ -303,10 +306,9 @@ Les tranches se somment à l'échelle de travail, la **ligne** arrondit au centi
 rapport est la somme de lignes **déjà arrondies**. Sans cette discipline, l'écran afficherait un total qui n'est pas
 la somme de ce qu'il montre — ce qu'aucun gestionnaire n'accepte d'un rapport de coût.
 
-### Ce contexte porte une horloge, contrairement à la feuille de temps
+### Ce contexte porte une horloge
 
-C'est l'écart assumé entre les deux projections. La feuille de temps s'interdit toute horloge pour que deux appels
-identiques rendent la même chose. Ici, un travail non terminé n'a pas de durée : le coût de revient d'un élément en
+Comme les relevés depuis le lot 5 des bornes de fin de journée. Ici, un travail non terminé n'a pas de durée : le coût de revient d'un élément en
 cours n'a de sens qu'arrêté à l'instant de la lecture. Deux appels espacés sur un élément en cours ne rendent donc
 pas la même chose, et la description OpenAPI de la route le dit.
 
@@ -367,6 +369,16 @@ Sept jours toujours, du lundi au dimanche de la semaine ISO demandée, vides com
 brut des pointages** horodatés (arrivée, pause, reprise, départ), et la **durée travaillée** — la somme des fenêtres
 de présence closes, pauses exclues, jamais l'amplitude arrivée→départ. Le total de la semaine est la somme des sept
 jours.
+
+La durée travaillée est celle qui est **pointée**. À côté, chaque jour et la semaine portent une **durée présumée**
+(`dureePresumee`, `dureePresumeeTotale`) : ce qu'une journée abandonnée compte jusqu'à sa fin présumée, et que
+l'assistante doit faire confirmer avant de transmettre à la paie. Dans l'exemple de référence, lundi vaut 5 h
+pointées et 3 h présumées, puis 9 h pointées une fois le départ régularisé. Un poste de nuit est coupé à minuit, dans
+le fuseau de l'entreprise, y compris quand minuit sépare deux semaines.
+
+**Une journée abandonnée est fermée à sa fin présumée** (lot 5 de [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md)) : sans départ et au-delà du seuil d'amplitude, lu dans la table du paramétrage, sa dernière fenêtre ouverte se ferme au dernier fait connu — son dernier pointage de présence, ou le dernier pointage d'OF de l'opérateur s'il est plus tardif et tombe entre l'arrivée et l'arrivée plus le seuil. Ce qui en découle est marqué **présumé**, à confirmer par une régularisation du départ. Juger l'abandon suppose de savoir quand on lit : ce contexte reçoit donc une horloge, comme `coutderevient`, et deux appels espacés ne rendent plus forcément la même chose. La semaine, elle, reste toujours explicite.
+
+À instant égal, l'arrivée passe devant dans le repli : l'arrivée implicite d'un geste tardif partage l'heure de ce geste.
 
 ### La résilience face aux anomalies du journal
 
