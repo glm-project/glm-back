@@ -1,5 +1,6 @@
 package com.glm.glmback.atelier.infrastructure.secondary;
 
+import com.glm.glmback.atelier.domain.CriteresDAnomalie;
 import com.glm.glmback.atelier.domain.EtatDePresence;
 import com.glm.glmback.atelier.domain.JourneeDeTravail;
 import com.glm.glmback.atelier.domain.JourneeDeTravailCriteria;
@@ -10,6 +11,7 @@ import com.glm.glmback.atelier.domain.JourneeDeTravailRepository;
 import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.Periode;
 import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
+import com.glm.glmback.atelier.domain.TypeDAnomalie;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import jakarta.persistence.criteria.Predicate;
@@ -93,6 +95,17 @@ class JpaJourneeDeTravailRepository implements JourneeDeTravailRepository {
   }
 
   @Override
+  public Page<JourneeDeTravail> enAnomalie(CriteresDAnomalie criteres, Pageable pageable) {
+    var page = journees.findAll(enAnomalie(criteres), PageRequest.of(pageable.page(), pageable.size(), PAR_DEBUT_DESCENDANT));
+
+    return Page.<JourneeDeTravail>builder()
+      .content(page.getContent().stream().map(JourneeDeTravailEntity::toDomain).toList())
+      .currentPage(pageable.page())
+      .pageSize(pageable.size())
+      .totalElementsCount(page.getTotalElements());
+  }
+
+  @Override
   public Page<JourneeDeTravail> list(JourneeDeTravailCriteria criteria, Pageable pageable) {
     var page = journees.findAll(correspondA(criteria), PageRequest.of(pageable.page(), pageable.size(), PAR_DEBUT_DESCENDANT));
 
@@ -101,6 +114,33 @@ class JpaJourneeDeTravailRepository implements JourneeDeTravailRepository {
       .currentPage(pageable.page())
       .pageSize(pageable.size())
       .totalElementsCount(page.getTotalElements());
+  }
+
+  /**
+   * Traduit en SQL les regles que {@link CriteresDAnomalie#matches} porte pour le domaine, sur les projections : une
+   * journee sans depart arrivee avant maintenant moins le seuil, ou une journee fermee dont l'amplitude depasse le
+   * seuil. Un test de parite confronte les deux expressions, seuil pile compris.
+   */
+  private static Specification<JourneeDeTravailEntity> enAnomalie(CriteresDAnomalie criteres) {
+    return (racine, requete, constructeur) -> {
+      Predicate sansDepart = constructeur.and(
+        constructeur.notEqual(racine.get("etat"), EtatDePresence.ABSENT),
+        constructeur.lessThan(racine.get("debut"), criteres.maintenant().minus(criteres.seuil().value()))
+      );
+      Predicate amplitudeExcessive = constructeur.and(
+        constructeur.equal(racine.get("etat"), EtatDePresence.ABSENT),
+        constructeur.greaterThan(racine.get("amplitudeMicrosecondes"), JourneeDeTravailEntity.microsecondes(criteres.seuil().value()))
+      );
+      Predicate parType = criteres
+        .type()
+        .map(type -> type == TypeDAnomalie.JOURNEE_SANS_DEPART ? sansDepart : amplitudeExcessive)
+        .orElseGet(() -> constructeur.or(sansDepart, amplitudeExcessive));
+
+      return criteres
+        .operateur()
+        .map(operateur -> constructeur.and(constructeur.equal(racine.get("operateurId"), operateur.uuid()), parType))
+        .orElse(parType);
+    };
   }
 
   /**

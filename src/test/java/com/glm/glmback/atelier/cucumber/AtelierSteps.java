@@ -571,6 +571,31 @@ public class AtelierSteps {
       .withValue(auteur);
   }
 
+  @When("je consulte les anomalies")
+  public void jeConsulteLesAnomalies() {
+    rest.get("/api/atelier/anomalies");
+  }
+
+  @When("je consulte les anomalies de {string}")
+  public void jeConsulteLesAnomaliesDe(String operateur) {
+    rest.get("/api/atelier/anomalies?operateur=" + idDeLOperateur(operateur));
+  }
+
+  @When("je consulte les anomalies de {string} de type {string}")
+  public void jeConsulteLesAnomaliesDeDeType(String operateur, String type) {
+    rest.get("/api/atelier/anomalies?operateur=" + idDeLOperateur(operateur) + "&type=" + type);
+  }
+
+  @Then("les anomalies sont")
+  public void lesAnomaliesSont(List<Map<String, String>> attendues) {
+    assertThatLastResponse().hasElement("$.content").containingExactly(attendues);
+  }
+
+  @Then("il n'y a aucune anomalie")
+  public void ilNYAAucuneAnomalie() {
+    assertThatLastResponse().hasElement("$.content").withElementsCount(0);
+  }
+
   @Then("la liste des journees contient {int} journees")
   public void laListeDesJourneesContient(int count) {
     assertThatLastResponse().hasElement("$.content").withElementsCount(count);

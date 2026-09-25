@@ -79,6 +79,17 @@ class JourneesDeTravailEnMemoire implements JourneeDeTravailRepository {
   }
 
   @Override
+  public Page<JourneeDeTravail> enAnomalie(CriteresDAnomalie criteres, Pageable pageable) {
+    List<JourneeDeTravail> retenues = journees.values().stream().filter(criteres::matches).sorted(parDebutDescendant()).toList();
+
+    return Page.<JourneeDeTravail>builder()
+      .content(retenues.stream().skip(pageable.offset()).limit(pageable.size()).toList())
+      .currentPage(pageable.page())
+      .pageSize(pageable.size())
+      .totalElementsCount(retenues.size());
+  }
+
+  @Override
   public Page<JourneeDeTravail> list(JourneeDeTravailCriteria criteria, Pageable pageable) {
     List<JourneeDeTravail> retenues = journees.values().stream().filter(criteria::matches).sorted(parDebutDescendant()).toList();
 

@@ -28,5 +28,7 @@ public interface JourneeDeTravailRepository {
 
   List<JourneeDeTravail> journeesDeLOperateurSur(OperateurId operateur, Periode periode);
 
+  Page<JourneeDeTravail> enAnomalie(CriteresDAnomalie criteres, Pageable pageable);
+
   Page<JourneeDeTravail> list(JourneeDeTravailCriteria criteria, Pageable pageable);
 }

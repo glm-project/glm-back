@@ -71,6 +71,9 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
 - **Une journée sans départ au-delà du seuil est abandonnée**, et le geste suivant de l'opérateur en ouvre une
   nouvelle ; sous le seuil, une arrivée est absorbée. Seuls les actes du gestionnaire peuvent être refusés pour
   chevauchement de deux journées. Détail dans `contexte-metier.md`, section « La présence, base de la paie ».
+- **Une anomalie de présence ne se stocke jamais.** `AnomalieDePresence.de` la déduit de la journée, du seuil et de
+  l'instant ; `CriteresDAnomalie.matches` porte la règle que l'adapter traduit en SQL, et le test de parité
+  confronte les deux, seuil pile et demi-seconde compris.
 - **L'habilitation, elle, bloque** : pointer sur un poste où l'opérateur n'est pas déclaré est refusé (409). C'est la
   seule règle dure du contexte. Elle ne joue que lorsqu'un poste est fourni, et elle joue sur les **trois** écritures
   du journal — pointage, régularisation, correction — sans quoi le back-office contournerait le pupitre.

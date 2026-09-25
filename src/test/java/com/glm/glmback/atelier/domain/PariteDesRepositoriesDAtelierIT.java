@@ -7,6 +7,7 @@ import com.glm.glmback.IntegrationTest;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -142,6 +143,64 @@ class PariteDesRepositoriesDAtelierIT {
       .tauxHoraire(Optional.of(TAUX_HORAIRE_DUPONT))
       .auteur(AUTEUR_DUPONT)
       .horodatage(Horodatage.saisiA(date));
+  }
+
+  /**
+   * Les anomalies se jugent a l'instant de lecture, sur des colonnes projetees : l'adapter doit retenir exactement ce
+   * que {@link CriteresDAnomalie#matches} retient, bornes du seuil comprises.
+   */
+  @Test
+  @WithTenant("impeccmold")
+  void shouldRendreLesMemesAnomaliesQueLeDoubleEnMemoire() {
+    OperateurId operateur = new OperateurId(UUID.randomUUID());
+    Instant lundi = Instant.parse("2042-04-07T07:00:00Z");
+    Instant samedi = Instant.parse("2042-04-12T07:00:00Z");
+    Instant maintenant = samedi.plus(Duration.ofHours(13));
+    List<JourneeDeTravail> jeu = List.of(
+      journeeOuverteA(operateur, lundi),
+      journeeFermeeApres(operateur, Instant.parse("2042-04-08T07:00:00Z"), Duration.ofHours(10)),
+      journeeFermeeApres(operateur, Instant.parse("2042-04-09T07:00:00Z"), Duration.ofHours(16)),
+      journeeFermeeApres(operateur, Instant.parse("2042-04-10T07:00:00Z"), Duration.ofHours(13)),
+      journeeFermeeApres(operateur, Instant.parse("2042-04-11T07:00:00Z"), Duration.ofHours(13).plusSeconds(1)),
+      journeeFermeeApres(operateur, Instant.parse("2042-04-11T21:00:00Z"), Duration.ofHours(13).plusMillis(500)),
+      journeeOuverteA(operateur, samedi)
+    );
+
+    JourneesDeTravailEnMemoire enMemoire = new JourneesDeTravailEnMemoire();
+    jeu.forEach(journee -> {
+      enMemoire.create(journee);
+      inTransaction(() -> journeesPersistees.create(journee));
+    });
+
+    for (Optional<TypeDAnomalie> type : List.of(
+      Optional.<TypeDAnomalie>empty(),
+      Optional.of(TypeDAnomalie.JOURNEE_SANS_DEPART),
+      Optional.of(TypeDAnomalie.AMPLITUDE_EXCESSIVE)
+    )) {
+      CriteresDAnomalie criteres = new CriteresDAnomalie(
+        maintenant,
+        new AmplitudeMaximale(Duration.ofHours(13)),
+        Optional.of(operateur),
+        type
+      );
+      Page<JourneeDeTravail> attendue = enMemoire.enAnomalie(criteres, PREMIERE_PAGE);
+      Page<JourneeDeTravail> obtenue = inTransaction(() -> journeesPersistees.enAnomalie(criteres, PREMIERE_PAGE));
+
+      assertThat(obtenue.content()).describedAs("type %s", type).containsExactlyElementsOf(attendue.content());
+      assertThat(obtenue.totalElementsCount()).isEqualTo(attendue.totalElementsCount());
+    }
+    assertThat(
+      enMemoire
+        .enAnomalie(
+          new CriteresDAnomalie(maintenant, new AmplitudeMaximale(Duration.ofHours(13)), Optional.of(operateur), Optional.empty()),
+          PREMIERE_PAGE
+        )
+        .totalElementsCount()
+    ).isEqualTo(4);
+  }
+
+  private static JourneeDeTravail journeeFermeeApres(OperateurId operateur, Instant arrivee, Duration amplitude) {
+    return journeeOuverteA(operateur, arrivee).enregistre(presence(TypeDEvenementDePresence.DEPART, arrivee.plus(amplitude)));
   }
 
   private static JourneeDeTravail journeeOuverteA(OperateurId operateur, Instant arrivee) {

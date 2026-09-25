@@ -16,6 +16,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,11 +30,11 @@ import java.util.stream.Collectors;
  * La ligne d'une journee de travail, et son journal de presence.
  *
  * <p>
- * {@code etat}, {@code debut}, {@code fin} et {@code dernierFait} sont des projections, ecrites depuis le domaine et
+ * {@code etat}, {@code debut}, {@code fin}, {@code dernierFait} et {@code amplitudeMicrosecondes} sont des projections, ecrites depuis le domaine et
  * jamais relues par {@link #toDomain()}. Elles rendent exprimables en SQL le tri de la liste, la recherche de la
  * journee en cours d'un operateur, celle de la journee contenant un instant — cette derniere etant sur le chemin de
  * chaque lecture de temps effectif — et celle des journees dont l'etendue touche une periode, qui garde du
- * chevauchement.
+ * chevauchement — et celle des journees fermees au-dela du seuil d'amplitude.
  * </p>
  */
 @Entity
@@ -56,6 +57,9 @@ class JourneeDeTravailEntity {
 
   @Column(name = "dernier_fait")
   private Instant dernierFait;
+
+  @Column(name = "amplitude_microsecondes")
+  private Long amplitudeMicrosecondes;
 
   @OneToMany(mappedBy = "journee", cascade = CascadeType.ALL)
   @OrderBy("dateDeSurvenue, id")
@@ -102,6 +106,10 @@ class JourneeDeTravailEntity {
     debut = journee.debut().orElse(null);
     fin = journee.amplitude().map(Periode::fin).orElse(null);
     dernierFait = journee.etendue().map(Periode::fin).orElse(null);
+    amplitudeMicrosecondes = journee
+      .amplitude()
+      .map(amplitude -> microsecondes(Duration.between(amplitude.debut(), amplitude.fin())))
+      .orElse(null);
 
     Map<UUID, EvenementDePresenceEntity> connus = journal
       .stream()
@@ -128,5 +136,13 @@ class JourneeDeTravailEntity {
     } else {
       connu.reporteLAnnulation(evenement);
     }
+  }
+
+  /**
+   * Une duree a la precision des horodatages de la base, la microseconde : c'est l'unite de la projection
+   * {@code amplitude_microsecondes}, et celle dans laquelle la requete des anomalies exprime le seuil.
+   */
+  static long microsecondes(Duration duree) {
+    return duree.toNanos() / 1_000;
   }
 }
