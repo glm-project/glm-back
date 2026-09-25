@@ -1,6 +1,7 @@
 package com.glm.glmback.pupitre.infrastructure.secondary;
 
 import com.glm.glmback.pupitre.domain.EtatDePresence;
+import com.glm.glmback.pupitre.domain.JourneeEnCours;
 import com.glm.glmback.pupitre.domain.OperateurId;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -35,7 +36,7 @@ class JourneeDuPupitreEntity {
     return new OperateurId(operateurId);
   }
 
-  EtatDePresence etat() {
-    return etat;
+  JourneeEnCours toDomain() {
+    return new JourneeEnCours(etat, debut);
   }
 }

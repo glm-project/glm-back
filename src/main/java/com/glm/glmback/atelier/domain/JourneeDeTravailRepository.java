@@ -3,6 +3,7 @@ package com.glm.glmback.atelier.domain;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 public interface JourneeDeTravailRepository {
@@ -24,6 +25,8 @@ public interface JourneeDeTravailRepository {
    * </p>
    */
   Optional<JourneeDeTravail> journeeContenant(OperateurId operateur, Instant instant);
+
+  List<JourneeDeTravail> journeesDeLOperateurSur(OperateurId operateur, Periode periode);
 
   Page<JourneeDeTravail> list(JourneeDeTravailCriteria criteria, Pageable pageable);
 }

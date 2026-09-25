@@ -42,7 +42,11 @@ class VieDeLAtelierTest {
     .postes(ressources.postes())
     .habilitations(ressources.habilitations())
     .clock(maintenant::get);
-  private final JourneesDeTravailService presence = new JourneesDeTravailService(journees, ressources.operateurs(), maintenant::get);
+  private final JourneesDeTravailService presence = JourneesDeTravailService.builder()
+    .repository(journees)
+    .operateurs(ressources.operateurs())
+    .seuil(() -> AMPLITUDE_MAXIMALE_13H)
+    .clock(maintenant::get);
   private final TempsDAtelierService temps = new TempsDAtelierService(suivis, journees);
 
   private SuiviDAtelierId premierOrdre;
@@ -54,7 +58,7 @@ class VieDeLAtelierTest {
     ilEst(LE_10_MAI_2026_A_7H);
     premierOrdre = engage(ELEMENT_OF_2026_000042);
     secondOrdre = engage(ELEMENT_OF_2026_000043);
-    journeeDeDupont = presence.arrive(new ArriveeAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT)).id();
+    journeeDeDupont = presence.arrive(new ArriveeAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT)).journee().id();
 
     ilEst(LE_10_MAI_2026_A_8H);
     atelier.pointe(pointage(premierOrdre, TypeDEvenementDAtelier.DEBUT, POSTE_ID_FRAISEUSE_1));

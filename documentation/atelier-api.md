@@ -158,6 +158,12 @@ Trois pièges :
 
 - `POST /api/atelier/journees/pointages` **n'a pas d'identifiant de journée** : le serveur retrouve seul la journée
   ouverte de l'opérateur. Sans journée ouverte, il répond 404.
+- **Une arrivée n'est jamais refusée parce qu'une journée est déjà ouverte.** Sous le seuil d'amplitude de
+  l'entreprise, elle est absorbée : `200` et la journée en cours, rien d'ajouté — un poste de nuit peut se
+  réidentifier à 3 h. Au-delà, la journée en cours est **abandonnée** et l'arrivée en ouvre une nouvelle (`201`).
+- **Un geste reçu pour une journée abandonnée ouvre une nouvelle journée** (`201`) : une arrivée implicite à l'heure
+  du geste, sous un identifiant du serveur, puis le geste. Une reprise s'y réduit à l'arrivée ; un départ tardif
+  donne une journée de durée nulle. Le seuil se juge sur l'heure du geste (`dateDeSurvenue`), pas sur sa réception.
 - **Une reprise après non conformité se pointe comme un `DEBUT`.** Il n'existe pas de type « reprise ». Ce qui change,
   c'est la `categorie` de l'activité, qui repasse de `NON_CONFORMITE` à `TRAVAIL`.
 - **Un `DEBUT` sur une activité déjà en cours la relance** au lieu d'être refusé, de même qu'une `NON_CONFORMITE` sur
@@ -204,6 +210,7 @@ leurs postes habilités, et les éléments encore pointables avec leurs activit�
       "prenom": "Jean",
       "matricule": "049",
       "etat": "PRESENT",
+      "presentJusqua": "2026-09-14T20:00:00Z",
       "postes": [{ "id": "…", "libelle": "Fraiseuse 1" }]
     }
   ],
@@ -235,12 +242,15 @@ Six choses à savoir avant de brancher un cache dessus :
   rien n'a bougé : ce n'est pas la date du dernier changement, et s'en servir pour décider d'un rafraîchissement
   n'aurait aucun sens. Il n'y a ni `ETag` ni `304`.
 - **`etat` dit quelles commandes de présence proposer.** `ABSENT`, `PRESENT` ou `EN_PAUSE` : c'est l'état de la
-  journée en cours de l'opérateur, sans borne de date — une journée ouverte hier et jamais fermée compte encore, et
-  l'opérateur y est toujours `PRESENT`. `ABSENT` vaut pour qui n'a aucune journée en cours ; il reste dans la liste,
+  journée en cours de l'opérateur, **tant qu'elle n'est pas abandonnée**. Une journée sans départ dont l'amplitude
+  dépasse le seuil de l'entreprise (13 h par défaut) est abandonnée, et l'opérateur redevient `ABSENT` : le pupitre ne
+  lui propose plus que l'arrivée. `ABSENT` vaut aussi pour qui n'a aucune journée en cours ; il reste dans la liste,
   qui rend les opérateurs **désignables**, pas les opérateurs présents. C'est ce champ qui évite d'offrir hors ligne
   une transition que le serveur refusera (`409`, une pause ne suit pas `EN_PAUSE`).
-  Ce que le champ ne porte pas, volontairement : **aucun instant** — pas de « en pause depuis 10 h 12 », l'écran
-  n'affiche que l'état — et **aucun marqueur d'idempotence** : les gestes locaux pas encore reflétés se replient avec
+  **`presentJusqua`** dit jusqu'à quand : l'arrivée plus le seuil. Hors ligne, le pupitre bascule seul l'opérateur à
+  `ABSENT` passé cet instant, sans attendre le référentiel suivant. Il est absent quand l'opérateur est `ABSENT`.
+  Ce que l'état ne porte pas, volontairement : **aucun instant de début** — pas de « en pause depuis 10 h 12 »,
+  l'écran n'affiche que l'état — et **aucun marqueur d'idempotence** : les gestes locaux pas encore reflétés se replient avec
   le marqueur que le pupitre tient déjà lui-même, comme pour les pointages.
 - **Aucun montant.** Ni `tauxHoraire` d'opérateur, ni `coutHoraire` de poste : un écran d'atelier partagé n'a pas à
   les recevoir, et `GET /api/couts-de-revient/{elementId}` reste réservé au `GESTIONNAIRE`.
@@ -325,16 +335,20 @@ sort de plusieurs contextes. Le catalogue complet est dans [documentation/codes-
 Deux statuts du tableau ci-dessous n'en portent pas : le **400** de Bean Validation, qui se lit par son `errors`
 (`Map<champ, message>`), et le **403**, qui vient de la chaîne de filtres sans corps du tout.
 
-| Statut | Cas                                                                                                                                                                                   |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 400    | Corps invalide (Bean Validation) — détail par champ dans `errors` — ou date de survenue future.                                                                                       |
-| 403    | Jeton sans entreprise connue, ou rôle insuffisant.                                                                                                                                    |
-| 404    | Suivi, journée, événement ou élément de fabrication introuvable ; ou aucune journée ouverte pour cet opérateur.                                                                       |
-| 409    | Élément déjà engagé, journée déjà ouverte, élément clôturé, événement déjà annulé, transition impossible, événement antérieur à l'engagement, UUID réutilisé, **saisie concurrente**. |
+| Statut | Cas                                                                                                                                                                                            |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 400    | Corps invalide (Bean Validation) — détail par champ dans `errors` — ou date de survenue future.                                                                                                |
+| 403    | Jeton sans entreprise connue, ou rôle insuffisant.                                                                                                                                             |
+| 404    | Suivi, journée, événement ou élément de fabrication introuvable ; ou aucune journée ouverte pour cet opérateur.                                                                                |
+| 409    | Élément déjà engagé, élément clôturé, événement déjà annulé, transition impossible, événement antérieur à l'engagement, UUID réutilisé, **chevauchement de journées**, **saisie concurrente**. |
 
 Les **409 de transition** sont les plus fréquents à l'usage : une `REPRISE` sans `PAUSE`, une `FIN` sans activité en
 cours, un `DEPART` sur une journée déjà fermée. Ils portent un `message` explicite — l'afficher plutôt que
 le remplacer par un texte générique.
+
+Le **chevauchement de journées** ne vient que d'un acte du gestionnaire : une régularisation ou une correction de
+présence qui ferait se toucher deux journées du même opérateur, jugées du premier au dernier fait connu. Régulariser
+le départ oublié de lundi à 17:00 passe ; le saisir à mardi 08:00 alors que mardi est ouvert depuis 07:00 est refusé.
 
 La **saisie concurrente** est le seul 409 qui ne dit rien de la saisie elle-même : elle était valide, mais quelqu'un a
 pointé sur le même élément ou la même journée entre la lecture et l'écriture. C'est le seul cas où **rejouer** l'appel

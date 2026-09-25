@@ -74,8 +74,9 @@ activités encore ouvertes ; `SuiviDuPupitre.etat()` en déduit `EN_ATTENTE`, `E
   qu'on demande ici est l'état courant de **tous** les opérateurs à la fois : le replier supposerait de rapporter
   tous les journaux de présence ouverts à chaque synchronisation, pour n'en garder que la dernière valeur. La
   journée en cours est choisie comme l'atelier la choisit — la plus récemment commencée parmi celles dont l'état
-  n'est pas `ABSENT`, **sans aucune borne de date** : une journée ouverte hier et jamais fermée est toujours la
-  journée en cours. Le filet reste `pupitre_referentiel.feature`, qui pointe la présence par l'API d'`atelier`.
+  n'est pas `ABSENT`. Le domaine juge ensuite, à l'instant du référentiel, si elle est **abandonnée** : au-delà de
+  l'arrivée plus le seuil (`SeuilDuPupitre`, lu dans la table `parametrage`), l'opérateur est `ABSENT`. Sinon, il
+  porte `presentJusqua`. Le filet reste `pupitre_referentiel.feature`, qui pointe la présence par l'API d'`atelier`.
 - **Un opérateur sans journée en cours n'est jamais omis.** La liste rend les opérateurs _désignables_, pas les
   opérateurs présents : son état vaut `ABSENT`, et il reste offert au pupitre.
 - **Le relevé des présences est une requête, pas une par opérateur.** Il entre par le paramètre de
@@ -117,11 +118,11 @@ dans deux classes fait échouer **toute** la suite. `PupitreSteps` porte donc so
 
 ## Ports sortants
 
-`OperateursDuPupitre`, `SuivisOuvertsDuPupitre`, `PresencesDuPupitre`, `Clock`.
+`OperateursDuPupitre`, `SuivisOuvertsDuPupitre`, `PresencesDuPupitre`, `SeuilDuPupitre`, `Clock`.
 
 Les trois premiers rendent tout d'un coup, sans critères ni pagination : c'est leur raison d'être. Les adapters
 lisent `operateur`, `operateur_poste`, `poste_de_travail`, `suivi_d_atelier`, `evenement_d_atelier`,
-`journee_de_travail` et `element_de_fabrication`, et **écartent les événements annulés dès le SQL** — les rapporter pour les filtrer ensuite
+`journee_de_travail`, `element_de_fabrication` et `parametrage`, et **écartent les événements annulés dès le SQL** — les rapporter pour les filtrer ensuite
 ferait porter au domaine une correction qui ne le regarde pas.
 
 ## État d'avancement

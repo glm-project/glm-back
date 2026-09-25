@@ -68,6 +68,9 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
 - **Un début sur une activité déjà en cours la relance**, il n'est jamais refusé (décision D9 de
   [bornes-de-fin-de-journee.md](../../../../../../../documentation/strategie/bornes-de-fin-de-journee.md)). La même
   règle vit dans les automates recopiés de `pupitre` et `coutderevient` : les trois changent ensemble.
+- **Une journée sans départ au-delà du seuil est abandonnée**, et le geste suivant de l'opérateur en ouvre une
+  nouvelle ; sous le seuil, une arrivée est absorbée. Seuls les actes du gestionnaire peuvent être refusés pour
+  chevauchement de deux journées. Détail dans `contexte-metier.md`, section « La présence, base de la paie ».
 - **L'habilitation, elle, bloque** : pointer sur un poste où l'opérateur n'est pas déclaré est refusé (409). C'est la
   seule règle dure du contexte. Elle ne joue que lorsqu'un poste est fourni, et elle joue sur les **trois** écritures
   du journal — pointage, régularisation, correction — sans quoi le back-office contournerait le pupitre.
@@ -81,7 +84,10 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
 ## Ports sortants
 
 `SuiviDAtelierRepository`, `JourneeDeTravailRepository`, `ElementsEngageables`, `OperateursConnus`, `PostesConnus`,
-`Habilitations`, `IdentitesDEvenements`, `Clock`.
+`Habilitations`, `IdentitesDEvenements`, `SeuilDAmplitude`, `Clock`.
+
+`SeuilDAmplitude` lit l'amplitude maximale dans la table `parametrage`, par une entité en lecture seule, sans
+importer le contexte voisin. Le seuil est lu à chaque geste : un changement vaut pour les gestes qui suivent.
 
 `OperateursConnus` expose `get(OperateurId)` en plus de `existe` et `parIds` : la présence (`JourneesDeTravailService`)
 n'a toujours besoin que de l'existence, mais le journal d'atelier (`SuivisDAtelierService`) résout désormais la fiche

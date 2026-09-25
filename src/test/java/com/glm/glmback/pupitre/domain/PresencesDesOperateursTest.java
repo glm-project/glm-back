@@ -20,15 +20,15 @@ class PresencesDesOperateursTest {
 
   @Test
   void shouldRendreLEtatDeLaJourneeEnCoursDeLOperateur() {
-    PresencesDesOperateurs presences = new PresencesDesOperateurs(Map.of(OPERATEUR_ID_DUPONT, EtatDePresence.EN_PAUSE));
+    PresencesDesOperateurs presences = new PresencesDesOperateurs(Map.of(OPERATEUR_ID_DUPONT, PRESENCE_PRESENTE_JUSQU_A_20H));
 
-    assertThat(presences.de(OPERATEUR_ID_DUPONT)).isEqualTo(EtatDePresence.EN_PAUSE);
+    assertThat(presences.de(OPERATEUR_ID_DUPONT)).isEqualTo(PRESENCE_PRESENTE_JUSQU_A_20H);
   }
 
   @Test
   void shouldTenirPourAbsentUnOperateurSansJourneeEnCours() {
-    PresencesDesOperateurs presences = new PresencesDesOperateurs(Map.of(OPERATEUR_ID_DUPONT, EtatDePresence.PRESENT));
+    PresencesDesOperateurs presences = new PresencesDesOperateurs(Map.of(OPERATEUR_ID_DUPONT, PRESENCE_PRESENTE_JUSQU_A_20H));
 
-    assertThat(presences.de(OPERATEUR_ID_MARTIN)).isEqualTo(EtatDePresence.ABSENT);
+    assertThat(presences.de(OPERATEUR_ID_MARTIN)).isEqualTo(PresenceDuPupitre.absente());
   }
 }

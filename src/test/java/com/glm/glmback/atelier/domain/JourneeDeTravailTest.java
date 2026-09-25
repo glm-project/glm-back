@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.shared.error.domain.MissingMandatoryValueException;
+import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
@@ -100,5 +101,76 @@ class JourneeDeTravailTest {
     JourneeDeTravail corrigee = journee.corrige(arrivee, annulationParLeroy(), arriveeDeDupontA(LE_10_MAI_2026_A_7H));
 
     assertThat(corrigee.debut()).contains(LE_10_MAI_2026_A_7H);
+  }
+
+  @Test
+  void shouldNeJamaisEtreAbandonneeSansArrivee() {
+    JourneeDeTravail vide = JourneeDeTravail.ouverte(ID, OPERATEUR_ID_DUPONT);
+
+    assertThat(vide.estAbandonneePour(LE_11_MAI_2026_A_9H, AMPLITUDE_MAXIMALE_13H)).isFalse();
+  }
+
+  @Test
+  void shouldNePasEtreAbandonneeSousLeSeuil() {
+    assertThat(journeeDeDupontOuverteA7H().estAbandonneePour(LE_10_MAI_2026_A_17H, AMPLITUDE_MAXIMALE_13H)).isFalse();
+  }
+
+  /**
+   * D2 : abandonnee quand l'amplitude depasse le seuil, pas quand elle l'atteint. Un geste a 20:00 pile reste dans la
+   * journee ouverte a 07:00.
+   */
+  @Test
+  void shouldNePasEtreAbandonneeAuSeuilPile() {
+    assertThat(journeeDeDupontOuverteA7H().estAbandonneePour(LE_10_MAI_2026_A_20H, AMPLITUDE_MAXIMALE_13H)).isFalse();
+  }
+
+  @Test
+  void shouldEtreAbandonneeUneSecondeApresLeSeuil() {
+    assertThat(journeeDeDupontOuverteA7H().estAbandonneePour(LE_10_MAI_2026_A_20H.plusSeconds(1), AMPLITUDE_MAXIMALE_13H)).isTrue();
+  }
+
+  @Test
+  void shouldMesurerLeSeuilPausesComprises() {
+    JourneeDeTravail enPause = journeeDeDupontOuverteA7H().enregistre(pauseDeDupontA(LE_10_MAI_2026_A_12H));
+
+    assertThat(enPause.estAbandonneePour(LE_11_MAI_2026_A_7H, AMPLITUDE_MAXIMALE_13H)).isTrue();
+  }
+
+  @Test
+  void shouldAppliquerLeSeuilDonne() {
+    Instant a17h30 = LE_10_MAI_2026_A_17H.plusSeconds(1800);
+
+    assertThat(journeeDeDupontOuverteA7H().estAbandonneePour(a17h30, AMPLITUDE_MAXIMALE_10H)).isTrue();
+    assertThat(journeeDeDupontOuverteA7H().estAbandonneePour(a17h30, AMPLITUDE_MAXIMALE_13H)).isFalse();
+  }
+
+  @Test
+  void shouldNeJamaisAbandonnerUneJourneeFermeeParUnDepart() {
+    assertThat(journeeDeDupontDe7HA17HAvecPauseDeMidi().estAbandonneePour(LE_11_MAI_2026_A_9H, AMPLITUDE_MAXIMALE_13H)).isFalse();
+  }
+
+  @Test
+  void shouldNAvoirAucuneEtendueSansEvenement() {
+    assertThat(JourneeDeTravail.ouverte(ID, OPERATEUR_ID_DUPONT).etendue()).isEmpty();
+  }
+
+  @Test
+  void shouldEtendreUneJourneeOuverteJusquASonDernierFaitConnu() {
+    JourneeDeTravail journee = journeeDeDupontOuverteA7H().enregistre(pauseDeDupontA(LE_10_MAI_2026_A_12H));
+
+    assertThat(journee.etendue()).contains(new Periode(LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_12H));
+  }
+
+  @Test
+  void shouldEtendreUneJourneeFermeeDeLArriveeAuDepart() {
+    assertThat(journeeDeDupontDe7HA17HAvecPauseDeMidi().etendue()).contains(new Periode(LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_17H));
+  }
+
+  @Test
+  void shouldEcarterDeLEtendueLesEvenementsAnnules() {
+    EvenementDePresence pause = pauseDeDupontA(LE_10_MAI_2026_A_12H);
+    JourneeDeTravail journee = journeeDeDupontOuverteA7H().enregistre(pause).annule(pause.id(), annulationParLeroy());
+
+    assertThat(journee.etendue()).contains(new Periode(LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_7H));
   }
 }

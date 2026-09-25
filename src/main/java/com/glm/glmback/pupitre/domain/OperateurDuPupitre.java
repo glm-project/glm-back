@@ -1,6 +1,7 @@
 package com.glm.glmback.pupitre.domain;
 
 import com.glm.glmback.shared.error.domain.Assert;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,6 +19,7 @@ public record OperateurDuPupitre(
   Prenom prenom,
   Optional<Matricule> matricule,
   EtatDePresence etat,
+  Optional<Instant> presentJusqua,
   List<PosteHabilite> postes
 ) {
   public OperateurDuPupitre {
@@ -26,6 +28,7 @@ public record OperateurDuPupitre(
     Assert.notNull("prenom", prenom);
     Assert.notNull("matricule", matricule);
     Assert.notNull("etat de presence", etat);
+    Assert.notNull("present jusqu'a", presentJusqua);
     Assert.field("postes", postes).notNull().noNullElement();
     postes = List.copyOf(postes);
   }
@@ -36,7 +39,11 @@ public record OperateurDuPupitre(
    */
   public static OperateurDuPupitreIdBuilder builder() {
     return id ->
-      nom -> prenom -> matricule -> etat -> postes -> new OperateurDuPupitre(id, nom, prenom, Matricule.of(matricule), etat, postes);
+      nom ->
+        prenom ->
+          matricule ->
+            etat ->
+              presentJusqua -> postes -> new OperateurDuPupitre(id, nom, prenom, Matricule.of(matricule), etat, presentJusqua, postes);
   }
 
   public interface OperateurDuPupitreIdBuilder {
@@ -56,7 +63,11 @@ public record OperateurDuPupitre(
   }
 
   public interface OperateurDuPupitreEtatBuilder {
-    OperateurDuPupitrePostesBuilder etat(EtatDePresence etat);
+    OperateurDuPupitrePresentJusquaBuilder etat(EtatDePresence etat);
+  }
+
+  public interface OperateurDuPupitrePresentJusquaBuilder {
+    OperateurDuPupitrePostesBuilder presentJusqua(Optional<Instant> presentJusqua);
   }
 
   public interface OperateurDuPupitrePostesBuilder {

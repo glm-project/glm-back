@@ -184,6 +184,16 @@ public class PupitreSteps {
     assertThat(operateur(alias)).containsEntry("etat", etat);
   }
 
+  @Then("{string} reste present jusqu'a {string} au referentiel du pupitre")
+  public void restePresentJusqua(String alias, String instant) {
+    assertThat(operateur(alias)).containsEntry("presentJusqua", instant);
+  }
+
+  @Then("{string} n'a aucune echeance de presence au referentiel du pupitre")
+  public void nAAucuneEcheanceDePresence(String alias) {
+    assertThat(operateur(alias).get("presentJusqua")).isNull();
+  }
+
   @Then("les postes proposes a {string} sont")
   public void lesPostesProposesSont(String alias, List<String> attendus) {
     assertThat(postesDe(alias))

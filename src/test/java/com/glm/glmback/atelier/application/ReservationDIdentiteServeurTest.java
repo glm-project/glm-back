@@ -166,6 +166,7 @@ class ReservationDIdentiteServeurTest {
       repository,
       Mockito.mock(OperateursConnus.class),
       Mockito.mock(PostesConnus.class),
+      () -> AMPLITUDE_MAXIMALE_13H,
       () -> LE_11_MAI_2026_A_9H15,
       identites
     );
@@ -205,6 +206,7 @@ class ReservationDIdentiteServeurTest {
       journees,
       Mockito.mock(OperateursConnus.class),
       Mockito.mock(PostesConnus.class),
+      () -> AMPLITUDE_MAXIMALE_13H,
       Mockito.mock(Clock.class),
       identites
     );

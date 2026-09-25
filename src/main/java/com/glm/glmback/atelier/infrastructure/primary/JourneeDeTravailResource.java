@@ -77,14 +77,18 @@ class JourneeDeTravailResource {
     Ouvre la journee de travail de l'operateur.
 
     Sans dateDeSurvenue, l'arrivee est datee a l'instant present : c'est le geste du matin. Avec, c'est le
-    gestionnaire qui saisit apres coup une arrivee jamais pointee.
+    gestionnaire qui saisit apres coup une arrivee jamais pointee, ou le pupitre qui rejoue un geste hors ligne.
+
+    Une arrivee n'est jamais refusee parce qu'une journee est deja ouverte. Sous l'amplitude maximale de l'entreprise,
+    l'operateur est deja la : l'arrivee est absorbee, rien n'est ajoute et la journee en cours est rendue. Au-dela, la
+    journee en cours est abandonnee et l'arrivee en ouvre une nouvelle.
     """
   )
-  @ApiResponse(responseCode = "201", description = "La journee est ouverte.")
-  @ApiResponse(responseCode = "200", description = "Le geste identique est rejoue.")
+  @ApiResponse(responseCode = "201", description = "Une journee est ouverte.")
+  @ApiResponse(responseCode = "200", description = "Le geste identique est rejoue, ou l'arrivee est absorbee dans la journee en cours.")
   @ApiResponse(responseCode = "400", description = "Le corps est invalide ou la date de survenue est future.")
   @ApiResponse(responseCode = "404", description = "Aucun operateur ne porte cet identifiant.")
-  @ApiResponse(responseCode = "409", description = "Cet operateur a deja une journee ouverte ou l'identifiant est reutilise.")
+  @ApiResponse(responseCode = "409", description = "L'identifiant est reutilise avec un autre contenu.")
   ResponseEntity<RestJourneeDeTravail> arrive(@RequestBody @Valid RestArrivee request) {
     var resultat = applicationService.arriveDuPupitre(request.toDomain(AuteurConnecte.get()));
     return ResponseEntity.status(resultat.rejeu() ? HttpStatus.OK : HttpStatus.CREATED).body(rendu(resultat.agregat()));
@@ -98,9 +102,12 @@ class JourneeDeTravailResource {
 
     Un seul appel, quel que soit le nombre d'elements en cours. Ne jamais boucler sur les elements pour repercuter une
     pause : le croisement est fait a la lecture du temps effectif.
+
+    Si la journee ouverte a depasse l'amplitude maximale a l'heure du geste, elle est abandonnee : le geste ouvre une
+    nouvelle journee par une arrivee implicite a son heure, puis s'y applique. Une reprise s'y reduit a l'arrivee.
     """
   )
-  @ApiResponse(responseCode = "201", description = "Le pointage est enregistre.")
+  @ApiResponse(responseCode = "201", description = "Le pointage est enregistre, le cas echeant dans une nouvelle journee.")
   @ApiResponse(responseCode = "200", description = "Le geste identique est rejoue.")
   @ApiResponse(responseCode = "400", description = "Le corps est invalide ou la date de survenue est future.")
   @ApiResponse(responseCode = "404", description = "Cet operateur n'a aucune journee ouverte.")
@@ -131,7 +138,10 @@ class JourneeDeTravailResource {
   )
   @ApiResponse(responseCode = "201", description = "La regularisation est enregistree.")
   @ApiResponse(responseCode = "404", description = "Journee introuvable.")
-  @ApiResponse(responseCode = "409", description = "Transition impossible depuis l'etat de presence a cet instant.")
+  @ApiResponse(
+    responseCode = "409",
+    description = "Transition impossible depuis l'etat de presence a cet instant, ou chevauchement avec une autre journee de l'operateur."
+  )
   RestJourneeDeTravail regularise(@PathVariable UUID id, @RequestBody @Valid RestRegularisationDePresence request) {
     return rendu(applicationService.regularise(request.toDomain(new JourneeDeTravailId(id), AuteurConnecte.get())));
   }
@@ -147,7 +157,10 @@ class JourneeDeTravailResource {
   @PutMapping("/{id}/evenements/{evenementId}")
   @Operation(summary = "Corriger une presence fausse", description = "Une annulation et une regularisation en un seul appel.")
   @ApiResponse(responseCode = "404", description = "Journee ou evenement introuvable.")
-  @ApiResponse(responseCode = "409", description = "Evenement deja annule, ou transition impossible.")
+  @ApiResponse(
+    responseCode = "409",
+    description = "Evenement deja annule, transition impossible, ou chevauchement avec une autre journee de l'operateur."
+  )
   RestJourneeDeTravail corrige(
     @PathVariable UUID id,
     @PathVariable UUID evenementId,

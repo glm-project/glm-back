@@ -29,10 +29,11 @@ import java.util.stream.Collectors;
  * La ligne d'une journee de travail, et son journal de presence.
  *
  * <p>
- * {@code etat}, {@code debut} et {@code fin} sont des projections, ecrites depuis le domaine et jamais relues par
- * {@link #toDomain()}. Elles rendent exprimables en SQL le tri de la liste, la recherche de la journee en cours d'un
- * operateur et celle de la journee contenant un instant — cette derniere etant sur le chemin de chaque lecture de
- * temps effectif.
+ * {@code etat}, {@code debut}, {@code fin} et {@code dernierFait} sont des projections, ecrites depuis le domaine et
+ * jamais relues par {@link #toDomain()}. Elles rendent exprimables en SQL le tri de la liste, la recherche de la
+ * journee en cours d'un operateur, celle de la journee contenant un instant — cette derniere etant sur le chemin de
+ * chaque lecture de temps effectif — et celle des journees dont l'etendue touche une periode, qui garde du
+ * chevauchement.
  * </p>
  */
 @Entity
@@ -52,6 +53,9 @@ class JourneeDeTravailEntity {
   private Instant debut;
 
   private Instant fin;
+
+  @Column(name = "dernier_fait")
+  private Instant dernierFait;
 
   @OneToMany(mappedBy = "journee", cascade = CascadeType.ALL)
   @OrderBy("dateDeSurvenue, id")
@@ -97,6 +101,7 @@ class JourneeDeTravailEntity {
     etat = journee.etat();
     debut = journee.debut().orElse(null);
     fin = journee.amplitude().map(Periode::fin).orElse(null);
+    dernierFait = journee.etendue().map(Periode::fin).orElse(null);
 
     Map<UUID, EvenementDePresenceEntity> connus = journal
       .stream()

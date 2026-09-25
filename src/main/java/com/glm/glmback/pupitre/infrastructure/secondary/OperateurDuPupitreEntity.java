@@ -4,6 +4,7 @@ import com.glm.glmback.pupitre.domain.Nom;
 import com.glm.glmback.pupitre.domain.OperateurDuPupitre;
 import com.glm.glmback.pupitre.domain.OperateurId;
 import com.glm.glmback.pupitre.domain.Prenom;
+import com.glm.glmback.pupitre.domain.PresenceDuPupitre;
 import com.glm.glmback.pupitre.domain.PresencesDesOperateurs;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -56,13 +57,15 @@ class OperateurDuPupitreEntity {
 
   OperateurDuPupitre toDomain(PresencesDesOperateurs presences) {
     OperateurId identite = new OperateurId(id);
+    PresenceDuPupitre presence = presences.de(identite);
 
     return OperateurDuPupitre.builder()
       .id(identite)
       .nom(new Nom(nom))
       .prenom(new Prenom(prenom))
       .matricule(matricule)
-      .etat(presences.de(identite))
+      .etat(presence.etat())
+      .presentJusqua(presence.presentJusqua())
       .postes(postes.stream().map(PosteDuPupitreEntity::toDomain).toList());
   }
 }

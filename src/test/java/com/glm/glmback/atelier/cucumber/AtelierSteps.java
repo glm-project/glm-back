@@ -383,6 +383,33 @@ public class AtelierSteps {
     journees.put(alias, idDeLaDerniereReponse());
   }
 
+  @Then("la reponse ne designe pas la journee {string}")
+  public void laReponseNeDesignePasLaJournee(String alias) {
+    assertThat(elementDeLaDerniereReponse("$.id")).isNotEqualTo(journees.get(alias));
+  }
+
+  @When("je consulte la journee {string}")
+  public void jeConsulteLaJournee(String alias) {
+    rest.get(JOURNEES_URI + "/" + journees.get(alias));
+  }
+
+  @When("je regularise la journee {string}")
+  public void jeRegulariseLaJournee(String alias, Map<String, String> donnees) {
+    rest.post(JOURNEES_URI + "/" + journees.get(alias) + "/regularisations", JSON.writeValueAsString(donnees));
+  }
+
+  @When("je corrige l'evenement {int} de la journee {string}")
+  public void jeCorrigeLEvenementDeLaJournee(int rang, String alias, Map<String, String> donnees) {
+    rest.get(JOURNEES_URI + "/" + journees.get(alias));
+    String evenement = elementDeLaDerniereReponse("$.journal[" + rang + "].id");
+    rest.put(JOURNEES_URI + "/" + journees.get(alias) + "/evenements/" + evenement, JSON.writeValueAsString(donnees));
+  }
+
+  @Then("l'evenement {int} de la journee n'a pas l'identifiant {string}")
+  public void lEvenementDeLaJourneeNAPasLIdentifiant(int rang, String id) {
+    assertThat(elementDeLaDerniereReponse("$.journal[" + rang + "].id")).isNotEqualTo(id);
+  }
+
   @Then("la reponse designe la journee {string}")
   public void laReponseDesigneLaJournee(String alias) {
     assertThatLastResponse().hasElement("$.id").withValue(journees.get(alias));

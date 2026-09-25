@@ -45,10 +45,51 @@ Feature: Le referentiel que le pupitre met en cache
     When je lis le referentiel du pupitre a "2026-05-11T18:00:00Z"
     Then "dupont" est "ABSENT" au referentiel du pupitre
 
-  Scenario: Une journee ouverte la veille et jamais fermee reste la journee en cours
-    Given au pupitre, "dupont" prend son poste a "2026-05-10T08:00:00Z"
-    When je lis le referentiel du pupitre a "2026-05-11T07:00:00Z"
+  Scenario: Un poste de nuit ouvert la veille reste la journee en cours sous le seuil
+    # E1 : arrive a 20 h, Dupont est toujours la a 3 h. Il le reste jusqu'a 09:00, son arrivee plus 13 h.
+    Given au pupitre, "dupont" prend son poste a "2026-05-10T20:00:00Z"
+    When je lis le referentiel du pupitre a "2026-05-11T03:00:00Z"
     Then "dupont" est "PRESENT" au referentiel du pupitre
+    And "dupont" reste present jusqu'a "2026-05-11T09:00:00Z" au referentiel du pupitre
+
+  Scenario: Une pause garde son echeance de presence
+    Given au pupitre, "dupont" prend son poste a "2026-05-11T08:00:00Z"
+    And au pupitre, "dupont" pointe sa presence "PAUSE" a "2026-05-11T12:00:00Z"
+    When je lis le referentiel du pupitre a "2026-05-11T12:30:00Z"
+    Then "dupont" est "EN_PAUSE" au referentiel du pupitre
+    And "dupont" reste present jusqu'a "2026-05-11T21:00:00Z" au referentiel du pupitre
+
+  Scenario: Au seuil pile, l'operateur est encore present
+    Given au pupitre, "dupont" prend son poste a "2026-05-11T07:00:00Z"
+    When je lis le referentiel du pupitre a "2026-05-11T20:00:00Z"
+    Then "dupont" est "PRESENT" au referentiel du pupitre
+
+  Scenario: Une journee abandonnee rend l'operateur absent
+    # E2 : lundi 21:00, la journee ouverte a 07:00 est abandonnee depuis 20:00. Le pupitre ne propose plus que l'arrivee.
+    Given au pupitre, "dupont" prend son poste a "2026-05-11T07:00:00Z"
+    When je lis le referentiel du pupitre a "2026-05-11T21:00:00Z"
+    Then "dupont" est "ABSENT" au referentiel du pupitre
+    And "dupont" n'a aucune echeance de presence au referentiel du pupitre
+
+  Scenario: Un depart referme la journee sans echeance
+    Given au pupitre, "dupont" prend son poste a "2026-05-11T08:00:00Z"
+    And au pupitre, "dupont" pointe sa presence "DEPART" a "2026-05-11T17:00:00Z"
+    When je lis le referentiel du pupitre a "2026-05-11T18:00:00Z"
+    Then "dupont" n'a aucune echeance de presence au referentiel du pupitre
+
+  Scenario: Apres une journee abandonnee, la nouvelle arrivee rend l'operateur present
+    Given au pupitre, "dupont" prend son poste a "2026-05-10T07:00:00Z"
+    And au pupitre, "dupont" prend son poste a "2026-05-11T07:00:00Z"
+    When je lis le referentiel du pupitre a "2026-05-11T09:00:00Z"
+    Then "dupont" est "PRESENT" au referentiel du pupitre
+    And "dupont" reste present jusqu'a "2026-05-11T20:00:00Z" au referentiel du pupitre
+
+  Scenario: Un depart tardif ne laisse pas l'operateur present sur la journee abandonnee
+    # E5 : le depart recu mardi ouvre et ferme une journee ; lundi, sans depart, reste abandonnee.
+    Given au pupitre, "dupont" prend son poste a "2026-05-10T07:00:00Z"
+    And au pupitre, "dupont" pointe sa presence "DEPART" a "2026-05-11T08:30:00Z"
+    When je lis le referentiel du pupitre a "2026-05-11T09:00:00Z"
+    Then "dupont" est "ABSENT" au referentiel du pupitre
 
   Scenario: Un element mis en atelier apparait en attente, avec sa reference relue au referentiel
     Given le pupitre fabrique "OF 4001"

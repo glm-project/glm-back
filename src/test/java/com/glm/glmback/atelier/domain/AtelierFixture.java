@@ -1,6 +1,7 @@
 package com.glm.glmback.atelier.domain;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -17,6 +18,15 @@ public final class AtelierFixture {
   public static final Instant LE_10_MAI_2026_A_16H = Instant.parse("2026-05-10T16:00:00Z");
   public static final Instant LE_10_MAI_2026_A_17H = Instant.parse("2026-05-10T17:00:00Z");
   public static final Instant LE_11_MAI_2026_A_9H15 = Instant.parse("2026-05-11T09:15:00Z");
+  public static final Instant LE_10_MAI_2026_A_20H = Instant.parse("2026-05-10T20:00:00Z");
+  public static final Instant LE_11_MAI_2026_A_3H = Instant.parse("2026-05-11T03:00:00Z");
+  public static final Instant LE_11_MAI_2026_A_7H = Instant.parse("2026-05-11T07:00:00Z");
+  public static final Instant LE_11_MAI_2026_A_8H = Instant.parse("2026-05-11T08:00:00Z");
+  public static final Instant LE_11_MAI_2026_A_8H30 = Instant.parse("2026-05-11T08:30:00Z");
+  public static final Instant LE_11_MAI_2026_A_9H = Instant.parse("2026-05-11T09:00:00Z");
+  public static final Instant LE_11_MAI_2026_A_20H = Instant.parse("2026-05-11T20:00:00Z");
+  public static final AmplitudeMaximale AMPLITUDE_MAXIMALE_13H = new AmplitudeMaximale(Duration.ofHours(13));
+  public static final AmplitudeMaximale AMPLITUDE_MAXIMALE_10H = new AmplitudeMaximale(Duration.ofHours(10));
 
   public static final OperateurId OPERATEUR_ID_DUPONT = new OperateurId(UUID.fromString("33333333-3333-3333-3333-333333333333"));
   public static final OperateurId OPERATEUR_ID_MARTIN = new OperateurId(UUID.fromString("44444444-4444-4444-4444-444444444444"));
