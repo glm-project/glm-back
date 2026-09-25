@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 450" width="960" height="450" role="img" aria-label="Trois frises alignées sur l&#x27;arrivée : un poste de nuit reste sous le seuil de 13 h et forme une seule journée ; un départ oublié dépasse le seuil et le retour du lendemain ouvre une nouvelle journée ; avec un seuil de 24 h ou plus ce retour serait absorbé.">
+<title>Solution — Le seuil d&#x27;amplitude décide si une journée est encore en cours</title>
+
+<style>
+svg { --bg:#ffffff; --fg:#1f2328; --mu:#59636e; --ax:#d0d7de; --band:#fff1e5;
+  --pres:#0969da; --presl:#ddf4ff; --of:#1a7f37; --ofl:#dafbe1; --ko:#cf222e; --kol:#ffebe9;
+  --warn:#bc4c00; --card:#f6f8fa; }
+@media (prefers-color-scheme: dark) {
+  svg { --bg:#0d1117; --fg:#e6edf3; --mu:#9198a1; --ax:#3d444d; --band:#2d1d0f;
+    --pres:#4493f8; --presl:#0c2d4f; --of:#3fb950; --ofl:#0f3319; --ko:#f85149; --kol:#3d1418;
+    --warn:#db6d28; --card:#161b22; }
+}
+text { font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; font-size:13px; fill:var(--fg); }
+.titre { font-size:18px; font-weight:700; }
+.sous { font-size:13px; fill:var(--mu); }
+.mu { fill:var(--mu); font-size:12px; }
+.b { font-weight:700; }
+.ko { fill:var(--ko); } .ok { fill:var(--of); } .warn { fill:var(--warn); } .bleu { fill:var(--pres); }
+.ax { stroke:var(--ax); stroke-width:1; }
+.minuit { stroke:var(--mu); stroke-width:1.5; stroke-dasharray:2 3; }
+.seuil { stroke:var(--warn); stroke-width:2; stroke-dasharray:6 4; }
+.band { fill:var(--band); }
+.pres { fill:var(--pres); }
+.presp { fill:var(--presl); stroke:var(--pres); stroke-width:1.5; stroke-dasharray:5 3; }
+.of { fill:var(--of); }
+.ofp { fill:var(--ofl); stroke:var(--of); stroke-width:1.5; stroke-dasharray:5 3; }
+.err { fill:url(#hachure); stroke:var(--ko); stroke-width:1.5; }
+.hach { stroke:var(--ko); stroke-width:2; }
+.gris { fill:var(--card); stroke:var(--ax); stroke-width:1; }
+.card { fill:var(--card); stroke:var(--ax); stroke-width:1; }
+.cardko { fill:var(--kol); stroke:var(--ko); stroke-width:1.5; }
+.cardok { fill:var(--ofl); stroke:var(--of); stroke-width:1.5; }
+.fl { stroke:var(--fg); stroke-width:1.5; fill:none; }
+.flko { stroke:var(--ko); stroke-width:1.5; fill:none; }
+.flwarn { stroke:var(--warn); stroke-width:1.8; fill:none; stroke-dasharray:6 4; }
+.pt { fill:var(--bg); stroke:var(--fg); stroke-width:1.5; }
+.croix { stroke:var(--ko); stroke-width:3; stroke-linecap:round; }
+.fond { fill:var(--bg); }
+.ptfg { fill:var(--fg); } .ptko { fill:var(--ko); } .ptwarn { fill:var(--warn); }
+</style>
+<defs>
+  <pattern id="hachure" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+    <rect width="8" height="8" style="fill:var(--kol)"/>
+    <line x1="0" y1="0" x2="0" y2="8" class="hach"/>
+  </pattern>
+  <marker id="fleche" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" class="ptfg"/>
+  </marker>
+  <marker id="flecheko" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" class="ptko"/>
+  </marker>
+  <marker id="flechewarn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" class="ptwarn"/>
+  </marker>
+</defs>
+
+<rect width="960" height="450" class="fond"/>
+
+<text x="24" y="34" class="titre">Solution — Le seuil d&#x27;amplitude décide si une journée est encore en cours</text>
+<text x="24" y="56" class="sous">Frises alignées sur l&#x27;heure d&#x27;arrivée. Seuil paramétré par l&#x27;entreprise : 13 h par défaut.</text>
+<rect x="250.0" y="80.0" width="340.0" height="280.0" rx="0" class="band"/>
+<text x="420.0" y="96.0" text-anchor="middle" class="warn">sous le seuil : la journée est en cours</text>
+<line x1="590.0" y1="78.0" x2="590.0" y2="360.0" class="seuil"/>
+<text x="596.0" y="96.0" text-anchor="start" class="warn b">seuil 13 h</text>
+<line x1="877.7" y1="78.0" x2="877.7" y2="360.0" class="minuit"/>
+<text x="871.7" y="96.0" text-anchor="end" class="mu">24 h</text>
+<text x="250.0" y="378.0" text-anchor="middle" class="mu">arrivée</text>
+<text x="406.9" y="378.0" text-anchor="middle" class="mu">+6 h</text>
+<text x="563.8" y="378.0" text-anchor="middle" class="mu">+12 h</text>
+<text x="720.8" y="378.0" text-anchor="middle" class="mu">+18 h</text>
+<text x="877.7" y="378.0" text-anchor="middle" class="mu">+24 h</text>
+<text x="24.0" y="146.0" text-anchor="start">Poste de nuit</text>
+<text x="24.0" y="162.0" text-anchor="start">20:00 → 08:00</text>
+<rect x="250.0" y="139.0" width="313.8" height="22.0" rx="3" class="pres"/>
+<circle cx="433.1" cy="150.0" r="5" class="pt"/>
+<text x="433.1" y="130.0" text-anchor="middle">03:00 : réidentification → même journée</text>
+<text x="571.8" y="154.0" text-anchor="start" class="ok">départ 08:00</text>
+<text x="24.0" y="231.0" text-anchor="start">Départ oublié</text>
+<text x="24.0" y="247.0" text-anchor="start">07:00, parti à 17:00</text>
+<rect x="250.0" y="224.0" width="261.5" height="22.0" rx="3" class="pres"/>
+<rect x="511.5" y="224.0" width="78.5" height="22.0" rx="3" class="presp"/>
+<text x="596.0" y="221.0" text-anchor="start" class="warn b">journée abandonnée</text>
+<circle cx="877.7" cy="235.0" r="5" class="pt"/>
+<text x="869.7" y="261.0" text-anchor="end" class="ok b">mar. 07:00 → nouvelle journée ✓</text>
+<text x="24.0" y="316.0" text-anchor="start">Si le seuil valait</text>
+<text x="24.0" y="332.0" text-anchor="start">24 h ou plus</text>
+<rect x="250.0" y="309.0" width="261.5" height="22.0" rx="3" class="pres"/>
+<rect x="511.5" y="309.0" width="366.2" height="22.0" rx="3" class="err"/>
+<line x1="870.7" y1="313.0" x2="884.7" y2="327.0" class="croix"/>
+<line x1="870.7" y1="327.0" x2="884.7" y2="313.0" class="croix"/>
+<text x="865.7" y="348.0" text-anchor="end" class="ko b">mar. 07:00 absorbé : arrivée perdue</text>
+<rect x="24.0" y="399.0" width="18.0" height="14.0" rx="2" class="pres"/>
+<text x="50.0" y="410.0" text-anchor="start" class="mu">présence pointée</text>
+<rect x="179.2" y="399.0" width="18.0" height="14.0" rx="2" class="presp"/>
+<text x="205.2" y="410.0" text-anchor="start" class="mu">ouverte, sans départ</text>
+<rect x="363.2" y="399.0" width="18.0" height="14.0" rx="2" class="err"/>
+<text x="389.2" y="410.0" text-anchor="start" class="mu">compté à tort</text>
+<line x1="496.8" y1="406.0" x2="514.8" y2="406.0" class="seuil"/>
+<text x="522.8" y="410.0" text-anchor="start" class="mu">seuil de l&#x27;entreprise</text>
+<text x="24.0" y="434.0" text-anchor="start" class="mu">D&#x27;où la borne : seuil strictement inférieur à 24 h, pour qu&#x27;un retour le lendemain à la même heure soit une arrivée.</text>
+</svg>

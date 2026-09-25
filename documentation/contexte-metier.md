@@ -138,6 +138,7 @@ L'API est décrite par OpenAPI (`/swagger-ui.html`) et par [atelier-api.md](atel
 6. **Le cycle de vie de l'élément lui-même.** La clôture existe côté atelier, sur le suivi. Reste à trancher si l'élément de fabrication porte en propre un statut, ou si son activité se lit entièrement par la présence ou l'absence d'un suivi non clôturé.
 7. **Aucune garde d'unicité en base** sur « un seul suivi non clôturé par élément » ni « une seule journée ouverte par opérateur », contrairement à ce que `elementdefabrication` fait pour la `Reference`. Les deux règles vivent dans les services, mais une contrainte partielle transformerait en 500 deux états que le domaine admet aujourd'hui : rouvrir la clôture d'un suivi dont l'élément a été réengagé depuis, ou annuler le `DEPART` d'une journée dont l'opérateur est déjà revenu. À trancher côté domaine avant de poser la contrainte.
 8. **L'écriture du journal rapproche par identifiant**, ce qui coûte une lecture indexée de la collection à chaque pointage. Si un journal devenait assez long pour que cette lecture pèse, la sortie est un upsert natif gardé (`on conflict (id) do update ... where ... is distinct from ...`), qui épargne à PostgreSQL toute version de tuple sur les lignes inchangées — au prix d'une scission permanente entre lecture JPA et écriture JDBC.
+9. **Départ oublié, poste de nuit, pointages jamais refusés.** Une journée sans départ n'a aujourd'hui pas de borne haute : elle absorbe la nuit, bloque l'arrivée du lendemain et fausse le coût de revient. Les décisions — amplitude maximale paramétrable, journée abandonnée, fin présumée, relance d'un OF, aucun pointage d'opérateur refusé sauf sur un OF clôturé — et leur découpage en huit lots sont dans [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md). Elles touchent aussi `feuilledetemps`, `syntheseheures`, `coutderevient` et `pupitre`.
 
 ## postedetravail
 
@@ -489,7 +490,10 @@ laisse donc sa tuile intacte, privée de sa seule référence.
    ci-dessus. À rouvrir si le volume le justifie.
 2. **La quarantaine des gestes refusés reste à faire**, côté serveur : un rejeu refusé pour raison métier —
    habilitation retirée, suivi clôturé — ne vit aujourd'hui que dans le journal local du pupitre.
-   `strategie/authentification-pointage.md` en fait une exigence.
+   `strategie/authentification-pointage.md` en fait une exigence. Le lot 8 de
+   [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md) la redéfinit : une habilitation
+   retirée est enregistrée et signalée, un suivi clôturé reste le seul refus montré à l'opérateur, et seuls les gestes
+   rattachés à rien — opérateur, poste ou OF inconnu — sont mis en attente.
 3. **Le client Keycloak du pupitre n'existe pas dans le realm.** `glm-front` attend `pupitre_device`, avec le
    device grant activé et le client scope `glmproject` — sans lui, le jeton ne porte pas de claim `tenant` et toute
    la surface `/api/**` répond 403. C'est la dernière pièce d'infrastructure avant qu'un pupitre déployé puisse

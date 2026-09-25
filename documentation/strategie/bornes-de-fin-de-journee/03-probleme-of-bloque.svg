@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 390" width="960" height="390" role="img" aria-label="Frise : l&#x27;OF 42 reste en cours de lundi 8 h à mardi ; mardi 7 h 05 le bouton démarrer est refusé ; le coût de revient valorise seize heures de nuit.">
+<title>Problème 3 — L&#x27;OF resté ouvert bloque la reprise et fausse le coût</title>
+
+<style>
+svg { --bg:#ffffff; --fg:#1f2328; --mu:#59636e; --ax:#d0d7de; --band:#fff1e5;
+  --pres:#0969da; --presl:#ddf4ff; --of:#1a7f37; --ofl:#dafbe1; --ko:#cf222e; --kol:#ffebe9;
+  --warn:#bc4c00; --card:#f6f8fa; }
+@media (prefers-color-scheme: dark) {
+  svg { --bg:#0d1117; --fg:#e6edf3; --mu:#9198a1; --ax:#3d444d; --band:#2d1d0f;
+    --pres:#4493f8; --presl:#0c2d4f; --of:#3fb950; --ofl:#0f3319; --ko:#f85149; --kol:#3d1418;
+    --warn:#db6d28; --card:#161b22; }
+}
+text { font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; font-size:13px; fill:var(--fg); }
+.titre { font-size:18px; font-weight:700; }
+.sous { font-size:13px; fill:var(--mu); }
+.mu { fill:var(--mu); font-size:12px; }
+.b { font-weight:700; }
+.ko { fill:var(--ko); } .ok { fill:var(--of); } .warn { fill:var(--warn); } .bleu { fill:var(--pres); }
+.ax { stroke:var(--ax); stroke-width:1; }
+.minuit { stroke:var(--mu); stroke-width:1.5; stroke-dasharray:2 3; }
+.seuil { stroke:var(--warn); stroke-width:2; stroke-dasharray:6 4; }
+.band { fill:var(--band); }
+.pres { fill:var(--pres); }
+.presp { fill:var(--presl); stroke:var(--pres); stroke-width:1.5; stroke-dasharray:5 3; }
+.of { fill:var(--of); }
+.ofp { fill:var(--ofl); stroke:var(--of); stroke-width:1.5; stroke-dasharray:5 3; }
+.err { fill:url(#hachure); stroke:var(--ko); stroke-width:1.5; }
+.hach { stroke:var(--ko); stroke-width:2; }
+.gris { fill:var(--card); stroke:var(--ax); stroke-width:1; }
+.card { fill:var(--card); stroke:var(--ax); stroke-width:1; }
+.cardko { fill:var(--kol); stroke:var(--ko); stroke-width:1.5; }
+.cardok { fill:var(--ofl); stroke:var(--of); stroke-width:1.5; }
+.fl { stroke:var(--fg); stroke-width:1.5; fill:none; }
+.flko { stroke:var(--ko); stroke-width:1.5; fill:none; }
+.flwarn { stroke:var(--warn); stroke-width:1.8; fill:none; stroke-dasharray:6 4; }
+.pt { fill:var(--bg); stroke:var(--fg); stroke-width:1.5; }
+.croix { stroke:var(--ko); stroke-width:3; stroke-linecap:round; }
+.fond { fill:var(--bg); }
+.ptfg { fill:var(--fg); } .ptko { fill:var(--ko); } .ptwarn { fill:var(--warn); }
+</style>
+<defs>
+  <pattern id="hachure" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+    <rect width="8" height="8" style="fill:var(--kol)"/>
+    <line x1="0" y1="0" x2="0" y2="8" class="hach"/>
+  </pattern>
+  <marker id="fleche" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" class="ptfg"/>
+  </marker>
+  <marker id="flecheko" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" class="ptko"/>
+  </marker>
+  <marker id="flechewarn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" class="ptwarn"/>
+  </marker>
+</defs>
+
+<rect width="960" height="390" class="fond"/>
+
+<text x="24" y="34" class="titre">Problème 3 — L&#x27;OF resté ouvert bloque la reprise et fausse le coût</text>
+<text x="24" y="56" class="sous">OF 42 démarré lundi 08:00 sur la fraiseuse 1, jamais arrêté. Coût de revient lu mardi 09:00.</text>
+<line x1="254.1" y1="90.0" x2="254.1" y2="280.0" class="ax"/>
+<text x="254.1" y="296.0" text-anchor="middle" class="mu">lun. 08:00</text>
+<line x1="389.3" y1="90.0" x2="389.3" y2="280.0" class="ax"/>
+<text x="389.3" y="296.0" text-anchor="middle" class="mu">lun. 13:00</text>
+<line x1="497.4" y1="90.0" x2="497.4" y2="280.0" class="ax"/>
+<text x="497.4" y="296.0" text-anchor="middle" class="mu">lun. 17:00</text>
+<line x1="878.1" y1="90.0" x2="878.1" y2="280.0" class="ax"/>
+<text x="878.1" y="296.0" text-anchor="middle" class="mu">mar. 07:05</text>
+<line x1="686.7" y1="84.0" x2="686.7" y2="280.0" class="minuit"/>
+<text x="686.7" y="80.0" text-anchor="middle" class="mu">minuit</text>
+<text x="24.0" y="136.0" text-anchor="start">OF 42 : ce que</text>
+<text x="24.0" y="152.0" text-anchor="start">dit son journal</text>
+<rect x="254.1" y="129.0" width="624.0" height="22.0" rx="3" class="ofp"/>
+<text x="578.5" y="144.0" text-anchor="middle">« en cours » depuis lundi 08:00</text>
+<line x1="871.1" y1="103.0" x2="885.1" y2="117.0" class="croix"/>
+<line x1="871.1" y1="117.0" x2="885.1" y2="103.0" class="croix"/>
+<text x="864.1" y="114.0" text-anchor="end" class="ko b">mar. 07:05 « démarrer » refusé : déjà en cours</text>
+<text x="24.0" y="221.0" text-anchor="start">Coût de revient</text>
+<text x="24.0" y="237.0" text-anchor="start">de l&#x27;OF 42</text>
+<rect x="254.1" y="214.0" width="108.1" height="22.0" rx="3" class="of"/>
+<rect x="389.3" y="214.0" width="108.1" height="22.0" rx="3" class="of"/>
+<rect x="497.4" y="214.0" width="432.6" height="22.0" rx="3" class="err"/>
+<text x="713.7" y="207.0" text-anchor="middle" class="ko b">≈ 16 h de machine et de main d&#x27;œuvre valorisées à tort</text>
+<text x="375.7" y="255.0" text-anchor="middle" class="ok">8 h réellement travaillées</text>
+<rect x="24.0" y="329.0" width="18.0" height="14.0" rx="2" class="ofp"/>
+<text x="50.0" y="340.0" text-anchor="start" class="mu">état affiché « en cours »</text>
+<rect x="244.0" y="329.0" width="18.0" height="14.0" rx="2" class="of"/>
+<text x="270.0" y="340.0" text-anchor="start" class="mu">temps réel</text>
+<rect x="356.0" y="329.0" width="18.0" height="14.0" rx="2" class="err"/>
+<text x="382.0" y="340.0" text-anchor="start" class="mu">valorisé à tort</text>
+<line x1="508.0" y1="331.0" x2="518.0" y2="341.0" class="croix"/>
+<line x1="508.0" y1="341.0" x2="518.0" y2="331.0" class="croix"/>
+<text x="530.0" y="340.0" text-anchor="start" class="mu">geste refusé</text>
+<text x="24.0" y="364.0" text-anchor="start" class="mu">Pour reprendre, l&#x27;opérateur devrait d&#x27;abord « arrêter » un travail qu&#x27;il croit déjà arrêté.</text>
+</svg>
