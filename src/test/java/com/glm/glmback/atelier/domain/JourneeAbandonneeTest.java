@@ -34,7 +34,7 @@ class JourneeAbandonneeTest {
   void shouldAbsorberUneArriveeSousLeSeuil() {
     JourneeDeTravail nuit = arriveA(LE_10_MAI_2026_A_20H).journee();
 
-    ArriveeTraitee reidentification = arriveA(LE_11_MAI_2026_A_3H);
+    PresenceTraitee reidentification = arriveA(LE_11_MAI_2026_A_3H);
 
     assertThat(reidentification.absorbee()).isTrue();
     assertThat(reidentification.journee()).isEqualTo(nuit);
@@ -45,7 +45,7 @@ class JourneeAbandonneeTest {
   void shouldAbsorberUneArriveeAuSeuilPile() {
     JourneeDeTravail matin = arriveA(LE_10_MAI_2026_A_7H).journee();
 
-    ArriveeTraitee arrivee = arriveA(LE_10_MAI_2026_A_20H);
+    PresenceTraitee arrivee = arriveA(LE_10_MAI_2026_A_20H);
 
     assertThat(arrivee.absorbee()).isTrue();
     assertThat(arrivee.journee().id()).isEqualTo(matin.id());
@@ -55,7 +55,7 @@ class JourneeAbandonneeTest {
   void shouldOuvrirUneNouvelleJourneeUneSecondeApresLeSeuil() {
     JourneeDeTravail matin = arriveA(LE_10_MAI_2026_A_7H).journee();
 
-    ArriveeTraitee arrivee = arriveA(LE_10_MAI_2026_A_20H.plusSeconds(1));
+    PresenceTraitee arrivee = arriveA(LE_10_MAI_2026_A_20H.plusSeconds(1));
 
     assertThat(arrivee.absorbee()).isFalse();
     assertThat(arrivee.journee().id()).isNotEqualTo(matin.id());
@@ -69,7 +69,7 @@ class JourneeAbandonneeTest {
   void shouldOuvrirUneNouvelleJourneeLeLendemainDUnDepartOublie() {
     JourneeDeTravail lundi = arriveA(LE_10_MAI_2026_A_7H).journee();
 
-    ArriveeTraitee mardi = arriveA(LE_11_MAI_2026_A_7H);
+    PresenceTraitee mardi = arriveA(LE_11_MAI_2026_A_7H);
 
     assertThat(mardi.absorbee()).isFalse();
     assertThat(mardi.journee().id()).isNotEqualTo(lundi.id());
@@ -97,7 +97,7 @@ class JourneeAbandonneeTest {
   void shouldOuvrirUneNouvelleJourneeApresUnPosteDeNuitOublie() {
     JourneeDeTravail nuit = arriveA(LE_10_MAI_2026_A_20H).journee();
 
-    ArriveeTraitee soir = arriveA(LE_11_MAI_2026_A_20H);
+    PresenceTraitee soir = arriveA(LE_11_MAI_2026_A_20H);
 
     assertThat(soir.absorbee()).isFalse();
     assertThat(soir.journee().id()).isNotEqualTo(nuit.id());
@@ -168,7 +168,7 @@ class JourneeAbandonneeTest {
       geste
     );
 
-    JourneeDeTravail mardi = service.pointe(depart, () -> ARRIVEE_IMPLICITE);
+    JourneeDeTravail mardi = service.pointe(depart, () -> ARRIVEE_IMPLICITE).journee();
 
     EvenementDePresence arrivee = mardi.journal().evenements().getFirst();
     assertThat(arrivee.id()).isEqualTo(ARRIVEE_IMPLICITE);
@@ -183,12 +183,11 @@ class JourneeAbandonneeTest {
     arriveA(LE_10_MAI_2026_A_7H);
     maintenant.set(LE_10_MAI_2026_A_12H);
 
-    JourneeDeTravail journee = service.pointe(
-      new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.PAUSE),
-      () -> {
+    JourneeDeTravail journee = service
+      .pointe(new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.PAUSE), () -> {
         throw new AssertionError("aucune arrivee implicite ne doit etre demandee");
-      }
-    );
+      })
+      .journee();
 
     assertThat(journee.etat()).isEqualTo(EtatDePresence.EN_PAUSE);
   }
@@ -201,7 +200,7 @@ class JourneeAbandonneeTest {
     JourneeDeTravail lundi = arriveA(LE_10_MAI_2026_A_7H).journee();
     maintenant.set(LE_11_MAI_2026_A_9H);
 
-    ArriveeTraitee soir = service.arrive(new ArriveeAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, Optional.of(LE_10_MAI_2026_A_17H)));
+    PresenceTraitee soir = service.arrive(new ArriveeAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, Optional.of(LE_10_MAI_2026_A_17H)));
 
     assertThat(soir.absorbee()).isTrue();
     assertThat(soir.journee().id()).isEqualTo(lundi.id());
@@ -215,7 +214,7 @@ class JourneeAbandonneeTest {
     JourneeDeTravail matin = arriveA(LE_10_MAI_2026_A_7H).journee();
     seuil.set(AMPLITUDE_MAXIMALE_10H);
 
-    ArriveeTraitee arrivee = arriveA(LE_10_MAI_2026_A_17H.plusSeconds(1800));
+    PresenceTraitee arrivee = arriveA(LE_10_MAI_2026_A_17H.plusSeconds(1800));
 
     assertThat(arrivee.absorbee()).isFalse();
     assertThat(arrivee.journee().id()).isNotEqualTo(matin.id());
@@ -226,22 +225,10 @@ class JourneeAbandonneeTest {
     arriveA(LE_10_MAI_2026_A_7H);
     pointeA(TypeDEvenementDePresence.DEPART, LE_10_MAI_2026_A_17H);
 
-    ArriveeTraitee soir = arriveA(LE_10_MAI_2026_A_20H);
+    PresenceTraitee soir = arriveA(LE_10_MAI_2026_A_20H);
 
     assertThat(soir.absorbee()).isFalse();
     assertThat(soir.journee().debut()).contains(LE_10_MAI_2026_A_20H);
-  }
-
-  @Test
-  void shouldToujoursRefuserUnGesteSansAucuneJournee() {
-    maintenant.set(LE_10_MAI_2026_A_12H);
-    PointageDePresenceAEnregistrer pause = new PointageDePresenceAEnregistrer(
-      OPERATEUR_ID_DUPONT,
-      AUTEUR_DUPONT,
-      TypeDEvenementDePresence.PAUSE
-    );
-
-    assertThatThrownBy(() -> service.pointe(pause)).isExactlyInstanceOf(AucuneJourneeDeTravailEnCoursException.class);
   }
 
   @Test
@@ -249,13 +236,13 @@ class JourneeAbandonneeTest {
     arriveA(LE_10_MAI_2026_A_7H);
     JourneeDeTravail mardi = pointeA(TypeDEvenementDePresence.DEPART, LE_11_MAI_2026_A_8H30);
 
-    ArriveeTraitee mercredi = arriveA(LE_11_MAI_2026_A_8H30.plusSeconds(24 * 3600));
+    PresenceTraitee mercredi = arriveA(LE_11_MAI_2026_A_8H30.plusSeconds(24 * 3600));
 
     assertThat(mercredi.absorbee()).isFalse();
     assertThat(mercredi.journee().id()).isNotEqualTo(mardi.id());
   }
 
-  private ArriveeTraitee arriveA(Instant instant) {
+  private PresenceTraitee arriveA(Instant instant) {
     maintenant.set(instant);
 
     return service.arrive(new ArriveeAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT));
@@ -264,6 +251,6 @@ class JourneeAbandonneeTest {
   private JourneeDeTravail pointeA(TypeDEvenementDePresence type, Instant instant) {
     maintenant.set(instant);
 
-    return service.pointe(new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, type));
+    return service.pointe(new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, type)).journee();
   }
 }

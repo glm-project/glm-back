@@ -161,6 +161,13 @@ Trois pièges :
 - **Une arrivée n'est jamais refusée parce qu'une journée est déjà ouverte.** Sous le seuil d'amplitude de
   l'entreprise, elle est absorbée : `200` et la journée en cours, rien d'ajouté — un poste de nuit peut se
   réidentifier à 3 h. Au-delà, la journée en cours est **abandonnée** et l'arrivée en ouvre une nouvelle (`201`).
+- **Un geste de présence sans journée ouverte en ouvre une** (`201`), comme sur une journée abandonnée : arrivée
+  implicite puis geste. **Un geste redondant** — pause déjà en pause, reprise déjà présent — **est absorbé** (`200`,
+  rien d'ajouté). Seuls restent refusés l'opérateur inconnu et le geste rejoué dans le désordre (lot 8c).
+- **Arrêter une activité qui n'est pas en cours, ou un élément clôturé, est absorbé** (`200`). Démarrer ou pointer
+  une non conformité sur un élément clôturé reste refusé (`409 suivi-d-atelier-cloture`) : c'est le seul refus à
+  afficher à l'opérateur, « OF clôturé, vous ne pouvez plus pointer dessus ».
+- **Deux saisies simultanées ne sont plus un refus** : le serveur rejoue lui-même l'écriture devancée.
 - **Un geste reçu pour une journée abandonnée ouvre une nouvelle journée** (`201`) : une arrivée implicite à l'heure
   du geste, sous un identifiant du serveur, puis le geste. Une reprise s'y réduit à l'arrivée ; un départ tardif
   donne une journée de durée nulle. Le seuil se juge sur l'heure du geste (`dateDeSurvenue`), pas sur sa réception.
@@ -364,7 +371,8 @@ Le **chevauchement de journées** ne vient que d'un acte du gestionnaire : une r
 présence qui ferait se toucher deux journées du même opérateur, jugées du premier au dernier fait connu. Régulariser
 le départ oublié de lundi à 17:00 passe ; le saisir à mardi 08:00 alors que mardi est ouvert depuis 07:00 est refusé.
 
-La **saisie concurrente** est le seul 409 qui ne dit rien de la saisie elle-même : elle était valide, mais quelqu'un a
+Sur les routes de pointage, la **saisie concurrente** est rejouée par le serveur et ne remonte plus qu'après trois
+échecs. Sur les actes du gestionnaire, elle reste le seul 409 qui ne dit rien de la saisie elle-même : elle était valide, mais quelqu'un a
 pointé sur le même élément ou la même journée entre la lecture et l'écriture. C'est le seul cas où **rejouer** l'appel
 tel quel est la bonne réaction — relire l'agrégat, et reproposer la saisie.
 

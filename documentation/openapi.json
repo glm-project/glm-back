@@ -1858,7 +1858,7 @@
     },
     "/api/atelier/journees/pointages" : {
       "post" : {
-        "description" : "Vise la journee ouverte de l'operateur, retrouvee par le serveur : aucun identifiant de journee n'est a fournir.\n\nUn seul appel, quel que soit le nombre d'elements en cours. Ne jamais boucler sur les elements pour repercuter une\npause : le croisement est fait a la lecture du temps effectif.\n\nSi la journee ouverte a depasse l'amplitude maximale a l'heure du geste, elle est abandonnee : le geste ouvre une\nnouvelle journee par une arrivee implicite a son heure, puis s'y applique. Une reprise s'y reduit a l'arrivee.\n",
+        "description" : "Vise la journee ouverte de l'operateur, retrouvee par le serveur : aucun identifiant de journee n'est a fournir.\n\nUn seul appel, quel que soit le nombre d'elements en cours. Ne jamais boucler sur les elements pour repercuter une\npause : le croisement est fait a la lecture du temps effectif.\n\nUn geste n'est jamais refuse parce que la journee ne s'y prete pas. Sans journee ouverte, ou si elle a depasse\nl'amplitude maximale a l'heure du geste, le geste ouvre une nouvelle journee par une arrivee implicite a son heure,\npuis s'y applique ; une reprise s'y reduit a l'arrivee. Redondant avec l'etat courant (une pause deja en pause, une\nreprise deja present), il est absorbe. Deux saisies simultanees sont rejouees par le serveur.\n",
         "operationId" : "pointe_1",
         "requestBody" : {
           "content" : {
@@ -1879,7 +1879,7 @@
                 }
               }
             },
-            "description" : "Le geste identique est rejoue."
+            "description" : "Le geste identique est rejoue, ou le geste redondant est absorbe."
           },
           "201" : {
             "content" : {
@@ -1909,7 +1909,7 @@
                 }
               }
             },
-            "description" : "Cet operateur n'a aucune journee ouverte."
+            "description" : "Operateur inconnu, ou geste sans journee ouverte date dans une journee deja fermee (rejoue dans le desordre)."
           },
           "409" : {
             "content" : {
@@ -1919,7 +1919,7 @@
                 }
               }
             },
-            "description" : "Transition impossible depuis l'etat de presence courant ou identifiant reutilise."
+            "description" : "Geste rejoue dans le desordre qui casse l'enchainement, ou identifiant reutilise."
           }
         },
         "summary" : "Pointer une pause, une reprise ou un depart",
@@ -2494,7 +2494,7 @@
                 }
               }
             },
-            "description" : "Le geste identique est rejoue."
+            "description" : "Le geste identique est rejoue, ou l'arret sans effet est absorbe."
           },
           "201" : {
             "content" : {
@@ -2534,7 +2534,7 @@
                 }
               }
             },
-            "description" : "Operateur non habilite sur ce poste, element cloture, transition impossible ou identifiant reutilise."
+            "description" : "Demarrer ou pointer une non conformite sur un element cloture (seul refus qu'afficher a l'operateur), operateur non\nhabilite sur ce poste, fin rejouee dans le desordre ou identifiant reutilise. Arreter une activite qui n'est pas en\ncours, ou un element cloture, est absorbe : 200.\n"
           }
         },
         "summary" : "Pointer un debut, une non conformite ou une fin",

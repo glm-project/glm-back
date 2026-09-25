@@ -85,21 +85,42 @@ public final class SuivisDAtelierService {
     );
   }
 
-  public SuiviDAtelier pointe(PointageAEnregistrer commande) {
+  /**
+   * Un pointage d'atelier n'est jamais refuse a l'operateur, a une exception pres (lot 8a de la strategie « bornes de
+   * fin de journee ») : demarrer ou pointer une non conformite sur un OF cloture, qui n'est plus pointable.
+   *
+   * <p>
+   * Arreter une activite qui n'est pas en cours, ou un OF que la cloture a deja arrete, ne change rien : le geste est
+   * absorbe. Une fin rejouee dans le desordre, datee avant le dernier fait de son activite, reste refusee jusqu'au lot
+   * 8c.
+   * </p>
+   */
+  public PointageDAtelierTraite pointe(PointageAEnregistrer commande) {
     SuiviDAtelier suivi = get(commande.suivi());
     if (suivi.estCloture()) {
+      if (commande.type() == TypeDEvenementDAtelier.FIN) {
+        return new PointageDAtelierTraite(suivi, true);
+      }
       throw new SuiviDAtelierClotureException(suivi.id());
     }
 
     Instant maintenant = clock.now();
     refuseDateFuture(commande.dateDeSurvenue(), maintenant);
     Horodatage horodatage = new Horodatage(commande.dateDeSurvenue().orElse(maintenant), maintenant);
-
-    return repository.update(
-      suivi.enregistre(
-        evenement(commande.evenement(), commande.type(), commande.operateur(), commande.poste(), commande.auteur(), horodatage)
-      )
+    EvenementDAtelier evenement = evenement(
+      commande.evenement(),
+      commande.type(),
+      commande.operateur(),
+      commande.poste(),
+      commande.auteur(),
+      horodatage
     );
+
+    if (suivi.arreteUneActiviteAbsente(evenement)) {
+      return new PointageDAtelierTraite(suivi, true);
+    }
+
+    return new PointageDAtelierTraite(repository.update(suivi.enregistre(evenement)), false);
   }
 
   public SuiviDAtelier regularise(RegularisationAEnregistrer commande) {

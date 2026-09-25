@@ -320,8 +320,8 @@ Feature: Suivi des elements engages en atelier
       | fraiseuse-1   | 2026-05-10T08:00:00Z | 2026-05-10T10:00:00Z |
       | fraiseuse-1   | 2026-05-10T10:00:00Z | 2026-05-10T12:00:00Z |
 
-  Scenario: Une fin sans activite en cours reste refusee
-    # Seule transition encore refusee par l'automate : le lot 8 l'absorbera.
+  Scenario: Arreter un element sans activite en cours est absorbe
+    # Lot 8a : le double appui sur « arreter » ne change rien et n'est jamais refuse.
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2093"
       | type      | ORDRE_DE_FABRICATION |
@@ -331,8 +331,9 @@ Feature: Suivi des elements engages en atelier
       | type      | FIN         |
       | operateur | dupont      |
       | poste     | fraiseuse-1 |
-    Then la reponse a le statut http 409
-    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:transition-d-atelier-interdite"
+    Then la reponse a le statut http 200
+    And le journal du suivi contient 0 evenements
+    And le suivi a l'etat "EN_ATTENTE"
 
   Scenario: Cloturer un element, puis le rouvrir
     Given il est "2026-05-10T08:00:00Z"
@@ -344,11 +345,18 @@ Feature: Suivi des elements engages en atelier
     When je cloture "OF 2006" a l'instant present
     Then la reponse a le statut http 200
     And le suivi a l'etat "CLOTURE"
-    # Un element cloture n'accepte plus de pointage.
+    # Un element cloture n'accepte plus qu'on y demarre : c'est la seule exception a la regle.
     When je pointe sur "OF 2006"
       | type      | DEBUT  |
       | operateur | dupont |
     Then la reponse a le statut http 409
+    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:suivi-d-atelier-cloture"
+    # L'arreter, en revanche, ne change rien : la cloture l'a deja fait.
+    When je pointe sur "OF 2006"
+      | type      | FIN    |
+      | operateur | dupont |
+    Then la reponse a le statut http 200
+    And le suivi a l'etat "CLOTURE"
     When je rouvre "OF 2006"
     Then la reponse a le statut http 200
     And le suivi a l'etat "EN_ATTENTE"

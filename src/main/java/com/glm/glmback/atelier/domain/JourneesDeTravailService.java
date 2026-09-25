@@ -43,7 +43,7 @@ public final class JourneesDeTravailService {
    * abandonnee et l'arrivee en ouvre une nouvelle. C'est ce qui permet a un poste de nuit de se reidentifier a 3 h,
    * et a l'arrivee du lendemain d'un depart oublie de n'etre plus jamais perdue.
    */
-  public ArriveeTraitee arrive(ArriveeAEnregistrer commande) {
+  public PresenceTraitee arrive(ArriveeAEnregistrer commande) {
     if (!operateurs.existe(commande.operateur())) {
       throw new OperateurDAtelierIntrouvableException(commande.operateur());
     }
@@ -54,44 +54,87 @@ public final class JourneesDeTravailService {
       .filter(journee -> !journee.estAbandonneePour(horodatage.dateDeSurvenue(), seuil.amplitudeMaximale()));
 
     if (enCours.isPresent()) {
-      return new ArriveeTraitee(enCours.orElseThrow(), true);
+      return new PresenceTraitee(enCours.orElseThrow(), true);
     }
 
     JourneeDeTravail ouverte = JourneeDeTravail.ouverte(JourneeDeTravailId.newId(), commande.operateur()).enregistre(
       evenement(commande.evenement(), TypeDEvenementDePresence.ARRIVEE, commande.auteur(), horodatage)
     );
 
-    return new ArriveeTraitee(repository.create(ouverte), false);
+    return new PresenceTraitee(repository.create(ouverte), false);
   }
 
-  public JourneeDeTravail pointe(PointageDePresenceAEnregistrer commande) {
+  public PresenceTraitee pointe(PointageDePresenceAEnregistrer commande) {
     return pointe(commande, EvenementDePresenceId::newId);
   }
 
   /**
-   * Un geste recu pour une journee abandonnee n'est jamais refuse : il ouvre une nouvelle journee par une arrivee
-   * implicite a l'heure du geste, puis s'y applique. Une reprise, qui suppose une pause, s'y reduit a l'arrivee.
+   * Un geste de presence n'est jamais refuse a l'operateur (lots 3 et 8a de la strategie « bornes de fin de
+   * journee »).
+   *
+   * <ul>
+   * <li>Sans journee en cours, ou sur une journee abandonnee, il ouvre une nouvelle journee par une arrivee implicite
+   * a l'heure du geste, puis s'y applique. Une reprise s'y reduit a l'arrivee.</li>
+   * <li>Redondant avec l'etat courant — une pause deja en pause, une reprise deja present —, il est absorbe : rien
+   * n'est ajoute au journal.</li>
+   * </ul>
+   *
+   * <p>
+   * Restent refuses jusqu'au lot 8c les gestes qu'on ne sait pas rattacher : un operateur inconnu, et un geste rejoue
+   * dans le desordre, date avant le dernier fait connu ou dans une journee deja fermee.
+   * </p>
    *
    * <p>
    * L'identifiant de l'arrivee implicite n'est demande que lorsque la decision est prise : il appartient au serveur,
    * jamais au pupitre.
    * </p>
    */
-  public JourneeDeTravail pointe(PointageDePresenceAEnregistrer commande, Supplier<EvenementDePresenceId> arriveeImplicite) {
-    JourneeDeTravail journee = repository
-      .getEnCoursPour(commande.operateur())
-      .orElseThrow(() -> new AucuneJourneeDeTravailEnCoursException(commande.operateur()));
-
+  public PresenceTraitee pointe(PointageDePresenceAEnregistrer commande, Supplier<EvenementDePresenceId> arriveeImplicite) {
     Horodatage horodatage = horodatage(commande.dateDeSurvenue());
-    EvenementDePresence geste = evenement(commande.evenement(), commande.type(), commande.auteur(), horodatage);
+    Instant geste = horodatage.dateDeSurvenue();
+    EvenementDePresence evenement = evenement(commande.evenement(), commande.type(), commande.auteur(), horodatage);
+    Optional<JourneeDeTravail> enCours = repository.getEnCoursPour(commande.operateur());
 
-    if (journee.estAbandonneePour(horodatage.dateDeSurvenue(), seuil.amplitudeMaximale())) {
-      return repository.create(
-        nouvelleJournee(commande, geste, evenement(arriveeImplicite.get(), TypeDEvenementDePresence.ARRIVEE, commande.auteur(), horodatage))
-      );
+    if (enCours.isEmpty()) {
+      exigeUnGesteRattachable(commande.operateur(), geste);
     }
 
-    return repository.update(journee.enregistre(geste));
+    if (enCours.filter(journee -> !journee.estAbandonneePour(geste, seuil.amplitudeMaximale())).isEmpty()) {
+      EvenementDePresence arrivee = evenement(arriveeImplicite.get(), TypeDEvenementDePresence.ARRIVEE, commande.auteur(), horodatage);
+
+      return new PresenceTraitee(repository.create(nouvelleJournee(commande, evenement, arrivee)), false);
+    }
+
+    JourneeDeTravail journee = enCours.orElseThrow();
+    if (estRedondant(journee, evenement)) {
+      return new PresenceTraitee(journee, true);
+    }
+
+    return new PresenceTraitee(repository.update(journee.enregistre(evenement)), false);
+  }
+
+  private void exigeUnGesteRattachable(OperateurId operateur, Instant geste) {
+    if (!operateurs.existe(operateur)) {
+      throw new OperateurDAtelierIntrouvableException(operateur);
+    }
+
+    if (!repository.journeesDeLOperateurSur(operateur, new Periode(geste, geste)).isEmpty()) {
+      throw new AucuneJourneeDeTravailEnCoursException(operateur);
+    }
+  }
+
+  /**
+   * Redondant : l'etat courant n'admet pas ce geste, et il n'est pas date avant le dernier fait connu. Date avant, il
+   * serait un geste rejoue dans le desordre, que l'automate refuse.
+   */
+  private static boolean estRedondant(JourneeDeTravail journee, EvenementDePresence evenement) {
+    return (
+      journee.etat().apres(evenement.type()).isEmpty()
+      && journee
+        .etendue()
+        .filter(etendue -> evenement.dateDeSurvenue().isBefore(etendue.fin()))
+        .isEmpty()
+    );
   }
 
   public JourneeDeTravail regularise(RegularisationDePresenceAEnregistrer commande) {
@@ -139,7 +182,15 @@ public final class JourneesDeTravailService {
   ) {
     JourneeDeTravail ouverte = JourneeDeTravail.ouverte(JourneeDeTravailId.newId(), commande.operateur()).enregistre(arrivee);
 
-    return geste.type() == TypeDEvenementDePresence.REPRISE ? ouverte : ouverte.enregistre(geste);
+    return seReduitALArrivee(geste) ? ouverte : ouverte.enregistre(geste);
+  }
+
+  /**
+   * Une reprise suppose une pause, et une arrivee egaree sur la route des pointages double l'arrivee implicite : sur
+   * une nouvelle journee, l'une comme l'autre se reduisent a cette arrivee.
+   */
+  private static boolean seReduitALArrivee(EvenementDePresence geste) {
+    return geste.type() == TypeDEvenementDePresence.REPRISE || geste.type() == TypeDEvenementDePresence.ARRIVEE;
   }
 
   /**

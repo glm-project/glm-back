@@ -58,9 +58,9 @@ class JourneesDeTravailServiceTest {
     maintenant.set(LE_10_MAI_2026_A_13H);
     service.pointe(new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.REPRISE));
     maintenant.set(LE_10_MAI_2026_A_17H);
-    JourneeDeTravail journee = service.pointe(
-      new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.DEPART)
-    );
+    JourneeDeTravail journee = service
+      .pointe(new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.DEPART))
+      .journee();
 
     assertThat(journee.estEnCours()).isFalse();
     assertThat(journee.amplitude()).contains(new Periode(LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_17H));
@@ -78,19 +78,6 @@ class JourneesDeTravailServiceTest {
     ArriveeAEnregistrer inconnu = new ArriveeAEnregistrer(new OperateurId(UUID.randomUUID()), AUTEUR_LEROY);
 
     assertThatThrownBy(() -> service.arrive(inconnu)).isExactlyInstanceOf(OperateurDAtelierIntrouvableException.class);
-  }
-
-  @Test
-  void shouldNotPointerSansJourneeEnCours() {
-    PointageDePresenceAEnregistrer pause = new PointageDePresenceAEnregistrer(
-      OPERATEUR_ID_DUPONT,
-      AUTEUR_DUPONT,
-      TypeDEvenementDePresence.PAUSE
-    );
-
-    assertThatThrownBy(() -> service.pointe(pause))
-      .isExactlyInstanceOf(AucuneJourneeDeTravailEnCoursException.class)
-      .hasMessageContaining(OPERATEUR_ID_DUPONT.uuid().toString());
   }
 
   @Test
@@ -125,9 +112,9 @@ class JourneesDeTravailServiceTest {
   void shouldAnnulerUnPointageEnTrop() {
     JourneeDeTravail ouverte = service.arrive(new ArriveeAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT)).journee();
     maintenant.set(LE_10_MAI_2026_A_12H);
-    JourneeDeTravail avecPause = service.pointe(
-      new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.PAUSE)
-    );
+    JourneeDeTravail avecPause = service
+      .pointe(new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.PAUSE))
+      .journee();
     EvenementDePresenceId pause = avecPause.journal().evenements().getLast().id();
 
     JourneeDeTravail journee = service.annule(

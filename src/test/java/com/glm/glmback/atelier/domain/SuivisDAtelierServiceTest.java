@@ -57,7 +57,7 @@ class SuivisDAtelierServiceTest {
     SuiviDAtelier engage = engage();
     maintenant.set(LE_10_MAI_2026_A_9H);
 
-    SuiviDAtelier pointe = atelier.pointe(debutSurFraiseuse1(engage.id()));
+    SuiviDAtelier pointe = atelier.pointe(debutSurFraiseuse1(engage.id())).suivi();
 
     assertThat(pointe.journal().actifs())
       .singleElement()
@@ -75,14 +75,16 @@ class SuivisDAtelierServiceTest {
   void shouldPointerSansPosteDeTravail() {
     SuiviDAtelier engage = engage();
 
-    SuiviDAtelier pointe = atelier.pointe(
-      PointageAEnregistrer.builder()
-        .suivi(engage.id())
-        .type(TypeDEvenementDAtelier.DEBUT)
-        .operateur(OPERATEUR_ID_DUPONT)
-        .poste(Optional.empty())
-        .auteur(AUTEUR_DUPONT)
-    );
+    SuiviDAtelier pointe = atelier
+      .pointe(
+        PointageAEnregistrer.builder()
+          .suivi(engage.id())
+          .type(TypeDEvenementDAtelier.DEBUT)
+          .operateur(OPERATEUR_ID_DUPONT)
+          .poste(Optional.empty())
+          .auteur(AUTEUR_DUPONT)
+      )
+      .suivi();
 
     assertThat(pointe.journal().actifs())
       .singleElement()
@@ -97,14 +99,16 @@ class SuivisDAtelierServiceTest {
   void shouldPointerSansNatureFauteDePoste() {
     SuiviDAtelier engage = engage();
 
-    SuiviDAtelier pointe = atelier.pointe(
-      PointageAEnregistrer.builder()
-        .suivi(engage.id())
-        .type(TypeDEvenementDAtelier.DEBUT)
-        .operateur(OPERATEUR_ID_MARTIN)
-        .poste(Optional.empty())
-        .auteur(AUTEUR_MARTIN)
-    );
+    SuiviDAtelier pointe = atelier
+      .pointe(
+        PointageAEnregistrer.builder()
+          .suivi(engage.id())
+          .type(TypeDEvenementDAtelier.DEBUT)
+          .operateur(OPERATEUR_ID_MARTIN)
+          .poste(Optional.empty())
+          .auteur(AUTEUR_MARTIN)
+      )
+      .suivi();
 
     assertThat(pointe.journal().actifs())
       .singleElement()
@@ -118,14 +122,16 @@ class SuivisDAtelierServiceTest {
   void shouldReprendreLaNatureDuPosteEtNonDeLOperateur() {
     SuiviDAtelier engage = engage();
 
-    SuiviDAtelier pointe = atelier.pointe(
-      PointageAEnregistrer.builder()
-        .suivi(engage.id())
-        .type(TypeDEvenementDAtelier.DEBUT)
-        .operateur(OPERATEUR_ID_DUPONT)
-        .poste(Optional.of(POSTE_ID_FRAISEUSE_2))
-        .auteur(AUTEUR_DUPONT)
-    );
+    SuiviDAtelier pointe = atelier
+      .pointe(
+        PointageAEnregistrer.builder()
+          .suivi(engage.id())
+          .type(TypeDEvenementDAtelier.DEBUT)
+          .operateur(OPERATEUR_ID_DUPONT)
+          .poste(Optional.of(POSTE_ID_FRAISEUSE_2))
+          .auteur(AUTEUR_DUPONT)
+      )
+      .suivi();
 
     assertThat(pointe.journal().actifs())
       .singleElement()
@@ -140,7 +146,7 @@ class SuivisDAtelierServiceTest {
   void shouldEstampillerLeCoutHoraireDuPoste() {
     SuiviDAtelier engage = engage();
 
-    SuiviDAtelier pointe = atelier.pointe(debutSurFraiseuse1(engage.id()));
+    SuiviDAtelier pointe = atelier.pointe(debutSurFraiseuse1(engage.id())).suivi();
 
     assertThat(pointe.journal().actifs())
       .singleElement()
@@ -151,14 +157,16 @@ class SuivisDAtelierServiceTest {
   void shouldPointerSansCoutHoraireFauteDePoste() {
     SuiviDAtelier engage = engage();
 
-    SuiviDAtelier pointe = atelier.pointe(
-      PointageAEnregistrer.builder()
-        .suivi(engage.id())
-        .type(TypeDEvenementDAtelier.DEBUT)
-        .operateur(OPERATEUR_ID_DUPONT)
-        .poste(Optional.empty())
-        .auteur(AUTEUR_DUPONT)
-    );
+    SuiviDAtelier pointe = atelier
+      .pointe(
+        PointageAEnregistrer.builder()
+          .suivi(engage.id())
+          .type(TypeDEvenementDAtelier.DEBUT)
+          .operateur(OPERATEUR_ID_DUPONT)
+          .poste(Optional.empty())
+          .auteur(AUTEUR_DUPONT)
+      )
+      .suivi();
 
     assertThat(pointe.journal().actifs())
       .singleElement()
@@ -173,14 +181,16 @@ class SuivisDAtelierServiceTest {
   void shouldPointerSansCoutHoraireQuandLePosteNEnAPas() {
     SuiviDAtelier engage = engage();
 
-    SuiviDAtelier pointe = atelier.pointe(
-      PointageAEnregistrer.builder()
-        .suivi(engage.id())
-        .type(TypeDEvenementDAtelier.DEBUT)
-        .operateur(OPERATEUR_ID_DUPONT)
-        .poste(Optional.of(POSTE_ID_FRAISEUSE_2))
-        .auteur(AUTEUR_DUPONT)
-    );
+    SuiviDAtelier pointe = atelier
+      .pointe(
+        PointageAEnregistrer.builder()
+          .suivi(engage.id())
+          .type(TypeDEvenementDAtelier.DEBUT)
+          .operateur(OPERATEUR_ID_DUPONT)
+          .poste(Optional.of(POSTE_ID_FRAISEUSE_2))
+          .auteur(AUTEUR_DUPONT)
+      )
+      .suivi();
 
     assertThat(pointe.journal().actifs())
       .singleElement()
@@ -191,7 +201,7 @@ class SuivisDAtelierServiceTest {
   void shouldEstampillerLeTauxHoraireDeLOperateur() {
     SuiviDAtelier engage = engage();
 
-    SuiviDAtelier pointe = atelier.pointe(debutSurFraiseuse1(engage.id()));
+    SuiviDAtelier pointe = atelier.pointe(debutSurFraiseuse1(engage.id())).suivi();
 
     assertThat(pointe.journal().actifs())
       .singleElement()
@@ -202,14 +212,16 @@ class SuivisDAtelierServiceTest {
   void shouldPointerSansTauxHoraireQuandLOperateurNEnAPas() {
     SuiviDAtelier engage = engage();
 
-    SuiviDAtelier pointe = atelier.pointe(
-      PointageAEnregistrer.builder()
-        .suivi(engage.id())
-        .type(TypeDEvenementDAtelier.DEBUT)
-        .operateur(OPERATEUR_ID_MARTIN)
-        .poste(Optional.empty())
-        .auteur(AUTEUR_MARTIN)
-    );
+    SuiviDAtelier pointe = atelier
+      .pointe(
+        PointageAEnregistrer.builder()
+          .suivi(engage.id())
+          .type(TypeDEvenementDAtelier.DEBUT)
+          .operateur(OPERATEUR_ID_MARTIN)
+          .poste(Optional.empty())
+          .auteur(AUTEUR_MARTIN)
+      )
+      .suivi();
 
     assertThat(pointe.journal().actifs())
       .singleElement()
@@ -283,14 +295,16 @@ class SuivisDAtelierServiceTest {
     SuiviDAtelier engage = engage();
     atelier.pointe(debutSurFraiseuse1(engage.id()));
 
-    SuiviDAtelier pointe = atelier.pointe(
-      PointageAEnregistrer.builder()
-        .suivi(engage.id())
-        .type(TypeDEvenementDAtelier.DEBUT)
-        .operateur(OPERATEUR_ID_DUPONT)
-        .poste(Optional.of(POSTE_ID_FRAISEUSE_2))
-        .auteur(AUTEUR_DUPONT)
-    );
+    SuiviDAtelier pointe = atelier
+      .pointe(
+        PointageAEnregistrer.builder()
+          .suivi(engage.id())
+          .type(TypeDEvenementDAtelier.DEBUT)
+          .operateur(OPERATEUR_ID_DUPONT)
+          .poste(Optional.of(POSTE_ID_FRAISEUSE_2))
+          .auteur(AUTEUR_DUPONT)
+      )
+      .suivi();
 
     assertThat(pointe.activitesEnCours())
       .extracting(ActiviteEnCours::poste)
@@ -353,7 +367,7 @@ class SuivisDAtelierServiceTest {
   @Test
   void shouldAnnulerUneSaisieEnTrop() {
     SuiviDAtelier engage = engage();
-    SuiviDAtelier pointe = atelier.pointe(debutSurFraiseuse1(engage.id()));
+    SuiviDAtelier pointe = atelier.pointe(debutSurFraiseuse1(engage.id())).suivi();
     EvenementDAtelierId debut = pointe.journal().actifs().getFirst().id();
 
     SuiviDAtelier annule = atelier.annule(
@@ -370,7 +384,7 @@ class SuivisDAtelierServiceTest {
   void shouldCorrigerUneSaisieFausseEnUnSeulActe() {
     SuiviDAtelier engage = engage();
     maintenant.set(LE_10_MAI_2026_A_9H);
-    SuiviDAtelier pointe = atelier.pointe(debutSurFraiseuse1(engage.id()));
+    SuiviDAtelier pointe = atelier.pointe(debutSurFraiseuse1(engage.id())).suivi();
     EvenementDAtelierId debutFautif = pointe.journal().actifs().getFirst().id();
     maintenant.set(LE_11_MAI_2026_A_9H15);
 

@@ -82,6 +82,24 @@ public record SuiviDAtelier(
     return activites().stream().filter(IntervalleDActivite::estOuvert).map(ActiviteEnCours::of).toList();
   }
 
+  /**
+   * Vrai si l'evenement arrete une activite qui n'est pas en cours, sans etre date avant son dernier fait : le double
+   * appui sur « arreter », qui ne change rien. Date avant, ce serait un geste rejoue dans le desordre.
+   */
+  public boolean arreteUneActiviteAbsente(EvenementDAtelier evenement) {
+    return (
+      evenement.type() == TypeDEvenementDAtelier.FIN
+      && activitesEnCours()
+        .stream()
+        .noneMatch(activite -> activite.activite().equals(evenement.cle()))
+      && journal
+        .actifs()
+        .stream()
+        .filter(fait -> fait.cle().equals(evenement.cle()))
+        .noneMatch(fait -> evenement.dateDeSurvenue().isBefore(fait.dateDeSurvenue()))
+    );
+  }
+
   public EtatDAtelier etat() {
     if (estCloture()) {
       return EtatDAtelier.CLOTURE;

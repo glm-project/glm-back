@@ -14,6 +14,7 @@ import com.glm.glmback.atelier.domain.JourneeDeTravailRepository;
 import com.glm.glmback.atelier.domain.OperateursConnus;
 import com.glm.glmback.atelier.domain.Periode;
 import com.glm.glmback.atelier.domain.PointageAEnregistrer;
+import com.glm.glmback.atelier.domain.PointageDAtelierTraite;
 import com.glm.glmback.atelier.domain.PostesConnus;
 import com.glm.glmback.atelier.domain.RegularisationAEnregistrer;
 import com.glm.glmback.atelier.domain.SeuilDAmplitude;
@@ -34,6 +35,7 @@ import java.util.stream.Stream;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Orchestration des actes portant sur un element engage en atelier.
@@ -50,6 +52,7 @@ public class SuivisDAtelierApplicationService {
   private final TempsDAtelierService tempsDAtelier;
   private final AnnuaireDAtelierService annuaires;
   private final IdentitesDEvenements identites;
+  private final TransactionTemplate transactions;
 
   public SuivisDAtelierApplicationService(
     SuiviDAtelierRepository repository,
@@ -60,7 +63,8 @@ public class SuivisDAtelierApplicationService {
     Habilitations habilitations,
     SeuilDAmplitude seuil,
     Clock clock,
-    IdentitesDEvenements identites
+    IdentitesDEvenements identites,
+    TransactionTemplate transactions
   ) {
     this.suivisDAtelier = SuivisDAtelierService.builder()
       .repository(repository)
@@ -72,6 +76,7 @@ public class SuivisDAtelierApplicationService {
     this.tempsDAtelier = TempsDAtelierService.builder().suivis(repository).journees(journees).seuil(seuil).clock(clock);
     this.annuaires = new AnnuaireDAtelierService(operateurs, postes);
     this.identites = identites;
+    this.transactions = transactions;
   }
 
   @Secured("ROLE_GESTIONNAIRE")
@@ -87,24 +92,28 @@ public class SuivisDAtelierApplicationService {
   }
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
-  @Transactional
   public ResultatDEcriture<SuiviDAtelier> pointeDuPupitre(PointageAEnregistrer commande) {
-    ReservationDEvenement reservation = identites.reserve(
-      commande.evenement().uuid(),
-      EmpreinteDEvenement.builder()
-        .nature(NatureDeGesteDuPupitre.POINTAGE_D_ATELIER)
-        .cible(Optional.of(commande.suivi().uuid()))
-        .operateur(commande.operateur().uuid())
-        .type(commande.type().name())
-        .poste(commande.poste().map(poste -> poste.uuid()))
-        .dateDeSurvenue(commande.dateDeSurvenue())
-    );
-    if (reservation.estUnRejeu()) {
-      return new ResultatDEcriture<>(suivisDAtelier.get(new SuiviDAtelierId(reservation.agregat().orElseThrow().id())), true);
-    }
-    SuiviDAtelier suivi = suivisDAtelier.pointe(commande);
-    identites.associe(commande.evenement().uuid(), new AgregatDEvenement(TypeDAgregatDEvenement.SUIVI_D_ATELIER, suivi.id().uuid()));
-    return new ResultatDEcriture<>(suivi, false);
+    return SaisieConcurrenteRejouee.executer(transactions, () -> {
+      ReservationDEvenement reservation = identites.reserve(
+        commande.evenement().uuid(),
+        EmpreinteDEvenement.builder()
+          .nature(NatureDeGesteDuPupitre.POINTAGE_D_ATELIER)
+          .cible(Optional.of(commande.suivi().uuid()))
+          .operateur(commande.operateur().uuid())
+          .type(commande.type().name())
+          .poste(commande.poste().map(poste -> poste.uuid()))
+          .dateDeSurvenue(commande.dateDeSurvenue())
+      );
+      if (reservation.estUnRejeu()) {
+        return new ResultatDEcriture<>(suivisDAtelier.get(new SuiviDAtelierId(reservation.agregat().orElseThrow().id())), true);
+      }
+      PointageDAtelierTraite traite = suivisDAtelier.pointe(commande);
+      identites.associe(
+        commande.evenement().uuid(),
+        new AgregatDEvenement(TypeDAgregatDEvenement.SUIVI_D_ATELIER, traite.suivi().id().uuid())
+      );
+      return new ResultatDEcriture<>(traite.suivi(), traite.absorbe());
+    });
   }
 
   @Secured("ROLE_GESTIONNAIRE")
