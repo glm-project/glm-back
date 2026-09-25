@@ -13,9 +13,18 @@ import java.time.Instant;
 )
 record RestPlage(
   @Schema(description = "Debut de la plage.", example = "2026-05-11T06:00:00Z") Instant debut,
-  @Schema(description = "Fin de la plage, absente tant que l'operateur n'est pas parti.") Instant fin
+  @Schema(description = "Fin de la plage, absente tant que l'operateur n'est pas parti.") Instant fin,
+  @Schema(
+    description = """
+    Vrai si la plage repose sur une fin de journee presumee : l'operateur n'a pas pointe son depart, et sa journee,
+    abandonnee au-dela de l'amplitude maximale, a ete fermee a son dernier fait connu. A confirmer par une
+    regularisation du depart.
+    """,
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  boolean presumee
 ) {
   static RestPlage from(Plage plage) {
-    return new RestPlage(plage.debut(), plage.fin().orElse(null));
+    return new RestPlage(plage.debut(), plage.fin().orElse(null), plage.presumee());
   }
 }

@@ -140,6 +140,15 @@ class DecoupageCalendaireTest {
     return new Plage(debut, Optional.of(fin));
   }
 
+  @Test
+  void shouldGarderLaPresomptionDUnePlageScindeeAMinuit() {
+    List<PlageDUnJour> plages = decoupage().plages(new Plage(le(11, 22), Optional.of(le(12, 2)), true));
+
+    assertThat(plages)
+      .extracting(plage -> plage.plage().presumee())
+      .containsExactly(true, true);
+  }
+
   private static Instant le(int jourDeMai, int heure) {
     return LocalDateTime.of(2026, 5, jourDeMai, heure, 0).atZone(PARIS).toInstant();
   }

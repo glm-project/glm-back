@@ -25,4 +25,11 @@ public record SyntheseDesHeures(OperateurConnu operateur, SemaineCalendaire sema
   public Duration dureeTotale() {
     return jours.stream().map(JourDeSynthese::duree).reduce(Duration.ZERO, Duration::plus);
   }
+
+  /**
+   * La duree presumee de la semaine : ce qui reste a confirmer avant de transmettre a la paie.
+   */
+  public Duration dureePresumeeTotale() {
+    return jours.stream().map(JourDeSynthese::dureePresumee).reduce(Duration.ZERO, Duration::plus);
+  }
 }

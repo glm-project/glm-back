@@ -32,6 +32,8 @@ public class FeuilleDeTempsSteps {
   private static final String OPERATEURS_URI = "/api/operateurs";
   private static final String JOURNEES_URI = "/api/atelier/journees";
   private static final String FEUILLES_URI = "/api/feuilles-de-temps";
+  private static final String ELEMENTS_URI = "/api/elements-de-fabrication";
+  private static final String SUIVIS_URI = "/api/atelier/suivis";
   private static final ObjectMapper JSON = JsonMapper.builder().build();
   private static final AtomicInteger SEQUENCE = new AtomicInteger();
 
@@ -42,6 +44,7 @@ public class FeuilleDeTempsSteps {
   private CucumberClock horloge;
 
   private final Map<String, String> operateurs = new HashMap<>();
+  private final Map<String, String> journees = new HashMap<>();
 
   @Given("la feuille de temps suit l'operateur {string}")
   public void laFeuilleDeTempsSuitLOperateur(String alias) {
@@ -54,6 +57,33 @@ public class FeuilleDeTempsSteps {
   public void estArriveA(String alias, String instant) {
     horloge.ilEst(Instant.parse(instant));
     rest.post(JOURNEES_URI, JSON.writeValueAsString(Map.of("id", UUID.randomUUID(), "operateur", operateurs.get(alias))));
+    journees.put(alias, String.valueOf(CucumberRestTestContext.getElement("$.id")));
+  }
+
+  /**
+   * Un ordre cree, engage et demarre a cet instant par l'operateur : de quoi donner a une journee abandonnee un
+   * dernier fait connu d'atelier, que le releve doit retrouver pour presumer sa fin.
+   */
+  @Given("{string} a demarre un ordre de fabrication a {string}")
+  public void aDemarreUnOrdreDeFabricationA(String alias, String instant) {
+    horloge.ilEst(Instant.parse(instant));
+    Map<String, Object> element = Map.of("type", "ORDRE_DE_FABRICATION", "reference", "FEUILLE-" + SEQUENCE.incrementAndGet());
+    rest.post(ELEMENTS_URI, JSON.writeValueAsString(element));
+    rest.post(SUIVIS_URI, JSON.writeValueAsString(Map.of("element", String.valueOf(CucumberRestTestContext.getElement("$.id")))));
+    String suivi = String.valueOf(CucumberRestTestContext.getElement("$.id"));
+    rest.post(
+      SUIVIS_URI + "/" + suivi + "/pointages",
+      JSON.writeValueAsString(Map.of("id", UUID.randomUUID(), "type", "DEBUT", "operateur", operateurs.get(alias)))
+    );
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage de l'ordre doit etre accepte").isTrue();
+  }
+
+  @Given("le depart de {string} est regularise a {string}")
+  public void leDepartDeEstRegulariseA(String alias, String instant) {
+    rest.post(
+      JOURNEES_URI + "/" + journees.get(alias) + "/regularisations",
+      JSON.writeValueAsString(Map.of("type", "DEPART", "dateDeSurvenue", instant))
+    );
   }
 
   @Given("{string} a pointe {string} a {string}")
@@ -89,7 +119,14 @@ public class FeuilleDeTempsSteps {
 
   @Then("la presence du {string} est")
   public void laPresenceDuEst(String jour, List<Map<String, String>> attendues) {
-    assertThat(presenceDu(jour)).isEqualTo(attendues);
+    List<Map<String, String>> presence = presenceDu(jour);
+
+    assertThat(presence).hasSameSizeAs(attendues);
+    for (int rang = 0; rang < attendues.size(); rang++) {
+      Map<String, String> attendue = attendues.get(rang);
+      Map<String, String> lue = presence.get(rang);
+      attendue.forEach((cle, valeur) -> assertThat(String.valueOf(lue.get(cle))).as(cle).isEqualTo(valeur));
+    }
   }
 
   @Then("la presence du {string} est vide")
@@ -100,7 +137,7 @@ public class FeuilleDeTempsSteps {
   @Then("la presence du {string} commence a {string} et n'est pas terminee")
   public void laPresenceDuCommenceAEtNEstPasTerminee(String jour, String debut) {
     assertThat(presenceDu(jour)).hasSize(1);
-    assertThat(presenceDu(jour).getFirst()).containsOnly(entry("debut", debut));
+    assertThat(presenceDu(jour).getFirst()).containsEntry("debut", debut).doesNotContainKey("fin");
   }
 
   private void consulte(String operateur, int semaine, int annee) {

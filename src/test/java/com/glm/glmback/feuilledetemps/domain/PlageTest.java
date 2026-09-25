@@ -45,4 +45,24 @@ class PlageTest {
   void shouldNotBeOuverteWithFin() {
     assertThat(new Plage(A_8H, Optional.of(A_12H)).estOuverte()).isFalse();
   }
+
+  @Test
+  void shouldEtrePointeeParDefaut() {
+    assertThat(new Plage(A_8H, Optional.empty()).presumee()).isFalse();
+  }
+
+  @Test
+  void shouldContenirSesBornesEtCeQuiEstEntre() {
+    Plage plage = new Plage(A_8H, Optional.of(A_12H));
+
+    assertThat(plage.contient(A_8H)).isTrue();
+    assertThat(plage.contient(A_12H)).isTrue();
+    assertThat(plage.contient(A_8H.minusSeconds(1))).isFalse();
+    assertThat(plage.contient(A_12H.plusSeconds(1))).isFalse();
+  }
+
+  @Test
+  void shouldContenirToutCeQuiSuitQuandElleEstOuverte() {
+    assertThat(new Plage(A_8H, Optional.empty()).contient(A_12H.plusSeconds(86_400))).isTrue();
+  }
 }

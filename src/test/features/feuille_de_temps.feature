@@ -56,6 +56,40 @@ Feature: Feuille de temps hebdomadaire d'un operateur
     And la presence du "2026-05-15" commence a "2026-05-15T06:00:00Z" et n'est pas terminee
     And la presence du "2026-05-16" est vide
 
+  Scenario: Une journee abandonnee signale sa plage presumee
+    # E2 de la strategie « bornes de fin de journee », lot 5 : lu mardi, lundi s'arrete a son dernier fait connu, un
+    # ordre demarre a 16 h. La plage d'apres-midi est presumee, jusqu'a la regularisation du depart.
+    Given "dupont" est arrive a "2026-05-11T05:00:00Z"
+    And "dupont" a pointe "PAUSE" a "2026-05-11T10:00:00Z"
+    And "dupont" a pointe "REPRISE" a "2026-05-11T11:00:00Z"
+    And "dupont" a demarre un ordre de fabrication a "2026-05-11T14:00:00Z"
+    And il est "2026-05-12T08:00:00Z"
+    When je consulte la feuille de temps de "dupont" pour la semaine 20 de 2026
+    Then la reponse a le statut http 200
+    And la presence du "2026-05-11" est
+      | debut                | fin                  | presumee |
+      | 2026-05-11T05:00:00Z | 2026-05-11T10:00:00Z | false    |
+      | 2026-05-11T11:00:00Z | 2026-05-11T14:00:00Z | true     |
+    Given le depart de "dupont" est regularise a "2026-05-11T15:00:00Z"
+    When je consulte la feuille de temps de "dupont" pour la semaine 20 de 2026
+    Then la presence du "2026-05-11" est
+      | debut                | fin                  | presumee |
+      | 2026-05-11T05:00:00Z | 2026-05-11T10:00:00Z | false    |
+      | 2026-05-11T11:00:00Z | 2026-05-11T15:00:00Z | false    |
+
+  Scenario: Un poste de nuit du dimanche au lundi se lit sur deux semaines
+    # E7 : minuit a Paris, 22:00Z, coupe la venue entre la semaine 19 et la semaine 20.
+    Given "dupont" est arrive a "2026-05-10T18:00:00Z"
+    And "dupont" a pointe "DEPART" a "2026-05-11T06:00:00Z"
+    When je consulte la feuille de temps de "dupont" pour la semaine 19 de 2026
+    Then la presence du "2026-05-10" est
+      | debut                | fin                  |
+      | 2026-05-10T18:00:00Z | 2026-05-10T22:00:00Z |
+    When je consulte la feuille de temps de "dupont" pour la semaine 20 de 2026
+    Then la presence du "2026-05-11" est
+      | debut                | fin                  |
+      | 2026-05-10T22:00:00Z | 2026-05-11T06:00:00Z |
+
   Scenario: Une feuille de temps ne se lit pas pour un operateur inconnu
     When je consulte la feuille de temps de l'operateur "11111111-2222-3333-4444-555555555555" pour la semaine 20 de 2026
     Then la reponse a le statut http 404

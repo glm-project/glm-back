@@ -91,7 +91,7 @@ public final class DecoupageCalendaire {
     while (curseur.isBefore(finRetenue)) {
       Instant minuitSuivant = jour.plusDays(1).atStartOfDay(zone).toInstant();
       Instant borne = minuitSuivant.isBefore(finRetenue) ? minuitSuivant : finRetenue;
-      plages.add(new PlageDUnJour(jour, new Plage(curseur, Optional.of(borne))));
+      plages.add(new PlageDUnJour(jour, new Plage(curseur, Optional.of(borne), plage.presumee())));
       curseur = borne;
       jour = jour.plusDays(1);
     }

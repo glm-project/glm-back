@@ -722,8 +722,13 @@
         "description" : "Un jour du calendrier de l'entreprise, ses pointages et la duree travaillee qui lui revient.\n\nLes sept jours sont toujours rendus, meme vides : un trou obligerait le lecteur a deviner s'il manque une journee\nou si l'operateur n'etait pas la.\n",
         "properties" : {
           "duree" : {
-            "description" : "Duree travaillee du jour, pauses exclues.",
+            "description" : "Duree travaillee et pointee du jour, pauses exclues.",
             "example" : "PT8H",
+            "type" : "string"
+          },
+          "dureePresumee" : {
+            "description" : "Duree presumee du jour : le temps d'une journee sans depart, abandonnee au-dela de l'amplitude maximale, entre sa\nderniere reprise et son dernier fait connu. A confirmer par une regularisation avant de transmettre a la paie.\n",
+            "example" : "PT3H",
             "type" : "string"
           },
           "jour" : {
@@ -1114,8 +1119,13 @@
             "description" : "Fin de la plage, absente tant que l'operateur n'est pas parti.",
             "format" : "date-time",
             "type" : "string"
+          },
+          "presumee" : {
+            "description" : "Vrai si la plage repose sur une fin de journee presumee : l'operateur n'a pas pointe son depart, et sa journee,\nabandonnee au-dela de l'amplitude maximale, a ete fermee a son dernier fait connu. A confirmer par une\nregularisation du depart.\n",
+            "type" : "boolean"
           }
         },
+        "required" : [ "presumee" ],
         "type" : "object"
       },
       "RestPointage" : {
@@ -1518,8 +1528,13 @@
             "format" : "int32",
             "type" : "integer"
           },
+          "dureePresumeeTotale" : {
+            "description" : "Duree presumee de la semaine, somme des sept jours.",
+            "example" : "PT3H",
+            "type" : "string"
+          },
           "dureeTotale" : {
-            "description" : "Duree travaillee de la semaine, somme des sept jours.",
+            "description" : "Duree travaillee et pointee de la semaine, somme des sept jours.",
             "example" : "PT38H",
             "type" : "string"
           },
@@ -2703,7 +2718,7 @@
     },
     "/api/feuilles-de-temps/{operateurId}" : {
       "get" : {
-        "description" : "Rend les sept jours de la semaine ISO demandee, chacun portant les fenetres de presence qui lui reviennent dans\nle fuseau horaire de l'entreprise.\n\nLa semaine est toujours explicite : aucune semaine courante implicite, pour que deux appels identiques rendent\ntoujours la meme chose. L'annee est celle des semaines ISO, qui differe de l'annee civile a ses bornes — la\nsemaine 1 de 2026 commence le 29 decembre 2025.\n",
+        "description" : "Rend les sept jours de la semaine ISO demandee, chacun portant les fenetres de presence qui lui reviennent dans\nle fuseau horaire de l'entreprise.\n\nLa semaine est toujours explicite : aucune semaine courante implicite. L'annee est celle des semaines ISO, qui\ndiffere de l'annee civile a ses bornes — la semaine 1 de 2026 commence le 29 decembre 2025.\n\nUne journee sans depart au-dela de l'amplitude maximale de l'entreprise est abandonnee : sa derniere plage se\nferme a son dernier fait connu et porte presumee. C'est l'instant de lecture qui en decide, donc deux appels\nespaces peuvent differer.\n",
         "operationId" : "get_5",
         "parameters" : [ {
           "description" : "Identifiant de l'operateur dans le referentiel.",
@@ -3234,7 +3249,7 @@
     },
     "/api/syntheses-des-heures/{operateurId}" : {
       "get" : {
-        "description" : "Rend les sept jours de la semaine ISO demandee. Chaque jour porte le journal brut des pointages (arrivee, pause,\nreprise, depart) et la duree travaillee, calculee sur les fenetres de presence, pauses exclues.\n\nLa semaine est toujours explicite : aucune semaine courante implicite, pour que deux appels identiques rendent\ntoujours la meme chose. L'annee est celle des semaines ISO, qui differe de l'annee civile a ses bornes — la\nsemaine 1 de 2026 commence le 29 decembre 2025.\n\nCe releve n'est ni une feuille de paie ni un rapport de paie : il expose du temps travaille pour l'alimenter,\nsans en etre une piece.\n",
+        "description" : "Rend les sept jours de la semaine ISO demandee. Chaque jour porte le journal brut des pointages (arrivee, pause,\nreprise, depart) et la duree travaillee, calculee sur les fenetres de presence, pauses exclues.\n\nLa semaine est toujours explicite : aucune semaine courante implicite. L'annee est celle des semaines ISO, qui\ndiffere de l'annee civile a ses bornes — la semaine 1 de 2026 commence le 29 decembre 2025.\n\nUne journee sans depart au-dela de l'amplitude maximale de l'entreprise est abandonnee : elle compte jusqu'a son\ndernier fait connu, dans dureePresumee et jamais dans duree. C'est l'instant de lecture qui en decide, donc deux\nappels espaces peuvent differer.\n\nCe releve n'est ni une feuille de paie ni un rapport de paie : il expose du temps travaille pour l'alimenter,\nsans en etre une piece.\n",
         "operationId" : "get_3",
         "parameters" : [ {
           "description" : "Identifiant de l'operateur dans le referentiel.",

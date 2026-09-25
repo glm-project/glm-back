@@ -38,8 +38,11 @@ fenêtres de présence, puis passe chaque fenêtre au `DecoupageCalendaire`, seu
 - **Une plage ouverte ne dépasse pas son propre jour.** Sans départ pointé, rien ne dit que l'opérateur était encore
   là le lendemain ; l'étaler jusqu'à la fin de la semaine affirmerait une présence que personne n'a saisie. C'est la
   transposition de la règle qu'`atelier` applique déjà à un travail jamais arrêté.
-- **La semaine est toujours explicite.** Aucune « semaine courante » implicite, donc **aucune horloge** dans ce
-  contexte : deux appels identiques rendent toujours la même chose.
+- **Une journée abandonnée est fermée à sa fin présumée.** Au-delà du seuil (`SeuilDAmplitude`, table
+  `parametrage`), sa dernière plage se ferme au dernier fait connu, pointage d'OF compris (`PointagesDAtelier`, table
+  `evenement_d_atelier`, interrogé pour une journée abandonnée seulement), et porte `presumee`.
+- **La semaine est toujours explicite.** Aucune « semaine courante » implicite. L'horloge ne sert qu'à juger
+  l'abandon d'une journée : deux appels espacés peuvent donc différer.
 - **Aucun import de `atelier`, `operateur` ni `postedetravail`**, tous annotés `@BusinessContext`. Ce contexte
   déclare ses propres entités JPA `@Immutable` sur leurs tables.
 
@@ -68,7 +71,8 @@ c'est le même mot du langage métier.
 
 ## Ports sortants
 
-`PresenceDeLOperateur`, `OperateursConnus`, `FuseauHoraireDeLEntreprise`.
+`PresenceDeLOperateur`, `OperateursConnus`, `FuseauHoraireDeLEntreprise`, `SeuilDAmplitude`, `PointagesDAtelier`,
+`Clock`.
 
 `FuseauHoraireDeLEntreprise` est une **donnée de paramétrage**, donc un port : `FuseauHoraireFixe` rend
 `Europe/Paris` pour l'instant, sur le patron assumé d'`InMemoryPrefixesDElementsDeFabrication`. Le jour où une

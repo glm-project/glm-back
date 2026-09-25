@@ -41,9 +41,12 @@ class FeuilleDeTempsResource {
     Rend les sept jours de la semaine ISO demandee, chacun portant les fenetres de presence qui lui reviennent dans
     le fuseau horaire de l'entreprise.
 
-    La semaine est toujours explicite : aucune semaine courante implicite, pour que deux appels identiques rendent
-    toujours la meme chose. L'annee est celle des semaines ISO, qui differe de l'annee civile a ses bornes — la
-    semaine 1 de 2026 commence le 29 decembre 2025.
+    La semaine est toujours explicite : aucune semaine courante implicite. L'annee est celle des semaines ISO, qui
+    differe de l'annee civile a ses bornes — la semaine 1 de 2026 commence le 29 decembre 2025.
+
+    Une journee sans depart au-dela de l'amplitude maximale de l'entreprise est abandonnee : sa derniere plage se
+    ferme a son dernier fait connu et porte presumee. C'est l'instant de lecture qui en decide, donc deux appels
+    espaces peuvent differer.
     """
   )
   @ApiResponse(responseCode = "200", description = "La feuille de temps de la semaine demandee.")

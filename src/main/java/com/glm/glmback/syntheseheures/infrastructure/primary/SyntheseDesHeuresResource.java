@@ -44,9 +44,12 @@ class SyntheseDesHeuresResource {
     Rend les sept jours de la semaine ISO demandee. Chaque jour porte le journal brut des pointages (arrivee, pause,
     reprise, depart) et la duree travaillee, calculee sur les fenetres de presence, pauses exclues.
 
-    La semaine est toujours explicite : aucune semaine courante implicite, pour que deux appels identiques rendent
-    toujours la meme chose. L'annee est celle des semaines ISO, qui differe de l'annee civile a ses bornes — la
-    semaine 1 de 2026 commence le 29 decembre 2025.
+    La semaine est toujours explicite : aucune semaine courante implicite. L'annee est celle des semaines ISO, qui
+    differe de l'annee civile a ses bornes — la semaine 1 de 2026 commence le 29 decembre 2025.
+
+    Une journee sans depart au-dela de l'amplitude maximale de l'entreprise est abandonnee : elle compte jusqu'a son
+    dernier fait connu, dans dureePresumee et jamais dans duree. C'est l'instant de lecture qui en decide, donc deux
+    appels espaces peuvent differer.
 
     Ce releve n'est ni une feuille de paie ni un rapport de paie : il expose du temps travaille pour l'alimenter,
     sans en etre une piece.

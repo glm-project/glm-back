@@ -18,9 +18,21 @@ class SyntheseDesHeuresTest {
   private static final JourDeSynthese LUNDI_8H = new JourDeSynthese(
     LocalDate.of(2026, 5, 11),
     List.of(arriveeA(LE_LUNDI_11_MAI_2026_A_8H)),
-    Duration.ofHours(8)
+    Duration.ofHours(8),
+    Duration.ofHours(1)
   );
-  private static final JourDeSynthese MARDI_SANS_PRESENCE = new JourDeSynthese(LocalDate.of(2026, 5, 12), List.of(), Duration.ZERO);
+  private static final JourDeSynthese MARDI_SANS_PRESENCE = new JourDeSynthese(
+    LocalDate.of(2026, 5, 12),
+    List.of(),
+    Duration.ZERO,
+    Duration.ZERO
+  );
+  private static final JourDeSynthese MERCREDI_PRESUME = new JourDeSynthese(
+    LocalDate.of(2026, 5, 13),
+    List.of(),
+    Duration.ofHours(2),
+    Duration.ofHours(3)
+  );
 
   @Test
   void shouldNotBuildWithoutOperateur() {
@@ -66,5 +78,17 @@ class SyntheseDesHeuresTest {
     SyntheseDesHeures synthese = new SyntheseDesHeures(OPERATEUR_CONNU_DUPONT, SEMAINE_20_DE_2026, List.of(LUNDI_8H, MARDI_SANS_PRESENCE));
 
     assertThat(synthese.dureeTotale()).isEqualTo(Duration.ofHours(8));
+  }
+
+  @Test
+  void shouldSommerLaDureePresumeeDeChaqueJour() {
+    SyntheseDesHeures synthese = new SyntheseDesHeures(
+      OPERATEUR_CONNU_DUPONT,
+      SEMAINE_20_DE_2026,
+      List.of(LUNDI_8H, MARDI_SANS_PRESENCE, MERCREDI_PRESUME)
+    );
+
+    assertThat(synthese.dureeTotale()).isEqualTo(Duration.ofHours(10));
+    assertThat(synthese.dureePresumeeTotale()).isEqualTo(Duration.ofHours(4));
   }
 }
