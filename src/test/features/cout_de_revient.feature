@@ -83,6 +83,23 @@ Feature: Cout de revient d'un element de fabrication
       | nature   | travail | nonConformite | machine | mainDOeuvre |
       | Fraisage | PT2H    | PT0S          | 90.00   | 40.00       |
 
+  Scenario: Un ordre relance le lendemain valorise les deux journees, sans la nuit
+    # E2 de la strategie « bornes de fin de journee » : sans relance, le debut de mardi serait refuse et la fin de
+    # mardi refermerait l'intervalle de lundi. Le rapport ne vaudrait pas trois heures.
+    Given l'entreprise fabrique "OF 3011"
+    And "OF 3011" est mis en atelier a "2026-05-11T07:00:00Z"
+    And "dupont" prend son poste a "2026-05-11T08:00:00Z"
+    And "dupont" pointe "DEBUT" sur "OF 3011" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
+    And "dupont" pointe sa presence "DEPART" a "2026-05-11T11:00:00Z"
+    And "dupont" prend son poste a "2026-05-12T08:00:00Z"
+    And "dupont" pointe "DEBUT" sur "OF 3011" au poste "fraiseuse" a "2026-05-12T09:00:00Z"
+    And "dupont" pointe "FIN" sur "OF 3011" au poste "fraiseuse" a "2026-05-12T10:00:00Z"
+    When je consulte le cout de revient de "OF 3011" a "2026-05-12T18:00:00Z"
+    Then la reponse a le statut http 200
+    And le rapport porte les lignes
+      | nature   | travail | nonConformite | machine | mainDOeuvre |
+      | Fraisage | PT3H    | PT0S          | 135.00  | 60.00       |
+
   Scenario: Deux machines menees de front divisent l'operateur, jamais les machines
     Given l'entreprise fabrique "OF 3005"
     And "OF 3005" est mis en atelier a "2026-05-11T07:00:00Z"
