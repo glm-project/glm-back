@@ -70,6 +70,29 @@ Feature: Le referentiel que le pupitre met en cache
       | operateur | poste     | categorie | depuis               |
       | dupont    | fraiseuse | TRAVAIL   | 2026-05-11T09:00:00Z |
 
+  Scenario: Une activite relancee reste unique et repart de la relance
+    Given le pupitre fabrique "OF 4010"
+    And "OF 4010" est engage au pupitre a "2026-05-11T07:00:00Z"
+    And au pupitre, "dupont" prend son poste a "2026-05-11T08:00:00Z"
+    And au pupitre, "dupont" pointe "DEBUT" sur "OF 4010" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
+    And au pupitre, "dupont" pointe "DEBUT" sur "OF 4010" au poste "fraiseuse" a "2026-05-11T10:00:00Z"
+    When je lis le referentiel du pupitre a "2026-05-11T11:00:00Z"
+    Then "OF 4010" figure au referentiel du pupitre dans l'etat "EN_COURS"
+    And les activites de "OF 4010" au referentiel du pupitre sont
+      | operateur | poste     | categorie | depuis               |
+      | dupont    | fraiseuse | TRAVAIL   | 2026-05-11T10:00:00Z |
+
+  Scenario: Une non conformite relancee reste unique et repart de la relance
+    Given le pupitre fabrique "OF 4011"
+    And "OF 4011" est engage au pupitre a "2026-05-11T07:00:00Z"
+    And au pupitre, "dupont" prend son poste a "2026-05-11T08:00:00Z"
+    And au pupitre, "dupont" pointe "NON_CONFORMITE" sur "OF 4011" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
+    And au pupitre, "dupont" pointe "NON_CONFORMITE" sur "OF 4011" au poste "fraiseuse" a "2026-05-11T10:00:00Z"
+    When je lis le referentiel du pupitre a "2026-05-11T11:00:00Z"
+    Then les activites de "OF 4011" au referentiel du pupitre sont
+      | operateur | poste     | categorie      | depuis               |
+      | dupont    | fraiseuse | NON_CONFORMITE | 2026-05-11T10:00:00Z |
+
   Scenario: Une non conformite change la categorie sans fermer l'activite
     Given le pupitre fabrique "OF 4003"
     And "OF 4003" est engage au pupitre a "2026-05-11T07:00:00Z"

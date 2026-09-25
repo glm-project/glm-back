@@ -220,7 +220,9 @@ Feature: Suivi des elements engages en atelier
       | poste     | 4b8e2d31-95c0-4f76-a1d3-7e6b0c5a9f42 |
     Then la reponse a le statut http 404
 
-  Scenario: Deux debuts consecutifs sur la meme activite sont refuses
+  Scenario: Demarrer une activite deja en cours la relance
+    # D9 : l'operateur qui revient sur un element reste ouvert n'est jamais bloque. Son debut ferme la periode
+    # precedente et en ouvre une nouvelle, sans trou ni recouvrement.
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2005"
       | type      | ORDRE_DE_FABRICATION |
@@ -230,11 +232,107 @@ Feature: Suivi des elements engages en atelier
       | type      | DEBUT       |
       | operateur | dupont      |
       | poste     | fraiseuse-1 |
+    Given il est "2026-05-10T10:00:00Z"
     When je pointe sur "OF 2005"
       | type      | DEBUT       |
       | operateur | dupont      |
       | poste     | fraiseuse-1 |
+    Then la reponse a le statut http 201
+    And le suivi a l'etat "EN_COURS"
+    And le suivi a 1 activites en cours
+    And l'activite en cours est de categorie "TRAVAIL"
+    And le journal du suivi contient 2 evenements
+
+  Scenario: Pointer une non conformite deja en cours la relance
+    Given il est "2026-05-10T08:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 2090"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 2090                 |
+    And j'ai engage l'element "OF 2090" en atelier
+    And j'ai pointe sur "OF 2090"
+      | type      | NON_CONFORMITE |
+      | operateur | dupont         |
+      | poste     | fraiseuse-1    |
+    Given il est "2026-05-10T10:00:00Z"
+    When je pointe sur "OF 2090"
+      | type      | NON_CONFORMITE |
+      | operateur | dupont         |
+      | poste     | fraiseuse-1    |
+    Then la reponse a le statut http 201
+    And le suivi a 1 activites en cours
+    And l'activite en cours est de categorie "NON_CONFORMITE"
+    And le journal du suivi contient 2 evenements
+
+  Scenario: Une relance rejouee par le pupitre ne cree pas un troisieme evenement
+    # La relance est un nouveau geste, sous un nouvel identifiant. Le meme geste rejoue reste absorbe.
+    Given il est "2026-05-10T08:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 2091"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 2091                 |
+    And j'ai engage l'element "OF 2091" en atelier
+    And j'ai pointe sur "OF 2091"
+      | id        | 00000000-0000-0000-0000-000000000041 |
+      | type      | DEBUT                                |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
+    Given il est "2026-05-10T10:00:00Z"
+    When je pointe sur "OF 2091"
+      | id        | 00000000-0000-0000-0000-000000000042 |
+      | type      | DEBUT                                |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
+    Then la reponse a le statut http 201
+    When je pointe sur "OF 2091"
+      | id        | 00000000-0000-0000-0000-000000000042 |
+      | type      | DEBUT                                |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
+    Then la reponse a le statut http 200
+    And le journal du suivi contient 2 evenements
+    And le suivi a 1 activites en cours
+
+  Scenario: Un debut regularise au milieu d'une activite la scinde sans la changer
+    Given il est "2026-05-10T08:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 2092"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 2092                 |
+    And j'ai engage l'element "OF 2092" en atelier
+    And j'ai pointe sur "OF 2092"
+      | type      | DEBUT       |
+      | operateur | dupont      |
+      | poste     | fraiseuse-1 |
+    Given il est "2026-05-10T12:00:00Z"
+    And j'ai pointe sur "OF 2092"
+      | type      | FIN         |
+      | operateur | dupont      |
+      | poste     | fraiseuse-1 |
+    Given il est "2026-05-11T09:15:00Z"
+    When je regularise sur "OF 2092"
+      | type           | DEBUT                |
+      | operateur      | dupont               |
+      | poste          | fraiseuse-1          |
+      | dateDeSurvenue | 2026-05-10T10:00:00Z |
+    Then la reponse a le statut http 201
+    And le suivi a l'etat "INTERROMPU"
+    When je consulte le temps effectif de "OF 2092"
+    Then le temps effectif contient
+      | poste.libelle | debut                | fin                  |
+      | fraiseuse-1   | 2026-05-10T08:00:00Z | 2026-05-10T10:00:00Z |
+      | fraiseuse-1   | 2026-05-10T10:00:00Z | 2026-05-10T12:00:00Z |
+
+  Scenario: Une fin sans activite en cours reste refusee
+    # Seule transition encore refusee par l'automate : le lot 8 l'absorbera.
+    Given il est "2026-05-10T08:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 2093"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 2093                 |
+    And j'ai engage l'element "OF 2093" en atelier
+    When je pointe sur "OF 2093"
+      | type      | FIN         |
+      | operateur | dupont      |
+      | poste     | fraiseuse-1 |
     Then la reponse a le statut http 409
+    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:transition-d-atelier-interdite"
 
   Scenario: Cloturer un element, puis le rouvrir
     Given il est "2026-05-10T08:00:00Z"
@@ -526,3 +624,56 @@ Feature: Suivi des elements engages en atelier
     # Une seule regularisation de depart a suffi a refermer tout ce qui restait ouvert.
     When je consulte le temps effectif de "OF 42"
     Then le temps effectif ne contient aucun intervalle ouvert
+
+  Scenario: Un ordre reste en cours la veille est relance le lendemain
+    # E2 de la strategie « bornes de fin de journee » : Dupont oublie d'arreter l'OF 42 et de pointer son depart.
+    # Le gestionnaire regularise le depart ; le lendemain, Dupont redemarre l'OF 42 sans etre bloque.
+    Given il est "2026-05-10T07:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 44"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 2044                 |
+    And j'ai engage l'element "OF 44" en atelier
+    And je suis arrive
+      | operateur | dupont |
+    Given il est "2026-05-10T08:00:00Z"
+    And j'ai pointe sur "OF 44"
+      | type      | DEBUT       |
+      | operateur | dupont      |
+      | poste     | fraiseuse-1 |
+    Given il est "2026-05-10T12:00:00Z"
+    And j'ai pointe ma presence
+      | operateur | dupont |
+      | type      | PAUSE  |
+    Given il est "2026-05-10T13:00:00Z"
+    And j'ai pointe ma presence
+      | operateur | dupont  |
+      | type      | REPRISE |
+    Given il est "2026-05-11T06:00:00Z"
+    And j'ai regularise ma journee
+      | type           | DEPART               |
+      | dateDeSurvenue | 2026-05-10T17:00:00Z |
+
+    Given il est "2026-05-11T07:00:00Z"
+    And je suis arrive
+      | operateur | dupont |
+    Given il est "2026-05-11T07:05:00Z"
+    When je pointe sur "OF 44"
+      | type      | DEBUT       |
+      | operateur | dupont      |
+      | poste     | fraiseuse-1 |
+    Then la reponse a le statut http 201
+    And le suivi a l'etat "EN_COURS"
+    And le suivi a 1 activites en cours
+    Given il est "2026-05-11T10:00:00Z"
+    And j'ai pointe sur "OF 44"
+      | type      | FIN         |
+      | operateur | dupont      |
+      | poste     | fraiseuse-1 |
+
+    # Le temps de lundi reste borne par la journee de lundi : la nuit n'est jamais comptee.
+    When je consulte le temps effectif de "OF 44"
+    Then le temps effectif contient
+      | poste.libelle | debut                | fin                  |
+      | fraiseuse-1   | 2026-05-10T08:00:00Z | 2026-05-10T12:00:00Z |
+      | fraiseuse-1   | 2026-05-10T13:00:00Z | 2026-05-10T17:00:00Z |
+      | fraiseuse-1   | 2026-05-11T07:05:00Z | 2026-05-11T10:00:00Z |

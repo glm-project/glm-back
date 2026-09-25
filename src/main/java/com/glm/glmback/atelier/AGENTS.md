@@ -65,6 +65,9 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
   patron que la nature : jamais relus depuis le référentiel après coup. Ils restent, comme la nature, entièrement
   facultatifs, et ne servent qu'à figer une valeur qui pourrait changer chez le voisin — le calcul lui-même n'entre
   pas dans ce contexte.
+- **Un début sur une activité déjà en cours la relance**, il n'est jamais refusé (décision D9 de
+  [bornes-de-fin-de-journee.md](../../../../../../../documentation/strategie/bornes-de-fin-de-journee.md)). La même
+  règle vit dans les automates recopiés de `pupitre` et `coutderevient` : les trois changent ensemble.
 - **L'habilitation, elle, bloque** : pointer sur un poste où l'opérateur n'est pas déclaré est refusé (409). C'est la
   seule règle dure du contexte. Elle ne joue que lorsqu'un poste est fourni, et elle joue sur les **trois** écritures
   du journal — pointage, régularisation, correction — sans quoi le back-office contournerait le pupitre.

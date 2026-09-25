@@ -248,6 +248,38 @@ class CoutsDeRevientServiceTest {
     assertThat(rapport.temps().travail()).isEqualTo(Duration.ofHours(2));
   }
 
+  /**
+   * Un double appui sur « demarrer » ne valorise rien de plus : la relance coupe l'intervalle sans l'allonger.
+   */
+  @Test
+  void shouldValoriseADoubleAppuiLikeASingleDebut() {
+    AtelierEnMemoire atelier = new AtelierEnMemoire()
+      .connait(ELEMENT_VALORISE_OF)
+      .aTravaille(
+        ELEMENT_ID_OF,
+        suivi(fraisage(DEBUT, LE_11_MAI_A_9H), fraisage(DEBUT, LE_11_MAI_A_9H.plusSeconds(3)), fraisage(FIN, LE_11_MAI_A_11H))
+      )
+      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17HAvecPauseDeMidi())));
+
+    CoutDeRevient rapport = service(atelier).rapport(ELEMENT_ID_OF);
+
+    assertThat(rapport.temps().travail()).isEqualTo(Duration.ofHours(2));
+    assertThat(rapport.cout()).isEqualTo(new Cout(new Montant(new BigDecimal("90.00")), new Montant(new BigDecimal("40.00"))));
+  }
+
+  @Test
+  void shouldValoriseTheSameDoubleAppuiAtTheSameInstant() {
+    AtelierEnMemoire atelier = new AtelierEnMemoire()
+      .connait(ELEMENT_VALORISE_OF)
+      .aTravaille(ELEMENT_ID_OF, suivi(fraisage(DEBUT, LE_11_MAI_A_9H), fraisage(DEBUT, LE_11_MAI_A_9H), fraisage(FIN, LE_11_MAI_A_11H)))
+      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17HAvecPauseDeMidi())));
+
+    CoutDeRevient rapport = service(atelier).rapport(ELEMENT_ID_OF);
+
+    assertThat(rapport.temps().travail()).isEqualTo(Duration.ofHours(2));
+    assertThat(rapport.cout()).isEqualTo(new Cout(new Montant(new BigDecimal("90.00")), new Montant(new BigDecimal("40.00"))));
+  }
+
   private static CoutsDeRevientService service(AtelierEnMemoire atelier) {
     return CoutsDeRevientService.builder()
       .elements(atelier)

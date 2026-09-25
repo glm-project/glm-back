@@ -10,6 +10,13 @@ import java.util.Optional;
  * atteint, jamais sur un troisieme type d'evenement. C'est le meme automate que celui de l'atelier, rejoue ici parce
  * que le contexte voisin est {@code BusinessContext} et ne s'importe pas.
  * </p>
+ *
+ * <p>
+ * Un debut sur une activite deja en cours la <b>relance</b>, de meme qu'une non conformite sur une non conformite en
+ * cours : la periode precedente s'arrete a l'instant de la relance et une nouvelle commence. L'operateur qui revient
+ * sur un element reste ouvert n'est jamais bloque, et un double appui n'ajoute aucun temps. Seule une fin sans
+ * activite en cours reste refusee.
+ * </p>
  */
 public enum EtatDActivite {
   ABSENTE,
@@ -42,17 +49,17 @@ public enum EtatDActivite {
 
   private static Optional<EtatDActivite> depuisEnCours(TypeDePointage type) {
     return switch (type) {
+      case DEBUT -> Optional.of(EN_COURS);
       case NON_CONFORMITE -> Optional.of(EN_NON_CONFORMITE);
       case FIN -> Optional.of(ABSENTE);
-      case DEBUT -> Optional.empty();
     };
   }
 
   private static Optional<EtatDActivite> depuisEnNonConformite(TypeDePointage type) {
     return switch (type) {
       case DEBUT -> Optional.of(EN_COURS);
+      case NON_CONFORMITE -> Optional.of(EN_NON_CONFORMITE);
       case FIN -> Optional.of(ABSENTE);
-      case NON_CONFORMITE -> Optional.empty();
     };
   }
 }
