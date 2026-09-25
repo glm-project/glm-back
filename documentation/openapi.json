@@ -1,6 +1,30 @@
 {
   "components" : {
     "schemas" : {
+      "PageRestAnomalieDePresence" : {
+        "properties" : {
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RestAnomalieDePresence"
+            },
+            "type" : "array"
+          },
+          "currentPage" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "pageSize" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElementsCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "content", "currentPage", "pageSize", "totalElementsCount" ],
+        "type" : "object"
+      },
       "PageRestElementDeFabrication" : {
         "properties" : {
           "content" : {
@@ -218,6 +242,42 @@
           }
         },
         "required" : [ "motif" ],
+        "type" : "object"
+      },
+      "RestAnomalieDePresence" : {
+        "description" : "Une journee de travail que le gestionnaire doit regarder. Rien n'est stocke : la ligne disparait des que la\nregularisation la resout.\n",
+        "properties" : {
+          "amplitude" : {
+            "description" : "Amplitude de l'arrivee au depart, absente d'une journee sans depart.",
+            "example" : "PT16H",
+            "type" : "string"
+          },
+          "arrivee" : {
+            "description" : "Arrivee de la journee.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "depart" : {
+            "description" : "Depart, absent d'une journee sans depart.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "journee" : {
+            "description" : "La journee concernee, a regulariser ou a corriger.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "operateur" : {
+            "$ref" : "#/components/schemas/RestOperateurDAtelier",
+            "description" : "L'operateur, resolu au referentiel."
+          },
+          "type" : {
+            "description" : "JOURNEE_SANS_DEPART : abandonnee sans depart au-dela du seuil. AMPLITUDE_EXCESSIVE : fermee au-dela du seuil.",
+            "enum" : [ "JOURNEE_SANS_DEPART", "AMPLITUDE_EXCESSIVE" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "arrivee", "journee", "operateur", "type" ],
         "type" : "object"
       },
       "RestArrivee" : {
@@ -1600,6 +1660,71 @@
   },
   "openapi" : "3.1.0",
   "paths" : {
+    "/api/atelier/anomalies" : {
+      "get" : {
+        "description" : "La plus recente d'abord, par arrivee. Filtres facultatifs sur l'operateur et le type. Une ligne disparait des que\nla regularisation du depart la resout ; une amplitude excessive reste tant que la journee n'est pas corrigee.\n",
+        "operationId" : "list_5",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "operateur",
+          "required" : false,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "type",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "JOURNEE_SANS_DEPART", "AMPLITUDE_EXCESSIVE" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageRestAnomalieDePresence"
+                }
+              }
+            },
+            "description" : "La page demandee, triee par arrivee descendante."
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageRestAnomalieDePresence"
+                }
+              }
+            },
+            "description" : "Type d'anomalie inconnu."
+          }
+        },
+        "summary" : "Lister les anomalies de presence",
+        "tags" : [ "Atelier - anomalies de presence" ]
+      }
+    },
     "/api/atelier/journees" : {
       "get" : {
         "description" : "Filtres facultatifs. La periode, quand elle est fournie, porte sur l'heure d'arrivee.",
@@ -3352,5 +3477,8 @@
   }, {
     "description" : "Le referentiel des personnes qui pointent, et des postes sur lesquels elles sont habilitees.\n\nLes metiers d'un operateur ne se saisissent pas : ils se deduisent des natures de ses postes. Un operateur habilite\nsur le poste de soudure et sur un tour ressort soudeur et tourneur.\n\nEn entree, l'operateur porte des identifiants de postes ; en sortie, il porte les postes resolus et ses natures, pour\nqu'un ecran se serve d'un seul appel.\n",
     "name" : "Operateurs"
+  }, {
+    "description" : "Ce que le gestionnaire doit regarder : les journees abandonnees sans depart, et les journees fermees au-dela de\nl'amplitude maximale de l'entreprise. Jugees a l'instant de lecture avec le seuil courant, jamais stockees.\n",
+    "name" : "Atelier - anomalies de presence"
   } ]
 }

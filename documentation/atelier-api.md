@@ -295,6 +295,16 @@ L'**amplitude maximale** est la durée, depuis l'arrivée, au-delà de laquelle 
 Elle vaut 13 h par défaut, se saisit à la minute et reste strictement sous 24 h : toute autre valeur répond 400.
 `derniereModification` est absente tant que personne ne l'a changée.
 
+### Anomalies de présence (rôle `GESTIONNAIRE`)
+
+```
+GET /api/atelier/anomalies?operateur={uuid}&type={JOURNEE_SANS_DEPART|AMPLITUDE_EXCESSIVE}&page=0&size=20
+```
+
+Les journées que le gestionnaire doit regarder, la plus récente d'abord : `type`, `journee` (l'identifiant à
+régulariser ou corriger), `operateur`, `arrivee`, et pour une amplitude excessive `depart` et `amplitude`. Rien n'est
+stocké : une ligne disparaît dès que la régularisation la résout. Un type inconnu répond 400, un opérateur 403.
+
 ### Lire le temps passé
 
 ```

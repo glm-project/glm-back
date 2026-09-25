@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <!--
+    L'amplitude d'une journee fermee, de l'arrivee au depart, en microsecondes, la precision des horodatages de la base : une projection, comme debut et fin, qui
+    rend exprimable en SQL la liste des journees fermees au-dela du seuil d'amplitude.
+  -->
+  <changeSet id="journee_amplitude_microsecondes" author="glm">
+    <addColumn tableName="journee_de_travail">
+      <column name="amplitude_microsecondes" type="bigint" />
+    </addColumn>
+
+    <sql>
+      update journee_de_travail
+      set amplitude_microsecondes = cast(extract(epoch from (fin - debut)) * 1000000 as bigint)
+      where fin is not null and debut is not null;
+    </sql>
+  </changeSet>
+</databaseChangeLog>
