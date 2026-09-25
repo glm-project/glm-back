@@ -132,3 +132,4 @@ Ne pas dupliquer ce qui est déjà documenté — s'y référer :
 - `documentation/atelier-api.md` — guide d'intégration de l'API atelier pour le développeur front.
 - `documentation/codes-erreur.md` — catalogue des codes d'erreur stables publiés dans le `type` des `ProblemDetail`.
 - `documentation/strategie/authentification-pointage.md` — stratégie retenue pour identifier l'opérateur au pupitre, sécuriser le poste et survivre à une coupure réseau.
+- `documentation/strategie/bornes-de-fin-de-journee.md` — départ oublié et poste de nuit : journée abandonnée, fin présumée, aucun pointage d'opérateur refusé, découpage en lots. Les schémas SVG sont à côté.

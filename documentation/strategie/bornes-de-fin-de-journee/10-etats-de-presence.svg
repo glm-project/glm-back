@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 430" width="960" height="430" role="img" aria-label="Diagramme d&#x27;états : absent, présent, en pause, avec arrivée, pause, reprise et départ ; nouvelle transition en pointillés orange de présent et en pause vers absent quand le seuil est dépassé.">
+<title>États de présence de l&#x27;opérateur et ce que le pupitre propose</title>
+
+<style>
+svg { --bg:#ffffff; --fg:#1f2328; --mu:#59636e; --ax:#d0d7de; --band:#fff1e5;
+  --pres:#0969da; --presl:#ddf4ff; --of:#1a7f37; --ofl:#dafbe1; --ko:#cf222e; --kol:#ffebe9;
+  --warn:#bc4c00; --card:#f6f8fa; }
+@media (prefers-color-scheme: dark) {
+  svg { --bg:#0d1117; --fg:#e6edf3; --mu:#9198a1; --ax:#3d444d; --band:#2d1d0f;
+    --pres:#4493f8; --presl:#0c2d4f; --of:#3fb950; --ofl:#0f3319; --ko:#f85149; --kol:#3d1418;
+    --warn:#db6d28; --card:#161b22; }
+}
+text { font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; font-size:13px; fill:var(--fg); }
+.titre { font-size:18px; font-weight:700; }
+.sous { font-size:13px; fill:var(--mu); }
+.mu { fill:var(--mu); font-size:12px; }
+.b { font-weight:700; }
+.ko { fill:var(--ko); } .ok { fill:var(--of); } .warn { fill:var(--warn); } .bleu { fill:var(--pres); }
+.ax { stroke:var(--ax); stroke-width:1; }
+.minuit { stroke:var(--mu); stroke-width:1.5; stroke-dasharray:2 3; }
+.seuil { stroke:var(--warn); stroke-width:2; stroke-dasharray:6 4; }
+.band { fill:var(--band); }
+.pres { fill:var(--pres); }
+.presp { fill:var(--presl); stroke:var(--pres); stroke-width:1.5; stroke-dasharray:5 3; }
+.of { fill:var(--of); }
+.ofp { fill:var(--ofl); stroke:var(--of); stroke-width:1.5; stroke-dasharray:5 3; }
+.err { fill:url(#hachure); stroke:var(--ko); stroke-width:1.5; }
+.hach { stroke:var(--ko); stroke-width:2; }
+.gris { fill:var(--card); stroke:var(--ax); stroke-width:1; }
+.card { fill:var(--card); stroke:var(--ax); stroke-width:1; }
+.cardko { fill:var(--kol); stroke:var(--ko); stroke-width:1.5; }
+.cardok { fill:var(--ofl); stroke:var(--of); stroke-width:1.5; }
+.fl { stroke:var(--fg); stroke-width:1.5; fill:none; }
+.flko { stroke:var(--ko); stroke-width:1.5; fill:none; }
+.flwarn { stroke:var(--warn); stroke-width:1.8; fill:none; stroke-dasharray:6 4; }
+.pt { fill:var(--bg); stroke:var(--fg); stroke-width:1.5; }
+.croix { stroke:var(--ko); stroke-width:3; stroke-linecap:round; }
+.fond { fill:var(--bg); }
+.ptfg { fill:var(--fg); } .ptko { fill:var(--ko); } .ptwarn { fill:var(--warn); }
+</style>
+<defs>
+  <pattern id="hachure" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+    <rect width="8" height="8" style="fill:var(--kol)"/>
+    <line x1="0" y1="0" x2="0" y2="8" class="hach"/>
+  </pattern>
+  <marker id="fleche" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" class="ptfg"/>
+  </marker>
+  <marker id="flecheko" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" class="ptko"/>
+  </marker>
+  <marker id="flechewarn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" class="ptwarn"/>
+  </marker>
+</defs>
+
+<rect width="960" height="430" class="fond"/>
+
+<text x="24" y="34" class="titre">États de présence de l&#x27;opérateur et ce que le pupitre propose</text>
+<text x="24" y="56" class="sous">En orange : la transition ajoutée. Le seuil dépassé rend l&#x27;opérateur absent, sans aucun geste.</text>
+<rect x="80.0" y="168.0" width="180.0" height="64.0" rx="32" class="card"/>
+<text x="170.0" y="205.0" text-anchor="middle" class="b" style="font-size:16px">Absent</text>
+<rect x="390.0" y="168.0" width="180.0" height="64.0" rx="32" class="card"/>
+<text x="480.0" y="205.0" text-anchor="middle" class="b" style="font-size:16px">Présent</text>
+<rect x="700.0" y="168.0" width="180.0" height="64.0" rx="32" class="card"/>
+<text x="790.0" y="205.0" text-anchor="middle" class="b" style="font-size:16px">En pause</text>
+<line x1="260.0" y1="190.0" x2="384.0" y2="190.0" class="fl" marker-end="url(#fleche)"/>
+<text x="322.0" y="182.0" text-anchor="middle">arrivée</text>
+<line x1="570.0" y1="190.0" x2="694.0" y2="190.0" class="fl" marker-end="url(#fleche)"/>
+<text x="632.0" y="182.0" text-anchor="middle">pause</text>
+<line x1="694.0" y1="212.0" x2="576.0" y2="212.0" class="fl" marker-end="url(#fleche)"/>
+<text x="632.0" y="230.0" text-anchor="middle">reprise</text>
+<path d="M430,168 C380,120 260,120 200,166" class="fl" marker-end="url(#fleche)"/>
+<text x="315.0" y="124.0" text-anchor="middle">départ</text>
+<path d="M790,168 C700,70 280,70 180,166" class="fl" marker-end="url(#fleche)"/>
+<text x="480.0" y="88.0" text-anchor="middle">départ (« tout arrêter »)</text>
+<path d="M450,232 C400,290 250,290 200,234" class="flwarn" marker-end="url(#flechewarn)"/>
+<path d="M780,234 C700,330 260,330 175,236" class="flwarn" marker-end="url(#flechewarn)"/>
+<text x="480.0" y="334.0" text-anchor="middle" class="warn b">seuil dépassé : journée abandonnée</text>
+<text x="170.0" y="372.0" text-anchor="middle" class="mu">Pupitre propose :</text>
+<text x="170.0" y="390.0" text-anchor="middle" class="b">Arrivée</text>
+<text x="480.0" y="372.0" text-anchor="middle" class="mu">Pupitre propose :</text>
+<text x="480.0" y="390.0" text-anchor="middle" class="b">OF · Pause · Tout arrêter</text>
+<text x="790.0" y="372.0" text-anchor="middle" class="mu">Pupitre propose :</text>
+<text x="790.0" y="390.0" text-anchor="middle" class="b">Reprise · Tout arrêter</text>
+<text x="24.0" y="418.0" text-anchor="start" class="mu">Si un geste arrive malgré tout sur une journée abandonnée, il ouvre d&#x27;abord une nouvelle journée (arrivée implicite).</text>
+</svg>
