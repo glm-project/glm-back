@@ -2,7 +2,6 @@ package com.glm.glmback.atelier.infrastructure.primary;
 
 import com.glm.glmback.atelier.domain.AucuneJourneeDeTravailEnCoursException;
 import com.glm.glmback.atelier.domain.ChevauchementDeJourneesException;
-import com.glm.glmback.atelier.domain.DateDeSurvenueFutureException;
 import com.glm.glmback.atelier.domain.ElementDejaEngageException;
 import com.glm.glmback.atelier.domain.ElementEngageableIntrouvableException;
 import com.glm.glmback.atelier.domain.EvenementAvantEngagementException;
@@ -15,6 +14,8 @@ import com.glm.glmback.atelier.domain.JourneeDeTravailDejaOuverteException;
 import com.glm.glmback.atelier.domain.JourneeDeTravailIntrouvableException;
 import com.glm.glmback.atelier.domain.OperateurDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.OperateurNonHabiliteException;
+import com.glm.glmback.atelier.domain.PointageSignaleDejaResoluException;
+import com.glm.glmback.atelier.domain.PointageSignaleIntrouvableException;
 import com.glm.glmback.atelier.domain.PosteDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierClotureException;
@@ -131,8 +132,13 @@ class AtelierExceptionAdvice {
     return ErreurDAtelier.IDENTIFIANT_EVENEMENT_REUTILISE.problem(e);
   }
 
-  @ExceptionHandler(DateDeSurvenueFutureException.class)
-  ProblemDetail handleDateDeSurvenueFuture(DateDeSurvenueFutureException e) {
-    return ErreurDAtelier.DATE_DE_SURVENUE_FUTURE.problem(e);
+  @ExceptionHandler(PointageSignaleIntrouvableException.class)
+  ProblemDetail handlePointageSignaleIntrouvable(PointageSignaleIntrouvableException e) {
+    return ErreurDAtelier.POINTAGE_SIGNALE_INTROUVABLE.problem(e);
+  }
+
+  @ExceptionHandler(PointageSignaleDejaResoluException.class)
+  ProblemDetail handlePointageSignaleDejaResolu(PointageSignaleDejaResoluException e) {
+    return ErreurDAtelier.POINTAGE_SIGNALE_DEJA_RESOLU.problem(e);
   }
 }

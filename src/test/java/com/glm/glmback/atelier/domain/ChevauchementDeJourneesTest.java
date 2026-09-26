@@ -22,6 +22,7 @@ class ChevauchementDeJourneesTest {
     .repository(journees)
     .operateurs(RessourcesDAtelierEnMemoire.deLAtelier().operateurs())
     .seuil(() -> AMPLITUDE_MAXIMALE_13H)
+    .signalements(new PointagesSignalesEnMemoire())
     .clock(maintenant::get);
 
   /**

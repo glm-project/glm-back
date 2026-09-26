@@ -25,6 +25,7 @@ class JourneeAbandonneeTest {
     .repository(journees)
     .operateurs(RessourcesDAtelierEnMemoire.deLAtelier().operateurs())
     .seuil(seuil::get)
+    .signalements(new PointagesSignalesEnMemoire())
     .clock(maintenant::get);
 
   /**

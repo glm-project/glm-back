@@ -88,7 +88,11 @@ tests sont le seul endroit qui les tient.
 | `evenement-anterieur-a-l-engagement` | 409    | evenement anterieur a l'engagement | `EvenementAvantEngagementException`       |
 | `saisie-concurrente`                 | 409    | saisie concurrente                 | `SaisieConcurrenteException`              |
 | `identifiant-evenement-reutilise`    | 409    | identifiant d'evenement reutilise  | `IdentifiantDEvenementReutiliseException` |
-| `date-de-survenue-future`            | 400    | date de survenue future            | `DateDeSurvenueFutureException`           |
+| `pointage-signale-introuvable`       | 404    | pointage signale introuvable       | `PointageSignaleIntrouvableException`     |
+| `pointage-signale-deja-resolu`       | 409    | pointage signale deja resolu       | `PointageSignaleDejaResoluException`      |
+
+`date-de-survenue-future` (400) a été retiré au lot 8b : une date future est ramenée à la réception et signalée au
+gestionnaire. `operateur-non-habilite` ne sort plus que d'un acte du gestionnaire, le pupitre étant signalé.
 
 `saisie-concurrente` est le seul code sur lequel **rejouer** l'appel est la bonne réaction : la saisie était valide,
 un autre pointage s'est glissé entre la lecture et l'écriture.

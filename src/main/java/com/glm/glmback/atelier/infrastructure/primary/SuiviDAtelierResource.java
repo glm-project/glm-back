@@ -136,17 +136,21 @@ class SuiviDAtelierResource {
 
     Ne jamais pointer ici une pause ou un depart : ce sont des faits de la journee de travail de l'operateur, ecrits
     une seule fois via POST /api/atelier/journees/pointages.
+
+    Un pointage d'operateur non habilite au poste, date avant l'engagement ou dans le futur est enregistre malgre tout
+    (ramene a l'engagement ou a la reception) et signale au gestionnaire (GET /api/atelier/pointages-signales), sans
+    que l'operateur en soit informe.
     """
   )
-  @ApiResponse(responseCode = "201", description = "Le pointage est enregistre.")
+  @ApiResponse(responseCode = "201", description = "Le pointage est enregistre, le cas echeant signale.")
   @ApiResponse(responseCode = "200", description = "Le geste identique est rejoue, ou l'arret sans effet est absorbe.")
-  @ApiResponse(responseCode = "400", description = "Le corps est invalide ou la date de survenue est future.")
+  @ApiResponse(responseCode = "400", description = "Le corps est invalide.")
   @ApiResponse(responseCode = "404", description = "Suivi, operateur ou poste de travail introuvable.")
   @ApiResponse(
     responseCode = "409",
     description = """
-    Demarrer ou pointer une non conformite sur un element cloture (seul refus qu'afficher a l'operateur), operateur non
-    habilite sur ce poste, fin rejouee dans le desordre ou identifiant reutilise. Arreter une activite qui n'est pas en
+    Demarrer ou pointer une non conformite sur un element cloture (seul refus qu'afficher a l'operateur), fin rejouee
+    dans le desordre ou identifiant reutilise. Arreter une activite qui n'est pas en
     cours, ou un element cloture, est absorbe : 200.
     """
   )

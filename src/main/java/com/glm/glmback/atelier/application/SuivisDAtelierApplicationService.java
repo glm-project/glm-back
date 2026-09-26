@@ -15,6 +15,7 @@ import com.glm.glmback.atelier.domain.OperateursConnus;
 import com.glm.glmback.atelier.domain.Periode;
 import com.glm.glmback.atelier.domain.PointageAEnregistrer;
 import com.glm.glmback.atelier.domain.PointageDAtelierTraite;
+import com.glm.glmback.atelier.domain.PointagesSignales;
 import com.glm.glmback.atelier.domain.PostesConnus;
 import com.glm.glmback.atelier.domain.RegularisationAEnregistrer;
 import com.glm.glmback.atelier.domain.SeuilDAmplitude;
@@ -62,6 +63,7 @@ public class SuivisDAtelierApplicationService {
     PostesConnus postes,
     Habilitations habilitations,
     SeuilDAmplitude seuil,
+    PointagesSignales signalements,
     Clock clock,
     IdentitesDEvenements identites,
     TransactionTemplate transactions
@@ -72,6 +74,7 @@ public class SuivisDAtelierApplicationService {
       .operateurs(operateurs)
       .postes(postes)
       .habilitations(habilitations)
+      .signalements(signalements)
       .clock(clock);
     this.tempsDAtelier = TempsDAtelierService.builder().suivis(repository).journees(journees).seuil(seuil).clock(clock);
     this.annuaires = new AnnuaireDAtelierService(operateurs, postes);

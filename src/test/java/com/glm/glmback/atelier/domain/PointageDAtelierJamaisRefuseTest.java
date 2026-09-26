@@ -26,6 +26,7 @@ class PointageDAtelierJamaisRefuseTest {
     .operateurs(ressources.operateurs())
     .postes(ressources.postes())
     .habilitations(ressources.habilitations())
+    .signalements(new PointagesSignalesEnMemoire())
     .clock(maintenant::get);
 
   @Test
