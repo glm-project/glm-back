@@ -97,6 +97,30 @@
         "required" : [ "content", "currentPage", "pageSize", "totalElementsCount" ],
         "type" : "object"
       },
+      "PageRestPointageEnAttente" : {
+        "properties" : {
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RestPointageEnAttente"
+            },
+            "type" : "array"
+          },
+          "currentPage" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "pageSize" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElementsCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "content", "currentPage", "pageSize", "totalElementsCount" ],
+        "type" : "object"
+      },
       "PageRestPointageSignale" : {
         "properties" : {
           "content" : {
@@ -546,6 +570,19 @@
           }
         },
         "required" : [ "libelle", "nature" ],
+        "type" : "object"
+      },
+      "RestEcart" : {
+        "properties" : {
+          "motif" : {
+            "description" : "Pourquoi le geste est ecarte.",
+            "example" : "Badge d'un visiteur",
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "motif" ],
         "type" : "object"
       },
       "RestElement" : {
@@ -1305,6 +1342,79 @@
         "required" : [ "dateDeSurvenue", "type" ],
         "type" : "object"
       },
+      "RestPointageEnAttente" : {
+        "description" : "Un geste du pupitre qu'on ne sait rattacher a rien, conserve tel quel et hors de tous les calculs. Il sort de la\nliste des que le gestionnaire l'applique ou l'ecarte.\n",
+        "properties" : {
+          "auteur" : {
+            "description" : "Utilisateur connecte au pupitre.",
+            "type" : "string"
+          },
+          "dateDeReception" : {
+            "description" : "La reception par le serveur.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "dateDeSurvenue" : {
+            "description" : "La date a laquelle le geste s'appliquera.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "dateDeclaree" : {
+            "description" : "La date envoyee par le pupitre, absente s'il n'en a pas envoye.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "evenement" : {
+            "description" : "Identifiant du geste envoye par le pupitre.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "id" : {
+            "description" : "Identifiant attribue par le serveur, pour l'appliquer ou l'ecarter.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "motif" : {
+            "description" : "OPERATEUR_INCONNU, POSTE_INCONNU, ELEMENT_INCONNU : referentiel du pupitre perime. GESTE_HORS_SEQUENCE : rejoue dans\nle desordre, ou date dans une journee deja fermee. IDENTIFIANT_REUTILISE : identifiant deja pris par un autre geste.\n",
+            "enum" : [ "OPERATEUR_INCONNU", "POSTE_INCONNU", "ELEMENT_INCONNU", "GESTE_HORS_SEQUENCE", "IDENTIFIANT_REUTILISE" ],
+            "type" : "string"
+          },
+          "nature" : {
+            "description" : "PRESENCE ou ATELIER.",
+            "enum" : [ "PRESENCE", "ATELIER" ],
+            "type" : "string"
+          },
+          "operateur" : {
+            "$ref" : "#/components/schemas/RestOperateurDAtelier",
+            "description" : "L'operateur, resolu au referentiel ; absent s'il est inconnu."
+          },
+          "operateurId" : {
+            "description" : "L'identifiant de l'operateur envoye, meme inconnu.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "poste" : {
+            "description" : "Le poste envoye, pour un geste d'atelier qui en porte un.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "suivi" : {
+            "description" : "Le suivi vise, pour un geste d'atelier.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "traitement" : {
+            "$ref" : "#/components/schemas/RestTraitementDuPointage",
+            "description" : "Ce qu'en a fait le gestionnaire ; absent tant qu'il est en attente."
+          },
+          "type" : {
+            "description" : "ARRIVEE, PAUSE, REPRISE ou DEPART pour la presence ; DEBUT, NON_CONFORMITE ou FIN pour l'atelier.",
+            "type" : "string"
+          }
+        },
+        "required" : [ "auteur", "dateDeReception", "dateDeSurvenue", "evenement", "id", "motif", "nature", "operateurId", "type" ],
+        "type" : "object"
+      },
       "RestPointageSignale" : {
         "description" : "Un pointage enregistre malgre tout, que le gestionnaire doit regarder : son temps compte deja. La ligne sort de la\nliste des qu'il est acquitte, annule ou corrige.\n",
         "properties" : {
@@ -1722,6 +1832,31 @@
           }
         },
         "type" : "object"
+      },
+      "RestTraitementDuPointage" : {
+        "description" : "Ce que le gestionnaire a fait d'un pointage en attente.",
+        "properties" : {
+          "auteur" : {
+            "description" : "Le gestionnaire.",
+            "type" : "string"
+          },
+          "date" : {
+            "description" : "L'instant du traitement.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "motif" : {
+            "description" : "Le motif, pour un pointage ecarte.",
+            "type" : "string"
+          },
+          "type" : {
+            "description" : "APPLIQUE ou ECARTE.",
+            "enum" : [ "APPLIQUE", "ECARTE" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "auteur", "date", "type" ],
+        "type" : "object"
       }
     },
     "securitySchemes" : {
@@ -1747,7 +1882,7 @@
     "/api/atelier/anomalies" : {
       "get" : {
         "description" : "La plus recente d'abord, par arrivee. Filtres facultatifs sur l'operateur et le type. Une ligne disparait des que\nla regularisation du depart la resout ; une amplitude excessive reste tant que la journee n'est pas corrigee.\n",
-        "operationId" : "list_6",
+        "operationId" : "list_7",
         "parameters" : [ {
           "in" : "query",
           "name" : "operateur",
@@ -1905,6 +2040,16 @@
             },
             "description" : "Une journee est ouverte."
           },
+          "202" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestJourneeDeTravail"
+                }
+              }
+            },
+            "description" : "Operateur inconnu, ou identifiant reutilise avec un autre contenu : le geste est mis en attente. Sans corps ; le gestionnaire le voit dans GET /api/atelier/pointages-en-attente."
+          },
           "400" : {
             "content" : {
               "*/*" : {
@@ -1914,26 +2059,6 @@
               }
             },
             "description" : "Le corps est invalide."
-          },
-          "404" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RestJourneeDeTravail"
-                }
-              }
-            },
-            "description" : "Aucun operateur ne porte cet identifiant."
-          },
-          "409" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RestJourneeDeTravail"
-                }
-              }
-            },
-            "description" : "L'identifiant est reutilise avec un autre contenu."
           }
         },
         "summary" : "Enregistrer une arrivee",
@@ -1975,6 +2100,16 @@
             },
             "description" : "Le pointage est enregistre, le cas echeant dans une nouvelle journee."
           },
+          "202" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestJourneeDeTravail"
+                }
+              }
+            },
+            "description" : "Operateur inconnu, geste rejoue dans le desordre ou date dans une journee deja fermee, ou identifiant reutilise : le geste est mis en attente. Sans corps ; le gestionnaire le voit dans GET /api/atelier/pointages-en-attente."
+          },
           "400" : {
             "content" : {
               "*/*" : {
@@ -1984,26 +2119,6 @@
               }
             },
             "description" : "Le corps est invalide."
-          },
-          "404" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RestJourneeDeTravail"
-                }
-              }
-            },
-            "description" : "Operateur inconnu, ou geste sans journee ouverte date dans une journee deja fermee (rejoue dans le desordre)."
-          },
-          "409" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RestJourneeDeTravail"
-                }
-              }
-            },
-            "description" : "Geste rejoue dans le desordre qui casse l'enchainement, ou identifiant reutilise."
           }
         },
         "summary" : "Pointer une pause, une reprise ou un depart",
@@ -2210,6 +2325,189 @@
         },
         "summary" : "Rattraper une presence oubliee",
         "tags" : [ "Atelier - presence des operateurs" ]
+      }
+    },
+    "/api/atelier/pointages-en-attente" : {
+      "get" : {
+        "description" : "Les pointages non traites, le plus recent d'abord par reception. Filtres facultatifs sur l'operateur et le motif.",
+        "operationId" : "list_6",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "operateur",
+          "required" : false,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "motif",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "OPERATEUR_INCONNU", "POSTE_INCONNU", "ELEMENT_INCONNU", "GESTE_HORS_SEQUENCE", "IDENTIFIANT_REUTILISE" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageRestPointageEnAttente"
+                }
+              }
+            },
+            "description" : "La page demandee, triee par reception descendante."
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageRestPointageEnAttente"
+                }
+              }
+            },
+            "description" : "Motif de mise en attente inconnu."
+          }
+        },
+        "summary" : "Lister les pointages en attente",
+        "tags" : [ "Atelier - pointages en attente" ]
+      }
+    },
+    "/api/atelier/pointages-en-attente/{id}/application" : {
+      "post" : {
+        "description" : "Enregistre le geste tel quel, a sa date, comme une regularisation du gestionnaire : corrigeable ensuite comme toute\nautre. Une arrivee ouvre sa journee ; un autre geste de presence s'inscrit dans la journee qui contient sa date, a\ndefaut dans la journee en cours. Refusee avec explication, l'application laisse le pointage en attente.\n",
+        "operationId" : "applique",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestPointageEnAttente"
+                }
+              }
+            },
+            "description" : "Le pointage applique."
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestPointageEnAttente"
+                }
+              }
+            },
+            "description" : "Pointage en attente inconnu, ou operateur, poste, element ou journee toujours introuvable."
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestPointageEnAttente"
+                }
+              }
+            },
+            "description" : "Pointage deja traite, ou regularisation refusee (transition, chevauchement, habilitation, cloture)."
+          }
+        },
+        "summary" : "Appliquer un pointage en attente",
+        "tags" : [ "Atelier - pointages en attente" ]
+      }
+    },
+    "/api/atelier/pointages-en-attente/{id}/ecart" : {
+      "post" : {
+        "description" : "Le geste sort de la liste sans rien ecrire au journal. Le motif est obligatoire.",
+        "operationId" : "ecarte",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RestEcart"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestPointageEnAttente"
+                }
+              }
+            },
+            "description" : "Le pointage ecarte."
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestPointageEnAttente"
+                }
+              }
+            },
+            "description" : "Motif absent ou vide."
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestPointageEnAttente"
+                }
+              }
+            },
+            "description" : "Pointage en attente inconnu."
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestPointageEnAttente"
+                }
+              }
+            },
+            "description" : "Pointage deja traite."
+          }
+        },
+        "summary" : "Ecarter un pointage en attente",
+        "tags" : [ "Atelier - pointages en attente" ]
       }
     },
     "/api/atelier/pointages-signales" : {
@@ -2704,6 +3002,16 @@
             },
             "description" : "Le pointage est enregistre, le cas echeant signale."
           },
+          "202" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestSuiviDAtelier"
+                }
+              }
+            },
+            "description" : "Element, operateur ou poste inconnu, geste rejoue dans le desordre, ou identifiant reutilise : le geste est mis en attente. Sans corps ; le gestionnaire le voit dans GET /api/atelier/pointages-en-attente."
+          },
           "400" : {
             "content" : {
               "*/*" : {
@@ -2714,16 +3022,6 @@
             },
             "description" : "Le corps est invalide."
           },
-          "404" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RestSuiviDAtelier"
-                }
-              }
-            },
-            "description" : "Suivi, operateur ou poste de travail introuvable."
-          },
           "409" : {
             "content" : {
               "*/*" : {
@@ -2732,7 +3030,7 @@
                 }
               }
             },
-            "description" : "Demarrer ou pointer une non conformite sur un element cloture (seul refus qu'afficher a l'operateur), fin rejouee\ndans le desordre ou identifiant reutilise. Arreter une activite qui n'est pas en\ncours, ou un element cloture, est absorbe : 200.\n"
+            "description" : "Demarrer ou pointer une non conformite sur un element cloture : seul refus a afficher a l'operateur. Arreter une\nactivite qui n'est pas en cours, ou un element cloture, est absorbe : 200.\n"
           }
         },
         "summary" : "Pointer un debut, une non conformite ou une fin",
@@ -3663,6 +3961,9 @@
   }, {
     "description" : "Le temps passe sur un element de fabrication, valorise par nature d'operation.",
     "name" : "Couts de revient"
+  }, {
+    "description" : "Les gestes du pupitre qu'on ne sait rattacher a rien : operateur, poste ou element inconnu, geste rejoue dans le\ndesordre, identifiant reutilise. Le pupitre a recu un succes (202) ; le geste est conserve tel quel, hors de tous\nles calculs, jusqu'a ce que le gestionnaire l'applique ou l'ecarte. L'operateur n'en est pas informe.\n",
+    "name" : "Atelier - pointages en attente"
   }, {
     "description" : "Le referentiel de ce sur quoi les operateurs pointent : une machine, un etabli, un four, une salle.\n\nChaque poste porte la nature du travail qui s'y fait. C'est de la que vient le metier exerce a un instant donne :\nl'operateur qui demarre sur le poste de soudure soude, celui qui demarre sur un tour tourne. Rien de tout cela n'est\ndeclare sur la personne.\n\nLe gestionnaire declare et revise les postes ; l'operateur (role USER) les consulte.\n",
     "name" : "Postes de travail"

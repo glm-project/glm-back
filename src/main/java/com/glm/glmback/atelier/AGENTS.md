@@ -34,11 +34,12 @@ Ne rien ajouter ici qui relève de :
 
 ## Agrégats
 
-| Agrégat            | Identité                | Journal             |
-| ------------------ | ----------------------- | ------------------- |
-| `JourneeDeTravail` | un opérateur, une venue | `JournalDePresence` |
-| `SuiviDAtelier`    | un élément engagé       | `JournalDAtelier`   |
-| `PointageSignale`  | l'événement signalé     | —                   |
+| Agrégat             | Identité                | Journal             |
+| ------------------- | ----------------------- | ------------------- |
+| `JourneeDeTravail`  | un opérateur, une venue | `JournalDePresence` |
+| `SuiviDAtelier`     | un élément engagé       | `JournalDAtelier`   |
+| `PointageSignale`   | l'événement signalé     | —                   |
+| `PointageEnAttente` | un geste non rattaché   | —                   |
 
 Ils cohabitent dans un seul contexte parce qu'ils partagent un même langage — opérateur, auteur, horodatage,
 annulation — que le shared kernel ne peut pas accueillir puisqu'il est en anglais.
@@ -83,6 +84,12 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
   l'engagement, à l'engagement. `RegistreDesSignalements` décide du redressement et inscrit le `PointageSignale`,
   qui porte l'identifiant de l'événement ; annuler ou corriger l'événement le résout, sa première résolution restant
   celle qui compte. Un geste absorbé n'est jamais signalé.
+- **Un geste du pupitre qu'on ne sait rattacher à rien est mis en attente**, jamais refusé : c'est
+  `PointagesEnAttenteService.recueille` qui transforme en `PointageEnAttente` les refus « rattaché à rien » (opérateur,
+  poste, élément inconnu, geste hors séquence, identifiant réutilisé). Il n'en retient aucun autre : un élément
+  clôturé reste refusé, une saisie concurrente est rejouée. Tous ces refus sont levés **avant la moindre écriture** —
+  un nouveau refus levé après une écriture ne doit pas entrer dans la liste, sans quoi la mise en attente laisserait
+  un agrégat à moitié écrit. Un pointage en attente n'entre dans aucun calcul ; l'appliquer est une régularisation.
 - **Rien d'autre n'est copié du référentiel des ressources.** Le journal ne stocke qu'un identifiant, et les libellés
   sont relus à chaque lecture : une fiche corrigée doit s'afficher corrigée sur tout l'historique. La contrepartie vit
   chez les voisins — ni un opérateur ni un poste ayant servi à pointer ne se supprime.
@@ -93,7 +100,11 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
 ## Ports sortants
 
 `SuiviDAtelierRepository`, `JourneeDeTravailRepository`, `ElementsEngageables`, `OperateursConnus`, `PostesConnus`,
-`Habilitations`, `IdentitesDEvenements`, `SeuilDAmplitude`, `PointagesSignales`, `Clock`.
+`Habilitations`, `IdentitesDEvenements`, `SeuilDAmplitude`, `PointagesSignales`, `PointagesEnAttente`, `Clock`.
+
+`PointagesEnAttente` suit la même sémantique stricte ; `parEvenementDuPupitre` retrouve les gestes mis en attente
+sous un identifiant réutilisé, qui n'est associé à aucun d'eux dans `IdentitesDEvenements` puisqu'il appartient déjà à
+un autre contenu : c'est ce qui évite de doubler le rejeu d'un tel geste.
 
 `PointagesSignales` suit la sémantique stricte des repositories : `create` refuse un événement déjà signalé, `update`
 un signalement inconnu. `CriteresDePointageSignale.matches` porte la sélection (non résolu, opérateur, motif) que

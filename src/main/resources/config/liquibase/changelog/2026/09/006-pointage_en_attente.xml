@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <!--
+    Les gestes du pupitre qu'on ne sait rattacher a rien (lot 8c de la strategie « bornes de fin de journee ») :
+    conserves tels quels, hors de tous les calculs, jusqu'a ce que le gestionnaire les applique ou les ecarte.
+  -->
+  <changeSet id="pointage_en_attente" author="glm">
+    <createTable tableName="pointage_en_attente">
+      <column name="id" type="${uuidType}">
+        <constraints primaryKey="true" nullable="false" />
+      </column>
+      <column name="evenement_du_pupitre" type="${uuidType}">
+        <constraints nullable="false" />
+      </column>
+      <column name="nature" type="varchar(20)">
+        <constraints nullable="false" />
+      </column>
+      <column name="type_evenement" type="varchar(20)">
+        <constraints nullable="false" />
+      </column>
+      <column name="operateur_id" type="${uuidType}">
+        <constraints nullable="false" />
+      </column>
+      <column name="suivi_id" type="${uuidType}" />
+      <column name="poste_id" type="${uuidType}" />
+      <column name="date_declaree" type="${datetimeType}" />
+      <column name="motif" type="varchar(32)">
+        <constraints nullable="false" />
+      </column>
+      <column name="auteur" type="varchar(100)">
+        <constraints nullable="false" />
+      </column>
+      <column name="date_de_reception" type="${datetimeType}">
+        <constraints nullable="false" />
+      </column>
+      <column name="traitement_type" type="varchar(20)" />
+      <column name="traitement_auteur" type="varchar(100)" />
+      <column name="traitement_date" type="${datetimeType}" />
+      <column name="traitement_motif" type="varchar(255)" />
+    </createTable>
+
+    <createIndex indexName="ix_pointage_en_attente_ouvert" tableName="pointage_en_attente">
+      <column name="traitement_type" />
+      <column name="operateur_id" />
+      <column name="date_de_reception" />
+    </createIndex>
+    <createIndex indexName="ix_pointage_en_attente_evenement" tableName="pointage_en_attente">
+      <column name="evenement_du_pupitre" />
+    </createIndex>
+  </changeSet>
+</databaseChangeLog>

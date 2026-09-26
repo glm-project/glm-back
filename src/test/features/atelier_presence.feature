@@ -40,18 +40,29 @@ Feature: Presence des operateurs en atelier
     Then la reponse a le statut http 200
     And le journal de la journee contient 1 evenements
 
-  Scenario: Un UUID reutilise avec un autre contenu est refuse
-    Given il est "2026-05-10T08:00:00Z"
+  Scenario: Un UUID reutilise avec un autre contenu est mis en attente
+    # Lot 8c : defaut du pupitre, jamais de l'operateur. Le geste est conserve sous un identifiant du serveur, et son
+    # rejeu ne le double pas.
+    Given l'entreprise a declare l'operateur "lambert"
+    And il est "2026-05-10T08:00:00Z"
     When j'arrive
       | id        | 00000000-0000-0000-0000-000000000032 |
-      | operateur | dupont                               |
+      | operateur | lambert                              |
     Then la reponse a le statut http 201
     When je pointe ma presence
       | id        | 00000000-0000-0000-0000-000000000032 |
-      | operateur | dupont                               |
+      | operateur | lambert                              |
       | type      | PAUSE                                |
-    Then la reponse a le statut http 409
-    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:identifiant-evenement-reutilise"
+    Then la reponse a le statut http 202
+    When je pointe ma presence
+      | id        | 00000000-0000-0000-0000-000000000032 |
+      | operateur | lambert                              |
+      | type      | PAUSE                                |
+    Then la reponse a le statut http 202
+    When je consulte les pointages en attente de "lambert"
+    Then il y a 1 pointages en attente
+    And le pointage en attente 0 porte le motif "IDENTIFIANT_REUTILISE"
+    And le pointage en attente 0 est un geste "PRESENCE" de type "PAUSE"
 
   Scenario: Une arrivee datee dans le futur est ramenee a sa reception et signalee
     # Lot 8b : l'horloge du pupitre avance. Le geste n'est pas refuse, il est ramene a sa reception, et le
@@ -374,17 +385,94 @@ Feature: Presence des operateurs en atelier
     And la journee a l'etat "ABSENT"
     And la journee a l'amplitude de "2026-05-10T17:00:00Z" a "2026-05-10T17:00:00Z"
 
-  Scenario: Une pause pour un operateur inconnu reste refusee
-    # Le geste ne peut etre rattache a personne : sa mise en attente est l'objet du lot 8c.
+  Scenario: Une pause pour un operateur inconnu est mise en attente
+    # Lot 8c : le geste ne se rattache a personne. Le pupitre recoit un succes, le gestionnaire le voit.
     When je pointe ma presence
       | operateur | 5e3d1c08-7f42-4a96-b0e5-2c8d9a1b3f74 |
       | type      | PAUSE                                |
-    Then la reponse a le statut http 404
+    Then la reponse a le statut http 202
+    When je consulte les pointages en attente de "5e3d1c08-7f42-4a96-b0e5-2c8d9a1b3f74"
+    Then il y a 1 pointages en attente
+    And le pointage en attente 0 porte le motif "OPERATEUR_INCONNU"
 
-  Scenario: Ouvrir une journee pour un operateur inconnu du referentiel renvoie 404
+  Scenario: Une arrivee d'un operateur inconnu est mise en attente, puis ecartee
+    Given il est "2026-05-10T07:00:00Z"
     When j'arrive
-      | operateur | 5e3d1c08-7f42-4a96-b0e5-2c8d9a1b3f74 |
+      | operateur | 1d2c3b4a-5e6f-4a70-8b91-c2d3e4f5a6b7 |
+    Then la reponse a le statut http 202
+    When j'applique le pointage en attente 0 de "1d2c3b4a-5e6f-4a70-8b91-c2d3e4f5a6b7"
     Then la reponse a le statut http 404
+    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:operateur-introuvable"
+    When je consulte les pointages en attente de "1d2c3b4a-5e6f-4a70-8b91-c2d3e4f5a6b7"
+    Then il y a 1 pointages en attente
+    When j'ecarte le pointage en attente deja lu pour "Badge d'un visiteur"
+    Then la reponse a le statut http 200
+    When j'ecarte le pointage en attente deja lu pour "Badge d'un visiteur"
+    Then la reponse a le statut http 409
+    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:pointage-en-attente-deja-traite"
+    When j'applique le pointage en attente deja lu
+    Then la reponse a le statut http 409
+    When je consulte les pointages en attente de "1d2c3b4a-5e6f-4a70-8b91-c2d3e4f5a6b7"
+    Then il y a 0 pointages en attente
+
+  Scenario: Un geste rejoue dans une journee deja fermee est mis en attente, puis applique
+    # Deux pupitres, l'un hors ligne : la pause de 12:00 arrive apres le depart de 17:00. Appliquee, elle s'inscrit
+    # dans la journee qui contient sa date, comme une regularisation.
+    Given l'entreprise a declare l'operateur "garnier"
+    And il est "2026-05-10T07:00:00Z"
+    And je suis arrive
+      | operateur | garnier |
+    And je retiens la journee sous le nom "garnier-lundi"
+    Given il est "2026-05-10T17:00:00Z"
+    And j'ai pointe ma presence
+      | operateur | garnier |
+      | type      | DEPART  |
+    Given il est "2026-05-10T17:30:00Z"
+    When je pointe ma presence
+      | operateur      | garnier              |
+      | type           | PAUSE                |
+      | dateDeSurvenue | 2026-05-10T12:00:00Z |
+    Then la reponse a le statut http 202
+    When je consulte les pointages en attente de "garnier"
+    Then il y a 1 pointages en attente
+    And le pointage en attente 0 porte le motif "GESTE_HORS_SEQUENCE"
+    When j'applique le pointage en attente 0 de "garnier"
+    Then la reponse a le statut http 200
+    When je consulte la journee "garnier-lundi"
+    Then le journal de la journee contient 3 evenements
+    When je consulte les pointages en attente de "garnier"
+    Then il y a 0 pointages en attente
+
+  Scenario: Ecarter un pointage en attente exige un motif
+    When je pointe ma presence
+      | operateur | 2e3f4a5b-6c7d-4e8f-9a0b-1c2d3e4f5a6b |
+      | type      | DEPART                               |
+    Then la reponse a le statut http 202
+    When j'ecarte le pointage en attente 0 de "2e3f4a5b-6c7d-4e8f-9a0b-1c2d3e4f5a6b" sans motif
+    Then la reponse a le statut http 400
+    When je consulte les pointages en attente de "2e3f4a5b-6c7d-4e8f-9a0b-1c2d3e4f5a6b"
+    Then il y a 1 pointages en attente
+
+  Scenario: Appliquer un pointage en attente inconnu renvoie 404
+    When j'applique le pointage en attente inconnu "8c6e4d13-8da5-4f27-b039-1426c8d0e3f5"
+    Then la reponse a le statut http 404
+    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:pointage-en-attente-introuvable"
+
+  Scenario: Un operateur ne consulte ni ne traite les pointages en attente
+    Given I am logged in as "operateur" with role "USER"
+    When je consulte les pointages en attente
+    Then la reponse a le statut http 403
+    When j'applique le pointage en attente inconnu "8c6e4d13-8da5-4f27-b039-1426c8d0e3f5"
+    Then la reponse a le statut http 403
+
+  Scenario: Un administrateur technique n'a pas acces aux pointages en attente
+    Given I am logged in as "admin" with role "ADMIN"
+    When je consulte les pointages en attente
+    Then la reponse a le statut http 403
+
+  Scenario: Un motif de mise en attente inconnu est refuse
+    When je consulte les pointages en attente de motif "INCONNU"
+    Then la reponse a le statut http 400
 
   Scenario: Une reprise alors que l'operateur est deja present est absorbee
     # Lot 8a : le geste ne change rien, il n'est pas refuse. Rejoue, il rend la meme journee.

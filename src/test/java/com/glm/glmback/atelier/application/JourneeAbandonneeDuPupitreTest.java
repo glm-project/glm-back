@@ -12,6 +12,7 @@ import com.glm.glmback.atelier.domain.JourneeDeTravail;
 import com.glm.glmback.atelier.domain.JourneeDeTravailRepository;
 import com.glm.glmback.atelier.domain.OperateursConnus;
 import com.glm.glmback.atelier.domain.PointageDePresenceAEnregistrer;
+import com.glm.glmback.atelier.domain.PointagesEnAttente;
 import com.glm.glmback.atelier.domain.PointagesSignales;
 import com.glm.glmback.atelier.domain.PostesConnus;
 import com.glm.glmback.atelier.domain.TypeDEvenementDePresence;
@@ -51,7 +52,7 @@ class JourneeAbandonneeDuPupitreTest {
 
     // THEN
     assertThat(resultat.rejeu()).isTrue();
-    assertThat(resultat.agregat()).isEqualTo(ouverteA7H);
+    assertThat(resultat.agregat()).contains(ouverteA7H);
     then(identites)
       .should()
       .associe(geste.uuid(), new AgregatDEvenement(TypeDAgregatDEvenement.JOURNEE_DE_TRAVAIL, ouverteA7H.id().uuid()));
@@ -77,7 +78,7 @@ class JourneeAbandonneeDuPupitreTest {
     );
 
     // THEN
-    JourneeDeTravail nouvelle = resultat.agregat();
+    JourneeDeTravail nouvelle = resultat.agregat().orElseThrow();
     assertThat(resultat.rejeu()).isFalse();
     assertThat(nouvelle.id()).isNotEqualTo(ouverteA7H.id());
     assertThat(nouvelle.journal().evenements().getFirst().id().uuid()).isNotEqualTo(refusee.get()).isNotEqualTo(geste.uuid());
@@ -98,6 +99,7 @@ class JourneeAbandonneeDuPupitreTest {
       Mockito.mock(PostesConnus.class),
       () -> AMPLITUDE_MAXIMALE_13H,
       Mockito.mock(PointagesSignales.class),
+      Mockito.mock(PointagesEnAttente.class),
       () -> maintenant,
       identites,
       new TransactionTemplate(Mockito.mock(PlatformTransactionManager.class))

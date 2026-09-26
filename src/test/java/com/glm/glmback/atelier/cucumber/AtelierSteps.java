@@ -31,6 +31,7 @@ import tools.jackson.databind.json.JsonMapper;
 public class AtelierSteps {
 
   private static final String SUIVIS_URI = "/api/atelier/suivis";
+  private static final String POINTAGES_EN_ATTENTE_URI = "/api/atelier/pointages-en-attente";
   private static final String JOURNEES_URI = "/api/atelier/journees";
   private static final String ELEMENTS_URI = "/api/elements-de-fabrication";
   private static final String POSTES_URI = "/api/postes-de-travail";
@@ -59,6 +60,7 @@ public class AtelierSteps {
 
   private String derniereJournee;
   private String dernierPointageSignale;
+  private String dernierPointageEnAttente;
   private String dernierGesteUri;
   private String dernierGesteCorps;
   private final Map<String, String> journees = new HashMap<>();
@@ -136,7 +138,7 @@ public class AtelierSteps {
 
   @When("je pointe sur {string}")
   public void jePointeSur(String alias, Map<String, String> donnees) {
-    envoieGeste(SUIVIS_URI + "/" + suivis.get(alias) + "/pointages", resoluAvecIdentifiant(donnees));
+    envoieGeste(SUIVIS_URI + "/" + suivis.getOrDefault(alias, alias) + "/pointages", resoluAvecIdentifiant(donnees));
   }
 
   @Given("j'ai pointe sur {string}")
@@ -618,6 +620,75 @@ public class AtelierSteps {
   @When("j'acquitte le pointage signale inconnu {string}")
   public void jAcquitteLePointageSignaleInconnu(String evenement) {
     rest.post("/api/atelier/pointages-signales/" + evenement + "/acquittement", "{}");
+  }
+
+  @When("je consulte les pointages en attente")
+  public void jeConsulteLesPointagesEnAttente() {
+    rest.get(POINTAGES_EN_ATTENTE_URI);
+  }
+
+  @When("je consulte les pointages en attente de {string}")
+  public void jeConsulteLesPointagesEnAttenteDe(String operateur) {
+    rest.get(POINTAGES_EN_ATTENTE_URI + "?operateur=" + idDeLOperateur(operateur));
+  }
+
+  @When("je consulte les pointages en attente de motif {string}")
+  public void jeConsulteLesPointagesEnAttenteDeMotif(String motif) {
+    rest.get(POINTAGES_EN_ATTENTE_URI + "?motif=" + motif);
+  }
+
+  @Then("il y a {int} pointages en attente")
+  public void ilYAPointagesEnAttente(int nombre) {
+    assertThatLastResponse().hasElement("$.content").withElementsCount(nombre);
+  }
+
+  @Then("le pointage en attente {int} porte le motif {string}")
+  public void lePointageEnAttentePorteLeMotif(int rang, String motif) {
+    assertThat(elementDeLaDerniereReponse("$.content[" + rang + "].motif")).isEqualTo(motif);
+  }
+
+  @Then("le pointage en attente {int} est un geste {string} de type {string}")
+  public void lePointageEnAttenteEstUnGeste(int rang, String nature, String type) {
+    assertThat(elementDeLaDerniereReponse("$.content[" + rang + "].nature")).isEqualTo(nature);
+    assertThat(elementDeLaDerniereReponse("$.content[" + rang + "].type")).isEqualTo(type);
+  }
+
+  @When("j'applique le pointage en attente {int} de {string}")
+  public void jAppliqueLePointageEnAttenteDe(int rang, String operateur) {
+    retiensLePointageEnAttente(rang, operateur);
+    rest.post(POINTAGES_EN_ATTENTE_URI + "/" + dernierPointageEnAttente + "/application", "{}");
+  }
+
+  @When("j'applique le pointage en attente deja lu")
+  public void jAppliqueLePointageEnAttenteDejaLu() {
+    rest.post(POINTAGES_EN_ATTENTE_URI + "/" + dernierPointageEnAttente + "/application", "{}");
+  }
+
+  @When("j'ecarte le pointage en attente {int} de {string} pour {string}")
+  public void jEcarteLePointageEnAttenteDe(int rang, String operateur, String motif) {
+    retiensLePointageEnAttente(rang, operateur);
+    jEcarteLePointageEnAttenteDejaLuPour(motif);
+  }
+
+  @When("j'ecarte le pointage en attente deja lu pour {string}")
+  public void jEcarteLePointageEnAttenteDejaLuPour(String motif) {
+    rest.post(POINTAGES_EN_ATTENTE_URI + "/" + dernierPointageEnAttente + "/ecart", JSON.writeValueAsString(Map.of("motif", motif)));
+  }
+
+  @When("j'ecarte le pointage en attente {int} de {string} sans motif")
+  public void jEcarteLePointageEnAttenteSansMotif(int rang, String operateur) {
+    retiensLePointageEnAttente(rang, operateur);
+    rest.post(POINTAGES_EN_ATTENTE_URI + "/" + dernierPointageEnAttente + "/ecart", "{}");
+  }
+
+  @When("j'applique le pointage en attente inconnu {string}")
+  public void jAppliqueLePointageEnAttenteInconnu(String id) {
+    rest.post(POINTAGES_EN_ATTENTE_URI + "/" + id + "/application", "{}");
+  }
+
+  private void retiensLePointageEnAttente(int rang, String operateur) {
+    rest.get(POINTAGES_EN_ATTENTE_URI + "?operateur=" + idDeLOperateur(operateur));
+    dernierPointageEnAttente = elementDeLaDerniereReponse("$.content[" + rang + "].id");
   }
 
   @When("je consulte les anomalies")

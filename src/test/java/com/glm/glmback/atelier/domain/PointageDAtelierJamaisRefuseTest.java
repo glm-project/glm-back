@@ -123,7 +123,7 @@ class PointageDAtelierJamaisRefuseTest {
 
   /**
    * Une fin rejouee dans le desordre, datee avant le debut qu'elle suppose, n'est pas redondante : elle reste
-   * refusee jusqu'a la mise en attente du lot 8c.
+   * refusee ici, et mise en attente par le lot 8c.
    */
   @Test
   void shouldToujoursRefuserUneFinRejoueeDansLeDesordre() {
@@ -144,7 +144,7 @@ class PointageDAtelierJamaisRefuseTest {
 
   /**
    * Une fin rejouee avant la fin deja pointee n'est pas un double appui : datee avant le dernier fait de son activite,
-   * elle reste refusee jusqu'au lot 8c.
+   * elle est refusee ici, et mise en attente par le lot 8c.
    */
   @Test
   void shouldToujoursRefuserUneFinRejoueeAvantLaFinDejaPointee() {
