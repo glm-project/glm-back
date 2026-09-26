@@ -273,8 +273,7 @@ Feature: Suivi des elements engages en atelier
     When je consulte les pointages signales de motif "INCONNU"
     Then la reponse a le statut http 400
 
-  Scenario: Pointer pour un operateur inconnu du referentiel est mis en attente
-    # Lot 8c : le referentiel du pupitre est perime. Le pupitre recoit un succes sans suivi, rien n'est ecrit au journal.
+  Scenario: Pointer pour un operateur inconnu du referentiel renvoie 404
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2018"
       | type      | ORDRE_DE_FABRICATION |
@@ -283,15 +282,9 @@ Feature: Suivi des elements engages en atelier
     When je pointe sur "OF 2018"
       | type      | DEBUT                                |
       | operateur | 9c1f4a67-0d38-4b52-8e91-6a7c5d4b3e20 |
-    Then la reponse a le statut http 202
-    When je consulte les pointages en attente de "9c1f4a67-0d38-4b52-8e91-6a7c5d4b3e20"
-    Then il y a 1 pointages en attente
-    And le pointage en attente 0 porte le motif "OPERATEUR_INCONNU"
-    And le pointage en attente 0 est un geste "ATELIER" de type "DEBUT"
-    When je consulte "OF 2018"
-    Then le journal du suivi contient 0 evenements
+    Then la reponse a le statut http 404
 
-  Scenario: Pointer sur un poste inconnu du referentiel est mis en attente
+  Scenario: Pointer sur un poste inconnu du referentiel renvoie 404
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2019"
       | type      | ORDRE_DE_FABRICATION |
@@ -299,48 +292,9 @@ Feature: Suivi des elements engages en atelier
     And j'ai engage l'element "OF 2019" en atelier
     When je pointe sur "OF 2019"
       | type      | DEBUT                                |
-      | operateur | martin                               |
+      | operateur | dupont                               |
       | poste     | 4b8e2d31-95c0-4f76-a1d3-7e6b0c5a9f42 |
-    Then la reponse a le statut http 202
-    When je consulte les pointages en attente de "martin"
-    Then il y a 1 pointages en attente
-    And le pointage en attente 0 porte le motif "POSTE_INCONNU"
-    When j'ecarte le pointage en attente 0 de "martin" pour "Poste retire du parc"
-    Then la reponse a le statut http 200
-
-  Scenario: Pointer sur un element inconnu est mis en attente, puis applique une fois engage
-    # Un element jamais engage, ou inconnu du serveur : le geste attend. Applique, il reste refuse tant que l'element
-    # est introuvable.
-    Given il est "2026-05-10T08:00:00Z"
-    When je pointe sur "3f9a1c52-6b7d-4e08-9f21-a4c3b5d6e7f8"
-      | type      | DEBUT                                |
-      | operateur | 7a6b5c4d-3e2f-4a1b-8c9d-0e1f2a3b4c5d |
-    Then la reponse a le statut http 202
-    When je consulte les pointages en attente de "7a6b5c4d-3e2f-4a1b-8c9d-0e1f2a3b4c5d"
-    Then il y a 1 pointages en attente
-    And le pointage en attente 0 porte le motif "ELEMENT_INCONNU"
-    When j'applique le pointage en attente 0 de "7a6b5c4d-3e2f-4a1b-8c9d-0e1f2a3b4c5d"
     Then la reponse a le statut http 404
-    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:suivi-d-atelier-introuvable"
-
-  Scenario: Appliquer un pointage d'atelier dont le poste reste inconnu est refuse au gestionnaire
-    # Appliquer, c'est regulariser : les controles du gestionnaire jouent, et le pointage reste en attente.
-    Given il est "2026-05-10T08:00:00Z"
-    And l'entreprise a cree l'element de fabrication "OF 2023"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2023                 |
-    And j'ai engage l'element "OF 2023" en atelier
-    And l'entreprise a declare l'operateur "perrin"
-    When je pointe sur "OF 2023"
-      | type      | DEBUT                                |
-      | operateur | perrin                               |
-      | poste     | 0f1e2d3c-4b5a-4968-8776-655443322110 |
-    Then la reponse a le statut http 202
-    When j'applique le pointage en attente 0 de "perrin"
-    Then la reponse a le statut http 404
-    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:poste-de-travail-introuvable"
-    When je consulte les pointages en attente de "perrin"
-    Then il y a 1 pointages en attente
 
   Scenario: Demarrer une activite deja en cours la relance
     # D9 : l'operateur qui revient sur un element reste ouvert n'est jamais bloque. Son debut ferme la periode

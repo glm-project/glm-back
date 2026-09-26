@@ -159,17 +159,13 @@ POST /api/atelier/journees/pointages       { "id": "<uuid geste>", "operateur": 
 Trois pièges :
 
 - `POST /api/atelier/journees/pointages` **n'a pas d'identifiant de journée** : le serveur retrouve seul la journée
-  ouverte de l'opérateur, ou en ouvre une.
+  ouverte de l'opérateur. Sans journée ouverte, il répond 404.
 - **Une arrivée n'est jamais refusée parce qu'une journée est déjà ouverte.** Sous le seuil d'amplitude de
   l'entreprise, elle est absorbée : `200` et la journée en cours, rien d'ajouté — un poste de nuit peut se
   réidentifier à 3 h. Au-delà, la journée en cours est **abandonnée** et l'arrivée en ouvre une nouvelle (`201`).
 - **Un geste de présence sans journée ouverte en ouvre une** (`201`), comme sur une journée abandonnée : arrivée
   implicite puis geste. **Un geste redondant** — pause déjà en pause, reprise déjà présent — **est absorbé** (`200`,
-  rien d'ajouté).
-- **Un geste qu'on ne sait rattacher à rien est mis en attente** (`202`, sans corps) : opérateur, poste ou élément
-  inconnu du serveur (référentiel du pupitre périmé), geste rejoué dans le désordre qui casse l'enchaînement ou daté
-  dans une journée déjà fermée, UUID réutilisé avec un autre contenu. Le pupitre le traite comme un succès et le retire
-  de sa file ; rejoué, il répond encore `202`. Le gestionnaire le voit dans les pointages en attente.
+  rien d'ajouté). Seuls restent refusés l'opérateur inconnu et le geste rejoué dans le désordre (lot 8c).
 - **Arrêter une activité qui n'est pas en cours, ou un élément clôturé, est absorbé** (`200`). Démarrer ou pointer
   une non conformité sur un élément clôturé reste refusé (`409 suivi-d-atelier-cloture`) : c'est le seul refus à
   afficher à l'opérateur, « OF clôturé, vous ne pouvez plus pointer dessus ».
@@ -192,9 +188,7 @@ Trois pièges :
   répond `201` et part dans les pointages signalés avec la date envoyée (`dateDeclaree`).
 - Un envoi accepté répond **201**. Rejouer exactement le même corps répond **200**, sans créer de second événement ;
   conserver donc l'UUID dans la file offline jusqu'à l'acquittement. Réutiliser cet UUID avec un autre contenu répond
-  `202` : ce contenu-là est mis en attente, le geste accepté reste intact.
-- **Côté pupitre, seul `409 suivi-d-atelier-cloture` est un refus à afficher.** Tout `2xx` retire le geste de la file ;
-  aucun autre code métier ne doit plus entrer dans la politique de rejeu.
+  409 (`identifiant-evenement-reutilise`).
 
 Les états d'un élément :
 
@@ -324,32 +318,6 @@ Les journées que le gestionnaire doit regarder, la plus récente d'abord : `typ
 régulariser ou corriger), `operateur`, `arrivee`, et pour une amplitude excessive `depart` et `amplitude`. Rien n'est
 stocké : une ligne disparaît dès que la régularisation la résout. Un type inconnu répond 400, un opérateur 403.
 
-### Pointages en attente (rôle `GESTIONNAIRE`)
-
-```
-GET  /api/atelier/pointages-en-attente?operateur={uuid}&motif={OPERATEUR_INCONNU|POSTE_INCONNU|ELEMENT_INCONNU|GESTE_HORS_SEQUENCE|IDENTIFIANT_REUTILISE}&page=0&size=20
-POST /api/atelier/pointages-en-attente/{id}/application
-POST /api/atelier/pointages-en-attente/{id}/ecart          { "motif": "Badge d'un visiteur" }
-```
-
-Les gestes du pupitre conservés tels quels, hors de tous les calculs, le plus récent d'abord par réception : `id`
-(attribué par le serveur), `evenement` (l'UUID du pupitre), `motif`, `nature` (`PRESENCE` ou `ATELIER`), `type`,
-`operateurId` (toujours présent, même inconnu) et `operateur` (résolu, absent si inconnu), `suivi` et `poste` pour un
-geste d'atelier, `dateDeclaree`, `dateDeSurvenue` (la date à laquelle il s'appliquera : celle du pupitre, ramenée à la
-réception si elle est future ou absente), `dateDeReception`, `auteur`. Un opérateur inconnu ne se filtre que par son
-`operateurId`.
-
-- **Appliquer** enregistre le geste tel quel, à sa date, comme une **régularisation** du gestionnaire, corrigeable
-  ensuite comme toute autre. Une arrivée ouvre sa journée ; un autre geste de présence s'inscrit dans la journée qui
-  contient sa date, à défaut dans la journée en cours ; un geste d'atelier est régularisé sur son suivi. Les contrôles
-  du gestionnaire jouent : un opérateur, un poste ou un élément toujours inconnu répond 404, une transition impossible
-  ou un chevauchement 409, et le pointage **reste en attente**. Il faut alors l'écarter et saisir la bonne
-  régularisation.
-- **Écarter** le sort de la liste sans rien écrire au journal. Le `motif` est obligatoire (400 sinon).
-- Un pointage déjà traité répond `409 pointage-en-attente-deja-traite`, un identifiant inconnu
-  `404 pointage-en-attente-introuvable`. Un motif de filtre inconnu répond 400, un opérateur 403. L'opérateur n'est
-  jamais informé.
-
 ### Pointages signalés (rôle `GESTIONNAIRE`)
 
 ```
@@ -411,12 +379,12 @@ sort de plusieurs contextes. Le catalogue complet est dans [documentation/codes-
 Deux statuts du tableau ci-dessous n'en portent pas : le **400** de Bean Validation, qui se lit par son `errors`
 (`Map<champ, message>`), et le **403**, qui vient de la chaîne de filtres sans corps du tout.
 
-| Statut | Cas                                                                                                                                                                            |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 400    | Corps invalide (Bean Validation) — détail par champ dans `errors`.                                                                                                             |
-| 403    | Jeton sans entreprise connue, ou rôle insuffisant.                                                                                                                             |
-| 404    | Suivi, journée, événement ou élément de fabrication introuvable ; ou aucune journée ouverte pour cet opérateur.                                                                |
-| 409    | Élément déjà engagé, élément clôturé, événement déjà annulé, transition impossible, événement antérieur à l'engagement, **chevauchement de journées**, **saisie concurrente**. |
+| Statut | Cas                                                                                                                                                                                            |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 400    | Corps invalide (Bean Validation) — détail par champ dans `errors`.                                                                                                                             |
+| 403    | Jeton sans entreprise connue, ou rôle insuffisant.                                                                                                                                             |
+| 404    | Suivi, journée, événement ou élément de fabrication introuvable ; ou aucune journée ouverte pour cet opérateur.                                                                                |
+| 409    | Élément déjà engagé, élément clôturé, événement déjà annulé, transition impossible, événement antérieur à l'engagement, UUID réutilisé, **chevauchement de journées**, **saisie concurrente**. |
 
 Les **409 de transition** sont les plus fréquents à l'usage : une `REPRISE` sans `PAUSE`, une `FIN` sans activité en
 cours, un `DEPART` sur une journée déjà fermée. Ils portent un `message` explicite — l'afficher plutôt que

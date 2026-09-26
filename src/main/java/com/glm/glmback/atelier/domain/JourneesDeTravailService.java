@@ -92,9 +92,8 @@ public final class JourneesDeTravailService {
    * </ul>
    *
    * <p>
-   * Restent refuses ici les gestes qu'on ne sait pas rattacher : un operateur inconnu, et un geste rejoue dans le
-   * desordre, date avant le dernier fait connu ou dans une journee deja fermee. {@link PointagesEnAttenteService} les
-   * met en attente (lot 8c).
+   * Restent refuses jusqu'au lot 8c les gestes qu'on ne sait pas rattacher : un operateur inconnu, et un geste rejoue
+   * dans le desordre, date avant le dernier fait connu ou dans une journee deja fermee.
    * </p>
    *
    * <p>
@@ -171,32 +170,6 @@ public final class JourneesDeTravailService {
 
   public JourneeDeTravail regularise(RegularisationDePresenceAEnregistrer commande, EvenementDePresenceId evenement) {
     return repository.update(sansChevauchement(get(commande.journee()).enregistre(regularisation(commande, evenement))));
-  }
-
-  /**
-   * Applique un geste de presence mis en attente, au nom du gestionnaire : c'est une regularisation, refusable avec
-   * explication comme toute autre. Une arrivee ouvre sa journee ; tout autre geste s'inscrit dans la journee qui
-   * contient sa date, a defaut dans la journee en cours.
-   */
-  public JourneeDeTravail applique(GesteDePresence geste, Instant dateDeSurvenue, Auteur auteur, EvenementDePresenceId evenement) {
-    if (geste.type() == TypeDEvenementDePresence.ARRIVEE) {
-      return arrive(new ArriveeAEnregistrer(geste.operateur(), auteur, Optional.of(dateDeSurvenue), evenement)).journee();
-    }
-    if (!operateurs.existe(geste.operateur())) {
-      throw new OperateurDAtelierIntrouvableException(geste.operateur());
-    }
-
-    JourneeDeTravail journee = repository
-      .journeesDeLOperateurSur(geste.operateur(), new Periode(dateDeSurvenue, dateDeSurvenue))
-      .stream()
-      .findFirst()
-      .or(() -> repository.getEnCoursPour(geste.operateur()))
-      .orElseThrow(() -> new AucuneJourneeDeTravailEnCoursException(geste.operateur()));
-
-    return regularise(
-      RegularisationDePresenceAEnregistrer.builder().journee(journee.id()).type(geste.type()).auteur(auteur).dateDeSurvenue(dateDeSurvenue),
-      evenement
-    );
   }
 
   public JourneeDeTravail annule(AnnulationDePresenceAEnregistrer commande) {

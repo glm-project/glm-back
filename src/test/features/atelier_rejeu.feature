@@ -172,8 +172,8 @@ Feature: Rejeu durable des gestes du pupitre
       | id             | 00000000-0000-0000-0000-000000000103 |
       | operateur      | dupont                               |
       | dateDeSurvenue | 2026-05-10T08:00:00Z                 |
-    # Lot 8c : le contenu different est mis en attente, sans toucher au geste accepte.
-    Then la reponse a le statut http 202
+    Then la reponse a le statut http 409
+    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:identifiant-evenement-reutilise"
     When j'arrive
       | id             | 00000000-0000-0000-0000-000000000103 |
       | operateur      | dupont                               |

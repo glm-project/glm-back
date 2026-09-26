@@ -20,7 +20,6 @@ import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.OperateursConnus;
 import com.glm.glmback.atelier.domain.PointageAEnregistrer;
 import com.glm.glmback.atelier.domain.PointageDePresenceAEnregistrer;
-import com.glm.glmback.atelier.domain.PointagesEnAttente;
 import com.glm.glmback.atelier.domain.PointagesSignales;
 import com.glm.glmback.atelier.domain.PostesConnus;
 import com.glm.glmback.atelier.domain.RegularisationAEnregistrer;
@@ -100,8 +99,8 @@ class ReservationDIdentiteServeurTest {
     List<SuiviDAtelier> suivisRejoues = rejoueAtelier(atelier, suivi);
 
     // THEN
-    assertThat(presencesRejouees).containsExactly(journee, journee);
-    assertThat(suivisRejoues).containsExactly(suivi);
+    assertThat(presencesRejouees).containsExactly(journee, journee, journee, journee);
+    assertThat(suivisRejoues).containsExactly(suivi, suivi);
     then(journees).should(never()).create(any());
     then(journees).should(never()).update(any());
     then(suivis).should(never()).update(any());
@@ -172,7 +171,6 @@ class ReservationDIdentiteServeurTest {
       Mockito.mock(PostesConnus.class),
       () -> AMPLITUDE_MAXIMALE_13H,
       Mockito.mock(PointagesSignales.class),
-      Mockito.mock(PointagesEnAttente.class),
       () -> LE_11_MAI_2026_A_9H15,
       identites,
       new TransactionTemplate(Mockito.mock(PlatformTransactionManager.class))
@@ -194,7 +192,6 @@ class ReservationDIdentiteServeurTest {
       Mockito.mock(Habilitations.class),
       () -> AMPLITUDE_MAXIMALE_13H,
       Mockito.mock(PointagesSignales.class),
-      Mockito.mock(PointagesEnAttente.class),
       () -> LE_11_MAI_2026_A_9H15,
       identites,
       new TransactionTemplate(Mockito.mock(PlatformTransactionManager.class))
@@ -206,7 +203,7 @@ class ReservationDIdentiteServeurTest {
       new AgregatDEvenement(TypeDAgregatDEvenement.JOURNEE_DE_TRAVAIL, journeeId)
     );
     ReservationDEvenement atelier = ReservationDEvenement.rejeu(new AgregatDEvenement(TypeDAgregatDEvenement.SUIVI_D_ATELIER, suiviId));
-    given(identites.reserve(any(), any())).willReturn(presence, presence, atelier);
+    given(identites.reserve(any(), any())).willReturn(presence, presence, presence, presence, atelier, atelier);
   }
 
   private static JourneesDeTravailApplicationService serviceDePresence(
@@ -219,7 +216,6 @@ class ReservationDIdentiteServeurTest {
       Mockito.mock(PostesConnus.class),
       () -> AMPLITUDE_MAXIMALE_13H,
       Mockito.mock(PointagesSignales.class),
-      Mockito.mock(PointagesEnAttente.class),
       Mockito.mock(Clock.class),
       identites,
       new TransactionTemplate(Mockito.mock(PlatformTransactionManager.class))
@@ -240,7 +236,6 @@ class ReservationDIdentiteServeurTest {
       Mockito.mock(Habilitations.class),
       () -> AMPLITUDE_MAXIMALE_13H,
       Mockito.mock(PointagesSignales.class),
-      Mockito.mock(PointagesEnAttente.class),
       Mockito.mock(Clock.class),
       identites,
       new TransactionTemplate(Mockito.mock(PlatformTransactionManager.class))
@@ -262,10 +257,18 @@ class ReservationDIdentiteServeurTest {
       EvenementDePresenceId.newId()
     );
 
-    return List.of(presence.arriveDuPupitre(arrivee).agregat().orElseThrow(), presence.pointeDuPupitre(pause).agregat().orElseThrow());
+    return List.of(
+      presence.arriveDuPupitre(arrivee).agregat(),
+      presence.arrive(arrivee),
+      presence.pointe(pause),
+      presence.pointeDuPupitre(pause).agregat()
+    );
   }
 
   private static List<SuiviDAtelier> rejoueAtelier(SuivisDAtelierApplicationService atelier, SuiviDAtelier suivi) {
-    return List.of(atelier.pointeDuPupitre(pointage(suivi.id().uuid(), OPERATEUR_ID_DUPONT, AUTEUR_DUPONT)).agregat().orElseThrow());
+    return List.of(
+      atelier.pointeDuPupitre(pointage(suivi.id().uuid(), OPERATEUR_ID_DUPONT, AUTEUR_DUPONT)).agregat(),
+      atelier.pointe(pointage(suivi.id().uuid(), OPERATEUR_ID_DUPONT, AUTEUR_DUPONT))
+    );
   }
 }

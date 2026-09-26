@@ -145,23 +145,18 @@ class SuiviDAtelierResource {
   @ApiResponse(responseCode = "201", description = "Le pointage est enregistre, le cas echeant signale.")
   @ApiResponse(responseCode = "200", description = "Le geste identique est rejoue, ou l'arret sans effet est absorbe.")
   @ApiResponse(responseCode = "400", description = "Le corps est invalide.")
-  @ApiResponse(
-    responseCode = "202",
-    description = "Element, operateur ou poste inconnu, geste rejoue dans le desordre, ou identifiant reutilise : le geste est mis en attente. Sans corps ; le gestionnaire le voit dans GET /api/atelier/pointages-en-attente."
-  )
+  @ApiResponse(responseCode = "404", description = "Suivi, operateur ou poste de travail introuvable.")
   @ApiResponse(
     responseCode = "409",
     description = """
-    Demarrer ou pointer une non conformite sur un element cloture : seul refus a afficher a l'operateur. Arreter une
-    activite qui n'est pas en cours, ou un element cloture, est absorbe : 200.
+    Demarrer ou pointer une non conformite sur un element cloture (seul refus qu'afficher a l'operateur), fin rejouee
+    dans le desordre ou identifiant reutilise. Arreter une activite qui n'est pas en
+    cours, ou un element cloture, est absorbe : 200.
     """
   )
   ResponseEntity<RestSuiviDAtelier> pointe(@PathVariable UUID id, @RequestBody @Valid RestPointage request) {
     var resultat = applicationService.pointeDuPupitre(request.toDomain(new SuiviDAtelierId(id), AuteurConnecte.get()));
-    return resultat
-      .agregat()
-      .map(agregat -> ResponseEntity.status(resultat.rejeu() ? HttpStatus.OK : HttpStatus.CREATED).body(rendu(agregat)))
-      .orElseGet(() -> ResponseEntity.accepted().build());
+    return ResponseEntity.status(resultat.rejeu() ? HttpStatus.OK : HttpStatus.CREATED).body(rendu(resultat.agregat()));
   }
 
   @PostMapping("/{id}/regularisations")

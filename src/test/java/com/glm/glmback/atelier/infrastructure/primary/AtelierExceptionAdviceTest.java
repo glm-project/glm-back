@@ -17,14 +17,12 @@ import com.glm.glmback.atelier.domain.EvenementDePresenceDejaAnnuleException;
 import com.glm.glmback.atelier.domain.EvenementDePresenceId;
 import com.glm.glmback.atelier.domain.EvenementDePresenceIntrouvableException;
 import com.glm.glmback.atelier.domain.EvenementDejaAnnuleException;
+import com.glm.glmback.atelier.domain.IdentifiantDEvenementReutiliseException;
 import com.glm.glmback.atelier.domain.JourneeDeTravailDejaOuverteException;
 import com.glm.glmback.atelier.domain.JourneeDeTravailId;
 import com.glm.glmback.atelier.domain.JourneeDeTravailIntrouvableException;
 import com.glm.glmback.atelier.domain.OperateurDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.OperateurNonHabiliteException;
-import com.glm.glmback.atelier.domain.PointageEnAttenteDejaTraiteException;
-import com.glm.glmback.atelier.domain.PointageEnAttenteId;
-import com.glm.glmback.atelier.domain.PointageEnAttenteIntrouvableException;
 import com.glm.glmback.atelier.domain.PointageSignaleDejaResoluException;
 import com.glm.glmback.atelier.domain.PointageSignaleId;
 import com.glm.glmback.atelier.domain.PointageSignaleIntrouvableException;
@@ -50,16 +48,6 @@ class AtelierExceptionAdviceTest extends ExceptionAdviceContract {
   @Override
   protected Stream<PublishedProblem> erreursPubliees() {
     return Stream.of(
-      new PublishedProblem(
-        new PointageEnAttenteIntrouvableException(PointageEnAttenteId.newId()),
-        "urn:glm:erreur:atelier:pointage-en-attente-introuvable",
-        NOT_FOUND
-      ),
-      new PublishedProblem(
-        new PointageEnAttenteDejaTraiteException(PointageEnAttenteId.newId()),
-        "urn:glm:erreur:atelier:pointage-en-attente-deja-traite",
-        CONFLICT
-      ),
       new PublishedProblem(
         new PointageSignaleIntrouvableException(new PointageSignaleId(java.util.UUID.randomUUID())),
         "urn:glm:erreur:atelier:pointage-signale-introuvable",
@@ -156,7 +144,12 @@ class AtelierExceptionAdviceTest extends ExceptionAdviceContract {
         "urn:glm:erreur:atelier:evenement-anterieur-a-l-engagement",
         CONFLICT
       ),
-      new PublishedProblem(new SaisieConcurrenteException(SuiviDAtelierId.newId()), "urn:glm:erreur:atelier:saisie-concurrente", CONFLICT)
+      new PublishedProblem(new SaisieConcurrenteException(SuiviDAtelierId.newId()), "urn:glm:erreur:atelier:saisie-concurrente", CONFLICT),
+      new PublishedProblem(
+        new IdentifiantDEvenementReutiliseException(java.util.UUID.randomUUID()),
+        "urn:glm:erreur:atelier:identifiant-evenement-reutilise",
+        CONFLICT
+      )
     );
   }
 }
