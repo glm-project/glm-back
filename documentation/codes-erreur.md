@@ -150,6 +150,7 @@ créée deux fois. `chevauchement-de-journees` ne répond qu'aux actes du gestio
 
 Depuis le lot 8a, les routes de pointage n'émettent plus `aucune-journee-de-travail-en-cours` que pour un geste rejoué
 dans une journée déjà fermée, ni `transition-de-presence-interdite` ou `transition-d-atelier-interdite` que pour un
-geste rejoué dans le désordre (tous deux voués à la mise en attente du lot 8c). `suivi-d-atelier-cloture` n'y sort
+geste rejoué dans le désordre. Ces deux refus restent définitifs, comme `operateur-introuvable`,
+`poste-de-travail-introuvable`, `suivi-d-atelier-introuvable` et `identifiant-evenement-reutilise` (lot 8c abandonné). `suivi-d-atelier-cloture` n'y sort
 plus que pour un démarrage ou une non conformité — la seule erreur à afficher à l'opérateur. `saisie-concurrente`
 n'y remonte qu'après trois essais du serveur.

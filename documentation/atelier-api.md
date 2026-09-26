@@ -165,7 +165,8 @@ Trois pièges :
   réidentifier à 3 h. Au-delà, la journée en cours est **abandonnée** et l'arrivée en ouvre une nouvelle (`201`).
 - **Un geste de présence sans journée ouverte en ouvre une** (`201`), comme sur une journée abandonnée : arrivée
   implicite puis geste. **Un geste redondant** — pause déjà en pause, reprise déjà présent — **est absorbé** (`200`,
-  rien d'ajouté). Seuls restent refusés l'opérateur inconnu et le geste rejoué dans le désordre (lot 8c).
+  rien d'ajouté). Restent refusés, définitivement, l'opérateur, le poste ou l'élément inconnu (404), le geste rejoué dans le désordre
+  (409) et l'UUID réutilisé avec un autre contenu (409).
 - **Arrêter une activité qui n'est pas en cours, ou un élément clôturé, est absorbé** (`200`). Démarrer ou pointer
   une non conformité sur un élément clôturé reste refusé (`409 suivi-d-atelier-cloture`) : c'est le seul refus à
   afficher à l'opérateur, « OF clôturé, vous ne pouvez plus pointer dessus ».

@@ -375,7 +375,7 @@ Feature: Presence des operateurs en atelier
     And la journee a l'amplitude de "2026-05-10T17:00:00Z" a "2026-05-10T17:00:00Z"
 
   Scenario: Une pause pour un operateur inconnu reste refusee
-    # Le geste ne peut etre rattache a personne : sa mise en attente est l'objet du lot 8c.
+    # Le geste ne peut etre rattache a personne : il reste refuse.
     When je pointe ma presence
       | operateur | 5e3d1c08-7f42-4a96-b0e5-2c8d9a1b3f74 |
       | type      | PAUSE                                |

@@ -92,8 +92,8 @@ public final class JourneesDeTravailService {
    * </ul>
    *
    * <p>
-   * Restent refuses jusqu'au lot 8c les gestes qu'on ne sait pas rattacher : un operateur inconnu, et un geste rejoue
-   * dans le desordre, date avant le dernier fait connu ou dans une journee deja fermee.
+   * Restent refuses les gestes qu'on ne sait pas rattacher : un operateur inconnu, et un geste rejoue dans le
+   * desordre, date avant le dernier fait connu ou dans une journee deja fermee.
    * </p>
    *
    * <p>
