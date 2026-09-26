@@ -8,8 +8,6 @@ import com.glm.glmback.atelier.domain.CorrectionAEnregistrer;
 import com.glm.glmback.atelier.domain.ElementsEngageables;
 import com.glm.glmback.atelier.domain.EngagementAEnregistrer;
 import com.glm.glmback.atelier.domain.EtatDAtelier;
-import com.glm.glmback.atelier.domain.GesteDAtelier;
-import com.glm.glmback.atelier.domain.GesteRecu;
 import com.glm.glmback.atelier.domain.Habilitations;
 import com.glm.glmback.atelier.domain.IntervalleDActivite;
 import com.glm.glmback.atelier.domain.JourneeDeTravailRepository;
@@ -17,8 +15,6 @@ import com.glm.glmback.atelier.domain.OperateursConnus;
 import com.glm.glmback.atelier.domain.Periode;
 import com.glm.glmback.atelier.domain.PointageAEnregistrer;
 import com.glm.glmback.atelier.domain.PointageDAtelierTraite;
-import com.glm.glmback.atelier.domain.PointagesEnAttente;
-import com.glm.glmback.atelier.domain.PointagesEnAttenteService;
 import com.glm.glmback.atelier.domain.PointagesSignales;
 import com.glm.glmback.atelier.domain.PostesConnus;
 import com.glm.glmback.atelier.domain.RegularisationAEnregistrer;
@@ -56,7 +52,6 @@ public class SuivisDAtelierApplicationService {
   private final SuivisDAtelierService suivisDAtelier;
   private final TempsDAtelierService tempsDAtelier;
   private final AnnuaireDAtelierService annuaires;
-  private final GestesDuPupitre gestes;
   private final IdentitesDEvenements identites;
   private final TransactionTemplate transactions;
 
@@ -69,7 +64,6 @@ public class SuivisDAtelierApplicationService {
     Habilitations habilitations,
     SeuilDAmplitude seuil,
     PointagesSignales signalements,
-    PointagesEnAttente enAttente,
     Clock clock,
     IdentitesDEvenements identites,
     TransactionTemplate transactions
@@ -84,7 +78,6 @@ public class SuivisDAtelierApplicationService {
       .clock(clock);
     this.tempsDAtelier = TempsDAtelierService.builder().suivis(repository).journees(journees).seuil(seuil).clock(clock);
     this.annuaires = new AnnuaireDAtelierService(operateurs, postes);
-    this.gestes = new GestesDuPupitre(new PointagesEnAttenteService(enAttente, clock), identites);
     this.identites = identites;
     this.transactions = transactions;
   }
@@ -96,40 +89,34 @@ public class SuivisDAtelierApplicationService {
   }
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
-  public ResultatDEcriture<SuiviDAtelier> pointeDuPupitre(PointageAEnregistrer commande) {
-    GesteRecu recu = new GesteRecu(
-      commande.evenement().uuid(),
-      GesteDAtelier.builder()
-        .suivi(commande.suivi())
-        .operateur(commande.operateur())
-        .type(commande.type())
-        .poste(commande.poste())
-        .dateDeclaree(commande.dateDeSurvenue()),
-      commande.auteur()
-    );
-    EmpreinteDEvenement empreinte = EmpreinteDEvenement.builder()
-      .nature(NatureDeGesteDuPupitre.POINTAGE_D_ATELIER)
-      .cible(Optional.of(commande.suivi().uuid()))
-      .operateur(commande.operateur().uuid())
-      .type(commande.type().name())
-      .poste(commande.poste().map(poste -> poste.uuid()))
-      .dateDeSurvenue(commande.dateDeSurvenue());
+  @Transactional
+  public SuiviDAtelier pointe(PointageAEnregistrer commande) {
+    return pointeDuPupitre(commande).agregat();
+  }
 
-    return SaisieConcurrenteRejouee.executer(transactions, () ->
-      gestes.ecrit(
-        recu,
-        empreinte,
-        id -> suivisDAtelier.get(new SuiviDAtelierId(id)),
-        () -> {
-          PointageDAtelierTraite traite = suivisDAtelier.pointe(commande);
-          identites.associe(
-            commande.evenement().uuid(),
-            new AgregatDEvenement(TypeDAgregatDEvenement.SUIVI_D_ATELIER, traite.suivi().id().uuid())
-          );
-          return new ResultatDEcriture<>(traite.suivi(), traite.absorbe());
-        }
-      )
-    );
+  @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
+  public ResultatDEcriture<SuiviDAtelier> pointeDuPupitre(PointageAEnregistrer commande) {
+    return SaisieConcurrenteRejouee.executer(transactions, () -> {
+      ReservationDEvenement reservation = identites.reserve(
+        commande.evenement().uuid(),
+        EmpreinteDEvenement.builder()
+          .nature(NatureDeGesteDuPupitre.POINTAGE_D_ATELIER)
+          .cible(Optional.of(commande.suivi().uuid()))
+          .operateur(commande.operateur().uuid())
+          .type(commande.type().name())
+          .poste(commande.poste().map(poste -> poste.uuid()))
+          .dateDeSurvenue(commande.dateDeSurvenue())
+      );
+      if (reservation.estUnRejeu()) {
+        return new ResultatDEcriture<>(suivisDAtelier.get(new SuiviDAtelierId(reservation.agregat().orElseThrow().id())), true);
+      }
+      PointageDAtelierTraite traite = suivisDAtelier.pointe(commande);
+      identites.associe(
+        commande.evenement().uuid(),
+        new AgregatDEvenement(TypeDAgregatDEvenement.SUIVI_D_ATELIER, traite.suivi().id().uuid())
+      );
+      return new ResultatDEcriture<>(traite.suivi(), traite.absorbe());
+    });
   }
 
   @Secured("ROLE_GESTIONNAIRE")

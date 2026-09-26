@@ -9,12 +9,11 @@ import com.glm.glmback.atelier.domain.EvenementDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.EvenementDePresenceDejaAnnuleException;
 import com.glm.glmback.atelier.domain.EvenementDePresenceIntrouvableException;
 import com.glm.glmback.atelier.domain.EvenementDejaAnnuleException;
+import com.glm.glmback.atelier.domain.IdentifiantDEvenementReutiliseException;
 import com.glm.glmback.atelier.domain.JourneeDeTravailDejaOuverteException;
 import com.glm.glmback.atelier.domain.JourneeDeTravailIntrouvableException;
 import com.glm.glmback.atelier.domain.OperateurDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.OperateurNonHabiliteException;
-import com.glm.glmback.atelier.domain.PointageEnAttenteDejaTraiteException;
-import com.glm.glmback.atelier.domain.PointageEnAttenteIntrouvableException;
 import com.glm.glmback.atelier.domain.PointageSignaleDejaResoluException;
 import com.glm.glmback.atelier.domain.PointageSignaleIntrouvableException;
 import com.glm.glmback.atelier.domain.PosteDAtelierIntrouvableException;
@@ -128,6 +127,11 @@ class AtelierExceptionAdvice {
     return ErreurDAtelier.SAISIE_CONCURRENTE.problem(e);
   }
 
+  @ExceptionHandler(IdentifiantDEvenementReutiliseException.class)
+  ProblemDetail handleIdentifiantDEvenementReutilise(IdentifiantDEvenementReutiliseException e) {
+    return ErreurDAtelier.IDENTIFIANT_EVENEMENT_REUTILISE.problem(e);
+  }
+
   @ExceptionHandler(PointageSignaleIntrouvableException.class)
   ProblemDetail handlePointageSignaleIntrouvable(PointageSignaleIntrouvableException e) {
     return ErreurDAtelier.POINTAGE_SIGNALE_INTROUVABLE.problem(e);
@@ -136,15 +140,5 @@ class AtelierExceptionAdvice {
   @ExceptionHandler(PointageSignaleDejaResoluException.class)
   ProblemDetail handlePointageSignaleDejaResolu(PointageSignaleDejaResoluException e) {
     return ErreurDAtelier.POINTAGE_SIGNALE_DEJA_RESOLU.problem(e);
-  }
-
-  @ExceptionHandler(PointageEnAttenteIntrouvableException.class)
-  ProblemDetail handlePointageEnAttenteIntrouvable(PointageEnAttenteIntrouvableException e) {
-    return ErreurDAtelier.POINTAGE_EN_ATTENTE_INTROUVABLE.problem(e);
-  }
-
-  @ExceptionHandler(PointageEnAttenteDejaTraiteException.class)
-  ProblemDetail handlePointageEnAttenteDejaTraite(PointageEnAttenteDejaTraiteException e) {
-    return ErreurDAtelier.POINTAGE_EN_ATTENTE_DEJA_TRAITE.problem(e);
   }
 }

@@ -9,5 +9,4 @@
   <include file="003-journee_dernier_fait.xml" relativeToChangelogFile="true" />
   <include file="004-journee_amplitude.xml" relativeToChangelogFile="true" />
   <include file="005-pointage_signale.xml" relativeToChangelogFile="true" />
-  <include file="006-pointage_en_attente.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>
