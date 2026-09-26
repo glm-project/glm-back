@@ -89,9 +89,9 @@ class ChevauchementDeJourneesTest {
   void shouldRefuserUneCorrectionQuiFeraitChevaucher() {
     JourneeDeTravail lundi = arriveA(OPERATEUR_ID_DUPONT, LE_10_MAI_2026_A_7H);
     maintenant.set(LE_10_MAI_2026_A_17H);
-    JourneeDeTravail fermee = service.pointe(
-      new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.DEPART)
-    );
+    JourneeDeTravail fermee = service
+      .pointe(new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.DEPART))
+      .journee();
     arriveA(OPERATEUR_ID_DUPONT, LE_11_MAI_2026_A_7H);
     maintenant.set(LE_11_MAI_2026_A_9H15);
     CorrectionDePresenceAEnregistrer departDeMardi = new CorrectionDePresenceAEnregistrer(
@@ -107,9 +107,9 @@ class ChevauchementDeJourneesTest {
   void shouldAccepterUneCorrectionQuiNeChevauchePas() {
     JourneeDeTravail lundi = arriveA(OPERATEUR_ID_DUPONT, LE_10_MAI_2026_A_7H);
     maintenant.set(LE_10_MAI_2026_A_17H);
-    JourneeDeTravail fermee = service.pointe(
-      new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.DEPART)
-    );
+    JourneeDeTravail fermee = service
+      .pointe(new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.DEPART))
+      .journee();
     arriveA(OPERATEUR_ID_DUPONT, LE_11_MAI_2026_A_7H);
     maintenant.set(LE_11_MAI_2026_A_9H15);
 
@@ -155,9 +155,9 @@ class ChevauchementDeJourneesTest {
   void shouldNeJamaisRefuserUneAnnulation() {
     JourneeDeTravail lundi = arriveA(OPERATEUR_ID_DUPONT, LE_10_MAI_2026_A_7H);
     maintenant.set(LE_10_MAI_2026_A_12H);
-    JourneeDeTravail enPause = service.pointe(
-      new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.PAUSE)
-    );
+    JourneeDeTravail enPause = service
+      .pointe(new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.PAUSE))
+      .journee();
     arriveA(OPERATEUR_ID_DUPONT, LE_11_MAI_2026_A_7H);
     maintenant.set(LE_11_MAI_2026_A_9H15);
 

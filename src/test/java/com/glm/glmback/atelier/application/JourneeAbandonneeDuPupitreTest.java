@@ -20,6 +20,8 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Ce que le pupitre recoit quand sa journee est abandonnee ou son arrivee redondante : jamais un refus.
@@ -95,7 +97,8 @@ class JourneeAbandonneeDuPupitreTest {
       Mockito.mock(PostesConnus.class),
       () -> AMPLITUDE_MAXIMALE_13H,
       () -> maintenant,
-      identites
+      identites,
+      new TransactionTemplate(Mockito.mock(PlatformTransactionManager.class))
     );
   }
 }

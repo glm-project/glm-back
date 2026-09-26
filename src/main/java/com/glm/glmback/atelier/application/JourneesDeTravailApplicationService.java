@@ -4,7 +4,6 @@ import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelierService;
 import com.glm.glmback.atelier.domain.AnnulationDePresenceAEnregistrer;
 import com.glm.glmback.atelier.domain.ArriveeAEnregistrer;
-import com.glm.glmback.atelier.domain.ArriveeTraitee;
 import com.glm.glmback.atelier.domain.CorrectionDePresenceAEnregistrer;
 import com.glm.glmback.atelier.domain.EvenementDePresenceId;
 import com.glm.glmback.atelier.domain.JourneeDeTravail;
@@ -16,6 +15,7 @@ import com.glm.glmback.atelier.domain.OperateursConnus;
 import com.glm.glmback.atelier.domain.Periode;
 import com.glm.glmback.atelier.domain.PointageDePresenceAEnregistrer;
 import com.glm.glmback.atelier.domain.PostesConnus;
+import com.glm.glmback.atelier.domain.PresenceTraitee;
 import com.glm.glmback.atelier.domain.RegularisationDePresenceAEnregistrer;
 import com.glm.glmback.atelier.domain.SeuilDAmplitude;
 import com.glm.glmback.shared.pagination.domain.Page;
@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Orchestration de la presence des operateurs.
@@ -43,6 +44,7 @@ public class JourneesDeTravailApplicationService {
   private final JourneesDeTravailService journeesDeTravail;
   private final AnnuaireDAtelierService annuaires;
   private final IdentitesDEvenements identites;
+  private final TransactionTemplate transactions;
 
   public JourneesDeTravailApplicationService(
     JourneeDeTravailRepository repository,
@@ -50,11 +52,13 @@ public class JourneesDeTravailApplicationService {
     PostesConnus postes,
     SeuilDAmplitude seuil,
     Clock clock,
-    IdentitesDEvenements identites
+    IdentitesDEvenements identites,
+    TransactionTemplate transactions
   ) {
     this.journeesDeTravail = JourneesDeTravailService.builder().repository(repository).operateurs(operateurs).seuil(seuil).clock(clock);
     this.annuaires = new AnnuaireDAtelierService(operateurs, postes);
     this.identites = identites;
+    this.transactions = transactions;
   }
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
@@ -64,27 +68,28 @@ public class JourneesDeTravailApplicationService {
   }
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
-  @Transactional
   public ResultatDEcriture<JourneeDeTravail> arriveDuPupitre(ArriveeAEnregistrer commande) {
-    ReservationDEvenement reservation = identites.reserve(
-      commande.evenement().uuid(),
-      EmpreinteDEvenement.builder()
-        .nature(NatureDeGesteDuPupitre.ARRIVEE)
-        .cible(Optional.empty())
-        .operateur(commande.operateur().uuid())
-        .type(commande.type().name())
-        .poste(Optional.empty())
-        .dateDeSurvenue(commande.dateDeSurvenue())
-    );
-    if (reservation.estUnRejeu()) {
-      return new ResultatDEcriture<>(journeesDeTravail.get(new JourneeDeTravailId(reservation.agregat().orElseThrow().id())), true);
-    }
-    ArriveeTraitee arrivee = journeesDeTravail.arrive(commande);
-    identites.associe(
-      commande.evenement().uuid(),
-      new AgregatDEvenement(TypeDAgregatDEvenement.JOURNEE_DE_TRAVAIL, arrivee.journee().id().uuid())
-    );
-    return new ResultatDEcriture<>(arrivee.journee(), arrivee.absorbee());
+    return SaisieConcurrenteRejouee.executer(transactions, () -> {
+      ReservationDEvenement reservation = identites.reserve(
+        commande.evenement().uuid(),
+        EmpreinteDEvenement.builder()
+          .nature(NatureDeGesteDuPupitre.ARRIVEE)
+          .cible(Optional.empty())
+          .operateur(commande.operateur().uuid())
+          .type(commande.type().name())
+          .poste(Optional.empty())
+          .dateDeSurvenue(commande.dateDeSurvenue())
+      );
+      if (reservation.estUnRejeu()) {
+        return new ResultatDEcriture<>(journeesDeTravail.get(new JourneeDeTravailId(reservation.agregat().orElseThrow().id())), true);
+      }
+      PresenceTraitee arrivee = journeesDeTravail.arrive(commande);
+      identites.associe(
+        commande.evenement().uuid(),
+        new AgregatDEvenement(TypeDAgregatDEvenement.JOURNEE_DE_TRAVAIL, arrivee.journee().id().uuid())
+      );
+      return new ResultatDEcriture<>(arrivee.journee(), arrivee.absorbee());
+    });
   }
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
@@ -94,24 +99,28 @@ public class JourneesDeTravailApplicationService {
   }
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
-  @Transactional
   public ResultatDEcriture<JourneeDeTravail> pointeDuPupitre(PointageDePresenceAEnregistrer commande) {
-    ReservationDEvenement reservation = identites.reserve(
-      commande.evenement().uuid(),
-      EmpreinteDEvenement.builder()
-        .nature(NatureDeGesteDuPupitre.POINTAGE_DE_PRESENCE)
-        .cible(Optional.empty())
-        .operateur(commande.operateur().uuid())
-        .type(commande.type().name())
-        .poste(Optional.empty())
-        .dateDeSurvenue(commande.dateDeSurvenue())
-    );
-    if (reservation.estUnRejeu()) {
-      return new ResultatDEcriture<>(journeesDeTravail.get(new JourneeDeTravailId(reservation.agregat().orElseThrow().id())), true);
-    }
-    JourneeDeTravail journee = journeesDeTravail.pointe(commande, () -> new EvenementDePresenceId(reserveIdentiteServeur()));
-    identites.associe(commande.evenement().uuid(), new AgregatDEvenement(TypeDAgregatDEvenement.JOURNEE_DE_TRAVAIL, journee.id().uuid()));
-    return new ResultatDEcriture<>(journee, false);
+    return SaisieConcurrenteRejouee.executer(transactions, () -> {
+      ReservationDEvenement reservation = identites.reserve(
+        commande.evenement().uuid(),
+        EmpreinteDEvenement.builder()
+          .nature(NatureDeGesteDuPupitre.POINTAGE_DE_PRESENCE)
+          .cible(Optional.empty())
+          .operateur(commande.operateur().uuid())
+          .type(commande.type().name())
+          .poste(Optional.empty())
+          .dateDeSurvenue(commande.dateDeSurvenue())
+      );
+      if (reservation.estUnRejeu()) {
+        return new ResultatDEcriture<>(journeesDeTravail.get(new JourneeDeTravailId(reservation.agregat().orElseThrow().id())), true);
+      }
+      PresenceTraitee traitee = journeesDeTravail.pointe(commande, () -> new EvenementDePresenceId(reserveIdentiteServeur()));
+      identites.associe(
+        commande.evenement().uuid(),
+        new AgregatDEvenement(TypeDAgregatDEvenement.JOURNEE_DE_TRAVAIL, traitee.journee().id().uuid())
+      );
+      return new ResultatDEcriture<>(traitee.journee(), traitee.absorbee());
+    });
   }
 
   @Secured("ROLE_GESTIONNAIRE")

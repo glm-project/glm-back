@@ -103,15 +103,20 @@ class JourneeDeTravailResource {
     Un seul appel, quel que soit le nombre d'elements en cours. Ne jamais boucler sur les elements pour repercuter une
     pause : le croisement est fait a la lecture du temps effectif.
 
-    Si la journee ouverte a depasse l'amplitude maximale a l'heure du geste, elle est abandonnee : le geste ouvre une
-    nouvelle journee par une arrivee implicite a son heure, puis s'y applique. Une reprise s'y reduit a l'arrivee.
+    Un geste n'est jamais refuse parce que la journee ne s'y prete pas. Sans journee ouverte, ou si elle a depasse
+    l'amplitude maximale a l'heure du geste, le geste ouvre une nouvelle journee par une arrivee implicite a son heure,
+    puis s'y applique ; une reprise s'y reduit a l'arrivee. Redondant avec l'etat courant (une pause deja en pause, une
+    reprise deja present), il est absorbe. Deux saisies simultanees sont rejouees par le serveur.
     """
   )
   @ApiResponse(responseCode = "201", description = "Le pointage est enregistre, le cas echeant dans une nouvelle journee.")
-  @ApiResponse(responseCode = "200", description = "Le geste identique est rejoue.")
+  @ApiResponse(responseCode = "200", description = "Le geste identique est rejoue, ou le geste redondant est absorbe.")
   @ApiResponse(responseCode = "400", description = "Le corps est invalide ou la date de survenue est future.")
-  @ApiResponse(responseCode = "404", description = "Cet operateur n'a aucune journee ouverte.")
-  @ApiResponse(responseCode = "409", description = "Transition impossible depuis l'etat de presence courant ou identifiant reutilise.")
+  @ApiResponse(
+    responseCode = "404",
+    description = "Operateur inconnu, ou geste sans journee ouverte date dans une journee deja fermee (rejoue dans le desordre)."
+  )
+  @ApiResponse(responseCode = "409", description = "Geste rejoue dans le desordre qui casse l'enchainement, ou identifiant reutilise.")
   ResponseEntity<RestJourneeDeTravail> pointe(@RequestBody @Valid RestPointageDePresence request) {
     var resultat = applicationService.pointeDuPupitre(request.toDomain(AuteurConnecte.get()));
     return ResponseEntity.status(resultat.rejeu() ? HttpStatus.OK : HttpStatus.CREATED).body(rendu(resultat.agregat()));

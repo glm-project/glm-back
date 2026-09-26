@@ -35,6 +35,8 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @UnitTest
 class ReservationDIdentiteServeurTest {
@@ -168,7 +170,8 @@ class ReservationDIdentiteServeurTest {
       Mockito.mock(PostesConnus.class),
       () -> AMPLITUDE_MAXIMALE_13H,
       () -> LE_11_MAI_2026_A_9H15,
-      identites
+      identites,
+      new TransactionTemplate(Mockito.mock(PlatformTransactionManager.class))
     );
   }
 
@@ -187,7 +190,8 @@ class ReservationDIdentiteServeurTest {
       Mockito.mock(Habilitations.class),
       () -> AMPLITUDE_MAXIMALE_13H,
       () -> LE_11_MAI_2026_A_9H15,
-      identites
+      identites,
+      new TransactionTemplate(Mockito.mock(PlatformTransactionManager.class))
     );
   }
 
@@ -209,7 +213,8 @@ class ReservationDIdentiteServeurTest {
       Mockito.mock(PostesConnus.class),
       () -> AMPLITUDE_MAXIMALE_13H,
       Mockito.mock(Clock.class),
-      identites
+      identites,
+      new TransactionTemplate(Mockito.mock(PlatformTransactionManager.class))
     );
   }
 
@@ -227,7 +232,8 @@ class ReservationDIdentiteServeurTest {
       Mockito.mock(Habilitations.class),
       () -> AMPLITUDE_MAXIMALE_13H,
       Mockito.mock(Clock.class),
-      identites
+      identites,
+      new TransactionTemplate(Mockito.mock(PlatformTransactionManager.class))
     );
   }
 

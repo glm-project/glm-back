@@ -346,10 +346,36 @@ Feature: Presence des operateurs en atelier
     Then la reponse a le statut http 409
     And la reponse porte le code d'erreur "urn:glm:erreur:atelier:chevauchement-de-journees"
 
-  Scenario: Pointer une pause sans journee ouverte est refuse
+  Scenario: Une pause sans journee ouverte en ouvre une qui commence en pause
+    # Lot 8a : un geste sans journee n'est jamais refuse a l'operateur. Une arrivee implicite, sous une identite du
+    # serveur, l'ouvre a l'heure du geste.
+    Given il est "2026-05-10T12:00:00Z"
+    When je pointe ma presence
+      | id        | 00000000-0000-0000-0000-000000000061 |
+      | operateur | dupont                               |
+      | type      | PAUSE                                |
+    Then la reponse a le statut http 201
+    And la journee a l'etat "EN_PAUSE"
+    And le journal du suivi ne contient que les types
+      | ARRIVEE |
+      | PAUSE   |
+    And l'evenement 0 de la journee n'a pas l'identifiant "00000000-0000-0000-0000-000000000061"
+    And l'evenement 1 de la journee a l'identifiant "00000000-0000-0000-0000-000000000061"
+
+  Scenario: Un depart presse par un operateur jamais arrive donne une journee de duree nulle
+    Given il est "2026-05-10T17:00:00Z"
     When je pointe ma presence
       | operateur | dupont |
-      | type      | PAUSE  |
+      | type      | DEPART |
+    Then la reponse a le statut http 201
+    And la journee a l'etat "ABSENT"
+    And la journee a l'amplitude de "2026-05-10T17:00:00Z" a "2026-05-10T17:00:00Z"
+
+  Scenario: Une pause pour un operateur inconnu reste refusee
+    # Le geste ne peut etre rattache a personne : sa mise en attente est l'objet du lot 8c.
+    When je pointe ma presence
+      | operateur | 5e3d1c08-7f42-4a96-b0e5-2c8d9a1b3f74 |
+      | type      | PAUSE                                |
     Then la reponse a le statut http 404
 
   Scenario: Ouvrir une journee pour un operateur inconnu du referentiel renvoie 404
@@ -357,15 +383,38 @@ Feature: Presence des operateurs en atelier
       | operateur | 5e3d1c08-7f42-4a96-b0e5-2c8d9a1b3f74 |
     Then la reponse a le statut http 404
 
-  Scenario: Une reprise sans pause est refusee
+  Scenario: Une reprise alors que l'operateur est deja present est absorbee
+    # Lot 8a : le geste ne change rien, il n'est pas refuse. Rejoue, il rend la meme journee.
     Given il est "2026-05-10T07:00:00Z"
     And je suis arrive
       | operateur | dupont |
+    And je retiens la journee sous le nom "matin"
     Given il est "2026-05-10T09:00:00Z"
     When je pointe ma presence
       | operateur | dupont  |
       | type      | REPRISE |
-    Then la reponse a le statut http 409
+    Then la reponse a le statut http 200
+    And la reponse designe la journee "matin"
+    And le journal de la journee contient 1 evenements
+    When je rejoue le dernier geste du pupitre
+    Then la reponse a le statut http 200
+    And la reponse designe la journee "matin"
+
+  Scenario: Un double appui sur pause est absorbe
+    Given il est "2026-05-10T07:00:00Z"
+    And je suis arrive
+      | operateur | dupont |
+    Given il est "2026-05-10T12:00:00Z"
+    And j'ai pointe ma presence
+      | operateur | dupont |
+      | type      | PAUSE  |
+    Given il est "2026-05-10T12:00:02Z"
+    When je pointe ma presence
+      | operateur | dupont |
+      | type      | PAUSE  |
+    Then la reponse a le statut http 200
+    And la journee a l'etat "EN_PAUSE"
+    And le journal de la journee contient 2 evenements
 
   Scenario: Un depart oublie, regularise le lendemain par un tiers
     # « Il a oublie de pointer le matin... mais il faut compter son temps de presence aussi » —

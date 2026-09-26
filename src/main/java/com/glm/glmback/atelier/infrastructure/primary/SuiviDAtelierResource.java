@@ -139,12 +139,16 @@ class SuiviDAtelierResource {
     """
   )
   @ApiResponse(responseCode = "201", description = "Le pointage est enregistre.")
-  @ApiResponse(responseCode = "200", description = "Le geste identique est rejoue.")
+  @ApiResponse(responseCode = "200", description = "Le geste identique est rejoue, ou l'arret sans effet est absorbe.")
   @ApiResponse(responseCode = "400", description = "Le corps est invalide ou la date de survenue est future.")
   @ApiResponse(responseCode = "404", description = "Suivi, operateur ou poste de travail introuvable.")
   @ApiResponse(
     responseCode = "409",
-    description = "Operateur non habilite sur ce poste, element cloture, transition impossible ou identifiant reutilise."
+    description = """
+    Demarrer ou pointer une non conformite sur un element cloture (seul refus qu'afficher a l'operateur), operateur non
+    habilite sur ce poste, fin rejouee dans le desordre ou identifiant reutilise. Arreter une activite qui n'est pas en
+    cours, ou un element cloture, est absorbe : 200.
+    """
   )
   ResponseEntity<RestSuiviDAtelier> pointe(@PathVariable UUID id, @RequestBody @Valid RestPointage request) {
     var resultat = applicationService.pointeDuPupitre(request.toDomain(new SuiviDAtelierId(id), AuteurConnecte.get()));

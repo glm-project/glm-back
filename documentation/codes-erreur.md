@@ -143,3 +143,9 @@ segment de contexte, et lui seul, qui les distingue.
 [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md), une arrivée redondante est absorbée
 et une journée abandonnée en fait ouvrir une nouvelle. Le code reste publié pour le seul cas d'une identité de journée
 créée deux fois. `chevauchement-de-journees` ne répond qu'aux actes du gestionnaire (régularisation, correction).
+
+Depuis le lot 8a, les routes de pointage n'émettent plus `aucune-journee-de-travail-en-cours` que pour un geste rejoué
+dans une journée déjà fermée, ni `transition-de-presence-interdite` ou `transition-d-atelier-interdite` que pour un
+geste rejoué dans le désordre (tous deux voués à la mise en attente du lot 8c). `suivi-d-atelier-cloture` n'y sort
+plus que pour un démarrage ou une non conformité — la seule erreur à afficher à l'opérateur. `saisie-concurrente`
+n'y remonte qu'après trois essais du serveur.
