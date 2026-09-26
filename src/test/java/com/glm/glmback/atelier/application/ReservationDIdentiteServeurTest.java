@@ -20,7 +20,6 @@ import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.OperateursConnus;
 import com.glm.glmback.atelier.domain.PointageAEnregistrer;
 import com.glm.glmback.atelier.domain.PointageDePresenceAEnregistrer;
-import com.glm.glmback.atelier.domain.PointagesSignales;
 import com.glm.glmback.atelier.domain.PostesConnus;
 import com.glm.glmback.atelier.domain.RegularisationAEnregistrer;
 import com.glm.glmback.atelier.domain.RegularisationDePresenceAEnregistrer;
@@ -170,7 +169,6 @@ class ReservationDIdentiteServeurTest {
       Mockito.mock(OperateursConnus.class),
       Mockito.mock(PostesConnus.class),
       () -> AMPLITUDE_MAXIMALE_13H,
-      Mockito.mock(PointagesSignales.class),
       () -> LE_11_MAI_2026_A_9H15,
       identites,
       new TransactionTemplate(Mockito.mock(PlatformTransactionManager.class))
@@ -191,7 +189,6 @@ class ReservationDIdentiteServeurTest {
       Mockito.mock(PostesConnus.class),
       Mockito.mock(Habilitations.class),
       () -> AMPLITUDE_MAXIMALE_13H,
-      Mockito.mock(PointagesSignales.class),
       () -> LE_11_MAI_2026_A_9H15,
       identites,
       new TransactionTemplate(Mockito.mock(PlatformTransactionManager.class))
@@ -215,7 +212,6 @@ class ReservationDIdentiteServeurTest {
       Mockito.mock(OperateursConnus.class),
       Mockito.mock(PostesConnus.class),
       () -> AMPLITUDE_MAXIMALE_13H,
-      Mockito.mock(PointagesSignales.class),
       Mockito.mock(Clock.class),
       identites,
       new TransactionTemplate(Mockito.mock(PlatformTransactionManager.class))
@@ -235,7 +231,6 @@ class ReservationDIdentiteServeurTest {
       Mockito.mock(PostesConnus.class),
       Mockito.mock(Habilitations.class),
       () -> AMPLITUDE_MAXIMALE_13H,
-      Mockito.mock(PointagesSignales.class),
       Mockito.mock(Clock.class),
       identites,
       new TransactionTemplate(Mockito.mock(PlatformTransactionManager.class))

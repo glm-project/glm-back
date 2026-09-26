@@ -82,14 +82,11 @@ class JourneeDeTravailResource {
     Une arrivee n'est jamais refusee parce qu'une journee est deja ouverte. Sous l'amplitude maximale de l'entreprise,
     l'operateur est deja la : l'arrivee est absorbee, rien n'est ajoute et la journee en cours est rendue. Au-dela, la
     journee en cours est abandonnee et l'arrivee en ouvre une nouvelle.
-
-    Une date de survenue future est ramenee a la reception et signalee au gestionnaire
-    (GET /api/atelier/pointages-signales), sans que l'operateur en soit informe.
     """
   )
   @ApiResponse(responseCode = "201", description = "Une journee est ouverte.")
   @ApiResponse(responseCode = "200", description = "Le geste identique est rejoue, ou l'arrivee est absorbee dans la journee en cours.")
-  @ApiResponse(responseCode = "400", description = "Le corps est invalide.")
+  @ApiResponse(responseCode = "400", description = "Le corps est invalide ou la date de survenue est future.")
   @ApiResponse(responseCode = "404", description = "Aucun operateur ne porte cet identifiant.")
   @ApiResponse(responseCode = "409", description = "L'identifiant est reutilise avec un autre contenu.")
   ResponseEntity<RestJourneeDeTravail> arrive(@RequestBody @Valid RestArrivee request) {
@@ -109,13 +106,12 @@ class JourneeDeTravailResource {
     Un geste n'est jamais refuse parce que la journee ne s'y prete pas. Sans journee ouverte, ou si elle a depasse
     l'amplitude maximale a l'heure du geste, le geste ouvre une nouvelle journee par une arrivee implicite a son heure,
     puis s'y applique ; une reprise s'y reduit a l'arrivee. Redondant avec l'etat courant (une pause deja en pause, une
-    reprise deja present), il est absorbe. Deux saisies simultanees sont rejouees par le serveur. Une date de survenue
-    future est ramenee a la reception et signalee au gestionnaire.
+    reprise deja present), il est absorbe. Deux saisies simultanees sont rejouees par le serveur.
     """
   )
   @ApiResponse(responseCode = "201", description = "Le pointage est enregistre, le cas echeant dans une nouvelle journee.")
   @ApiResponse(responseCode = "200", description = "Le geste identique est rejoue, ou le geste redondant est absorbe.")
-  @ApiResponse(responseCode = "400", description = "Le corps est invalide.")
+  @ApiResponse(responseCode = "400", description = "Le corps est invalide ou la date de survenue est future.")
   @ApiResponse(
     responseCode = "404",
     description = "Operateur inconnu, ou geste sans journee ouverte date dans une journee deja fermee (rejoue dans le desordre)."

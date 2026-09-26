@@ -12,7 +12,6 @@ enum ErreurDAtelier implements ProblemCode {
   OPERATEUR_INTROUVABLE(HttpStatus.NOT_FOUND, "operateur introuvable"),
   POSTE_DE_TRAVAIL_INTROUVABLE(HttpStatus.NOT_FOUND, "poste de travail introuvable"),
   AUCUNE_JOURNEE_DE_TRAVAIL_EN_COURS(HttpStatus.NOT_FOUND, "aucune journee de travail en cours"),
-  POINTAGE_SIGNALE_INTROUVABLE(HttpStatus.NOT_FOUND, "pointage signale introuvable"),
   OPERATEUR_NON_HABILITE(HttpStatus.CONFLICT, "operateur non habilite"),
   ELEMENT_DEJA_ENGAGE(HttpStatus.CONFLICT, "element deja engage"),
   JOURNEE_DE_TRAVAIL_DEJA_OUVERTE(HttpStatus.CONFLICT, "journee de travail deja ouverte"),
@@ -25,7 +24,7 @@ enum ErreurDAtelier implements ProblemCode {
   EVENEMENT_ANTERIEUR_A_L_ENGAGEMENT(HttpStatus.CONFLICT, "evenement anterieur a l'engagement"),
   SAISIE_CONCURRENTE(HttpStatus.CONFLICT, "saisie concurrente"),
   IDENTIFIANT_EVENEMENT_REUTILISE(HttpStatus.CONFLICT, "identifiant d'evenement reutilise"),
-  POINTAGE_SIGNALE_DEJA_RESOLU(HttpStatus.CONFLICT, "pointage signale deja resolu");
+  DATE_DE_SURVENUE_FUTURE(HttpStatus.BAD_REQUEST, "date de survenue future");
 
   private final HttpStatus status;
   private final String title;

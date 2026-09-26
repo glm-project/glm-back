@@ -6,6 +6,7 @@ import static org.springframework.http.HttpStatus.*;
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.atelier.domain.AucuneJourneeDeTravailEnCoursException;
 import com.glm.glmback.atelier.domain.ChevauchementDeJourneesException;
+import com.glm.glmback.atelier.domain.DateDeSurvenueFutureException;
 import com.glm.glmback.atelier.domain.ElementDejaEngageException;
 import com.glm.glmback.atelier.domain.ElementEngageableIntrouvableException;
 import com.glm.glmback.atelier.domain.EtatDActivite;
@@ -23,9 +24,6 @@ import com.glm.glmback.atelier.domain.JourneeDeTravailId;
 import com.glm.glmback.atelier.domain.JourneeDeTravailIntrouvableException;
 import com.glm.glmback.atelier.domain.OperateurDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.OperateurNonHabiliteException;
-import com.glm.glmback.atelier.domain.PointageSignaleDejaResoluException;
-import com.glm.glmback.atelier.domain.PointageSignaleId;
-import com.glm.glmback.atelier.domain.PointageSignaleIntrouvableException;
 import com.glm.glmback.atelier.domain.PosteDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierClotureException;
@@ -48,16 +46,6 @@ class AtelierExceptionAdviceTest extends ExceptionAdviceContract {
   @Override
   protected Stream<PublishedProblem> erreursPubliees() {
     return Stream.of(
-      new PublishedProblem(
-        new PointageSignaleIntrouvableException(new PointageSignaleId(java.util.UUID.randomUUID())),
-        "urn:glm:erreur:atelier:pointage-signale-introuvable",
-        NOT_FOUND
-      ),
-      new PublishedProblem(
-        new PointageSignaleDejaResoluException(new PointageSignaleId(java.util.UUID.randomUUID())),
-        "urn:glm:erreur:atelier:pointage-signale-deja-resolu",
-        CONFLICT
-      ),
       new PublishedProblem(
         new ChevauchementDeJourneesException(journeeDeDupontDe7HA17HAvecPauseDeMidi(), journeeDeDupontOuverteA7H()),
         "urn:glm:erreur:atelier:chevauchement-de-journees",
@@ -149,6 +137,11 @@ class AtelierExceptionAdviceTest extends ExceptionAdviceContract {
         new IdentifiantDEvenementReutiliseException(java.util.UUID.randomUUID()),
         "urn:glm:erreur:atelier:identifiant-evenement-reutilise",
         CONFLICT
+      ),
+      new PublishedProblem(
+        new DateDeSurvenueFutureException(LE_10_MAI_2026_A_8H),
+        "urn:glm:erreur:atelier:date-de-survenue-future",
+        BAD_REQUEST
       )
     );
   }

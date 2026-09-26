@@ -38,7 +38,6 @@ Ne rien ajouter ici qui relève de :
 | ------------------ | ----------------------- | ------------------- |
 | `JourneeDeTravail` | un opérateur, une venue | `JournalDePresence` |
 | `SuiviDAtelier`    | un élément engagé       | `JournalDAtelier`   |
-| `PointageSignale`  | l'événement signalé     | —                   |
 
 Ils cohabitent dans un seul contexte parce qu'ils partagent un même langage — opérateur, auteur, horodatage,
 annulation — que le shared kernel ne peut pas accueillir puisqu'il est en anglais.
@@ -75,14 +74,9 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
 - **Une anomalie de présence ne se stocke jamais.** `AnomalieDePresence.de` la déduit de la journée, du seuil et de
   l'instant ; `CriteresDAnomalie.matches` porte la règle que l'adapter traduit en SQL, et le test de parité
   confronte les deux, seuil pile et demi-seconde compris.
-- **L'habilitation bloque le gestionnaire, pas le pupitre** : une régularisation ou une correction sur un poste où
-  l'opérateur n'est pas déclaré est refusée (409) ; un pointage du pupitre est enregistré et signalé
-  (`OPERATEUR_NON_HABILITE`), l'habilitation ayant pu être retirée hors ligne. Elle ne joue que lorsqu'un poste est
-  fourni.
-- **Un pointage du pupitre n'est jamais refusé pour sa date** : futur, il est ramené à sa réception ; daté avant
-  l'engagement, à l'engagement. `RegistreDesSignalements` décide du redressement et inscrit le `PointageSignale`,
-  qui porte l'identifiant de l'événement ; annuler ou corriger l'événement le résout, sa première résolution restant
-  celle qui compte. Un geste absorbé n'est jamais signalé.
+- **L'habilitation, elle, bloque** : pointer sur un poste où l'opérateur n'est pas déclaré est refusé (409). C'est la
+  seule règle dure du contexte. Elle ne joue que lorsqu'un poste est fourni, et elle joue sur les **trois** écritures
+  du journal — pointage, régularisation, correction — sans quoi le back-office contournerait le pupitre.
 - **Rien d'autre n'est copié du référentiel des ressources.** Le journal ne stocke qu'un identifiant, et les libellés
   sont relus à chaque lecture : une fiche corrigée doit s'afficher corrigée sur tout l'historique. La contrepartie vit
   chez les voisins — ni un opérateur ni un poste ayant servi à pointer ne se supprime.
@@ -93,11 +87,7 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
 ## Ports sortants
 
 `SuiviDAtelierRepository`, `JourneeDeTravailRepository`, `ElementsEngageables`, `OperateursConnus`, `PostesConnus`,
-`Habilitations`, `IdentitesDEvenements`, `SeuilDAmplitude`, `PointagesSignales`, `Clock`.
-
-`PointagesSignales` suit la sémantique stricte des repositories : `create` refuse un événement déjà signalé, `update`
-un signalement inconnu. `CriteresDePointageSignale.matches` porte la sélection (non résolu, opérateur, motif) que
-`JpaPointagesSignales` traduit en SQL, triée par date retenue descendante puis par identifiant.
+`Habilitations`, `IdentitesDEvenements`, `SeuilDAmplitude`, `Clock`.
 
 `SeuilDAmplitude` lit l'amplitude maximale dans la table `parametrage`, par une entité en lecture seule, sans
 importer le contexte voisin. Le seuil est lu à chaque geste : un changement vaut pour les gestes qui suivent.
