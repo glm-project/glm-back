@@ -88,11 +88,13 @@ Un poste requalifié plus tard ne requalifie pas les heures déjà passées.
 (coût du poste, taux de l'opérateur), jamais recalculés à la lecture. Ils sont absents quand la source du référentiel
 n'est pas valorisée, ou quand aucun poste n'est fourni pour `coutHoraire`.
 
-### L'habilitation est une règle dure
+### L'habilitation : signalée au pupitre, refusée au gestionnaire
 
-Pointer sur un poste où l'opérateur n'est pas déclaré répond **409**. C'est vrai du pointage comme de la régularisation
-et de la correction. Un écran de pupitre doit donc **ne proposer que les postes de l'opérateur choisi**, lisibles dans
-`GET /api/operateurs/{id}`, plutôt que laisser le serveur refuser.
+Un **pointage du pupitre** sur un poste où l'opérateur n'est pas déclaré est **enregistré** (`201`) et **signalé** au
+gestionnaire (`OPERATEUR_NON_HABILITE`) : l'habilitation a pu être retirée pendant que le pupitre était hors ligne, et
+le temps de l'opérateur compte. Une **régularisation** ou une **correction** du gestionnaire sur un tel poste répond en
+revanche **409**. Un écran de pupitre doit toujours **ne proposer que les postes de l'opérateur choisi**, lisibles
+dans `GET /api/operateurs/{id}`.
 
 La règle ne joue que si un poste est fourni : sans parc machine, il n'y a rien à habiliter.
 
@@ -178,11 +180,15 @@ Trois pièges :
   qui revient sur un élément resté ouvert la veille n'est jamais bloqué, et un double appui n'ajoute aucun temps.
 - `poste` est **toujours facultatif**, comme la `nature`. Une entreprise sans parc machine les laisse vides et doit
   retrouver un comportement nominal, pas un cas dégradé. Ne jamais rendre le champ obligatoire côté formulaire.
-- Un poste fourni doit être **habilité pour cet opérateur**, sans quoi 409. Filtrer la liste des postes sur la fiche de
-  l'opérateur choisi évite d'avoir à traiter ce refus.
+- Un poste fourni devrait être **habilité pour cet opérateur**. S'il ne l'est pas, le pointage est enregistré et
+  signalé au gestionnaire, sans rien en dire à l'opérateur. Filtrer la liste des postes sur la fiche de l'opérateur
+  choisi reste la règle d'écran.
+- **Une date redressée est enregistrée, jamais refusée** : une `dateDeSurvenue` future (horloge du pupitre en avance)
+  est ramenée à la réception, un pointage d'atelier daté avant l'engagement est ramené à l'engagement. Le pointage
+  répond `201` et part dans les pointages signalés avec la date envoyée (`dateDeclaree`).
 - Un envoi accepté répond **201**. Rejouer exactement le même corps répond **200**, sans créer de second événement ;
   conserver donc l'UUID dans la file offline jusqu'à l'acquittement. Réutiliser cet UUID avec un autre contenu répond
-  409 (`identifiant-evenement-reutilise`). Une date future répond 400 et ne réserve pas l'UUID.
+  409 (`identifiant-evenement-reutilise`).
 
 Les états d'un élément :
 
@@ -312,6 +318,23 @@ Les journées que le gestionnaire doit regarder, la plus récente d'abord : `typ
 régulariser ou corriger), `operateur`, `arrivee`, et pour une amplitude excessive `depart` et `amplitude`. Rien n'est
 stocké : une ligne disparaît dès que la régularisation la résout. Un type inconnu répond 400, un opérateur 403.
 
+### Pointages signalés (rôle `GESTIONNAIRE`)
+
+```
+GET  /api/atelier/pointages-signales?operateur={uuid}&motif={OPERATEUR_NON_HABILITE|DATE_ANTERIEURE_A_L_ENGAGEMENT|DATE_FUTURE}&page=0&size=20
+POST /api/atelier/pointages-signales/{evenement}/acquittement
+```
+
+Les pointages du pupitre enregistrés malgré tout, le plus récent d'abord par date retenue : `evenement` (qui identifie
+aussi le signalement), `cible` (`type` `JOURNEE_DE_TRAVAIL` ou `SUIVI_D_ATELIER`, et l'`id` de l'agrégat, pour annuler
+ou corriger l'événement), `operateur`, `motifs` (un pointage peut en cumuler plusieurs), `dateDeSurvenue` retenue,
+`dateDEnregistrement`, et `dateDeclaree` quand la date envoyée a été ramenée. Leur temps compte déjà.
+
+Une ligne sort de la liste quand l'événement est **annulé**, **corrigé**, ou **acquitté** : le gestionnaire juge le
+pointage légitime, l'acquittement ne change rien au journal. Acquitter une seconde fois répond
+`409 pointage-signale-deja-resolu`, un événement jamais signalé `404 pointage-signale-introuvable`. Un motif inconnu
+répond 400, un opérateur 403. L'opérateur n'est jamais informé d'un signalement.
+
 ### Lire le temps passé
 
 ```
@@ -358,7 +381,7 @@ Deux statuts du tableau ci-dessous n'en portent pas : le **400** de Bean Validat
 
 | Statut | Cas                                                                                                                                                                                            |
 | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 400    | Corps invalide (Bean Validation) — détail par champ dans `errors` — ou date de survenue future.                                                                                                |
+| 400    | Corps invalide (Bean Validation) — détail par champ dans `errors`.                                                                                                                             |
 | 403    | Jeton sans entreprise connue, ou rôle insuffisant.                                                                                                                                             |
 | 404    | Suivi, journée, événement ou élément de fabrication introuvable ; ou aucune journée ouverte pour cet opérateur.                                                                                |
 | 409    | Élément déjà engagé, élément clôturé, événement déjà annulé, transition impossible, événement antérieur à l'engagement, UUID réutilisé, **chevauchement de journées**, **saisie concurrente**. |
@@ -376,8 +399,8 @@ Sur les routes de pointage, la **saisie concurrente** est rejouée par le serveu
 pointé sur le même élément ou la même journée entre la lecture et l'écriture. C'est le seul cas où **rejouer** l'appel
 tel quel est la bonne réaction — relire l'agrégat, et reproposer la saisie.
 
-Une `dateDeSurvenue` strictement postérieure à l'instant courant répond 400 avec le code stable
-`date-de-survenue-future`. Le pupitre peut alors corriger son contenu et réutiliser le même UUID.
+Une `dateDeSurvenue` strictement postérieure à l'instant courant n'est plus refusée : elle est ramenée à la réception
+et signalée au gestionnaire. Le code `date-de-survenue-future` n'existe plus.
 
 ---
 

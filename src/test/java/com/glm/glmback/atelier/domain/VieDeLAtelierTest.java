@@ -41,11 +41,13 @@ class VieDeLAtelierTest {
     .operateurs(ressources.operateurs())
     .postes(ressources.postes())
     .habilitations(ressources.habilitations())
+    .signalements(new PointagesSignalesEnMemoire())
     .clock(maintenant::get);
   private final JourneesDeTravailService presence = JourneesDeTravailService.builder()
     .repository(journees)
     .operateurs(ressources.operateurs())
     .seuil(() -> AMPLITUDE_MAXIMALE_13H)
+    .signalements(new PointagesSignalesEnMemoire())
     .clock(maintenant::get);
   private final TempsDAtelierService temps = TempsDAtelierService.builder()
     .suivis(suivis)

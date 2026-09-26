@@ -58,6 +58,7 @@ public class AtelierSteps {
   private final Map<String, String> operateurs = new HashMap<>();
 
   private String derniereJournee;
+  private String dernierPointageSignale;
   private String dernierGesteUri;
   private String dernierGesteCorps;
   private final Map<String, String> journees = new HashMap<>();
@@ -569,6 +570,54 @@ public class AtelierSteps {
       .and()
       .hasElement("$.journal[" + rang + "].auteur")
       .withValue(auteur);
+  }
+
+  @When("je consulte les pointages signales")
+  public void jeConsulteLesPointagesSignales() {
+    rest.get("/api/atelier/pointages-signales");
+  }
+
+  @When("je consulte les pointages signales de {string}")
+  public void jeConsulteLesPointagesSignalesDe(String operateur) {
+    rest.get("/api/atelier/pointages-signales?operateur=" + idDeLOperateur(operateur));
+  }
+
+  @When("je consulte les pointages signales de motif {string}")
+  public void jeConsulteLesPointagesSignalesDeMotif(String motif) {
+    rest.get("/api/atelier/pointages-signales?motif=" + motif);
+  }
+
+  @Then("il y a {int} pointages signales")
+  public void ilYAPointagesSignales(int nombre) {
+    assertThatLastResponse().hasElement("$.content").withElementsCount(nombre);
+  }
+
+  @Then("le pointage signale {int} porte le motif {string}")
+  @SuppressWarnings("unchecked")
+  public void lePointageSignalePorteLeMotif(int rang, String motif) {
+    assertThat((List<String>) CucumberRestTestContext.getElement("$.content[" + rang + "].motifs")).contains(motif);
+  }
+
+  @Then("le pointage signale {int} a ete declare a {string}")
+  public void lePointageSignaleAEteDeclareA(int rang, String date) {
+    assertThat(elementDeLaDerniereReponse("$.content[" + rang + "].dateDeclaree")).isEqualTo(date);
+  }
+
+  @When("j'acquitte le pointage signale {int} de {string}")
+  public void jAcquitteLePointageSignaleDe(int rang, String operateur) {
+    rest.get("/api/atelier/pointages-signales?operateur=" + idDeLOperateur(operateur));
+    dernierPointageSignale = elementDeLaDerniereReponse("$.content[" + rang + "].evenement");
+    rest.post("/api/atelier/pointages-signales/" + dernierPointageSignale + "/acquittement", "{}");
+  }
+
+  @When("j'acquitte le pointage signale deja lu")
+  public void jAcquitteLePointageSignaleDejaLu() {
+    rest.post("/api/atelier/pointages-signales/" + dernierPointageSignale + "/acquittement", "{}");
+  }
+
+  @When("j'acquitte le pointage signale inconnu {string}")
+  public void jAcquitteLePointageSignaleInconnu(String evenement) {
+    rest.post("/api/atelier/pointages-signales/" + evenement + "/acquittement", "{}");
   }
 
   @When("je consulte les anomalies")

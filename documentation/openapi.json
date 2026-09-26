@@ -97,6 +97,30 @@
         "required" : [ "content", "currentPage", "pageSize", "totalElementsCount" ],
         "type" : "object"
       },
+      "PageRestPointageSignale" : {
+        "properties" : {
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RestPointageSignale"
+            },
+            "type" : "array"
+          },
+          "currentPage" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "pageSize" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElementsCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "content", "currentPage", "pageSize", "totalElementsCount" ],
+        "type" : "object"
+      },
       "PageRestPosteDeTravail" : {
         "properties" : {
           "content" : {
@@ -300,6 +324,23 @@
           }
         },
         "required" : [ "id", "operateur" ],
+        "type" : "object"
+      },
+      "RestCibleDuSignalement" : {
+        "description" : "L'agregat qui porte l'evenement signale.",
+        "properties" : {
+          "id" : {
+            "description" : "L'identifiant de la journee ou du suivi.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "type" : {
+            "description" : "JOURNEE_DE_TRAVAIL ou SUIVI_D_ATELIER.",
+            "enum" : [ "JOURNEE_DE_TRAVAIL", "SUIVI_D_ATELIER" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "type" ],
         "type" : "object"
       },
       "RestCloture" : {
@@ -1264,6 +1305,49 @@
         "required" : [ "dateDeSurvenue", "type" ],
         "type" : "object"
       },
+      "RestPointageSignale" : {
+        "description" : "Un pointage enregistre malgre tout, que le gestionnaire doit regarder : son temps compte deja. La ligne sort de la\nliste des qu'il est acquitte, annule ou corrige.\n",
+        "properties" : {
+          "cible" : {
+            "$ref" : "#/components/schemas/RestCibleDuSignalement",
+            "description" : "Ou vit l'evenement, pour l'annuler ou le corriger."
+          },
+          "dateDEnregistrement" : {
+            "description" : "La reception par le serveur.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "dateDeSurvenue" : {
+            "description" : "La date retenue pour l'evenement.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "dateDeclaree" : {
+            "description" : "La date envoyee par le pupitre, presente seulement quand elle a ete ramenee.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "evenement" : {
+            "description" : "L'evenement signale, qui identifie aussi le signalement pour l'acquitter.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "motifs" : {
+            "description" : "OPERATEUR_NON_HABILITE : l'operateur n'etait pas habilite au poste. DATE_ANTERIEURE_A_L_ENGAGEMENT : ramene a\nl'engagement. DATE_FUTURE : ramene a sa reception.\n",
+            "items" : {
+              "enum" : [ "OPERATEUR_NON_HABILITE", "DATE_ANTERIEURE_A_L_ENGAGEMENT", "DATE_FUTURE" ],
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "operateur" : {
+            "$ref" : "#/components/schemas/RestOperateurDAtelier",
+            "description" : "L'operateur, resolu au referentiel."
+          }
+        },
+        "required" : [ "cible", "dateDEnregistrement", "dateDeSurvenue", "evenement", "motifs", "operateur" ],
+        "type" : "object"
+      },
       "RestPosteDAtelier" : {
         "description" : "Un poste de travail du referentiel, resolu a la lecture.\n\nToujours facultatif : une entreprise sans parc machine laisse le champ vide et retrouve une activite unique par\noperateur.\n",
         "properties" : {
@@ -1663,7 +1747,7 @@
     "/api/atelier/anomalies" : {
       "get" : {
         "description" : "La plus recente d'abord, par arrivee. Filtres facultatifs sur l'operateur et le type. Une ligne disparait des que\nla regularisation du depart la resout ; une amplitude excessive reste tant que la journee n'est pas corrigee.\n",
-        "operationId" : "list_5",
+        "operationId" : "list_6",
         "parameters" : [ {
           "in" : "query",
           "name" : "operateur",
@@ -1788,7 +1872,7 @@
         "tags" : [ "Atelier - presence des operateurs" ]
       },
       "post" : {
-        "description" : "Ouvre la journee de travail de l'operateur.\n\nSans dateDeSurvenue, l'arrivee est datee a l'instant present : c'est le geste du matin. Avec, c'est le\ngestionnaire qui saisit apres coup une arrivee jamais pointee, ou le pupitre qui rejoue un geste hors ligne.\n\nUne arrivee n'est jamais refusee parce qu'une journee est deja ouverte. Sous l'amplitude maximale de l'entreprise,\nl'operateur est deja la : l'arrivee est absorbee, rien n'est ajoute et la journee en cours est rendue. Au-dela, la\njournee en cours est abandonnee et l'arrivee en ouvre une nouvelle.\n",
+        "description" : "Ouvre la journee de travail de l'operateur.\n\nSans dateDeSurvenue, l'arrivee est datee a l'instant present : c'est le geste du matin. Avec, c'est le\ngestionnaire qui saisit apres coup une arrivee jamais pointee, ou le pupitre qui rejoue un geste hors ligne.\n\nUne arrivee n'est jamais refusee parce qu'une journee est deja ouverte. Sous l'amplitude maximale de l'entreprise,\nl'operateur est deja la : l'arrivee est absorbee, rien n'est ajoute et la journee en cours est rendue. Au-dela, la\njournee en cours est abandonnee et l'arrivee en ouvre une nouvelle.\n\nUne date de survenue future est ramenee a la reception et signalee au gestionnaire\n(GET /api/atelier/pointages-signales), sans que l'operateur en soit informe.\n",
         "operationId" : "arrive",
         "requestBody" : {
           "content" : {
@@ -1829,7 +1913,7 @@
                 }
               }
             },
-            "description" : "Le corps est invalide ou la date de survenue est future."
+            "description" : "Le corps est invalide."
           },
           "404" : {
             "content" : {
@@ -1858,7 +1942,7 @@
     },
     "/api/atelier/journees/pointages" : {
       "post" : {
-        "description" : "Vise la journee ouverte de l'operateur, retrouvee par le serveur : aucun identifiant de journee n'est a fournir.\n\nUn seul appel, quel que soit le nombre d'elements en cours. Ne jamais boucler sur les elements pour repercuter une\npause : le croisement est fait a la lecture du temps effectif.\n\nUn geste n'est jamais refuse parce que la journee ne s'y prete pas. Sans journee ouverte, ou si elle a depasse\nl'amplitude maximale a l'heure du geste, le geste ouvre une nouvelle journee par une arrivee implicite a son heure,\npuis s'y applique ; une reprise s'y reduit a l'arrivee. Redondant avec l'etat courant (une pause deja en pause, une\nreprise deja present), il est absorbe. Deux saisies simultanees sont rejouees par le serveur.\n",
+        "description" : "Vise la journee ouverte de l'operateur, retrouvee par le serveur : aucun identifiant de journee n'est a fournir.\n\nUn seul appel, quel que soit le nombre d'elements en cours. Ne jamais boucler sur les elements pour repercuter une\npause : le croisement est fait a la lecture du temps effectif.\n\nUn geste n'est jamais refuse parce que la journee ne s'y prete pas. Sans journee ouverte, ou si elle a depasse\nl'amplitude maximale a l'heure du geste, le geste ouvre une nouvelle journee par une arrivee implicite a son heure,\npuis s'y applique ; une reprise s'y reduit a l'arrivee. Redondant avec l'etat courant (une pause deja en pause, une\nreprise deja present), il est absorbe. Deux saisies simultanees sont rejouees par le serveur. Une date de survenue\nfuture est ramenee a la reception et signalee au gestionnaire.\n",
         "operationId" : "pointe_1",
         "requestBody" : {
           "content" : {
@@ -1899,7 +1983,7 @@
                 }
               }
             },
-            "description" : "Le corps est invalide ou la date de survenue est future."
+            "description" : "Le corps est invalide."
           },
           "404" : {
             "content" : {
@@ -2126,6 +2210,120 @@
         },
         "summary" : "Rattraper une presence oubliee",
         "tags" : [ "Atelier - presence des operateurs" ]
+      }
+    },
+    "/api/atelier/pointages-signales" : {
+      "get" : {
+        "description" : "Les signalements non resolus, le plus recent d'abord par date retenue. Filtres facultatifs sur l'operateur et le\nmotif.\n",
+        "operationId" : "list_5",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "operateur",
+          "required" : false,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "motif",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "OPERATEUR_NON_HABILITE", "DATE_ANTERIEURE_A_L_ENGAGEMENT", "DATE_FUTURE" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageRestPointageSignale"
+                }
+              }
+            },
+            "description" : "La page demandee, triee par date retenue descendante."
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageRestPointageSignale"
+                }
+              }
+            },
+            "description" : "Motif de signalement inconnu."
+          }
+        },
+        "summary" : "Lister les pointages signales",
+        "tags" : [ "Atelier - pointages signales" ]
+      }
+    },
+    "/api/atelier/pointages-signales/{evenement}/acquittement" : {
+      "post" : {
+        "description" : "Le gestionnaire juge le pointage legitime : son temps compte toujours, la ligne sort de la liste.",
+        "operationId" : "acquitte",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "evenement",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestPointageSignale"
+                }
+              }
+            },
+            "description" : "Le signalement acquitte."
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestPointageSignale"
+                }
+              }
+            },
+            "description" : "Aucun pointage signale ne porte cet evenement."
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestPointageSignale"
+                }
+              }
+            },
+            "description" : "Le signalement est deja acquitte, annule ou corrige."
+          }
+        },
+        "summary" : "Acquitter un pointage signale",
+        "tags" : [ "Atelier - pointages signales" ]
       }
     },
     "/api/atelier/suivis" : {
@@ -2464,7 +2662,7 @@
     },
     "/api/atelier/suivis/{id}/pointages" : {
       "post" : {
-        "description" : "Le geste de l'operateur, date a l'instant present.\n\nNe jamais pointer ici une pause ou un depart : ce sont des faits de la journee de travail de l'operateur, ecrits\nune seule fois via POST /api/atelier/journees/pointages.\n",
+        "description" : "Le geste de l'operateur, date a l'instant present.\n\nNe jamais pointer ici une pause ou un depart : ce sont des faits de la journee de travail de l'operateur, ecrits\nune seule fois via POST /api/atelier/journees/pointages.\n\nUn pointage d'operateur non habilite au poste, date avant l'engagement ou dans le futur est enregistre malgre tout\n(ramene a l'engagement ou a la reception) et signale au gestionnaire (GET /api/atelier/pointages-signales), sans\nque l'operateur en soit informe.\n",
         "operationId" : "pointe",
         "parameters" : [ {
           "in" : "path",
@@ -2504,7 +2702,7 @@
                 }
               }
             },
-            "description" : "Le pointage est enregistre."
+            "description" : "Le pointage est enregistre, le cas echeant signale."
           },
           "400" : {
             "content" : {
@@ -2514,7 +2712,7 @@
                 }
               }
             },
-            "description" : "Le corps est invalide ou la date de survenue est future."
+            "description" : "Le corps est invalide."
           },
           "404" : {
             "content" : {
@@ -2534,7 +2732,7 @@
                 }
               }
             },
-            "description" : "Demarrer ou pointer une non conformite sur un element cloture (seul refus qu'afficher a l'operateur), operateur non\nhabilite sur ce poste, fin rejouee dans le desordre ou identifiant reutilise. Arreter une activite qui n'est pas en\ncours, ou un element cloture, est absorbe : 200.\n"
+            "description" : "Demarrer ou pointer une non conformite sur un element cloture (seul refus qu'afficher a l'operateur), fin rejouee\ndans le desordre ou identifiant reutilise. Arreter une activite qui n'est pas en\ncours, ou un element cloture, est absorbe : 200.\n"
           }
         },
         "summary" : "Pointer un debut, une non conformite ou une fin",
@@ -3451,6 +3649,9 @@
     "bearer-jwt" : [ ]
   } ],
   "tags" : [ {
+    "description" : "Les pointages du pupitre enregistres malgre tout : operateur non habilite au poste, date anterieure a l'engagement\nou future. Leur temps compte deja ; le gestionnaire les regarde, puis les acquitte, les annule ou les corrige.\nL'operateur n'en est pas informe.\n",
+    "name" : "Atelier - pointages signales"
+  }, {
     "description" : "Le suivi des elements de fabrication mis en atelier.\n\nDeux publics se partagent ces routes. L'operateur (role USER) consulte le tableau des elements actifs et pointe son\ntravail. Le gestionnaire (role GESTIONNAIRE) engage les elements, les cloture et corrige les saisies.\n\nRien de ce qui se deduit n'est stocke : etat, activites en cours et temps sont recalcules du journal a chaque lecture.\n",
     "name" : "Atelier - elements engages"
   }, {

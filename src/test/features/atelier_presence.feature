@@ -53,19 +53,22 @@ Feature: Presence des operateurs en atelier
     Then la reponse a le statut http 409
     And la reponse porte le code d'erreur "urn:glm:erreur:atelier:identifiant-evenement-reutilise"
 
-  Scenario: Une date future ne reserve pas l'identifiant du pupitre
+  Scenario: Une arrivee datee dans le futur est ramenee a sa reception et signalee
+    # Lot 8b : l'horloge du pupitre avance. Le geste n'est pas refuse, il est ramene a sa reception, et le
+    # gestionnaire voit l'ecart. Rejoue a l'identique, il rend la meme journee.
     Given il est "2026-05-10T08:00:00Z"
     When j'arrive
       | id             | 00000000-0000-0000-0000-000000000033 |
       | operateur      | dupont                               |
       | dateDeSurvenue | 2026-05-10T09:00:00Z                 |
-    Then la reponse a le statut http 400
-    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:date-de-survenue-future"
-    When j'arrive
-      | id             | 00000000-0000-0000-0000-000000000033 |
-      | operateur      | dupont                               |
-      | dateDeSurvenue | 2026-05-10T08:00:00Z                 |
     Then la reponse a le statut http 201
+    And l'evenement 0 de la journee a survenu a "2026-05-10T08:00:00Z" et a ete saisi a "2026-05-10T08:00:00Z" par "gestionnaire"
+    When je rejoue le dernier geste du pupitre
+    Then la reponse a le statut http 200
+    When je consulte les pointages signales de "dupont"
+    Then il y a 1 pointages signales
+    And le pointage signale 0 porte le motif "DATE_FUTURE"
+    And le pointage signale 0 a ete declare a "2026-05-10T09:00:00Z"
 
   Scenario: Une journee complete, de l'arrivee au depart, avec une pause de midi
     Given il est "2026-05-10T07:00:00Z"

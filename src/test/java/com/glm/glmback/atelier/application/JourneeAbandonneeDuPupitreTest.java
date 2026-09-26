@@ -12,6 +12,7 @@ import com.glm.glmback.atelier.domain.JourneeDeTravail;
 import com.glm.glmback.atelier.domain.JourneeDeTravailRepository;
 import com.glm.glmback.atelier.domain.OperateursConnus;
 import com.glm.glmback.atelier.domain.PointageDePresenceAEnregistrer;
+import com.glm.glmback.atelier.domain.PointagesSignales;
 import com.glm.glmback.atelier.domain.PostesConnus;
 import com.glm.glmback.atelier.domain.TypeDEvenementDePresence;
 import java.time.Instant;
@@ -96,6 +97,7 @@ class JourneeAbandonneeDuPupitreTest {
       operateurs,
       Mockito.mock(PostesConnus.class),
       () -> AMPLITUDE_MAXIMALE_13H,
+      Mockito.mock(PointagesSignales.class),
       () -> maintenant,
       identites,
       new TransactionTemplate(Mockito.mock(PlatformTransactionManager.class))

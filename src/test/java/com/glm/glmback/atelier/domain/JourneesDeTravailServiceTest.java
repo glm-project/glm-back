@@ -22,6 +22,7 @@ class JourneesDeTravailServiceTest {
     .repository(journees)
     .operateurs(ressources.operateurs())
     .seuil(seuil::get)
+    .signalements(new PointagesSignalesEnMemoire())
     .clock(maintenant::get);
 
   @Test

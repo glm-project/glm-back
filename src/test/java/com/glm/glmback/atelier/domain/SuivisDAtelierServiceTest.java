@@ -26,6 +26,7 @@ class SuivisDAtelierServiceTest {
     .operateurs(ressources.operateurs())
     .postes(ressources.postes())
     .habilitations(ressources.habilitations())
+    .signalements(new PointagesSignalesEnMemoire())
     .clock(maintenant::get);
 
   @Test
@@ -252,23 +253,6 @@ class SuivisDAtelierServiceTest {
       .auteur(AUTEUR_DUPONT);
 
     assertThatThrownBy(() -> atelier.pointe(commande)).isExactlyInstanceOf(PosteDAtelierIntrouvableException.class);
-  }
-
-  /**
-   * L'habilitation est la seule regle dure de ce contexte : Martin n'est declare sur aucun poste, il ne peut pas y
-   * pointer.
-   */
-  @Test
-  void shouldNotPointerSurUnPosteNonHabilite() {
-    SuiviDAtelier engage = engage();
-    PointageAEnregistrer commande = PointageAEnregistrer.builder()
-      .suivi(engage.id())
-      .type(TypeDEvenementDAtelier.DEBUT)
-      .operateur(OPERATEUR_ID_MARTIN)
-      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
-      .auteur(AUTEUR_MARTIN);
-
-    assertThatThrownBy(() -> atelier.pointe(commande)).isExactlyInstanceOf(OperateurNonHabiliteException.class);
   }
 
   /**
