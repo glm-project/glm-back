@@ -97,8 +97,8 @@ public final class SuivisDAtelierService {
    *
    * <p>
    * Arreter une activite qui n'est pas en cours, ou un OF que la cloture a deja arrete, ne change rien : le geste est
-   * absorbe. Une fin rejouee dans le desordre, datee avant le dernier fait de son activite, reste refusee jusqu'au lot
-   * 8c.
+   * absorbe. Une fin rejouee dans le desordre, datee avant le dernier fait de son activite, est refusee ici :
+   * {@link PointagesEnAttenteService} la met en attente (lot 8c).
    * </p>
    */
   public PointageDAtelierTraite pointe(PointageAEnregistrer commande) {

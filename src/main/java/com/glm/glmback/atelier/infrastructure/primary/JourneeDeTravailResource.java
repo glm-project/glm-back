@@ -90,11 +90,16 @@ class JourneeDeTravailResource {
   @ApiResponse(responseCode = "201", description = "Une journee est ouverte.")
   @ApiResponse(responseCode = "200", description = "Le geste identique est rejoue, ou l'arrivee est absorbee dans la journee en cours.")
   @ApiResponse(responseCode = "400", description = "Le corps est invalide.")
-  @ApiResponse(responseCode = "404", description = "Aucun operateur ne porte cet identifiant.")
-  @ApiResponse(responseCode = "409", description = "L'identifiant est reutilise avec un autre contenu.")
+  @ApiResponse(
+    responseCode = "202",
+    description = "Operateur inconnu, ou identifiant reutilise avec un autre contenu : le geste est mis en attente. Sans corps ; le gestionnaire le voit dans GET /api/atelier/pointages-en-attente."
+  )
   ResponseEntity<RestJourneeDeTravail> arrive(@RequestBody @Valid RestArrivee request) {
     var resultat = applicationService.arriveDuPupitre(request.toDomain(AuteurConnecte.get()));
-    return ResponseEntity.status(resultat.rejeu() ? HttpStatus.OK : HttpStatus.CREATED).body(rendu(resultat.agregat()));
+    return resultat
+      .agregat()
+      .map(agregat -> ResponseEntity.status(resultat.rejeu() ? HttpStatus.OK : HttpStatus.CREATED).body(rendu(agregat)))
+      .orElseGet(() -> ResponseEntity.accepted().build());
   }
 
   @PostMapping("/pointages")
@@ -117,13 +122,15 @@ class JourneeDeTravailResource {
   @ApiResponse(responseCode = "200", description = "Le geste identique est rejoue, ou le geste redondant est absorbe.")
   @ApiResponse(responseCode = "400", description = "Le corps est invalide.")
   @ApiResponse(
-    responseCode = "404",
-    description = "Operateur inconnu, ou geste sans journee ouverte date dans une journee deja fermee (rejoue dans le desordre)."
+    responseCode = "202",
+    description = "Operateur inconnu, geste rejoue dans le desordre ou date dans une journee deja fermee, ou identifiant reutilise : le geste est mis en attente. Sans corps ; le gestionnaire le voit dans GET /api/atelier/pointages-en-attente."
   )
-  @ApiResponse(responseCode = "409", description = "Geste rejoue dans le desordre qui casse l'enchainement, ou identifiant reutilise.")
   ResponseEntity<RestJourneeDeTravail> pointe(@RequestBody @Valid RestPointageDePresence request) {
     var resultat = applicationService.pointeDuPupitre(request.toDomain(AuteurConnecte.get()));
-    return ResponseEntity.status(resultat.rejeu() ? HttpStatus.OK : HttpStatus.CREATED).body(rendu(resultat.agregat()));
+    return resultat
+      .agregat()
+      .map(agregat -> ResponseEntity.status(resultat.rejeu() ? HttpStatus.OK : HttpStatus.CREATED).body(rendu(agregat)))
+      .orElseGet(() -> ResponseEntity.accepted().build());
   }
 
   @GetMapping("/{id}")

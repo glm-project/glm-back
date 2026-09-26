@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Strategie « bornes de fin de journee », lot 8a : un geste de presence n'est jamais refuse a l'operateur. Sans
  * journee, il en ouvre une par une arrivee implicite ; redondant avec l'etat courant, il est absorbe. Les gestes
- * rejoues dans le desordre restent l'affaire du lot 8c.
+ * rejoues dans le desordre sont refuses ici, et mis en attente par le lot 8c.
  */
 @UnitTest
 class PointageDePresenceJamaisRefuseTest {
@@ -108,7 +108,7 @@ class PointageDePresenceJamaisRefuseTest {
 
   /**
    * Un geste sans journee en cours mais date dans une journee deja fermee est un geste rejoue dans le desordre : il
-   * reste refuse jusqu'a la mise en attente du lot 8c, plutot que d'ouvrir une journee qui la chevaucherait.
+   * est refuse ici, et mis en attente par le lot 8c, plutot que d'ouvrir une journee qui la chevaucherait.
    */
   @Test
   void shouldNePasOuvrirUneJourneeDansUneJourneeFermee() {
@@ -170,7 +170,7 @@ class PointageDePresenceJamaisRefuseTest {
 
   /**
    * Une reprise rejouee dans le desordre, datee avant la pause qu'elle suppose, n'est pas redondante : elle casse
-   * l'enchainement et reste refusee jusqu'au lot 8c.
+   * l'enchainement : refusee ici, elle est mise en attente par le lot 8c.
    */
   @Test
   void shouldToujoursRefuserUnGesteRejoueDansLeDesordre() {
@@ -190,7 +190,7 @@ class PointageDePresenceJamaisRefuseTest {
 
   /**
    * Une pause rejouee avant la pause deja pointee n'est pas un double appui : datee avant le dernier fait, elle casse
-   * l'enchainement et reste refusee jusqu'au lot 8c.
+   * l'enchainement : refusee ici, elle est mise en attente par le lot 8c.
    */
   @Test
   void shouldToujoursRefuserUnGesteRedondantRejoueAvantLeDernierFait() {

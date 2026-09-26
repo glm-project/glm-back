@@ -97,7 +97,7 @@ class JpaIdentitesDEvenementsIT {
       var rejeu = seconde.get(5, TimeUnit.SECONDS);
 
       // THEN
-      assertThat(rejeu.agregat().id()).isEqualTo(journee.id());
+      assertThat(rejeu.agregat().orElseThrow().id()).isEqualTo(journee.id());
       assertUnSeulDepartPersiste(initial, rejeu, depart);
     }
   }
@@ -126,13 +126,15 @@ class JpaIdentitesDEvenementsIT {
   ) {
     assertThat(initial.rejeu()).isFalse();
     assertThat(rejeu.rejeu()).isTrue();
-    JourneeDeTravail relue = presence.get(initial.agregat().id());
+    JourneeDeTravail relue = presence.get(initial.agregat().orElseThrow().id());
     assertThat(relue.journal().evenements()).hasSize(2);
     var evenement = relue.journal().evenements().getLast();
     assertThat(evenement.id()).isEqualTo(depart.evenement());
     assertThat(evenement.dateDeSurvenue()).isEqualTo(LE_10_MAI_2026_A_17H);
-    assertThat(evenement.dateDEnregistrement()).isEqualTo(initial.agregat().journal().evenements().getLast().dateDEnregistrement());
-    assertThat(rejeu.agregat()).isEqualTo(relue);
+    assertThat(evenement.dateDEnregistrement()).isEqualTo(
+      initial.agregat().orElseThrow().journal().evenements().getLast().dateDEnregistrement()
+    );
+    assertThat(rejeu.agregat()).contains(relue);
   }
 
   private final class RejeuConcurrent implements AutoCloseable {
