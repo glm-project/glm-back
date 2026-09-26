@@ -25,26 +25,17 @@ public final class JourneesDeTravailService {
   private final JourneeDeTravailRepository repository;
   private final OperateursConnus operateurs;
   private final SeuilDAmplitude seuil;
-  private final RegistreDesSignalements signalements;
   private final Clock clock;
 
-  private JourneesDeTravailService(
-    JourneeDeTravailRepository repository,
-    OperateursConnus operateurs,
-    SeuilDAmplitude seuil,
-    PointagesSignales signalements,
-    Clock clock
-  ) {
+  private JourneesDeTravailService(JourneeDeTravailRepository repository, OperateursConnus operateurs, SeuilDAmplitude seuil, Clock clock) {
     this.repository = repository;
     this.operateurs = operateurs;
     this.seuil = seuil;
-    this.signalements = new RegistreDesSignalements(signalements, clock);
     this.clock = clock;
   }
 
   public static JourneesDeTravailServiceRepositoryBuilder builder() {
-    return repository ->
-      operateurs -> seuil -> signalements -> clock -> new JourneesDeTravailService(repository, operateurs, seuil, signalements, clock);
+    return repository -> operateurs -> seuil -> clock -> new JourneesDeTravailService(repository, operateurs, seuil, clock);
   }
 
   /**
@@ -57,23 +48,20 @@ public final class JourneesDeTravailService {
       throw new OperateurDAtelierIntrouvableException(commande.operateur());
     }
 
-    RegistreDesSignalements.DateRedressee date = redresse(commande.dateDeSurvenue());
+    Horodatage horodatage = horodatage(commande.dateDeSurvenue());
     Optional<JourneeDeTravail> enCours = repository
       .getEnCoursPour(commande.operateur())
-      .filter(journee -> !journee.estAbandonneePour(date.horodatage().dateDeSurvenue(), seuil.amplitudeMaximale()));
+      .filter(journee -> !journee.estAbandonneePour(horodatage.dateDeSurvenue(), seuil.amplitudeMaximale()));
 
     if (enCours.isPresent()) {
       return new PresenceTraitee(enCours.orElseThrow(), true);
     }
 
-    JourneeDeTravail ouverte = repository.create(
-      JourneeDeTravail.ouverte(JourneeDeTravailId.newId(), commande.operateur()).enregistre(
-        evenement(commande.evenement(), TypeDEvenementDePresence.ARRIVEE, commande.auteur(), date.horodatage())
-      )
+    JourneeDeTravail ouverte = JourneeDeTravail.ouverte(JourneeDeTravailId.newId(), commande.operateur()).enregistre(
+      evenement(commande.evenement(), TypeDEvenementDePresence.ARRIVEE, commande.auteur(), horodatage)
     );
-    signale(commande.evenement(), ouverte, date);
 
-    return new PresenceTraitee(ouverte, false);
+    return new PresenceTraitee(repository.create(ouverte), false);
   }
 
   public PresenceTraitee pointe(PointageDePresenceAEnregistrer commande) {
@@ -102,8 +90,7 @@ public final class JourneesDeTravailService {
    * </p>
    */
   public PresenceTraitee pointe(PointageDePresenceAEnregistrer commande, Supplier<EvenementDePresenceId> arriveeImplicite) {
-    RegistreDesSignalements.DateRedressee date = redresse(commande.dateDeSurvenue());
-    Horodatage horodatage = date.horodatage();
+    Horodatage horodatage = horodatage(commande.dateDeSurvenue());
     Instant geste = horodatage.dateDeSurvenue();
     EvenementDePresence evenement = evenement(commande.evenement(), commande.type(), commande.auteur(), horodatage);
     Optional<JourneeDeTravail> enCours = repository.getEnCoursPour(commande.operateur());
@@ -114,10 +101,8 @@ public final class JourneesDeTravailService {
 
     if (enCours.filter(journee -> !journee.estAbandonneePour(geste, seuil.amplitudeMaximale())).isEmpty()) {
       EvenementDePresence arrivee = evenement(arriveeImplicite.get(), TypeDEvenementDePresence.ARRIVEE, commande.auteur(), horodatage);
-      JourneeDeTravail ouverte = repository.create(nouvelleJournee(commande, evenement, arrivee));
-      signale(commande.evenement(), ouverte, date);
 
-      return new PresenceTraitee(ouverte, false);
+      return new PresenceTraitee(repository.create(nouvelleJournee(commande, evenement, arrivee)), false);
     }
 
     JourneeDeTravail journee = enCours.orElseThrow();
@@ -125,19 +110,7 @@ public final class JourneesDeTravailService {
       return new PresenceTraitee(journee, true);
     }
 
-    JourneeDeTravail pointee = repository.update(journee.enregistre(evenement));
-    signale(commande.evenement(), pointee, date);
-
-    return new PresenceTraitee(pointee, false);
-  }
-
-  private void signale(EvenementDePresenceId evenement, JourneeDeTravail journee, RegistreDesSignalements.DateRedressee date) {
-    signalements.signale(
-      evenement.uuid(),
-      new CibleDuSignalement(TypeDeCible.JOURNEE_DE_TRAVAIL, journee.id().uuid()),
-      journee.operateur(),
-      date
-    );
+    return new PresenceTraitee(repository.update(journee.enregistre(evenement)), false);
   }
 
   private void exigeUnGesteRattachable(OperateurId operateur, Instant geste) {
@@ -173,12 +146,7 @@ public final class JourneesDeTravailService {
   }
 
   public JourneeDeTravail annule(AnnulationDePresenceAEnregistrer commande) {
-    JourneeDeTravail annulee = repository.update(
-      get(commande.journee()).annule(commande.evenement(), annulation(commande.auteur(), commande.motif()))
-    );
-    signalements.resout(commande.evenement().uuid(), TypeDeResolution.ANNULE, commande.auteur());
-
-    return annulee;
+    return repository.update(get(commande.journee()).annule(commande.evenement(), annulation(commande.auteur(), commande.motif())));
   }
 
   public JourneeDeTravail corrige(CorrectionDePresenceAEnregistrer commande) {
@@ -188,7 +156,7 @@ public final class JourneesDeTravailService {
   public JourneeDeTravail corrige(CorrectionDePresenceAEnregistrer commande, EvenementDePresenceId remplacementId) {
     RegularisationDePresenceAEnregistrer remplacement = commande.remplacement();
 
-    JourneeDeTravail corrigee = repository.update(
+    return repository.update(
       sansChevauchement(
         get(remplacement.journee()).corrige(
           commande.evenement(),
@@ -197,9 +165,6 @@ public final class JourneesDeTravailService {
         )
       )
     );
-    signalements.resout(commande.evenement().uuid(), TypeDeResolution.CORRIGE, remplacement.auteur());
-
-    return corrigee;
   }
 
   public JourneeDeTravail get(JourneeDeTravailId id) {
@@ -249,12 +214,11 @@ public final class JourneesDeTravailService {
     return journee;
   }
 
-  /**
-   * Un geste du pupitre date dans le futur, horloge en avance, n'est plus refuse : il est ramene a sa reception et
-   * signale au gestionnaire.
-   */
-  private RegistreDesSignalements.DateRedressee redresse(Optional<Instant> dateDeSurvenue) {
-    return RegistreDesSignalements.redresse(dateDeSurvenue, clock.now(), Optional.empty());
+  private Horodatage horodatage(Optional<Instant> dateDeSurvenue) {
+    Instant maintenant = clock.now();
+    refuseDateFuture(dateDeSurvenue, maintenant);
+
+    return new Horodatage(dateDeSurvenue.orElse(maintenant), maintenant);
   }
 
   private EvenementDePresence regularisation(RegularisationDePresenceAEnregistrer commande, EvenementDePresenceId evenement) {
@@ -263,6 +227,12 @@ public final class JourneesDeTravailService {
 
   private Annulation annulation(Auteur auteur, MotifDAnnulation motif) {
     return new Annulation(auteur, clock.now(), motif);
+  }
+
+  private static void refuseDateFuture(Optional<Instant> dateDeSurvenue, Instant maintenant) {
+    if (dateDeSurvenue.filter(date -> date.isAfter(maintenant)).isPresent()) {
+      throw new DateDeSurvenueFutureException(dateDeSurvenue.orElseThrow());
+    }
   }
 
   private static EvenementDePresence evenement(
@@ -283,11 +253,7 @@ public final class JourneesDeTravailService {
   }
 
   public interface JourneesDeTravailServiceSeuilBuilder {
-    JourneesDeTravailServiceSignalementsBuilder seuil(SeuilDAmplitude seuil);
-  }
-
-  public interface JourneesDeTravailServiceSignalementsBuilder {
-    JourneesDeTravailServiceClockBuilder signalements(PointagesSignales signalements);
+    JourneesDeTravailServiceClockBuilder seuil(SeuilDAmplitude seuil);
   }
 
   public interface JourneesDeTravailServiceClockBuilder {
