@@ -14,7 +14,6 @@ import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.OperateursConnus;
 import com.glm.glmback.atelier.domain.Periode;
 import com.glm.glmback.atelier.domain.PointageDePresenceAEnregistrer;
-import com.glm.glmback.atelier.domain.PointagesSignales;
 import com.glm.glmback.atelier.domain.PostesConnus;
 import com.glm.glmback.atelier.domain.PresenceTraitee;
 import com.glm.glmback.atelier.domain.RegularisationDePresenceAEnregistrer;
@@ -52,17 +51,11 @@ public class JourneesDeTravailApplicationService {
     OperateursConnus operateurs,
     PostesConnus postes,
     SeuilDAmplitude seuil,
-    PointagesSignales signalements,
     Clock clock,
     IdentitesDEvenements identites,
     TransactionTemplate transactions
   ) {
-    this.journeesDeTravail = JourneesDeTravailService.builder()
-      .repository(repository)
-      .operateurs(operateurs)
-      .seuil(seuil)
-      .signalements(signalements)
-      .clock(clock);
+    this.journeesDeTravail = JourneesDeTravailService.builder().repository(repository).operateurs(operateurs).seuil(seuil).clock(clock);
     this.annuaires = new AnnuaireDAtelierService(operateurs, postes);
     this.identites = identites;
     this.transactions = transactions;

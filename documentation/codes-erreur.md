@@ -88,11 +88,7 @@ tests sont le seul endroit qui les tient.
 | `evenement-anterieur-a-l-engagement` | 409    | evenement anterieur a l'engagement | `EvenementAvantEngagementException`       |
 | `saisie-concurrente`                 | 409    | saisie concurrente                 | `SaisieConcurrenteException`              |
 | `identifiant-evenement-reutilise`    | 409    | identifiant d'evenement reutilise  | `IdentifiantDEvenementReutiliseException` |
-| `pointage-signale-introuvable`       | 404    | pointage signale introuvable       | `PointageSignaleIntrouvableException`     |
-| `pointage-signale-deja-resolu`       | 409    | pointage signale deja resolu       | `PointageSignaleDejaResoluException`      |
-
-`date-de-survenue-future` (400) a été retiré au lot 8b : une date future est ramenée à la réception et signalée au
-gestionnaire. `operateur-non-habilite` ne sort plus que d'un acte du gestionnaire, le pupitre étant signalé.
+| `date-de-survenue-future`            | 400    | date de survenue future            | `DateDeSurvenueFutureException`           |
 
 `saisie-concurrente` est le seul code sur lequel **rejouer** l'appel est la bonne réaction : la saisie était valide,
 un autre pointage s'est glissé entre la lecture et l'écriture.
@@ -151,6 +147,7 @@ créée deux fois. `chevauchement-de-journees` ne répond qu'aux actes du gestio
 Depuis le lot 8a, les routes de pointage n'émettent plus `aucune-journee-de-travail-en-cours` que pour un geste rejoué
 dans une journée déjà fermée, ni `transition-de-presence-interdite` ou `transition-d-atelier-interdite` que pour un
 geste rejoué dans le désordre. Ces deux refus restent définitifs, comme `operateur-introuvable`,
-`poste-de-travail-introuvable`, `suivi-d-atelier-introuvable` et `identifiant-evenement-reutilise` (lot 8c abandonné). `suivi-d-atelier-cloture` n'y sort
+`poste-de-travail-introuvable`, `suivi-d-atelier-introuvable`, `identifiant-evenement-reutilise`,
+`operateur-non-habilite`, `evenement-anterieur-a-l-engagement` et `date-de-survenue-future` (lots 8b et 8c abandonnés). `suivi-d-atelier-cloture` n'y sort
 plus que pour un démarrage ou une non conformité — la seule erreur à afficher à l'opérateur. `saisie-concurrente`
 n'y remonte qu'après trois essais du serveur.

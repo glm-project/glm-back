@@ -123,7 +123,7 @@ Feature: Suivi des elements engages en atelier
     Then la reponse a le statut http 200
     And le journal du suivi contient 1 evenements
 
-  Scenario: Un pointage d'atelier futur est ramene a sa reception et signale
+  Scenario: Un pointage d'atelier futur est refuse
     Given il est "2026-05-10T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2997"
       | type      | ORDRE_DE_FABRICATION |
@@ -135,32 +135,8 @@ Feature: Suivi des elements engages en atelier
       | operateur      | dupont                               |
       | poste          | fraiseuse-1                          |
       | dateDeSurvenue | 2026-05-10T07:00:00Z                 |
-    Then la reponse a le statut http 201
-    And l'evenement 0 du suivi a survenu a "2026-05-10T06:00:00Z" et a ete saisi a "2026-05-10T06:00:00Z" par "gestionnaire"
-    When je consulte les pointages signales de "dupont"
-    Then il y a 1 pointages signales
-    And le pointage signale 0 porte le motif "DATE_FUTURE"
-    And le pointage signale 0 a ete declare a "2026-05-10T07:00:00Z"
-
-  Scenario: Un pointage date avant l'engagement est ramene a l'engagement et signale
-    # L'horloge du pupitre retarde : le travail ne peut pas avoir commence avant la mise en atelier.
-    Given il est "2026-05-10T08:00:00Z"
-    And l'entreprise a cree l'element de fabrication "OF 2994"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2994                 |
-    And j'ai engage l'element "OF 2994" en atelier
-    Given il est "2026-05-10T09:00:00Z"
-    When je pointe sur "OF 2994"
-      | type           | DEBUT                |
-      | operateur      | dupont               |
-      | poste          | fraiseuse-1          |
-      | dateDeSurvenue | 2026-05-10T07:00:00Z |
-    Then la reponse a le statut http 201
-    And l'evenement 0 du suivi a survenu a "2026-05-10T08:00:00Z" et a ete saisi a "2026-05-10T09:00:00Z" par "gestionnaire"
-    When je consulte les pointages signales de "dupont"
-    Then il y a 1 pointages signales
-    And le pointage signale 0 porte le motif "DATE_ANTERIEURE_A_L_ENGAGEMENT"
-    And le pointage signale 0 a ete declare a "2026-05-10T07:00:00Z"
+    Then la reponse a le statut http 400
+    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:date-de-survenue-future"
 
   Scenario: Une non conformite interrompt l'element, une reprise se pointe comme un debut
     Given il est "2026-05-10T08:00:00Z"
@@ -208,9 +184,8 @@ Feature: Suivi des elements engages en atelier
     Then le suivi a l'etat "INTERROMPU"
     And le suivi a 0 activites en cours
 
-  Scenario: Pointer sur un poste ou l'operateur n'est pas habilite est enregistre et signale
-    # Lot 8b : l'habilitation a pu etre retiree pendant que le pupitre etait hors ligne. Le temps compte, le
-    # gestionnaire le voit, et l'acquitte s'il le juge legitime.
+  Scenario: Pointer sur un poste ou l'operateur n'est pas habilite est refuse
+    # L'habilitation est la seule regle dure du contexte : le referentiel dit qui peut pointer ou.
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2017"
       | type      | ORDRE_DE_FABRICATION |
@@ -220,58 +195,7 @@ Feature: Suivi des elements engages en atelier
       | type      | DEBUT       |
       | operateur | martin      |
       | poste     | fraiseuse-1 |
-    Then la reponse a le statut http 201
-    And le suivi a l'etat "EN_COURS"
-    When je consulte les pointages signales de "martin"
-    Then il y a 1 pointages signales
-    And le pointage signale 0 porte le motif "OPERATEUR_NON_HABILITE"
-    When j'acquitte le pointage signale 0 de "martin"
-    Then la reponse a le statut http 200
-    When j'acquitte le pointage signale deja lu
     Then la reponse a le statut http 409
-    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:pointage-signale-deja-resolu"
-    When je consulte les pointages signales de "martin"
-    Then il y a 0 pointages signales
-
-  Scenario: Annuler un pointage signale le retire de la liste
-    Given il est "2026-05-10T08:00:00Z"
-    And l'entreprise a cree l'element de fabrication "OF 2022"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2022                 |
-    And j'ai engage l'element "OF 2022" en atelier
-    And j'ai pointe sur "OF 2022"
-      | type      | DEBUT       |
-      | operateur | martin      |
-      | poste     | fraiseuse-1 |
-    When je consulte les pointages signales de "martin"
-    Then il y a 1 pointages signales
-    Given il est "2026-05-10T09:00:00Z"
-    When j'annule l'evenement 0 de "OF 2022"
-      | motif | Pointe sur le mauvais poste |
-    Then la reponse a le statut http 200
-    When je consulte les pointages signales de "martin"
-    Then il y a 0 pointages signales
-
-  Scenario: Acquitter un pointage signale inconnu renvoie 404
-    When j'acquitte le pointage signale inconnu "8b5f3d02-7c94-4e16-af28-0315b7c9d2e4"
-    Then la reponse a le statut http 404
-    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:pointage-signale-introuvable"
-
-  Scenario: Un operateur ne consulte ni n'acquitte les pointages signales
-    Given I am logged in as "dupont" with role "USER"
-    When je consulte les pointages signales
-    Then la reponse a le statut http 403
-    When j'acquitte le pointage signale inconnu "8b5f3d02-7c94-4e16-af28-0315b7c9d2e4"
-    Then la reponse a le statut http 403
-
-  Scenario: Un administrateur technique n'a pas acces aux pointages signales
-    Given I am logged in as "admin" with role "ADMIN"
-    When je consulte les pointages signales
-    Then la reponse a le statut http 403
-
-  Scenario: Un motif de signalement inconnu est refuse
-    When je consulte les pointages signales de motif "INCONNU"
-    Then la reponse a le statut http 400
 
   Scenario: Pointer pour un operateur inconnu du referentiel renvoie 404
     Given il est "2026-05-10T08:00:00Z"

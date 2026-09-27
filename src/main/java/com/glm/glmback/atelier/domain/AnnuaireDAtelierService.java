@@ -60,11 +60,7 @@ public final class AnnuaireDAtelierService {
    * La presence ne connait aucun poste : seul l'operateur de chaque journee est a resoudre.
    */
   public AnnuaireDAtelier pourJournees(Collection<JourneeDeTravail> journees) {
-    return pourOperateurs(journees.stream().map(JourneeDeTravail::operateur).toList());
-  }
-
-  public AnnuaireDAtelier pourOperateurs(Collection<OperateurId> operateursAResoudre) {
-    return resout(Set.copyOf(operateursAResoudre), Set.of());
+    return resout(journees.stream().map(JourneeDeTravail::operateur).collect(Collectors.toSet()), Set.of());
   }
 
   private AnnuaireDAtelier resout(Set<OperateurId> operateursAResoudre, Set<PosteDeTravailId> postesAResoudre) {

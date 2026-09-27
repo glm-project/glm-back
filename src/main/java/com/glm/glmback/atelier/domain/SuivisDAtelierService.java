@@ -34,7 +34,6 @@ public final class SuivisDAtelierService {
   private final OperateursConnus operateurs;
   private final PostesConnus postes;
   private final Habilitations habilitations;
-  private final RegistreDesSignalements signalements;
   private final Clock clock;
 
   private SuivisDAtelierService(
@@ -43,7 +42,6 @@ public final class SuivisDAtelierService {
     OperateursConnus operateurs,
     PostesConnus postes,
     Habilitations habilitations,
-    PointagesSignales signalements,
     Clock clock
   ) {
     this.repository = repository;
@@ -51,7 +49,6 @@ public final class SuivisDAtelierService {
     this.operateurs = operateurs;
     this.postes = postes;
     this.habilitations = habilitations;
-    this.signalements = new RegistreDesSignalements(signalements, clock);
     this.clock = clock;
   }
 
@@ -59,10 +56,7 @@ public final class SuivisDAtelierService {
     return repository ->
       elements ->
         operateurs ->
-          postes ->
-            habilitations ->
-              signalements ->
-                clock -> new SuivisDAtelierService(repository, elements, operateurs, postes, habilitations, signalements, clock);
+          postes -> habilitations -> clock -> new SuivisDAtelierService(repository, elements, operateurs, postes, habilitations, clock);
   }
 
   /**
@@ -110,45 +104,23 @@ public final class SuivisDAtelierService {
       throw new SuiviDAtelierClotureException(suivi.id());
     }
 
-    RegistreDesSignalements.DateRedressee date = RegistreDesSignalements.redresse(
-      commande.dateDeSurvenue(),
-      clock.now(),
-      Optional.of(suivi.engagement().date())
-    );
-    OperateurConnu operateurConnu = operateurConnu(commande.operateur());
-    Optional<PosteConnu> posteConnu = commande.poste().map(this::posteConnu);
-    if (
-      commande
-        .poste()
-        .filter(poste -> !habilitations.estHabilite(commande.operateur(), poste))
-        .isPresent()
-    ) {
-      date = date.avec(MotifDeSignalement.OPERATEUR_NON_HABILITE);
-    }
+    Instant maintenant = clock.now();
+    refuseDateFuture(commande.dateDeSurvenue(), maintenant);
+    Horodatage horodatage = new Horodatage(commande.dateDeSurvenue().orElse(maintenant), maintenant);
     EvenementDAtelier evenement = evenement(
       commande.evenement(),
       commande.type(),
       commande.operateur(),
       commande.poste(),
       commande.auteur(),
-      date.horodatage(),
-      operateurConnu,
-      posteConnu
+      horodatage
     );
 
     if (suivi.arreteUneActiviteAbsente(evenement)) {
       return new PointageDAtelierTraite(suivi, true);
     }
 
-    SuiviDAtelier pointe = repository.update(suivi.enregistre(evenement));
-    signalements.signale(
-      commande.evenement().uuid(),
-      new CibleDuSignalement(TypeDeCible.SUIVI_D_ATELIER, suivi.id().uuid()),
-      commande.operateur(),
-      date
-    );
-
-    return new PointageDAtelierTraite(pointe, false);
+    return new PointageDAtelierTraite(repository.update(suivi.enregistre(evenement)), false);
   }
 
   public SuiviDAtelier regularise(RegularisationAEnregistrer commande) {
@@ -160,12 +132,7 @@ public final class SuivisDAtelierService {
   }
 
   public SuiviDAtelier annule(AnnulationAEnregistrer commande) {
-    SuiviDAtelier annule = repository.update(
-      get(commande.suivi()).annule(commande.evenement(), annulation(commande.auteur(), commande.motif()))
-    );
-    signalements.resout(commande.evenement().uuid(), TypeDeResolution.ANNULE, commande.auteur());
-
-    return annule;
+    return repository.update(get(commande.suivi()).annule(commande.evenement(), annulation(commande.auteur(), commande.motif())));
   }
 
   public SuiviDAtelier corrige(CorrectionAEnregistrer commande) {
@@ -175,16 +142,13 @@ public final class SuivisDAtelierService {
   public SuiviDAtelier corrige(CorrectionAEnregistrer commande, EvenementDAtelierId remplacementId) {
     RegularisationAEnregistrer remplacement = commande.remplacement();
 
-    SuiviDAtelier corrige = repository.update(
+    return repository.update(
       get(remplacement.suivi()).corrige(
         commande.evenement(),
         annulation(remplacement.auteur(), commande.motif()),
         regularisation(remplacement, remplacementId)
       )
     );
-    signalements.resout(commande.evenement().uuid(), TypeDeResolution.CORRIGE, remplacement.auteur());
-
-    return corrige;
   }
 
   public SuiviDAtelier cloture(ClotureAEnregistrer commande) {
@@ -221,6 +185,12 @@ public final class SuivisDAtelierService {
     return new Annulation(auteur, clock.now(), motif);
   }
 
+  private static void refuseDateFuture(Optional<Instant> dateDeSurvenue, Instant maintenant) {
+    if (dateDeSurvenue.filter(date -> date.isAfter(maintenant)).isPresent()) {
+      throw new DateDeSurvenueFutureException(dateDeSurvenue.orElseThrow());
+    }
+  }
+
   private EvenementDAtelier evenement(
     EvenementDAtelierId evenement,
     TypeDEvenementDAtelier type,
@@ -229,28 +199,9 @@ public final class SuivisDAtelierService {
     Auteur auteur,
     Horodatage horodatage
   ) {
-    return evenement(
-      evenement,
-      type,
-      operateur,
-      poste,
-      auteur,
-      horodatage,
-      operateurConnu(operateur),
-      poste.map(id -> posteHabilite(operateur, id))
-    );
-  }
+    OperateurConnu operateurConnu = operateurConnu(operateur);
+    Optional<PosteConnu> posteConnu = poste.map(id -> posteHabilite(operateur, id));
 
-  private static EvenementDAtelier evenement(
-    EvenementDAtelierId evenement,
-    TypeDEvenementDAtelier type,
-    OperateurId operateur,
-    Optional<PosteDeTravailId> poste,
-    Auteur auteur,
-    Horodatage horodatage,
-    OperateurConnu operateurConnu,
-    Optional<PosteConnu> posteConnu
-  ) {
     return EvenementDAtelier.builder()
       .id(evenement)
       .type(type)
@@ -275,12 +226,8 @@ public final class SuivisDAtelierService {
    * que lorsqu'un poste est fourni, une entreprise sans parc machine n'ayant aucune habilitation a declarer.
    * </p>
    */
-  private PosteConnu posteConnu(PosteDeTravailId poste) {
-    return postes.get(poste).orElseThrow(() -> new PosteDAtelierIntrouvableException(poste));
-  }
-
   private PosteConnu posteHabilite(OperateurId operateur, PosteDeTravailId poste) {
-    PosteConnu connu = posteConnu(poste);
+    PosteConnu connu = postes.get(poste).orElseThrow(() -> new PosteDAtelierIntrouvableException(poste));
 
     if (!habilitations.estHabilite(operateur, poste)) {
       throw new OperateurNonHabiliteException(operateur, poste);
@@ -306,11 +253,7 @@ public final class SuivisDAtelierService {
   }
 
   public interface SuivisDAtelierServiceHabilitationsBuilder {
-    SuivisDAtelierServiceSignalementsBuilder habilitations(Habilitations habilitations);
-  }
-
-  public interface SuivisDAtelierServiceSignalementsBuilder {
-    SuivisDAtelierServiceClockBuilder signalements(PointagesSignales signalements);
+    SuivisDAtelierServiceClockBuilder habilitations(Habilitations habilitations);
   }
 
   public interface SuivisDAtelierServiceClockBuilder {
