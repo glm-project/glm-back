@@ -41,6 +41,10 @@ fenêtres de présence, puis passe chaque fenêtre au `DecoupageCalendaire`, seu
 - **Une journée abandonnée est fermée à sa fin présumée.** Au-delà du seuil (`SeuilDAmplitude`, table
   `parametrage`), sa dernière plage se ferme au dernier fait connu, pointage d'OF compris (`PointagesDAtelier`, table
   `evenement_d_atelier`, interrogé pour une journée abandonnée seulement), et porte `presumee`.
+- **Une journée fermée plus de 24 h après son arrivée se lit comme abandonnée** (D13, issue #59) : `estPresumeePour`
+  la ferme à sa fin présumée, le dernier fait **de la fenêtre de recherche**, départ exclu. Entre le seuil et 24 h,
+  une journée fermée compte entière. 24 h est une borne physique, jamais un paramètre : la constante vit dans
+  `JourneeDeTravail`, recopiée dans `atelier`, `feuilledetemps`, `syntheseheures` et `coutderevient`.
 - **La semaine est toujours explicite.** Aucune « semaine courante » implicite. L'horloge ne sert qu'à juger
   l'abandon d'une journée : deux appels espacés peuvent donc différer.
 - **Aucun import de `atelier`, `operateur` ni `postedetravail`**, tous annotés `@BusinessContext`. Ce contexte

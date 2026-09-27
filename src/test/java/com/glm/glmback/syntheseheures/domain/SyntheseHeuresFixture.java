@@ -39,6 +39,7 @@ public final class SyntheseHeuresFixture {
   public static final Instant LE_LUNDI_11_MAI_2026_A_22H = aParis(11, 22);
   public static final Instant LE_MARDI_12_MAI_2026_A_MINUIT = aParis(12, 0);
   public static final Instant LE_MARDI_12_MAI_2026_A_2H = aParis(12, 2);
+  public static final Instant LE_MARDI_12_MAI_2026_A_7H = aParis(12, 7);
   public static final Instant LE_MARDI_12_MAI_2026_A_8H = aParis(12, 8);
   public static final Instant LE_MERCREDI_13_MAI_2026_A_12H = aParis(13, 12);
 
@@ -103,6 +104,23 @@ public final class SyntheseHeuresFixture {
   public static JourneeDeTravail journeeDuLundiDe7HSansDepart() {
     return new JourneeDeTravail(
       List.of(arriveeA(LE_LUNDI_11_MAI_2026_A_7H), pauseA(LE_LUNDI_11_MAI_2026_A_12H), repriseA(LE_LUNDI_11_MAI_2026_A_13H))
+    );
+  }
+
+  /**
+   * Issue #59 : lundi, Dupont arrive a 7 h et prend sa pause de midi, puis ne pointe plus rien avant une pause mardi a
+   * 10 h et un depart mercredi a midi, rattaches a la meme journee par une version anterieure au lot 3.
+   */
+  public static JourneeDeTravail journeeDuLundi7HAuMercredi12H() {
+    return new JourneeDeTravail(
+      List.of(
+        arriveeA(LE_LUNDI_11_MAI_2026_A_7H),
+        pauseA(LE_LUNDI_11_MAI_2026_A_12H),
+        repriseA(LE_LUNDI_11_MAI_2026_A_13H),
+        pauseA(LE_MARDI_12_MAI_2026_A_10H),
+        repriseA(LE_MARDI_12_MAI_2026_A_20H),
+        departA(LE_MERCREDI_13_MAI_2026_A_12H)
+      )
     );
   }
 

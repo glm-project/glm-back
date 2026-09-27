@@ -110,7 +110,8 @@ Deux filets tiennent les implémentations alignées :
 
 `SeuilDuCout` lit l'amplitude maximale dans la table `parametrage`, par une entité en lecture seule. Avec l'horloge,
 il décide quelles venues sans départ sont abandonnées : elles reçoivent une fin présumée, calculée sur les pointages
-déjà lus pour le rapport, et la nuit n'est jamais valorisée.
+déjà lus pour le rapport, et la nuit n'est jamais valorisée. Une venue fermée plus de 24 h après son arrivée la reçoit
+aussi (D13, issue #59) : son dernier fait se cherche alors entre l'arrivée et l'arrivée plus le seuil, départ exclu.
 
 `OccupationDesOperateurs` est celui qui n'a pas d'équivalent ailleurs : il rend ce que les opérateurs menaient de
 front **tous éléments confondus**, ce qu'aucune lecture par élément ne pourrait donner. Sa borne est haute

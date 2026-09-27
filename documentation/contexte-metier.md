@@ -73,7 +73,7 @@ La **présence sans affectation** — le temps de présence sans élément ratta
 
 Borner l'intervalle à sa journée est aussi ce qui empêche un travail jamais arrêté de courir jusqu'au lendemain : l'opérateur reclique sur l'élément à son retour, ce qui est exactement le geste que le client décrit. Un début qui ne tombe dans aucune journée connue est **rendu intact** : c'est la présence qui manque, et le domaine ne masque pas l'anomalie derrière un temps amputé.
 
-**Une journée abandonnée se ferme à sa fin présumée**, calculée à la lecture et jamais stockée : le dernier fait connu, qu'il soit son dernier événement de présence ou le dernier pointage d'OF de l'opérateur (tous éléments confondus) survenu entre l'arrivée et l'arrivée plus le seuil. La fenêtre ainsi fermée est **présumée**, et les intervalles qui s'y réduisent portent `presume` : le temps effectif distingue ce qui a été pointé de ce qui reste à confirmer. Dans l'exemple de référence, l'OF 42 de lundi vaut 7 h, dont 3 h présumées, et la nuit n'est plus comptée. Un travail commencé dans une journée abandonnée après sa fin présumée ne vaut rien : la fin présumée n'invente jamais d'heures. Une journée encore sous le seuil reste ouverte, c'est du travail en cours ; une régularisation du départ remplace le présumé par le pointé.
+**Une journée abandonnée se ferme à sa fin présumée**, calculée à la lecture et jamais stockée : le dernier fait connu, qu'il soit son dernier événement de présence ou le dernier pointage d'OF de l'opérateur (tous éléments confondus) survenu entre l'arrivée et l'arrivée plus le seuil. La fenêtre ainsi fermée est **présumée**, et les intervalles qui s'y réduisent portent `presume` : le temps effectif distingue ce qui a été pointé de ce qui reste à confirmer. Dans l'exemple de référence, l'OF 42 de lundi vaut 7 h, dont 3 h présumées, et la nuit n'est plus comptée. Un travail commencé dans une journée abandonnée après sa fin présumée ne vaut rien : la fin présumée n'invente jamais d'heures. Une journée encore sous le seuil reste ouverte, c'est du travail en cours ; une régularisation du départ remplace le présumé par le pointé. **Une journée fermée plus de 24 h après son arrivée se lit comme abandonnée pour le temps effectif** ([D13](strategie/bornes-de-fin-de-journee.md), issue #59) : elle n'a pas pu être vécue d'une traite, et son départ ne dit rien de l'heure à laquelle l'opérateur est parti. Elle se ferme à sa fin présumée, le dernier fait connu **entre l'arrivée et l'arrivée plus le seuil** — ses faits au-delà, départ compris, ne comptent pas — et ce qui dépasse disparaît. Rien n'est réécrit, et elle reste signalée en amplitude excessive. Entre le seuil et 24 h, une journée fermée compte entière. 24 h est une borne physique, jamais un paramètre de l'entreprise. Pour la saisie, elle n'est pas abandonnée : un geste reçu ensuite ne la concerne pas.
 
 ### L'activité, un opérateur sur un poste de travail
 
@@ -242,6 +242,8 @@ n'a saisie. C'est la transposition de la règle qu'`atelier` applique déjà à 
 
 **Une journée abandonnée est fermée à sa fin présumée** (lot 5 de [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md)) : sans départ et au-delà du seuil d'amplitude, lu dans la table du paramétrage, sa dernière fenêtre ouverte se ferme au dernier fait connu — son dernier pointage de présence, ou le dernier pointage d'OF de l'opérateur s'il est plus tardif et tombe entre l'arrivée et l'arrivée plus le seuil. Ce qui en découle est marqué **présumé**, à confirmer par une régularisation du départ. Juger l'abandon suppose de savoir quand on lit : ce contexte reçoit donc une horloge, comme `coutderevient`, et deux appels espacés ne rendent plus forcément la même chose. La semaine, elle, reste toujours explicite.
 
+**Une journée fermée plus de 24 h après son arrivée se lit comme abandonnée** ([D13](strategie/bornes-de-fin-de-journee.md), issue #59) : elle n'a pas pu être vécue d'une traite, et son départ ne dit rien de l'heure à laquelle l'opérateur est parti. Elle se ferme à sa fin présumée, le dernier fait connu **entre l'arrivée et l'arrivée plus le seuil** — ses faits au-delà, départ compris, ne comptent pas — et ce qui dépasse disparaît. Rien n'est réécrit, et elle reste signalée en amplitude excessive. Entre le seuil et 24 h, une journée fermée compte entière. 24 h est une borne physique, jamais un paramètre de l'entreprise.
+
 À instant égal, l'arrivée passe devant dans le repli : l'arrivée implicite d'un geste tardif partage l'heure de ce geste. Chaque plage de la feuille porte `presumee`.
 
 ### Points ouverts
@@ -278,7 +280,8 @@ journal d'un autre agrégat modifie ; seule une projection le peut.
 
 Une ligne par nature d'opération — fraisage, tournage, érosion —, plus une ligne sans nature pour ce qui a été
 pointé sans poste. **La nuit d'une journée abandonnée n'est jamais valorisée** : chaque venue sans départ au-delà du
-seuil reçoit la même fin présumée que dans l'atelier, calculée sur les pointages déjà lus pour le rapport. La forme du
+seuil reçoit la même fin présumée que dans l'atelier, calculée sur les pointages déjà lus pour le rapport. Une venue fermée
+plus de 24 h après son arrivée la reçoit aussi ([D13](strategie/bornes-de-fin-de-journee.md), issue #59). La forme du
 rapport ne change pas ; la part présumée se lit dans le temps effectif de l'atelier. Chaque ligne porte le temps de bon travail, le temps de reprise de non conformité **avec ses
 périodes datées**, et le coût séparé en machine et main d'œuvre.
 
@@ -386,6 +389,8 @@ pointées et 3 h présumées, puis 9 h pointées une fois le départ régularis�
 le fuseau de l'entreprise, y compris quand minuit sépare deux semaines.
 
 **Une journée abandonnée est fermée à sa fin présumée** (lot 5 de [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md)) : sans départ et au-delà du seuil d'amplitude, lu dans la table du paramétrage, sa dernière fenêtre ouverte se ferme au dernier fait connu — son dernier pointage de présence, ou le dernier pointage d'OF de l'opérateur s'il est plus tardif et tombe entre l'arrivée et l'arrivée plus le seuil. Ce qui en découle est marqué **présumé**, à confirmer par une régularisation du départ. Juger l'abandon suppose de savoir quand on lit : ce contexte reçoit donc une horloge, comme `coutderevient`, et deux appels espacés ne rendent plus forcément la même chose. La semaine, elle, reste toujours explicite.
+
+**Une journée fermée plus de 24 h après son arrivée se lit comme abandonnée** ([D13](strategie/bornes-de-fin-de-journee.md), issue #59) : elle n'a pas pu être vécue d'une traite, et son départ ne dit rien de l'heure à laquelle l'opérateur est parti. Elle se ferme à sa fin présumée, le dernier fait connu **entre l'arrivée et l'arrivée plus le seuil** — ses faits au-delà, départ compris, ne comptent pas — et ce qui dépasse disparaît. Rien n'est réécrit, et elle reste signalée en amplitude excessive. Entre le seuil et 24 h, une journée fermée compte entière. 24 h est une borne physique, jamais un paramètre de l'entreprise.
 
 À instant égal, l'arrivée passe devant dans le repli : l'arrivée implicite d'un geste tardif partage l'heure de ce geste.
 

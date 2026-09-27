@@ -5,8 +5,8 @@
 
 **Ce qu'on attend de vous**
 
-- valider ou contester chaque décision D1 à D12 : la colonne « À challenger » donne l'objection la plus forte qu'on leur connaît ;
-- vérifier les chiffres des exemples E1 à E8, et le tableau des pointages aujourd'hui refusés (§2) ;
+- valider ou contester chaque décision D1 à D13 : la colonne « À challenger » donne l'objection la plus forte qu'on leur connaît ;
+- vérifier les chiffres des exemples E1 à E9, et le tableau des pointages aujourd'hui refusés (§2) ;
 - répondre aux questions ouvertes (§5) ;
 - dire si le découpage en lots (§4) permet d'itérer.
 
@@ -25,17 +25,17 @@ Une contrainte s'y ajoute : **un opérateur peut travailler de nuit**, par exemp
 
 Exemple : Dupont arrive lundi à 7 h, démarre l'OF 42 à 8 h, fait une pause de 12 h à 13 h, termine l'OF 43 à 16 h et part à 17 h **sans rien pointer**. Il revient mardi à 7 h.
 
-| Où                         | Ce qu'on constate                                                                                            |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Journée de lundi           | reste ouverte, sans fin                                                                                      |
-| Pupitre, lundi 21 h        | Dupont affiché **présent**                                                                                   |
-| Arrivée de mardi 7 h       | refusée par le serveur, masquée par le pupitre : **l'heure d'arrivée de mardi n'est enregistrée nulle part** |
-| Pointages de mardi         | comptés dans la journée de lundi                                                                             |
-| OF 42, mardi 7 h 05        | « démarrer » refusé : l'OF est toujours en cours depuis lundi                                                |
-| Temps passé sur l'OF 42    | 8 h → 12 h, puis 13 h → **sans fin** : la nuit est comptée                                                   |
-| Coût de revient de l'OF 42 | valorisé jusqu'à l'instant de lecture, nuit comprise                                                         |
-| Relevé des heures, lundi   | **0 h** (seules les périodes fermées comptent)                                                               |
-| Relevé des heures, mardi   | 0 h                                                                                                          |
+| Où                       | Ce qu'on constate                                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| Journée de lundi         | reste ouverte, sans fin                                                                                      |
+| Pupitre, lundi 21 h      | Dupont affiché **présent**                                                                                   |
+| Arrivée de mardi 7 h     | refusée par le serveur, masquée par le pupitre : **l'heure d'arrivée de mardi n'est enregistrée nulle part** |
+| Pointages de mardi       | comptés dans la journée de lundi                                                                             |
+| OF 42, mardi 7 h 05      | « démarrer » refusé : l'OF est toujours en cours depuis lundi                                                |
+| Temps passé sur l'OF 42  | 8 h → 12 h, puis 13 h → **sans fin** : la nuit est comptée                                                   |
+| Coût de revient          | l'OF 42 court jusqu'à lundi 21:18                                                                            | l'OF 42 ne reçoit aucune heure : la journée s'arrête à 09:00, comme en E3 |
+| Relevé des heures, lundi | **0 h** (seules les périodes fermées comptent)                                                               |
+| Relevé des heures, mardi | 0 h                                                                                                          |
 
 Quatre problèmes, un schéma chacun.
 
@@ -71,6 +71,7 @@ Quatre problèmes, un schéma chacun.
 | D10 | L'état d'un OF reste « en cours » tant que son journal le dit. Seule l'activité est présentée **« non arrêtée »** quand la journée de l'opérateur est terminée.                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Un OF « en cours » sur lequel personne ne travaille peut induire le back-office en erreur.                                                                  |
 | D11 | Le gestionnaire dispose d'une **liste des anomalies** : journées abandonnées sans départ, journées fermées dont l'amplitude dépasse le seuil.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Sans notification, personne ne consultera peut-être la liste.                                                                                               |
 | D12 | **L'opérateur n'est jamais empêché de pointer ni de commencer son activité** quand son geste est valide : chaque geste est enregistré, absorbé ou redressé dès qu'il peut l'être (tableau ci-dessous). **Restent refusés** : un OF clôturé, dont l'opérateur est informé par un message ; un geste qu'on ne sait rattacher à rien (opérateur, poste ou OF inconnu, geste hors séquence, identifiant réutilisé) ; un geste inhabituel (habilitation retirée, date antérieure à l'engagement ou future). Décision du 26/09/2026 : lots 8b et 8c abandonnés. Les actes du gestionnaire, eux, peuvent être refusés avec explication. | Un pointage signalé compte immédiatement, avant que le gestionnaire l'ait vu. Et le pupitre ne peut plus signaler à l'opérateur une erreur de manipulation. |
+| D13 | Une journée **fermée plus de 24 h après son arrivée** se lit comme abandonnée : elle se ferme à sa fin présumée (D5), le dernier fait connu **entre l'arrivée et l'arrivée + seuil**, et son départ ne compte pas. Rien n'est réécrit ; elle reste signalée en « amplitude excessive » (D11). Entre le seuil et 24 h, une journée fermée compte entière. Décision du 27/09/2026, issue #59.                                                                                                                                                                                                                                      | 24 h est une borne physique, pas un paramètre de l'entreprise. Une vraie journée de plus de 24 h ne peut pas être comptée entière.                          |
 
 ### Presque aucun pointage ne rend d'erreur
 
@@ -260,6 +261,18 @@ Le seuil passe à 10 h. Dupont arrive à 07:00 et oublie son départ.
 | 17:30 | s'identifie | 10 h 30 > 10 h : **nouvelle journée** |
 
 Le changement vaut pour les gestes qui suivent. Sur une journée **non régularisée**, il peut aussi déplacer la fin présumée, puisque la recherche du dernier fait connu s'arrête à l'arrivée + seuil.
+
+### E9 — Départ rattaché des jours plus tard
+
+Dupont arrive jeudi à 08:00 et démarre l'OF 42 à 09:00, sans pointer son départ. Lundi à 21:18, un départ est rattaché à la même journée — par une version antérieure au lot 3, ou par une régularisation du gestionnaire.
+
+| Lecture          | Avant D13                          | Avec D13                                                                  |
+| ---------------- | ---------------------------------- | ------------------------------------------------------------------------- |
+| Feuille de temps | 24 h le vendredi, samedi, dimanche | jeudi 08:00–09:00 **présumé**, rien ensuite                               |
+| Coût de revient  | l'OF 42 court jusqu'à lundi 21:18  | l'OF 42 ne reçoit aucune heure : la journée s'arrête à 09:00, comme en E3 |
+| Anomalies        | amplitude excessive                | amplitude excessive, inchangé                                             |
+
+Le gestionnaire corrige le départ à l'heure réelle : la journée repasse sous 24 h et compte ce qui est pointé.
 
 ## 4. Découpage en lots
 

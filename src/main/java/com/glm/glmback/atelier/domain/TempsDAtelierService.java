@@ -65,14 +65,14 @@ public final class TempsDAtelierService {
   }
 
   /**
-   * Le dernier pointage d'OF de l'operateur n'est cherche que pour une journee abandonnee, la seule qui ait besoin d'une
-   * fin presumee.
+   * Le dernier pointage d'OF de l'operateur n'est cherche que pour une journee abandonnee, ou fermee plus de 24 h apres
+   * son arrivee : les seules qui aient besoin d'une fin presumee.
    */
   private List<FenetreDePresence> fenetres(JourneeDeTravail journee) {
     Instant maintenant = clock.now();
     AmplitudeMaximale amplitude = seuil.amplitudeMaximale();
 
-    if (!journee.estAbandonneePour(maintenant, amplitude)) {
+    if (!journee.estPresumeePour(maintenant, amplitude)) {
       return journee.fenetres();
     }
 
