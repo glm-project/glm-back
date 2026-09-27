@@ -15,7 +15,8 @@ import java.util.Optional;
  * Un debut sur une activite deja en cours la <b>relance</b>, de meme qu'une non conformite sur une non conformite en
  * cours : la periode precedente s'arrete a l'instant de la relance et une nouvelle commence. L'operateur qui revient
  * sur un element reste ouvert n'est jamais bloque, et un double appui n'ajoute aucun temps. Seule une fin sans
- * activite en cours reste refusee.
+ * activite en cours reste refusee par l'automate — et {@link JournalDAtelier} l'ignore, le calcul du cout ne devant
+ * jamais echouer.
  * </p>
  */
 public enum EtatDActivite {

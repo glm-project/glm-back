@@ -21,11 +21,44 @@ class JournalDAtelierTest {
       .hasMessageContaining("evenements");
   }
 
+  /**
+   * Le calcul du cout ne doit jamais echouer sur le journal (issue #54) : une fin sans activite en cours est ignoree.
+   */
   @Test
-  void shouldRefuseImpossibleSequence() {
-    assertThatThrownBy(() -> new JournalDAtelier(List.of(surFraiseuse(FIN, LE_11_MAI_A_10H)))).isExactlyInstanceOf(
-      TransitionDAtelierInterditeException.class
-    );
+  void shouldIgnorerUneFinSansActivite() {
+    assertThat(new JournalDAtelier(List.of(surFraiseuse(FIN, LE_11_MAI_A_10H))).intervalles(Optional.empty())).isEmpty();
+  }
+
+  /**
+   * La fin ignoree ne borne rien : l'intervalle precedent s'arrete a la premiere fin, le suivant commence au debut.
+   */
+  @Test
+  void shouldIgnorerUneSecondeFin() {
+    List<IntervalleDActivite> intervalles = new JournalDAtelier(
+      List.of(
+        surFraiseuse(DEBUT, LE_11_MAI_A_9H),
+        surFraiseuse(FIN, LE_11_MAI_A_10H),
+        surFraiseuse(FIN, LE_11_MAI_A_11H),
+        surFraiseuse(DEBUT, LE_11_MAI_A_12H),
+        surFraiseuse(FIN, LE_11_MAI_A_13H)
+      )
+    ).intervalles(Optional.empty());
+
+    assertThat(intervalles)
+      .extracting(IntervalleDActivite::plage)
+      .containsExactly(new Plage(LE_11_MAI_A_9H, Optional.of(LE_11_MAI_A_10H)), new Plage(LE_11_MAI_A_12H, Optional.of(LE_11_MAI_A_13H)));
+  }
+
+  /**
+   * Une fin rendue avant un debut au meme instant, par l'ordre des identifiants, ne fait pas echouer le repli.
+   */
+  @Test
+  void shouldIgnorerUneFinRendueAvantUnDebutSimultane() {
+    List<IntervalleDActivite> intervalles = new JournalDAtelier(
+      List.of(surFraiseuse(FIN, LE_11_MAI_A_10H), surFraiseuse(DEBUT, LE_11_MAI_A_10H))
+    ).intervalles(Optional.empty());
+
+    assertThat(intervalles).extracting(IntervalleDActivite::plage).containsExactly(new Plage(LE_11_MAI_A_10H, Optional.empty()));
   }
 
   @Test

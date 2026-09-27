@@ -20,6 +20,12 @@ import java.util.Optional;
  * Le journal reste la source de verite : les colonnes {@code debut} et {@code fin} de la table ne servent qu'a borner
  * la requete, jamais a reconstruire la presence.
  * </p>
+ *
+ * <p>
+ * Le calcul du cout ne doit jamais echouer sur la presence : un geste que l'automate refuse — un depart sans arrivee,
+ * une seconde pause — est ecarte du journal a la construction, et la journee se lit sur ce qui reste. C'est a
+ * l'atelier de refuser ou de corriger, jamais a la lecture.
+ * </p>
  */
 public record JourneeDeTravail(List<EvenementDePresence> journal, Optional<Instant> finPresumee) {
   /**
@@ -33,8 +39,7 @@ public record JourneeDeTravail(List<EvenementDePresence> journal, Optional<Insta
   public JourneeDeTravail {
     Assert.field("journal", journal).notNull().noNullElement();
     Assert.notNull("fin presumee", finPresumee);
-    journal = journal.stream().sorted(PAR_ORDRE_CHRONOLOGIQUE).toList();
-    fenetres(journal);
+    journal = retenus(journal.stream().sorted(PAR_ORDRE_CHRONOLOGIQUE).toList());
     List<EvenementDePresence> evenements = journal;
     finPresumee.ifPresent(fin -> {
       Assert.notEmpty("journal d'une journee presumee", evenements);
@@ -138,14 +143,35 @@ public record JourneeDeTravail(List<EvenementDePresence> journal, Optional<Insta
       .map(EvenementDePresence::dateDeSurvenue);
   }
 
+  /**
+   * Les seuls evenements que l'automate admet, dans l'ordre : un geste refuse est saute, et l'etat reste celui d'avant.
+   */
+  private static List<EvenementDePresence> retenus(List<EvenementDePresence> evenements) {
+    List<EvenementDePresence> retenus = new ArrayList<>();
+    EtatDePresence etat = EtatDePresence.ABSENT;
+
+    for (EvenementDePresence evenement : evenements) {
+      Optional<EtatDePresence> apres = etat.apres(evenement.type());
+
+      if (apres.isPresent()) {
+        retenus.add(evenement);
+        etat = apres.orElseThrow();
+      }
+    }
+
+    return List.copyOf(retenus);
+  }
+
+  /**
+   * Le journal est deja coherent : chaque transition y est admise.
+   */
   private static List<Plage> fenetres(List<EvenementDePresence> evenements) {
     List<Plage> fenetres = new ArrayList<>();
     EtatDePresence etat = EtatDePresence.ABSENT;
 
     for (int rang = 0; rang < evenements.size(); rang++) {
       EvenementDePresence evenement = evenements.get(rang);
-      EtatDePresence avant = etat;
-      etat = avant.apres(evenement.type()).orElseThrow(() -> new TransitionDePresenceInterditeException(evenement, avant));
+      etat = etat.apres(evenement.type()).orElseThrow();
 
       if (etat == EtatDePresence.PRESENT) {
         fenetres.add(new Plage(evenement.dateDeSurvenue(), suivant(evenements, rang)));

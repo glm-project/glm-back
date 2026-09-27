@@ -327,6 +327,11 @@ feuille de temps qui l'écarte : ici, l'anomalie doit rester chiffrée plutôt q
 déclare ses propres entités JPA en lecture seule sur leurs tables. Il rejoue donc **sa propre** version du repli du
 journal d'atelier, et — pour la troisième fois du projet — du repli de présence.
 
+Ces deux replis sont **tolérants**, comme ceux de `syntheseheures` et `pupitre` : un geste que l'automate refuse —
+un départ sans arrivée, une fin sans activité en cours — est ignoré, et le rapport se calcule sur ce qui reste. Le
+calcul du coût ne doit jamais répondre `500` (issue #54). À instant égal, l'arrivée passe devant : l'arrivée implicite
+d'un geste tardif partage l'heure de ce geste, et la base rendait les deux dans l'ordre de leurs identifiants.
+
 Cette duplication est assumée, pour la même raison que dans `feuilledetemps` : le partage passerait soit par un
 import interdit, soit par le shared kernel, qui est en anglais. Le filet est le scénario Cucumber, qui pointe par
 l'API d'`atelier` et relit par celle du coût de revient.

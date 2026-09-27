@@ -23,6 +23,11 @@ import java.util.stream.Collectors;
  * qu'un repli en bloc refuserait. L'ordre des ex aequo vient de la requete, qui trie par date de survenue puis par
  * identifiant ; le tri du domaine etant stable, il le conserve.
  * </p>
+ *
+ * <p>
+ * Le calcul du cout ne doit jamais echouer sur le journal : une fin sans activite en cours est ignoree, et
+ * l'intervalle precedent reste borne par la fin qui l'a vraiment arrete.
+ * </p>
  */
 public record JournalDAtelier(List<EvenementDAtelier> evenements) {
   private static final Comparator<EvenementDAtelier> PAR_ORDRE_CHRONOLOGIQUE = Comparator.comparing(EvenementDAtelier::dateDeSurvenue);
@@ -32,7 +37,6 @@ public record JournalDAtelier(List<EvenementDAtelier> evenements) {
   public JournalDAtelier {
     Assert.field("evenements", evenements).notNull().noNullElement();
     evenements = evenements.stream().sorted(PAR_ORDRE_CHRONOLOGIQUE).toList();
-    intervalles(evenements, Optional.empty());
   }
 
   /**
@@ -54,20 +58,39 @@ public record JournalDAtelier(List<EvenementDAtelier> evenements) {
       .toList();
   }
 
-  private static List<IntervalleDActivite> intervallesDUneActivite(List<EvenementDAtelier> evenements, Optional<Instant> fermetureFinale) {
+  private static List<IntervalleDActivite> intervallesDUneActivite(List<EvenementDAtelier> activite, Optional<Instant> fermetureFinale) {
+    List<EvenementDAtelier> evenements = retenus(activite);
     List<IntervalleDActivite> intervalles = new ArrayList<>();
     EtatDActivite etat = EtatDActivite.ABSENTE;
 
     for (int rang = 0; rang < evenements.size(); rang++) {
       EvenementDAtelier evenement = evenements.get(rang);
-      EtatDActivite avant = etat;
-      etat = avant.apres(evenement.type()).orElseThrow(() -> new TransitionDAtelierInterditeException(evenement, avant));
+      etat = etat.apres(evenement.type()).orElseThrow();
 
       Optional<Instant> fin = rang + 1 < evenements.size() ? Optional.of(evenements.get(rang + 1).dateDeSurvenue()) : fermetureFinale;
       etat.categorie().ifPresent(categorie -> intervalles.add(intervalle(evenement, categorie, fin)));
     }
 
     return List.copyOf(intervalles);
+  }
+
+  /**
+   * Les seuls evenements que l'automate admet, dans l'ordre : un geste refuse est saute, et l'etat reste celui d'avant.
+   */
+  private static List<EvenementDAtelier> retenus(List<EvenementDAtelier> evenements) {
+    List<EvenementDAtelier> retenus = new ArrayList<>();
+    EtatDActivite etat = EtatDActivite.ABSENTE;
+
+    for (EvenementDAtelier evenement : evenements) {
+      Optional<EtatDActivite> apres = etat.apres(evenement.type());
+
+      if (apres.isPresent()) {
+        retenus.add(evenement);
+        etat = apres.orElseThrow();
+      }
+    }
+
+    return retenus;
   }
 
   private static IntervalleDActivite intervalle(EvenementDAtelier evenement, CategorieDActivite categorie, Optional<Instant> fin) {

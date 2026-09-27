@@ -62,6 +62,10 @@ l'objet naît et meurt dans l'appel.
 - **Un intervalle dont le début ne tombe dans aucune journée connue est rendu intact**, puis fermé à l'horloge :
   c'est la présence qui manque, et le domaine ne masque pas l'anomalie derrière un temps amputé. C'est la règle
   d'`atelier`, et non celle de `feuilledetemps`, qui écarte ce cas.
+- **Le calcul ne lève jamais sur un journal.** Un geste que l'automate refuse — départ sans arrivée, seconde pause,
+  fin sans activité en cours — est écarté par le repli, qui se poursuit sur ce qui reste. À instant égal, l'arrivée
+  passe devant : l'arrivée implicite d'un geste tardif partage son heure, et la base les rend dans l'ordre de leurs
+  identifiants (issue #54).
 - **Aucun import de `atelier`, `elementdefabrication`, `operateur` ni `postedetravail`**, tous annotés
   `@BusinessContext`. Ce contexte déclare ses propres entités JPA `@Immutable` sur leurs tables.
 
@@ -78,6 +82,9 @@ chose — c'est écrit dans la description OpenAPI de la route.
 réécrits ici : le second pour la **troisième** fois, après `atelier` et `feuilledetemps`. C'est le prix de la
 frontière — le partage passerait soit par un import interdit, soit par le shared kernel, qui est en anglais et ne
 peut pas accueillir du vocabulaire d'atelier.
+
+Contrairement à ceux d'`atelier` et de `feuilledetemps`, ces replis sont **tolérants** : ils ignorent un geste que
+l'automate refuse au lieu de lever, comme ceux de `syntheseheures` et `pupitre`.
 
 Deux filets tiennent les implémentations alignées :
 
