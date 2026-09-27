@@ -57,6 +57,24 @@ class JourneeDeTravailTest {
     assertThat(journee.fenetres()).containsExactly(new Plage(LE_11_MAI_A_8H, Optional.of(LE_11_MAI_A_17H)));
   }
 
+  /**
+   * Une arrivee implicite et le depart d'un geste tardif partagent leur heure : l'arrivee passe devant, quel que soit
+   * l'ordre dans lequel la base les rend. Sans ce departage, le repli strict de ce contexte echouerait (issue #54).
+   */
+  @Test
+  void shouldFairePasserLArriveeDevantUnDepartSimultane() {
+    JourneeDeTravail nulle = new JourneeDeTravail(List.of(departA(LE_11_MAI_A_17H), arriveeA(LE_11_MAI_A_17H)));
+
+    assertThat(nulle.fenetres()).containsExactly(new Plage(LE_11_MAI_A_17H, Optional.of(LE_11_MAI_A_17H)));
+  }
+
+  @Test
+  void shouldFairePasserLArriveeDevantUnePauseSimultanee() {
+    JourneeDeTravail enPause = new JourneeDeTravail(List.of(pauseA(LE_11_MAI_A_12H), arriveeA(LE_11_MAI_A_12H)));
+
+    assertThat(enPause.fenetres()).containsExactly(new Plage(LE_11_MAI_A_12H, Optional.of(LE_11_MAI_A_12H)));
+  }
+
   @Test
   void shouldContainInstantBetweenArriveeAndDepart() {
     assertThat(journeeDe8HA17HAvecPauseDeMidi().contient(LE_11_MAI_A_12H)).isTrue();

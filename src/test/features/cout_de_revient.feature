@@ -152,6 +152,27 @@ Feature: Cout de revient d'un element de fabrication
       | nature   | travail | nonConformite | machine | mainDOeuvre |
       | Fraisage | PT3H    | PT0S          | 135.00  | 60.00       |
 
+  Scenario: Un depart pointe hors journee ne fait pas echouer le rapport
+    Given l'entreprise fabrique "OF 3013"
+    And "OF 3013" est mis en atelier a "2026-05-11T07:00:00Z"
+    And "dupont" prend son poste a "2026-05-11T08:00:00Z"
+    And "dupont" pointe "DEBUT" sur "OF 3013" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
+    And "dupont" pointe sa presence "DEPART" a "2026-05-11T12:00:00Z"
+    # Chaque depart tardif ouvre sa propre journee par une arrivee implicite a la meme heure (lot 8a), lue par le
+    # rapport puisque le travail n'a jamais ete arrete. La base rend les deux evenements dans l'ordre de leurs
+    # identifiants, tires au hasard : plusieurs departs rendent l'inversion quasi certaine si le repli ne les departage
+    # pas lui-meme (issue #54).
+    And "dupont" pointe sa presence "DEPART" a "2026-05-11T12:05:00Z"
+    And "dupont" pointe sa presence "DEPART" a "2026-05-11T12:10:00Z"
+    And "dupont" pointe sa presence "DEPART" a "2026-05-11T12:15:00Z"
+    And "dupont" pointe sa presence "DEPART" a "2026-05-11T12:20:00Z"
+    When je consulte le cout de revient de "OF 3013" a "2026-05-11T18:00:00Z"
+    Then la reponse a le statut http 200
+    # Le travail reste borne au depart de 12 h : les journees vides d'apres ne valorisent rien.
+    And le rapport porte les lignes
+      | nature   | travail | nonConformite | machine | mainDOeuvre |
+      | Fraisage | PT3H    | PT0S          | 135.00  | 60.00       |
+
   Scenario: La cloture referme le travail laisse ouvert
     Given l'entreprise fabrique "OF 3007"
     And "OF 3007" est mis en atelier a "2026-05-11T07:00:00Z"

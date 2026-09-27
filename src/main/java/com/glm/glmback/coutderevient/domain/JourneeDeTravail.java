@@ -22,7 +22,13 @@ import java.util.Optional;
  * </p>
  */
 public record JourneeDeTravail(List<EvenementDePresence> journal, Optional<Instant> finPresumee) {
-  private static final Comparator<EvenementDePresence> PAR_ORDRE_CHRONOLOGIQUE = Comparator.comparing(EvenementDePresence::dateDeSurvenue);
+  /**
+   * A instant egal, l'arrivee passe devant : l'arrivee implicite d'un geste tardif partage l'heure de ce geste, et la
+   * base les rend sans les departager.
+   */
+  private static final Comparator<EvenementDePresence> PAR_ORDRE_CHRONOLOGIQUE = Comparator.comparing(
+    EvenementDePresence::dateDeSurvenue
+  ).thenComparing(EvenementDePresence::type);
 
   public JourneeDeTravail {
     Assert.field("journal", journal).notNull().noNullElement();
