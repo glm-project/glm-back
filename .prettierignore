@@ -5,3 +5,4 @@ documentation/openapi.json
 gradle
 .gradle
 documentation/strategie/bornes-de-fin-de-journee/*.svg
+src/main/docker/jeu-de-donnees/ATTENDUS.md
