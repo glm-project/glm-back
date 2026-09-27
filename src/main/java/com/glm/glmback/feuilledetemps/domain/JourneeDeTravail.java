@@ -1,11 +1,13 @@
 package com.glm.glmback.feuilledetemps.domain;
 
 import com.glm.glmback.shared.error.domain.Assert;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Une venue de l'operateur, et les fenetres de presence qu'on en deduit.
@@ -30,6 +32,8 @@ public record JourneeDeTravail(List<EvenementDePresence> journal, Optional<Insta
     EvenementDePresence::dateDeSurvenue
   ).thenComparing(EvenementDePresence::type);
 
+  private static final Duration JOURNEE_INVRAISEMBLABLE = Duration.ofHours(24);
+
   public JourneeDeTravail {
     Assert.field("journal", journal).notNull().noNullElement();
     Assert.notNull("fin presumee", finPresumee);
@@ -50,6 +54,15 @@ public record JourneeDeTravail(List<EvenementDePresence> journal, Optional<Insta
   }
 
   /**
+   * Vrai si la journee se lit a sa fin presumee : abandonnee a cet instant, ou fermee plus de 24 h apres son arrivee.
+   * Une telle journee n'a pas pu etre vecue d'une traite, et son depart ne dit rien de l'heure a laquelle l'operateur
+   * est vraiment parti (issue #59).
+   */
+  public boolean estPresumeePour(Instant instant, AmplitudeMaximale seuil) {
+    return estAbandonneePour(instant, seuil) || estInvraisemblable();
+  }
+
+  /**
    * De l'arrivee a l'arrivee plus le seuil : la ou se cherche le dernier fait connu d'une journee abandonnee.
    */
   public Optional<Plage> fenetreDeRecherche(AmplitudeMaximale seuil) {
@@ -66,7 +79,7 @@ public record JourneeDeTravail(List<EvenementDePresence> journal, Optional<Insta
       return this;
     }
 
-    Instant dernierFait = dernierFait().orElseThrow();
+    Instant dernierFait = dernierFaitRetenu(recherche.orElseThrow());
     Instant fin = dernierPointage
       .filter(recherche.orElseThrow()::contient)
       .filter(pointage -> pointage.isAfter(dernierFait))
@@ -82,16 +95,57 @@ public record JourneeDeTravail(List<EvenementDePresence> journal, Optional<Insta
     return presumees(fenetres(journal));
   }
 
+  /**
+   * Les fenetres coupees a la fin presumee : celle qui la franchit, ou reste ouverte, s'y arrete et devient presumee,
+   * celles qui commencent apres disparaissent.
+   */
   private List<Plage> presumees(List<Plage> fenetres) {
-    return fenetres
-      .stream()
-      .map(fenetre ->
-        finPresumee
-          .filter(fin -> fenetre.estOuverte())
-          .map(fin -> new Plage(fenetre.debut(), Optional.of(fin), true))
-          .orElse(fenetre)
+    return finPresumee
+      .map(fin ->
+        fenetres
+          .stream()
+          .filter(fenetre -> !fenetre.debut().isAfter(fin))
+          .map(fenetre -> coupee(fenetre, fin))
+          .toList()
       )
-      .toList();
+      .orElse(fenetres);
+  }
+
+  private static Plage coupee(Plage fenetre, Instant fin) {
+    if (
+      fenetre
+        .fin()
+        .filter(date -> !date.isAfter(fin))
+        .isPresent()
+    ) {
+      return fenetre;
+    }
+
+    return new Plage(fenetre.debut(), Optional.of(fin), true);
+  }
+
+  /**
+   * Fermee plus de 24 h apres son arrivee : une borne physique, et non un parametre de l'entreprise, que l'amplitude
+   * maximale ne peut jamais atteindre.
+   */
+  private boolean estInvraisemblable() {
+    return estFermee() && dernierFait().orElseThrow().isAfter(premierFait().orElseThrow().plus(JOURNEE_INVRAISEMBLABLE));
+  }
+
+  /**
+   * Le dernier fait connu d'une journee ouverte, quel qu'il soit : un fait regularise au-dela du seuil reste un fait.
+   * Celui d'une journee fermee se cherche dans la fenetre de recherche, puisque c'est son depart qu'on ne croit pas.
+   */
+  private Instant dernierFaitRetenu(Plage recherche) {
+    if (!estFermee()) {
+      return dernierFait().orElseThrow();
+    }
+
+    return faits()
+      .map(EvenementDePresence::dateDeSurvenue)
+      .filter(recherche::contient)
+      .reduce((precedent, suivant) -> suivant)
+      .orElseThrow();
   }
 
   private boolean estFermee() {
@@ -102,6 +156,10 @@ public record JourneeDeTravail(List<EvenementDePresence> journal, Optional<Insta
 
   private Optional<Instant> premierFait() {
     return journal.stream().findFirst().map(EvenementDePresence::dateDeSurvenue);
+  }
+
+  private Stream<EvenementDePresence> faits() {
+    return journal.stream();
   }
 
   private Optional<Instant> dernierFait() {

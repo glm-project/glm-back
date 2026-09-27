@@ -373,6 +373,22 @@ class CoutsDeRevientServiceTest {
     assertThat(rapport.temps().travail()).isEqualTo(Duration.ofHours(2));
   }
 
+  /**
+   * Issue #59 : un travail jamais arrete, commence dans une journee fermee de plus de 24 h, ne court que jusqu'a sa
+   * fin presumee, lundi 13:00 — 9-12, trois heures, et non les nuits jusqu'a mercredi.
+   */
+  @Test
+  void shouldNeValoriserUneJourneeDePlusDe24HQueJusquASaFinPresumee() {
+    AtelierEnMemoire atelier = new AtelierEnMemoire()
+      .connait(ELEMENT_VALORISE_OF)
+      .aTravaille(ELEMENT_ID_OF, suivi(fraisage(DEBUT, LE_11_MAI_A_9H)))
+      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDuLundi8HAuMercredi8H())));
+
+    CoutDeRevient rapport = service(atelier, LE_13_MAI_A_8H).rapport(ELEMENT_ID_OF);
+
+    assertThat(rapport.temps().travail()).isEqualTo(Duration.ofHours(3));
+  }
+
   private static CoutsDeRevientService service(AtelierEnMemoire atelier) {
     return service(atelier, MAINTENANT);
   }

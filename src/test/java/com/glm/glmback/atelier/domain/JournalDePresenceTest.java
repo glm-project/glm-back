@@ -121,6 +121,25 @@ class JournalDePresenceTest {
   }
 
   @Test
+  void shouldTrouverLeDernierFaitDUnePeriodeBornesComprises() {
+    JournalDePresence journal = journeeDeDupontDe7HA17HAvecPauseDeMidi().journal();
+
+    assertThat(journal.dernierFaitDans(new Periode(LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_13H))).contains(LE_10_MAI_2026_A_13H);
+    assertThat(journal.dernierFaitDans(new Periode(LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_12H.minusSeconds(1)))).contains(
+      LE_10_MAI_2026_A_7H
+    );
+    assertThat(journal.dernierFaitDans(new Periode(LE_10_MAI_2026_A_20H, LE_11_MAI_2026_A_7H))).isEmpty();
+  }
+
+  @Test
+  void shouldEcarterDuDernierFaitUnEvenementAnnule() {
+    JournalDePresence journal = journeeDeDupontDe7HA17HAvecPauseDeMidi().journal();
+    JournalDePresence sansDepart = journal.annule(journal.evenements().getLast().id(), annulationParLeroy());
+
+    assertThat(sansDepart.dernierFaitDans(new Periode(LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_20H))).contains(LE_10_MAI_2026_A_13H);
+  }
+
+  @Test
   void shouldNotAnnulerUnEvenementInconnu() {
     JournalDePresence journal = journeeDeDupontDe7HA17HAvecPauseDeMidi().journal();
     EvenementDePresenceId inconnu = EvenementDePresenceId.newId();

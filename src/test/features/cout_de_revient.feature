@@ -122,6 +122,23 @@ Feature: Cout de revient d'un element de fabrication
       | nature   | travail | nonConformite | machine | mainDOeuvre |
       | Fraisage | PT6H    | PT0S          | 270.00  | 120.00      |
 
+  Scenario: Une journee fermee de plus de 24 h n'est valorisee que jusqu'a sa fin presumee
+    # Issue #59 : lundi, Dupont ne pointe pas son depart ; le gestionnaire le saisit mercredi a 8 h sur la meme journee.
+    # Plus de 24 h ne se vivent pas d'une traite : la journee s'arrete au dernier fait de lundi, la reprise de 13:00.
+    Given l'entreprise fabrique "OF 3016"
+    And "OF 3016" est mis en atelier a "2026-05-11T07:00:00Z"
+    And "dupont" prend son poste a "2026-05-11T08:00:00Z"
+    And "dupont" pointe "DEBUT" sur "OF 3016" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
+    And "dupont" pointe sa presence "PAUSE" a "2026-05-11T12:00:00Z"
+    And "dupont" pointe sa presence "REPRISE" a "2026-05-11T13:00:00Z"
+    And le depart de "dupont" est rattrape sur sa journee a "2026-05-13T08:00:00Z"
+    When je consulte le cout de revient de "OF 3016" a "2026-05-13T18:00:00Z"
+    Then la reponse a le statut http 200
+    # Lundi 9-12 seulement : ni l'apres-midi presume, ni les deux nuits jusqu'au depart.
+    And le rapport porte les lignes
+      | nature   | travail | nonConformite | machine | mainDOeuvre |
+      | Fraisage | PT3H    | PT0S          | 135.00  | 60.00       |
+
   Scenario: Deux machines menees de front divisent l'operateur, jamais les machines
     Given l'entreprise fabrique "OF 3005"
     And "OF 3005" est mis en atelier a "2026-05-11T07:00:00Z"

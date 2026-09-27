@@ -224,6 +224,33 @@ class SynthesesDesHeuresServiceTest {
   }
 
   /**
+   * Issue #59 : une journee fermee de plus de 24 h n'est comptee que jusqu'a sa fin presumee, la fin de l'OF 43 a
+   * 16:00 : 5 h pointees et 3 h presumees lundi, rien mardi ni mercredi.
+   */
+  @Test
+  void shouldBornerASaFinPresumeeUneJourneeFermeeDePlusDe24H() {
+    AtomicReference<Plage> recherche = new AtomicReference<>();
+    PointagesDAtelier finDeLOf43 = (operateur, periode) -> {
+      recherche.set(periode);
+      return Optional.of(LE_LUNDI_11_MAI_2026_A_16H);
+    };
+
+    SyntheseDesHeures synthese = service(
+      PresencesEnMemoire.avec(List.of(journeeDuLundi7HAuMercredi12H())),
+      finDeLOf43,
+      LE_MERCREDI_13_MAI_2026_A_12H
+    ).synthese(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
+
+    assertThat(jourDe(synthese, LUNDI_11_MAI_2026).duree()).isEqualTo(Duration.ofHours(5));
+    assertThat(jourDe(synthese, LUNDI_11_MAI_2026).dureePresumee()).isEqualTo(Duration.ofHours(3));
+    assertThat(jourDe(synthese, MARDI_12_MAI_2026).duree()).isZero();
+    assertThat(jourDe(synthese, MERCREDI_13_MAI_2026).duree()).isZero();
+    assertThat(synthese.dureeTotale()).isEqualTo(Duration.ofHours(5));
+    assertThat(synthese.dureePresumeeTotale()).isEqualTo(Duration.ofHours(3));
+    assertThat(recherche.get()).isEqualTo(new Plage(LE_LUNDI_11_MAI_2026_A_7H, Optional.of(LE_LUNDI_11_MAI_2026_A_20H)));
+  }
+
+  /**
    * E7 : le poste de nuit du dimanche au lundi se partage entre deux semaines de releve, a minuit a Paris.
    */
   @Test

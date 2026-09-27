@@ -304,6 +304,29 @@ class TempsDAtelierServiceTest {
     assertThat(temps.tempsEffectif(of42)).isEmpty();
   }
 
+  /**
+   * Issue #59 : un OF jamais arrete, commence dans une journee fermee de plus de 24 h, s'arrete a la fin presumee de
+   * celle-ci, la fin de l'OF 43 a 16:00 — et non au depart du lendemain.
+   */
+  @Test
+  void shouldArreterUnTravailALaFinPresumeeDUneJourneeDePlusDe24H() {
+    journees.create(journeeDeDupontDu10A7HAu11A9H());
+    SuiviDAtelierId of42 = enAtelier(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)));
+    enAtelier(
+      suiviDAtelierEngage()
+        .enregistre(debutSurFraiseuse2ParDupontA(LE_10_MAI_2026_A_9H))
+        .enregistre(finSurFraiseuse2ParDupontA(LE_10_MAI_2026_A_16H))
+    );
+    maintenant.set(LE_11_MAI_2026_A_9H15);
+
+    assertThat(temps.tempsEffectif(of42))
+      .extracting(IntervalleDActivite::debut, IntervalleDActivite::fin, IntervalleDActivite::presume)
+      .containsExactly(
+        tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H), false),
+        tuple(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_16H), true)
+      );
+  }
+
   private static JourneeDeTravail journeeDeLundiSansDepart() {
     return journeeDeDupontOuverteA7H().enregistre(pauseDeDupontA(LE_10_MAI_2026_A_12H)).enregistre(repriseDeDupontA(LE_10_MAI_2026_A_13H));
   }

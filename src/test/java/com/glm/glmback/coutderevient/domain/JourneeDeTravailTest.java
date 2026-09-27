@@ -275,6 +275,65 @@ class JourneeDeTravailTest {
     assertThat(vide.presumee(LE_12_MAI_A_8H, AMPLITUDE_MAXIMALE_13H, List.of(LE_11_MAI_A_15H))).isEqualTo(vide);
   }
 
+  /**
+   * Issue #59 : une journee fermee de plus de 24 h n'a pas pu etre vecue d'une traite. Elle se ferme a sa fin
+   * presumee, le dernier fait de la fenetre de recherche : la pause de mardi et le depart de mercredi en sont exclus.
+   */
+  @Test
+  void shouldFermerUneJourneeDePlusDe24HAuDernierFaitDeLaFenetreDeRecherche() {
+    JourneeDeTravail presumee = journeeDuLundi8HAuMercredi8H().presumee(LE_13_MAI_A_8H, AMPLITUDE_MAXIMALE_13H, List.of());
+
+    assertThat(presumee.finPresumee()).contains(LE_11_MAI_A_13H);
+    assertThat(presumee.fenetres()).containsExactly(
+      new Plage(LE_11_MAI_A_8H, Optional.of(LE_11_MAI_A_12H)),
+      new Plage(LE_11_MAI_A_13H, Optional.of(LE_11_MAI_A_13H))
+    );
+    assertThat(presumee.contient(LE_11_MAI_A_12H)).isTrue();
+    assertThat(presumee.contient(LE_11_MAI_A_14H)).isFalse();
+    assertThat(presumee.contient(LE_12_MAI_A_9H)).isFalse();
+  }
+
+  @Test
+  void shouldFermerUneJourneeDePlusDe24HAuDernierPointageDeLaFenetre() {
+    JourneeDeTravail presumee = journeeDuLundi8HAuMercredi8H().presumee(
+      LE_13_MAI_A_8H,
+      AMPLITUDE_MAXIMALE_13H,
+      List.of(LE_11_MAI_A_15H, LE_12_MAI_A_9H)
+    );
+
+    assertThat(presumee.finPresumee()).contains(LE_11_MAI_A_15H);
+    assertThat(presumee.fenetres()).last().isEqualTo(new Plage(LE_11_MAI_A_13H, Optional.of(LE_11_MAI_A_15H)));
+  }
+
+  /**
+   * Une journee fermee n'a pas besoin de l'horloge : son amplitude est connue, lue avant meme le seuil.
+   */
+  @Test
+  void shouldPresumerUneJourneeDePlusDe24HAToutInstant() {
+    assertThat(journeeDuLundi8HAuMercredi8H().presumee(LE_11_MAI_A_9H, AMPLITUDE_MAXIMALE_13H, List.of()).finPresumee()).contains(
+      LE_11_MAI_A_13H
+    );
+  }
+
+  @Test
+  void shouldNePasPresumerUneJourneeFermeeDe24HPile() {
+    JourneeDeTravail pile = new JourneeDeTravail(List.of(arriveeA(LE_11_MAI_A_8H), departA(LE_12_MAI_A_8H)));
+    JourneeDeTravail auDela = new JourneeDeTravail(List.of(arriveeA(LE_11_MAI_A_8H), departA(LE_12_MAI_A_8H.plusSeconds(1))));
+
+    assertThat(pile.presumee(LE_13_MAI_A_8H, AMPLITUDE_MAXIMALE_13H, List.of())).isEqualTo(pile);
+    assertThat(auDela.presumee(LE_13_MAI_A_8H, AMPLITUDE_MAXIMALE_13H, List.of()).finPresumee()).contains(LE_11_MAI_A_8H);
+  }
+
+  /**
+   * Au-dela du seuil mais sous 24 h, une longue journee fermee compte entiere : elle n'est qu'une anomalie a examiner.
+   */
+  @Test
+  void shouldNePasPresumerUneLongueJourneeFermeeSous24H() {
+    JourneeDeTravail longue = new JourneeDeTravail(List.of(arriveeA(LE_11_MAI_A_8H), departA(LE_12_MAI_A_7H)));
+
+    assertThat(longue.presumee(LE_13_MAI_A_8H, AMPLITUDE_MAXIMALE_13H, List.of())).isEqualTo(longue);
+  }
+
   @Test
   void shouldNeRienOuvrirDUneJourneeAbandonneeEnPause() {
     JourneeDeTravail enPause = new JourneeDeTravail(List.of(arriveeA(LE_11_MAI_A_8H), pauseA(LE_11_MAI_A_12H)));

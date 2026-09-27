@@ -77,6 +77,26 @@ Feature: Feuille de temps hebdomadaire d'un operateur
       | 2026-05-11T05:00:00Z | 2026-05-11T10:00:00Z | false    |
       | 2026-05-11T11:00:00Z | 2026-05-11T15:00:00Z | false    |
 
+  Scenario: Une journee fermee de plus de 24 h s'arrete a sa fin presumee
+    # Issue #59 : lundi, Dupont ne pointe pas son depart ; le gestionnaire le saisit mercredi sur la meme journee. Plus
+    # de 24 h ne se vivent pas d'une traite : lundi s'arrete a son dernier fait connu, un ordre demarre a 16 h, et
+    # mardi comme mercredi restent vides au lieu de compter 24 h.
+    Given "dupont" est arrive a "2026-05-11T05:00:00Z"
+    And "dupont" a pointe "PAUSE" a "2026-05-11T10:00:00Z"
+    And "dupont" a pointe "REPRISE" a "2026-05-11T11:00:00Z"
+    And "dupont" a demarre un ordre de fabrication a "2026-05-11T14:00:00Z"
+    And il est "2026-05-13T10:00:00Z"
+    And le depart de "dupont" est regularise a "2026-05-13T08:00:00Z"
+    And la reponse a le statut http 201
+    When je consulte la feuille de temps de "dupont" pour la semaine 20 de 2026
+    Then la reponse a le statut http 200
+    And la presence du "2026-05-11" est
+      | debut                | fin                  | presumee |
+      | 2026-05-11T05:00:00Z | 2026-05-11T10:00:00Z | false    |
+      | 2026-05-11T11:00:00Z | 2026-05-11T14:00:00Z | true     |
+    And la presence du "2026-05-12" est vide
+    And la presence du "2026-05-13" est vide
+
   Scenario: Un poste de nuit du dimanche au lundi se lit sur deux semaines
     # E7 : minuit a Paris, 22:00Z, coupe la venue entre la semaine 19 et la semaine 20.
     Given "dupont" est arrive a "2026-05-10T18:00:00Z"

@@ -53,6 +53,10 @@ avec `DecoupageCalendaire`.
   au dernier fait connu et sa durée va dans `dureePresumee`, jamais dans `duree`. Le seuil vient de `SeuilDAmplitude`
   (table `parametrage`), le dernier pointage d'OF de `PointagesDAtelier` (table `evenement_d_atelier`), interrogé
   pour une journée abandonnée seulement.
+- **Une journée fermée plus de 24 h après son arrivée se lit comme abandonnée** (D13, issue #59) : `estPresumeePour`
+  la ferme à sa fin présumée, le dernier fait **de la fenêtre de recherche**, départ exclu. Entre le seuil et 24 h,
+  une journée fermée compte entière. 24 h est une borne physique, jamais un paramètre : la constante vit dans
+  `JourneeDeTravail`, recopiée dans `atelier`, `feuilledetemps`, `syntheseheures` et `coutderevient`.
 - **La semaine est toujours explicite.** Aucune « semaine courante » implicite. L'horloge ne sert qu'à juger
   l'abandon d'une journée : deux appels espacés peuvent donc différer.
 - **Aucun import de `atelier`, `feuilledetemps`, `operateur` ni `postedetravail`**, tous annotés `@BusinessContext`.

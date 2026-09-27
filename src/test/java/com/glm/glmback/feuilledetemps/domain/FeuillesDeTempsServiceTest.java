@@ -160,6 +160,26 @@ class FeuillesDeTempsServiceTest {
   }
 
   /**
+   * Issue #59 : une journee fermee de plus de 24 h n'est comptee que jusqu'a sa fin presumee, la fin de l'OF a 16:00.
+   * Mardi et mercredi ne portent rien.
+   */
+  @Test
+  void shouldBornerASaFinPresumeeUneJourneeFermeeDePlusDe24H() {
+    FeuilleDeTemps feuille = service(
+      PresencesEnMemoire.avec(List.of(journeeDuLundi7HAuMercredi8H())),
+      (operateur, periode) -> Optional.of(LE_LUNDI_11_MAI_2026_A_16H),
+      LE_MERCREDI_13_MAI_2026_A_8H
+    ).historique(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
+
+    assertThat(presenceDu(feuille, LUNDI_11_MAI_2026)).containsExactly(
+      new Plage(LE_LUNDI_11_MAI_2026_A_7H, Optional.of(LE_LUNDI_11_MAI_2026_A_12H)),
+      new Plage(LE_LUNDI_11_MAI_2026_A_13H, Optional.of(LE_LUNDI_11_MAI_2026_A_16H), true)
+    );
+    assertThat(presenceDu(feuille, MARDI_12_MAI_2026)).isEmpty();
+    assertThat(presenceDu(feuille, MERCREDI_13_MAI_2026)).isEmpty();
+  }
+
+  /**
    * E7 : le poste de nuit du dimanche au lundi se lit sur deux semaines, coupe a minuit a Paris.
    */
   @Test

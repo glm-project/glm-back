@@ -150,6 +150,50 @@ class JourneeDeTravailTest {
   }
 
   @Test
+  void shouldPresumerUneJourneeAbandonnee() {
+    assertThat(journeeDeDupontOuverteA7H().estPresumeePour(LE_10_MAI_2026_A_20H, AMPLITUDE_MAXIMALE_13H)).isFalse();
+    assertThat(journeeDeDupontOuverteA7H().estPresumeePour(LE_10_MAI_2026_A_20H.plusSeconds(1), AMPLITUDE_MAXIMALE_13H)).isTrue();
+  }
+
+  /**
+   * Issue #59 : une journee fermee de plus de 24 h n'a pas pu etre vecue d'une traite. Elle se lit comme abandonnee,
+   * a tout instant, sans etre abandonnee pour autant : un geste recu ensuite ne la concerne pas, et l'anomalie reste
+   * une amplitude excessive.
+   */
+  @Test
+  void shouldPresumerUneJourneeFermeeDePlusDe24H() {
+    assertThat(journeeDeDupontDu10A7HAu11A9H().estPresumeePour(LE_10_MAI_2026_A_8H, AMPLITUDE_MAXIMALE_13H)).isTrue();
+    assertThat(journeeDeDupontDu10A7HAu11A9H().estAbandonneePour(LE_11_MAI_2026_A_20H, AMPLITUDE_MAXIMALE_13H)).isFalse();
+  }
+
+  @Test
+  void shouldNePasPresumerUneJourneeFermeeDe24HPile() {
+    JourneeDeTravail pile = journeeDeDupontOuverteA7H().enregistre(departDeDupontA(LE_11_MAI_2026_A_7H));
+    JourneeDeTravail auDela = journeeDeDupontOuverteA7H().enregistre(departDeDupontA(LE_11_MAI_2026_A_7H.plusSeconds(1)));
+
+    assertThat(pile.estPresumeePour(LE_11_MAI_2026_A_20H, AMPLITUDE_MAXIMALE_13H)).isFalse();
+    assertThat(auDela.estPresumeePour(LE_11_MAI_2026_A_20H, AMPLITUDE_MAXIMALE_13H)).isTrue();
+  }
+
+  /**
+   * Au-dela du seuil mais sous 24 h, une longue journee fermee compte entiere : elle n'est qu'une anomalie a examiner.
+   */
+  @Test
+  void shouldNePasPresumerUneLongueJourneeFermeeSous24H() {
+    JourneeDeTravail longue = journeeDeDupontOuverteA7H().enregistre(departDeDupontA(LE_11_MAI_2026_A_3H));
+
+    assertThat(longue.estPresumeePour(LE_11_MAI_2026_A_20H, AMPLITUDE_MAXIMALE_13H)).isFalse();
+    assertThat(longue.fenetresA(LE_11_MAI_2026_A_20H, AMPLITUDE_MAXIMALE_13H, Optional.of(LE_10_MAI_2026_A_16H))).isEqualTo(
+      longue.fenetres()
+    );
+  }
+
+  @Test
+  void shouldNeJamaisPresumerUneJourneeSansArrivee() {
+    assertThat(JourneeDeTravail.ouverte(ID, OPERATEUR_ID_DUPONT).estPresumeePour(LE_11_MAI_2026_A_20H, AMPLITUDE_MAXIMALE_13H)).isFalse();
+  }
+
+  @Test
   void shouldNAvoirAucuneEtendueSansEvenement() {
     assertThat(JourneeDeTravail.ouverte(ID, OPERATEUR_ID_DUPONT).etendue()).isEmpty();
   }
@@ -267,6 +311,28 @@ class JourneeDeTravailTest {
     assertThat(reprisTard.fenetresA(LE_11_MAI_2026_A_9H, AMPLITUDE_MAXIMALE_13H, Optional.of(LE_10_MAI_2026_A_16H)))
       .last()
       .isEqualTo(new FenetreDePresence(LE_10_MAI_2026_A_20H.plusSeconds(3600), Optional.of(LE_10_MAI_2026_A_20H.plusSeconds(3600)), true));
+  }
+
+  /**
+   * Issue #59 : ici, c'est le depart qu'on ne croit pas. Seuls les faits de la fenetre de recherche comptent : la
+   * pause, la reprise et le depart du 11 en sont exclus, et ce qui suit la fin presumee disparait.
+   */
+  @Test
+  void shouldFermerUneJourneeDePlusDe24HAuDernierFaitDeLaFenetreDeRecherche() {
+    assertThat(journeeDeDupontDu10A7HAu11A9H().fenetresA(LE_11_MAI_2026_A_20H, AMPLITUDE_MAXIMALE_13H, Optional.empty())).containsExactly(
+      new FenetreDePresence(LE_10_MAI_2026_A_7H, Optional.of(LE_10_MAI_2026_A_12H)),
+      new FenetreDePresence(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_13H), true)
+    );
+  }
+
+  @Test
+  void shouldFermerUneJourneeDePlusDe24HAuDernierPointageDeLaFenetre() {
+    assertThat(
+      journeeDeDupontDu10A7HAu11A9H().fenetresA(LE_11_MAI_2026_A_20H, AMPLITUDE_MAXIMALE_13H, Optional.of(LE_10_MAI_2026_A_16H))
+    ).containsExactly(
+      new FenetreDePresence(LE_10_MAI_2026_A_7H, Optional.of(LE_10_MAI_2026_A_12H)),
+      new FenetreDePresence(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_16H), true)
+    );
   }
 
   private static JourneeDeTravail journeeDeLundiSansDepart() {

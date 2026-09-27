@@ -219,6 +219,19 @@ public final class AtelierFixture {
       .enregistre(departDeDupontA(LE_10_MAI_2026_A_17H));
   }
 
+  /**
+   * Issue #59 : Dupont arrive le 10 a 7 h et prend sa pause de midi, puis ne pointe plus rien avant une pause le 11 a
+   * 3 h, une reprise a 7 h et un depart a 9 h, rattaches a la meme journee par une version anterieure au lot 3.
+   */
+  public static JourneeDeTravail journeeDeDupontDu10A7HAu11A9H() {
+    return journeeDeDupontOuverteA7H()
+      .enregistre(pauseDeDupontA(LE_10_MAI_2026_A_12H))
+      .enregistre(repriseDeDupontA(LE_10_MAI_2026_A_13H))
+      .enregistre(pauseDeDupontA(LE_11_MAI_2026_A_3H))
+      .enregistre(repriseDeDupontA(LE_11_MAI_2026_A_7H))
+      .enregistre(departDeDupontA(LE_11_MAI_2026_A_9H));
+  }
+
   public static EvenementDePresence arriveeDeDupontA(Instant date) {
     return presenceDeDupont(TypeDEvenementDePresence.ARRIVEE, date);
   }

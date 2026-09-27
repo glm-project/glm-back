@@ -1,6 +1,7 @@
 package com.glm.glmback.coutderevient.domain;
 
 import com.glm.glmback.shared.error.domain.Assert;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -36,6 +37,8 @@ public record JourneeDeTravail(List<EvenementDePresence> journal, Optional<Insta
     EvenementDePresence::dateDeSurvenue
   ).thenComparing(EvenementDePresence::type);
 
+  private static final Duration JOURNEE_INVRAISEMBLABLE = Duration.ofHours(24);
+
   public JourneeDeTravail {
     Assert.field("journal", journal).notNull().noNullElement();
     Assert.notNull("fin presumee", finPresumee);
@@ -43,7 +46,7 @@ public record JourneeDeTravail(List<EvenementDePresence> journal, Optional<Insta
     List<EvenementDePresence> evenements = journal;
     finPresumee.ifPresent(fin -> {
       Assert.notEmpty("journal d'une journee presumee", evenements);
-      Assert.field("fin presumee", fin).afterOrAt(evenements.getLast().dateDeSurvenue());
+      Assert.field("fin presumee", fin).afterOrAt(evenements.getFirst().dateDeSurvenue());
     });
   }
 
@@ -55,22 +58,23 @@ public record JourneeDeTravail(List<EvenementDePresence> journal, Optional<Insta
   }
 
   /**
-   * La meme venue lue a cet instant. Sans depart et au-dela du seuil, elle est abandonnee et recoit une fin presumee :
-   * son dernier evenement, ou le dernier pointage d'OF de l'operateur s'il est plus tardif et tombe entre l'arrivee et
+   * La meme venue lue a cet instant. Sans depart et au-dela du seuil, elle est abandonnee ; fermee plus de 24 h apres
+   * son arrivee, elle n'a pas pu etre vecue d'une traite (issue #59). L'une comme l'autre recoit une fin presumee : son
+   * dernier fait connu, ou le dernier pointage d'OF de l'operateur s'il est plus tardif et tombe entre l'arrivee et
    * l'arrivee plus le seuil. La nuit n'est alors plus valorisee.
    */
   public JourneeDeTravail presumee(Instant maintenant, AmplitudeMaximale seuil, List<Instant> pointagesDeLOperateur) {
-    if (journal.isEmpty() || estFermee()) {
+    if (journal.isEmpty()) {
       return this;
     }
 
     Instant arrivee = journal.getFirst().dateDeSurvenue();
     Instant limite = arrivee.plus(seuil.value());
-    if (!maintenant.isAfter(limite)) {
+    if (!estPresumeeA(maintenant, limite)) {
       return this;
     }
 
-    Instant dernierFait = journal.getLast().dateDeSurvenue();
+    Instant dernierFait = dernierFaitRetenu(limite);
     Instant fin = pointagesDeLOperateur
       .stream()
       .filter(pointage -> !pointage.isBefore(arrivee) && !pointage.isAfter(limite))
@@ -82,18 +86,59 @@ public record JourneeDeTravail(List<EvenementDePresence> journal, Optional<Insta
   }
 
   /**
-   * Les intervalles ou l'operateur etait present et non en pause, dans l'ordre.
+   * Abandonnee a cet instant si elle est encore ouverte ; fermee, seulement si son depart suit l'arrivee de plus de
+   * 24 h — une borne physique, et non un parametre de l'entreprise, que l'amplitude maximale ne peut jamais atteindre.
+   */
+  private boolean estPresumeeA(Instant maintenant, Instant limite) {
+    return depart()
+      .map(date -> date.isAfter(journal.getFirst().dateDeSurvenue().plus(JOURNEE_INVRAISEMBLABLE)))
+      .orElseGet(() -> maintenant.isAfter(limite));
+  }
+
+  /**
+   * Le dernier fait connu d'une venue ouverte, quel qu'il soit. Celui d'une venue fermee se cherche entre l'arrivee et
+   * l'arrivee plus le seuil, puisque c'est son depart qu'on ne croit pas.
+   */
+  private Instant dernierFaitRetenu(Instant limite) {
+    if (!estFermee()) {
+      return journal.getLast().dateDeSurvenue();
+    }
+
+    return journal
+      .stream()
+      .map(EvenementDePresence::dateDeSurvenue)
+      .filter(date -> !date.isAfter(limite))
+      .reduce((precedent, suivant) -> suivant)
+      .orElseThrow();
+  }
+
+  /**
+   * Les intervalles ou l'operateur etait present et non en pause, dans l'ordre, coupes a la fin presumee : celui qui la
+   * franchit, ou reste ouvert, s'y arrete, et ceux qui commencent apres disparaissent.
    */
   public List<Plage> fenetres() {
-    return fenetres(journal)
-      .stream()
-      .map(fenetre ->
-        finPresumee
-          .filter(fin -> fenetre.fin().isEmpty())
-          .map(fin -> new Plage(fenetre.debut(), Optional.of(fin)))
-          .orElse(fenetre)
+    return finPresumee
+      .map(fin ->
+        fenetres(journal)
+          .stream()
+          .filter(fenetre -> !fenetre.debut().isAfter(fin))
+          .map(fenetre -> coupee(fenetre, fin))
+          .toList()
       )
-      .toList();
+      .orElseGet(() -> fenetres(journal));
+  }
+
+  private static Plage coupee(Plage fenetre, Instant fin) {
+    if (
+      fenetre
+        .fin()
+        .filter(date -> !date.isAfter(fin))
+        .isPresent()
+    ) {
+      return fenetre;
+    }
+
+    return new Plage(fenetre.debut(), Optional.of(fin));
   }
 
   /**
@@ -125,10 +170,10 @@ public record JourneeDeTravail(List<EvenementDePresence> journal, Optional<Insta
   }
 
   /**
-   * Le depart, ou a defaut la fin presumee d'une venue abandonnee.
+   * La fin presumee, qui prime sur un depart qu'on ne croit pas, ou a defaut le depart.
    */
   private Optional<Instant> fin() {
-    return depart().or(() -> finPresumee);
+    return finPresumee.or(this::depart);
   }
 
   private boolean estFermee() {

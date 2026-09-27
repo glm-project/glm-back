@@ -55,6 +55,7 @@ public class CoutDeRevientSteps {
   private final Map<String, String> operateurs = new HashMap<>();
   private final Map<String, String> elements = new HashMap<>();
   private final Map<String, String> suivis = new HashMap<>();
+  private final Map<String, String> journees = new HashMap<>();
 
   @Given("le rapport connait le poste {string} de nature {string} a {string} de l'heure")
   public void leRapportConnaitLePoste(String alias, String nature, String coutHoraire) {
@@ -101,6 +102,21 @@ public class CoutDeRevientSteps {
   public void prendSonPosteA(String operateur, String instant) {
     horloge.ilEst(Instant.parse(instant));
     rest.post(JOURNEES_URI, JSON.writeValueAsString(Map.of("id", UUID.randomUUID(), "operateur", operateurs.get(operateur))));
+    journees.put(operateur, id());
+  }
+
+  /**
+   * Un depart saisi par le gestionnaire sur la derniere journee ouverte par l'operateur : la seule voie de l'API qui
+   * ferme encore une journee au-dela de 24 h.
+   */
+  @Given("le depart de {string} est rattrape sur sa journee a {string}")
+  public void leDepartEstRattrapeSurSaJourneeA(String operateur, String instant) {
+    horloge.ilEst(Instant.parse(instant));
+    rest.post(
+      JOURNEES_URI + "/" + journees.get(operateur) + "/regularisations",
+      JSON.writeValueAsString(Map.of("type", "DEPART", "dateDeSurvenue", instant))
+    );
+    assertThat(CucumberRestTestContext.getStatus().value()).as("la regularisation du depart doit etre acceptee").isEqualTo(201);
   }
 
   @Given("{string} pointe sa presence {string} a {string}")

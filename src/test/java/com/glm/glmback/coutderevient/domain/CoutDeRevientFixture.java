@@ -31,6 +31,7 @@ public final class CoutDeRevientFixture {
   public static final Instant LE_12_MAI_A_9H = Instant.parse("2026-05-12T09:00:00Z");
   public static final Instant LE_12_MAI_A_10H = Instant.parse("2026-05-12T10:00:00Z");
   public static final Instant LE_12_MAI_A_18H = Instant.parse("2026-05-12T18:00:00Z");
+  public static final Instant LE_13_MAI_A_8H = Instant.parse("2026-05-13T08:00:00Z");
   public static final AmplitudeMaximale AMPLITUDE_MAXIMALE_13H = new AmplitudeMaximale(Duration.ofHours(13));
 
   public static final ElementId ELEMENT_ID_OF = new ElementId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
@@ -85,6 +86,23 @@ public final class CoutDeRevientFixture {
   /**
    * Lundi, Dupont arrive a 8 h, prend sa pause de midi et ne pointe jamais son depart.
    */
+  /**
+   * Issue #59 : lundi, Dupont arrive a 8 h et prend sa pause de midi, puis ne pointe plus rien avant une pause mardi a
+   * 10 h et un depart mercredi a 8 h, rattaches a la meme journee par une version anterieure au lot 3.
+   */
+  public static JourneeDeTravail journeeDuLundi8HAuMercredi8H() {
+    return new JourneeDeTravail(
+      List.of(
+        arriveeA(LE_11_MAI_A_8H),
+        pauseA(LE_11_MAI_A_12H),
+        repriseA(LE_11_MAI_A_13H),
+        pauseA(LE_12_MAI_A_10H),
+        repriseA(LE_12_MAI_A_18H),
+        departA(LE_13_MAI_A_8H)
+      )
+    );
+  }
+
   public static JourneeDeTravail journeeDe8HSansDepart() {
     return new JourneeDeTravail(List.of(arriveeA(LE_11_MAI_A_8H), pauseA(LE_11_MAI_A_12H), repriseA(LE_11_MAI_A_13H)));
   }

@@ -108,6 +108,77 @@ class JourneeDeTravailTest {
   }
 
   @Test
+  void shouldPresumerUneJourneeAbandonnee() {
+    JourneeDeTravail lundi = journeeDuLundiDe7HSansDepart();
+
+    assertThat(lundi.estPresumeePour(LE_LUNDI_11_MAI_2026_A_20H, AMPLITUDE_MAXIMALE_13H)).isFalse();
+    assertThat(lundi.estPresumeePour(LE_LUNDI_11_MAI_2026_A_20H.plusSeconds(1), AMPLITUDE_MAXIMALE_13H)).isTrue();
+  }
+
+  /**
+   * Issue #59 : une journee fermee de plus de 24 h n'a pas pu etre vecue d'une traite. Elle se lit comme abandonnee,
+   * a tout instant, sans cesser pour autant d'etre fermee : l'atelier ne la tient pas pour abandonnee.
+   */
+  @Test
+  void shouldPresumerUneJourneeFermeeDePlusDe24H() {
+    JourneeDeTravail troisJours = journeeDuLundi7HAuMercredi8H();
+
+    assertThat(troisJours.estPresumeePour(LE_LUNDI_11_MAI_2026_A_8H, AMPLITUDE_MAXIMALE_13H)).isTrue();
+    assertThat(troisJours.estAbandonneePour(LE_MERCREDI_13_MAI_2026_A_8H, AMPLITUDE_MAXIMALE_13H)).isFalse();
+  }
+
+  @Test
+  void shouldNePasPresumerUneJourneeFermeeDe24HPile() {
+    JourneeDeTravail pile = new JourneeDeTravail(List.of(arriveeA(LE_LUNDI_11_MAI_2026_A_7H), departA(LE_MARDI_12_MAI_2026_A_7H)));
+    JourneeDeTravail auDela = new JourneeDeTravail(
+      List.of(arriveeA(LE_LUNDI_11_MAI_2026_A_7H), departA(LE_MARDI_12_MAI_2026_A_7H.plusSeconds(1)))
+    );
+
+    assertThat(pile.estPresumeePour(LE_MERCREDI_13_MAI_2026_A_8H, AMPLITUDE_MAXIMALE_13H)).isFalse();
+    assertThat(auDela.estPresumeePour(LE_MERCREDI_13_MAI_2026_A_8H, AMPLITUDE_MAXIMALE_13H)).isTrue();
+  }
+
+  /**
+   * Au-dela du seuil mais sous 24 h, une longue journee fermee compte entiere : elle n'est qu'une anomalie a examiner.
+   */
+  @Test
+  void shouldNePasPresumerUneLongueJourneeFermeeSous24H() {
+    JourneeDeTravail longue = new JourneeDeTravail(List.of(arriveeA(LE_LUNDI_11_MAI_2026_A_7H), departA(LE_MARDI_12_MAI_2026_A_2H)));
+
+    assertThat(longue.estPresumeePour(LE_MERCREDI_13_MAI_2026_A_8H, AMPLITUDE_MAXIMALE_13H)).isFalse();
+  }
+
+  @Test
+  void shouldNeJamaisPresumerUneJourneeSansEvenement() {
+    assertThat(new JourneeDeTravail(List.of()).estPresumeePour(LE_MERCREDI_13_MAI_2026_A_8H, AMPLITUDE_MAXIMALE_13H)).isFalse();
+  }
+
+  /**
+   * Le dernier fait connu se cherche dans la fenetre de recherche : la pause de mardi et le depart de mercredi en
+   * sont exclus, et tout ce qui suit la fin presumee disparait.
+   */
+  @Test
+  void shouldFermerUneJourneeDePlusDe24HAuDernierFaitDeLaFenetreDeRecherche() {
+    JourneeDeTravail presumee = journeeDuLundi7HAuMercredi8H().presumee(AMPLITUDE_MAXIMALE_13H, Optional.empty());
+
+    assertThat(presumee.finPresumee()).contains(LE_LUNDI_11_MAI_2026_A_13H);
+    assertThat(presumee.fenetres()).containsExactly(
+      new Plage(LE_LUNDI_11_MAI_2026_A_7H, Optional.of(LE_LUNDI_11_MAI_2026_A_12H)),
+      new Plage(LE_LUNDI_11_MAI_2026_A_13H, Optional.of(LE_LUNDI_11_MAI_2026_A_13H), true)
+    );
+  }
+
+  @Test
+  void shouldFermerUneJourneeDePlusDe24HAuDernierPointageDAtelierDeLaFenetre() {
+    JourneeDeTravail presumee = journeeDuLundi7HAuMercredi8H().presumee(AMPLITUDE_MAXIMALE_13H, Optional.of(LE_LUNDI_11_MAI_2026_A_16H));
+
+    assertThat(presumee.fenetres()).containsExactly(
+      new Plage(LE_LUNDI_11_MAI_2026_A_7H, Optional.of(LE_LUNDI_11_MAI_2026_A_12H)),
+      new Plage(LE_LUNDI_11_MAI_2026_A_13H, Optional.of(LE_LUNDI_11_MAI_2026_A_16H), true)
+    );
+  }
+
+  @Test
   void shouldChercherLesFaitsConnusEntreLArriveeEtLeSeuil() {
     assertThat(journeeDuLundiDe7HSansDepart().fenetreDeRecherche(AMPLITUDE_MAXIMALE_13H)).contains(
       new Plage(LE_LUNDI_11_MAI_2026_A_7H, Optional.of(LE_LUNDI_11_MAI_2026_A_20H))

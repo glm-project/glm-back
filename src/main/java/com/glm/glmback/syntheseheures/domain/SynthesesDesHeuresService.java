@@ -103,11 +103,11 @@ public final class SynthesesDesHeuresService {
   }
 
   /**
-   * La journee telle qu'on la lit maintenant : une journee abandonnee est fermee a sa fin presumee, et le dernier
-   * pointage d'OF de l'operateur n'est demande que pour elle.
+   * La journee telle qu'on la lit maintenant : une journee abandonnee, ou fermee plus de 24 h apres son arrivee, est
+   * fermee a sa fin presumee, et le dernier pointage d'OF de l'operateur n'est demande que pour elle.
    */
   private JourneeDeTravail lue(OperateurId operateur, JourneeDeTravail journee, Instant maintenant, AmplitudeMaximale amplitude) {
-    if (!journee.estAbandonneePour(maintenant, amplitude)) {
+    if (!journee.estPresumeePour(maintenant, amplitude)) {
       return journee;
     }
 
