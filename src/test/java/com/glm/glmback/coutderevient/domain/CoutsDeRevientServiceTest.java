@@ -327,6 +327,52 @@ class CoutsDeRevientServiceTest {
     assertThat(rapport.temps().travail()).isEqualTo(Duration.ZERO);
   }
 
+  /**
+   * Issue #54 : un depart pointe mardi hors journee ouvre une journee par une arrivee implicite a la meme heure, et
+   * la base peut rendre le depart en premier. Le rapport se calcule, sans que la journee vide ajoute du temps.
+   */
+  @Test
+  void shouldValoriserMalgreUneArriveeImpliciteRendueApresSonDepart() {
+    AtelierEnMemoire atelier = new AtelierEnMemoire()
+      .connait(ELEMENT_VALORISE_OF)
+      .aTravaille(ELEMENT_ID_OF, suivi(fraisage(DEBUT, LE_11_MAI_A_9H)))
+      .aEtePresent(
+        new PresenceDUnOperateur(
+          OPERATEUR_ID_DUPONT,
+          List.of(journeeDe8HA17HAvecPauseDeMidi(), new JourneeDeTravail(List.of(departA(LE_12_MAI_A_9H), arriveeA(LE_12_MAI_A_9H))))
+        )
+      );
+
+    CoutDeRevient rapport = service(atelier, LE_12_MAI_A_18H).rapport(ELEMENT_ID_OF);
+
+    assertThat(rapport.temps().travail()).isEqualTo(Duration.ofHours(7));
+  }
+
+  /**
+   * Issue #54 : le calcul du cout ne doit jamais echouer. Une presence que l'automate refuse est ignoree geste par
+   * geste, et le travail se valorise sur ce qui reste.
+   */
+  @Test
+  void shouldValoriserMalgreUnePresenceIncoherente() {
+    AtelierEnMemoire atelier = new AtelierEnMemoire()
+      .connait(ELEMENT_VALORISE_OF)
+      .aTravaille(ELEMENT_ID_OF, suivi(fraisage(DEBUT, LE_11_MAI_A_9H), fraisage(FIN, LE_11_MAI_A_11H), fraisage(FIN, LE_11_MAI_A_14H)))
+      .aEtePresent(
+        new PresenceDUnOperateur(
+          OPERATEUR_ID_DUPONT,
+          List.of(
+            new JourneeDeTravail(
+              List.of(arriveeA(LE_11_MAI_A_8H), arriveeA(LE_11_MAI_A_10H), departA(LE_11_MAI_A_17H), departA(LE_11_MAI_A_21H))
+            )
+          )
+        )
+      );
+
+    CoutDeRevient rapport = service(atelier, LE_12_MAI_A_18H).rapport(ELEMENT_ID_OF);
+
+    assertThat(rapport.temps().travail()).isEqualTo(Duration.ofHours(2));
+  }
+
   private static CoutsDeRevientService service(AtelierEnMemoire atelier) {
     return service(atelier, MAINTENANT);
   }
