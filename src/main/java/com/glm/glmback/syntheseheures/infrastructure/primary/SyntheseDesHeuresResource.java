@@ -41,8 +41,9 @@ class SyntheseDesHeuresResource {
   @Operation(
     summary = "Lire la synthese des heures hebdomadaire d'un operateur",
     description = """
-    Rend les sept jours de la semaine ISO demandee. Chaque jour porte le journal brut des pointages (arrivee, pause,
-    reprise, depart) et la duree travaillee, calculee sur les fenetres de presence, pauses exclues.
+    Rend les sept jours de la semaine ISO demandee. Chaque jour porte le journal brut des pointages (arrivee, depart)
+    et la duree de presence, calculee sur les fenetres de presence. La pause n'est pas un pointage de presence : la
+    duree la compte.
 
     La semaine est toujours explicite : aucune semaine courante implicite. L'annee est celle des semaines ISO, qui
     differe de l'annee civile a ses bornes — la semaine 1 de 2026 commence le 29 decembre 2025.

@@ -381,14 +381,14 @@ une heure de travail.
 ### Ce que le relevé montre
 
 Sept jours toujours, du lundi au dimanche de la semaine ISO demandée, vides compris. Pour chaque jour : le **journal
-brut des pointages** horodatés (arrivée, pause, reprise, départ), et la **durée travaillée** — la somme des fenêtres
-de présence closes, pauses exclues, jamais l'amplitude arrivée→départ. Le total de la semaine est la somme des sept
-jours.
+brut des pointages** horodatés (arrivée, départ), et la **durée** — la somme des fenêtres de présence closes. La pause
+n'étant pas un pointage de présence ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)), la
+durée la compte. Le total de la semaine est la somme des sept jours.
 
 La durée travaillée est celle qui est **pointée**. À côté, chaque jour et la semaine portent une **durée présumée**
 (`dureePresumee`, `dureePresumeeTotale`) : ce qu'une journée abandonnée compte jusqu'à sa fin présumée, et que
-l'assistante doit faire confirmer avant de transmettre à la paie. Dans l'exemple de référence, lundi vaut 5 h
-pointées et 3 h présumées, puis 9 h pointées une fois le départ régularisé. Un poste de nuit est coupé à minuit, dans
+l'assistante doit faire confirmer. Dans l'exemple de référence, lundi vaut 9 h présumées — sans départ, la journée n'a
+qu'une fenêtre, présumée en entier —, puis 10 h pointées une fois le départ régularisé. Un poste de nuit est coupé à minuit, dans
 le fuseau de l'entreprise, y compris quand minuit sépare deux semaines.
 
 **Une journée abandonnée est fermée à sa fin présumée** (lot 5 de [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md)) : sans départ et au-delà du seuil d'amplitude, lu dans la table du paramétrage, sa dernière fenêtre ouverte se ferme au dernier fait connu — son dernier pointage de présence, ou le dernier pointage d'OF de l'opérateur s'il est plus tardif et tombe entre l'arrivée et l'arrivée plus le seuil. Ce qui en découle est marqué **présumé**, à confirmer par une régularisation du départ. Juger l'abandon suppose de savoir quand on lit : ce contexte reçoit donc une horloge, comme `coutderevient`, et deux appels espacés ne rendent plus forcément la même chose. La semaine, elle, reste toujours explicite.
@@ -424,9 +424,8 @@ anomalies.
 
 ### Points ouverts
 
-1. **La mesure d'heures retenue** (fenêtres de présence, pauses exclues) reste à confirmer avec le client : le même
-   point ouvert que celui documenté dans `atelier` (« quelle mesure alimente la paie ? ») — l'amplitude
-   arrivée→départ n'a pas été retenue ici, mais rien n'exclut qu'elle le soit un jour à côté de l'autre mesure.
+1. **La mesure d'heures retenue** — fermé le 28/09/2026, avec le point 2 d'`atelier` : la présence ne sert pas à
+   payer, et le relevé compte la pause ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)).
 2. **Les heures supplémentaires ne sont pas calculées**, faute de règle fournie par le client.
 3. **Le catalogue transverse des anomalies et l'écran récapitulatif du gestionnaire restent à concevoir**, côté
    `atelier` (voir ci-dessus).

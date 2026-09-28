@@ -8,14 +8,14 @@ Responsabilité, frontières et invariants de ce contexte. Les règles de code c
 
 **Relever les heures travaillées d'un opérateur, semaine par semaine, pour alimenter la paie.** Un seul acte : lire
 le journal de présence d'un opérateur sur une semaine ISO donnée, jour par jour — le journal brut des pointages
-(arrivée, pause, reprise, départ), et la durée travaillée qui en découle.
+(arrivée, départ), et la durée qui en découle.
 
 C'est une **projection transverse**, comme `feuilledetemps` et `coutderevient` : un contexte purement lecteur, qui
 ne possède aucune table, n'écrit rien, et recalcule tout à chaque appel.
 
 ## Ce dont il ne s'occupe pas
 
-- **Le pointage et sa correction** — arrivée, pause, départ, régularisation, annulation appartiennent à `atelier`.
+- **Le pointage et sa correction** — arrivée, départ, régularisation, annulation appartiennent à `atelier`.
   Ce contexte ne propose aucune écriture.
 - **La feuille de paie, ou tout calcul de paie.** Ce contexte relève des heures ; il ne dit pas ce qui est payé, à
   quel taux, ni ce qui compte comme heure supplémentaire. « Synthèse des heures », pas « rapport de paie » — le nom
@@ -33,7 +33,7 @@ ne possède aucune table, n'écrit rien, et recalcule tout à chaque appel.
 persistance — l'objet naît et meurt dans l'appel.
 
 Chaque `JourDeSynthese` porte ses pointages (`List<EvenementDePresence>`) et sa `duree` (`java.time.Duration`, somme
-des fenêtres de présence closes de ce jour, pauses exclues).
+des fenêtres de présence closes de ce jour ; la pause n'étant pas un pointage de présence, elle y est comptée).
 
 `SynthesesDesHeuresService` est la fabrique : elle demande les journées qui **recouvrent** la semaine, replie chacune
 en pointages classés et en fenêtres de présence via `JourneeDeTravail`, puis ramène le tout aux jours du calendrier
@@ -74,8 +74,8 @@ le même cas limite. Rien n'oblige les deux implémentations à rester identique
 c'est même tout l'intérêt de la frontière : chacune répond au besoin de son propre rapport.
 
 **Ce cas n'est pas atteignable par l'API réelle.** `atelier` rejoue et valide **tout** le journal à chaque écriture,
-y compris une annulation — vérifié en pratique : annuler une pause qui laisserait une reprise orpheline est refusé
-par `atelier` lui-même (`409 transition-de-presence-interdite`), avant même d'atteindre ce contexte. Conséquence
+y compris une annulation — vérifié en pratique : annuler une arrivée qui laisserait un départ orphelin est refusé par
+`atelier` lui-même (`409 transition-de-presence-interdite`), avant même d'atteindre ce contexte. Conséquence
 assumée (YAGNI) : ce contexte n'a **jamais porté de champ `valide`/anomalie**, ni domaine ni API — un flag qui
 vaudrait toujours vrai ne porte aucune information, et l'exposer aurait ajouté une surface d'API et de tests sans
 justification. Le pointage fautif est donc simplement absent du relevé, comme s'il n'existait pas.

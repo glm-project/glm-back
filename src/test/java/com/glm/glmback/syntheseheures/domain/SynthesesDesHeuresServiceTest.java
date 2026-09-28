@@ -84,18 +84,21 @@ class SynthesesDesHeuresServiceTest {
 
   @Test
   void shouldPorterLesPointagesDuJourTriesParHeure() {
-    SyntheseDesHeures synthese = syntheseDeDupont(PresencesEnMemoire.avec(List.of(journeeDuLundiDe8HA17HAvecPauseDeMidi())));
+    SyntheseDesHeures synthese = syntheseDeDupont(PresencesEnMemoire.avec(List.of(journeeDuLundiDe8HA17H())));
 
     assertThat(jourDe(synthese, LUNDI_11_MAI_2026).pointages())
       .extracting(EvenementDePresence::dateDeSurvenue)
-      .containsExactly(LE_LUNDI_11_MAI_2026_A_8H, LE_LUNDI_11_MAI_2026_A_12H, LE_LUNDI_11_MAI_2026_A_13H, LE_LUNDI_11_MAI_2026_A_17H);
+      .containsExactly(LE_LUNDI_11_MAI_2026_A_8H, LE_LUNDI_11_MAI_2026_A_17H);
   }
 
+  /**
+   * La pause de midi n'est pas un pointage de presence : la duree du jour court de l'arrivee au depart.
+   */
   @Test
-  void shouldSommerLesFenetresFermeesDeLaPauseDeMidiPourLaDureeDuJour() {
-    SyntheseDesHeures synthese = syntheseDeDupont(PresencesEnMemoire.avec(List.of(journeeDuLundiDe8HA17HAvecPauseDeMidi())));
+  void shouldSommerLesFenetresFermeesPourLaDureeDuJour() {
+    SyntheseDesHeures synthese = syntheseDeDupont(PresencesEnMemoire.avec(List.of(journeeDuLundiDe8HA17H())));
 
-    assertThat(jourDe(synthese, LUNDI_11_MAI_2026).duree()).isEqualTo(Duration.ofHours(8));
+    assertThat(jourDe(synthese, LUNDI_11_MAI_2026).duree()).isEqualTo(Duration.ofHours(9));
   }
 
   /**
@@ -136,7 +139,7 @@ class SynthesesDesHeuresServiceTest {
    */
   @Test
   void shouldIgnorerLePointageFautifSansLeCompterDansLaDuree() {
-    SyntheseDesHeures synthese = syntheseDeDupont(PresencesEnMemoire.avec(List.of(journeeDuMercrediAvecPauseSansArrivee())));
+    SyntheseDesHeures synthese = syntheseDeDupont(PresencesEnMemoire.avec(List.of(journeeDuMercrediAvecDepartSansArrivee())));
 
     JourDeSynthese mercredi = jourDe(synthese, MERCREDI_13_MAI_2026);
     assertThat(mercredi.pointages()).isEmpty();
@@ -145,16 +148,14 @@ class SynthesesDesHeuresServiceTest {
 
   @Test
   void shouldSommerLaDureeDesSeptJoursPourLaDureeTotale() {
-    SyntheseDesHeures synthese = syntheseDeDupont(
-      PresencesEnMemoire.avec(List.of(journeeDuLundiDe8HA17HAvecPauseDeMidi(), journeeDuMardiOuverteA8H()))
-    );
+    SyntheseDesHeures synthese = syntheseDeDupont(PresencesEnMemoire.avec(List.of(journeeDuLundiDe8HA17H(), journeeDuMardiOuverteA8H())));
 
-    assertThat(synthese.dureeTotale()).isEqualTo(Duration.ofHours(8));
+    assertThat(synthese.dureeTotale()).isEqualTo(Duration.ofHours(9));
   }
 
   /**
    * E2 : lundi sans depart, lu mardi. La journee est abandonnee et fermee a sa fin presumee, la fin de l'OF 43 a
-   * 16:00 : 5 h pointees, 3 h presumees.
+   * 16:00. Sans depart, elle n'a qu'une fenetre : ses 9 h sont presumees, aucune n'est pointee.
    */
   @Test
   void shouldSeparerLesHeuresPointeesDesHeuresPresumees() {
@@ -171,10 +172,10 @@ class SynthesesDesHeuresServiceTest {
     ).synthese(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
 
     JourDeSynthese lundi = jourDe(synthese, LUNDI_11_MAI_2026);
-    assertThat(lundi.duree()).isEqualTo(Duration.ofHours(5));
-    assertThat(lundi.dureePresumee()).isEqualTo(Duration.ofHours(3));
-    assertThat(synthese.dureeTotale()).isEqualTo(Duration.ofHours(5));
-    assertThat(synthese.dureePresumeeTotale()).isEqualTo(Duration.ofHours(3));
+    assertThat(lundi.duree()).isZero();
+    assertThat(lundi.dureePresumee()).isEqualTo(Duration.ofHours(9));
+    assertThat(synthese.dureeTotale()).isZero();
+    assertThat(synthese.dureePresumeeTotale()).isEqualTo(Duration.ofHours(9));
     assertThat(recherche.get()).isEqualTo(new Plage(LE_LUNDI_11_MAI_2026_A_7H, Optional.of(LE_LUNDI_11_MAI_2026_A_20H)));
   }
 
@@ -205,27 +206,27 @@ class SynthesesDesHeuresServiceTest {
       LE_LUNDI_11_MAI_2026_A_20H
     ).synthese(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
 
-    assertThat(jourDe(synthese, LUNDI_11_MAI_2026).duree()).isEqualTo(Duration.ofHours(5));
+    assertThat(jourDe(synthese, LUNDI_11_MAI_2026).duree()).isZero();
     assertThat(jourDe(synthese, LUNDI_11_MAI_2026).dureePresumee()).isZero();
   }
 
   @Test
   void shouldNeRienPresumerDUneJourneeFermee() {
     SyntheseDesHeures synthese = service(
-      PresencesEnMemoire.avec(List.of(journeeDuLundiDe8HA17HAvecPauseDeMidi())),
+      PresencesEnMemoire.avec(List.of(journeeDuLundiDe8HA17H())),
       (operateur, periode) -> {
         throw new AssertionError("aucun pointage ne doit etre cherche pour une journee fermee");
       },
       LE_MARDI_12_MAI_2026_A_20H
     ).synthese(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
 
-    assertThat(synthese.dureeTotale()).isEqualTo(Duration.ofHours(8));
+    assertThat(synthese.dureeTotale()).isEqualTo(Duration.ofHours(9));
     assertThat(synthese.dureePresumeeTotale()).isZero();
   }
 
   /**
    * Issue #59 : une journee fermee de plus de 24 h n'est comptee que jusqu'a sa fin presumee, la fin de l'OF 43 a
-   * 16:00 : 5 h pointees et 3 h presumees lundi, rien mardi ni mercredi.
+   * 16:00 : 9 h presumees lundi, rien mardi ni mercredi.
    */
   @Test
   void shouldBornerASaFinPresumeeUneJourneeFermeeDePlusDe24H() {
@@ -241,12 +242,12 @@ class SynthesesDesHeuresServiceTest {
       LE_MERCREDI_13_MAI_2026_A_12H
     ).synthese(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
 
-    assertThat(jourDe(synthese, LUNDI_11_MAI_2026).duree()).isEqualTo(Duration.ofHours(5));
-    assertThat(jourDe(synthese, LUNDI_11_MAI_2026).dureePresumee()).isEqualTo(Duration.ofHours(3));
+    assertThat(jourDe(synthese, LUNDI_11_MAI_2026).duree()).isZero();
+    assertThat(jourDe(synthese, LUNDI_11_MAI_2026).dureePresumee()).isEqualTo(Duration.ofHours(9));
     assertThat(jourDe(synthese, MARDI_12_MAI_2026).duree()).isZero();
     assertThat(jourDe(synthese, MERCREDI_13_MAI_2026).duree()).isZero();
-    assertThat(synthese.dureeTotale()).isEqualTo(Duration.ofHours(5));
-    assertThat(synthese.dureePresumeeTotale()).isEqualTo(Duration.ofHours(3));
+    assertThat(synthese.dureeTotale()).isZero();
+    assertThat(synthese.dureePresumeeTotale()).isEqualTo(Duration.ofHours(9));
     assertThat(recherche.get()).isEqualTo(new Plage(LE_LUNDI_11_MAI_2026_A_7H, Optional.of(LE_LUNDI_11_MAI_2026_A_20H)));
   }
 
