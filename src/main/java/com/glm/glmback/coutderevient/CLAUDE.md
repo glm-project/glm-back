@@ -62,7 +62,7 @@ l'objet naît et meurt dans l'appel.
 - **Un intervalle dont le début ne tombe dans aucune journée connue est rendu intact**, puis fermé à l'horloge :
   c'est la présence qui manque, et le domaine ne masque pas l'anomalie derrière un temps amputé. C'est la règle
   d'`atelier`, et non celle de `feuilledetemps`, qui écarte ce cas.
-- **Le calcul ne lève jamais sur un journal.** Un geste que l'automate refuse — départ sans arrivée, seconde pause,
+- **Le calcul ne lève jamais sur un journal.** Un geste que l'automate refuse — départ sans arrivée, seconde arrivée,
   fin sans activité en cours — est écarté par le repli, qui se poursuit sur ce qui reste. À instant égal, l'arrivée
   passe devant : l'arrivée implicite d'un geste tardif partage son heure, et la base les rend dans l'ordre de leurs
   identifiants (issue #54).

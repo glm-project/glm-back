@@ -323,7 +323,8 @@ cours n'a de sens qu'arrêté à l'instant de la lecture. Deux appels espacés s
 pas la même chose, et la description OpenAPI de la route le dit.
 
 Le reste suit les règles d'`atelier` à la lettre : le temps brut est ramené aux fenêtres de présence de **la journée
-où il a commencé**, si bien qu'une pause de midi le scinde et qu'un départ referme ce que personne n'a arrêté. Un
+où il a commencé**, si bien qu'un départ referme ce que personne n'a arrêté ; la pause de midi, elle, est pointée
+dans le journal de l'élément, par une fin et un début. Un
 début qui ne tombe dans aucune journée connue est **rendu intact** — c'est le choix d'`atelier`, et non celui de la
 feuille de temps qui l'écarte : ici, l'anomalie doit rester chiffrée plutôt que disparaître du coût.
 

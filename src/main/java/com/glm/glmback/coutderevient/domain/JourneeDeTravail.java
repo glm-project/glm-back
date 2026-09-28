@@ -24,7 +24,7 @@ import java.util.Optional;
  *
  * <p>
  * Le calcul du cout ne doit jamais echouer sur la presence : un geste que l'automate refuse — un depart sans arrivee,
- * une seconde pause — est ecarte du journal a la construction, et la journee se lit sur ce qui reste. C'est a
+ * une seconde arrivee — est ecarte du journal a la construction, et la journee se lit sur ce qui reste. C'est a
  * l'atelier de refuser ou de corriger, jamais a la lecture.
  * </p>
  */
@@ -113,8 +113,8 @@ public record JourneeDeTravail(List<EvenementDePresence> journal, Optional<Insta
   }
 
   /**
-   * Les intervalles ou l'operateur etait present et non en pause, dans l'ordre, coupes a la fin presumee : celui qui la
-   * franchit, ou reste ouvert, s'y arrete, et ceux qui commencent apres disparaissent.
+   * Les intervalles ou l'operateur etait present, de chaque arrivee a son depart, dans l'ordre, coupes a la fin
+   * presumee : celui qui la franchit, ou reste ouvert, s'y arrete, et ceux qui commencent apres disparaissent.
    */
   public List<Plage> fenetres() {
     return finPresumee
@@ -227,8 +227,8 @@ public record JourneeDeTravail(List<EvenementDePresence> journal, Optional<Insta
   }
 
   /**
-   * La fin d'une fenetre est l'evenement suivant, quel qu'il soit : une pause comme un depart la referment. Sans
-   * suivant, l'operateur n'est pas encore parti et la fenetre reste ouverte.
+   * La fin d'une fenetre est l'evenement suivant, le depart qui la referme. Sans suivant, l'operateur n'est pas encore
+   * parti et la fenetre reste ouverte.
    */
   private static Optional<Instant> suivant(List<EvenementDePresence> evenements, int rang) {
     if (rang + 1 == evenements.size()) {

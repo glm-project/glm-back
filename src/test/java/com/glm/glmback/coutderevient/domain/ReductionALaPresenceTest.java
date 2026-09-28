@@ -23,14 +23,14 @@ class ReductionALaPresenceTest {
     .categorie(CategorieDActivite.TRAVAIL);
 
   /**
-   * La pause de midi scinde le travail en deux, sans qu'elle ait jamais eu besoin d'etre recopiee dans le journal de
-   * l'element.
+   * Une journee rouverte par une arrivee apres son depart a deux fenetres : le travail se reduit a chacune.
    */
   @Test
-  void shouldSplitOnPauseDeMidi() {
-    ReductionALaPresence reduction = ReductionALaPresence.de(
-      List.of(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17HAvecPauseDeMidi())))
+  void shouldSplitOnEachVenue() {
+    JourneeDeTravail deuxVenues = new JourneeDeTravail(
+      List.of(arriveeA(LE_11_MAI_A_8H), departA(LE_11_MAI_A_12H), arriveeA(LE_11_MAI_A_13H), departA(LE_11_MAI_A_17H))
     );
+    ReductionALaPresence reduction = ReductionALaPresence.de(List.of(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(deuxVenues))));
 
     List<IntervalleDActivite> reduits = reduction.reduit(intervalle(LE_11_MAI_A_11H, Optional.of(LE_11_MAI_A_14H)));
 
@@ -42,7 +42,7 @@ class ReductionALaPresenceTest {
   @Test
   void shouldTruncateAtDepart() {
     ReductionALaPresence reduction = ReductionALaPresence.de(
-      List.of(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17HAvecPauseDeMidi())))
+      List.of(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17H())))
     );
 
     List<IntervalleDActivite> reduits = reduction.reduit(intervalle(LE_11_MAI_A_14H, Optional.empty()));
@@ -66,7 +66,7 @@ class ReductionALaPresenceTest {
   @Test
   void shouldKeepIntervalleStartingOutsideAnyJournee() {
     ReductionALaPresence reduction = ReductionALaPresence.de(
-      List.of(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17HAvecPauseDeMidi())))
+      List.of(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17H())))
     );
 
     IntervalleDActivite intervalle = intervalle(LE_12_MAI_A_8H, Optional.of(LE_12_MAI_A_8H.plusSeconds(3600)));
@@ -82,10 +82,7 @@ class ReductionALaPresenceTest {
   void shouldBoundToTheJourneeWhereItStarted() {
     ReductionALaPresence reduction = ReductionALaPresence.de(
       List.of(
-        new PresenceDUnOperateur(
-          OPERATEUR_ID_DUPONT,
-          List.of(journeeDe8HA17HAvecPauseDeMidi(), new JourneeDeTravail(List.of(arriveeA(LE_12_MAI_A_8H))))
-        )
+        new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17H(), new JourneeDeTravail(List.of(arriveeA(LE_12_MAI_A_8H)))))
       )
     );
 

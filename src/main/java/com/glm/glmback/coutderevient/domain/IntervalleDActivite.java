@@ -22,8 +22,8 @@ public record IntervalleDActivite(Activite activite, Plage plage) {
    * Le meme intervalle reduit a la fenetre de presence donnee, s'il en reste quelque chose.
    *
    * <p>
-   * Une pause de midi le scinde en deux, un depart referme ce que l'operateur a oublie d'arreter : aucun de ces deux
-   * faits n'a eu besoin d'etre recopie dans le journal de l'element.
+   * Un depart referme ce que l'operateur a oublie d'arreter, sans avoir eu besoin d'etre recopie dans le journal de
+   * l'element.
    * </p>
    */
   public Optional<IntervalleDActivite> reduitA(Plage fenetre) {

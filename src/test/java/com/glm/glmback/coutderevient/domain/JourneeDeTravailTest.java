@@ -35,8 +35,8 @@ class JourneeDeTravailTest {
   }
 
   @Test
-  void shouldIgnorerUnePauseEtUneRepriseSansArrivee() {
-    JourneeDeTravail journee = new JourneeDeTravail(List.of(pauseA(LE_11_MAI_A_8H), repriseA(LE_11_MAI_A_9H), arriveeA(LE_11_MAI_A_10H)));
+  void shouldIgnorerUnDepartQuiPrecedeLArrivee() {
+    JourneeDeTravail journee = new JourneeDeTravail(List.of(departA(LE_11_MAI_A_8H), arriveeA(LE_11_MAI_A_10H)));
 
     assertThat(journee.journal()).containsExactly(arriveeA(LE_11_MAI_A_10H));
     assertThat(journee.fenetres()).containsExactly(new Plage(LE_11_MAI_A_10H, Optional.empty()));
@@ -47,25 +47,6 @@ class JourneeDeTravailTest {
     JourneeDeTravail journee = new JourneeDeTravail(List.of(arriveeA(LE_11_MAI_A_8H), arriveeA(LE_11_MAI_A_10H), departA(LE_11_MAI_A_17H)));
 
     assertThat(journee.fenetres()).containsExactly(new Plage(LE_11_MAI_A_8H, Optional.of(LE_11_MAI_A_17H)));
-  }
-
-  @Test
-  void shouldIgnorerUneRepriseSansPause() {
-    JourneeDeTravail journee = new JourneeDeTravail(List.of(arriveeA(LE_11_MAI_A_8H), repriseA(LE_11_MAI_A_10H), departA(LE_11_MAI_A_17H)));
-
-    assertThat(journee.fenetres()).containsExactly(new Plage(LE_11_MAI_A_8H, Optional.of(LE_11_MAI_A_17H)));
-  }
-
-  @Test
-  void shouldIgnorerUnePausePendantLaPause() {
-    JourneeDeTravail journee = new JourneeDeTravail(
-      List.of(arriveeA(LE_11_MAI_A_8H), pauseA(LE_11_MAI_A_12H), pauseA(LE_11_MAI_A_12H.plusSeconds(600)), repriseA(LE_11_MAI_A_13H))
-    );
-
-    assertThat(journee.fenetres()).containsExactly(
-      new Plage(LE_11_MAI_A_8H, Optional.of(LE_11_MAI_A_12H)),
-      new Plage(LE_11_MAI_A_13H, Optional.empty())
-    );
   }
 
   @Test
@@ -83,7 +64,7 @@ class JourneeDeTravailTest {
    */
   @Test
   void shouldNePasFermerUneJourneeParUnGesteIgnore() {
-    JourneeDeTravail journee = new JourneeDeTravail(List.of(arriveeA(LE_11_MAI_A_8H), repriseA(LE_11_MAI_A_9H)));
+    JourneeDeTravail journee = new JourneeDeTravail(List.of(arriveeA(LE_11_MAI_A_8H), arriveeA(LE_11_MAI_A_9H)));
 
     assertThat(journee.contient(LE_12_MAI_A_8H)).isTrue();
     assertThat(journee.presumee(LE_12_MAI_A_8H, AMPLITUDE_MAXIMALE_13H, List.of()).finPresumee()).contains(LE_11_MAI_A_8H);
@@ -102,14 +83,21 @@ class JourneeDeTravailTest {
   }
 
   /**
-   * La pause n'ote que son propre creux : la journee se lit en deux fenetres, et c'est ce qui scindera le travail de
-   * midi en deux tranches valorisees.
+   * La pause de midi n'est pas un geste de presence : la journee se lit en une seule fenetre, de l'arrivee au depart.
    */
   @Test
-  void shouldSplitFenetresOnPause() {
-    assertThat(journeeDe8HA17HAvecPauseDeMidi().fenetres()).containsExactly(
+  void shouldCloseTheFenetreAtDepart() {
+    assertThat(journeeDe8HA17H().fenetres()).containsExactly(new Plage(LE_11_MAI_A_8H, Optional.of(LE_11_MAI_A_17H)));
+  }
+
+  /**
+   * Une arrivee regularisee apres le depart rouvre la journee : chaque venue a sa fenetre.
+   */
+  @Test
+  void shouldOpenOneFenetrePerVenue() {
+    assertThat(journeeRouverteA13H().fenetres()).containsExactly(
       new Plage(LE_11_MAI_A_8H, Optional.of(LE_11_MAI_A_12H)),
-      new Plage(LE_11_MAI_A_13H, Optional.of(LE_11_MAI_A_17H))
+      new Plage(LE_11_MAI_A_13H, Optional.empty())
     );
   }
 
@@ -137,25 +125,18 @@ class JourneeDeTravailTest {
   }
 
   @Test
-  void shouldFairePasserLArriveeDevantUnePauseSimultanee() {
-    JourneeDeTravail enPause = new JourneeDeTravail(List.of(pauseA(LE_11_MAI_A_12H), arriveeA(LE_11_MAI_A_12H)));
-
-    assertThat(enPause.fenetres()).containsExactly(new Plage(LE_11_MAI_A_12H, Optional.of(LE_11_MAI_A_12H)));
-  }
-
-  @Test
   void shouldContainInstantBetweenArriveeAndDepart() {
-    assertThat(journeeDe8HA17HAvecPauseDeMidi().contient(LE_11_MAI_A_12H)).isTrue();
+    assertThat(journeeDe8HA17H().contient(LE_11_MAI_A_12H)).isTrue();
   }
 
   @Test
   void shouldNotContainInstantBeforeArrivee() {
-    assertThat(journeeDe8HA17HAvecPauseDeMidi().contient(LE_11_MAI_A_8H.minusSeconds(1))).isFalse();
+    assertThat(journeeDe8HA17H().contient(LE_11_MAI_A_8H.minusSeconds(1))).isFalse();
   }
 
   @Test
   void shouldNotContainInstantAfterDepart() {
-    assertThat(journeeDe8HA17HAvecPauseDeMidi().contient(LE_12_MAI_A_8H)).isFalse();
+    assertThat(journeeDe8HA17H().contient(LE_12_MAI_A_8H)).isFalse();
   }
 
   /**
@@ -206,17 +187,14 @@ class JourneeDeTravailTest {
    */
   @Test
   void shouldFermerUneJourneeAbandonneeASaFinPresumee() {
-    JourneeDeTravail presumee = journeeDe8HSansDepart().presumee(
+    JourneeDeTravail presumee = journeeOuverteDepuis8H().presumee(
       LE_12_MAI_A_8H,
       AMPLITUDE_MAXIMALE_13H,
       List.of(LE_11_MAI_A_9H, LE_11_MAI_A_15H, LE_12_MAI_A_7H)
     );
 
     assertThat(presumee.finPresumee()).contains(LE_11_MAI_A_15H);
-    assertThat(presumee.fenetres()).containsExactly(
-      new Plage(LE_11_MAI_A_8H, Optional.of(LE_11_MAI_A_12H)),
-      new Plage(LE_11_MAI_A_13H, Optional.of(LE_11_MAI_A_15H))
-    );
+    assertThat(presumee.fenetres()).containsExactly(new Plage(LE_11_MAI_A_8H, Optional.of(LE_11_MAI_A_15H)));
     assertThat(presumee.contient(LE_11_MAI_A_14H)).isTrue();
     assertThat(presumee.contient(LE_11_MAI_A_15H)).isTrue();
     assertThat(presumee.contient(LE_11_MAI_A_17H)).isFalse();
@@ -225,47 +203,60 @@ class JourneeDeTravailTest {
 
   @Test
   void shouldPresumerAuDernierEvenementDePresenceSansPointage() {
-    JourneeDeTravail presumee = journeeDe8HSansDepart().presumee(LE_12_MAI_A_8H, AMPLITUDE_MAXIMALE_13H, List.of());
+    JourneeDeTravail presumee = journeeOuverteDepuis8H().presumee(LE_12_MAI_A_8H, AMPLITUDE_MAXIMALE_13H, List.of());
 
-    assertThat(presumee.finPresumee()).contains(LE_11_MAI_A_13H);
-    assertThat(presumee.fenetres()).last().isEqualTo(new Plage(LE_11_MAI_A_13H, Optional.of(LE_11_MAI_A_13H)));
+    assertThat(presumee.finPresumee()).contains(LE_11_MAI_A_8H);
+    assertThat(presumee.fenetres()).last().isEqualTo(new Plage(LE_11_MAI_A_8H, Optional.of(LE_11_MAI_A_8H)));
   }
 
   @Test
   void shouldIgnorerUnPointageAnterieurAuDernierFaitDePresence() {
-    JourneeDeTravail presumee = journeeDe8HSansDepart().presumee(LE_12_MAI_A_8H, AMPLITUDE_MAXIMALE_13H, List.of(LE_11_MAI_A_9H));
+    JourneeDeTravail presumee = journeeRouverteA13H().presumee(LE_12_MAI_A_8H, AMPLITUDE_MAXIMALE_13H, List.of(LE_11_MAI_A_9H));
 
     assertThat(presumee.finPresumee()).contains(LE_11_MAI_A_13H);
   }
 
   @Test
   void shouldIgnorerUnPointageAnterieurALArrivee() {
-    JourneeDeTravail presumee = journeeDe8HSansDepart().presumee(
+    JourneeDeTravail presumee = journeeOuverteDepuis8H().presumee(
       LE_12_MAI_A_8H,
       AMPLITUDE_MAXIMALE_13H,
       List.of(LE_11_MAI_A_8H.minusSeconds(3600))
     );
 
-    assertThat(presumee.finPresumee()).contains(LE_11_MAI_A_13H);
+    assertThat(presumee.finPresumee()).contains(LE_11_MAI_A_8H);
+  }
+
+  /**
+   * Une venue close avant la fin presumee reste entiere : seule la derniere, restee ouverte, s'y arrete.
+   */
+  @Test
+  void shouldGarderEntiereUneVenueCloseAvantLaFinPresumee() {
+    JourneeDeTravail presumee = journeeRouverteA13H().presumee(LE_12_MAI_A_8H, AMPLITUDE_MAXIMALE_13H, List.of(LE_11_MAI_A_15H));
+
+    assertThat(presumee.fenetres()).containsExactly(
+      new Plage(LE_11_MAI_A_8H, Optional.of(LE_11_MAI_A_12H)),
+      new Plage(LE_11_MAI_A_13H, Optional.of(LE_11_MAI_A_15H))
+    );
   }
 
   @Test
   void shouldNePasPresumerUneJourneeNonAbandonnee() {
-    assertThat(journeeDe8HSansDepart().presumee(LE_11_MAI_A_17H, AMPLITUDE_MAXIMALE_13H, List.of(LE_11_MAI_A_15H))).isEqualTo(
-      journeeDe8HSansDepart()
+    assertThat(journeeOuverteDepuis8H().presumee(LE_11_MAI_A_17H, AMPLITUDE_MAXIMALE_13H, List.of(LE_11_MAI_A_15H))).isEqualTo(
+      journeeOuverteDepuis8H()
     );
   }
 
   @Test
   void shouldNePasPresumerAuSeuilPile() {
-    assertThat(journeeDe8HSansDepart().presumee(LE_11_MAI_A_21H, AMPLITUDE_MAXIMALE_13H, List.of(LE_11_MAI_A_15H)).finPresumee()).isEmpty();
+    assertThat(
+      journeeOuverteDepuis8H().presumee(LE_11_MAI_A_21H, AMPLITUDE_MAXIMALE_13H, List.of(LE_11_MAI_A_15H)).finPresumee()
+    ).isEmpty();
   }
 
   @Test
   void shouldNePasPresumerUneJourneeFermee() {
-    assertThat(journeeDe8HA17HAvecPauseDeMidi().presumee(LE_12_MAI_A_8H, AMPLITUDE_MAXIMALE_13H, List.of(LE_11_MAI_A_15H))).isEqualTo(
-      journeeDe8HA17HAvecPauseDeMidi()
-    );
+    assertThat(journeeDe8HA17H().presumee(LE_12_MAI_A_8H, AMPLITUDE_MAXIMALE_13H, List.of(LE_11_MAI_A_15H))).isEqualTo(journeeDe8HA17H());
   }
 
   @Test
@@ -277,19 +268,16 @@ class JourneeDeTravailTest {
 
   /**
    * Issue #59 : une journee fermee de plus de 24 h n'a pas pu etre vecue d'une traite. Elle se ferme a sa fin
-   * presumee, le dernier fait de la fenetre de recherche : la pause de mardi et le depart de mercredi en sont exclus.
+   * presumee, le dernier fait de la fenetre de recherche : le depart de mercredi en est exclu.
    */
   @Test
   void shouldFermerUneJourneeDePlusDe24HAuDernierFaitDeLaFenetreDeRecherche() {
     JourneeDeTravail presumee = journeeDuLundi8HAuMercredi8H().presumee(LE_13_MAI_A_8H, AMPLITUDE_MAXIMALE_13H, List.of());
 
-    assertThat(presumee.finPresumee()).contains(LE_11_MAI_A_13H);
-    assertThat(presumee.fenetres()).containsExactly(
-      new Plage(LE_11_MAI_A_8H, Optional.of(LE_11_MAI_A_12H)),
-      new Plage(LE_11_MAI_A_13H, Optional.of(LE_11_MAI_A_13H))
-    );
-    assertThat(presumee.contient(LE_11_MAI_A_12H)).isTrue();
-    assertThat(presumee.contient(LE_11_MAI_A_14H)).isFalse();
+    assertThat(presumee.finPresumee()).contains(LE_11_MAI_A_8H);
+    assertThat(presumee.fenetres()).containsExactly(new Plage(LE_11_MAI_A_8H, Optional.of(LE_11_MAI_A_8H)));
+    assertThat(presumee.contient(LE_11_MAI_A_8H)).isTrue();
+    assertThat(presumee.contient(LE_11_MAI_A_9H)).isFalse();
     assertThat(presumee.contient(LE_12_MAI_A_9H)).isFalse();
   }
 
@@ -302,7 +290,22 @@ class JourneeDeTravailTest {
     );
 
     assertThat(presumee.finPresumee()).contains(LE_11_MAI_A_15H);
-    assertThat(presumee.fenetres()).last().isEqualTo(new Plage(LE_11_MAI_A_13H, Optional.of(LE_11_MAI_A_15H)));
+    assertThat(presumee.fenetres()).containsExactly(new Plage(LE_11_MAI_A_8H, Optional.of(LE_11_MAI_A_15H)));
+  }
+
+  /**
+   * Issue #59, sur une journee de deux venues : celle du lundi, close avant la fin presumee, reste entiere ; celle du
+   * mardi commence apres, et disparait.
+   */
+  @Test
+  void shouldEcarterUneVenueCommenceeApresLaFinPresumee() {
+    JourneeDeTravail deuxVenues = new JourneeDeTravail(
+      List.of(arriveeA(LE_11_MAI_A_8H), departA(LE_11_MAI_A_12H), arriveeA(LE_12_MAI_A_9H), departA(LE_13_MAI_A_8H))
+    );
+
+    assertThat(deuxVenues.presumee(LE_13_MAI_A_8H, AMPLITUDE_MAXIMALE_13H, List.of(LE_11_MAI_A_15H)).fenetres()).containsExactly(
+      new Plage(LE_11_MAI_A_8H, Optional.of(LE_11_MAI_A_12H))
+    );
   }
 
   /**
@@ -311,7 +314,7 @@ class JourneeDeTravailTest {
   @Test
   void shouldPresumerUneJourneeDePlusDe24HAToutInstant() {
     assertThat(journeeDuLundi8HAuMercredi8H().presumee(LE_11_MAI_A_9H, AMPLITUDE_MAXIMALE_13H, List.of()).finPresumee()).contains(
-      LE_11_MAI_A_13H
+      LE_11_MAI_A_8H
     );
   }
 
@@ -334,13 +337,10 @@ class JourneeDeTravailTest {
     assertThat(longue.presumee(LE_13_MAI_A_8H, AMPLITUDE_MAXIMALE_13H, List.of())).isEqualTo(longue);
   }
 
-  @Test
-  void shouldNeRienOuvrirDUneJourneeAbandonneeEnPause() {
-    JourneeDeTravail enPause = new JourneeDeTravail(List.of(arriveeA(LE_11_MAI_A_8H), pauseA(LE_11_MAI_A_12H)));
-
-    JourneeDeTravail presumee = enPause.presumee(LE_12_MAI_A_8H, AMPLITUDE_MAXIMALE_13H, List.of(LE_11_MAI_A_9H));
-
-    assertThat(presumee.fenetres()).containsExactly(new Plage(LE_11_MAI_A_8H, Optional.of(LE_11_MAI_A_12H)));
-    assertThat(presumee.contient(LE_11_MAI_A_13H)).isFalse();
+  /**
+   * Lundi, Dupont part a midi ; une arrivee a 13 h, regularisee sur la meme journee, la rouvre sans depart.
+   */
+  private static JourneeDeTravail journeeRouverteA13H() {
+    return new JourneeDeTravail(List.of(arriveeA(LE_11_MAI_A_8H), departA(LE_11_MAI_A_12H), arriveeA(LE_11_MAI_A_13H)));
   }
 }
