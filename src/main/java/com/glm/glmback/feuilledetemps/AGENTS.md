@@ -14,7 +14,7 @@ n'écrit rien, et recalcule tout à chaque appel.
 
 ## Ce dont il ne s'occupe pas
 
-- **Le pointage et sa correction** — arrivée, pause, départ, régularisation, annulation appartiennent à `atelier`.
+- **Le pointage et sa correction** — arrivée, départ, régularisation, annulation appartiennent à `atelier`.
   Ce contexte ne propose aucune écriture.
 - **La valorisation** — ni taux horaire, ni coût horaire, ni temps réparti. Il affiche du temps, il ne le
   multiplie par rien. Le coût de revient sera un autre contexte lecteur, sur la même couture.

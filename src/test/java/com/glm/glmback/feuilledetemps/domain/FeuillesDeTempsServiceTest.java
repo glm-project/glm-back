@@ -69,11 +69,10 @@ class FeuillesDeTempsServiceTest {
 
   @Test
   void shouldRattacherLesFenetresAuJourQuiLesPorte() {
-    FeuilleDeTemps feuille = historiqueDeDupont(PresencesEnMemoire.avec(List.of(journeeDuLundiDe8HA17HAvecPauseDeMidi())));
+    FeuilleDeTemps feuille = historiqueDeDupont(PresencesEnMemoire.avec(List.of(journeeDuLundiDe8HA17H())));
 
     assertThat(presenceDu(feuille, LUNDI_11_MAI_2026)).containsExactly(
-      new Plage(LE_LUNDI_11_MAI_2026_A_8H, Optional.of(LE_LUNDI_11_MAI_2026_A_12H)),
-      new Plage(LE_LUNDI_11_MAI_2026_A_13H, Optional.of(LE_LUNDI_11_MAI_2026_A_17H))
+      new Plage(LE_LUNDI_11_MAI_2026_A_8H, Optional.of(LE_LUNDI_11_MAI_2026_A_17H))
     );
     assertThat(presenceDu(feuille, MARDI_12_MAI_2026)).isEmpty();
   }
@@ -116,14 +115,14 @@ class FeuillesDeTempsServiceTest {
   @Test
   void shouldTrierLesFenetresDUnJourParHeure() {
     PresencesEnMemoire presences = PresencesEnMemoire.avec(
-      List.of(journeeDuMardiOuverteA8H(), journeeDuLundi22HAuMardi2H(), journeeDuLundiDe8HA17HAvecPauseDeMidi())
+      List.of(journeeDuMardiOuverteA8H(), journeeDuLundi22HAuMardi2H(), journeeDuLundiDe8HA17H())
     );
 
     FeuilleDeTemps feuille = historiqueDeDupont(presences);
 
     assertThat(presenceDu(feuille, LUNDI_11_MAI_2026))
       .extracting(Plage::debut)
-      .containsExactly(LE_LUNDI_11_MAI_2026_A_8H, LE_LUNDI_11_MAI_2026_A_13H, LE_LUNDI_11_MAI_2026_A_22H);
+      .containsExactly(LE_LUNDI_11_MAI_2026_A_8H, LE_LUNDI_11_MAI_2026_A_22H);
     assertThat(presenceDu(feuille, MARDI_12_MAI_2026))
       .extracting(Plage::debut)
       .containsExactly(LE_MARDI_12_MAI_2026_A_MINUIT, LE_MARDI_12_MAI_2026_A_8H);
@@ -141,8 +140,7 @@ class FeuillesDeTempsServiceTest {
     ).historique(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
 
     assertThat(presenceDu(feuille, LUNDI_11_MAI_2026)).containsExactly(
-      new Plage(LE_LUNDI_11_MAI_2026_A_7H, Optional.of(LE_LUNDI_11_MAI_2026_A_12H)),
-      new Plage(LE_LUNDI_11_MAI_2026_A_13H, Optional.of(LE_LUNDI_11_MAI_2026_A_16H), true)
+      new Plage(LE_LUNDI_11_MAI_2026_A_7H, Optional.of(LE_LUNDI_11_MAI_2026_A_16H), true)
     );
   }
 
@@ -156,7 +154,7 @@ class FeuillesDeTempsServiceTest {
       LE_LUNDI_11_MAI_2026_A_20H
     ).historique(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
 
-    assertThat(presenceDu(feuille, LUNDI_11_MAI_2026)).last().isEqualTo(new Plage(LE_LUNDI_11_MAI_2026_A_13H, Optional.empty()));
+    assertThat(presenceDu(feuille, LUNDI_11_MAI_2026)).last().isEqualTo(new Plage(LE_LUNDI_11_MAI_2026_A_7H, Optional.empty()));
   }
 
   /**
@@ -172,8 +170,7 @@ class FeuillesDeTempsServiceTest {
     ).historique(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
 
     assertThat(presenceDu(feuille, LUNDI_11_MAI_2026)).containsExactly(
-      new Plage(LE_LUNDI_11_MAI_2026_A_7H, Optional.of(LE_LUNDI_11_MAI_2026_A_12H)),
-      new Plage(LE_LUNDI_11_MAI_2026_A_13H, Optional.of(LE_LUNDI_11_MAI_2026_A_16H), true)
+      new Plage(LE_LUNDI_11_MAI_2026_A_7H, Optional.of(LE_LUNDI_11_MAI_2026_A_16H), true)
     );
     assertThat(presenceDu(feuille, MARDI_12_MAI_2026)).isEmpty();
     assertThat(presenceDu(feuille, MERCREDI_13_MAI_2026)).isEmpty();
