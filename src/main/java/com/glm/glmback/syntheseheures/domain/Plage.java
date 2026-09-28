@@ -38,4 +38,23 @@ public record Plage(Instant debut, Optional<Instant> fin, boolean presumee) {
   public boolean estOuverte() {
     return fin.isEmpty();
   }
+
+  /**
+   * La part commune a cette plage et a la fenetre, s'il en reste une de duree non nulle. Deux plages encore ouvertes
+   * se croisent en une plage encore ouverte, et ce qu'une fenetre presumee borne devient presume.
+   */
+  public Optional<Plage> intersection(Plage fenetre) {
+    Instant debutCommun = debut.isAfter(fenetre.debut) ? debut : fenetre.debut;
+    Optional<Instant> finCommune = plusTot(fin, fenetre.fin);
+
+    if (finCommune.filter(date -> !date.isAfter(debutCommun)).isPresent()) {
+      return Optional.empty();
+    }
+
+    return Optional.of(new Plage(debutCommun, finCommune, presumee || fenetre.presumee));
+  }
+
+  private static Optional<Instant> plusTot(Optional<Instant> une, Optional<Instant> autre) {
+    return une.map(date -> autre.filter(date::isAfter).orElse(date)).or(() -> autre);
+  }
 }

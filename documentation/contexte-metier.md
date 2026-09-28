@@ -124,6 +124,10 @@ Deux mesures coexisteront, qui ne s'additionnent pas de la même façon :
 - **temps effectif** — la durée réelle passée sur un élément, telle que la produit `TempsDAtelierService`. Deux postes pendant 1 h font 2 h effectives.
 - **temps réparti** — la même heure d'opérateur divisée par le **nombre de postes de travail** qu'il occupait simultanément, tous éléments confondus. Il ne servira qu'au coût de revient.
 
+Une troisième lecture en dérive sans rien ajouter au journal : le **temps opérationnel** de `syntheseheures`, qui
+s'additionne comme l'effectif mais écarte un début hors de toute journée et se coupe à minuit (voir la section
+`syntheseheures`).
+
 Le diviseur est bien le nombre de postes, et non le nombre d'activités ou d'éléments : le client énonce la règle deux fois de suite — coût horaire de chaque machine active non divisé, taux horaire de l'opérateur divisé par le nombre de machines qu'il utilise. Un opérateur sur trois éléments avec une seule machine n'est donc pas divisé.
 
 **Le journal n'enregistre que l'effectif.** Le réparti traverse les agrégats — un nouveau pointage sur un second élément change la part déjà attribuée sur le premier —, il ne peut donc être qu'une fonction de projection, calculée à la lecture. `TempsDAtelierService` produit pour cela des intervalles complets, et pas seulement l'état courant dont l'écran a besoin aujourd'hui : c'est la couture sur laquelle les tableaux de bord se brancheront.
@@ -374,8 +378,9 @@ Il dérive des taux horaires des opérateurs, que le pupitre n'a aucune raison d
 
 Troisième **projection transverse** du projet, après `feuilledetemps` et `coutderevient` : un contexte purement
 lecteur, qui ne possède aucune table et recalcule tout à chaque appel. Il répond à une seule question — _combien
-d'heures cette personne a-t-elle été présente cette semaine, jour par jour_ — et ne sert pas à la paie : ni feuille
-de paie, ni valorisation en euros, ni heures supplémentaires pour l'instant (règle non fournie par le client).
+d'heures cette personne a-t-elle été présente cette semaine, et sur quoi a-t-elle travaillé, jour par jour_ — et ne
+sert pas à la paie : ni feuille de paie, ni valorisation en euros, ni heures supplémentaires pour l'instant (règle non
+fournie par le client).
 
 ### Pourquoi il n'est pas dans atelier
 
@@ -402,6 +407,37 @@ le fuseau de l'entreprise, y compris quand minuit sépare deux semaines.
 
 À instant égal, l'arrivée passe devant dans le repli : l'arrivée implicite d'un geste tardif partage l'heure de ce geste.
 
+### Le temps opérationnel
+
+À côté de la présence, le relevé rend le **temps opérationnel** : ce que l'opérateur a pointé sur ses éléments. Ses
+pointages sur chaque suivi sont rejoués poste par poste avec l'automate d'atelier, réduits aux fenêtres de présence
+de la journée où chaque intervalle a commencé — exactement comme la feuille de temps —, coupés à minuit, puis
+additionnés. Un intervalle clos compte en pointé, ou en présumé s'il est borné par la fin présumée d'une journée
+abandonnée ; un intervalle ouvert ne compte rien, comme une fenêtre de présence ouverte. Un début qui ne tombe dans
+aucune journée ne compte pas.
+
+**Le temps opérationnel n'est pas le temps effectif d'`atelier`**, bien qu'il en partage la base : même réduction aux
+fenêtres de la journée où le travail a commencé, même addition quand deux activités courent de front. Il en diffère
+sur deux points : un début hors de toute journée, rendu intact par le temps effectif, ne compte pas ici ; et il est
+coupé à minuit et borné à la semaine. Pour un même élément, la synthèse peut donc afficher moins que
+`GET /api/atelier/suivis/{id}/temps-effectif` : l'écart est une présence manquante, à régulariser dans `atelier`.
+La feuille de temps applique les mêmes règles pour en exposer les périodes : les deux changent ensemble.
+
+**Les durées se cumulent par élément** : une heure passée sur deux éléments compte sur chacun, et le temps
+opérationnel d'un jour peut donc dépasser sa présence. Chaque jour porte `dureeOperationnelle` et
+`dureeOperationnellePresumee`, la semaine leurs totaux, qui valent aussi la somme de ses éléments.
+
+La semaine rend ses **éléments** : tout élément qui porte un intervalle ou un pointage dans la semaine, par première
+apparition puis par nom. Chacun porte sa durée pointée (non-conformité comprise), la part de non-conformité, sa durée
+présumée, et un couple par poste et nature distincts — tout poste nommé au journal y trouve son libellé. Un
+réengagement après clôture reste le même élément. Le nom et
+le type viennent du suivi, qui les a copiés à l'engagement ; la référence et la description sont relues au
+référentiel, et absentes si l'élément a été supprimé ; le libellé du poste aussi.
+
+Le **journal brut** de chaque jour mêle la présence et tous les pointages d'élément de l'opérateur datés de ce jour,
+même hors de toute journée. À instant égal : l'arrivée, puis les pointages d'élément, puis le départ ; deux éléments
+pointés au même instant se départagent par leur identifiant, et un même élément garde l'ordre de son journal.
+
 ### La résilience face aux anomalies du journal
 
 **Un pointage qui casse l'automate de présence n'empêche jamais la génération du relevé.** Contrairement à
@@ -425,7 +461,8 @@ semaine ni d'un rapport demandé. `atelier` possède déjà l'écran de correcti
 
 `atelier` étant annoté `@BusinessContext`, ce contexte déclare ses propres entités JPA en lecture seule sur ses
 tables — pour la troisième fois du projet, il rejoue **sa propre** version du repli de présence, tolérante aux
-anomalies.
+anomalies, et pour la cinquième fois l'automate d'atelier. Il lit aussi `element_de_fabrication` et
+`poste_de_travail`, pour la référence, la description et le libellé.
 
 ### Points ouverts
 

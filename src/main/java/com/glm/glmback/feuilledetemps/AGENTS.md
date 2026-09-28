@@ -20,7 +20,7 @@ n'écrit rien, et recalcule tout à chaque appel.
   multiplie par rien. Le coût de revient sera un autre contexte lecteur, sur la même couture.
 - **Le référentiel** — identité de l'opérateur lue par port, jamais possédée. Ni le libellé du poste ni la fiche de
   l'élément ne sont lus : la feuille ne rend que leurs identifiants, et la synthèse des heures porte leurs libellés.
-- **Les durées** — la feuille rend des périodes ; les sommer est l'affaire de `syntheseheures`.
+- **Les durées** — la feuille expose des périodes ; `syntheseheures` expose les durées, qu'il calcule de son côté.
 - **La paie** — il expose la présence découpée par jour, il ne choisit pas ce qui compte.
 
 ## Agrégat de lecture
@@ -66,6 +66,9 @@ découpage.
   ne peut l'accueillir sans arbitraire, et l'anomalie reste visible sur `GET /api/atelier/suivis/{id}/temps-effectif`.
   L'API d'`atelier` ouvre une arrivée implicite à chaque geste : le cas n'est atteignable qu'en unitaire.
 - **Une activité ouverte ne rend que son jour de début**, comme une plage de présence ouverte.
+- **La réduction, l'écart hors journée et le découpage changent avec `syntheseheures`**, qui les applique aux mêmes
+  intervalles pour en tirer les durées : l'écran « Temps opérationnel » du front dessine les unes et additionne les
+  autres. Les tableaux parallèles de `feuille_de_temps.feature` et `synthese_des_heures.feature` sont le filet.
 - **Une activité porte l'élément, jamais le suivi** : un élément réengagé après clôture reste le même élément.
 - **La semaine est toujours explicite.** Aucune « semaine courante » implicite. L'horloge ne sert qu'à juger
   l'abandon d'une journée : deux appels espacés peuvent donc différer.
@@ -76,9 +79,10 @@ découpage.
 
 `EtatDePresence`, `TypeDEvenementDePresence` et le repli en fenêtres de `JourneeDeTravail` sont une **seconde
 implémentation** de ce qu'`atelier` fait déjà. `EtatDActivite`, `TypeDEvenementDAtelier` et `JournalDAtelier` en sont
-une autre, celle du journal d'un élément : quatre automates d'atelier vivent désormais dans le projet (`atelier`,
-`pupitre`, `coutderevient`, `feuilledetemps`) et changent ensemble. C'est le prix de la frontière : le partage passerait soit par un
-import interdit, soit par le shared kernel, qui est en anglais et ne peut pas accueillir du vocabulaire d'atelier.
+une autre, celle du journal d'un élément : cinq automates d'atelier vivent désormais dans le projet (`atelier`,
+`pupitre`, `coutderevient`, `feuilledetemps`, `syntheseheures`) et changent ensemble. C'est le prix de la
+frontière : le partage passerait soit par un import interdit, soit par le shared kernel, qui est en anglais et ne peut
+pas accueillir du vocabulaire d'atelier.
 
 Deux filets tiennent les deux implémentations alignées :
 

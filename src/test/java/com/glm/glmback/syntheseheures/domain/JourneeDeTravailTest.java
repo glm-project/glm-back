@@ -320,4 +320,49 @@ class JourneeDeTravailTest {
       List.of(arriveeA(LE_LUNDI_11_MAI_2026_A_7H), departA(LE_LUNDI_11_MAI_2026_A_12H), arriveeA(LE_LUNDI_11_MAI_2026_A_13H))
     );
   }
+
+  @Test
+  void shouldContenirSonArriveeSonDepartEtCeQuiEstEntre() {
+    JourneeDeTravail journee = journeeDuLundiDe8HA17H();
+
+    assertThat(journee.contient(LE_LUNDI_11_MAI_2026_A_8H)).isTrue();
+    assertThat(journee.contient(LE_LUNDI_11_MAI_2026_A_12H)).isTrue();
+    assertThat(journee.contient(LE_LUNDI_11_MAI_2026_A_17H)).isTrue();
+  }
+
+  @Test
+  void shouldNePasContenirCeQuiPrecedeSonArrivee() {
+    assertThat(journeeDuLundiDe8HA17H().contient(LE_LUNDI_11_MAI_2026_A_7H)).isFalse();
+  }
+
+  @Test
+  void shouldNePasContenirCeQuiSuitSonDepart() {
+    assertThat(journeeDuLundiDe8HA17H().contient(LE_LUNDI_11_MAI_2026_A_18H)).isFalse();
+  }
+
+  /**
+   * Comme dans l'atelier, seule l'arrivee et le depart pointes bornent la journee : une journee sans depart contient
+   * tout ce qui suit son arrivee, meme abandonnee. C'est la plus recente qui l'emporte, a la reduction.
+   */
+  @Test
+  void shouldContenirToutCeQuiSuitLArriveeDUneJourneeSansDepart() {
+    JourneeDeTravail abandonnee = journeeDuLundiDe7HSansDepart().presumee(AMPLITUDE_MAXIMALE_13H, Optional.of(LE_LUNDI_11_MAI_2026_A_16H));
+
+    assertThat(abandonnee.contient(LE_MARDI_12_MAI_2026_A_9H)).isTrue();
+  }
+
+  @Test
+  void shouldNeRienContenirSansEvenement() {
+    assertThat(new JourneeDeTravail(List.of()).contient(LE_LUNDI_11_MAI_2026_A_8H)).isFalse();
+  }
+
+  @Test
+  void shouldExposerSonArrivee() {
+    assertThat(journeeDuLundiDe8HA17H().arrivee()).contains(LE_LUNDI_11_MAI_2026_A_8H);
+  }
+
+  @Test
+  void shouldNAvoirAucuneArriveeSansEvenement() {
+    assertThat(new JourneeDeTravail(List.of()).arrivee()).isEmpty();
+  }
 }

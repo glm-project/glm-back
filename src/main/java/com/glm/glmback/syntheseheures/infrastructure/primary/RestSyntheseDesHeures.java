@@ -21,7 +21,27 @@ record RestSyntheseDesHeures(
   @Schema(description = "Numero de la semaine ISO.", example = "20") int semaine,
   @Schema(description = "Les sept jours, du lundi au dimanche.") List<RestJourDeSynthese> jours,
   @Schema(description = "Duree travaillee et pointee de la semaine, somme des sept jours.", example = "PT38H") Duration dureeTotale,
-  @Schema(description = "Duree presumee de la semaine, somme des sept jours.", example = "PT3H") Duration dureePresumeeTotale
+  @Schema(description = "Duree presumee de la semaine, somme des sept jours.", example = "PT3H") Duration dureePresumeeTotale,
+  @Schema(
+    description = "Temps operationnel pointe de la semaine, somme des sept jours, et somme des durees des elements.",
+    example = "PT57H30M",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  Duration dureeOperationnelleTotale,
+  @Schema(
+    description = "Temps operationnel presume de la semaine, somme des sept jours.",
+    example = "PT0S",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  Duration dureeOperationnellePresumeeTotale,
+  @Schema(
+    description = """
+    Les elements travailles ou pointes dans la semaine, par premiere apparition (premiere periode de travail ou premier
+    pointage), puis par nom. Un element reengage apres cloture reste un seul element.
+    """,
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  List<RestElementDeLaSynthese> elements
 ) {
   static RestSyntheseDesHeures from(SyntheseDesHeures synthese) {
     return new RestSyntheseDesHeures(
@@ -30,7 +50,10 @@ record RestSyntheseDesHeures(
       synthese.semaine().numero(),
       synthese.jours().stream().map(RestJourDeSynthese::from).toList(),
       synthese.dureeTotale(),
-      synthese.dureePresumeeTotale()
+      synthese.dureePresumeeTotale(),
+      synthese.dureeOperationnelleTotale(),
+      synthese.dureeOperationnellePresumeeTotale(),
+      synthese.elements().stream().map(RestElementDeLaSynthese::from).toList()
     );
   }
 }

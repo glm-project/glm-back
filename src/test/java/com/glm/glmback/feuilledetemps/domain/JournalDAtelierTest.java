@@ -92,12 +92,13 @@ class JournalDAtelierTest {
       List.of(nonConformiteSurLaDmu50A(LE_LUNDI_11_MAI_2026_A_8H), nonConformiteSurLaDmu50A(LE_LUNDI_11_MAI_2026_A_10H))
     ).intervalles(ELEMENT_ID_CARTER, Optional.empty());
 
-    assertThat(intervalles)
-      .extracting(IntervalleDActivite::plage)
-      .containsExactly(
-        new Plage(LE_LUNDI_11_MAI_2026_A_8H, Optional.of(LE_LUNDI_11_MAI_2026_A_10H)),
-        new Plage(LE_LUNDI_11_MAI_2026_A_10H, Optional.empty())
-      );
+    assertThat(intervalles).containsExactly(
+      new IntervalleDActivite(
+        activiteDeNonConformiteDuCarterSurLaDmu50(),
+        new Plage(LE_LUNDI_11_MAI_2026_A_8H, Optional.of(LE_LUNDI_11_MAI_2026_A_10H))
+      ),
+      new IntervalleDActivite(activiteDeNonConformiteDuCarterSurLaDmu50(), new Plage(LE_LUNDI_11_MAI_2026_A_10H, Optional.empty()))
+    );
   }
 
   /**

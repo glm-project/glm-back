@@ -66,6 +66,17 @@ public final class DecoupageCalendaire {
     return scindee(plage);
   }
 
+  /**
+   * L'intervalle d'activite coupe de la meme facon que la presence : ramene a la semaine, scinde a minuit, et rendu
+   * sur son seul jour de debut s'il est encore ouvert.
+   */
+  public List<IntervalleDUnJour> intervalles(IntervalleDActivite intervalle) {
+    return plages(intervalle.plage())
+      .stream()
+      .map(plage -> new IntervalleDUnJour(plage.jour(), intervalle.sur(plage.plage())))
+      .toList();
+  }
+
   private List<PlageDUnJour> surSonSeulJour(Plage plage) {
     LocalDate jour = jourDe(plage.debut());
 

@@ -57,6 +57,26 @@ public record JourneeDeTravail(List<EvenementDePresence> journal, Optional<Insta
   }
 
   /**
+   * Vrai si cet instant tombe entre l'arrivee et le depart pointes, une journee sans depart n'ayant pas de borne
+   * haute. Comme dans l'atelier, la fin presumee ne borne pas la journee : elle ne coupe que ses fenetres.
+   */
+  public boolean contient(Instant instant) {
+    return (
+      premierFait()
+        .filter(arrivee -> !instant.isBefore(arrivee))
+        .isPresent()
+      && dernier()
+        .filter(evenement -> evenement.type() == TypeDEvenementDePresence.DEPART)
+        .filter(depart -> instant.isAfter(depart.dateDeSurvenue()))
+        .isEmpty()
+    );
+  }
+
+  public Optional<Instant> arrivee() {
+    return premierFait();
+  }
+
+  /**
    * Vrai si la journee, toujours sans depart, a depasse le seuil a cet instant : son amplitude depuis l'arrivee est
    * strictement superieure au seuil.
    */

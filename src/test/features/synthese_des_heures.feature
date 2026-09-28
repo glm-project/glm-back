@@ -15,6 +15,13 @@ Feature: Synthese des heures hebdomadaire d'un operateur
   Background:
     Given I am logged in as "gestionnaire" with role "GESTIONNAIRE"
     And la synthese des heures suit l'operateur "dupont"
+    And la synthese des heures connait le poste "DMU 50" de nature "Fraisage"
+    And la synthese des heures connait le poste "Tour" de nature "Tournage"
+    And la synthese des heures suit l'operateur "martin" habilite sur
+      | DMU 50 |
+      | Tour   |
+    And la synthese des heures connait l'element "carter"
+    And la synthese des heures connait l'element "bride"
 
   Scenario: Une semaine sans pointage rend sept jours vides
     When je consulte la synthese des heures de "dupont" pour la semaine 20 de 2026
@@ -117,6 +124,178 @@ Feature: Synthese des heures hebdomadaire d'un operateur
     When je consulte la synthese des heures de "dupont" pour la semaine 20 de 2026
     Then le jour "2026-05-11" a une duree de "PT8H"
     And la duree totale de la semaine est "PT8H"
+
+  # Le temps operationnel : les pointages de l'operateur sur ses elements, rejoues poste par poste avec l'automate
+  # d'atelier, reduits a la presence de la journee ou chacun a commence, coupes a minuit, puis additionnes. Les
+  # durees se cumulent par element : une heure passee sur deux elements compte deux fois.
+  Scenario: Une fin coupe le travail, un debut le relance, et la coupure ne compte pas
+    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And "martin" pointe son arrivee a "2026-05-11T05:00:00Z"
+    And "martin" enregistre "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:05:00Z"
+    And "martin" enregistre "FIN" sur l'element "carter" au poste "DMU 50" a "2026-05-11T10:00:00Z"
+    And "martin" enregistre "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T11:00:00Z"
+    And "martin" enregistre le pointage "DEPART" a "2026-05-11T15:00:00Z"
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
+    Then la reponse a le statut http 200
+    And le jour "2026-05-11" a une duree operationnelle de "PT8H55M"
+    And la duree operationnelle totale de la semaine est "PT8H55M"
+
+  Scenario: Une non conformite compte dans l'element, a part
+    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And "martin" pointe son arrivee a "2026-05-11T05:00:00Z"
+    And "martin" enregistre "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:05:00Z"
+    And "martin" enregistre "NON_CONFORMITE" sur l'element "carter" au poste "DMU 50" a "2026-05-11T08:00:00Z"
+    And "martin" enregistre "FIN" sur l'element "carter" au poste "DMU 50" a "2026-05-11T09:00:00Z"
+    And "martin" enregistre le pointage "DEPART" a "2026-05-11T15:00:00Z"
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
+    Then les elements de la synthese sont
+      | id     | type    | duree   | dureeNonConformite | dureePresumee |
+      | carter | PRODUIT | PT3H55M | PT1H               | PT0S          |
+
+  Scenario: Un depart arrete le travail que personne n'a arrete
+    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And "martin" pointe son arrivee a "2026-05-11T05:00:00Z"
+    And "martin" enregistre "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:05:00Z"
+    And "martin" enregistre le pointage "DEPART" a "2026-05-11T10:00:00Z"
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
+    Then le jour "2026-05-11" a une duree operationnelle de "PT4H55M"
+
+  Scenario: Deux elements travailles en meme temps comptent chacun, au-dela de la presence
+    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And pour la synthese, l'element "bride" est engage en atelier a "2026-05-11T04:00:00Z"
+    And "martin" pointe son arrivee a "2026-05-11T05:00:00Z"
+    And "martin" enregistre "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:05:00Z"
+    And "martin" enregistre "DEBUT" sur l'element "bride" au poste "DMU 50" a "2026-05-11T06:00:00Z"
+    And "martin" enregistre le pointage "DEPART" a "2026-05-11T10:00:00Z"
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
+    Then le jour "2026-05-11" a une duree de "PT5H"
+    And le jour "2026-05-11" a une duree operationnelle de "PT8H55M"
+    And les elements de la synthese sont
+      | id     | duree   |
+      | carter | PT4H55M |
+      | bride  | PT4H    |
+
+  Scenario: Un element travaille sur deux postes porte deux couples de poste et de nature
+    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And "martin" pointe son arrivee a "2026-05-11T05:00:00Z"
+    And "martin" enregistre "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:05:00Z"
+    And "martin" enregistre "DEBUT" sur l'element "carter" au poste "Tour" a "2026-05-11T06:00:00Z"
+    And "martin" enregistre le pointage "DEPART" a "2026-05-11T10:00:00Z"
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
+    Then l'element "carter" de la synthese porte les postes
+      | poste  | nature   |
+      | DMU 50 | Fraisage |
+      | Tour   | Tournage |
+
+  Scenario: Le travail d'un poste de nuit se repartit sur les deux jours
+    # Minuit a Paris, c'est 22:00Z.
+    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-13T19:00:00Z"
+    And "martin" pointe son arrivee a "2026-05-13T20:00:00Z"
+    And "martin" enregistre "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-13T20:05:00Z"
+    And "martin" enregistre le pointage "DEPART" a "2026-05-14T00:00:00Z"
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
+    Then le jour "2026-05-13" a une duree operationnelle de "PT1H55M"
+    And le jour "2026-05-14" a une duree operationnelle de "PT2H"
+
+  Scenario: Le travail d'une journee abandonnee est presume en entier
+    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And "martin" pointe son arrivee a "2026-05-11T05:00:00Z"
+    And "martin" enregistre "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:05:00Z"
+    And "martin" enregistre "FIN" sur l'element "carter" au poste "DMU 50" a "2026-05-11T14:00:00Z"
+    And il est "2026-05-12T08:00:00Z"
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
+    Then le jour "2026-05-11" a une duree operationnelle de "PT0S"
+    And le jour "2026-05-11" a une duree operationnelle presumee de "PT8H55M"
+    And la duree operationnelle presumee totale de la semaine est "PT8H55M"
+
+  Scenario: Un travail en cours ne compte pas encore
+    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And "martin" pointe son arrivee a "2026-05-11T05:00:00Z"
+    And "martin" enregistre "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:05:00Z"
+    And il est "2026-05-11T09:00:00Z"
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
+    Then le jour "2026-05-11" a une duree operationnelle de "PT0S"
+    And les elements de la synthese sont
+      | id     | duree |
+      | carter | PT0S  |
+
+  Scenario: Un element reengage apres cloture reste un seul element
+    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And "martin" pointe son arrivee a "2026-05-11T05:00:00Z"
+    And "martin" enregistre "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:05:00Z"
+    And pour la synthese, l'element "carter" est cloture a "2026-05-11T07:00:00Z"
+    And pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T08:00:00Z"
+    And "martin" enregistre "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T08:05:00Z"
+    And "martin" enregistre le pointage "DEPART" a "2026-05-11T12:00:00Z"
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
+    Then les elements de la synthese sont
+      | id     | duree   |
+      | carter | PT5H50M |
+
+  Scenario: Un pointage annule disparait du journal
+    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And "martin" pointe son arrivee a "2026-05-11T05:00:00Z"
+    And "martin" enregistre "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:05:00Z"
+    And pour la synthese, le dernier pointage sur l'element "carter" est annule a "2026-05-11T06:00:00Z"
+    And "martin" enregistre le pointage "DEPART" a "2026-05-11T15:00:00Z"
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
+    Then les pointages du "2026-05-11" sont
+      | type    | dateDeSurvenue       |
+      | ARRIVEE | 2026-05-11T05:00:00Z |
+      | DEPART  | 2026-05-11T15:00:00Z |
+    And les elements de la synthese sont
+      | id |
+
+  Scenario: Le journal du jour mele presence et elements, l'arrivee et le depart aux bornes d'un meme instant
+    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And "martin" pointe son arrivee a "2026-05-11T05:00:00Z"
+    And "martin" enregistre "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:00:00Z"
+    And "martin" enregistre "FIN" sur l'element "carter" au poste "DMU 50" a "2026-05-11T15:00:00Z"
+    And "martin" enregistre le pointage "DEPART" a "2026-05-11T15:00:00Z"
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
+    Then le journal du "2026-05-11" est
+      | type    | dateDeSurvenue       | element | poste  |
+      | ARRIVEE | 2026-05-11T05:00:00Z |         |        |
+      | DEBUT   | 2026-05-11T05:00:00Z | carter  | DMU 50 |
+      | FIN     | 2026-05-11T15:00:00Z | carter  | DMU 50 |
+      | DEPART  | 2026-05-11T15:00:00Z |         |        |
+
+  Scenario: Le poste d'un pointage qui ne laisse aucun travail est nomme dans son element
+    # Lu le lendemain, la journee s'arrete a son dernier fait, le debut lui-meme : son travail est reduit a un instant
+    # et ne compte rien, mais le journal nomme le poste, que l'element doit porter.
+    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And "martin" pointe son arrivee a "2026-05-11T05:00:00Z"
+    And "martin" enregistre "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:05:00Z"
+    And il est "2026-05-12T08:00:00Z"
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
+    Then les elements de la synthese sont
+      | id     | duree | dureePresumee |
+      | carter | PT0S  | PT0S          |
+    And l'element "carter" de la synthese porte les postes
+      | poste  | nature   |
+      | DMU 50 | Fraisage |
+
+  Scenario: Les elements suivent leur premiere apparition dans la semaine
+    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And pour la synthese, l'element "bride" est engage en atelier a "2026-05-11T04:00:00Z"
+    And "martin" pointe son arrivee a "2026-05-11T05:00:00Z"
+    And "martin" enregistre "DEBUT" sur l'element "bride" au poste "Tour" a "2026-05-11T05:05:00Z"
+    And "martin" enregistre "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T06:00:00Z"
+    And "martin" enregistre le pointage "DEPART" a "2026-05-11T10:00:00Z"
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
+    Then les elements de la synthese sont
+      | id     |
+      | bride  |
+      | carter |
+
+  Scenario: La reference et la description d'un element sont relues au referentiel
+    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And "martin" pointe son arrivee a "2026-05-11T05:00:00Z"
+    And "martin" enregistre "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:05:00Z"
+    And "martin" enregistre le pointage "DEPART" a "2026-05-11T10:00:00Z"
+    And la fiche de l'element "carter" est revisee avec la reference "1015-B" et la description "Carter de pompe revise"
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
+    Then l'element "carter" de la synthese porte sa fiche revisee
 
   Scenario: Une synthese ne se lit pas pour un operateur inconnu
     When je consulte la synthese des heures de l'operateur "11111111-2222-3333-4444-555555555555" pour la semaine 20 de 2026

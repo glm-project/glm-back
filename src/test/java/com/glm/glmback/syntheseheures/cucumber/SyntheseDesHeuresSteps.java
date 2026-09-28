@@ -34,6 +34,7 @@ public class SyntheseDesHeuresSteps {
   private static final String SYNTHESES_URI = "/api/syntheses-des-heures";
   private static final String ELEMENTS_URI = "/api/elements-de-fabrication";
   private static final String SUIVIS_URI = "/api/atelier/suivis";
+  private static final String POSTES_URI = "/api/postes-de-travail";
   private static final ObjectMapper JSON = JsonMapper.builder().build();
   private static final AtomicInteger SEQUENCE = new AtomicInteger();
 
@@ -45,12 +46,105 @@ public class SyntheseDesHeuresSteps {
 
   private final Map<String, String> operateurs = new HashMap<>();
   private final Map<String, String> journees = new HashMap<>();
+  private final Map<String, String> postes = new HashMap<>();
+  private final Map<String, String> elements = new HashMap<>();
+  private final Map<String, String> suivis = new HashMap<>();
+  private final Map<String, Map<String, String>> fichesRevisees = new HashMap<>();
+  private String dernierPointage;
 
   @Given("la synthese des heures suit l'operateur {string}")
   public void laSyntheseDesHeuresSuitLOperateur(String alias) {
     Map<String, Object> corps = Map.of("nom", alias, "prenom", "Synthese " + SEQUENCE.incrementAndGet(), "postes", List.of());
     rest.post(OPERATEURS_URI, JSON.writeValueAsString(corps));
     operateurs.put(alias, String.valueOf(CucumberRestTestContext.getElement("$.id")));
+  }
+
+  @Given("la synthese des heures connait le poste {string} de nature {string}")
+  public void laSyntheseDesHeuresConnaitLePoste(String alias, String nature) {
+    rest.post(
+      POSTES_URI,
+      JSON.writeValueAsString(Map.of("libelle", "Synthese " + alias + " " + SEQUENCE.incrementAndGet(), "nature", nature))
+    );
+    postes.put(alias, id());
+  }
+
+  @Given("la synthese des heures suit l'operateur {string} habilite sur")
+  public void laSyntheseDesHeuresSuitLOperateurHabiliteSur(String alias, List<String> habilitations) {
+    Map<String, Object> corps = Map.of(
+      "nom",
+      alias,
+      "prenom",
+      "Synthese " + SEQUENCE.incrementAndGet(),
+      "postes",
+      habilitations.stream().map(postes::get).toList()
+    );
+    rest.post(OPERATEURS_URI, JSON.writeValueAsString(corps));
+    operateurs.put(alias, id());
+  }
+
+  @Given("la synthese des heures connait l'element {string}")
+  public void laSyntheseDesHeuresConnaitLElement(String alias) {
+    Map<String, Object> element = Map.of("type", "PRODUIT", "reference", "SYNTHESE-" + alias + "-" + SEQUENCE.incrementAndGet());
+    rest.post(ELEMENTS_URI, JSON.writeValueAsString(element));
+    elements.put(alias, id());
+  }
+
+  /**
+   * La fiche a ete creee a l'heure reelle, en debut de scenario : sa revision ne peut pas la preceder. La reference,
+   * unique dans l'entreprise, recoit un suffixe propre au scenario.
+   */
+  @Given("la fiche de l'element {string} est revisee avec la reference {string} et la description {string}")
+  public void laFicheDeLElementEstRevisee(String alias, String reference, String description) {
+    horloge.ilEst(Instant.now());
+    String unique = reference + "-" + SEQUENCE.incrementAndGet();
+    rest.put(ELEMENTS_URI + "/" + elements.get(alias), JSON.writeValueAsString(Map.of("reference", unique, "description", description)));
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("la revision de la fiche doit etre acceptee").isTrue();
+    fichesRevisees.put(alias, Map.of("reference", unique, "description", description));
+  }
+
+  /**
+   * Engager un element deja cloture ouvre un nouveau suivi : c'est le reengagement, qui reste le meme element.
+   */
+  @Given("pour la synthese, l'element {string} est engage en atelier a {string}")
+  public void pourLaSyntheseLElementEstEngageA(String alias, String instant) {
+    horloge.ilEst(Instant.parse(instant));
+    rest.post(SUIVIS_URI, JSON.writeValueAsString(Map.of("element", elements.get(alias))));
+    suivis.put(alias, id());
+  }
+
+  @Given("{string} enregistre {string} sur l'element {string} au poste {string} a {string}")
+  public void enregistreSurLElementAuPoste(String operateur, String type, String element, String poste, String instant) {
+    horloge.ilEst(Instant.parse(instant));
+    dernierPointage = UUID.randomUUID().toString();
+    Map<String, Object> corps = Map.of(
+      "id",
+      dernierPointage,
+      "type",
+      type,
+      "operateur",
+      operateurs.get(operateur),
+      "poste",
+      postes.get(poste)
+    );
+    rest.post(SUIVIS_URI + "/" + suivis.get(element) + "/pointages", JSON.writeValueAsString(corps));
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage de l'element doit etre accepte").isTrue();
+  }
+
+  @Given("pour la synthese, le dernier pointage sur l'element {string} est annule a {string}")
+  public void pourLaSyntheseLeDernierPointageEstAnnule(String element, String instant) {
+    horloge.ilEst(Instant.parse(instant));
+    rest.post(
+      SUIVIS_URI + "/" + suivis.get(element) + "/evenements/" + dernierPointage + "/annulation",
+      JSON.writeValueAsString(Map.of("motif", "saisie en trop"))
+    );
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("l'annulation doit etre acceptee").isTrue();
+  }
+
+  @Given("pour la synthese, l'element {string} est cloture a {string}")
+  public void pourLaSyntheseLElementEstClotureA(String element, String instant) {
+    horloge.ilEst(Instant.parse(instant));
+    rest.put(SUIVIS_URI + "/" + suivis.get(element) + "/cloture", JSON.writeValueAsString(Map.of("dateDeSurvenue", instant)));
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("la cloture doit etre acceptee").isTrue();
   }
 
   @Given("{string} pointe son arrivee a {string}")
@@ -150,6 +244,95 @@ public class SyntheseDesHeuresSteps {
   @Then("la duree totale de la semaine est {string}")
   public void laDureeTotaleDeLaSemaineEst(String duree) {
     assertThat(CucumberRestTestContext.getElement("$.dureeTotale")).isEqualTo(duree);
+  }
+
+  @Then("le jour {string} a une duree operationnelle de {string}")
+  public void leJourAUneDureeOperationnelleDe(String jour, String duree) {
+    assertThat(jourDe(jour).get("dureeOperationnelle")).isEqualTo(duree);
+  }
+
+  @Then("le jour {string} a une duree operationnelle presumee de {string}")
+  public void leJourAUneDureeOperationnellePresumeeDe(String jour, String duree) {
+    assertThat(jourDe(jour).get("dureeOperationnellePresumee")).isEqualTo(duree);
+  }
+
+  @Then("la duree operationnelle totale de la semaine est {string}")
+  public void laDureeOperationnelleTotaleDeLaSemaineEst(String duree) {
+    assertThat(CucumberRestTestContext.getElement("$.dureeOperationnelleTotale")).isEqualTo(duree);
+  }
+
+  @Then("la duree operationnelle presumee totale de la semaine est {string}")
+  public void laDureeOperationnellePresumeeTotaleDeLaSemaineEst(String duree) {
+    assertThat(CucumberRestTestContext.getElement("$.dureeOperationnellePresumeeTotale")).isEqualTo(duree);
+  }
+
+  /**
+   * Le journal du jour, identifiants ramenes aux alias du scenario. Une cellule vide dit que le champ est absent.
+   */
+  @Then("le journal du {string} est")
+  public void leJournalDuEst(String jour, List<Map<String, String>> attendus) {
+    compare(pointagesDu(jour), attendus);
+  }
+
+  /**
+   * Les elements de la semaine, dans l'ordre rendu, chacun reduit aux colonnes du tableau.
+   */
+  @Then("les elements de la synthese sont")
+  public void lesElementsDeLaSyntheseSont(List<Map<String, String>> attendus) {
+    compare(elementsDeLaSynthese(), attendus);
+  }
+
+  @Then("l'element {string} de la synthese porte les postes")
+  public void lElementDeLaSynthesePorteLesPostes(String element, List<Map<String, String>> attendus) {
+    List<Map<String, Object>> lus = postesDe(elementDeLaSynthese(element))
+      .stream()
+      .map(poste -> Map.<String, Object>of("poste", ((Map<?, ?>) poste.get("poste")).get("id"), "nature", poste.get("nature")))
+      .toList();
+
+    compare(lus, attendus);
+  }
+
+  @Then("l'element {string} de la synthese porte sa fiche revisee")
+  public void lElementDeLaSynthesePorteSaFicheRevisee(String element) {
+    assertThat(elementDeLaSynthese(element)).containsAllEntriesOf(fichesRevisees.get(element));
+  }
+
+  private void compare(List<Map<String, Object>> lus, List<Map<String, String>> attendus) {
+    assertThat(lus).hasSameSizeAs(attendus);
+    for (int rang = 0; rang < attendus.size(); rang++) {
+      Map<String, Object> lu = lus.get(rang);
+      attendus.get(rang).forEach((cle, valeur) -> assertThat(lu.get(cle)).as(cle).isEqualTo(attendu(cle, valeur)));
+    }
+  }
+
+  private Object attendu(String cle, String valeur) {
+    return switch (cle) {
+      case "element", "id" -> elements.get(valeur);
+      case "poste" -> postes.get(valeur);
+      default -> valeur;
+    };
+  }
+
+  private Map<String, Object> elementDeLaSynthese(String alias) {
+    return elementsDeLaSynthese()
+      .stream()
+      .filter(element -> elements.get(alias).equals(element.get("id")))
+      .findFirst()
+      .orElseThrow();
+  }
+
+  @SuppressWarnings("unchecked")
+  private static List<Map<String, Object>> elementsDeLaSynthese() {
+    return (List<Map<String, Object>>) CucumberRestTestContext.getElement("$.elements");
+  }
+
+  @SuppressWarnings("unchecked")
+  private static List<Map<String, Object>> postesDe(Map<String, Object> element) {
+    return (List<Map<String, Object>>) element.get("postes");
+  }
+
+  private static String id() {
+    return String.valueOf(CucumberRestTestContext.getElement("$.id"));
   }
 
   private void consulte(String operateur, int semaine, int annee) {

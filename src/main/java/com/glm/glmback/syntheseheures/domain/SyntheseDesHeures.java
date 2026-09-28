@@ -12,11 +12,21 @@ import java.util.List;
  * saisie regularisee apres coup compte a l'heure ou le travail a eu lieu.
  * </p>
  */
-public record SyntheseDesHeures(OperateurConnu operateur, SemaineCalendaire semaine, List<JourDeSynthese> jours) {
+public record SyntheseDesHeures(
+  OperateurConnu operateur,
+  SemaineCalendaire semaine,
+  List<JourDeSynthese> jours,
+  List<ElementDeLaSynthese> elements
+) {
   public SyntheseDesHeures {
     Assert.notNull("operateur", operateur);
     Assert.notNull("semaine", semaine);
     Assert.field("jours", jours).notNull().noNullElement();
+    Assert.field("elements", elements).notNull().noNullElement();
+  }
+
+  static SyntheseDesHeuresOperateurBuilder builder() {
+    return operateur -> semaine -> jours -> elements -> new SyntheseDesHeures(operateur, semaine, jours, elements);
   }
 
   /**
@@ -31,5 +41,33 @@ public record SyntheseDesHeures(OperateurConnu operateur, SemaineCalendaire sema
    */
   public Duration dureePresumeeTotale() {
     return jours.stream().map(JourDeSynthese::dureePresumee).reduce(Duration.ZERO, Duration::plus);
+  }
+
+  /**
+   * Le temps operationnel pointe de la semaine, somme des sept jours. Il se cumule par element, et peut donc depasser
+   * la presence.
+   */
+  public Duration dureeOperationnelleTotale() {
+    return jours.stream().map(JourDeSynthese::dureeOperationnelle).reduce(Duration.ZERO, Duration::plus);
+  }
+
+  public Duration dureeOperationnellePresumeeTotale() {
+    return jours.stream().map(JourDeSynthese::dureeOperationnellePresumee).reduce(Duration.ZERO, Duration::plus);
+  }
+
+  interface SyntheseDesHeuresOperateurBuilder {
+    SyntheseDesHeuresSemaineBuilder operateur(OperateurConnu operateur);
+  }
+
+  interface SyntheseDesHeuresSemaineBuilder {
+    SyntheseDesHeuresJoursBuilder semaine(SemaineCalendaire semaine);
+  }
+
+  interface SyntheseDesHeuresJoursBuilder {
+    SyntheseDesHeuresElementsBuilder jours(List<JourDeSynthese> jours);
+  }
+
+  interface SyntheseDesHeuresElementsBuilder {
+    SyntheseDesHeures elements(List<ElementDeLaSynthese> elements);
   }
 }

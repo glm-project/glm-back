@@ -71,7 +71,7 @@ class ReductionALaPresenceTest {
   @Test
   void shouldRattacherLeTravailALaJourneeLaPlusRecente() {
     JourneeDeTravail abandonnee = journeeDuLundiDe7HSansDepart().presumee(AMPLITUDE_MAXIMALE_13H, Optional.of(LE_LUNDI_11_MAI_2026_A_16H));
-    ReductionALaPresence reduction = new ReductionALaPresence(List.of(journeeDuMardiOuverteA8H(), abandonnee));
+    ReductionALaPresence reduction = new ReductionALaPresence(List.of(abandonnee, journeeDuMardiOuverteA8H()));
 
     assertThat(reduction.reduit(travailDuCarter(new Plage(LE_MARDI_12_MAI_2026_A_9H, Optional.empty())))).containsExactly(
       travailDuCarter(new Plage(LE_MARDI_12_MAI_2026_A_9H, Optional.empty()))
