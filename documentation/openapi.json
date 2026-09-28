@@ -3130,7 +3130,7 @@
     },
     "/api/parametrage/amplitude-maximale" : {
       "put" : {
-        "description" : "Au-dela de cette duree depuis l'arrivee, pauses comprises, une journee sans depart est abandonnee. 13 h par\ndefaut. La valeur se compte a la minute et reste strictement sous 24 h, pour qu'un retour le lendemain a la meme\nheure soit toujours une nouvelle arrivee.\n",
+        "description" : "Au-dela de cette duree depuis l'arrivee, une journee sans depart est abandonnee. 13 h par defaut. La valeur se\ncompte a la minute et reste strictement sous 24 h, pour qu'un retour le lendemain a la meme heure soit toujours\nune nouvelle arrivee.\n",
         "operationId" : "fixeLAmplitudeMaximale",
         "requestBody" : {
           "content" : {

@@ -543,7 +543,7 @@ laisse donc sa tuile intacte, privée de sa seule référence.
 
 ## parametrage
 
-Porte le **paramétrage d'une entreprise** : pour l'instant, la seule **amplitude maximale** d'une journée de travail (décision D1 de [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md)). Au-delà de cette durée depuis l'arrivée, pauses comprises, une journée sans départ sera abandonnée (lot 3). Le gestionnaire la fixe ; l'opérateur la lit.
+Porte le **paramétrage d'une entreprise** : pour l'instant, la seule **amplitude maximale** d'une journée de travail (décision D1 de [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md)). Au-delà de cette durée depuis l'arrivée, une journée sans départ sera abandonnée (lot 3). Le gestionnaire la fixe ; l'opérateur la lit.
 
 **La valeur par défaut n'est pas une constante du code.** Elle est semée en base, 13 h, par le changelog qui crée la table, dans chaque schéma d'entreprise. C'est la règle du dépôt pour toute donnée de paramétrage : le domaine la reçoit par un port. Une entreprise neuve reçoit donc sa ligne en même temps que son schéma, et aucune lecture ne tombe jamais sur une valeur absente.
 

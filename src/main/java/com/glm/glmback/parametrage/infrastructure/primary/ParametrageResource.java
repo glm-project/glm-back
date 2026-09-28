@@ -40,9 +40,9 @@ class ParametrageResource {
   @Operation(
     summary = "Fixer l'amplitude maximale d'une journee de travail",
     description = """
-    Au-dela de cette duree depuis l'arrivee, pauses comprises, une journee sans depart est abandonnee. 13 h par
-    defaut. La valeur se compte a la minute et reste strictement sous 24 h, pour qu'un retour le lendemain a la meme
-    heure soit toujours une nouvelle arrivee.
+    Au-dela de cette duree depuis l'arrivee, une journee sans depart est abandonnee. 13 h par defaut. La valeur se
+    compte a la minute et reste strictement sous 24 h, pour qu'un retour le lendemain a la meme heure soit toujours
+    une nouvelle arrivee.
     """
   )
   @ApiResponse(responseCode = "200", description = "Le parametrage modifie.")
