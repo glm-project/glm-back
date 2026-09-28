@@ -43,13 +43,13 @@ Feature: Cout de revient d'un element de fabrication
     And "OF 3003" est mis en atelier a "2026-05-11T07:00:00Z"
     And "dupont" prend son poste a "2026-05-11T08:00:00Z"
     And "dupont" pointe "DEBUT" sur "OF 3003" au poste "fraiseuse" a "2026-05-11T10:00:00Z"
-    And "dupont" pointe sa presence "PAUSE" a "2026-05-11T12:00:00Z"
-    And "dupont" pointe sa presence "REPRISE" a "2026-05-11T13:00:00Z"
+    And "dupont" pointe "FIN" sur "OF 3003" au poste "fraiseuse" a "2026-05-11T12:00:00Z"
+    And "dupont" pointe "DEBUT" sur "OF 3003" au poste "fraiseuse" a "2026-05-11T13:00:00Z"
     And "dupont" pointe "FIN" sur "OF 3003" au poste "fraiseuse" a "2026-05-11T14:00:00Z"
     When je consulte le cout de revient de "OF 3003" a "2026-05-11T18:00:00Z"
     Then la reponse a le statut http 200
-    # Quatre heures pointees, trois heures de presence effective : la pause n'a jamais eu besoin d'etre recopiee dans
-    # le journal de l'element.
+    # Quatre heures de 10 h a 14 h, trois de travail : le pupitre a pointe la pause de midi par une fin et un debut
+    # dans le journal de l'element.
     And le rapport porte les lignes
       | nature   | travail | nonConformite | machine | mainDOeuvre |
       | Fraisage | PT3H    | PT0S          | 135.00  | 60.00       |
@@ -109,8 +109,8 @@ Feature: Cout de revient d'un element de fabrication
     And "OF 3015" est mis en atelier a "2026-05-11T07:00:00Z"
     And "dupont" prend son poste a "2026-05-11T08:00:00Z"
     And "dupont" pointe "DEBUT" sur "OF 3014" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
-    And "dupont" pointe sa presence "PAUSE" a "2026-05-11T12:00:00Z"
-    And "dupont" pointe sa presence "REPRISE" a "2026-05-11T13:00:00Z"
+    And "dupont" pointe "FIN" sur "OF 3014" au poste "fraiseuse" a "2026-05-11T12:00:00Z"
+    And "dupont" pointe "DEBUT" sur "OF 3014" au poste "fraiseuse" a "2026-05-11T13:00:00Z"
     And "dupont" pointe "DEBUT" sur "OF 3015" au poste "tour" a "2026-05-11T15:00:00Z"
     And "dupont" prend son poste a "2026-05-12T08:00:00Z"
     And "dupont" pointe "DEBUT" sur "OF 3014" au poste "fraiseuse" a "2026-05-12T09:00:00Z"
@@ -124,13 +124,13 @@ Feature: Cout de revient d'un element de fabrication
 
   Scenario: Une journee fermee de plus de 24 h n'est valorisee que jusqu'a sa fin presumee
     # Issue #59 : lundi, Dupont ne pointe pas son depart ; le gestionnaire le saisit mercredi a 8 h sur la meme journee.
-    # Plus de 24 h ne se vivent pas d'une traite : la journee s'arrete au dernier fait de lundi, la reprise de 13:00.
+    # Plus de 24 h ne se vivent pas d'une traite : la journee s'arrete au dernier fait de lundi, la relance de 13:00.
     Given l'entreprise fabrique "OF 3016"
     And "OF 3016" est mis en atelier a "2026-05-11T07:00:00Z"
     And "dupont" prend son poste a "2026-05-11T08:00:00Z"
     And "dupont" pointe "DEBUT" sur "OF 3016" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
-    And "dupont" pointe sa presence "PAUSE" a "2026-05-11T12:00:00Z"
-    And "dupont" pointe sa presence "REPRISE" a "2026-05-11T13:00:00Z"
+    And "dupont" pointe "FIN" sur "OF 3016" au poste "fraiseuse" a "2026-05-11T12:00:00Z"
+    And "dupont" pointe "DEBUT" sur "OF 3016" au poste "fraiseuse" a "2026-05-11T13:00:00Z"
     And le depart de "dupont" est rattrape sur sa journee a "2026-05-13T08:00:00Z"
     When je consulte le cout de revient de "OF 3016" a "2026-05-13T18:00:00Z"
     Then la reponse a le statut http 200
