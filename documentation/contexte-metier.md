@@ -369,9 +369,8 @@ Il dérive des taux horaires des opérateurs, que le pupitre n'a aucune raison d
 
 Troisième **projection transverse** du projet, après `feuilledetemps` et `coutderevient` : un contexte purement
 lecteur, qui ne possède aucune table et recalcule tout à chaque appel. Il répond à une seule question — _combien
-d'heures cette personne a-t-elle travaillées cette semaine, jour par jour_ — pour alimenter la paie, sans en être
-une pièce : ni feuille de paie, ni valorisation en euros, ni heures supplémentaires pour l'instant (règle non
-fournie par le client).
+d'heures cette personne a-t-elle été présente cette semaine, jour par jour_ — et ne sert pas à la paie : ni feuille
+de paie, ni valorisation en euros, ni heures supplémentaires pour l'instant (règle non fournie par le client).
 
 ### Pourquoi il n'est pas dans atelier
 

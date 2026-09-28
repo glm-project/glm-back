@@ -6,9 +6,9 @@ Responsabilité, frontières et invariants de ce contexte. Les règles de code c
 
 ## Ce dont ce contexte s'occupe
 
-**Relever les heures travaillées d'un opérateur, semaine par semaine, pour alimenter la paie.** Un seul acte : lire
-le journal de présence d'un opérateur sur une semaine ISO donnée, jour par jour — le journal brut des pointages
-(arrivée, départ), et la durée qui en découle.
+**Relever les heures de présence d'un opérateur, semaine par semaine.** La présence ne sert pas à payer. Un seul
+acte : lire le journal de présence d'un opérateur sur une semaine ISO donnée, jour par jour — le journal brut des
+pointages (arrivée, départ), et la durée qui en découle.
 
 C'est une **projection transverse**, comme `feuilledetemps` et `coutderevient` : un contexte purement lecteur, qui
 ne possède aucune table, n'écrit rien, et recalcule tout à chaque appel.

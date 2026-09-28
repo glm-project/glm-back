@@ -52,8 +52,7 @@ class SyntheseDesHeuresResource {
     dernier fait connu, dans dureePresumee et jamais dans duree. C'est l'instant de lecture qui en decide, donc deux
     appels espaces peuvent differer.
 
-    Ce releve n'est ni une feuille de paie ni un rapport de paie : il expose du temps travaille pour l'alimenter,
-    sans en etre une piece.
+    Ce releve n'est ni une feuille de paie ni un rapport de paie : il releve la presence, qui ne sert pas a payer.
     """
   )
   @ApiResponse(responseCode = "200", description = "La synthese des heures de la semaine demandee.")

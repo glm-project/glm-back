@@ -27,7 +27,7 @@ public record SyntheseDesHeures(OperateurConnu operateur, SemaineCalendaire sema
   }
 
   /**
-   * La duree presumee de la semaine : ce qui reste a confirmer avant de transmettre a la paie.
+   * La duree presumee de la semaine : ce qui reste a confirmer par une regularisation du depart.
    */
   public Duration dureePresumeeTotale() {
     return jours.stream().map(JourDeSynthese::dureePresumee).reduce(Duration.ZERO, Duration::plus);
