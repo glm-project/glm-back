@@ -33,14 +33,14 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(
   name = "Atelier - presence des operateurs",
   description = """
-  La presence des operateurs : arrivee, pause, reprise, depart.
+  La presence des operateurs : arrivee, depart.
 
   Une journee de travail est une venue, bornee par une arrivee et un depart. Ce n'est pas un jour calendaire : le
   contexte ne connait ni fuseau horaire ni date.
 
-  La presence est ecrite une seule fois, ici, et jamais recopiee dans le journal des elements. C'est ce qui permet a un
-  seul bouton de pause de scinder tout ce que l'operateur avait en cours, et a une seule regularisation de depart de
-  refermer tous ses elements de la journee.
+  Le depart est ecrit une seule fois, ici, et jamais recopie dans le journal des elements. C'est ce qui permet a une
+  seule regularisation de depart de refermer tous les elements de la journee. La pause n'est pas un evenement de
+  presence : le pupitre la pointe sur les elements, par une fin puis un debut sur chaque activite.
   """
 )
 class JourneeDeTravailResource {
@@ -96,17 +96,17 @@ class JourneeDeTravailResource {
 
   @PostMapping("/pointages")
   @Operation(
-    summary = "Pointer une pause, une reprise ou un depart",
+    summary = "Pointer un depart",
     description = """
     Vise la journee ouverte de l'operateur, retrouvee par le serveur : aucun identifiant de journee n'est a fournir.
 
-    Un seul appel, quel que soit le nombre d'elements en cours. Ne jamais boucler sur les elements pour repercuter une
-    pause : le croisement est fait a la lecture du temps effectif.
+    Un seul appel, quel que soit le nombre d'elements en cours : le depart referme a la lecture du temps effectif ce
+    que l'operateur a oublie d'arreter.
 
     Un geste n'est jamais refuse parce que la journee ne s'y prete pas. Sans journee ouverte, ou si elle a depasse
     l'amplitude maximale a l'heure du geste, le geste ouvre une nouvelle journee par une arrivee implicite a son heure,
-    puis s'y applique ; une reprise s'y reduit a l'arrivee. Redondant avec l'etat courant (une pause deja en pause, une
-    reprise deja present), il est absorbe. Deux saisies simultanees sont rejouees par le serveur.
+    puis s'y applique. Redondant avec l'etat courant (une arrivee egaree ici pour un operateur deja present), il est
+    absorbe. Deux saisies simultanees sont rejouees par le serveur.
     """
   )
   @ApiResponse(responseCode = "201", description = "Le pointage est enregistre, le cas echeant dans une nouvelle journee.")
@@ -125,7 +125,7 @@ class JourneeDeTravailResource {
   @GetMapping("/{id}")
   @Operation(
     summary = "Consulter une journee de travail",
-    description = "Expose a la fois l'amplitude et les fenetres : le contexte ne choisit pas laquelle compte pour la paie."
+    description = "Expose l'amplitude, les fenetres de presence et le journal complet de la journee."
   )
   @ApiResponse(responseCode = "404", description = "Journee introuvable.")
   RestJourneeDeTravail get(@PathVariable UUID id) {

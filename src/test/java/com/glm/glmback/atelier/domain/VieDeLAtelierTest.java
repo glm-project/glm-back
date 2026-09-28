@@ -18,14 +18,15 @@ import org.junit.jupiter.api.Test;
  * <p>
  * La ou les tests voisins verifient chacun une mecanique isolee, celui-ci enonce le fonctionnement demande par le
  * client : un operateur pointe sa presence d'un cote, ses ordres de fabrication de l'autre, mene deux machines de
- * front, et un seul bouton de pause suffit a scinder tout ce qui est en cours. Il tient lieu de scenario metier tant
- * que le contexte n'a ni adapter primaire ni feature Gherkin.
+ * front, et sa pause de midi arrete puis relance tout ce qui est en cours. Il tient lieu de scenario metier tant que
+ * le contexte n'a ni adapter primaire ni feature Gherkin.
  * </p>
  *
  * <p>
- * Le recit : Dupont arrive a 7 h, demarre l'OF 42 sur la fraiseuse 1 a 8 h, l'OF 43 sur la fraiseuse 2 a 9 h, part en
- * pause a midi, reprend a 13 h, termine l'OF 43 a 16 h, puis rentre chez lui a 17 h <em>sans rien pointer</em> — ni
- * son depart, ni la fin de l'OF 42. Le lendemain, Leroy regularise le depart oublie.
+ * Le recit : Dupont arrive a 7 h, demarre l'OF 42 sur la fraiseuse 1 a 8 h, l'OF 43 sur la fraiseuse 2 a 9 h, les
+ * arrete tous deux a midi pour sa pause et les redemarre a 13 h — une fin et un debut par ordre, que le pupitre pointe
+ * pour lui —, termine l'OF 43 a 16 h, puis rentre chez lui a 17 h <em>sans rien pointer</em> — ni son depart, ni la
+ * fin de l'OF 42. Le lendemain, Leroy regularise le depart oublie.
  * </p>
  */
 @UnitTest
@@ -71,10 +72,12 @@ class VieDeLAtelierTest {
     atelier.pointe(pointage(secondOrdre, TypeDEvenementDAtelier.DEBUT, POSTE_ID_FRAISEUSE_2));
 
     ilEst(LE_10_MAI_2026_A_12H);
-    presence.pointe(new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.PAUSE));
+    atelier.pointe(pointage(premierOrdre, TypeDEvenementDAtelier.FIN, POSTE_ID_FRAISEUSE_1));
+    atelier.pointe(pointage(secondOrdre, TypeDEvenementDAtelier.FIN, POSTE_ID_FRAISEUSE_2));
 
     ilEst(LE_10_MAI_2026_A_13H);
-    presence.pointe(new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.REPRISE));
+    atelier.pointe(pointage(premierOrdre, TypeDEvenementDAtelier.DEBUT, POSTE_ID_FRAISEUSE_1));
+    atelier.pointe(pointage(secondOrdre, TypeDEvenementDAtelier.DEBUT, POSTE_ID_FRAISEUSE_2));
 
     ilEst(LE_10_MAI_2026_A_16H);
     atelier.pointe(pointage(secondOrdre, TypeDEvenementDAtelier.FIN, POSTE_ID_FRAISEUSE_2));
@@ -91,25 +94,22 @@ class VieDeLAtelierTest {
 
   /**
    * « Les heures de presence, c'est les heures ou il arrive a la societe, il pointe et il part » : l'amplitude court
-   * de l'arrivee au depart, la pause n'en retirant que son propre creux.
+   * de l'arrivee au depart, et la pause de midi, pointee sur les ordres, ne l'interrompt pas.
    */
   @Test
   void shouldSuivreLaPresenceDeLArriveeAuDepart() {
     JourneeDeTravail journee = presence.get(journeeDeDupont);
 
     assertThat(journee.amplitude()).contains(new Periode(LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_17H));
-    assertThat(journee.fenetres()).containsExactly(
-      new FenetreDePresence(LE_10_MAI_2026_A_7H, Optional.of(LE_10_MAI_2026_A_12H)),
-      new FenetreDePresence(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_17H))
-    );
+    assertThat(journee.fenetres()).containsExactly(new FenetreDePresence(LE_10_MAI_2026_A_7H, Optional.of(LE_10_MAI_2026_A_17H)));
   }
 
   /**
-   * Le test qui porte le modele : apres son debut a 8 h, l'OF 42 n'a plus recu le moindre pointage. C'est la presence
-   * seule qui le scinde a midi et le referme au depart regularise.
+   * Le test qui porte le modele : la pause de midi scinde l'OF 42 par sa fin et son debut, puis, apres sa relance a
+   * 13 h, l'OF 42 n'a plus recu le moindre pointage. C'est la presence seule qui le referme au depart regularise.
    */
   @Test
-  void shouldScinderEtRefermerLePremierOrdreSansAucunPointageApresSonDebut() {
+  void shouldScinderLePremierOrdreASaPauseEtLeRefermerAuDepartRegularise() {
     assertThat(temps.tempsEffectif(premierOrdre))
       .extracting(IntervalleDActivite::poste, IntervalleDActivite::debut, IntervalleDActivite::fin)
       .containsExactly(
@@ -139,32 +139,28 @@ class VieDeLAtelierTest {
    */
   @Test
   void shouldEstampillerLeCoutEtLeTauxHoraireALaSaisie() {
-    assertThat(atelier.get(premierOrdre).journal().actifs())
-      .singleElement()
-      .satisfies(evenement -> {
-        assertThat(evenement.coutHoraire()).contains(COUT_HORAIRE_FRAISEUSE_1);
-        assertThat(evenement.tauxHoraire()).contains(TAUX_HORAIRE_DUPONT);
-      });
-    assertThat(atelier.get(secondOrdre).journal().actifs())
-      .element(0)
-      .satisfies(evenement -> {
-        assertThat(evenement.coutHoraire()).isEmpty();
-        assertThat(evenement.tauxHoraire()).contains(TAUX_HORAIRE_DUPONT);
-      });
+    assertThat(atelier.get(premierOrdre).journal().actifs()).allSatisfy(evenement -> {
+      assertThat(evenement.coutHoraire()).contains(COUT_HORAIRE_FRAISEUSE_1);
+      assertThat(evenement.tauxHoraire()).contains(TAUX_HORAIRE_DUPONT);
+    });
+    assertThat(atelier.get(secondOrdre).journal().actifs()).allSatisfy(evenement -> {
+      assertThat(evenement.coutHoraire()).isEmpty();
+      assertThat(evenement.tauxHoraire()).contains(TAUX_HORAIRE_DUPONT);
+    });
   }
 
   /**
-   * « Ne mettez qu'un bouton pas trois » : un seul geste de pause, et aucune recopie dans les ordres en cours. Le
-   * journal de chaque ordre ne contient que ce que l'operateur y a pointe.
+   * « Pause / arret / reprise sont le meme mecanisme » : la pause de midi se lit dans le journal de chaque ordre, par la
+   * fin et le debut que le pupitre y a pointes, et nulle part ailleurs.
    */
   @Test
-  void shouldNePasRecopierLaPauseDansLeJournalDesOrdres() {
+  void shouldPorterLaPauseDeMidiDansLeJournalDeChaqueOrdre() {
     assertThat(atelier.get(premierOrdre).journal().actifs())
       .extracting(EvenementDAtelier::type)
-      .containsExactly(TypeDEvenementDAtelier.DEBUT);
+      .containsExactly(TypeDEvenementDAtelier.DEBUT, TypeDEvenementDAtelier.FIN, TypeDEvenementDAtelier.DEBUT);
     assertThat(atelier.get(secondOrdre).journal().actifs())
       .extracting(EvenementDAtelier::type)
-      .containsExactly(TypeDEvenementDAtelier.DEBUT, TypeDEvenementDAtelier.FIN);
+      .containsExactly(TypeDEvenementDAtelier.DEBUT, TypeDEvenementDAtelier.FIN, TypeDEvenementDAtelier.DEBUT, TypeDEvenementDAtelier.FIN);
   }
 
   /**

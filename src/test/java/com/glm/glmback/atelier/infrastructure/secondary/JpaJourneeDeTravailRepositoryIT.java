@@ -9,6 +9,7 @@ import com.glm.glmback.atelier.domain.Annulation;
 import com.glm.glmback.atelier.domain.EtatDePresence;
 import com.glm.glmback.atelier.domain.EvenementDePresence;
 import com.glm.glmback.atelier.domain.EvenementDePresenceId;
+import com.glm.glmback.atelier.domain.FenetreDePresence;
 import com.glm.glmback.atelier.domain.Horodatage;
 import com.glm.glmback.atelier.domain.JourneeDeTravail;
 import com.glm.glmback.atelier.domain.JourneeDeTravailCriteria;
@@ -83,7 +84,7 @@ class JpaJourneeDeTravailRepositoryIT {
     JourneeDeTravail relue = inTransaction(() -> journees.get(complete.id())).orElseThrow();
     assertThat(relue).isEqualTo(complete);
     assertThat(relue.amplitude()).contains(new Periode(arrivee, arrivee.plusSeconds(36000)));
-    assertThat(relue.fenetres()).hasSize(2);
+    assertThat(relue.fenetres()).containsExactly(new FenetreDePresence(arrivee, Optional.of(arrivee.plusSeconds(36000))));
   }
 
   @Test
@@ -256,7 +257,7 @@ class JpaJourneeDeTravailRepositoryIT {
     JourneeDeTravail ouverte = journeeOuverteA(operateur, arrivee);
     inTransaction(() -> journees.create(ouverte));
 
-    JourneeDeTravail premiereSaisie = ouverte.enregistre(presence(TypeDEvenementDePresence.PAUSE, arrivee.plusSeconds(18000)));
+    JourneeDeTravail premiereSaisie = ouverte.enregistre(presence(TypeDEvenementDePresence.DEPART, arrivee.plusSeconds(18000)));
     JourneeDeTravail secondeSaisie = ouverte.enregistre(presence(TypeDEvenementDePresence.DEPART, arrivee.plusSeconds(36000)));
     inTransaction(() -> journees.update(premiereSaisie));
 
@@ -280,8 +281,8 @@ class JpaJourneeDeTravailRepositoryIT {
   }
 
   /**
-   * L'etendue va du premier au dernier fait connu : une journee sans depart s'arrete a son dernier geste, elle ne
-   * deborde pas indefiniment sur la suite.
+   * L'etendue va du premier au dernier fait connu : une journee sans depart — ici rouverte par une arrivee apres son
+   * depart — s'arrete a son dernier geste, elle ne deborde pas indefiniment sur la suite.
    */
   @Test
   @WithTenant(IMPECCMOLD)
@@ -289,9 +290,9 @@ class JpaJourneeDeTravailRepositoryIT {
     OperateurId operateur = operateurDeTest();
     Instant lundi = Instant.parse("2041-02-04T07:00:00Z");
     Instant mardi = Instant.parse("2041-02-05T07:00:00Z");
-    JourneeDeTravail abandonnee = journeeOuverteA(operateur, lundi).enregistre(
-      presence(TypeDEvenementDePresence.PAUSE, lundi.plusSeconds(18000))
-    );
+    JourneeDeTravail abandonnee = journeeOuverteA(operateur, lundi)
+      .enregistre(presence(TypeDEvenementDePresence.DEPART, lundi.plusSeconds(14400)))
+      .enregistre(presence(TypeDEvenementDePresence.ARRIVEE, lundi.plusSeconds(18000)));
     JourneeDeTravail complete = journeeCompleteA(operateur, mardi);
     inTransaction(() -> journees.create(abandonnee));
     inTransaction(() -> journees.create(complete));
@@ -338,10 +339,7 @@ class JpaJourneeDeTravailRepositoryIT {
   }
 
   private static JourneeDeTravail journeeCompleteA(OperateurId operateur, Instant arrivee) {
-    return journeeOuverteA(operateur, arrivee)
-      .enregistre(presence(TypeDEvenementDePresence.PAUSE, arrivee.plusSeconds(18000)))
-      .enregistre(presence(TypeDEvenementDePresence.REPRISE, arrivee.plusSeconds(21600)))
-      .enregistre(presence(TypeDEvenementDePresence.DEPART, arrivee.plusSeconds(36000)));
+    return journeeOuverteA(operateur, arrivee).enregistre(presence(TypeDEvenementDePresence.DEPART, arrivee.plusSeconds(36000)));
   }
 
   private static EvenementDePresence presence(TypeDEvenementDePresence type, Instant date) {

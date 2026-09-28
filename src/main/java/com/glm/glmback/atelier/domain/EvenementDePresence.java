@@ -5,7 +5,7 @@ import java.time.Instant;
 import java.util.Optional;
 
 /**
- * Un fait du journal de presence : l'operateur est arrive, s'est mis en pause, a repris ou est parti.
+ * Un fait du journal de presence : l'operateur est arrive ou est parti.
  *
  * <p>
  * L'operateur n'est pas un composant : la journee de travail le porte deja. L'auteur, lui, en est un, parce qu'un

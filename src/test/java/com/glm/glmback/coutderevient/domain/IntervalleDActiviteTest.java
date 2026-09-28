@@ -34,8 +34,8 @@ class IntervalleDActiviteTest {
   }
 
   /**
-   * Une pause de midi scinde le travail : c'est la reduction aux fenetres de presence, et non le journal de
-   * l'element, qui produit ce second intervalle.
+   * Un depart a midi arrete le travail : c'est la reduction aux fenetres de presence, et non le journal de l'element,
+   * qui le referme.
    */
   @Test
   void shouldReduceToFenetreDePresence() {

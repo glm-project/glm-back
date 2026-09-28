@@ -47,7 +47,7 @@ class JourneesDeTravailEnMemoireTest {
 
   @Test
   void shouldGetJourneeContenantUnInstant() {
-    JourneeDeTravail journee = journees.create(journeeDeDupontDe7HA17HAvecPauseDeMidi());
+    JourneeDeTravail journee = journees.create(journeeDeDupontDe7HA17H());
 
     assertThat(journees.journeeContenant(OPERATEUR_ID_DUPONT, LE_10_MAI_2026_A_9H)).contains(journee);
     assertThat(journees.journeeContenant(OPERATEUR_ID_DUPONT, LE_11_MAI_2026_A_9H15)).isEmpty();

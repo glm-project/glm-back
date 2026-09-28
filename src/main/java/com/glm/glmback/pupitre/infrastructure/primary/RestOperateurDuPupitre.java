@@ -33,9 +33,9 @@ record RestOperateurDuPupitre(
     Etat de presence courant, celui de la journee en cours de l'operateur.
 
     ABSENT vaut pour un operateur sans journee en cours, et ne le retire pas de la liste : elle rend les operateurs
-    designables, pas les operateurs presents. C'est cet etat qui dit a l'ecran d'atelier quelles commandes de
-    presence sont legales, y compris hors ligne — proposer une pause a un operateur deja en pause ne peut
-    qu'aboutir a un refus du serveur.
+    designables, pas les operateurs presents. C'est cet etat qui dit a l'ecran d'atelier s'il faut proposer
+    l'arrivee ou le depart, y compris hors ligne. La pause n'en est pas un : un operateur en pause reste present,
+    et c'est le pupitre qui la traduit en fins d'activite.
     """,
     requiredMode = Schema.RequiredMode.REQUIRED
   )

@@ -30,21 +30,17 @@ Feature: Synthese des heures hebdomadaire d'un operateur
     And chaque jour de la synthese ne porte aucun pointage et une duree de "PT0S"
     And la duree totale de la semaine est "PT0S"
 
-  Scenario: Une journee avec pause de midi porte son journal brut et sa duree
+  Scenario: Une journee porte son journal brut et sa duree, pause de midi comprise
     Given "dupont" pointe son arrivee a "2026-05-11T06:00:00Z"
-    And "dupont" enregistre le pointage "PAUSE" a "2026-05-11T10:00:00Z"
-    And "dupont" enregistre le pointage "REPRISE" a "2026-05-11T11:00:00Z"
     And "dupont" enregistre le pointage "DEPART" a "2026-05-11T15:00:00Z"
     When je consulte la synthese des heures de "dupont" pour la semaine 20 de 2026
     Then la reponse a le statut http 200
     And les pointages du "2026-05-11" sont
       | type    | dateDeSurvenue       |
       | ARRIVEE | 2026-05-11T06:00:00Z |
-      | PAUSE   | 2026-05-11T10:00:00Z |
-      | REPRISE | 2026-05-11T11:00:00Z |
       | DEPART  | 2026-05-11T15:00:00Z |
-    # La pause de midi n'ote que son propre creux : 4h + 4h, jamais l'amplitude de 9h.
-    And le jour "2026-05-11" a une duree de "PT8H"
+    # La pause de midi se pointe sur les ordres, jamais sur la presence : la duree court de l'arrivee au depart.
+    And le jour "2026-05-11" a une duree de "PT9H"
 
   Scenario: Une equipe de nuit repartit sa duree sur les deux jours qu'elle traverse
     Given "dupont" pointe son arrivee a "2026-05-13T20:00:00Z"
@@ -67,43 +63,40 @@ Feature: Synthese des heures hebdomadaire d'un operateur
 
   Scenario: Une journee abandonnee separe ses heures pointees de ses heures presumees
     # E2 de la strategie « bornes de fin de journee », lot 5 : lundi, Dupont part sans pointer son depart. Lu mardi,
-    # sa journee s'arrete a son dernier fait connu, un ordre demarre a 16 h : 5 h pointees, 3 h presumees.
+    # sa journee s'arrete a son dernier fait connu, un ordre demarre a 16 h. Sans depart, elle n'a qu'une fenetre :
+    # ses 9 h sont presumees en entier.
     Given "dupont" pointe son arrivee a "2026-05-11T05:00:00Z"
-    And "dupont" enregistre le pointage "PAUSE" a "2026-05-11T10:00:00Z"
-    And "dupont" enregistre le pointage "REPRISE" a "2026-05-11T11:00:00Z"
     And "dupont" demarre un ordre de fabrication a "2026-05-11T14:00:00Z"
     And il est "2026-05-12T08:00:00Z"
     When je consulte la synthese des heures de "dupont" pour la semaine 20 de 2026
     Then la reponse a le statut http 200
-    And le jour "2026-05-11" a une duree de "PT5H"
-    And le jour "2026-05-11" a une duree presumee de "PT3H"
-    And la duree totale de la semaine est "PT5H"
-    And la duree presumee totale de la semaine est "PT3H"
+    And le jour "2026-05-11" a une duree de "PT0S"
+    And le jour "2026-05-11" a une duree presumee de "PT9H"
+    And la duree totale de la semaine est "PT0S"
+    And la duree presumee totale de la semaine est "PT9H"
     # Le gestionnaire regularise le depart a 17 h : le pointe remplace le presume.
     Given le gestionnaire regularise le depart de "dupont" a "2026-05-11T15:00:00Z"
     When je consulte la synthese des heures de "dupont" pour la semaine 20 de 2026
-    Then le jour "2026-05-11" a une duree de "PT9H"
+    Then le jour "2026-05-11" a une duree de "PT10H"
     And le jour "2026-05-11" a une duree presumee de "PT0S"
     And la duree presumee totale de la semaine est "PT0S"
 
   Scenario: Une journee fermee de plus de 24 h ne compte que jusqu'a sa fin presumee
     # Issue #59 : lundi, Dupont ne pointe pas son depart ; le gestionnaire le saisit mercredi sur la meme journee. Plus
-    # de 24 h ne se vivent pas d'une traite : 5 h pointees et 3 h presumees lundi, rien mardi ni mercredi.
+    # de 24 h ne se vivent pas d'une traite : 9 h presumees lundi, rien mardi ni mercredi.
     Given "dupont" pointe son arrivee a "2026-05-11T05:00:00Z"
-    And "dupont" enregistre le pointage "PAUSE" a "2026-05-11T10:00:00Z"
-    And "dupont" enregistre le pointage "REPRISE" a "2026-05-11T11:00:00Z"
     And "dupont" demarre un ordre de fabrication a "2026-05-11T14:00:00Z"
     And il est "2026-05-13T10:00:00Z"
     And le gestionnaire regularise le depart de "dupont" a "2026-05-13T08:00:00Z"
     And la reponse a le statut http 201
     When je consulte la synthese des heures de "dupont" pour la semaine 20 de 2026
     Then la reponse a le statut http 200
-    And le jour "2026-05-11" a une duree de "PT5H"
-    And le jour "2026-05-11" a une duree presumee de "PT3H"
+    And le jour "2026-05-11" a une duree de "PT0S"
+    And le jour "2026-05-11" a une duree presumee de "PT9H"
     And le jour "2026-05-12" a une duree de "PT0S"
     And le jour "2026-05-13" a une duree de "PT0S"
-    And la duree totale de la semaine est "PT5H"
-    And la duree presumee totale de la semaine est "PT3H"
+    And la duree totale de la semaine est "PT0S"
+    And la duree presumee totale de la semaine est "PT9H"
 
   Scenario: Un poste de nuit oublie ne presume que ses cinq premieres minutes
     # E3 : arrive a 20 h, un ordre demarre a 20 h 05, rien d'autre. La fin presumee n'invente aucune heure.

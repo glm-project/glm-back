@@ -55,27 +55,12 @@ public final class SyntheseHeuresFixture {
     return new EvenementDePresence(TypeDEvenementDePresence.ARRIVEE, date);
   }
 
-  public static EvenementDePresence pauseA(Instant date) {
-    return new EvenementDePresence(TypeDEvenementDePresence.PAUSE, date);
-  }
-
-  public static EvenementDePresence repriseA(Instant date) {
-    return new EvenementDePresence(TypeDEvenementDePresence.REPRISE, date);
-  }
-
   public static EvenementDePresence departA(Instant date) {
     return new EvenementDePresence(TypeDEvenementDePresence.DEPART, date);
   }
 
-  public static JourneeDeTravail journeeDuLundiDe8HA17HAvecPauseDeMidi() {
-    return new JourneeDeTravail(
-      List.of(
-        arriveeA(LE_LUNDI_11_MAI_2026_A_8H),
-        pauseA(LE_LUNDI_11_MAI_2026_A_12H),
-        repriseA(LE_LUNDI_11_MAI_2026_A_13H),
-        departA(LE_LUNDI_11_MAI_2026_A_17H)
-      )
-    );
+  public static JourneeDeTravail journeeDuLundiDe8HA17H() {
+    return new JourneeDeTravail(List.of(arriveeA(LE_LUNDI_11_MAI_2026_A_8H), departA(LE_LUNDI_11_MAI_2026_A_17H)));
   }
 
   public static JourneeDeTravail journeeDuLundi22HAuMardi2H() {
@@ -91,37 +76,25 @@ public final class SyntheseHeuresFixture {
   }
 
   /**
-   * Une pause pointee sans arrivee prealable : l'automate refuse cette transition, mais le pointage doit rester
-   * visible dans le releve du mercredi, marque invalide.
+   * Un depart pointe sans arrivee prealable : l'automate refuse cette transition, et le releve du mercredi l'ignore.
    */
-  public static JourneeDeTravail journeeDuMercrediAvecPauseSansArrivee() {
-    return new JourneeDeTravail(List.of(pauseA(LE_MERCREDI_13_MAI_2026_A_12H)));
+  public static JourneeDeTravail journeeDuMercrediAvecDepartSansArrivee() {
+    return new JourneeDeTravail(List.of(departA(LE_MERCREDI_13_MAI_2026_A_12H)));
   }
 
   /**
-   * E2 : lundi, Dupont arrive a 7 h, prend sa pause de midi et part sans pointer son depart.
+   * E2 : lundi, Dupont arrive a 7 h et part sans pointer son depart.
    */
   public static JourneeDeTravail journeeDuLundiDe7HSansDepart() {
-    return new JourneeDeTravail(
-      List.of(arriveeA(LE_LUNDI_11_MAI_2026_A_7H), pauseA(LE_LUNDI_11_MAI_2026_A_12H), repriseA(LE_LUNDI_11_MAI_2026_A_13H))
-    );
+    return new JourneeDeTravail(List.of(arriveeA(LE_LUNDI_11_MAI_2026_A_7H)));
   }
 
   /**
-   * Issue #59 : lundi, Dupont arrive a 7 h et prend sa pause de midi, puis ne pointe plus rien avant une pause mardi a
-   * 10 h et un depart mercredi a midi, rattaches a la meme journee par une version anterieure au lot 3.
+   * Issue #59 : lundi, Dupont arrive a 7 h, puis ne pointe plus rien avant un depart mercredi a midi, rattache a la
+   * meme journee par une version anterieure au lot 3.
    */
   public static JourneeDeTravail journeeDuLundi7HAuMercredi12H() {
-    return new JourneeDeTravail(
-      List.of(
-        arriveeA(LE_LUNDI_11_MAI_2026_A_7H),
-        pauseA(LE_LUNDI_11_MAI_2026_A_12H),
-        repriseA(LE_LUNDI_11_MAI_2026_A_13H),
-        pauseA(LE_MARDI_12_MAI_2026_A_10H),
-        repriseA(LE_MARDI_12_MAI_2026_A_20H),
-        departA(LE_MERCREDI_13_MAI_2026_A_12H)
-      )
-    );
+    return new JourneeDeTravail(List.of(arriveeA(LE_LUNDI_11_MAI_2026_A_7H), departA(LE_MERCREDI_13_MAI_2026_A_12H)));
   }
 
   /**

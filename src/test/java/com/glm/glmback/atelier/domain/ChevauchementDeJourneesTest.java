@@ -69,7 +69,7 @@ class ChevauchementDeJourneesTest {
   void shouldRefuserUneArriveeCorrigeeQuiReculeDansLaJourneePrecedente() {
     arriveA(OPERATEUR_ID_DUPONT, LE_10_MAI_2026_A_7H);
     maintenant.set(LE_10_MAI_2026_A_12H);
-    service.pointe(new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.PAUSE));
+    service.pointe(new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.DEPART));
     JourneeDeTravail mardi = arriveA(OPERATEUR_ID_DUPONT, LE_11_MAI_2026_A_7H);
     maintenant.set(LE_11_MAI_2026_A_9H15);
     CorrectionDePresenceAEnregistrer arriveeDeLundiMatin = new CorrectionDePresenceAEnregistrer(
@@ -155,8 +155,8 @@ class ChevauchementDeJourneesTest {
   void shouldNeJamaisRefuserUneAnnulation() {
     JourneeDeTravail lundi = arriveA(OPERATEUR_ID_DUPONT, LE_10_MAI_2026_A_7H);
     maintenant.set(LE_10_MAI_2026_A_12H);
-    JourneeDeTravail enPause = service
-      .pointe(new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.PAUSE))
+    JourneeDeTravail partie = service
+      .pointe(new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.DEPART))
       .journee();
     arriveA(OPERATEUR_ID_DUPONT, LE_11_MAI_2026_A_7H);
     maintenant.set(LE_11_MAI_2026_A_9H15);
@@ -164,7 +164,7 @@ class ChevauchementDeJourneesTest {
     JourneeDeTravail annulee = service.annule(
       AnnulationDePresenceAEnregistrer.builder()
         .journee(lundi.id())
-        .evenement(enPause.journal().evenements().getLast().id())
+        .evenement(partie.journal().evenements().getLast().id())
         .auteur(AUTEUR_LEROY)
         .motif(MOTIF_ERREUR_DE_SAISIE)
     );

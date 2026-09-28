@@ -5,12 +5,12 @@ import java.time.Instant;
 import java.util.Optional;
 
 /**
- * Un intervalle pendant lequel un operateur etait present et non en pause.
+ * Un intervalle pendant lequel un operateur etait present, de son arrivee a son depart.
  *
  * <p>
  * C'est la matiere du temps effectif : le temps passe sur un element ne vaut que dans les fenetres de presence de
- * l'operateur, ce qui fait qu'une pause de midi scinde son travail et qu'un depart le referme, sans qu'aucun de ces
- * deux faits ait eu besoin d'etre recopie dans le journal de l'element.
+ * l'operateur, ce qui fait qu'un depart referme son travail sans avoir eu besoin d'etre recopie dans le journal de
+ * l'element.
  * </p>
  */
 public record FenetreDePresence(Instant debut, Optional<Instant> fin, boolean presumee) {
@@ -36,7 +36,7 @@ public record FenetreDePresence(Instant debut, Optional<Instant> fin, boolean pr
    * La part de l'intervalle donne qui tombe dans cette fenetre, s'il y en a une.
    *
    * <p>
-   * Une intersection reduite a un instant ne rend rien : une pause prise a la seconde ou le travail commence ne
+   * Une intersection reduite a un instant ne rend rien : un depart pointe a la seconde ou le travail commence ne
    * produit pas d'intervalle de duree nulle.
    * </p>
    */

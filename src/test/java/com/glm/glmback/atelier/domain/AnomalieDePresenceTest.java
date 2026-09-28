@@ -80,7 +80,7 @@ class AnomalieDePresenceTest {
 
   @Test
   void shouldNeRienSignalerDUneJourneeFermeeSousLeSeuil() {
-    assertThat(AnomalieDePresence.de(journeeDeDupontDe7HA17HAvecPauseDeMidi(), LE_11_MAI_2026_A_9H, AMPLITUDE_MAXIMALE_13H)).isEmpty();
+    assertThat(AnomalieDePresence.de(journeeDeDupontDe7HA17H(), LE_11_MAI_2026_A_9H, AMPLITUDE_MAXIMALE_13H)).isEmpty();
   }
 
   /**
@@ -95,7 +95,7 @@ class AnomalieDePresenceTest {
 
   @Test
   void shouldAppliquerLeSeuilDonne() {
-    assertThat(AnomalieDePresence.de(journeeDeDupontDe7HA17HAvecPauseDeMidi(), LE_11_MAI_2026_A_9H, AMPLITUDE_MAXIMALE_10H))
+    assertThat(AnomalieDePresence.de(journeeDeDupontDe7HA17H(), LE_11_MAI_2026_A_9H, AMPLITUDE_MAXIMALE_10H))
       .map(AnomalieDePresence::type)
       .isEmpty();
     JourneeDeTravail onze = journeeDeDupontOuverteA7H().enregistre(departDeDupontA(LE_10_MAI_2026_A_17H.plus(Duration.ofHours(1))));

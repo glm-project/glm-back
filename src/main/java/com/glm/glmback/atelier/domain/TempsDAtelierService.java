@@ -9,10 +9,10 @@ import java.util.Optional;
  * Le temps reellement passe sur un element : ses intervalles bruts, ramenes aux fenetres de presence des operateurs.
  *
  * <p>
- * Une pause de midi scinde le travail en deux, un depart referme ce que l'operateur a oublie d'arreter, et une
- * regularisation de depart corrige d'un coup tous les elements de la journee. Aucun de ces trois faits n'a eu besoin
- * d'etre recopie dans le journal de l'element : c'est ce que le croisement des deux journaux fait gratuitement, et ce
- * qu'une pause dupliquee element par element n'aurait jamais su rattraper apres coup.
+ * Un depart referme ce que l'operateur a oublie d'arreter, et une regularisation de depart corrige d'un coup tous les
+ * elements de la journee. Aucun de ces deux faits n'a eu besoin d'etre recopie dans le journal de l'element : c'est
+ * ce que le croisement des deux journaux fait gratuitement. La pause de midi, elle, se lit dans le journal de
+ * l'element, ou le pupitre l'a pointee par une fin et un debut.
  * </p>
  */
 public final class TempsDAtelierService {

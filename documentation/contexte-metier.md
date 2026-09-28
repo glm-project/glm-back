@@ -37,19 +37,21 @@ Le contexte porte **deux agrégats** : la `JourneeDeTravail` d'un opérateur et 
 
 **Une régularisation se reconnaît à l'écart entre ces deux dates, pas à l'identité de l'auteur.** `estUneRegularisation()` dit que la saisie est différée — et c'est le seul fait exposé : l'option de pointage en retard, qui laisse l'opérateur saisir lui-même son heure de début, est bien une régularisation sans aucun tiers. Le booléen jumeau `estSaisiParUnTiers` a été retiré avec le passage à l'identifiant : l'`Auteur` vient du jeton et l'opérateur du référentiel, et rien ne relie encore les deux — le comparer n'aurait plus produit qu'une réponse toujours vraie. Il reviendra avec le lot « utilisateur connecté ».
 
-### La présence, base de la paie
+### La présence, de l'arrivée au départ
 
-Le client décrit son besoin comme « une pointeuse à laquelle on rajoute une option OF », et il a corrigé explicitement l'équipe sur ce point : les heures de présence courent de l'arrivée dans la société au départ, **jamais du premier au dernier élément travaillé**.
+Le client décrit son besoin comme « une pointeuse à laquelle on rajoute une option OF », et il a corrigé explicitement l'équipe sur ce point : les heures de présence courent de l'arrivée dans la société au départ, **jamais du premier au dernier élément travaillé**. L'objectif du produit reste de savoir qui travaille sur quoi et combien un OF a coûté en temps de travail : **la présence ne sert pas à payer**.
 
-`JourneeDeTravail` porte donc son propre journal, d'`ARRIVEE`, `PAUSE`, `REPRISE` et `DEPART`. Ses bornes sont l'arrivée et le départ, **pas le jour calendaire** : aucun fuseau horaire n'entre dans le domaine, et une équipe de nuit ou un retour en soirée ouvre simplement une seconde journée. Elle expose deux mesures que les écrans de paie choisiront :
+`JourneeDeTravail` porte donc son propre journal, d'`ARRIVEE` et de `DEPART`. Ses bornes sont l'arrivée et le départ, **pas le jour calendaire** : aucun fuseau horaire n'entre dans le domaine, et une équipe de nuit ou un retour en soirée ouvre simplement une seconde journée. Elle expose deux mesures, que l'absence de pause rend égales pour une journée d'une seule venue :
 
-- `amplitude()` — de l'arrivée au départ, pauses comprises ;
-- `fenetres()` — les périodes de présence effective, pauses exclues.
+- `amplitude()` — de l'arrivée au départ ;
+- `fenetres()` — les périodes de présence, une par venue.
 
-**Une journée sans départ est abandonnée** quand son amplitude depuis l'arrivée, pauses comprises, dépasse le seuil paramétré par l'entreprise (contexte `parametrage`, 13 h par défaut) — strictement : un geste au seuil pile reste dans la journée. Aucune règle calendaire ne peut fermer une journée, puisqu'un poste de nuit court de 20 h à 8 h ; le seuil, lui, reste sous 24 h, ce qui garantit qu'un retour le lendemain à la même heure soit une nouvelle arrivée. L'abandon se juge sur l'heure du geste, jamais sur sa réception : un pupitre hors ligne qui rejoue un geste de la veille le voit rangé dans la bonne journée.
+**La pause n'est pas un fait de présence** ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)) : un opérateur en pause reste présent, et le relevé de présence compte sa pause.
+
+**Une journée sans départ est abandonnée** quand son amplitude depuis l'arrivée dépasse le seuil paramétré par l'entreprise (contexte `parametrage`, 13 h par défaut) — strictement : un geste au seuil pile reste dans la journée. Aucune règle calendaire ne peut fermer une journée, puisqu'un poste de nuit court de 20 h à 8 h ; le seuil, lui, reste sous 24 h, ce qui garantit qu'un retour le lendemain à la même heure soit une nouvelle arrivée. L'abandon se juge sur l'heure du geste, jamais sur sa réception : un pupitre hors ligne qui rejoue un geste de la veille le voit rangé dans la bonne journée.
 
 - **Une arrivée sous le seuil est absorbée** : l'opérateur est déjà là, rien n'est ajouté, la journée en cours est rendue comme un rejeu. C'est ce qui permet à l'opérateur de nuit de se réidentifier à 3 h.
-- **Un geste reçu pour une journée abandonnée en ouvre une nouvelle** : une arrivée implicite à l'heure du geste, sous un identifiant du serveur réservé comme celui d'une régularisation, puis le geste lui-même. Une reprise s'y réduit à l'arrivée ; un départ tardif donne une journée de durée nulle. La journée abandonnée reste telle quelle, sans départ, à régulariser.
+- **Un geste reçu pour une journée abandonnée en ouvre une nouvelle** : une arrivée implicite à l'heure du geste, sous un identifiant du serveur réservé comme celui d'une régularisation, puis le geste lui-même. Une arrivée égarée sur la route des pointages s'y réduit à l'arrivée implicite ; un départ tardif donne une journée de durée nulle. La journée abandonnée reste telle quelle, sans départ, à régulariser.
 - **Deux journées d'un même opérateur ne se chevauchent jamais.** L'étendue d'une journée va de son premier à son dernier fait connu ; une régularisation ou une correction qui ferait toucher deux étendues est refusée au gestionnaire (`chevauchement-de-journees`). Les gestes de l'opérateur ne sont jamais refusés pour cette raison. La recherche passe par la projection `dernier_fait`, écrite comme `debut` et `fin`.
 - À instant égal, dans le journal de présence, **l'arrivée passe devant** : l'arrivée implicite partage l'heure du geste qu'elle précède.
 
@@ -57,7 +59,7 @@ Le client décrit son besoin comme « une pointeuse à laquelle on rajoute une o
 
 Depuis le lot 3, une amplitude excessive ne naît plus d'un geste de l'opérateur : un départ pointé au-delà du seuil ouvre une nouvelle journée, et c'est la journée du matin, sans départ, qui est signalée. Elle ne vient que d'un acte du gestionnaire — un départ régularisé ou corrigé tard.
 
-**La pause et le départ sont des faits de l'opérateur, écrits une seule fois.** Ils ne sont jamais recopiés dans le journal des éléments. C'est ce qui donne au client son bouton de pause unique et son bouton d'arrêt de fin de journée — « ne mettez qu'un bouton, pas trois » — sans jamais N clics pour N tâches, et sans qu'aucun code de diffusion n'ait à maintenir la cohérence de N journaux.
+**Le départ est un fait de l'opérateur, écrit une seule fois ; la pause n'existe pas pour le serveur, le pupitre la traduit en fins d'activité.** Le départ n'est jamais recopié dans le journal des éléments : c'est ce qui donne au client son bouton d'arrêt de fin de journée, sans jamais N clics pour N tâches. La pause, elle, se lit dans le journal de chaque élément : le client la décrit comme l'arrêt et la reprise du travail — « pause / arrêt / reprise sont le même mécanisme » —, et le pupitre y pointe une fin par activité en cours, puis un début, ou une non conformité, à la reprise. Le serveur ne reçoit que des fins et des débuts.
 
 La **présence sans affectation** — le temps de présence sans élément rattaché — n'est pas un élément fictif : c'est le résidu de la présence moins le temps affecté, calculé à la lecture. La présence est comptée dès l'identification, que l'opérateur ait ou non pointé sur un élément.
 
@@ -65,15 +67,16 @@ La **présence sans affectation** — le temps de présence sans élément ratta
 
 ### Le temps effectif, croisement des deux journaux
 
-`SuiviDAtelier.activites()` produit des intervalles **bruts** : ils ignorent la présence. `TempsDAtelierService.tempsEffectif` les ramène aux fenêtres de présence de l'opérateur, en intersectant chaque intervalle avec les fenêtres de **la journée où il a commencé**. Une seule règle, trois effets :
+`SuiviDAtelier.activites()` produit des intervalles **bruts** : ils ignorent la présence. `TempsDAtelierService.tempsEffectif` les ramène aux fenêtres de présence de l'opérateur, en intersectant chaque intervalle avec les fenêtres de **la journée où il a commencé**. Une seule règle, deux effets :
 
-- une pause de midi **scinde** le travail en deux ;
 - un départ **tronque** ce que l'opérateur a oublié d'arrêter — un `FIN` manquant ne produit plus un intervalle infini ;
-- une régularisation de départ **corrige d'un coup tous les éléments** de la journée, là où une pause dupliquée par élément aurait demandé autant de corrections que d'éléments, et n'aurait jamais rattrapé un début inséré après coup.
+- une régularisation de départ **corrige d'un coup tous les éléments** de la journée, là où un départ recopié par élément aurait demandé autant de corrections que d'éléments, et n'aurait jamais rattrapé un début inséré après coup.
+
+La pause de midi, elle, scinde le travail par le journal de l'élément : une fin à midi, un début à la reprise. Corriger une heure de pause fausse demande donc une correction par activité, sur sa fin et sur son début.
 
 Borner l'intervalle à sa journée est aussi ce qui empêche un travail jamais arrêté de courir jusqu'au lendemain : l'opérateur reclique sur l'élément à son retour, ce qui est exactement le geste que le client décrit. Un début qui ne tombe dans aucune journée connue est **rendu intact** : c'est la présence qui manque, et le domaine ne masque pas l'anomalie derrière un temps amputé.
 
-**Une journée abandonnée se ferme à sa fin présumée**, calculée à la lecture et jamais stockée : le dernier fait connu, qu'il soit son dernier événement de présence ou le dernier pointage d'OF de l'opérateur (tous éléments confondus) survenu entre l'arrivée et l'arrivée plus le seuil. La fenêtre ainsi fermée est **présumée**, et les intervalles qui s'y réduisent portent `presume` : le temps effectif distingue ce qui a été pointé de ce qui reste à confirmer. Dans l'exemple de référence, l'OF 42 de lundi vaut 7 h, dont 3 h présumées, et la nuit n'est plus comptée. Un travail commencé dans une journée abandonnée après sa fin présumée ne vaut rien : la fin présumée n'invente jamais d'heures. Une journée encore sous le seuil reste ouverte, c'est du travail en cours ; une régularisation du départ remplace le présumé par le pointé. **Une journée fermée plus de 24 h après son arrivée se lit comme abandonnée pour le temps effectif** ([D13](strategie/bornes-de-fin-de-journee.md), issue #59) : elle n'a pas pu être vécue d'une traite, et son départ ne dit rien de l'heure à laquelle l'opérateur est parti. Elle se ferme à sa fin présumée, le dernier fait connu **entre l'arrivée et l'arrivée plus le seuil** — ses faits au-delà, départ compris, ne comptent pas — et ce qui dépasse disparaît. Rien n'est réécrit, et elle reste signalée en amplitude excessive. Entre le seuil et 24 h, une journée fermée compte entière. 24 h est une borne physique, jamais un paramètre de l'entreprise. Pour la saisie, elle n'est pas abandonnée : un geste reçu ensuite ne la concerne pas.
+**Une journée abandonnée se ferme à sa fin présumée**, calculée à la lecture et jamais stockée : le dernier fait connu, qu'il soit son dernier événement de présence ou le dernier pointage d'OF de l'opérateur (tous éléments confondus) survenu entre l'arrivée et l'arrivée plus le seuil. La fenêtre ainsi fermée est **présumée**, et les intervalles qui s'y réduisent portent `presume` : le temps effectif distingue ce qui a été pointé de ce qui reste à confirmer. Dans l'exemple de référence, l'OF 42 de lundi vaut 7 h, toutes présumées — sans départ, la journée n'a qu'une fenêtre, présumée en entier —, et la nuit n'est plus comptée. Un travail commencé dans une journée abandonnée après sa fin présumée ne vaut rien : la fin présumée n'invente jamais d'heures. Une journée encore sous le seuil reste ouverte, c'est du travail en cours ; une régularisation du départ remplace le présumé par le pointé. **Une journée fermée plus de 24 h après son arrivée se lit comme abandonnée pour le temps effectif** ([D13](strategie/bornes-de-fin-de-journee.md), issue #59) : elle n'a pas pu être vécue d'une traite, et son départ ne dit rien de l'heure à laquelle l'opérateur est parti. Elle se ferme à sa fin présumée, le dernier fait connu **entre l'arrivée et l'arrivée plus le seuil** — ses faits au-delà, départ compris, ne comptent pas — et ce qui dépasse disparaît. Rien n'est réécrit, et elle reste signalée en amplitude excessive. Entre le seuil et 24 h, une journée fermée compte entière. 24 h est une borne physique, jamais un paramètre de l'entreprise. Pour la saisie, elle n'est pas abandonnée : un geste reçu ensuite ne la concerne pas.
 
 ### L'activité, un opérateur sur un poste de travail
 
@@ -144,9 +147,9 @@ L'API est décrite par OpenAPI (`/swagger-ui.html`) et par [atelier-api.md](atel
 ### Points ouverts
 
 1. **Régulariser après une dé-habilitation est refusé.** L'habilitation étant vérifiée sur les trois écritures du journal, un gestionnaire ne peut plus rattraper une saisie oubliée sur un poste dont l'opérateur a été retiré depuis. Le cas est assumé pour ce lot — il ferme la porte au contournement —, mais il laisserait un trou dans la paie s'il se produisait : à rouvrir si le client le rencontre.
-2. **Quelle mesure alimente la paie ?** L'amplitude arrivée → départ, ou la somme des fenêtres de présence, pause de midi déduite ? Le client dit « les heures où il arrive à la société, il pointe et il part », mais pointe aussi sa pause déjeuner. Les deux mesures sont exposées, le choix reste à faire avec l'assistante.
+2. **Quelle mesure alimente la paie ? Fermé le 28/09/2026** : aucune, la présence ne sert pas à payer ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)). `amplitude()` et `fenetres()` restent exposées tant que la présence existe ; sa suppression est un chantier suivant.
 3. **Le coût de revient monétaire est sorti du contexte**, comme prévu : il vit dans `coutderevient`, qui lit le journal d'`atelier` par port en lecture seule. `atelier` continue de ne rien calculer — il copie le coût horaire du poste et le taux horaire de l'opérateur sur l'événement, et s'arrête là. Reste ouvert le **coût par période** (par opérateur, par poste, par mois), qui n'a pas de demande client formulée, et l'objection de Nicolas sur la division du taux humain : le modèle retient le verbatim client — taux divisé par le nombre de postes, coût machine jamais divisé —, elle n'a jamais été reprise en réunion.
-4. **Le bouton de pause global n'a jamais été validé de première main.** Il ne vient que de la réunion d'équipe. Dans la réunion client, la pause est décrite au singulier, sur un seul élément. Le modèle retient le bouton global — à reconfirmer, c'est lui qui structure l'écran principal.
+4. **Le bouton de pause global n'a jamais été validé de première main** — point **déplacé au pupitre**. Il ne vient que de la réunion d'équipe ; dans la réunion client, la pause est décrite au singulier, sur un seul élément. Le serveur ne connaissant plus la pause ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)), c'est le pupitre qui porte le bouton global et la question : voir l'ADR du front et l'`AGENTS.md` du contexte `atelier` du pupitre.
 5. **La déclaration du travail non facturable.** Le client veut son bouton GLM, placé en bas de l'écran, pour déclarer à la main le travail qu'il ne facture pas. Rien ne le modélise encore : le mode de déclaration, le rattachement éventuel à un projet interne et la coexistence avec d'autres activités feront l'objet d'une spec à part. La présence sans affectation n'y répond pas : ce n'est pas un travail déclaré.
 6. **Le cycle de vie de l'élément lui-même.** La clôture existe côté atelier, sur le suivi. Reste à trancher si l'élément de fabrication porte en propre un statut, ou si son activité se lit entièrement par la présence ou l'absence d'un suivi non clôturé.
 7. **Aucune garde d'unicité en base** sur « un seul suivi non clôturé par élément », contrairement à ce que `elementdefabrication` fait pour la `Reference`. La règle vit dans le service, mais une contrainte partielle transformerait en 500 un état que le domaine admet aujourd'hui : rouvrir la clôture d'un suivi dont l'élément a été réengagé depuis. À trancher côté domaine avant de poser la contrainte. « Une seule journée ouverte par opérateur » n'est plus une règle : une journée abandonnée reste sans départ pendant que la suivante est ouverte.
@@ -320,7 +323,8 @@ cours n'a de sens qu'arrêté à l'instant de la lecture. Deux appels espacés s
 pas la même chose, et la description OpenAPI de la route le dit.
 
 Le reste suit les règles d'`atelier` à la lettre : le temps brut est ramené aux fenêtres de présence de **la journée
-où il a commencé**, si bien qu'une pause de midi le scinde et qu'un départ referme ce que personne n'a arrêté. Un
+où il a commencé**, si bien qu'un départ referme ce que personne n'a arrêté ; la pause de midi, elle, est pointée
+dans le journal de l'élément, par une fin et un début. Un
 début qui ne tombe dans aucune journée connue est **rendu intact** — c'est le choix d'`atelier`, et non celui de la
 feuille de temps qui l'écarte : ici, l'anomalie doit rester chiffrée plutôt que disparaître du coût.
 
@@ -365,9 +369,8 @@ Il dérive des taux horaires des opérateurs, que le pupitre n'a aucune raison d
 
 Troisième **projection transverse** du projet, après `feuilledetemps` et `coutderevient` : un contexte purement
 lecteur, qui ne possède aucune table et recalcule tout à chaque appel. Il répond à une seule question — _combien
-d'heures cette personne a-t-elle travaillées cette semaine, jour par jour_ — pour alimenter la paie, sans en être
-une pièce : ni feuille de paie, ni valorisation en euros, ni heures supplémentaires pour l'instant (règle non
-fournie par le client).
+d'heures cette personne a-t-elle été présente cette semaine, jour par jour_ — et ne sert pas à la paie : ni feuille
+de paie, ni valorisation en euros, ni heures supplémentaires pour l'instant (règle non fournie par le client).
 
 ### Pourquoi il n'est pas dans atelier
 
@@ -378,14 +381,14 @@ une heure de travail.
 ### Ce que le relevé montre
 
 Sept jours toujours, du lundi au dimanche de la semaine ISO demandée, vides compris. Pour chaque jour : le **journal
-brut des pointages** horodatés (arrivée, pause, reprise, départ), et la **durée travaillée** — la somme des fenêtres
-de présence closes, pauses exclues, jamais l'amplitude arrivée→départ. Le total de la semaine est la somme des sept
-jours.
+brut des pointages** horodatés (arrivée, départ), et la **durée** — la somme des fenêtres de présence closes. La pause
+n'étant pas un pointage de présence ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)), la
+durée la compte. Le total de la semaine est la somme des sept jours.
 
 La durée travaillée est celle qui est **pointée**. À côté, chaque jour et la semaine portent une **durée présumée**
 (`dureePresumee`, `dureePresumeeTotale`) : ce qu'une journée abandonnée compte jusqu'à sa fin présumée, et que
-l'assistante doit faire confirmer avant de transmettre à la paie. Dans l'exemple de référence, lundi vaut 5 h
-pointées et 3 h présumées, puis 9 h pointées une fois le départ régularisé. Un poste de nuit est coupé à minuit, dans
+l'assistante doit faire confirmer. Dans l'exemple de référence, lundi vaut 9 h présumées — sans départ, la journée n'a
+qu'une fenêtre, présumée en entier —, puis 10 h pointées une fois le départ régularisé. Un poste de nuit est coupé à minuit, dans
 le fuseau de l'entreprise, y compris quand minuit sépare deux semaines.
 
 **Une journée abandonnée est fermée à sa fin présumée** (lot 5 de [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md)) : sans départ et au-delà du seuil d'amplitude, lu dans la table du paramétrage, sa dernière fenêtre ouverte se ferme au dernier fait connu — son dernier pointage de présence, ou le dernier pointage d'OF de l'opérateur s'il est plus tardif et tombe entre l'arrivée et l'arrivée plus le seuil. Ce qui en découle est marqué **présumé**, à confirmer par une régularisation du départ. Juger l'abandon suppose de savoir quand on lit : ce contexte reçoit donc une horloge, comme `coutderevient`, et deux appels espacés ne rendent plus forcément la même chose. La semaine, elle, reste toujours explicite.
@@ -421,9 +424,8 @@ anomalies.
 
 ### Points ouverts
 
-1. **La mesure d'heures retenue** (fenêtres de présence, pauses exclues) reste à confirmer avec le client : le même
-   point ouvert que celui documenté dans `atelier` (« quelle mesure alimente la paie ? ») — l'amplitude
-   arrivée→départ n'a pas été retenue ici, mais rien n'exclut qu'elle le soit un jour à côté de l'autre mesure.
+1. **La mesure d'heures retenue** — fermé le 28/09/2026, avec le point 2 d'`atelier` : la présence ne sert pas à
+   payer, et le relevé compte la pause ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)).
 2. **Les heures supplémentaires ne sont pas calculées**, faute de règle fournie par le client.
 3. **Le catalogue transverse des anomalies et l'écran récapitulatif du gestionnaire restent à concevoir**, côté
    `atelier` (voir ci-dessus).
@@ -461,16 +463,16 @@ Quatre défauts en découlaient, tous du ressort du back :
 Les opérateurs désignables — identité, matricule, postes habilités, **état de présence** —, les éléments encore
 pointables — identité, nom d'atelier, référence, type, état, activités en cours —, et `genereLe`.
 
-L'**état de présence** est ce qui permet à l'écran d'atelier de n'offrir, hors ligne compris, que les commandes que
-l'atelier acceptera : sans lui, le pupitre proposait ses trois gestes en aveugle et le serveur refusait la
-transition impossible. C'est l'état de la journée en cours de l'opérateur, choisie comme l'atelier la choisit, **tant
+L'**état de présence**, `ABSENT` ou `PRESENT`, est ce qui permet à l'écran d'atelier de proposer, hors ligne compris,
+l'arrivée ou le départ. La pause n'en est pas un ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)) :
+un opérateur en pause reste présent, et c'est le journal du pupitre qui sait qu'une pause est en cours. C'est l'état de la journée en cours de l'opérateur, choisie comme l'atelier la choisit, **tant
 qu'elle n'est pas abandonnée** : au-delà du seuil d'amplitude, lu dans la table du paramétrage, l'opérateur redevient
 `ABSENT`. Chaque opérateur présent porte `presentJusqua`, son arrivée plus le seuil, pour que le pupitre hors ligne le
 bascule seul. Un opérateur sans journée en cours vaut `ABSENT` et reste rendu : la liste est celle des opérateurs
 _désignables_, pas des opérateurs présents.
 
 Elle ne rend **ni montant** (taux horaire, coût horaire : les entités de lecture ne les mappent même pas), **ni
-journal d'événements**, **ni élément clôturé**, **aucun instant de présence** — « en pause depuis 10 h 12 »
+journal d'événements**, **ni élément clôturé**, **aucun instant de présence** — « présent depuis 7 h 02 »
 supposerait de replier le journal de présence de tous les opérateurs à chaque appel, et donnerait une seconde source
 de durée en désaccord visible avec celles que le pupitre fige déjà —, et **aucune métadonnée d'engagement ou de
 clôture** : rien de tout cela n'est lu par un écran d'atelier.
@@ -540,7 +542,7 @@ laisse donc sa tuile intacte, privée de sa seule référence.
 
 ## parametrage
 
-Porte le **paramétrage d'une entreprise** : pour l'instant, la seule **amplitude maximale** d'une journée de travail (décision D1 de [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md)). Au-delà de cette durée depuis l'arrivée, pauses comprises, une journée sans départ sera abandonnée (lot 3). Le gestionnaire la fixe ; l'opérateur la lit.
+Porte le **paramétrage d'une entreprise** : pour l'instant, la seule **amplitude maximale** d'une journée de travail (décision D1 de [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md)). Au-delà de cette durée depuis l'arrivée, une journée sans départ sera abandonnée (lot 3). Le gestionnaire la fixe ; l'opérateur la lit.
 
 **La valeur par défaut n'est pas une constante du code.** Elle est semée en base, 13 h, par le changelog qui crée la table, dans chaque schéma d'entreprise. C'est la règle du dépôt pour toute donnée de paramétrage : le domaine la reçoit par un port. Une entreprise neuve reçoit donc sa ligne en même temps que son schéma, et aucune lecture ne tombe jamais sur une valeur absente.
 

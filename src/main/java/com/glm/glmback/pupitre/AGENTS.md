@@ -19,8 +19,10 @@ purement lecteur, qui ne possède aucune table, n'écrit rien, et recalcule tout
 - **Le pointage lui-même et sa correction** : le pupitre écrit par l'API d'`atelier`, jamais par ici. Ce contexte ne
   propose aucune écriture, et n'en proposera pas — le chemin d'écriture idempotent existe déjà chez `atelier`
   (identifiants de geste créés au pupitre, rejeu à 200, registre `identite_evenement_atelier`).
-- **L'écriture de la présence** — arrivée, pause, reprise, départ s'écrivent par l'API d'`atelier`. Ce contexte en
-  **lit** l'état courant, et rien d'autre : ni l'instant du dernier événement — « en pause depuis 10 h 12 »
+- **L'écriture de la présence** — arrivée et départ s'écrivent par l'API d'`atelier`. Ce contexte en **lit** l'état
+  courant, `ABSENT` ou `PRESENT`, et rien d'autre : la pause n'est pas un état de présence, le pupitre la traduit en
+  fins d'activité ([ADR 0002](../../../../../../../documentation/adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)).
+  Il ne lit pas non plus l'instant du dernier événement — « présent depuis 7 h 02 »
   supposerait de replier le journal de présence de tous les opérateurs à chaque appel, et donnerait une seconde
   source de durée en désaccord visible avec celles que le pupitre fige déjà —, ni aucun marqueur d'idempotence, que
   le pupitre tient lui-même pour replier ses gestes locaux, comme il le fait des pointages.

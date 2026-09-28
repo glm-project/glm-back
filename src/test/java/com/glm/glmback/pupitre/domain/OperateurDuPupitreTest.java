@@ -64,11 +64,11 @@ class OperateurDuPupitreTest {
       .nom(NOM_DUPONT)
       .prenom(PRENOM_JEAN)
       .matricule(MATRICULE_049.value())
-      .etat(EtatDePresence.EN_PAUSE)
+      .etat(EtatDePresence.PRESENT)
       .presentJusqua(Optional.of(LE_10_MAI_2026_A_20H))
       .postes(List.of(POSTE_HABILITE_FRAISEUSE_1));
 
-    assertThat(operateur.etat()).isEqualTo(EtatDePresence.EN_PAUSE);
+    assertThat(operateur.etat()).isEqualTo(EtatDePresence.PRESENT);
     assertThat(operateur.presentJusqua()).contains(LE_10_MAI_2026_A_20H);
   }
 

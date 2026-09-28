@@ -57,8 +57,8 @@ public record JourneeDeTravail(List<EvenementDePresence> journal, Optional<Insta
   }
 
   /**
-   * Vrai si la journee, toujours sans depart, a depasse le seuil a cet instant : son amplitude depuis l'arrivee,
-   * pauses comprises, est strictement superieure au seuil.
+   * Vrai si la journee, toujours sans depart, a depasse le seuil a cet instant : son amplitude depuis l'arrivee est
+   * strictement superieure au seuil.
    */
   public boolean estAbandonneePour(Instant instant, AmplitudeMaximale seuil) {
     return !estFermee() && fenetreDeRecherche(seuil).flatMap(Plage::fin).filter(instant::isAfter).isPresent();
@@ -100,7 +100,7 @@ public record JourneeDeTravail(List<EvenementDePresence> journal, Optional<Insta
   }
 
   /**
-   * Les intervalles ou l'operateur etait present et non en pause, dans l'ordre.
+   * Les intervalles ou l'operateur etait present, de chaque arrivee a son depart, dans l'ordre.
    */
   public List<Plage> fenetres() {
     return presumees(repli().fenetres());
@@ -199,11 +199,11 @@ public record JourneeDeTravail(List<EvenementDePresence> journal, Optional<Insta
       pointages.add(evenement);
 
       EtatDePresence nouvelEtat = apres.get();
-      // L'automate ne mappe jamais PRESENT sur PRESENT (voir EtatDePresence) : verifier l'etat d'arrivee suffit,
-      // sans re-verifier l'etat de depart en plus — les deux conditions ne peuvent jamais etre vraies ensemble.
+      // L'automate alterne l'arrivee et le depart (voir EtatDePresence) : un pointage admis ouvre une fenetre, ou
+      // ferme celle que l'arrivee precedente a ouverte.
       if (nouvelEtat == EtatDePresence.PRESENT) {
         debutFenetre = evenement.dateDeSurvenue();
-      } else if (etat == EtatDePresence.PRESENT) {
+      } else {
         fenetres.add(new Plage(debutFenetre, Optional.of(evenement.dateDeSurvenue())));
       }
       etat = nouvelEtat;

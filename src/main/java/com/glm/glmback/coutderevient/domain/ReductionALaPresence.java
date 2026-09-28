@@ -12,8 +12,8 @@ import java.util.stream.Collectors;
  *
  * <p>
  * Meme regle que celle de l'atelier, rejouee ici : chaque intervalle est intersecte avec les fenetres de
- * <strong>la journee ou il a commence</strong>. Une pause de midi le scinde, un depart referme ce que l'operateur a
- * oublie d'arreter, et une regularisation de depart corrige d'un coup tous les elements de la journee.
+ * <strong>la journee ou il a commence</strong>. Un depart referme ce que l'operateur a oublie d'arreter, et une
+ * regularisation de depart corrige d'un coup tous les elements de la journee.
  * </p>
  *
  * <p>

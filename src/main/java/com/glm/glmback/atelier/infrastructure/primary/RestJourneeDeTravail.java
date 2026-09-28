@@ -11,16 +11,16 @@ import java.util.UUID;
   description = """
   La journee de travail d'un operateur : une venue, bornee par une arrivee et un depart.
 
-  Ce n'est **pas** un jour calendaire — le contexte ne connait ni fuseau horaire ni date. L'API expose a la fois
-  `amplitude` (de l'arrivee au depart) et `fenetres` (pauses retirees) sans choisir laquelle compte pour la paie.
+  Ce n'est **pas** un jour calendaire — le contexte ne connait ni fuseau horaire ni date. La pause n'est pas un
+  evenement de presence : un operateur en pause reste present, et le pupitre pointe sa pause sur les elements.
   """
 )
 record RestJourneeDeTravail(
   @Schema(description = "Identifiant de la journee.") UUID id,
   @Schema(description = "Operateur concerne.") RestOperateur operateur,
-  @Schema(description = "ABSENT, PRESENT ou EN_PAUSE. Deduit du journal.") EtatDePresence etat,
-  @Schema(description = "De l'arrivee au depart, pauses comprises. Absente tant que la journee est ouverte.") RestPeriode amplitude,
-  @Schema(description = "Les intervalles de presence effective, pauses retirees.") List<RestFenetreDePresence> fenetres,
+  @Schema(description = "ABSENT ou PRESENT. Deduit du journal.") EtatDePresence etat,
+  @Schema(description = "De l'arrivee au depart. Absente tant que la journee est ouverte.") RestPeriode amplitude,
+  @Schema(description = "Les intervalles de presence, chacun de l'arrivee au depart.") List<RestFenetreDePresence> fenetres,
   @Schema(description = "Le journal complet, annules compris, du plus ancien au plus recent.") List<RestEvenementDePresence> journal
 ) {
   static RestJourneeDeTravail from(JourneeDeTravail journee, AnnuaireDAtelier annuaire) {

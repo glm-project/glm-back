@@ -36,16 +36,6 @@ class JourneeEnCoursTest {
   }
 
   @Test
-  void shouldGarderLaPauseSousLeSeuil() {
-    PresenceDuPupitre presence = new JourneeEnCours(EtatDePresence.EN_PAUSE, LE_10_MAI_2026_A_7H).a(
-      LE_10_MAI_2026_A_12H,
-      AMPLITUDE_MAXIMALE_13H
-    );
-
-    assertThat(presence).isEqualTo(new PresenceDuPupitre(EtatDePresence.EN_PAUSE, Optional.of(LE_10_MAI_2026_A_20H)));
-  }
-
-  @Test
   void shouldResterPresentAuSeuilPile() {
     PresenceDuPupitre presence = new JourneeEnCours(EtatDePresence.PRESENT, LE_10_MAI_2026_A_7H).a(
       LE_10_MAI_2026_A_20H,
@@ -57,7 +47,7 @@ class JourneeEnCoursTest {
 
   @Test
   void shouldEtreAbsentUneFoisLaJourneeAbandonnee() {
-    PresenceDuPupitre presence = new JourneeEnCours(EtatDePresence.EN_PAUSE, LE_10_MAI_2026_A_7H).a(
+    PresenceDuPupitre presence = new JourneeEnCours(EtatDePresence.PRESENT, LE_10_MAI_2026_A_7H).a(
       LE_10_MAI_2026_A_20H.plusSeconds(1),
       AMPLITUDE_MAXIMALE_13H
     );

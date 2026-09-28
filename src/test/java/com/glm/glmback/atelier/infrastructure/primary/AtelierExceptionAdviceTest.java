@@ -47,7 +47,7 @@ class AtelierExceptionAdviceTest extends ExceptionAdviceContract {
   protected Stream<PublishedProblem> erreursPubliees() {
     return Stream.of(
       new PublishedProblem(
-        new ChevauchementDeJourneesException(journeeDeDupontDe7HA17HAvecPauseDeMidi(), journeeDeDupontOuverteA7H()),
+        new ChevauchementDeJourneesException(journeeDeDupontDe7HA17H(), journeeDeDupontOuverteA7H()),
         "urn:glm:erreur:atelier:chevauchement-de-journees",
         CONFLICT
       ),

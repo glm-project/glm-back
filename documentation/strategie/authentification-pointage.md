@@ -1,5 +1,8 @@
 # Stratégie — authentification et identification au pupitre
 
+> **28/09/2026 : la pause n'est plus un événement de présence ([ADR 0002](../adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)).**
+> Le pupitre la traduit en fins d'activité, puis en débuts à la reprise ; la présence ne connaît plus que l'arrivée et le départ, et ses états se réduisent à absent et présent. Les passages qui parlent de pause ou de reprise décrivent le modèle d'avant.
+
 Document de réflexion, pas de spécification. Il fixe la stratégie retenue pour reconnaître l'opérateur qui pointe, sécuriser le pupitre d'atelier et survivre à une coupure réseau. Le détail métier et sa justification par le verbatim client vivent dans [contexte-metier.md](../contexte-metier.md), l'isolation par entreprise dans [multitenancy.md](../multitenancy.md), les invariants du pointage dans le [AGENTS.md du contexte `atelier`](../../src/main/java/com/glm/glmback/atelier/AGENTS.md) — ne rien dupliquer ici.
 
 Il répond au point ouvert « Utilisateur connecté » (`contexte-metier.md`, section `operateur`), resté non tranché depuis la livraison des référentiels.
@@ -173,7 +176,7 @@ La dégradation n'est pas uniforme, et c'est ce qui rend le problème tenable.
 
 **Réponse retenue : l'engagement par anticipation.** Le back-office met les éléments à l'atelier à l'avance, le cache du pupitre les porte déjà. C'est une contrainte d'organisation, pas de logiciel, et elle est cohérente avec ce que le client décrit : engager est un geste de préparation, pas une réaction à l'urgence.
 
-**Filet de dernier recours**, si le cas se produit quand même : la présence continue de courir, le travail non rattachable tombe dans la présence sans affectation — la présence moins le temps affecté, définie dans [contexte-metier.md](../contexte-metier.md#la-présence-base-de-la-paie) —, et le gestionnaire l'affecte après coup par `regularise` ou `corrige`. Ces trois actes existent exactement pour ça ; rien à ajouter au modèle.
+**Filet de dernier recours**, si le cas se produit quand même : la présence continue de courir, le travail non rattachable tombe dans la présence sans affectation — la présence moins le temps affecté, définie dans [contexte-metier.md](../contexte-metier.md#la-présence-de-larrivée-au-départ) —, et le gestionnaire l'affecte après coup par `regularise` ou `corrige`. Ces trois actes existent exactement pour ça ; rien à ajouter au modèle.
 
 ## Le rejeu
 

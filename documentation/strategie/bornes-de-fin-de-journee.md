@@ -1,5 +1,8 @@
 # Bornes de fin de journée : départ oublié et poste de nuit
 
+> **28/09/2026 : la pause n'est plus un événement de présence ([ADR 0002](../adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)).**
+> Le pupitre la traduit en fins d'activité, puis en débuts à la reprise ; la présence ne connaît plus que l'arrivée et le départ, et ses états se réduisent à absent et présent. Les passages et les figures qui parlent de pause, de reprise ou d'état « en pause » décrivent le modèle d'avant : ils n'ont pas été redessinés.
+
 > **Statut : proposition à challenger.** Décisions prises le 24/09/2026 ; le découpage du poste de nuit à minuit est explicitement révisable.
 > Heures en heure locale (Europe/Paris) pour la lisibilité ; l'API échange des instants UTC. Seuil d'amplitude pris à **13 h** dans tous les exemples.
 

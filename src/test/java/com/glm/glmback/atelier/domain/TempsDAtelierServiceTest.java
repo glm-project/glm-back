@@ -30,16 +30,16 @@ class TempsDAtelierServiceTest {
   }
 
   /**
-   * La pause de midi n'est jamais entree dans le journal de l'element : elle le scinde pourtant en deux, parce que le
-   * temps effectif est l'intersection des deux journaux.
+   * La pause de midi est pointee dans le journal de l'element, par une fin et un debut : la presence, d'un seul tenant
+   * de l'arrivee au depart, n'y retranche rien.
    */
   @Test
-  void shouldScinderLeTravailAutourDeLaPauseDeMidi() {
-    journees.create(journeeDeDupontDe7HA17HAvecPauseDeMidi());
+  void shouldScinderLeTravailALaPauseDeMidiPointeeSurLElement() {
+    journees.create(journeeDeDupontDe7HA17H());
     SuiviDAtelierId suivi = enAtelier(
-      suiviDAtelierEngage()
-        .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))
-        .enregistre(finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_17H))
+      avecPauseDeMidi(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))).enregistre(
+        finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_17H)
+      )
     );
 
     assertThat(temps.tempsEffectif(suivi))
@@ -56,7 +56,7 @@ class TempsDAtelierServiceTest {
    */
   @Test
   void shouldRefermerAuDepartUneActiviteJamaisArretee() {
-    journees.create(journeeDeDupontDe7HA17HAvecPauseDeMidi());
+    journees.create(journeeDeDupontDe7HA17H());
     SuiviDAtelierId suivi = enAtelier(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H)));
 
     assertThat(temps.tempsEffectif(suivi))
@@ -68,7 +68,7 @@ class TempsDAtelierServiceTest {
   }
 
   /**
-   * Une seule regularisation de depart corrige tous les elements de la journee, la ou une pause recopiee element par
+   * Une seule regularisation de depart corrige tous les elements de la journee, la ou un depart recopie element par
    * element aurait demande autant de corrections que d'elements.
    */
   @Test
@@ -115,43 +115,24 @@ class TempsDAtelierServiceTest {
       });
   }
 
+  /**
+   * Un travail commence a l'instant du depart ne tombe dans aucune fenetre de presence : il ne compte rien.
+   */
   @Test
   void shouldEcarterUnTravailEntierementHorsDesFenetresDePresence() {
-    journees.create(journeeDeDupontDe7HA17HAvecPauseDeMidi());
+    journees.create(journeeDeDupontDe7HA17H());
     SuiviDAtelierId suivi = enAtelier(
       suiviDAtelierEngage()
-        .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H))
-        .enregistre(finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H))
+        .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_17H))
+        .enregistre(finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_20H))
     );
 
     assertThat(temps.tempsEffectif(suivi)).isEmpty();
   }
 
-  /**
-   * Une relance pointee pendant la pause ne fait pas compter la pause : le temps effectif reste l'intersection avec la
-   * presence.
-   */
-  @Test
-  void shouldAmputerDeLaPauseUneActiviteRelanceePendantLaPause() {
-    journees.create(journeeDeDupontDe7HA17HAvecPauseDeMidi());
-    SuiviDAtelierId suivi = enAtelier(
-      suiviDAtelierEngage()
-        .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))
-        .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H.plusSeconds(1800)))
-        .enregistre(finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_17H))
-    );
-
-    assertThat(temps.tempsEffectif(suivi))
-      .extracting(IntervalleDActivite::debut, IntervalleDActivite::fin)
-      .containsExactly(
-        tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H)),
-        tuple(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_17H))
-      );
-  }
-
   @Test
   void shouldNeRienAjouterAuTempsEffectifSurUnDoubleAppui() {
-    journees.create(journeeDeDupontDe7HA17HAvecPauseDeMidi());
+    journees.create(journeeDeDupontDe7HA17H());
     SuiviDAtelierId suivi = enAtelier(
       suiviDAtelierEngage()
         .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))
@@ -169,12 +150,13 @@ class TempsDAtelierServiceTest {
 
   /**
    * E2 : Dupont part lundi sans rien pointer. Lu mardi, l'OF 42 s'arrete a la fin presumee de lundi, la fin de l'OF 43
-   * a 16:00 : 4 h pointees et 3 h presumees, la nuit n'est plus comptee.
+   * a 16:00 : 7 h, la nuit n'est plus comptee. Sans depart, lundi n'a qu'une fenetre de presence, et ses 7 h sont
+   * toutes presumees.
    */
   @Test
   void shouldArreterUnTravailALaFinPresumeeDUneJourneeAbandonnee() {
-    journees.create(journeeDeLundiSansDepart());
-    SuiviDAtelierId of42 = enAtelier(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)));
+    journees.create(journeeDeDupontOuverteA7H());
+    SuiviDAtelierId of42 = enAtelier(avecPauseDeMidi(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))));
     enAtelier(
       suiviDAtelierEngage()
         .enregistre(debutSurFraiseuse2ParDupontA(LE_10_MAI_2026_A_9H))
@@ -185,7 +167,7 @@ class TempsDAtelierServiceTest {
     assertThat(temps.tempsEffectif(of42))
       .extracting(IntervalleDActivite::debut, IntervalleDActivite::fin, IntervalleDActivite::presume)
       .containsExactly(
-        tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H), false),
+        tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H), true),
         tuple(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_16H), true)
       );
   }
@@ -195,14 +177,14 @@ class TempsDAtelierServiceTest {
    */
   @Test
   void shouldSeparerLundiPresumeDeLaRelanceDeMardi() {
-    journees.create(journeeDeLundiSansDepart());
+    journees.create(journeeDeDupontOuverteA7H());
     journees.create(
       JourneeDeTravail.ouverte(JourneeDeTravailId.newId(), OPERATEUR_ID_DUPONT).enregistre(arriveeDeDupontA(LE_11_MAI_2026_A_7H))
     );
     SuiviDAtelierId of42 = enAtelier(
-      suiviDAtelierEngage()
-        .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))
-        .enregistre(debutSurFraiseuse1ParDupontA(LE_11_MAI_2026_A_7H.plusSeconds(300)))
+      avecPauseDeMidi(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))).enregistre(
+        debutSurFraiseuse1ParDupontA(LE_11_MAI_2026_A_7H.plusSeconds(300))
+      )
     );
     enAtelier(
       suiviDAtelierEngage()
@@ -214,7 +196,7 @@ class TempsDAtelierServiceTest {
     assertThat(temps.tempsEffectif(of42))
       .extracting(IntervalleDActivite::debut, IntervalleDActivite::fin, IntervalleDActivite::presume)
       .containsExactly(
-        tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H), false),
+        tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H), true),
         tuple(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_16H), true),
         tuple(LE_11_MAI_2026_A_7H.plusSeconds(300), Optional.empty(), false)
       );
@@ -222,7 +204,7 @@ class TempsDAtelierServiceTest {
 
   @Test
   void shouldNePasCompterLeTravailDApresLaFinPresumee() {
-    journees.create(journeeDeLundiSansDepart());
+    journees.create(journeeDeDupontOuverteA7H());
     SuiviDAtelierId nuit = enAtelier(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_11_MAI_2026_A_3H)));
     maintenant.set(LE_11_MAI_2026_A_9H);
 
@@ -231,8 +213,8 @@ class TempsDAtelierServiceTest {
 
   @Test
   void shouldIgnorerLesPointagesDUnAutreOperateur() {
-    journees.create(journeeDeLundiSansDepart());
-    SuiviDAtelierId of42 = enAtelier(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)));
+    journees.create(journeeDeDupontOuverteA7H());
+    SuiviDAtelierId of42 = enAtelier(avecPauseDeMidi(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))));
     enAtelier(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParMartinA(LE_10_MAI_2026_A_17H)));
     maintenant.set(LE_11_MAI_2026_A_9H);
 
@@ -243,8 +225,8 @@ class TempsDAtelierServiceTest {
 
   @Test
   void shouldRemplacerLePresumeParLePointeApresRegularisation() {
-    journees.create(journeeDeLundiSansDepart().enregistre(departRegulariseParLeroyA(LE_10_MAI_2026_A_17H)));
-    SuiviDAtelierId of42 = enAtelier(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)));
+    journees.create(journeeDeDupontOuverteA7H().enregistre(departRegulariseParLeroyA(LE_10_MAI_2026_A_17H)));
+    SuiviDAtelierId of42 = enAtelier(avecPauseDeMidi(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))));
     maintenant.set(LE_11_MAI_2026_A_9H15);
 
     assertThat(temps.tempsEffectif(of42))
@@ -257,7 +239,7 @@ class TempsDAtelierServiceTest {
 
   @Test
   void shouldLaisserOuvertUnTravailDUneJourneeNonAbandonnee() {
-    journees.create(journeeDeLundiSansDepart());
+    journees.create(journeeDeDupontOuverteA7H());
     SuiviDAtelierId of42 = enAtelier(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)));
     maintenant.set(LE_10_MAI_2026_A_20H);
 
@@ -270,11 +252,12 @@ class TempsDAtelierServiceTest {
   }
 
   /**
-   * E8 : un seuil ramene a 10 h arrete la recherche a 17:00. La fin de l'OF 43 a 18:00 n'est plus un fait de lundi.
+   * E8 : un seuil ramene a 10 h arrete la recherche a 17:00. La fin de l'OF 43 a 18:00 n'est plus un fait de lundi, et
+   * l'OF 42 s'arrete au debut de l'OF 43, a 9:00.
    */
   @Test
   void shouldChercherLaFinPresumeeDansLeSeuilCourant() {
-    journees.create(journeeDeLundiSansDepart());
+    journees.create(journeeDeDupontOuverteA7H());
     SuiviDAtelierId of42 = enAtelier(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)));
     enAtelier(
       suiviDAtelierEngage()
@@ -285,8 +268,8 @@ class TempsDAtelierServiceTest {
     seuil.set(AMPLITUDE_MAXIMALE_10H);
 
     assertThat(temps.tempsEffectif(of42))
-      .extracting(IntervalleDActivite::debut, IntervalleDActivite::presume)
-      .containsExactly(tuple(LE_10_MAI_2026_A_8H, false));
+      .extracting(IntervalleDActivite::debut, IntervalleDActivite::fin, IntervalleDActivite::presume)
+      .containsExactly(tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_9H), true));
   }
 
   /**
@@ -311,7 +294,7 @@ class TempsDAtelierServiceTest {
   @Test
   void shouldArreterUnTravailALaFinPresumeeDUneJourneeDePlusDe24H() {
     journees.create(journeeDeDupontDu10A7HAu11A9H());
-    SuiviDAtelierId of42 = enAtelier(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)));
+    SuiviDAtelierId of42 = enAtelier(avecPauseDeMidi(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))));
     enAtelier(
       suiviDAtelierEngage()
         .enregistre(debutSurFraiseuse2ParDupontA(LE_10_MAI_2026_A_9H))
@@ -322,13 +305,18 @@ class TempsDAtelierServiceTest {
     assertThat(temps.tempsEffectif(of42))
       .extracting(IntervalleDActivite::debut, IntervalleDActivite::fin, IntervalleDActivite::presume)
       .containsExactly(
-        tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H), false),
+        tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H), true),
         tuple(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_16H), true)
       );
   }
 
-  private static JourneeDeTravail journeeDeLundiSansDepart() {
-    return journeeDeDupontOuverteA7H().enregistre(pauseDeDupontA(LE_10_MAI_2026_A_12H)).enregistre(repriseDeDupontA(LE_10_MAI_2026_A_13H));
+  /**
+   * La pause de midi telle que le pupitre la pointe sur l'activite de Dupont : une fin a 12 h, un debut a 13 h.
+   */
+  private static SuiviDAtelier avecPauseDeMidi(SuiviDAtelier suivi) {
+    return suivi
+      .enregistre(finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H))
+      .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H));
   }
 
   private SuiviDAtelierId enAtelier(SuiviDAtelier suivi) {

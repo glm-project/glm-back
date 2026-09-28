@@ -51,7 +51,7 @@ class CoutsDeRevientServiceTest {
     AtelierEnMemoire atelier = new AtelierEnMemoire()
       .connait(ELEMENT_VALORISE_OF)
       .aTravaille(ELEMENT_ID_OF, suivi(fraisage(DEBUT, LE_11_MAI_A_9H), fraisage(FIN, LE_11_MAI_A_11H)))
-      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17HAvecPauseDeMidi())));
+      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17H())));
 
     CoutDeRevient rapport = service(atelier).rapport(ELEMENT_ID_OF);
 
@@ -65,14 +65,23 @@ class CoutsDeRevientServiceTest {
   }
 
   /**
-   * La pause de midi scinde le travail : quatre heures pointees d'affilee n'en font que trois de presence effective.
+   * La pause de midi, pointee sur l'element par une fin et un debut, n'est pas valorisee : de 10 h a 14 h, trois heures
+   * de travail.
    */
   @Test
-  void shouldReduceToFenetresDePresence() {
+  void shouldNotValoriseThePauseDeMidi() {
     AtelierEnMemoire atelier = new AtelierEnMemoire()
       .connait(ELEMENT_VALORISE_OF)
-      .aTravaille(ELEMENT_ID_OF, suivi(fraisage(DEBUT, LE_11_MAI_A_10H), fraisage(FIN, LE_11_MAI_A_14H)))
-      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17HAvecPauseDeMidi())));
+      .aTravaille(
+        ELEMENT_ID_OF,
+        suivi(
+          fraisage(DEBUT, LE_11_MAI_A_10H),
+          fraisage(FIN, LE_11_MAI_A_12H),
+          fraisage(DEBUT, LE_11_MAI_A_13H),
+          fraisage(FIN, LE_11_MAI_A_14H)
+        )
+      )
+      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17H())));
 
     CoutDeRevient rapport = service(atelier).rapport(ELEMENT_ID_OF);
 
@@ -88,7 +97,7 @@ class CoutsDeRevientServiceTest {
     AtelierEnMemoire atelier = new AtelierEnMemoire()
       .connait(ELEMENT_VALORISE_OF)
       .aTravaille(ELEMENT_ID_OF, suivi(fraisage(DEBUT, LE_11_MAI_A_14H)))
-      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17HAvecPauseDeMidi())));
+      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17H())));
 
     CoutDeRevient rapport = service(atelier).rapport(ELEMENT_ID_OF);
 
@@ -118,7 +127,7 @@ class CoutsDeRevientServiceTest {
         ELEMENT_ID_OF,
         suivi(fraisage(DEBUT, LE_11_MAI_A_9H), fraisage(NON_CONFORMITE, LE_11_MAI_A_10H), fraisage(FIN, LE_11_MAI_A_11H))
       )
-      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17HAvecPauseDeMidi())));
+      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17H())));
 
     CoutDeRevient rapport = service(atelier).rapport(ELEMENT_ID_OF);
 
@@ -143,7 +152,7 @@ class CoutsDeRevientServiceTest {
           tournage(FIN, LE_11_MAI_A_10H)
         )
       )
-      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17HAvecPauseDeMidi())));
+      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17H())));
 
     CoutDeRevient rapport = service(atelier).rapport(ELEMENT_ID_OF);
 
@@ -160,7 +169,7 @@ class CoutsDeRevientServiceTest {
       .connait(ELEMENT_VALORISE_OF)
       .aTravaille(ELEMENT_ID_OF, suivi(fraisage(DEBUT, LE_11_MAI_A_9H), fraisage(FIN, LE_11_MAI_A_10H)))
       .aMeneDeFront(suivi(tournage(DEBUT, LE_11_MAI_A_9H), tournage(FIN, LE_11_MAI_A_10H)))
-      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17HAvecPauseDeMidi())));
+      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17H())));
 
     CoutDeRevient rapport = service(atelier).rapport(ELEMENT_ID_OF);
 
@@ -176,7 +185,7 @@ class CoutsDeRevientServiceTest {
       .connait(ELEMENT_VALORISE_OF)
       .aTravaille(ELEMENT_ID_OF, suivi(fraisage(DEBUT, LE_11_MAI_A_9H), fraisage(FIN, LE_11_MAI_A_10H)))
       .aMeneDeFront(suivi(fraisage(DEBUT, LE_11_MAI_A_9H), fraisage(FIN, LE_11_MAI_A_10H)))
-      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17HAvecPauseDeMidi())));
+      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17H())));
 
     CoutDeRevient rapport = service(atelier).rapport(ELEMENT_ID_OF);
 
@@ -188,7 +197,7 @@ class CoutsDeRevientServiceTest {
     AtelierEnMemoire atelier = new AtelierEnMemoire()
       .connait(ELEMENT_VALORISE_OF)
       .aTravaille(ELEMENT_ID_OF, suivi(fraisage(DEBUT, LE_11_MAI_A_9H), fraisage(FIN, LE_11_MAI_A_10H)))
-      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17HAvecPauseDeMidi())));
+      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17H())));
 
     service(atelier).rapport(ELEMENT_ID_OF);
 
@@ -204,7 +213,7 @@ class CoutsDeRevientServiceTest {
     AtelierEnMemoire atelier = new AtelierEnMemoire()
       .connait(ELEMENT_VALORISE_OF)
       .aTravaille(ELEMENT_ID_OF, suivi(sansPoste(DEBUT, LE_11_MAI_A_9H), sansPoste(FIN, LE_11_MAI_A_10H)))
-      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17HAvecPauseDeMidi())));
+      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17H())));
 
     CoutDeRevient rapport = service(atelier).rapport(ELEMENT_ID_OF);
 
@@ -225,7 +234,7 @@ class CoutsDeRevientServiceTest {
     AtelierEnMemoire atelier = new AtelierEnMemoire()
       .connait(ELEMENT_VALORISE_OF)
       .aTravaille(ELEMENT_ID_OF, suivi(sansTaux(DEBUT, LE_11_MAI_A_9H), sansTaux(FIN, LE_11_MAI_A_10H)))
-      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17HAvecPauseDeMidi())));
+      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17H())));
 
     CoutDeRevient rapport = service(atelier).rapport(ELEMENT_ID_OF);
 
@@ -241,7 +250,7 @@ class CoutsDeRevientServiceTest {
       .connait(ELEMENT_VALORISE_OF)
       .aTravaille(ELEMENT_ID_OF, clos(LE_11_MAI_A_10H, fraisage(DEBUT, LE_11_MAI_A_9H)))
       .aTravaille(ELEMENT_ID_OF, suivi(fraisage(DEBUT, LE_11_MAI_A_13H), fraisage(FIN, LE_11_MAI_A_14H)))
-      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17HAvecPauseDeMidi())));
+      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17H())));
 
     CoutDeRevient rapport = service(atelier).rapport(ELEMENT_ID_OF);
 
@@ -259,7 +268,7 @@ class CoutsDeRevientServiceTest {
         ELEMENT_ID_OF,
         suivi(fraisage(DEBUT, LE_11_MAI_A_9H), fraisage(DEBUT, LE_11_MAI_A_9H.plusSeconds(3)), fraisage(FIN, LE_11_MAI_A_11H))
       )
-      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17HAvecPauseDeMidi())));
+      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17H())));
 
     CoutDeRevient rapport = service(atelier).rapport(ELEMENT_ID_OF);
 
@@ -272,7 +281,7 @@ class CoutsDeRevientServiceTest {
     AtelierEnMemoire atelier = new AtelierEnMemoire()
       .connait(ELEMENT_VALORISE_OF)
       .aTravaille(ELEMENT_ID_OF, suivi(fraisage(DEBUT, LE_11_MAI_A_9H), fraisage(DEBUT, LE_11_MAI_A_9H), fraisage(FIN, LE_11_MAI_A_11H)))
-      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17HAvecPauseDeMidi())));
+      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17H())));
 
     CoutDeRevient rapport = service(atelier).rapport(ELEMENT_ID_OF);
 
@@ -288,12 +297,21 @@ class CoutsDeRevientServiceTest {
   void shouldNeValoriserUneJourneeAbandonneeQueJusquASaFinPresumee() {
     AtelierEnMemoire atelier = new AtelierEnMemoire()
       .connait(ELEMENT_VALORISE_OF)
-      .aTravaille(ELEMENT_ID_OF, suivi(fraisage(DEBUT, LE_11_MAI_A_9H), fraisage(DEBUT, LE_12_MAI_A_9H), fraisage(FIN, LE_12_MAI_A_10H)))
+      .aTravaille(
+        ELEMENT_ID_OF,
+        suivi(
+          fraisage(DEBUT, LE_11_MAI_A_9H),
+          fraisage(FIN, LE_11_MAI_A_12H),
+          fraisage(DEBUT, LE_11_MAI_A_13H),
+          fraisage(DEBUT, LE_12_MAI_A_9H),
+          fraisage(FIN, LE_12_MAI_A_10H)
+        )
+      )
       .aMeneDeFront(suivi(tournage(DEBUT, LE_11_MAI_A_15H)))
       .aEtePresent(
         new PresenceDUnOperateur(
           OPERATEUR_ID_DUPONT,
-          List.of(journeeDe8HSansDepart(), new JourneeDeTravail(List.of(arriveeA(LE_12_MAI_A_8H))))
+          List.of(journeeOuverteDepuis8H(), new JourneeDeTravail(List.of(arriveeA(LE_12_MAI_A_8H))))
         )
       );
 
@@ -307,8 +325,8 @@ class CoutsDeRevientServiceTest {
   void shouldValoriserLePointeApresRegularisationDuDepart() {
     AtelierEnMemoire atelier = new AtelierEnMemoire()
       .connait(ELEMENT_VALORISE_OF)
-      .aTravaille(ELEMENT_ID_OF, suivi(fraisage(DEBUT, LE_11_MAI_A_9H)))
-      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17HAvecPauseDeMidi())));
+      .aTravaille(ELEMENT_ID_OF, suivi(fraisage(DEBUT, LE_11_MAI_A_9H), fraisage(FIN, LE_11_MAI_A_12H), fraisage(DEBUT, LE_11_MAI_A_13H)))
+      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HA17H())));
 
     CoutDeRevient rapport = service(atelier, LE_12_MAI_A_18H).rapport(ELEMENT_ID_OF);
 
@@ -320,7 +338,7 @@ class CoutsDeRevientServiceTest {
     AtelierEnMemoire atelier = new AtelierEnMemoire()
       .connait(ELEMENT_VALORISE_OF)
       .aTravaille(ELEMENT_ID_OF, suivi(fraisage(DEBUT, LE_11_MAI_A_17H), fraisage(FIN, LE_12_MAI_A_7H)))
-      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDe8HSansDepart())));
+      .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeOuverteDepuis8H())));
 
     CoutDeRevient rapport = service(atelier, LE_12_MAI_A_18H).rapport(ELEMENT_ID_OF);
 
@@ -335,11 +353,11 @@ class CoutsDeRevientServiceTest {
   void shouldValoriserMalgreUneArriveeImpliciteRendueApresSonDepart() {
     AtelierEnMemoire atelier = new AtelierEnMemoire()
       .connait(ELEMENT_VALORISE_OF)
-      .aTravaille(ELEMENT_ID_OF, suivi(fraisage(DEBUT, LE_11_MAI_A_9H)))
+      .aTravaille(ELEMENT_ID_OF, suivi(fraisage(DEBUT, LE_11_MAI_A_9H), fraisage(FIN, LE_11_MAI_A_12H), fraisage(DEBUT, LE_11_MAI_A_13H)))
       .aEtePresent(
         new PresenceDUnOperateur(
           OPERATEUR_ID_DUPONT,
-          List.of(journeeDe8HA17HAvecPauseDeMidi(), new JourneeDeTravail(List.of(departA(LE_12_MAI_A_9H), arriveeA(LE_12_MAI_A_9H))))
+          List.of(journeeDe8HA17H(), new JourneeDeTravail(List.of(departA(LE_12_MAI_A_9H), arriveeA(LE_12_MAI_A_9H))))
         )
       );
 
@@ -375,13 +393,14 @@ class CoutsDeRevientServiceTest {
 
   /**
    * Issue #59 : un travail jamais arrete, commence dans une journee fermee de plus de 24 h, ne court que jusqu'a sa
-   * fin presumee, lundi 13:00 — 9-12, trois heures, et non les nuits jusqu'a mercredi.
+   * fin presumee, lundi 13:00, sa relance apres la pause de midi — 9-12, trois heures, et non les nuits jusqu'a
+   * mercredi.
    */
   @Test
   void shouldNeValoriserUneJourneeDePlusDe24HQueJusquASaFinPresumee() {
     AtelierEnMemoire atelier = new AtelierEnMemoire()
       .connait(ELEMENT_VALORISE_OF)
-      .aTravaille(ELEMENT_ID_OF, suivi(fraisage(DEBUT, LE_11_MAI_A_9H)))
+      .aTravaille(ELEMENT_ID_OF, suivi(fraisage(DEBUT, LE_11_MAI_A_9H), fraisage(FIN, LE_11_MAI_A_12H), fraisage(DEBUT, LE_11_MAI_A_13H)))
       .aEtePresent(new PresenceDUnOperateur(OPERATEUR_ID_DUPONT, List.of(journeeDuLundi8HAuMercredi8H())));
 
     CoutDeRevient rapport = service(atelier, LE_13_MAI_A_8H).rapport(ELEMENT_ID_OF);

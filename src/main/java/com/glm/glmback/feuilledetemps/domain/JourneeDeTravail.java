@@ -46,8 +46,8 @@ public record JourneeDeTravail(List<EvenementDePresence> journal, Optional<Insta
   }
 
   /**
-   * Vrai si la journee, toujours sans depart, a depasse le seuil a cet instant : son amplitude depuis l'arrivee,
-   * pauses comprises, est strictement superieure au seuil.
+   * Vrai si la journee, toujours sans depart, a depasse le seuil a cet instant : son amplitude depuis l'arrivee est
+   * strictement superieure au seuil.
    */
   public boolean estAbandonneePour(Instant instant, AmplitudeMaximale seuil) {
     return !estFermee() && fenetreDeRecherche(seuil).flatMap(Plage::fin).filter(instant::isAfter).isPresent();
@@ -89,7 +89,7 @@ public record JourneeDeTravail(List<EvenementDePresence> journal, Optional<Insta
   }
 
   /**
-   * Les intervalles ou l'operateur etait present et non en pause, dans l'ordre.
+   * Les intervalles ou l'operateur etait present, de chaque arrivee a son depart, dans l'ordre.
    */
   public List<Plage> fenetres() {
     return presumees(fenetres(journal));
@@ -188,8 +188,8 @@ public record JourneeDeTravail(List<EvenementDePresence> journal, Optional<Insta
   }
 
   /**
-   * La fin d'une fenetre est l'evenement suivant, quel qu'il soit : une pause comme un depart la referment. Sans
-   * suivant, l'operateur n'est pas encore parti et la fenetre reste ouverte.
+   * La fin d'une fenetre est l'evenement suivant, le depart qui la referme. Sans suivant, l'operateur n'est pas encore
+   * parti et la fenetre reste ouverte.
    */
   private static Optional<Instant> suivant(List<EvenementDePresence> evenements, int rang) {
     if (rang + 1 == evenements.size()) {

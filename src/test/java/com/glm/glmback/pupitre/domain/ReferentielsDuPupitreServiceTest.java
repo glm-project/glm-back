@@ -35,9 +35,9 @@ class ReferentielsDuPupitreServiceTest {
 
   @Test
   void shouldRemettreLesPresencesReleveesALaLectureDesOperateurs() {
-    ReferentielDuPupitre referentiel = referentielA(LE_10_MAI_2026_A_9H, new JourneeEnCours(EtatDePresence.EN_PAUSE, LE_10_MAI_2026_A_7H));
+    ReferentielDuPupitre referentiel = referentielA(LE_10_MAI_2026_A_9H, new JourneeEnCours(EtatDePresence.PRESENT, LE_10_MAI_2026_A_7H));
 
-    assertThat(referentiel.operateurs()).extracting(OperateurDuPupitre::etat).containsExactly(EtatDePresence.EN_PAUSE);
+    assertThat(referentiel.operateurs()).extracting(OperateurDuPupitre::etat).containsExactly(EtatDePresence.PRESENT);
     assertThat(referentiel.operateurs()).extracting(OperateurDuPupitre::presentJusqua).containsExactly(Optional.of(LE_10_MAI_2026_A_20H));
   }
 

@@ -112,9 +112,8 @@ class SuiviDAtelierResource {
     description = """
     Les intervalles bruts du journal, ramenes aux fenetres de presence des operateurs.
 
-    C'est ici que la pause de midi scinde un travail en deux et qu'un depart referme ce que l'operateur a oublie
-    d'arreter, sans qu'aucun de ces faits ait eu besoin d'etre recopie dans le journal de l'element. Un intervalle
-    sans fin est encore en cours.
+    C'est ici qu'un depart referme ce que l'operateur a oublie d'arreter, sans avoir eu besoin d'etre recopie dans le
+    journal de l'element. Un intervalle sans fin est encore en cours.
     """
   )
   @ApiResponse(responseCode = "404", description = "Suivi introuvable.")
@@ -134,8 +133,9 @@ class SuiviDAtelierResource {
     description = """
     Le geste de l'operateur, date a l'instant present.
 
-    Ne jamais pointer ici une pause ou un depart : ce sont des faits de la journee de travail de l'operateur, ecrits
-    une seule fois via POST /api/atelier/journees/pointages.
+    Ne jamais pointer ici un depart : c'est un fait de la journee de travail de l'operateur, ecrit une seule fois via
+    POST /api/atelier/journees/pointages. Une pause, elle, se pointe ici : une fin par activite en cours, puis un
+    debut, ou une non conformite, a la reprise.
     """
   )
   @ApiResponse(responseCode = "201", description = "Le pointage est enregistre.")

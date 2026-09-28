@@ -108,7 +108,7 @@ public record JournalDePresence(List<EvenementDePresence> evenements) {
   }
 
   /**
-   * L'amplitude de la journee, de l'arrivee au depart : le temps passe dans les murs, pauses comprises.
+   * L'amplitude de la journee, de l'arrivee au depart : le temps passe dans les murs.
    */
   public Optional<Periode> amplitude() {
     List<EvenementDePresence> actifs = actifs(evenements);

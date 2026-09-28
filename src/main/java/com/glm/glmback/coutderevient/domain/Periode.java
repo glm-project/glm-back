@@ -27,7 +27,7 @@ public record Periode(Instant debut, Instant fin) {
    * La part commune aux deux periodes, s'il y en a une de duree non nulle.
    *
    * <p>
-   * Deux periodes qui ne font que se toucher n'en partagent aucune : une pause prise a la seconde ou le travail
+   * Deux periodes qui ne font que se toucher n'en partagent aucune : un depart pointe a la seconde ou le travail
    * commence ne doit pas ouvrir une ligne de rapport sur du vide.
    * </p>
    */

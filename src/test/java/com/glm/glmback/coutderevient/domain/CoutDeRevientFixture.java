@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Le 11 mai 2026, une journee de 8 h a 17 h avec une pause de midi, et de quoi la valoriser.
+ * Le 11 mai 2026, une journee de 8 h a 17 h, et de quoi la valoriser.
  *
  * <p>
  * Aucun fuseau horaire ici, contrairement a la fixture de la feuille de temps : ce contexte ne connait que des
@@ -61,22 +61,12 @@ public final class CoutDeRevientFixture {
     return new EvenementDePresence(TypeDEvenementDePresence.ARRIVEE, date);
   }
 
-  public static EvenementDePresence pauseA(Instant date) {
-    return new EvenementDePresence(TypeDEvenementDePresence.PAUSE, date);
-  }
-
-  public static EvenementDePresence repriseA(Instant date) {
-    return new EvenementDePresence(TypeDEvenementDePresence.REPRISE, date);
-  }
-
   public static EvenementDePresence departA(Instant date) {
     return new EvenementDePresence(TypeDEvenementDePresence.DEPART, date);
   }
 
-  public static JourneeDeTravail journeeDe8HA17HAvecPauseDeMidi() {
-    return new JourneeDeTravail(
-      List.of(arriveeA(LE_11_MAI_A_8H), pauseA(LE_11_MAI_A_12H), repriseA(LE_11_MAI_A_13H), departA(LE_11_MAI_A_17H))
-    );
+  public static JourneeDeTravail journeeDe8HA17H() {
+    return new JourneeDeTravail(List.of(arriveeA(LE_11_MAI_A_8H), departA(LE_11_MAI_A_17H)));
   }
 
   public static JourneeDeTravail journeeOuverteDepuis8H() {
@@ -84,26 +74,10 @@ public final class CoutDeRevientFixture {
   }
 
   /**
-   * Lundi, Dupont arrive a 8 h, prend sa pause de midi et ne pointe jamais son depart.
-   */
-  /**
-   * Issue #59 : lundi, Dupont arrive a 8 h et prend sa pause de midi, puis ne pointe plus rien avant une pause mardi a
-   * 10 h et un depart mercredi a 8 h, rattaches a la meme journee par une version anterieure au lot 3.
+   * Issue #59 : lundi, Dupont arrive a 8 h, puis ne pointe plus rien avant un depart mercredi a 8 h, rattache a la
+   * meme journee par une version anterieure au lot 3.
    */
   public static JourneeDeTravail journeeDuLundi8HAuMercredi8H() {
-    return new JourneeDeTravail(
-      List.of(
-        arriveeA(LE_11_MAI_A_8H),
-        pauseA(LE_11_MAI_A_12H),
-        repriseA(LE_11_MAI_A_13H),
-        pauseA(LE_12_MAI_A_10H),
-        repriseA(LE_12_MAI_A_18H),
-        departA(LE_13_MAI_A_8H)
-      )
-    );
-  }
-
-  public static JourneeDeTravail journeeDe8HSansDepart() {
-    return new JourneeDeTravail(List.of(arriveeA(LE_11_MAI_A_8H), pauseA(LE_11_MAI_A_12H), repriseA(LE_11_MAI_A_13H)));
+    return new JourneeDeTravail(List.of(arriveeA(LE_11_MAI_A_8H), departA(LE_13_MAI_A_8H)));
   }
 }

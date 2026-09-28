@@ -212,36 +212,20 @@ public final class AtelierFixture {
     return JourneeDeTravail.ouverte(JourneeDeTravailId.newId(), OPERATEUR_ID_DUPONT).enregistre(arriveeDeDupontA(LE_10_MAI_2026_A_7H));
   }
 
-  public static JourneeDeTravail journeeDeDupontDe7HA17HAvecPauseDeMidi() {
-    return journeeDeDupontOuverteA7H()
-      .enregistre(pauseDeDupontA(LE_10_MAI_2026_A_12H))
-      .enregistre(repriseDeDupontA(LE_10_MAI_2026_A_13H))
-      .enregistre(departDeDupontA(LE_10_MAI_2026_A_17H));
+  public static JourneeDeTravail journeeDeDupontDe7HA17H() {
+    return journeeDeDupontOuverteA7H().enregistre(departDeDupontA(LE_10_MAI_2026_A_17H));
   }
 
   /**
-   * Issue #59 : Dupont arrive le 10 a 7 h et prend sa pause de midi, puis ne pointe plus rien avant une pause le 11 a
-   * 3 h, une reprise a 7 h et un depart a 9 h, rattaches a la meme journee par une version anterieure au lot 3.
+   * Issue #59 : Dupont arrive le 10 a 7 h, puis ne pointe plus rien avant un depart le 11 a 9 h, rattache a la meme
+   * journee par une version anterieure au lot 3.
    */
   public static JourneeDeTravail journeeDeDupontDu10A7HAu11A9H() {
-    return journeeDeDupontOuverteA7H()
-      .enregistre(pauseDeDupontA(LE_10_MAI_2026_A_12H))
-      .enregistre(repriseDeDupontA(LE_10_MAI_2026_A_13H))
-      .enregistre(pauseDeDupontA(LE_11_MAI_2026_A_3H))
-      .enregistre(repriseDeDupontA(LE_11_MAI_2026_A_7H))
-      .enregistre(departDeDupontA(LE_11_MAI_2026_A_9H));
+    return journeeDeDupontOuverteA7H().enregistre(departDeDupontA(LE_11_MAI_2026_A_9H));
   }
 
   public static EvenementDePresence arriveeDeDupontA(Instant date) {
     return presenceDeDupont(TypeDEvenementDePresence.ARRIVEE, date);
-  }
-
-  public static EvenementDePresence pauseDeDupontA(Instant date) {
-    return presenceDeDupont(TypeDEvenementDePresence.PAUSE, date);
-  }
-
-  public static EvenementDePresence repriseDeDupontA(Instant date) {
-    return presenceDeDupont(TypeDEvenementDePresence.REPRISE, date);
   }
 
   public static EvenementDePresence departDeDupontA(Instant date) {

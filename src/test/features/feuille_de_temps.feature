@@ -22,18 +22,16 @@ Feature: Feuille de temps hebdomadaire d'un operateur
       | 2026-05-17 |
     And la feuille de temps ne porte aucune presence
 
-  Scenario: Une journee avec pause de midi se lit dans le jour qui la porte
+  Scenario: Une journee se lit dans le jour qui la porte, pause de midi comprise
     Given "dupont" est arrive a "2026-05-11T06:00:00Z"
-    And "dupont" a pointe "PAUSE" a "2026-05-11T10:00:00Z"
-    And "dupont" a pointe "REPRISE" a "2026-05-11T11:00:00Z"
     And "dupont" a pointe "DEPART" a "2026-05-11T15:00:00Z"
     When je consulte la feuille de temps de "dupont" pour la semaine 20 de 2026
     Then la reponse a le statut http 200
-    # La pause n'ote que son propre creux : la journee se lit en deux fenetres, le meme jour.
+    # La pause de midi se pointe sur les ordres, jamais sur la presence : la journee se lit en une seule fenetre, de
+    # l'arrivee au depart.
     And la presence du "2026-05-11" est
       | debut                | fin                  |
-      | 2026-05-11T06:00:00Z | 2026-05-11T10:00:00Z |
-      | 2026-05-11T11:00:00Z | 2026-05-11T15:00:00Z |
+      | 2026-05-11T06:00:00Z | 2026-05-11T15:00:00Z |
     And la presence du "2026-05-12" est vide
 
   Scenario: Une equipe de nuit compte sur les deux jours qu'elle traverse
@@ -58,32 +56,27 @@ Feature: Feuille de temps hebdomadaire d'un operateur
 
   Scenario: Une journee abandonnee signale sa plage presumee
     # E2 de la strategie « bornes de fin de journee », lot 5 : lu mardi, lundi s'arrete a son dernier fait connu, un
-    # ordre demarre a 16 h. La plage d'apres-midi est presumee, jusqu'a la regularisation du depart.
+    # ordre demarre a 16 h. Sans depart, la journee n'a qu'une plage, presumee en entier jusqu'a la regularisation du
+    # depart.
     Given "dupont" est arrive a "2026-05-11T05:00:00Z"
-    And "dupont" a pointe "PAUSE" a "2026-05-11T10:00:00Z"
-    And "dupont" a pointe "REPRISE" a "2026-05-11T11:00:00Z"
     And "dupont" a demarre un ordre de fabrication a "2026-05-11T14:00:00Z"
     And il est "2026-05-12T08:00:00Z"
     When je consulte la feuille de temps de "dupont" pour la semaine 20 de 2026
     Then la reponse a le statut http 200
     And la presence du "2026-05-11" est
       | debut                | fin                  | presumee |
-      | 2026-05-11T05:00:00Z | 2026-05-11T10:00:00Z | false    |
-      | 2026-05-11T11:00:00Z | 2026-05-11T14:00:00Z | true     |
+      | 2026-05-11T05:00:00Z | 2026-05-11T14:00:00Z | true     |
     Given le depart de "dupont" est regularise a "2026-05-11T15:00:00Z"
     When je consulte la feuille de temps de "dupont" pour la semaine 20 de 2026
     Then la presence du "2026-05-11" est
       | debut                | fin                  | presumee |
-      | 2026-05-11T05:00:00Z | 2026-05-11T10:00:00Z | false    |
-      | 2026-05-11T11:00:00Z | 2026-05-11T15:00:00Z | false    |
+      | 2026-05-11T05:00:00Z | 2026-05-11T15:00:00Z | false    |
 
   Scenario: Une journee fermee de plus de 24 h s'arrete a sa fin presumee
     # Issue #59 : lundi, Dupont ne pointe pas son depart ; le gestionnaire le saisit mercredi sur la meme journee. Plus
     # de 24 h ne se vivent pas d'une traite : lundi s'arrete a son dernier fait connu, un ordre demarre a 16 h, et
     # mardi comme mercredi restent vides au lieu de compter 24 h.
     Given "dupont" est arrive a "2026-05-11T05:00:00Z"
-    And "dupont" a pointe "PAUSE" a "2026-05-11T10:00:00Z"
-    And "dupont" a pointe "REPRISE" a "2026-05-11T11:00:00Z"
     And "dupont" a demarre un ordre de fabrication a "2026-05-11T14:00:00Z"
     And il est "2026-05-13T10:00:00Z"
     And le depart de "dupont" est regularise a "2026-05-13T08:00:00Z"
@@ -92,8 +85,7 @@ Feature: Feuille de temps hebdomadaire d'un operateur
     Then la reponse a le statut http 200
     And la presence du "2026-05-11" est
       | debut                | fin                  | presumee |
-      | 2026-05-11T05:00:00Z | 2026-05-11T10:00:00Z | false    |
-      | 2026-05-11T11:00:00Z | 2026-05-11T14:00:00Z | true     |
+      | 2026-05-11T05:00:00Z | 2026-05-11T14:00:00Z | true     |
     And la presence du "2026-05-12" est vide
     And la presence du "2026-05-13" est vide
 

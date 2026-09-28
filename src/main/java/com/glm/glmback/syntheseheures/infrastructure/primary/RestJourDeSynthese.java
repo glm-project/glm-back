@@ -17,11 +17,11 @@ import java.util.List;
 record RestJourDeSynthese(
   @Schema(description = "Date du jour, dans le fuseau de l'entreprise.", example = "2026-05-11") LocalDate jour,
   @Schema(description = "Les pointages de ce jour, dans l'ordre des heures.") List<RestPointage> pointages,
-  @Schema(description = "Duree travaillee et pointee du jour, pauses exclues.", example = "PT8H") Duration duree,
+  @Schema(description = "Duree de presence pointee du jour, de l'arrivee au depart, pause comprise.", example = "PT8H") Duration duree,
   @Schema(
     description = """
-    Duree presumee du jour : le temps d'une journee sans depart, abandonnee au-dela de l'amplitude maximale, entre sa
-    derniere reprise et son dernier fait connu. A confirmer par une regularisation avant de transmettre a la paie.
+    Duree presumee du jour : le temps d'une journee sans depart, abandonnee au-dela de l'amplitude maximale, entre son
+    arrivee et son dernier fait connu. A confirmer par une regularisation du depart.
     """,
     example = "PT3H"
   )
