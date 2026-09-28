@@ -6,9 +6,10 @@ Responsabilité, frontières et invariants de ce contexte. Les règles de code c
 
 ## Ce dont ce contexte s'occupe
 
-**Relever les heures de présence d'un opérateur, semaine par semaine.** La présence ne sert pas à payer. Un seul
-acte : lire le journal de présence d'un opérateur sur une semaine ISO donnée, jour par jour — le journal brut des
-pointages (arrivée, départ), et la durée qui en découle.
+**Relever les heures d'un opérateur, semaine par semaine** : sa présence, et son temps opérationnel sur les éléments.
+La présence ne sert pas à payer. Un seul acte : lire les journaux d'un opérateur sur une semaine ISO donnée, jour par
+jour — le journal brut des pointages (arrivée, départ, début, non-conformité, fin), les durées qui en découlent, et
+les éléments travaillés.
 
 C'est une **projection transverse**, comme `feuilledetemps` et `coutderevient` : un contexte purement lecteur, qui
 ne possède aucune table, n'écrit rien, et recalcule tout à chaque appel.
@@ -25,19 +26,26 @@ ne possède aucune table, n'écrit rien, et recalcule tout à chaque appel.
   l'écran de correction (régularisation, annulation, correction de présence) — c'est lui qui portera ce catalogue,
   pas ce contexte.
 - **La valorisation** — ni taux horaire, ni coût. Il affiche du temps, il ne le multiplie par rien.
-- **Le référentiel** — identité de l'opérateur lue par port, jamais possédée.
+- **Le référentiel** — identité de l'opérateur, fiche de l'élément et libellé du poste lus par port, jamais possédés.
+- **Les périodes de travail elles-mêmes** — ce contexte ne les expose pas, il n'en rend que les durées ; la feuille
+  de temps expose les périodes, qu'elle calcule de son côté.
 
 ## Agrégat de lecture
 
 `SyntheseDesHeures` : un opérateur résolu, une `SemaineCalendaire`, sept `JourDeSynthese`. Aucune identité, aucune
 persistance — l'objet naît et meurt dans l'appel.
 
-Chaque `JourDeSynthese` porte ses pointages (`List<EvenementDePresence>`) et sa `duree` (`java.time.Duration`, somme
-des fenêtres de présence closes de ce jour ; la pause n'étant pas un pointage de présence, elle y est comptée).
+Chaque `JourDeSynthese` porte ses pointages (`List<PointageDuJour>`, interface scellée : `EvenementDePresence` ou
+`PointageDElement`, qui nomme en plus l'élément et le poste), sa `duree` (somme des fenêtres de présence closes de ce
+jour ; la pause n'étant pas un pointage de présence, elle y est comptée), sa `dureePresumee`, et son temps
+opérationnel `dureeOperationnelle` et `dureeOperationnellePresumee`. `SyntheseDesHeures` porte en plus ses
+`ElementDeLaSynthese` : l'élément engagé (nom et type du suivi), sa fiche relue, ses trois durées et ses
+`PosteDeLElement`.
 
 `SynthesesDesHeuresService` est la fabrique : elle demande les journées qui **recouvrent** la semaine, replie chacune
 en pointages classés et en fenêtres de présence via `JourneeDeTravail`, puis ramène le tout aux jours du calendrier
-avec `DecoupageCalendaire`.
+avec `DecoupageCalendaire`. Le travail suit le même chemin : les `SuiviDuTravail` de l'opérateur sont repliés par leur
+`JournalDAtelier`, réduits par `ReductionALaPresence`, puis coupés par le même découpage.
 
 ## Invariants à ne pas casser
 
@@ -57,10 +65,39 @@ avec `DecoupageCalendaire`.
   la ferme à sa fin présumée, le dernier fait **de la fenêtre de recherche**, départ exclu. Entre le seuil et 24 h,
   une journée fermée compte entière. 24 h est une borne physique, jamais un paramètre : la constante vit dans
   `JourneeDeTravail`, recopiée dans `atelier`, `feuilledetemps`, `syntheseheures` et `coutderevient`.
+- **Le repli du travail rejoue l'automate d'atelier par poste**, l'opérateur étant fixé : un début sur une activité
+  en cours la relance, une non-conformité ouvre une reprise, une fin sans activité est ignorée. Un intervalle court
+  jusqu'au pointage suivant sur le même poste, sinon jusqu'à la clôture du suivi, sinon il reste ouvert. Les
+  événements annulés sont écartés dès le SQL.
+- **Le port rend tout le journal des suivis touchés**, restreint à l'opérateur : une non-conformité de la semaine peut
+  suivre un début de la semaine d'avant. La période part de la plus précoce des arrivées des journées lues, ou du
+  lundi s'il est antérieur.
+- **Un intervalle est réduit aux fenêtres de la journée où il a commencé**, lue comme la présence : la plus récente
+  dont l'arrivée précède l'instant et que son départ pointé ne finit pas avant lui. Une fenêtre présumée rend
+  l'intervalle présumé ; une intersection réduite à un instant ne rend rien. **Un début hors de toute journée ne compte
+  pas**, mais son pointage reste au journal brut, et son élément reste rendu.
+- **Les durées opérationnelles se cumulent par élément** : une heure sur deux éléments compte deux fois. Un intervalle
+  clos compte en pointé, ou en présumé s'il l'est ; un intervalle ouvert ne compte rien. Jour = somme de ses
+  intervalles ; élément = somme de ses intervalles de la semaine ; semaine = somme des jours = somme des éléments.
+- **Les éléments rendus** sont ceux qui portent un intervalle ou un pointage d'élément dans la semaine, par première
+  apparition puis par nom. Un réengagement reste le même élément. Référence et description sont absentes si l'élément
+  a été supprimé. Les couples poste et nature suivent l'ordre de première apparition, intervalles et pointages
+  confondus : tout poste nommé au journal trouve son libellé dans son élément. Ce qui est pointé sans poste n'en donne
+  aucun.
+- **Le journal du jour** mêle la présence et tous les pointages d'élément non annulés de l'opérateur datés du jour,
+  même hors journée. À instant égal : arrivée, pointages d'élément, départ ; deux éléments au même instant se
+  départagent par l'identifiant de l'élément, un même élément garde l'ordre de son journal (date, identifiant).
 - **La semaine est toujours explicite.** Aucune « semaine courante » implicite. L'horloge ne sert qu'à juger
   l'abandon d'une journée : deux appels espacés peuvent donc différer.
-- **Aucun import de `atelier`, `feuilledetemps`, `operateur` ni `postedetravail`**, tous annotés `@BusinessContext`.
-  Ce contexte déclare ses propres entités JPA `@Immutable` sur leurs tables.
+- **Aucun import de `atelier`, `feuilledetemps`, `elementdefabrication`, `operateur` ni `postedetravail`**, tous
+  annotés `@BusinessContext`. Ce contexte déclare ses propres entités JPA `@Immutable` sur leurs tables.
+- **La réduction, l'écart hors journée et le découpage changent avec `feuilledetemps`**, qui les applique aux mêmes
+  intervalles pour en exposer les périodes : l'écran « Temps opérationnel » du front dessine les unes et additionne les
+  autres. Rien ne relie les deux codes ; les tableaux parallèles de `feuille_de_temps.feature` et
+  `synthese_des_heures.feature` sont le filet, et une règle changée d'un côté se change de l'autre.
+- **Cinq automates d'atelier changent ensemble** : `atelier`, `pupitre`, `coutderevient`, `feuilledetemps` et ce
+  contexte. `synthese_des_heures.feature` pointe par l'API d'`atelier` et relit par ce contexte : il échoue dès que
+  les deux cessent de rejouer le même automate.
 
 ## Une divergence assumée par rapport à `feuilledetemps`
 
@@ -95,9 +132,14 @@ prouvé au niveau domaine. Le test unitaire reste la bonne échelle pour ce cas 
 ## Ports sortants
 
 `PresenceDeLOperateur`, `OperateursConnus`, `FuseauHoraireDeLEntreprise`, `SeuilDAmplitude`, `PointagesDAtelier`,
-`Clock`, implémentés par
+`TravailDeLOperateur`, `ElementsDeFabrication`, `PostesDeTravail`, `Clock`, implémentés par
 `infrastructure/secondary` sur les mêmes tables que `feuilledetemps` (`evenement_de_presence`, `journee_de_travail`,
-`operateur`) — troisième lecteur de ces tables après `atelier` (propriétaire) et `feuilledetemps`.
+`operateur`, `evenement_d_atelier`, `suivi_d_atelier`) — troisième lecteur de ces tables après `atelier`
+(propriétaire) et `feuilledetemps` —, et sur `element_de_fabrication` et `poste_de_travail`.
+
+`TravailDeLOperateur` est servi par trois requêtes, jamais une par suivi : les identifiants des suivis où l'opérateur a
+pointé sur la période (index `ix_evenement_d_atelier_operateur`), ces suivis, puis leurs journaux triés par date et
+identifiant. `ElementsDeFabrication.parIds` et `PostesDeTravail.parIds` lisent chacun en une requête.
 
 ## Les adapters ne peuvent porter ni le nom de ceux d'atelier, ni ceux de feuilledetemps
 
@@ -107,15 +149,19 @@ différents refusent de démarrer ensemble (`ConflictingBeanDefinitionException`
 `feuilledetemps` a déjà pris `ReferentielDesOperateurs`, `FuseauHoraireFixe`, `JourneesDeTravailDAtelier` et leurs
 entités `*LectureEntity` ; `coutderevient` a pris ses `*ValoriseEntity`. Ce contexte prend donc son propre
 vocabulaire, distinct des deux : `OperateursDeLaSynthese`, `FuseauHoraireDeLaSynthese`,
-`JourneesDeTravailPourLaSynthese`, entités `*SyntheseEntity`. Un quatrième lecteur des mêmes tables devra choisir un
-quatrième nom.
+`JourneesDeTravailPourLaSynthese`, entités `*SyntheseEntity`. Le temps opérationnel a pris `TravailDeLaSynthese`,
+`ElementsDeLaSynthese`, `PostesDeLaSynthese`, et les entités `SuiviDeLaSyntheseEntity`,
+`ElementDeLaSyntheseEntity`, `PosteDeLaSyntheseEntity`, `PointageDAtelierDeLaSyntheseEntity`, dont les colonnes
+reprennent une à une le nommage des entités propriétaires. Un quatrième lecteur des mêmes tables devra choisir un
+quatrième nom. Les schémas OpenAPI portent de même un `@Schema(name = …)` propre au contexte.
 
 ## État d'avancement
 
 Les quatre couches sont livrées : `domain`, `infrastructure/secondary` (adapters JPA en lecture seule),
 `application` (`SynthesesDesHeuresApplicationService`, ouvert à `USER` et `GESTIONNAIRE` — ce relevé affiche du
 temps, pas un montant, rien ne justifie de le réserver au gestionnaire comme `coutderevient`) et
-`infrastructure/primary` (`GET /api/syntheses-des-heures/{operateurId}?annee=&semaine=`).
+`infrastructure/primary` (`GET /api/syntheses-des-heures/{operateurId}?annee=&semaine=`). Le temps opérationnel —
+durées par jour, par élément et pour la semaine, éléments de la semaine, pointages d'élément au journal — est livré.
 
 `infrastructure/secondary` n'a **aucun test dédié** — ni unitaire, ni d'intégration : c'est le patron déjà suivi par
 `feuilledetemps` et `coutderevient`, leur correction étant vérifiée par le scénario Cucumber qui traverse toute la
@@ -127,6 +173,6 @@ de ce contexte, donc échoue dès que les deux cessent de lire les mêmes colonn
 texte de step défini dans deux classes lève une erreur de démarrage (`DuplicateStepDefinition`) qui fait échouer
 **toute** la suite, pas seulement ce fichier. `feuilledetemps` avait déjà pris « `{string} est arrive a {string}` »
 et « `{string} a pointe {string} a {string}` » ; ce contexte a dû inventer son propre phrasé (« pointe son arrivee
-a », « enregistre le pointage ... a »), sur le même principe que `CoutDeRevientSteps` (« prend son poste a »,
+a », « enregistre le pointage ... a », « enregistre ... sur l'element ... au poste ... a », « pour la synthese, ... »), sur le même principe que `CoutDeRevientSteps` (« prend son poste a »,
 « pointe sa presence ... a »). Un texte de step générique se choisit donc en vérifiant d'abord qu'aucune autre
 classe de `src/test/java` ne le porte déjà.

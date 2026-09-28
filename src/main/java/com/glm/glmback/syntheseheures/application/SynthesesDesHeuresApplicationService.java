@@ -1,15 +1,18 @@
 package com.glm.glmback.syntheseheures.application;
 
 import com.glm.glmback.shared.time.domain.Clock;
+import com.glm.glmback.syntheseheures.domain.ElementsDeFabrication;
 import com.glm.glmback.syntheseheures.domain.FuseauHoraireDeLEntreprise;
 import com.glm.glmback.syntheseheures.domain.OperateurId;
 import com.glm.glmback.syntheseheures.domain.OperateursConnus;
 import com.glm.glmback.syntheseheures.domain.PointagesDAtelier;
+import com.glm.glmback.syntheseheures.domain.PostesDeTravail;
 import com.glm.glmback.syntheseheures.domain.PresenceDeLOperateur;
 import com.glm.glmback.syntheseheures.domain.SemaineCalendaire;
 import com.glm.glmback.syntheseheures.domain.SeuilDAmplitude;
 import com.glm.glmback.syntheseheures.domain.SyntheseDesHeures;
 import com.glm.glmback.syntheseheures.domain.SynthesesDesHeuresService;
+import com.glm.glmback.syntheseheures.domain.TravailDeLOperateur;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,9 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
  * Orchestration de la lecture des syntheses des heures.
  *
  * <p>
- * Rien a ecrire : le contexte ne fait que relire les journaux de l'atelier. La transaction est donc en lecture
- * seule, et elle couvre les deux requetes du meme coup — journees puis journaux — pour que le releve ne melange pas
- * deux etats de la base.
+ * Rien a ecrire : le contexte ne fait que relire les journaux de l'atelier et le referentiel. La transaction est donc
+ * en lecture seule, et elle couvre toutes les requetes du meme coup — journees, suivis, leurs journaux, fiches et
+ * postes — pour que le releve ne melange pas deux etats de la base.
  * </p>
  */
 @Service
@@ -34,6 +37,9 @@ public class SynthesesDesHeuresApplicationService {
     FuseauHoraireDeLEntreprise fuseau,
     SeuilDAmplitude seuil,
     PointagesDAtelier pointages,
+    TravailDeLOperateur travail,
+    ElementsDeFabrication elements,
+    PostesDeTravail postes,
     Clock clock
   ) {
     this.synthesesDesHeures = SynthesesDesHeuresService.builder()
@@ -42,6 +48,9 @@ public class SynthesesDesHeuresApplicationService {
       .fuseau(fuseau)
       .seuil(seuil)
       .pointages(pointages)
+      .travail(travail)
+      .elements(elements)
+      .postes(postes)
       .clock(clock);
   }
 

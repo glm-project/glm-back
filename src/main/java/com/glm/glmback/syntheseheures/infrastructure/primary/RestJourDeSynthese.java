@@ -8,7 +8,7 @@ import java.util.List;
 
 @Schema(
   description = """
-  Un jour du calendrier de l'entreprise, ses pointages et la duree travaillee qui lui revient.
+  Un jour du calendrier de l'entreprise, son journal brut, sa duree de presence et son temps operationnel.
 
   Les sept jours sont toujours rendus, meme vides : un trou obligerait le lecteur a deviner s'il manque une journee
   ou si l'operateur n'etait pas la.
@@ -16,7 +16,15 @@ import java.util.List;
 )
 record RestJourDeSynthese(
   @Schema(description = "Date du jour, dans le fuseau de l'entreprise.", example = "2026-05-11") LocalDate jour,
-  @Schema(description = "Les pointages de ce jour, dans l'ordre des heures.") List<RestPointage> pointages,
+  @Schema(
+    description = """
+    Le journal brut de ce jour : les pointages de presence, et tous les pointages d'element non annules de l'operateur
+    dates de ce jour, meme hors de toute journee. Dans l'ordre des heures ; a instant egal, l'arrivee, puis les
+    pointages d'element, puis le depart ; deux elements pointes au meme instant se departagent par l'identifiant de
+    l'element, et un meme element garde l'ordre de son journal.
+    """
+  )
+  List<RestPointage> pointages,
   @Schema(description = "Duree de presence pointee du jour, de l'arrivee au depart, pause comprise.", example = "PT8H") Duration duree,
   @Schema(
     description = """
@@ -25,14 +33,31 @@ record RestJourDeSynthese(
     """,
     example = "PT3H"
   )
-  Duration dureePresumee
+  Duration dureePresumee,
+  @Schema(
+    description = """
+    Temps operationnel pointe du jour : la somme des periodes de travail closes de ce jour, reduites a la presence. Il se
+    cumule par element, et peut donc depasser la presence. Un travail en cours ne compte rien.
+    """,
+    example = "PT13H40M",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  Duration dureeOperationnelle,
+  @Schema(
+    description = "Temps operationnel presume du jour : le travail borne par la fin presumee d'une journee abandonnee.",
+    example = "PT0S",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  Duration dureeOperationnellePresumee
 ) {
   static RestJourDeSynthese from(JourDeSynthese jour) {
     return new RestJourDeSynthese(
       jour.jour(),
       jour.pointages().stream().map(RestPointage::from).toList(),
       jour.duree(),
-      jour.dureePresumee()
+      jour.dureePresumee(),
+      jour.dureeOperationnelle(),
+      jour.dureeOperationnellePresumee()
     );
   }
 }

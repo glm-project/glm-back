@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 @UnitTest
 class FeuilleDeTempsTest {
 
-  private static final JourDeLaSemaine LUNDI_SANS_PRESENCE = new JourDeLaSemaine(LUNDI_11_MAI_2026, List.of());
+  private static final JourDeLaSemaine LUNDI_SANS_PRESENCE = new JourDeLaSemaine(LUNDI_11_MAI_2026, List.of(), List.of());
 
   @Test
   void shouldNotBuildWithoutOperateur() {

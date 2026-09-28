@@ -20,37 +20,75 @@ class JourDeSyntheseTest {
 
   @Test
   void shouldNotBuildWithoutJour() {
-    assertThatThrownBy(() -> new JourDeSynthese(null, List.of(), Duration.ZERO, Duration.ZERO))
+    assertThatThrownBy(() ->
+      JourDeSynthese.builder()
+        .jour(null)
+        .pointages(List.of())
+        .duree(Duration.ZERO)
+        .dureePresumee(Duration.ZERO)
+        .dureeOperationnelle(Duration.ZERO)
+        .dureeOperationnellePresumee(Duration.ZERO)
+    )
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("jour");
   }
 
   @Test
   void shouldNotBuildWithoutPointages() {
-    assertThatThrownBy(() -> new JourDeSynthese(LUNDI_11_MAI_2026, null, Duration.ZERO, Duration.ZERO))
+    assertThatThrownBy(() ->
+      JourDeSynthese.builder()
+        .jour(LUNDI_11_MAI_2026)
+        .pointages(null)
+        .duree(Duration.ZERO)
+        .dureePresumee(Duration.ZERO)
+        .dureeOperationnelle(Duration.ZERO)
+        .dureeOperationnellePresumee(Duration.ZERO)
+    )
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("pointages");
   }
 
   @Test
   void shouldNotBuildWithNullPointage() {
-    List<EvenementDePresence> pointages = Arrays.asList(ARRIVEE, null);
+    List<PointageDuJour> pointages = Arrays.asList(ARRIVEE, null);
 
-    assertThatThrownBy(() -> new JourDeSynthese(LUNDI_11_MAI_2026, pointages, Duration.ZERO, Duration.ZERO))
+    assertThatThrownBy(() ->
+      JourDeSynthese.builder()
+        .jour(LUNDI_11_MAI_2026)
+        .pointages(pointages)
+        .duree(Duration.ZERO)
+        .dureePresumee(Duration.ZERO)
+        .dureeOperationnelle(Duration.ZERO)
+        .dureeOperationnellePresumee(Duration.ZERO)
+    )
       .isExactlyInstanceOf(NullElementInCollectionException.class)
       .hasMessageContaining("pointages");
   }
 
   @Test
   void shouldNotBuildWithoutDuree() {
-    assertThatThrownBy(() -> new JourDeSynthese(LUNDI_11_MAI_2026, List.of(), null, Duration.ZERO))
+    assertThatThrownBy(() ->
+      JourDeSynthese.builder()
+        .jour(LUNDI_11_MAI_2026)
+        .pointages(List.of())
+        .duree(null)
+        .dureePresumee(Duration.ZERO)
+        .dureeOperationnelle(Duration.ZERO)
+        .dureeOperationnellePresumee(Duration.ZERO)
+    )
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("duree");
   }
 
   @Test
   void shouldPorterSonJourSesPointagesEtSaDuree() {
-    JourDeSynthese jour = new JourDeSynthese(LUNDI_11_MAI_2026, List.of(ARRIVEE), Duration.ofHours(8), Duration.ZERO);
+    JourDeSynthese jour = JourDeSynthese.builder()
+      .jour(LUNDI_11_MAI_2026)
+      .pointages(List.of(ARRIVEE))
+      .duree(Duration.ofHours(8))
+      .dureePresumee(Duration.ZERO)
+      .dureeOperationnelle(Duration.ZERO)
+      .dureeOperationnellePresumee(Duration.ZERO);
 
     assertThat(jour.jour()).isEqualTo(LUNDI_11_MAI_2026);
     assertThat(jour.pointages()).containsExactly(ARRIVEE);
@@ -59,15 +97,74 @@ class JourDeSyntheseTest {
 
   @Test
   void shouldNotBuildWithoutDureePresumee() {
-    assertThatThrownBy(() -> new JourDeSynthese(LUNDI_11_MAI_2026, List.of(), Duration.ZERO, null))
+    assertThatThrownBy(() ->
+      JourDeSynthese.builder()
+        .jour(LUNDI_11_MAI_2026)
+        .pointages(List.of())
+        .duree(Duration.ZERO)
+        .dureePresumee(null)
+        .dureeOperationnelle(Duration.ZERO)
+        .dureeOperationnellePresumee(Duration.ZERO)
+    )
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("duree presumee");
   }
 
   @Test
   void shouldPorterSaDureePresumee() {
-    assertThat(new JourDeSynthese(LUNDI_11_MAI_2026, List.of(), Duration.ZERO, Duration.ofHours(3)).dureePresumee()).isEqualTo(
-      Duration.ofHours(3)
-    );
+    assertThat(
+      JourDeSynthese.builder()
+        .jour(LUNDI_11_MAI_2026)
+        .pointages(List.of())
+        .duree(Duration.ZERO)
+        .dureePresumee(Duration.ofHours(3))
+        .dureeOperationnelle(Duration.ZERO)
+        .dureeOperationnellePresumee(Duration.ZERO)
+        .dureePresumee()
+    ).isEqualTo(Duration.ofHours(3));
+  }
+
+  @Test
+  void shouldNotBuildWithoutDureeOperationnelle() {
+    assertThatThrownBy(() ->
+      JourDeSynthese.builder()
+        .jour(LUNDI_11_MAI_2026)
+        .pointages(List.of())
+        .duree(Duration.ZERO)
+        .dureePresumee(Duration.ZERO)
+        .dureeOperationnelle(null)
+        .dureeOperationnellePresumee(Duration.ZERO)
+    )
+      .isExactlyInstanceOf(MissingMandatoryValueException.class)
+      .hasMessageContaining("duree operationnelle");
+  }
+
+  @Test
+  void shouldNotBuildWithoutDureeOperationnellePresumee() {
+    assertThatThrownBy(() ->
+      JourDeSynthese.builder()
+        .jour(LUNDI_11_MAI_2026)
+        .pointages(List.of())
+        .duree(Duration.ZERO)
+        .dureePresumee(Duration.ZERO)
+        .dureeOperationnelle(Duration.ZERO)
+        .dureeOperationnellePresumee(null)
+    )
+      .isExactlyInstanceOf(MissingMandatoryValueException.class)
+      .hasMessageContaining("duree operationnelle presumee");
+  }
+
+  @Test
+  void shouldPorterSonTempsOperationnel() {
+    JourDeSynthese jour = JourDeSynthese.builder()
+      .jour(LUNDI_11_MAI_2026)
+      .pointages(List.of())
+      .duree(Duration.ZERO)
+      .dureePresumee(Duration.ZERO)
+      .dureeOperationnelle(Duration.ofHours(13))
+      .dureeOperationnellePresumee(Duration.ofHours(2));
+
+    assertThat(jour.dureeOperationnelle()).isEqualTo(Duration.ofHours(13));
+    assertThat(jour.dureeOperationnellePresumee()).isEqualTo(Duration.ofHours(2));
   }
 }

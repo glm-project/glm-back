@@ -34,6 +34,7 @@ public class FeuilleDeTempsSteps {
   private static final String FEUILLES_URI = "/api/feuilles-de-temps";
   private static final String ELEMENTS_URI = "/api/elements-de-fabrication";
   private static final String SUIVIS_URI = "/api/atelier/suivis";
+  private static final String POSTES_URI = "/api/postes-de-travail";
   private static final ObjectMapper JSON = JsonMapper.builder().build();
   private static final AtomicInteger SEQUENCE = new AtomicInteger();
 
@@ -45,12 +46,96 @@ public class FeuilleDeTempsSteps {
 
   private final Map<String, String> operateurs = new HashMap<>();
   private final Map<String, String> journees = new HashMap<>();
+  private final Map<String, String> postes = new HashMap<>();
+  private final Map<String, String> elements = new HashMap<>();
+  private final Map<String, String> suivis = new HashMap<>();
+  private String dernierPointage;
 
   @Given("la feuille de temps suit l'operateur {string}")
   public void laFeuilleDeTempsSuitLOperateur(String alias) {
     Map<String, Object> corps = Map.of("nom", alias, "prenom", "Feuille " + SEQUENCE.incrementAndGet(), "postes", List.of());
     rest.post(OPERATEURS_URI, JSON.writeValueAsString(corps));
     operateurs.put(alias, String.valueOf(CucumberRestTestContext.getElement("$.id")));
+  }
+
+  @Given("la feuille de temps connait le poste {string} de nature {string}")
+  public void laFeuilleDeTempsConnaitLePoste(String alias, String nature) {
+    rest.post(
+      POSTES_URI,
+      JSON.writeValueAsString(Map.of("libelle", "Feuille " + alias + " " + SEQUENCE.incrementAndGet(), "nature", nature))
+    );
+    postes.put(alias, id());
+  }
+
+  @Given("la feuille de temps suit l'operateur {string} habilite sur")
+  public void laFeuilleDeTempsSuitLOperateurHabiliteSur(String alias, List<String> habilitations) {
+    Map<String, Object> corps = Map.of(
+      "nom",
+      alias,
+      "prenom",
+      "Feuille " + SEQUENCE.incrementAndGet(),
+      "postes",
+      habilitations.stream().map(postes::get).toList()
+    );
+    rest.post(OPERATEURS_URI, JSON.writeValueAsString(corps));
+    operateurs.put(alias, id());
+  }
+
+  @Given("la feuille de temps connait l'element {string}")
+  public void laFeuilleDeTempsConnaitLElement(String alias) {
+    Map<String, Object> element = Map.of(
+      "type",
+      "ORDRE_DE_FABRICATION",
+      "reference",
+      "FEUILLE-" + alias + "-" + SEQUENCE.incrementAndGet()
+    );
+    rest.post(ELEMENTS_URI, JSON.writeValueAsString(element));
+    elements.put(alias, id());
+  }
+
+  /**
+   * Engager un element deja cloture ouvre un nouveau suivi : c'est le reengagement, qui reste le meme element.
+   */
+  @Given("l'element {string} est engage en atelier a {string}")
+  public void lElementEstEngageEnAtelierA(String alias, String instant) {
+    horloge.ilEst(Instant.parse(instant));
+    rest.post(SUIVIS_URI, JSON.writeValueAsString(Map.of("element", elements.get(alias))));
+    suivis.put(alias, id());
+  }
+
+  @Given("{string} pointe {string} sur l'element {string} au poste {string} a {string}")
+  public void pointeSurLElementAuPoste(String operateur, String type, String element, String poste, String instant) {
+    horloge.ilEst(Instant.parse(instant));
+    dernierPointage = UUID.randomUUID().toString();
+    Map<String, Object> corps = Map.of(
+      "id",
+      dernierPointage,
+      "type",
+      type,
+      "operateur",
+      operateurs.get(operateur),
+      "poste",
+      postes.get(poste)
+    );
+    rest.post(SUIVIS_URI + "/" + suivis.get(element) + "/pointages", JSON.writeValueAsString(corps));
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage de l'element doit etre accepte").isTrue();
+  }
+
+  @Given("le dernier pointage sur l'element {string} est annule a {string}")
+  public void leDernierPointageSurLElementEstAnnule(String element, String instant) {
+    horloge.ilEst(Instant.parse(instant));
+    rest.post(
+      SUIVIS_URI + "/" + suivis.get(element) + "/evenements/" + dernierPointage + "/annulation",
+      JSON.writeValueAsString(Map.of("motif", "saisie en trop"))
+    );
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("l'annulation doit etre acceptee").isTrue();
+  }
+
+  @Given("l'element {string} est cloture a {string}")
+  public void lElementEstClotureA(String element, String instant) {
+    horloge.ilEst(Instant.parse(instant));
+    rest.put(SUIVIS_URI + "/" + suivis.get(element) + "/cloture", JSON.writeValueAsString(Map.of("dateDeSurvenue", instant)));
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("la cloture doit etre acceptee").isTrue();
   }
 
   @Given("{string} est arrive a {string}")
@@ -138,6 +223,50 @@ public class FeuilleDeTempsSteps {
   public void laPresenceDuCommenceAEtNEstPasTerminee(String jour, String debut) {
     assertThat(presenceDu(jour)).hasSize(1);
     assertThat(presenceDu(jour).getFirst()).containsEntry("debut", debut).doesNotContainKey("fin");
+  }
+
+  /**
+   * Chaque activite lue, ses identifiants ramenes aux alias du scenario. Une cellule vide dit que le champ est absent :
+   * une activite en cours n'a pas de fin.
+   */
+  @Then("les activites du {string} sont")
+  public void lesActivitesDuSont(String jour, List<Map<String, String>> attendues) {
+    List<Map<String, Object>> activites = activitesDu(jour);
+
+    assertThat(activites).hasSameSizeAs(attendues);
+    for (int rang = 0; rang < attendues.size(); rang++) {
+      Map<String, String> attendue = attendues.get(rang);
+      Map<String, Object> lue = activites.get(rang);
+      attendue.forEach((cle, valeur) -> assertThat(lue.get(cle)).as(cle).isEqualTo(attendu(cle, valeur)));
+    }
+  }
+
+  @Then("le {string} ne porte aucune activite")
+  public void neporteAucuneActivite(String jour) {
+    assertThat(activitesDu(jour)).isEmpty();
+  }
+
+  private Object attendu(String cle, String valeur) {
+    return switch (cle) {
+      case "element" -> elements.get(valeur);
+      case "poste" -> postes.get(valeur);
+      case "presumee" -> Boolean.valueOf(valeur);
+      default -> valeur;
+    };
+  }
+
+  @SuppressWarnings("unchecked")
+  private static List<Map<String, Object>> activitesDu(String jour) {
+    return jours()
+      .stream()
+      .filter(jourDeLaSemaine -> jour.equals(jourDeLaSemaine.get("jour")))
+      .findFirst()
+      .map(jourDeLaSemaine -> (List<Map<String, Object>>) jourDeLaSemaine.get("activites"))
+      .orElseThrow();
+  }
+
+  private static String id() {
+    return String.valueOf(CucumberRestTestContext.getElement("$.id"));
   }
 
   private void consulte(String operateur, int semaine, int annee) {

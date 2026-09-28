@@ -192,18 +192,224 @@ class FeuillesDeTempsServiceTest {
     );
   }
 
+  @Test
+  void shouldDemanderLeTravailDepuisLeLundiQuandAucuneJourneeNeLePrecede() {
+    TravailEnMemoire travail = TravailEnMemoire.sansSuivi();
+
+    historiqueDeDupont(PresencesEnMemoire.avec(List.of(journeeDuLundiDe8HA17H())), travail);
+
+    assertThat(travail.depuisDemande()).isEqualTo(Instant.parse("2026-05-10T22:00:00Z"));
+    assertThat(travail.finExclusiveDemandee()).isEqualTo(Instant.parse("2026-05-17T22:00:00Z"));
+  }
+
+  /**
+   * Un poste de nuit arrive dimanche soir a pu demarrer son travail avant minuit : les suivis se cherchent depuis son
+   * arrivee.
+   */
+  @Test
+  void shouldDemanderLeTravailDepuisLaPremiereArriveeQuandElleEstAnterieureAuLundi() {
+    TravailEnMemoire travail = TravailEnMemoire.sansSuivi();
+
+    historiqueDeDupont(PresencesEnMemoire.avec(List.of(journeeDuLundiDe8HA17H(), journeeDuDimanche20HAuLundi8H())), travail);
+
+    assertThat(travail.depuisDemande()).isEqualTo(LE_DIMANCHE_10_MAI_2026_A_20H);
+  }
+
+  @Test
+  void shouldNeRendreAucuneActiviteSansTravail() {
+    FeuilleDeTemps feuille = historiqueDeDupont(PresencesEnMemoire.avec(List.of(journeeDuLundiDe8HA17H())));
+
+    assertThat(feuille.jours()).allSatisfy(jour -> assertThat(jour.activites()).isEmpty());
+  }
+
+  /**
+   * Une fin a midi coupe le travail, un debut le relance : deux activites autour de la coupure.
+   */
+  @Test
+  void shouldRattacherLeTravailAuJourQuiLePorte() {
+    FeuilleDeTemps feuille = historiqueDeDupont(
+      PresencesEnMemoire.avec(List.of(journeeDuLundiDe8HA17H())),
+      TravailEnMemoire.avec(
+        List.of(
+          suiviDuCarter(
+            debutSurLaDmu50A(LE_LUNDI_11_MAI_2026_A_8H),
+            finSurLaDmu50A(LE_LUNDI_11_MAI_2026_A_12H),
+            debutSurLaDmu50A(LE_LUNDI_11_MAI_2026_A_13H),
+            finSurLaDmu50A(LE_LUNDI_11_MAI_2026_A_17H)
+          )
+        )
+      )
+    );
+
+    assertThat(activitesDu(feuille, LUNDI_11_MAI_2026)).containsExactly(
+      travailDuCarter(LE_LUNDI_11_MAI_2026_A_8H, Optional.of(LE_LUNDI_11_MAI_2026_A_12H)),
+      travailDuCarter(LE_LUNDI_11_MAI_2026_A_13H, Optional.of(LE_LUNDI_11_MAI_2026_A_17H))
+    );
+    assertThat(activitesDu(feuille, MARDI_12_MAI_2026)).isEmpty();
+  }
+
+  @Test
+  void shouldRefermerAuDepartUnTravailJamaisArrete() {
+    FeuilleDeTemps feuille = historiqueDeDupont(
+      PresencesEnMemoire.avec(List.of(journeeDuLundiDe8HA17H())),
+      TravailEnMemoire.avec(List.of(suiviDuCarter(debutSurLaDmu50A(LE_LUNDI_11_MAI_2026_A_9H))))
+    );
+
+    assertThat(activitesDu(feuille, LUNDI_11_MAI_2026)).containsExactly(
+      travailDuCarter(LE_LUNDI_11_MAI_2026_A_9H, Optional.of(LE_LUNDI_11_MAI_2026_A_17H))
+    );
+  }
+
+  @Test
+  void shouldLaisserOuvertSurSonJourUnTravailEnCours() {
+    FeuilleDeTemps feuille = historiqueDeDupont(
+      PresencesEnMemoire.avec(List.of(journeeDuMardiOuverteA8H())),
+      TravailEnMemoire.avec(List.of(suiviDuCarter(debutSurLaDmu50A(LE_MARDI_12_MAI_2026_A_9H))))
+    );
+
+    assertThat(activitesDu(feuille, MARDI_12_MAI_2026)).containsExactly(travailDuCarter(LE_MARDI_12_MAI_2026_A_9H, Optional.empty()));
+    assertThat(activitesDu(feuille, MERCREDI_13_MAI_2026)).isEmpty();
+  }
+
+  @Test
+  void shouldEcarterUnTravailCommenceHorsDeTouteJournee() {
+    FeuilleDeTemps feuille = historiqueDeDupont(
+      PresencesEnMemoire.avec(List.of(journeeDuLundiDe8HA17H())),
+      TravailEnMemoire.avec(List.of(suiviDuCarter(debutSurLaDmu50A(LE_LUNDI_11_MAI_2026_A_18H))))
+    );
+
+    assertThat(feuille.jours()).allSatisfy(jour -> assertThat(jour.activites()).isEmpty());
+  }
+
+  /**
+   * Un poste de nuit se coupe a minuit, sur chacun des deux jours.
+   */
+  @Test
+  void shouldScinderAMinuitLeTravailDUnPosteDeNuit() {
+    FeuilleDeTemps feuille = historiqueDeDupont(
+      PresencesEnMemoire.avec(List.of(journeeDuLundi22HAuMardi2H())),
+      TravailEnMemoire.avec(List.of(suiviDuCarter(debutSurLaDmu50A(LE_LUNDI_11_MAI_2026_A_23H), finSurLaDmu50A(LE_MARDI_12_MAI_2026_A_1H))))
+    );
+
+    assertThat(activitesDu(feuille, LUNDI_11_MAI_2026)).containsExactly(
+      travailDuCarter(LE_LUNDI_11_MAI_2026_A_23H, Optional.of(LE_MARDI_12_MAI_2026_A_MINUIT))
+    );
+    assertThat(activitesDu(feuille, MARDI_12_MAI_2026)).containsExactly(
+      travailDuCarter(LE_MARDI_12_MAI_2026_A_MINUIT, Optional.of(LE_MARDI_12_MAI_2026_A_1H))
+    );
+  }
+
+  @Test
+  void shouldPresumerLeTravailDUneJourneeAbandonnee() {
+    FeuilleDeTemps feuille = service(
+      PresencesEnMemoire.avec(List.of(journeeDuLundiDe7HSansDepart())),
+      TravailEnMemoire.avec(List.of(suiviDuCarter(debutSurLaDmu50A(LE_LUNDI_11_MAI_2026_A_8H)))),
+      (operateur, periode) -> Optional.of(LE_LUNDI_11_MAI_2026_A_16H),
+      LE_MARDI_12_MAI_2026_A_10H
+    ).historique(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
+
+    assertThat(activitesDu(feuille, LUNDI_11_MAI_2026)).containsExactly(
+      new IntervalleDActivite(
+        activiteDeTravailDuCarterSurLaDmu50(),
+        new Plage(LE_LUNDI_11_MAI_2026_A_8H, Optional.of(LE_LUNDI_11_MAI_2026_A_16H), true)
+      )
+    );
+  }
+
+  /**
+   * Deux elements en meme temps : deux activites qui se chevauchent, dans l'ordre de leurs debuts, quel que soit
+   * l'ordre des suivis rendus par le port.
+   */
+  @Test
+  void shouldTrierLesActivitesDUnJourParDebut() {
+    SuiviDuTravail bride = new SuiviDuTravail(
+      ELEMENT_ID_BRIDE,
+      new JournalDAtelier(List.of(debutSurLaDmu50A(LE_LUNDI_11_MAI_2026_A_10H))),
+      Optional.empty()
+    );
+
+    FeuilleDeTemps feuille = historiqueDeDupont(
+      PresencesEnMemoire.avec(List.of(journeeDuLundiDe8HA17H())),
+      TravailEnMemoire.avec(List.of(bride, suiviDuCarter(debutAuTourA(LE_LUNDI_11_MAI_2026_A_9H))))
+    );
+
+    assertThat(activitesDu(feuille, LUNDI_11_MAI_2026)).containsExactly(
+      new IntervalleDActivite(
+        activiteDeTravailDuCarterAuTour(),
+        new Plage(LE_LUNDI_11_MAI_2026_A_9H, Optional.of(LE_LUNDI_11_MAI_2026_A_17H))
+      ),
+      new IntervalleDActivite(
+        activiteDeTravailDeLaBrideSurLaDmu50(),
+        new Plage(LE_LUNDI_11_MAI_2026_A_10H, Optional.of(LE_LUNDI_11_MAI_2026_A_17H))
+      )
+    );
+  }
+
+  /**
+   * Deux debuts au meme instant se departagent par l'element, pour que deux lectures rendent le meme ordre.
+   */
+  @Test
+  void shouldDepartagerParLElementDeuxActivitesCommenceesEnsemble() {
+    SuiviDuTravail bride = new SuiviDuTravail(
+      ELEMENT_ID_BRIDE,
+      new JournalDAtelier(List.of(debutSurLaDmu50A(LE_LUNDI_11_MAI_2026_A_9H))),
+      Optional.empty()
+    );
+
+    FeuilleDeTemps feuille = historiqueDeDupont(
+      PresencesEnMemoire.avec(List.of(journeeDuLundiDe8HA17H())),
+      TravailEnMemoire.avec(List.of(bride, suiviDuCarter(debutAuTourA(LE_LUNDI_11_MAI_2026_A_9H))))
+    );
+
+    assertThat(activitesDu(feuille, LUNDI_11_MAI_2026))
+      .extracting(intervalle -> intervalle.activite().element())
+      .containsExactly(ELEMENT_ID_CARTER, ELEMENT_ID_BRIDE);
+  }
+
+  private static SuiviDuTravail suiviDuCarter(PointageDAtelier... pointages) {
+    return new SuiviDuTravail(ELEMENT_ID_CARTER, new JournalDAtelier(List.of(pointages)), Optional.empty());
+  }
+
+  private static IntervalleDActivite travailDuCarter(Instant debut, Optional<Instant> fin) {
+    return new IntervalleDActivite(activiteDeTravailDuCarterSurLaDmu50(), new Plage(debut, fin));
+  }
+
   private static FeuilleDeTemps historiqueDeDupont(PresencesEnMemoire presences) {
-    return service(presences, AUCUN_POINTAGE, LE_MARDI_12_MAI_2026_A_10H).historique(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
+    return historiqueDeDupont(presences, TravailEnMemoire.sansSuivi());
+  }
+
+  private static FeuilleDeTemps historiqueDeDupont(PresencesEnMemoire presences, TravailEnMemoire travail) {
+    return service(presences, travail, AUCUN_POINTAGE, LE_MARDI_12_MAI_2026_A_10H).historique(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
   }
 
   private static FeuillesDeTempsService service(PresencesEnMemoire presences, PointagesDAtelier pointages, Instant maintenant) {
+    return service(presences, TravailEnMemoire.sansSuivi(), pointages, maintenant);
+  }
+
+  private static FeuillesDeTempsService service(
+    PresencesEnMemoire presences,
+    TravailEnMemoire travail,
+    PointagesDAtelier pointages,
+    Instant maintenant
+  ) {
     return FeuillesDeTempsService.builder()
       .presences(presences)
       .operateurs(REFERENTIEL)
       .fuseau(A_PARIS)
       .seuil(() -> AMPLITUDE_MAXIMALE_13H)
       .pointages(pointages)
+      .travail(travail)
       .clock(() -> maintenant);
+  }
+
+  private static List<IntervalleDActivite> activitesDu(FeuilleDeTemps feuille, LocalDate jour) {
+    return feuille
+      .jours()
+      .stream()
+      .filter(jourDeLaSemaine -> jourDeLaSemaine.jour().equals(jour))
+      .findFirst()
+      .orElseThrow()
+      .activites();
   }
 
   private static List<Plage> presenceDu(FeuilleDeTemps feuille, LocalDate jour) {

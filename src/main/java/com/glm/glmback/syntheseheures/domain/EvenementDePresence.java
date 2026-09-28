@@ -11,7 +11,7 @@ import java.time.Instant;
  * annules sont ecartes des la lecture. Ce qui reste est le seul fait qui compte ici — un type, a une heure.
  * </p>
  */
-public record EvenementDePresence(TypeDEvenementDePresence type, Instant dateDeSurvenue) {
+public record EvenementDePresence(TypeDEvenementDePresence type, Instant dateDeSurvenue) implements PointageDuJour {
   public EvenementDePresence {
     Assert.notNull("type", type);
     Assert.notNull("date de survenue", dateDeSurvenue);

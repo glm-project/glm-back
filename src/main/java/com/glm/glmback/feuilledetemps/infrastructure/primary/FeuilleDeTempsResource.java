@@ -38,8 +38,15 @@ class FeuilleDeTempsResource {
   @Operation(
     summary = "Lire la feuille de temps hebdomadaire d'un operateur",
     description = """
-    Rend les sept jours de la semaine ISO demandee, chacun portant les fenetres de presence qui lui reviennent dans
-    le fuseau horaire de l'entreprise.
+    Rend les sept jours de la semaine ISO demandee, chacun portant les fenetres de presence et les periodes de
+    travail par element qui lui reviennent dans le fuseau horaire de l'entreprise.
+
+    Le travail est rejoue depuis les pointages d'element de l'operateur, poste par poste : un debut sur une activite
+    en cours la relance, une non conformite ouvre une reprise, une fin sans activite est ignoree. Une periode court
+    jusqu'au pointage suivant sur le meme poste, sinon jusqu'a la cloture du suivi, sinon elle reste ouverte. Elle est
+    ensuite reduite aux fenetres de presence de la journee ou elle a commence : un depart la referme, une fenetre
+    presumee la rend presumee, et un travail commence hors de toute journee n'est pas rendu. Elle est enfin coupee a
+    minuit ; ouverte, elle ne rend que son jour de debut. Les evenements annules n'apparaissent jamais.
 
     La semaine est toujours explicite : aucune semaine courante implicite. L'annee est celle des semaines ISO, qui
     differe de l'annee civile a ses bornes — la semaine 1 de 2026 commence le 29 decembre 2025.

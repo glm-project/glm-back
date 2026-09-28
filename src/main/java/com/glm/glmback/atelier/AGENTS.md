@@ -70,7 +70,8 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
   pas dans ce contexte.
 - **Un début sur une activité déjà en cours la relance**, il n'est jamais refusé (décision D9 de
   [bornes-de-fin-de-journee.md](../../../../../../../documentation/strategie/bornes-de-fin-de-journee.md)). La même
-  règle vit dans les automates recopiés de `pupitre` et `coutderevient` : les trois changent ensemble.
+  règle vit dans les automates recopiés de `pupitre`, `coutderevient`, `feuilledetemps` et `syntheseheures` : les
+  cinq changent ensemble.
 - **Une journée sans départ au-delà du seuil est abandonnée**, et le geste suivant de l'opérateur en ouvre une
   nouvelle ; sous le seuil, une arrivée est absorbée. Seuls les actes du gestionnaire peuvent être refusés pour
   chevauchement de deux journées. Détail dans `contexte-metier.md`, section « La présence, de l'arrivée au départ ».
