@@ -58,8 +58,9 @@ The presence itself — arrival, departure, working day — stays. Removing it i
 forgotten activity does not change: amplitude threshold, abandoned day, presumed end.
 
 The contract changes only through enumerations that shrink and descriptions: no route is renamed and no field is
-removed. There is no data migration: the database is reset, nothing runs in production, and the test pupitres are
-wiped.
+removed. A Liquibase data migration removes old `PAUSE` and `REPRISE` presence events, including cancelled ones,
+changes projected `EN_PAUSE` days to `PRESENT`, and recomputes their last known presence fact. Event identities remain
+reserved to prevent reuse. No schema change is needed; the test pupitres are wiped.
 
 ## Consequences
 
