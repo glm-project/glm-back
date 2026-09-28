@@ -15,24 +15,21 @@ import org.junit.jupiter.api.Test;
 @UnitTest
 class SyntheseDesHeuresTest {
 
-  private static final JourDeSynthese LUNDI_8H = new JourDeSynthese(
-    LocalDate.of(2026, 5, 11),
-    List.of(arriveeA(LE_LUNDI_11_MAI_2026_A_8H)),
-    Duration.ofHours(8),
-    Duration.ofHours(1)
-  );
-  private static final JourDeSynthese MARDI_SANS_PRESENCE = new JourDeSynthese(
-    LocalDate.of(2026, 5, 12),
-    List.of(),
-    Duration.ZERO,
-    Duration.ZERO
-  );
-  private static final JourDeSynthese MERCREDI_PRESUME = new JourDeSynthese(
-    LocalDate.of(2026, 5, 13),
-    List.of(),
-    Duration.ofHours(2),
-    Duration.ofHours(3)
-  );
+  private static final JourDeSynthese LUNDI_8H = JourDeSynthese.builder()
+    .jour(LocalDate.of(2026, 5, 11))
+    .pointages(List.of(arriveeA(LE_LUNDI_11_MAI_2026_A_8H)))
+    .duree(Duration.ofHours(8))
+    .dureePresumee(Duration.ofHours(1));
+  private static final JourDeSynthese MARDI_SANS_PRESENCE = JourDeSynthese.builder()
+    .jour(LocalDate.of(2026, 5, 12))
+    .pointages(List.of())
+    .duree(Duration.ZERO)
+    .dureePresumee(Duration.ZERO);
+  private static final JourDeSynthese MERCREDI_PRESUME = JourDeSynthese.builder()
+    .jour(LocalDate.of(2026, 5, 13))
+    .pointages(List.of())
+    .duree(Duration.ofHours(2))
+    .dureePresumee(Duration.ofHours(3));
 
   @Test
   void shouldNotBuildWithoutOperateur() {

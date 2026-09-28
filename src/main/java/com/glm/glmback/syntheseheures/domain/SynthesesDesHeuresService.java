@@ -127,12 +127,11 @@ public final class SynthesesDesHeuresService {
       .jours()
       .stream()
       .map(jour ->
-        new JourDeSynthese(
-          jour,
-          pointagesParJour.getOrDefault(jour, List.of()),
-          dureeParJour.getOrDefault(jour, Duration.ZERO),
-          dureePresumeeParJour.getOrDefault(jour, Duration.ZERO)
-        )
+        JourDeSynthese.builder()
+          .jour(jour)
+          .pointages(pointagesParJour.getOrDefault(jour, List.of()))
+          .duree(dureeParJour.getOrDefault(jour, Duration.ZERO))
+          .dureePresumee(dureePresumeeParJour.getOrDefault(jour, Duration.ZERO))
       )
       .toList();
   }

@@ -20,4 +20,66 @@ public record JourDeSynthese(LocalDate jour, List<EvenementDePresence> pointages
     Assert.notNull("duree", duree);
     Assert.notNull("duree presumee", dureePresumee);
   }
+
+  private JourDeSynthese(JourDeSyntheseBuilder builder) {
+    this(builder.jour, builder.pointages, builder.duree, builder.dureePresumee);
+  }
+
+  static JourDeSyntheseJourBuilder builder() {
+    return new JourDeSyntheseBuilder();
+  }
+
+  private static final class JourDeSyntheseBuilder
+    implements JourDeSyntheseJourBuilder, JourDeSynthesePointagesBuilder, JourDeSyntheseDureeBuilder, JourDeSyntheseDureePresumeeBuilder
+  {
+
+    private LocalDate jour;
+    private List<EvenementDePresence> pointages;
+    private Duration duree;
+    private Duration dureePresumee;
+
+    @Override
+    public JourDeSynthesePointagesBuilder jour(LocalDate jour) {
+      this.jour = jour;
+
+      return this;
+    }
+
+    @Override
+    public JourDeSyntheseDureeBuilder pointages(List<EvenementDePresence> pointages) {
+      this.pointages = pointages;
+
+      return this;
+    }
+
+    @Override
+    public JourDeSyntheseDureePresumeeBuilder duree(Duration duree) {
+      this.duree = duree;
+
+      return this;
+    }
+
+    @Override
+    public JourDeSynthese dureePresumee(Duration dureePresumee) {
+      this.dureePresumee = dureePresumee;
+
+      return new JourDeSynthese(this);
+    }
+  }
+
+  interface JourDeSyntheseJourBuilder {
+    JourDeSynthesePointagesBuilder jour(LocalDate jour);
+  }
+
+  interface JourDeSynthesePointagesBuilder {
+    JourDeSyntheseDureeBuilder pointages(List<EvenementDePresence> pointages);
+  }
+
+  interface JourDeSyntheseDureeBuilder {
+    JourDeSyntheseDureePresumeeBuilder duree(Duration duree);
+  }
+
+  interface JourDeSyntheseDureePresumeeBuilder {
+    JourDeSynthese dureePresumee(Duration dureePresumee);
+  }
 }
