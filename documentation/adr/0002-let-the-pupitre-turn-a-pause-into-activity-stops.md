@@ -74,6 +74,9 @@ reserved to prevent reuse. No schema change is needed; the test pupitres are wip
 
 ### Negative
 
+- On migrated data, an activity that was left open through an old presence pause now counts that pause in its
+  effective time and cost. The data migration removes obsolete presence events but does not invent historical
+  `FIN`/`DEBUT` events for each element.
 - Correcting a wrong pause time took one presence correction; it now takes one per activity, on its end and its
   start.
 - The server pause cut every activity of the operator; the pupitre pause closes only what its referential knows. An
