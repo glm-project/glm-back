@@ -1094,8 +1094,8 @@
         "description" : "Un operateur designable au pupitre, et les postes sur lesquels il peut pointer.\n\nPas de taux horaire, contrairement a GET /api/operateurs : un ecran d'atelier partage n'a aucune raison de recevoir\nce que le rapport de cout de revient reserve au gestionnaire. Le matricule, lui, est ce que l'operateur tape : il\ndesigne, il ne prouve rien, et un operateur qui n'en a pas n'est pas designable.\n",
         "properties" : {
           "etat" : {
-            "description" : "Etat de presence courant, celui de la journee en cours de l'operateur.\n\nABSENT vaut pour un operateur sans journee en cours, et ne le retire pas de la liste : elle rend les operateurs\ndesignables, pas les operateurs presents. C'est cet etat qui dit a l'ecran d'atelier quelles commandes de\npresence sont legales, y compris hors ligne — proposer une pause a un operateur deja en pause ne peut\nqu'aboutir a un refus du serveur.\n",
-            "enum" : [ "ABSENT", "PRESENT", "EN_PAUSE" ],
+            "description" : "Etat de presence courant, celui de la journee en cours de l'operateur.\n\nABSENT vaut pour un operateur sans journee en cours, et ne le retire pas de la liste : elle rend les operateurs\ndesignables, pas les operateurs presents. C'est cet etat qui dit a l'ecran d'atelier s'il faut proposer\nl'arrivee ou le depart, y compris hors ligne. La pause n'en est pas un : un operateur en pause reste present,\net c'est le pupitre qui la traduit en fins d'activite.\n",
+            "enum" : [ "ABSENT", "PRESENT" ],
             "type" : "string"
           },
           "id" : {

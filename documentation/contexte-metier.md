@@ -464,16 +464,16 @@ Quatre défauts en découlaient, tous du ressort du back :
 Les opérateurs désignables — identité, matricule, postes habilités, **état de présence** —, les éléments encore
 pointables — identité, nom d'atelier, référence, type, état, activités en cours —, et `genereLe`.
 
-L'**état de présence** est ce qui permet à l'écran d'atelier de n'offrir, hors ligne compris, que les commandes que
-l'atelier acceptera : sans lui, le pupitre proposait ses trois gestes en aveugle et le serveur refusait la
-transition impossible. C'est l'état de la journée en cours de l'opérateur, choisie comme l'atelier la choisit, **tant
+L'**état de présence**, `ABSENT` ou `PRESENT`, est ce qui permet à l'écran d'atelier de proposer, hors ligne compris,
+l'arrivée ou le départ. La pause n'en est pas un ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)) :
+un opérateur en pause reste présent, et c'est le journal du pupitre qui sait qu'une pause est en cours. C'est l'état de la journée en cours de l'opérateur, choisie comme l'atelier la choisit, **tant
 qu'elle n'est pas abandonnée** : au-delà du seuil d'amplitude, lu dans la table du paramétrage, l'opérateur redevient
 `ABSENT`. Chaque opérateur présent porte `presentJusqua`, son arrivée plus le seuil, pour que le pupitre hors ligne le
 bascule seul. Un opérateur sans journée en cours vaut `ABSENT` et reste rendu : la liste est celle des opérateurs
 _désignables_, pas des opérateurs présents.
 
 Elle ne rend **ni montant** (taux horaire, coût horaire : les entités de lecture ne les mappent même pas), **ni
-journal d'événements**, **ni élément clôturé**, **aucun instant de présence** — « en pause depuis 10 h 12 »
+journal d'événements**, **ni élément clôturé**, **aucun instant de présence** — « présent depuis 7 h 02 »
 supposerait de replier le journal de présence de tous les opérateurs à chaque appel, et donnerait une seconde source
 de durée en désaccord visible avec celles que le pupitre fige déjà —, et **aucune métadonnée d'engagement ou de
 clôture** : rien de tout cela n'est lu par un écran d'atelier.
