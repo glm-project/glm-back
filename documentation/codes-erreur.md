@@ -8,10 +8,10 @@ urn:glm:erreur:<contexte>:<code>
 
 ```json
 {
-  "type": "urn:glm:erreur:atelier:transition-d-atelier-interdite",
-  "title": "transition d'atelier interdite",
+  "type": "urn:glm:erreur:atelier:transition-de-presence-interdite",
+  "title": "transition de presence interdite",
   "status": 409,
-  "message": "une REPRISE suppose une PAUSE en cours"
+  "message": "Un evenement de presence DEPART ne peut pas suivre l'etat ABSENT"
 }
 ```
 

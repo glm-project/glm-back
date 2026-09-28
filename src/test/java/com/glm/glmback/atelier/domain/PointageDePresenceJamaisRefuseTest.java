@@ -28,40 +28,23 @@ class PointageDePresenceJamaisRefuseTest {
     .seuil(() -> AMPLITUDE_MAXIMALE_13H)
     .clock(maintenant::get);
 
-  @Test
-  void shouldOuvrirUneJourneeSurUnePauseSansJournee() {
-    PresenceTraitee traitee = pointeA(TypeDEvenementDePresence.PAUSE, LE_10_MAI_2026_A_12H);
-
-    assertThat(traitee.absorbee()).isFalse();
-    assertThat(traitee.journee().etat()).isEqualTo(EtatDePresence.EN_PAUSE);
-    assertThat(traitee.journee().journal().evenements())
-      .extracting(EvenementDePresence::id, EvenementDePresence::type, EvenementDePresence::dateDeSurvenue)
-      .containsExactly(
-        tuple(ARRIVEE_IMPLICITE, TypeDEvenementDePresence.ARRIVEE, LE_10_MAI_2026_A_12H),
-        tuple(traitee.journee().journal().evenements().getLast().id(), TypeDEvenementDePresence.PAUSE, LE_10_MAI_2026_A_12H)
-      );
-    assertThat(journees.getEnCoursPour(OPERATEUR_ID_DUPONT)).contains(traitee.journee());
-  }
-
   /**
-   * Le depart presse par un operateur jamais arrive : une journee de duree nulle, rien de refuse.
+   * Le depart presse par un operateur jamais arrive : une journee de duree nulle, ouverte par une arrivee implicite a
+   * l'heure du geste, rien de refuse.
    */
   @Test
   void shouldOuvrirEtFermerUneJourneeSurUnDepartSansJournee() {
     PresenceTraitee traitee = pointeA(TypeDEvenementDePresence.DEPART, LE_10_MAI_2026_A_17H);
 
+    assertThat(traitee.absorbee()).isFalse();
     assertThat(traitee.journee().etat()).isEqualTo(EtatDePresence.ABSENT);
     assertThat(traitee.journee().amplitude()).contains(new Periode(LE_10_MAI_2026_A_17H, LE_10_MAI_2026_A_17H));
-  }
-
-  @Test
-  void shouldNOuvrirQuUneArriveeSurUneRepriseSansJournee() {
-    PresenceTraitee traitee = pointeA(TypeDEvenementDePresence.REPRISE, LE_10_MAI_2026_A_13H);
-
-    assertThat(traitee.journee().etat()).isEqualTo(EtatDePresence.PRESENT);
     assertThat(traitee.journee().journal().evenements())
-      .extracting(EvenementDePresence::type)
-      .containsExactly(TypeDEvenementDePresence.ARRIVEE);
+      .extracting(EvenementDePresence::id, EvenementDePresence::type)
+      .containsExactly(
+        tuple(ARRIVEE_IMPLICITE, TypeDEvenementDePresence.ARRIVEE),
+        tuple(traitee.journee().journal().evenements().getLast().id(), TypeDEvenementDePresence.DEPART)
+      );
   }
 
   @Test
@@ -88,7 +71,7 @@ class PointageDePresenceJamaisRefuseTest {
     arriveA(LE_10_MAI_2026_A_7H);
     JourneeDeTravail matin = pointeA(TypeDEvenementDePresence.DEPART, LE_10_MAI_2026_A_12H).journee();
 
-    PresenceTraitee apresMidi = pointeA(TypeDEvenementDePresence.PAUSE, LE_10_MAI_2026_A_16H);
+    PresenceTraitee apresMidi = pointeA(TypeDEvenementDePresence.DEPART, LE_10_MAI_2026_A_16H);
 
     assertThat(apresMidi.journee().id()).isNotEqualTo(matin.id());
     assertThat(apresMidi.journee().debut()).contains(LE_10_MAI_2026_A_16H);
@@ -99,7 +82,7 @@ class PointageDePresenceJamaisRefuseTest {
     PointageDePresenceAEnregistrer inconnu = new PointageDePresenceAEnregistrer(
       new OperateurId(UUID.randomUUID()),
       AUTEUR_DUPONT,
-      TypeDEvenementDePresence.PAUSE
+      TypeDEvenementDePresence.DEPART
     );
 
     assertThatThrownBy(() -> service.pointe(inconnu)).isExactlyInstanceOf(OperateurDAtelierIntrouvableException.class);
@@ -114,42 +97,17 @@ class PointageDePresenceJamaisRefuseTest {
     arriveA(LE_10_MAI_2026_A_7H);
     pointeA(TypeDEvenementDePresence.DEPART, LE_10_MAI_2026_A_17H);
     maintenant.set(LE_10_MAI_2026_A_20H);
-    PointageDePresenceAEnregistrer pauseDeMidi = new PointageDePresenceAEnregistrer(
+    PointageDePresenceAEnregistrer departDeMidi = new PointageDePresenceAEnregistrer(
       OPERATEUR_ID_DUPONT,
       AUTEUR_DUPONT,
-      TypeDEvenementDePresence.PAUSE,
+      TypeDEvenementDePresence.DEPART,
       Optional.of(LE_10_MAI_2026_A_12H),
       EvenementDePresenceId.newId()
     );
 
-    assertThatThrownBy(() -> service.pointe(pauseDeMidi, () -> ARRIVEE_IMPLICITE))
+    assertThatThrownBy(() -> service.pointe(departDeMidi, () -> ARRIVEE_IMPLICITE))
       .isExactlyInstanceOf(AucuneJourneeDeTravailEnCoursException.class)
       .hasMessageContaining(OPERATEUR_ID_DUPONT.uuid().toString());
-  }
-
-  /**
-   * Le double appui sur « pause » : le second geste ne change rien, il est absorbe.
-   */
-  @Test
-  void shouldAbsorberUnePauseDejaEnPause() {
-    arriveA(LE_10_MAI_2026_A_7H);
-    JourneeDeTravail enPause = pointeA(TypeDEvenementDePresence.PAUSE, LE_10_MAI_2026_A_12H).journee();
-
-    PresenceTraitee second = pointeA(TypeDEvenementDePresence.PAUSE, LE_10_MAI_2026_A_12H.plusSeconds(2));
-
-    assertThat(second.absorbee()).isTrue();
-    assertThat(second.journee()).isEqualTo(enPause);
-    assertThat(journees.get(enPause.id())).contains(enPause);
-  }
-
-  @Test
-  void shouldAbsorberUneRepriseDejaPresent() {
-    JourneeDeTravail presente = arriveA(LE_10_MAI_2026_A_7H);
-
-    PresenceTraitee reprise = pointeA(TypeDEvenementDePresence.REPRISE, LE_10_MAI_2026_A_9H);
-
-    assertThat(reprise.absorbee()).isTrue();
-    assertThat(reprise.journee()).isEqualTo(presente);
   }
 
   @Test
@@ -157,54 +115,52 @@ class PointageDePresenceJamaisRefuseTest {
     arriveA(LE_10_MAI_2026_A_7H);
     maintenant.set(LE_10_MAI_2026_A_9H);
 
-    PresenceTraitee reprise = service.pointe(
-      new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.REPRISE),
+    PresenceTraitee arrivee = service.pointe(
+      new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.ARRIVEE),
       () -> {
         throw new AssertionError("aucune arrivee implicite pour un geste absorbe");
       }
     );
 
-    assertThat(reprise.absorbee()).isTrue();
+    assertThat(arrivee.absorbee()).isTrue();
   }
 
   /**
-   * Une reprise rejouee dans le desordre, datee avant la pause qu'elle suppose, n'est pas redondante : elle casse
-   * l'enchainement et reste refusee.
+   * Un depart rejoue dans le desordre, date avant l'arrivee qu'il suppose, n'est pas redondant : il casse
+   * l'enchainement et reste refuse.
    */
   @Test
   void shouldToujoursRefuserUnGesteRejoueDansLeDesordre() {
-    arriveA(LE_10_MAI_2026_A_7H);
-    pointeA(TypeDEvenementDePresence.PAUSE, LE_10_MAI_2026_A_12H);
+    arriveA(LE_10_MAI_2026_A_9H);
     maintenant.set(LE_10_MAI_2026_A_13H);
-    PointageDePresenceAEnregistrer repriseAnterieure = new PointageDePresenceAEnregistrer(
+    PointageDePresenceAEnregistrer departAnterieur = new PointageDePresenceAEnregistrer(
       OPERATEUR_ID_DUPONT,
       AUTEUR_DUPONT,
-      TypeDEvenementDePresence.REPRISE,
-      Optional.of(LE_10_MAI_2026_A_9H),
+      TypeDEvenementDePresence.DEPART,
+      Optional.of(LE_10_MAI_2026_A_7H),
       EvenementDePresenceId.newId()
     );
 
-    assertThatThrownBy(() -> service.pointe(repriseAnterieure)).isExactlyInstanceOf(TransitionDePresenceInterditeException.class);
+    assertThatThrownBy(() -> service.pointe(departAnterieur)).isExactlyInstanceOf(TransitionDePresenceInterditeException.class);
   }
 
   /**
-   * Une pause rejouee avant la pause deja pointee n'est pas un double appui : datee avant le dernier fait, elle casse
-   * l'enchainement et reste refusee.
+   * Une arrivee egaree datee avant l'arrivee deja pointee n'est pas un geste redondant : datee avant le dernier fait,
+   * elle casse l'enchainement et reste refusee.
    */
   @Test
   void shouldToujoursRefuserUnGesteRedondantRejoueAvantLeDernierFait() {
-    arriveA(LE_10_MAI_2026_A_7H);
-    pointeA(TypeDEvenementDePresence.PAUSE, LE_10_MAI_2026_A_12H);
+    arriveA(LE_10_MAI_2026_A_9H);
     maintenant.set(LE_10_MAI_2026_A_13H);
-    PointageDePresenceAEnregistrer pauseAnterieure = new PointageDePresenceAEnregistrer(
+    PointageDePresenceAEnregistrer arriveeAnterieure = new PointageDePresenceAEnregistrer(
       OPERATEUR_ID_DUPONT,
       AUTEUR_DUPONT,
-      TypeDEvenementDePresence.PAUSE,
-      Optional.of(LE_10_MAI_2026_A_9H),
+      TypeDEvenementDePresence.ARRIVEE,
+      Optional.of(LE_10_MAI_2026_A_7H),
       EvenementDePresenceId.newId()
     );
 
-    assertThatThrownBy(() -> service.pointe(pauseAnterieure)).isExactlyInstanceOf(TransitionDePresenceInterditeException.class);
+    assertThatThrownBy(() -> service.pointe(arriveeAnterieure)).isExactlyInstanceOf(TransitionDePresenceInterditeException.class);
   }
 
   private JourneeDeTravail arriveA(Instant instant) {

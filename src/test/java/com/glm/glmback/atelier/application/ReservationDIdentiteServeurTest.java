@@ -83,7 +83,7 @@ class ReservationDIdentiteServeurTest {
     IdentitesDEvenements identites = Mockito.mock(IdentitesDEvenements.class);
     JourneeDeTravailRepository journees = Mockito.mock(JourneeDeTravailRepository.class);
     SuiviDAtelierRepository suivis = Mockito.mock(SuiviDAtelierRepository.class);
-    JourneeDeTravail journee = journeeDeDupontDe7HA17HAvecPauseDeMidi();
+    JourneeDeTravail journee = journeeDeDupontDe7HA17H();
     SuiviDAtelier suivi = suiviDAtelierEngage().cloture(clotureParLeroyA(LE_10_MAI_2026_A_17H));
     UUID journeeId = journee.id().uuid();
     UUID suiviId = suivi.id().uuid();
@@ -244,10 +244,10 @@ class ReservationDIdentiteServeurTest {
       Optional.empty(),
       EvenementDePresenceId.newId()
     );
-    PointageDePresenceAEnregistrer pause = new PointageDePresenceAEnregistrer(
+    PointageDePresenceAEnregistrer depart = new PointageDePresenceAEnregistrer(
       OPERATEUR_ID_DUPONT,
       AUTEUR_DUPONT,
-      TypeDEvenementDePresence.PAUSE,
+      TypeDEvenementDePresence.DEPART,
       Optional.empty(),
       EvenementDePresenceId.newId()
     );
@@ -255,8 +255,8 @@ class ReservationDIdentiteServeurTest {
     return List.of(
       presence.arriveDuPupitre(arrivee).agregat(),
       presence.arrive(arrivee),
-      presence.pointe(pause),
-      presence.pointeDuPupitre(pause).agregat()
+      presence.pointe(depart),
+      presence.pointeDuPupitre(depart).agregat()
     );
   }
 

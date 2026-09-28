@@ -47,16 +47,12 @@ class JourneesDeTravailServiceTest {
   }
 
   /**
-   * Le bouton de pause unique du client : un seul evenement, quel que soit le nombre d'elements en cours.
+   * Le bouton d'arret de fin de journee du client : un seul evenement, quel que soit le nombre d'elements en cours.
    */
   @Test
-  void shouldPointerPauseRepriseEtDepartSurLaJourneeEnCours() {
+  void shouldPointerLeDepartSurLaJourneeEnCours() {
     service.arrive(new ArriveeAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT));
 
-    maintenant.set(LE_10_MAI_2026_A_12H);
-    service.pointe(new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.PAUSE));
-    maintenant.set(LE_10_MAI_2026_A_13H);
-    service.pointe(new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.REPRISE));
     maintenant.set(LE_10_MAI_2026_A_17H);
     JourneeDeTravail journee = service
       .pointe(new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.DEPART))
@@ -64,10 +60,7 @@ class JourneesDeTravailServiceTest {
 
     assertThat(journee.estEnCours()).isFalse();
     assertThat(journee.amplitude()).contains(new Periode(LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_17H));
-    assertThat(journee.fenetres()).containsExactly(
-      new FenetreDePresence(LE_10_MAI_2026_A_7H, Optional.of(LE_10_MAI_2026_A_12H)),
-      new FenetreDePresence(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_17H))
-    );
+    assertThat(journee.fenetres()).containsExactly(new FenetreDePresence(LE_10_MAI_2026_A_7H, Optional.of(LE_10_MAI_2026_A_17H)));
   }
 
   /**
@@ -112,13 +105,13 @@ class JourneesDeTravailServiceTest {
   void shouldAnnulerUnPointageEnTrop() {
     JourneeDeTravail ouverte = service.arrive(new ArriveeAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT)).journee();
     maintenant.set(LE_10_MAI_2026_A_12H);
-    JourneeDeTravail avecPause = service
-      .pointe(new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.PAUSE))
+    JourneeDeTravail avecDepart = service
+      .pointe(new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.DEPART))
       .journee();
-    EvenementDePresenceId pause = avecPause.journal().evenements().getLast().id();
+    EvenementDePresenceId depart = avecDepart.journal().evenements().getLast().id();
 
     JourneeDeTravail journee = service.annule(
-      AnnulationDePresenceAEnregistrer.builder().journee(ouverte.id()).evenement(pause).auteur(AUTEUR_LEROY).motif(MOTIF_ERREUR_DE_SAISIE)
+      AnnulationDePresenceAEnregistrer.builder().journee(ouverte.id()).evenement(depart).auteur(AUTEUR_LEROY).motif(MOTIF_ERREUR_DE_SAISIE)
     );
 
     assertThat(journee.etat()).isEqualTo(EtatDePresence.PRESENT);

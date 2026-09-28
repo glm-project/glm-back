@@ -69,11 +69,11 @@ class JournalDePresenceTest {
 
   @Test
   void shouldRefuserUneSequenceImpossible() {
-    List<EvenementDePresence> repriseSansPause = List.of(arriveeDeDupontA(LE_10_MAI_2026_A_7H), repriseDeDupontA(LE_10_MAI_2026_A_9H));
+    List<EvenementDePresence> departAvantLArrivee = List.of(departDeDupontA(LE_10_MAI_2026_A_7H), arriveeDeDupontA(LE_10_MAI_2026_A_9H));
 
-    assertThatThrownBy(() -> new JournalDePresence(repriseSansPause))
+    assertThatThrownBy(() -> new JournalDePresence(departAvantLArrivee))
       .isExactlyInstanceOf(TransitionDePresenceInterditeException.class)
-      .hasMessageContaining("REPRISE");
+      .hasMessageContaining("DEPART");
   }
 
   @Test
@@ -86,46 +86,51 @@ class JournalDePresenceTest {
     assertThat(journal.amplitude()).isEmpty();
   }
 
+  /**
+   * La pause n'est pas un fait de presence : de l'arrivee au depart, une seule fenetre, qui couvre l'amplitude.
+   */
   @Test
-  void shouldScinderLaPresenceAutourDeLaPause() {
-    JournalDePresence journal = journeeDeDupontDe7HA17HAvecPauseDeMidi().journal();
+  void shouldFermerLaFenetreDePresenceAuDepart() {
+    JournalDePresence journal = journeeDeDupontDe7HA17H().journal();
 
-    assertThat(journal.fenetres()).containsExactly(
-      new FenetreDePresence(LE_10_MAI_2026_A_7H, Optional.of(LE_10_MAI_2026_A_12H)),
-      new FenetreDePresence(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_17H))
-    );
+    assertThat(journal.fenetres()).containsExactly(new FenetreDePresence(LE_10_MAI_2026_A_7H, Optional.of(LE_10_MAI_2026_A_17H)));
     assertThat(journal.amplitude()).contains(new Periode(LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_17H));
     assertThat(journal.etat()).isEqualTo(EtatDePresence.ABSENT);
   }
 
+  /**
+   * Une arrivee regularisee apres le depart rouvre la journee : chaque venue a sa fenetre.
+   */
   @Test
-  void shouldResterEnPauseTantQueLaRepriseNEstPasPointee() {
-    JournalDePresence journal = JournalDePresence.vide()
-      .enregistre(arriveeDeDupontA(LE_10_MAI_2026_A_7H))
-      .enregistre(pauseDeDupontA(LE_10_MAI_2026_A_12H));
+  void shouldOuvrirUneFenetreParVenue() {
+    JournalDePresence journal = journeeDeDupontDe7HA17H().journal().enregistre(arriveeDeDupontA(LE_10_MAI_2026_A_20H));
 
-    assertThat(journal.etat()).isEqualTo(EtatDePresence.EN_PAUSE);
-    assertThat(journal.fenetres()).containsExactly(new FenetreDePresence(LE_10_MAI_2026_A_7H, Optional.of(LE_10_MAI_2026_A_12H)));
+    assertThat(journal.fenetres()).containsExactly(
+      new FenetreDePresence(LE_10_MAI_2026_A_7H, Optional.of(LE_10_MAI_2026_A_17H)),
+      new FenetreDePresence(LE_10_MAI_2026_A_20H, Optional.empty())
+    );
+    assertThat(journal.etat()).isEqualTo(EtatDePresence.PRESENT);
+    assertThat(journal.amplitude()).isEmpty();
   }
 
   @Test
   void shouldEcarterDuRepliUnEvenementAnnule() {
-    JournalDePresence journal = journeeDeDupontDe7HA17HAvecPauseDeMidi().journal();
+    JournalDePresence journal = journeeDeDupontDe7HA17H().journal();
     EvenementDePresenceId depart = journal.evenements().getLast().id();
 
     JournalDePresence sansDepart = journal.annule(depart, annulationParLeroy());
 
-    assertThat(sansDepart.evenements()).hasSize(4);
+    assertThat(sansDepart.evenements()).hasSize(2);
     assertThat(sansDepart.amplitude()).isEmpty();
     assertThat(sansDepart.fenetres().getLast().estOuverte()).isTrue();
   }
 
   @Test
   void shouldTrouverLeDernierFaitDUnePeriodeBornesComprises() {
-    JournalDePresence journal = journeeDeDupontDe7HA17HAvecPauseDeMidi().journal();
+    JournalDePresence journal = journeeDeDupontDe7HA17H().journal();
 
-    assertThat(journal.dernierFaitDans(new Periode(LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_13H))).contains(LE_10_MAI_2026_A_13H);
-    assertThat(journal.dernierFaitDans(new Periode(LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_12H.minusSeconds(1)))).contains(
+    assertThat(journal.dernierFaitDans(new Periode(LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_17H))).contains(LE_10_MAI_2026_A_17H);
+    assertThat(journal.dernierFaitDans(new Periode(LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_17H.minusSeconds(1)))).contains(
       LE_10_MAI_2026_A_7H
     );
     assertThat(journal.dernierFaitDans(new Periode(LE_10_MAI_2026_A_20H, LE_11_MAI_2026_A_7H))).isEmpty();
@@ -133,15 +138,15 @@ class JournalDePresenceTest {
 
   @Test
   void shouldEcarterDuDernierFaitUnEvenementAnnule() {
-    JournalDePresence journal = journeeDeDupontDe7HA17HAvecPauseDeMidi().journal();
+    JournalDePresence journal = journeeDeDupontDe7HA17H().journal();
     JournalDePresence sansDepart = journal.annule(journal.evenements().getLast().id(), annulationParLeroy());
 
-    assertThat(sansDepart.dernierFaitDans(new Periode(LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_20H))).contains(LE_10_MAI_2026_A_13H);
+    assertThat(sansDepart.dernierFaitDans(new Periode(LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_20H))).contains(LE_10_MAI_2026_A_7H);
   }
 
   @Test
   void shouldNotAnnulerUnEvenementInconnu() {
-    JournalDePresence journal = journeeDeDupontDe7HA17HAvecPauseDeMidi().journal();
+    JournalDePresence journal = journeeDeDupontDe7HA17H().journal();
     EvenementDePresenceId inconnu = EvenementDePresenceId.newId();
     Annulation annulation = annulationParLeroy();
 
@@ -152,14 +157,14 @@ class JournalDePresenceTest {
   void shouldRemplacerUnEvenementParSaVersionCorrigeeEnLaissantLesAutresEnPlace() {
     JournalDePresence journal = JournalDePresence.vide()
       .enregistre(arriveeDeDupontA(LE_10_MAI_2026_A_9H))
-      .enregistre(pauseDeDupontA(LE_10_MAI_2026_A_12H));
+      .enregistre(departDeDupontA(LE_10_MAI_2026_A_17H));
     EvenementDePresenceId arrivee = journal.evenements().getFirst().id();
 
     JournalDePresence corrige = journal.corrige(arrivee, annulationParLeroy(), arriveeDeDupontA(LE_10_MAI_2026_A_7H));
 
     assertThat(corrige.evenements()).hasSize(3);
     assertThat(corrige.debut()).contains(LE_10_MAI_2026_A_7H);
-    assertThat(corrige.etat()).isEqualTo(EtatDePresence.EN_PAUSE);
+    assertThat(corrige.amplitude()).contains(new Periode(LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_17H));
   }
 
   @Test

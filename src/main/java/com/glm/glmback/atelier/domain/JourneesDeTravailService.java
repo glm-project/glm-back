@@ -74,9 +74,9 @@ public final class JourneesDeTravailService {
    *
    * <ul>
    * <li>Sans journee en cours, ou sur une journee abandonnee, il ouvre une nouvelle journee par une arrivee implicite
-   * a l'heure du geste, puis s'y applique. Une reprise s'y reduit a l'arrivee.</li>
-   * <li>Redondant avec l'etat courant — une pause deja en pause, une reprise deja present —, il est absorbe : rien
-   * n'est ajoute au journal.</li>
+   * a l'heure du geste, puis s'y applique.</li>
+   * <li>Redondant avec l'etat courant — une arrivee egaree sur la route des pointages d'un operateur deja present —,
+   * il est absorbe : rien n'est ajoute au journal.</li>
    * </ul>
    *
    * <p>
@@ -186,11 +186,11 @@ public final class JourneesDeTravailService {
   }
 
   /**
-   * Une reprise suppose une pause, et une arrivee egaree sur la route des pointages double l'arrivee implicite : sur
-   * une nouvelle journee, l'une comme l'autre se reduisent a cette arrivee.
+   * Une arrivee egaree sur la route des pointages double l'arrivee implicite : sur une nouvelle journee, elle se
+   * reduit a cette arrivee.
    */
   private static boolean seReduitALArrivee(EvenementDePresence geste) {
-    return geste.type() == TypeDEvenementDePresence.REPRISE || geste.type() == TypeDEvenementDePresence.ARRIVEE;
+    return geste.type() == TypeDEvenementDePresence.ARRIVEE;
   }
 
   /**

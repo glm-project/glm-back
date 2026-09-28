@@ -57,7 +57,7 @@ class AnnuaireDAtelierServiceTest {
 
   @Test
   void shouldResoudreLesOperateursDUneListeDeJournees() {
-    AnnuaireDAtelier annuaire = annuaires.pourJournees(List.of(journeeDeDupontOuverteA7H(), journeeDeDupontDe7HA17HAvecPauseDeMidi()));
+    AnnuaireDAtelier annuaire = annuaires.pourJournees(List.of(journeeDeDupontOuverteA7H(), journeeDeDupontDe7HA17H()));
 
     assertThat(annuaire.operateurs()).containsOnlyKeys(OPERATEUR_ID_DUPONT);
   }

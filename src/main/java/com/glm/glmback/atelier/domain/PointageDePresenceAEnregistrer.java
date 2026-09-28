@@ -5,11 +5,11 @@ import java.time.Instant;
 import java.util.Optional;
 
 /**
- * Une pause, une reprise ou un depart, saisis en direct sur la journee en cours de l'operateur.
+ * Un depart, saisi en direct sur la journee en cours de l'operateur.
  *
  * <p>
  * Un seul evenement, quel que soit le nombre d'elements sur lesquels l'operateur travaille : c'est ce qui donne au
- * client son bouton de pause unique et son bouton d'arret de fin de journee, sans jamais N clics pour N taches.
+ * client son bouton d'arret de fin de journee, sans jamais N clics pour N taches.
  * </p>
  */
 public record PointageDePresenceAEnregistrer(

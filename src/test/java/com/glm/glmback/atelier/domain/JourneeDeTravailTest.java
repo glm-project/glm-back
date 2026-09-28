@@ -59,16 +59,16 @@ class JourneeDeTravailTest {
 
   @Test
   void shouldSeFermerAuDepart() {
-    JourneeDeTravail journee = journeeDeDupontDe7HA17HAvecPauseDeMidi();
+    JourneeDeTravail journee = journeeDeDupontDe7HA17H();
 
     assertThat(journee.estEnCours()).isFalse();
     assertThat(journee.amplitude()).contains(new Periode(LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_17H));
-    assertThat(journee.fenetres()).hasSize(2);
+    assertThat(journee.fenetres()).containsExactly(new FenetreDePresence(LE_10_MAI_2026_A_7H, Optional.of(LE_10_MAI_2026_A_17H)));
   }
 
   @Test
   void shouldContenirLesInstantsDeLaJourneeFermee() {
-    JourneeDeTravail journee = journeeDeDupontDe7HA17HAvecPauseDeMidi();
+    JourneeDeTravail journee = journeeDeDupontDe7HA17H();
 
     assertThat(journee.contient(LE_10_MAI_2026_A_7H)).isTrue();
     assertThat(journee.contient(LE_10_MAI_2026_A_12H)).isTrue();
@@ -84,7 +84,7 @@ class JourneeDeTravailTest {
 
   @Test
   void shouldAnnulerUnEvenement() {
-    JourneeDeTravail journee = journeeDeDupontDe7HA17HAvecPauseDeMidi();
+    JourneeDeTravail journee = journeeDeDupontDe7HA17H();
     EvenementDePresenceId depart = journee.journal().evenements().getLast().id();
 
     JourneeDeTravail sansDepart = journee.annule(depart, annulationParLeroy());
@@ -130,13 +130,6 @@ class JourneeDeTravailTest {
   }
 
   @Test
-  void shouldMesurerLeSeuilPausesComprises() {
-    JourneeDeTravail enPause = journeeDeDupontOuverteA7H().enregistre(pauseDeDupontA(LE_10_MAI_2026_A_12H));
-
-    assertThat(enPause.estAbandonneePour(LE_11_MAI_2026_A_7H, AMPLITUDE_MAXIMALE_13H)).isTrue();
-  }
-
-  @Test
   void shouldAppliquerLeSeuilDonne() {
     Instant a17h30 = LE_10_MAI_2026_A_17H.plusSeconds(1800);
 
@@ -146,7 +139,7 @@ class JourneeDeTravailTest {
 
   @Test
   void shouldNeJamaisAbandonnerUneJourneeFermeeParUnDepart() {
-    assertThat(journeeDeDupontDe7HA17HAvecPauseDeMidi().estAbandonneePour(LE_11_MAI_2026_A_9H, AMPLITUDE_MAXIMALE_13H)).isFalse();
+    assertThat(journeeDeDupontDe7HA17H().estAbandonneePour(LE_11_MAI_2026_A_9H, AMPLITUDE_MAXIMALE_13H)).isFalse();
   }
 
   @Test
@@ -200,20 +193,18 @@ class JourneeDeTravailTest {
 
   @Test
   void shouldEtendreUneJourneeOuverteJusquASonDernierFaitConnu() {
-    JourneeDeTravail journee = journeeDeDupontOuverteA7H().enregistre(pauseDeDupontA(LE_10_MAI_2026_A_12H));
-
-    assertThat(journee.etendue()).contains(new Periode(LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_12H));
+    assertThat(journeeDeLundiRouverteA13H().etendue()).contains(new Periode(LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_13H));
   }
 
   @Test
   void shouldEtendreUneJourneeFermeeDeLArriveeAuDepart() {
-    assertThat(journeeDeDupontDe7HA17HAvecPauseDeMidi().etendue()).contains(new Periode(LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_17H));
+    assertThat(journeeDeDupontDe7HA17H().etendue()).contains(new Periode(LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_17H));
   }
 
   @Test
   void shouldEcarterDeLEtendueLesEvenementsAnnules() {
-    EvenementDePresence pause = pauseDeDupontA(LE_10_MAI_2026_A_12H);
-    JourneeDeTravail journee = journeeDeDupontOuverteA7H().enregistre(pause).annule(pause.id(), annulationParLeroy());
+    EvenementDePresence depart = departDeDupontA(LE_10_MAI_2026_A_17H);
+    JourneeDeTravail journee = journeeDeDupontOuverteA7H().enregistre(depart).annule(depart.id(), annulationParLeroy());
 
     assertThat(journee.etendue()).contains(new Periode(LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_7H));
   }
@@ -234,13 +225,30 @@ class JourneeDeTravailTest {
   }
 
   /**
-   * E2 : lundi sans depart, lu mardi. La journee abandonnee se ferme au dernier fait connu, la fin de l'OF 43 a 16:00,
-   * et seule la derniere fenetre est presumee.
+   * E2 : lundi sans depart, lu mardi. La journee abandonnee se ferme au dernier fait connu, la fin de l'OF 43 a 16:00.
+   * Sans depart, elle n'a qu'une fenetre : toute la journee est presumee.
    */
   @Test
   void shouldFermerUneJourneeAbandonneeASaFinPresumee() {
     assertThat(
-      journeeDeLundiSansDepart().fenetresA(LE_11_MAI_2026_A_9H, AMPLITUDE_MAXIMALE_13H, Optional.of(LE_10_MAI_2026_A_16H))
+      journeeDeDupontOuverteA7H().fenetresA(LE_11_MAI_2026_A_9H, AMPLITUDE_MAXIMALE_13H, Optional.of(LE_10_MAI_2026_A_16H))
+    ).containsExactly(new FenetreDePresence(LE_10_MAI_2026_A_7H, Optional.of(LE_10_MAI_2026_A_16H), true));
+  }
+
+  @Test
+  void shouldPresumerLaFinAuDernierEvenementDePresenceSansPointage() {
+    assertThat(journeeDeDupontOuverteA7H().fenetresA(LE_11_MAI_2026_A_9H, AMPLITUDE_MAXIMALE_13H, Optional.empty())).containsExactly(
+      new FenetreDePresence(LE_10_MAI_2026_A_7H, Optional.of(LE_10_MAI_2026_A_7H), true)
+    );
+  }
+
+  /**
+   * Une venue close avant la fin presumee reste pointee : seule la derniere, restee ouverte, est presumee.
+   */
+  @Test
+  void shouldGarderPointeeUneVenueCloseAvantLaFinPresumee() {
+    assertThat(
+      journeeDeLundiRouverteA13H().fenetresA(LE_11_MAI_2026_A_9H, AMPLITUDE_MAXIMALE_13H, Optional.of(LE_10_MAI_2026_A_16H))
     ).containsExactly(
       new FenetreDePresence(LE_10_MAI_2026_A_7H, Optional.of(LE_10_MAI_2026_A_12H)),
       new FenetreDePresence(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_16H), true)
@@ -248,55 +256,38 @@ class JourneeDeTravailTest {
   }
 
   @Test
-  void shouldPresumerLaFinAuDernierEvenementDePresenceSansPointage() {
-    assertThat(journeeDeLundiSansDepart().fenetresA(LE_11_MAI_2026_A_9H, AMPLITUDE_MAXIMALE_13H, Optional.empty())).containsExactly(
-      new FenetreDePresence(LE_10_MAI_2026_A_7H, Optional.of(LE_10_MAI_2026_A_12H)),
-      new FenetreDePresence(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_13H), true)
-    );
-  }
-
-  @Test
   void shouldIgnorerUnPointageAnterieurAuDernierFaitDePresence() {
-    assertThat(journeeDeLundiSansDepart().fenetresA(LE_11_MAI_2026_A_9H, AMPLITUDE_MAXIMALE_13H, Optional.of(LE_10_MAI_2026_A_9H)))
+    assertThat(journeeDeLundiRouverteA13H().fenetresA(LE_11_MAI_2026_A_9H, AMPLITUDE_MAXIMALE_13H, Optional.of(LE_10_MAI_2026_A_9H)))
       .last()
       .isEqualTo(new FenetreDePresence(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_13H), true));
   }
 
   @Test
   void shouldIgnorerUnPointageHorsDeLaFenetreDeRecherche() {
-    assertThat(journeeDeLundiSansDepart().fenetresA(LE_11_MAI_2026_A_9H, AMPLITUDE_MAXIMALE_13H, Optional.of(LE_11_MAI_2026_A_7H)))
+    assertThat(journeeDeDupontOuverteA7H().fenetresA(LE_11_MAI_2026_A_9H, AMPLITUDE_MAXIMALE_13H, Optional.of(LE_11_MAI_2026_A_7H)))
       .last()
-      .isEqualTo(new FenetreDePresence(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_13H), true));
+      .isEqualTo(new FenetreDePresence(LE_10_MAI_2026_A_7H, Optional.of(LE_10_MAI_2026_A_7H), true));
   }
 
   @Test
   void shouldLaisserOuverteUneJourneeNonAbandonnee() {
-    assertThat(journeeDeLundiSansDepart().fenetresA(LE_10_MAI_2026_A_17H, AMPLITUDE_MAXIMALE_13H, Optional.of(LE_10_MAI_2026_A_16H)))
+    assertThat(journeeDeDupontOuverteA7H().fenetresA(LE_10_MAI_2026_A_17H, AMPLITUDE_MAXIMALE_13H, Optional.of(LE_10_MAI_2026_A_16H)))
       .last()
-      .isEqualTo(new FenetreDePresence(LE_10_MAI_2026_A_13H, Optional.empty()));
+      .isEqualTo(new FenetreDePresence(LE_10_MAI_2026_A_7H, Optional.empty()));
   }
 
   @Test
   void shouldLaisserOuverteUneJourneeLueAuSeuilPile() {
-    assertThat(journeeDeLundiSansDepart().fenetresA(LE_10_MAI_2026_A_20H, AMPLITUDE_MAXIMALE_13H, Optional.of(LE_10_MAI_2026_A_16H)))
+    assertThat(journeeDeDupontOuverteA7H().fenetresA(LE_10_MAI_2026_A_20H, AMPLITUDE_MAXIMALE_13H, Optional.of(LE_10_MAI_2026_A_16H)))
       .last()
       .matches(FenetreDePresence::estOuverte);
   }
 
   @Test
-  void shouldNeRienPresumerDUneJourneeAbandonneeEnPause() {
-    JourneeDeTravail enPause = journeeDeDupontOuverteA7H().enregistre(pauseDeDupontA(LE_10_MAI_2026_A_12H));
-
-    assertThat(enPause.fenetresA(LE_11_MAI_2026_A_9H, AMPLITUDE_MAXIMALE_13H, Optional.of(LE_10_MAI_2026_A_16H))).containsExactly(
-      new FenetreDePresence(LE_10_MAI_2026_A_7H, Optional.of(LE_10_MAI_2026_A_12H))
-    );
-  }
-
-  @Test
   void shouldNeRienPresumerDUneJourneeFermee() {
     assertThat(
-      journeeDeDupontDe7HA17HAvecPauseDeMidi().fenetresA(LE_11_MAI_2026_A_9H, AMPLITUDE_MAXIMALE_13H, Optional.of(LE_10_MAI_2026_A_16H))
-    ).isEqualTo(journeeDeDupontDe7HA17HAvecPauseDeMidi().fenetres());
+      journeeDeDupontDe7HA17H().fenetresA(LE_11_MAI_2026_A_9H, AMPLITUDE_MAXIMALE_13H, Optional.of(LE_10_MAI_2026_A_16H))
+    ).isEqualTo(journeeDeDupontDe7HA17H().fenetres());
   }
 
   /**
@@ -304,24 +295,23 @@ class JourneeDeTravailTest {
    */
   @Test
   void shouldNeJamaisPresumerAvantLeDernierFaitDePresence() {
-    JourneeDeTravail reprisTard = journeeDeDupontOuverteA7H()
-      .enregistre(pauseDeDupontA(LE_10_MAI_2026_A_12H))
-      .enregistre(repriseDeDupontA(LE_10_MAI_2026_A_20H.plusSeconds(3600)));
+    JourneeDeTravail revenuTard = journeeDeDupontOuverteA7H()
+      .enregistre(departDeDupontA(LE_10_MAI_2026_A_12H))
+      .enregistre(arriveeDeDupontA(LE_10_MAI_2026_A_20H.plusSeconds(3600)));
 
-    assertThat(reprisTard.fenetresA(LE_11_MAI_2026_A_9H, AMPLITUDE_MAXIMALE_13H, Optional.of(LE_10_MAI_2026_A_16H)))
+    assertThat(revenuTard.fenetresA(LE_11_MAI_2026_A_9H, AMPLITUDE_MAXIMALE_13H, Optional.of(LE_10_MAI_2026_A_16H)))
       .last()
       .isEqualTo(new FenetreDePresence(LE_10_MAI_2026_A_20H.plusSeconds(3600), Optional.of(LE_10_MAI_2026_A_20H.plusSeconds(3600)), true));
   }
 
   /**
-   * Issue #59 : ici, c'est le depart qu'on ne croit pas. Seuls les faits de la fenetre de recherche comptent : la
-   * pause, la reprise et le depart du 11 en sont exclus, et ce qui suit la fin presumee disparait.
+   * Issue #59 : ici, c'est le depart qu'on ne croit pas. Seuls les faits de la fenetre de recherche comptent : le
+   * depart du 11 en est exclu, et ce qui suit la fin presumee disparait.
    */
   @Test
   void shouldFermerUneJourneeDePlusDe24HAuDernierFaitDeLaFenetreDeRecherche() {
     assertThat(journeeDeDupontDu10A7HAu11A9H().fenetresA(LE_11_MAI_2026_A_20H, AMPLITUDE_MAXIMALE_13H, Optional.empty())).containsExactly(
-      new FenetreDePresence(LE_10_MAI_2026_A_7H, Optional.of(LE_10_MAI_2026_A_12H)),
-      new FenetreDePresence(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_13H), true)
+      new FenetreDePresence(LE_10_MAI_2026_A_7H, Optional.of(LE_10_MAI_2026_A_7H), true)
     );
   }
 
@@ -329,13 +319,29 @@ class JourneeDeTravailTest {
   void shouldFermerUneJourneeDePlusDe24HAuDernierPointageDeLaFenetre() {
     assertThat(
       journeeDeDupontDu10A7HAu11A9H().fenetresA(LE_11_MAI_2026_A_20H, AMPLITUDE_MAXIMALE_13H, Optional.of(LE_10_MAI_2026_A_16H))
-    ).containsExactly(
-      new FenetreDePresence(LE_10_MAI_2026_A_7H, Optional.of(LE_10_MAI_2026_A_12H)),
-      new FenetreDePresence(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_16H), true)
+    ).containsExactly(new FenetreDePresence(LE_10_MAI_2026_A_7H, Optional.of(LE_10_MAI_2026_A_16H), true));
+  }
+
+  /**
+   * Issue #59, sur une journee de deux venues : celle du matin, close avant la fin presumee, reste pointee ; celle du
+   * lendemain commence apres, et disparait.
+   */
+  @Test
+  void shouldEcarterUneVenueCommenceeApresLaFinPresumee() {
+    JourneeDeTravail deuxVenues = journeeDeDupontOuverteA7H()
+      .enregistre(departDeDupontA(LE_10_MAI_2026_A_12H))
+      .enregistre(arriveeDeDupontA(LE_11_MAI_2026_A_7H))
+      .enregistre(departDeDupontA(LE_11_MAI_2026_A_9H));
+
+    assertThat(deuxVenues.fenetresA(LE_11_MAI_2026_A_20H, AMPLITUDE_MAXIMALE_13H, Optional.of(LE_10_MAI_2026_A_16H))).containsExactly(
+      new FenetreDePresence(LE_10_MAI_2026_A_7H, Optional.of(LE_10_MAI_2026_A_12H))
     );
   }
 
-  private static JourneeDeTravail journeeDeLundiSansDepart() {
-    return journeeDeDupontOuverteA7H().enregistre(pauseDeDupontA(LE_10_MAI_2026_A_12H)).enregistre(repriseDeDupontA(LE_10_MAI_2026_A_13H));
+  /**
+   * Lundi, Dupont part a midi ; une arrivee a 13 h, regularisee sur la meme journee, la rouvre sans depart.
+   */
+  private static JourneeDeTravail journeeDeLundiRouverteA13H() {
+    return journeeDeDupontOuverteA7H().enregistre(departDeDupontA(LE_10_MAI_2026_A_12H)).enregistre(arriveeDeDupontA(LE_10_MAI_2026_A_13H));
   }
 }

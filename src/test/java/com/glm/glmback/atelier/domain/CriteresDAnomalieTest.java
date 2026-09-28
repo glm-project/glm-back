@@ -51,7 +51,7 @@ class CriteresDAnomalieTest {
 
     assertThat(criteres.matches(SANS_DEPART)).isTrue();
     assertThat(criteres.matches(SEIZE_HEURES)).isTrue();
-    assertThat(criteres.matches(journeeDeDupontDe7HA17HAvecPauseDeMidi())).isFalse();
+    assertThat(criteres.matches(journeeDeDupontDe7HA17H())).isFalse();
   }
 
   @Test

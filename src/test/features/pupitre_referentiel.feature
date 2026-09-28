@@ -33,12 +33,6 @@ Feature: Le referentiel que le pupitre met en cache
     When je lis le referentiel du pupitre a "2026-05-11T09:00:00Z"
     Then "dupont" est "PRESENT" au referentiel du pupitre
 
-  Scenario: Une pause suspend la presence sans y mettre fin
-    Given au pupitre, "dupont" prend son poste a "2026-05-11T08:00:00Z"
-    And au pupitre, "dupont" pointe sa presence "PAUSE" a "2026-05-11T12:00:00Z"
-    When je lis le referentiel du pupitre a "2026-05-11T12:30:00Z"
-    Then "dupont" est "EN_PAUSE" au referentiel du pupitre
-
   Scenario: Un depart referme la journee et rend l'operateur absent
     Given au pupitre, "dupont" prend son poste a "2026-05-11T08:00:00Z"
     And au pupitre, "dupont" pointe sa presence "DEPART" a "2026-05-11T17:00:00Z"
@@ -51,13 +45,6 @@ Feature: Le referentiel que le pupitre met en cache
     When je lis le referentiel du pupitre a "2026-05-11T03:00:00Z"
     Then "dupont" est "PRESENT" au referentiel du pupitre
     And "dupont" reste present jusqu'a "2026-05-11T09:00:00Z" au referentiel du pupitre
-
-  Scenario: Une pause garde son echeance de presence
-    Given au pupitre, "dupont" prend son poste a "2026-05-11T08:00:00Z"
-    And au pupitre, "dupont" pointe sa presence "PAUSE" a "2026-05-11T12:00:00Z"
-    When je lis le referentiel du pupitre a "2026-05-11T12:30:00Z"
-    Then "dupont" est "EN_PAUSE" au referentiel du pupitre
-    And "dupont" reste present jusqu'a "2026-05-11T21:00:00Z" au referentiel du pupitre
 
   Scenario: Au seuil pile, l'operateur est encore present
     Given au pupitre, "dupont" prend son poste a "2026-05-11T07:00:00Z"

@@ -83,10 +83,10 @@ class JourneeAbandonneeTest {
     JourneeDeTravail lundi = arriveA(LE_10_MAI_2026_A_7H).journee();
     JourneeDeTravail mardi = arriveA(LE_11_MAI_2026_A_7H).journee();
 
-    JourneeDeTravail enPause = pointeA(TypeDEvenementDePresence.PAUSE, LE_11_MAI_2026_A_9H);
+    JourneeDeTravail partie = pointeA(TypeDEvenementDePresence.DEPART, LE_11_MAI_2026_A_9H);
 
-    assertThat(enPause.id()).isEqualTo(mardi.id());
-    assertThat(enPause.etat()).isEqualTo(EtatDePresence.EN_PAUSE);
+    assertThat(partie.id()).isEqualTo(mardi.id());
+    assertThat(partie.etat()).isEqualTo(EtatDePresence.ABSENT);
     assertThat(journees.get(lundi.id())).contains(lundi);
   }
 
@@ -122,35 +122,6 @@ class JourneeAbandonneeTest {
     assertThat(journees.get(lundi.id())).contains(lundi);
   }
 
-  @Test
-  void shouldOuvrirUneJourneeQuiCommenceEnPauseSurUnePauseTardive() {
-    arriveA(LE_10_MAI_2026_A_7H);
-
-    JourneeDeTravail mardi = pointeA(TypeDEvenementDePresence.PAUSE, LE_11_MAI_2026_A_8H30);
-
-    assertThat(mardi.etat()).isEqualTo(EtatDePresence.EN_PAUSE);
-    assertThat(mardi.debut()).contains(LE_11_MAI_2026_A_8H30);
-    assertThat(mardi.journal().evenements())
-      .extracting(EvenementDePresence::type)
-      .containsExactly(TypeDEvenementDePresence.ARRIVEE, TypeDEvenementDePresence.PAUSE);
-  }
-
-  /**
-   * Une reprise suppose une pause : sur une journee abandonnee, seule l'arrivee a un sens, la reprise est absorbee.
-   */
-  @Test
-  void shouldNOuvrirQuUneArriveeSurUneRepriseTardive() {
-    JourneeDeTravail lundi = arriveA(LE_10_MAI_2026_A_7H).journee();
-    maintenant.set(LE_10_MAI_2026_A_12H);
-    service.pointe(new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.PAUSE));
-
-    JourneeDeTravail mardi = pointeA(TypeDEvenementDePresence.REPRISE, LE_11_MAI_2026_A_8H30);
-
-    assertThat(mardi.id()).isNotEqualTo(lundi.id());
-    assertThat(mardi.etat()).isEqualTo(EtatDePresence.PRESENT);
-    assertThat(mardi.journal().evenements()).extracting(EvenementDePresence::type).containsExactly(TypeDEvenementDePresence.ARRIVEE);
-  }
-
   /**
    * L'arrivee implicite est tracee : identifiant fourni par le serveur, distinct du geste, a l'heure du geste et au
    * nom de son auteur.
@@ -184,12 +155,12 @@ class JourneeAbandonneeTest {
     maintenant.set(LE_10_MAI_2026_A_12H);
 
     JourneeDeTravail journee = service
-      .pointe(new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.PAUSE), () -> {
+      .pointe(new PointageDePresenceAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT, TypeDEvenementDePresence.DEPART), () -> {
         throw new AssertionError("aucune arrivee implicite ne doit etre demandee");
       })
       .journee();
 
-    assertThat(journee.etat()).isEqualTo(EtatDePresence.EN_PAUSE);
+    assertThat(journee.etat()).isEqualTo(EtatDePresence.ABSENT);
   }
 
   /**

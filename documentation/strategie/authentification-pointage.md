@@ -1,5 +1,8 @@
 # Stratégie — authentification et identification au pupitre
 
+> **28/09/2026 : la pause n'est plus un événement de présence ([ADR 0002](../adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)).**
+> Le pupitre la traduit en fins d'activité, puis en débuts à la reprise ; la présence ne connaît plus que l'arrivée et le départ, et ses états se réduisent à absent et présent. Les passages qui parlent de pause ou de reprise décrivent le modèle d'avant.
+
 Document de réflexion, pas de spécification. Il fixe la stratégie retenue pour reconnaître l'opérateur qui pointe, sécuriser le pupitre d'atelier et survivre à une coupure réseau. Le détail métier et sa justification par le verbatim client vivent dans [contexte-metier.md](../contexte-metier.md), l'isolation par entreprise dans [multitenancy.md](../multitenancy.md), les invariants du pointage dans le [AGENTS.md du contexte `atelier`](../../src/main/java/com/glm/glmback/atelier/AGENTS.md) — ne rien dupliquer ici.
 
 Il répond au point ouvert « Utilisateur connecté » (`contexte-metier.md`, section `operateur`), resté non tranché depuis la livraison des référentiels.

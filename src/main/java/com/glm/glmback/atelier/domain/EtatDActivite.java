@@ -7,8 +7,8 @@ import java.util.Optional;
  *
  * <p>
  * La reprise apres une non conformite se pointe comme un debut : les deux categories se distinguent a la lecture, sur
- * l'etat atteint, jamais sur un troisieme type d'evenement. Une pause ne figure pas ici, elle suspend la presence de
- * l'operateur et non son activite sur l'element.
+ * l'etat atteint, jamais sur un troisieme type d'evenement. Une pause n'y figure pas davantage : le pupitre la pointe
+ * par une fin, et la reprise par le debut ou la non conformite qui rouvre l'activite.
  * </p>
  *
  * <p>

@@ -1,11 +1,12 @@
 Feature: Presence des operateurs en atelier
 
   # La presence est le socle du temps passe : elle est saisie une seule fois, dans la journee de travail de
-  # l'operateur, et jamais recopiee dans le journal des elements sur lesquels il travaille.
+  # l'operateur, et jamais recopiee dans le journal des elements sur lesquels il travaille. Elle ne connait que
+  # l'arrivee et le depart : la pause n'en fait pas partie, le pupitre la pointe sur les elements.
   #
   # Une journee de travail n'est pas un jour calendaire : c'est une venue, bornee par une arrivee et un depart.
-  # L'operateur est designe par son identifiant dans le referentiel : la presence sert de socle a la paie, elle ne
-  # peut pas reposer sur une chaine saisie. Aucun poste n'y intervient, donc aucune habilitation.
+  # L'operateur est designe par son identifiant dans le referentiel : la presence ne peut pas reposer sur une chaine
+  # saisie. Aucun poste n'y intervient, donc aucune habilitation.
   Background:
     Given I am logged in as "gestionnaire" with role "GESTIONNAIRE"
     And l'entreprise a declare l'operateur "dupont"
@@ -49,7 +50,7 @@ Feature: Presence des operateurs en atelier
     When je pointe ma presence
       | id        | 00000000-0000-0000-0000-000000000032 |
       | operateur | dupont                               |
-      | type      | PAUSE                                |
+      | type      | DEPART                               |
     Then la reponse a le statut http 409
     And la reponse porte le code d'erreur "urn:glm:erreur:atelier:identifiant-evenement-reutilise"
 
@@ -67,18 +68,10 @@ Feature: Presence des operateurs en atelier
       | dateDeSurvenue | 2026-05-10T08:00:00Z                 |
     Then la reponse a le statut http 201
 
-  Scenario: Une journee complete, de l'arrivee au depart, avec une pause de midi
+  Scenario: Une journee complete, de l'arrivee au depart
     Given il est "2026-05-10T07:00:00Z"
     And je suis arrive
       | operateur | dupont |
-    Given il est "2026-05-10T12:00:00Z"
-    And j'ai pointe ma presence
-      | operateur | dupont |
-      | type      | PAUSE  |
-    Given il est "2026-05-10T13:00:00Z"
-    And j'ai pointe ma presence
-      | operateur | dupont  |
-      | type      | REPRISE |
     Given il est "2026-05-10T17:00:00Z"
     And j'ai pointe ma presence
       | operateur | dupont |
@@ -88,11 +81,10 @@ Feature: Presence des operateurs en atelier
     And la journee a l'etat "ABSENT"
     # « Les heures de presence, c'est les heures ou il arrive a la societe, il pointe et il part. »
     And la journee a l'amplitude de "2026-05-10T07:00:00Z" a "2026-05-10T17:00:00Z"
-    # La pause n'ote que son propre creux : elle scinde la presence en deux fenetres.
+    # La pause de midi n'est pas un fait de presence : une seule fenetre, de l'arrivee au depart.
     And les fenetres de presence sont
       | debut                | fin                  |
-      | 2026-05-10T07:00:00Z | 2026-05-10T12:00:00Z |
-      | 2026-05-10T13:00:00Z | 2026-05-10T17:00:00Z |
+      | 2026-05-10T07:00:00Z | 2026-05-10T17:00:00Z |
 
   Scenario: Le pointage de presence du pupitre conserve son identifiant et son heure de geste
     Given il est "2026-05-10T07:00:00Z"
@@ -102,7 +94,7 @@ Feature: Presence des operateurs en atelier
     When je pointe ma presence
       | id             | 00000000-0000-0000-0000-000000000022 |
       | operateur      | dupont                               |
-      | type           | PAUSE                                |
+      | type           | DEPART                               |
       | dateDeSurvenue | 2026-05-10T12:00:00Z                 |
     Then la reponse a le statut http 201
     And l'evenement 1 de la journee a l'identifiant "00000000-0000-0000-0000-000000000022"
@@ -116,12 +108,12 @@ Feature: Presence des operateurs en atelier
     When je pointe ma presence
       | id        | 00000000-0000-0000-0000-000000000034 |
       | operateur | dupont                               |
-      | type      | PAUSE                                |
+      | type      | DEPART                               |
     Then la reponse a le statut http 201
     When je pointe ma presence
       | id        | 00000000-0000-0000-0000-000000000034 |
       | operateur | dupont                               |
-      | type      | PAUSE                                |
+      | type      | DEPART                               |
     Then la reponse a le statut http 200
     And le journal de la journee contient 2 evenements
 
@@ -186,10 +178,10 @@ Feature: Presence des operateurs en atelier
     And la reponse ne designe pas la journee "lundi"
     And je retiens la journee sous le nom "mardi"
     And la journee a l'etat "PRESENT"
-    Given il est "2026-05-11T12:00:00Z"
+    Given il est "2026-05-11T17:00:00Z"
     When je pointe ma presence
       | operateur | dupont |
-      | type      | PAUSE  |
+      | type      | DEPART |
     Then la reponse a le statut http 201
     And la reponse designe la journee "mardi"
     # La journee de lundi reste telle quelle : sans depart, en attente de regularisation.
@@ -225,38 +217,6 @@ Feature: Presence des operateurs en atelier
     Then la reponse a le statut http 200
     And la reponse designe la journee "mardi"
 
-  Scenario: Une pause tardive ouvre une journee qui commence en pause
-    Given il est "2026-05-10T07:00:00Z"
-    And je suis arrive
-      | operateur | dupont |
-    Given il est "2026-05-11T08:30:00Z"
-    When je pointe ma presence
-      | operateur | dupont |
-      | type      | PAUSE  |
-    Then la reponse a le statut http 201
-    And la journee a l'etat "EN_PAUSE"
-    And le journal du suivi ne contient que les types
-      | ARRIVEE |
-      | PAUSE   |
-
-  Scenario: Une reprise tardive n'ouvre qu'une arrivee
-    # Une reprise suppose une pause : sur une journee abandonnee, seule l'arrivee a un sens.
-    Given il est "2026-05-10T07:00:00Z"
-    And je suis arrive
-      | operateur | dupont |
-    Given il est "2026-05-10T12:00:00Z"
-    And j'ai pointe ma presence
-      | operateur | dupont |
-      | type      | PAUSE  |
-    Given il est "2026-05-11T08:30:00Z"
-    When je pointe ma presence
-      | operateur | dupont  |
-      | type      | REPRISE |
-    Then la reponse a le statut http 201
-    And la journee a l'etat "PRESENT"
-    And le journal du suivi ne contient que les types
-      | ARRIVEE |
-
   Scenario: Un geste rejoue hors ligne est juge a son heure, pas a sa reception
     Given il est "2026-05-10T07:00:00Z"
     And je suis arrive
@@ -265,11 +225,11 @@ Feature: Presence des operateurs en atelier
     Given il est "2026-05-11T09:00:00Z"
     When je pointe ma presence
       | operateur      | dupont               |
-      | type           | PAUSE                |
-      | dateDeSurvenue | 2026-05-10T12:00:00Z |
+      | type           | DEPART               |
+      | dateDeSurvenue | 2026-05-10T17:00:00Z |
     Then la reponse a le statut http 201
     And la reponse designe la journee "lundi"
-    And la journee a l'etat "EN_PAUSE"
+    And la journee a l'etat "ABSENT"
 
   @parametrage
   Scenario: Le seuil fixe par le gestionnaire vaut pour les gestes suivants
@@ -346,22 +306,6 @@ Feature: Presence des operateurs en atelier
     Then la reponse a le statut http 409
     And la reponse porte le code d'erreur "urn:glm:erreur:atelier:chevauchement-de-journees"
 
-  Scenario: Une pause sans journee ouverte en ouvre une qui commence en pause
-    # Lot 8a : un geste sans journee n'est jamais refuse a l'operateur. Une arrivee implicite, sous une identite du
-    # serveur, l'ouvre a l'heure du geste.
-    Given il est "2026-05-10T12:00:00Z"
-    When je pointe ma presence
-      | id        | 00000000-0000-0000-0000-000000000061 |
-      | operateur | dupont                               |
-      | type      | PAUSE                                |
-    Then la reponse a le statut http 201
-    And la journee a l'etat "EN_PAUSE"
-    And le journal du suivi ne contient que les types
-      | ARRIVEE |
-      | PAUSE   |
-    And l'evenement 0 de la journee n'a pas l'identifiant "00000000-0000-0000-0000-000000000061"
-    And l'evenement 1 de la journee a l'identifiant "00000000-0000-0000-0000-000000000061"
-
   Scenario: Un depart presse par un operateur jamais arrive donne une journee de duree nulle
     Given il est "2026-05-10T17:00:00Z"
     When je pointe ma presence
@@ -371,11 +315,11 @@ Feature: Presence des operateurs en atelier
     And la journee a l'etat "ABSENT"
     And la journee a l'amplitude de "2026-05-10T17:00:00Z" a "2026-05-10T17:00:00Z"
 
-  Scenario: Une pause pour un operateur inconnu reste refusee
+  Scenario: Un depart pour un operateur inconnu reste refuse
     # Le geste ne peut etre rattache a personne : il reste refuse.
     When je pointe ma presence
       | operateur | 5e3d1c08-7f42-4a96-b0e5-2c8d9a1b3f74 |
-      | type      | PAUSE                                |
+      | type      | DEPART                               |
     Then la reponse a le statut http 404
 
   Scenario: Ouvrir une journee pour un operateur inconnu du referentiel renvoie 404
@@ -383,8 +327,9 @@ Feature: Presence des operateurs en atelier
       | operateur | 5e3d1c08-7f42-4a96-b0e5-2c8d9a1b3f74 |
     Then la reponse a le statut http 404
 
-  Scenario: Une reprise alors que l'operateur est deja present est absorbee
-    # Lot 8a : le geste ne change rien, il n'est pas refuse. Rejoue, il rend la meme journee.
+  Scenario: Une arrivee egaree sur la route des pointages est absorbee
+    # Lot 8a : l'operateur est deja present, le geste ne change rien et n'est pas refuse. Rejoue, il rend la meme
+    # journee.
     Given il est "2026-05-10T07:00:00Z"
     And je suis arrive
       | operateur | dupont |
@@ -392,29 +337,13 @@ Feature: Presence des operateurs en atelier
     Given il est "2026-05-10T09:00:00Z"
     When je pointe ma presence
       | operateur | dupont  |
-      | type      | REPRISE |
+      | type      | ARRIVEE |
     Then la reponse a le statut http 200
     And la reponse designe la journee "matin"
     And le journal de la journee contient 1 evenements
     When je rejoue le dernier geste du pupitre
     Then la reponse a le statut http 200
     And la reponse designe la journee "matin"
-
-  Scenario: Un double appui sur pause est absorbe
-    Given il est "2026-05-10T07:00:00Z"
-    And je suis arrive
-      | operateur | dupont |
-    Given il est "2026-05-10T12:00:00Z"
-    And j'ai pointe ma presence
-      | operateur | dupont |
-      | type      | PAUSE  |
-    Given il est "2026-05-10T12:00:02Z"
-    When je pointe ma presence
-      | operateur | dupont |
-      | type      | PAUSE  |
-    Then la reponse a le statut http 200
-    And la journee a l'etat "EN_PAUSE"
-    And le journal de la journee contient 2 evenements
 
   Scenario: Un depart oublie, regularise le lendemain par un tiers
     # « Il a oublie de pointer le matin... mais il faut compter son temps de presence aussi » —
@@ -441,34 +370,34 @@ Feature: Presence des operateurs en atelier
     Given il est "2026-05-10T12:00:00Z"
     And j'ai pointe ma presence
       | operateur | dupont |
-      | type      | PAUSE  |
+      | type      | DEPART |
     When j'annule l'evenement 1 de ma journee
-      | motif | Pause pointee par erreur |
+      | motif | Depart pointe par erreur |
     Then la reponse a le statut http 200
     And la journee a l'etat "PRESENT"
     # Personne ne supprime un evenement : le repli l'ecarte, le journal le garde.
     And le journal de la journee contient 2 evenements
-    And l'evenement 1 de la journee est annule avec le motif "Pause pointee par erreur"
+    And l'evenement 1 de la journee est annule avec le motif "Depart pointe par erreur"
 
   Scenario: Une heure fausse est corrigee en un seul acte
     Given il est "2026-05-10T07:00:00Z"
     And je suis arrive
       | operateur | dupont |
-    Given il est "2026-05-10T12:00:00Z"
+    Given il est "2026-05-10T17:00:00Z"
     And j'ai pointe ma presence
       | operateur | dupont |
-      | type      | PAUSE  |
+      | type      | DEPART |
     When je corrige l'evenement 1 de ma journee
-      | motif          | Pause prise a 11h30  |
-      | type           | PAUSE                |
-      | dateDeSurvenue | 2026-05-10T11:30:00Z |
+      | motif          | Parti a 16h30        |
+      | type           | DEPART               |
+      | dateDeSurvenue | 2026-05-10T16:30:00Z |
     Then la reponse a le statut http 200
-    And la journee a l'etat "EN_PAUSE"
+    And la journee a l'etat "ABSENT"
     # L'ancien evenement reste, annule, et le remplacant prend sa place a l'heure corrigee.
     And le journal de la journee contient 3 evenements
     And les fenetres de presence sont
       | debut                | fin                  |
-      | 2026-05-10T07:00:00Z | 2026-05-10T11:30:00Z |
+      | 2026-05-10T07:00:00Z | 2026-05-10T16:30:00Z |
 
   Scenario: Consulter une journee inexistante renvoie 404
     When je consulte la journee inconnue "3f2c7b0a-4d5e-4f70-a132-c3d4e5f60718"
@@ -489,12 +418,12 @@ Feature: Presence des operateurs en atelier
     Given il est "2026-05-10T12:00:00Z"
     And j'ai pointe ma presence
       | operateur | dupont |
-      | type      | PAUSE  |
+      | type      | DEPART |
     When j'annule l'evenement 1 de ma journee
-      | motif | Pause pointee par erreur |
+      | motif | Depart pointe par erreur |
     Then la reponse a le statut http 200
     When j'annule l'evenement 1 de ma journee
-      | motif | Deja annulee |
+      | motif | Deja annule |
     Then la reponse a le statut http 409
 
   Scenario: L'historique de presence se filtre par operateur et par periode

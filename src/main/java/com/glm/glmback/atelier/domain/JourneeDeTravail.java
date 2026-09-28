@@ -57,8 +57,8 @@ public record JourneeDeTravail(JourneeDeTravailId id, OperateurId operateur, Jou
   }
 
   /**
-   * Vrai si la journee, toujours sans depart, a depasse le seuil a cet instant : son amplitude depuis l'arrivee,
-   * pauses comprises, est strictement superieure au seuil. Un geste recu a ce moment ouvre une nouvelle journee.
+   * Vrai si la journee, toujours sans depart, a depasse le seuil a cet instant : son amplitude depuis l'arrivee est
+   * strictement superieure au seuil. Un geste recu a ce moment ouvre une nouvelle journee.
    */
   public boolean estAbandonneePour(Instant instant, AmplitudeMaximale seuil) {
     return (
@@ -107,8 +107,8 @@ public record JourneeDeTravail(JourneeDeTravailId id, OperateurId operateur, Jou
   /**
    * Les fenetres de presence lues a cet instant. Une journee abandonnee se ferme a sa fin presumee, le dernier fait
    * connu : son dernier evenement, ou le dernier pointage d'OF de l'operateur s'il est plus tardif et reste dans la
-   * fenetre de recherche. La fenetre ainsi fermee est presumee ; une journee restee en pause n'en a aucune a fermer.
-   * Une journee encore sous le seuil reste ouverte : c'est du travail en cours.
+   * fenetre de recherche. La fenetre ainsi fermee est presumee. Une journee encore sous le seuil reste ouverte : c'est
+   * du travail en cours.
    */
   public List<FenetreDePresence> fenetresA(Instant maintenant, AmplitudeMaximale seuil, Optional<Instant> dernierPointage) {
     if (!estPresumeePour(maintenant, seuil)) {

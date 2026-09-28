@@ -13,7 +13,7 @@ import java.util.UUID;
   Du temps passe sur un element, deduit du journal et jamais stocke.
 
   Le temps effectif est l'intersection des intervalles bruts avec les fenetres de presence de l'operateur : c'est
-  pourquoi une pause de midi produit deux intervalles la ou l'operateur n'a pointe qu'un debut.
+  pourquoi un depart referme un intervalle que l'operateur n'a jamais arrete.
   """
 )
 record RestIntervalleDActivite(

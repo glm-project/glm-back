@@ -34,8 +34,7 @@ import org.springframework.transaction.support.TransactionTemplate;
  * Orchestration de la presence des operateurs.
  *
  * <p>
- * Arrivee, pause, reprise et depart sont des gestes de l'operateur lui-meme ; leur correction appartient au
- * gestionnaire.
+ * Arrivee et depart sont des gestes de l'operateur lui-meme ; leur correction appartient au gestionnaire.
  * </p>
  */
 @Service

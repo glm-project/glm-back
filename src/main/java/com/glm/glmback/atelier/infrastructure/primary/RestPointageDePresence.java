@@ -13,10 +13,11 @@ import java.util.UUID;
 
 @Schema(
   description = """
-  Une pause, une reprise ou un depart, saisis en direct sur la journee ouverte de l'operateur.
+  Un depart, saisi en direct sur la journee ouverte de l'operateur.
 
   Un seul evenement, quel que soit le nombre d'elements sur lesquels l'operateur travaille : c'est ce qui donne un
-  bouton de pause unique, sans N clics pour N taches. Aucun identifiant de journee n'est necessaire.
+  bouton d'arret de fin de journee, sans N clics pour N taches. Aucun identifiant de journee n'est necessaire. La
+  pause n'est pas un evenement de presence : le pupitre la pointe sur les elements, par des fins puis des debuts.
   """
 )
 record RestPointageDePresence(
@@ -26,10 +27,7 @@ record RestPointageDePresence(
 
   @Schema(description = "Identifiant de l'operateur qui pointe.", requiredMode = Schema.RequiredMode.REQUIRED) @NotNull UUID operateur,
 
-  @Schema(
-    description = "PAUSE, REPRISE ou DEPART. ARRIVEE passe par POST /api/atelier/journees.",
-    requiredMode = Schema.RequiredMode.REQUIRED
-  )
+  @Schema(description = "DEPART. ARRIVEE passe par POST /api/atelier/journees.", requiredMode = Schema.RequiredMode.REQUIRED)
   @NotNull
   TypeDEvenementDePresence type,
 

@@ -14,8 +14,8 @@ import java.util.Optional;
  * </p>
  *
  * <p>
- * Les intervalles produits ici sont bruts : ils ignorent les pauses et les departs de l'operateur, qui vivent dans sa
- * journee de travail. Le temps effectif se lit a l'intersection des deux, par {@link TempsDAtelierService}.
+ * Les intervalles produits ici sont bruts : ils ignorent le depart de l'operateur, qui vit dans sa journee de
+ * travail. Le temps effectif se lit a l'intersection des deux, par {@link TempsDAtelierService}.
  * </p>
  */
 public record SuiviDAtelier(

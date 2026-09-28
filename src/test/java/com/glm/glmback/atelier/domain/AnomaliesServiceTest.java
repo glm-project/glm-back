@@ -49,7 +49,7 @@ class AnomaliesServiceTest {
 
   @Test
   void shouldNeRienListerSansAnomalie() {
-    journees.create(journeeDeDupontDe7HA17HAvecPauseDeMidi());
+    journees.create(journeeDeDupontDe7HA17H());
     maintenant.set(LE_10_MAI_2026_A_17H);
     journees.create(
       JourneeDeTravail.ouverte(JourneeDeTravailId.newId(), OPERATEUR_ID_MARTIN).enregistre(arriveeDeDupontA(LE_10_MAI_2026_A_8H))

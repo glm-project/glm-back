@@ -104,17 +104,19 @@ l'écarte du calcul. Le `journal` rendu par l'API **contient donc les événemen
 Pour un écran d'atelier, filtrer sur `annulation == null`. Pour un écran d'audit, tout montrer — c'est là tout
 l'intérêt de les conserver.
 
-### La présence est écrite une seule fois
+### Le départ est écrit une seule fois, la pause sur chaque élément
 
-C'est le parti pris structurant. Pause, reprise et départ sont des faits de la **journée de travail de l'opérateur**,
-jamais recopiés dans le journal des éléments sur lesquels il travaille.
+Le départ est un fait de la **journée de travail de l'opérateur**, jamais recopié dans le journal des éléments sur
+lesquels il travaille. Un seul `POST /api/atelier/journees/pointages` suffit, quel que soit le nombre d'éléments ; le
+croisement est fait à la lecture, par `GET /api/atelier/suivis/{id}/temps-effectif`. C'est ce qui permet à une seule
+régularisation de départ de refermer d'un coup tous les éléments qu'un opérateur avait laissés ouverts en rentrant chez
+lui.
 
-**Ne jamais boucler sur les éléments en cours pour répercuter une pause.** Un seul `POST /api/atelier/journees/pointages`
-suffit, quel que soit le nombre d'éléments : c'est ce qui donne au client son bouton unique. Le croisement est fait à la
-lecture, par `GET /api/atelier/suivis/{id}/temps-effectif`.
-
-C'est aussi ce qui permet à une seule régularisation de départ de refermer d'un coup tous les éléments qu'un opérateur
-avait laissés ouverts en rentrant chez lui.
+**La pause, à l'inverse, n'existe pas pour le serveur** ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)) :
+ni `PAUSE`, ni `REPRISE`, ni état « en pause ». Pour mettre un opérateur en pause, le pupitre **boucle sur ses
+activités en cours** et envoie un `FIN` par activité, sur son poste ; pour la reprendre, un `DEBUT` par activité
+suspendue — ou un `NON_CONFORMITE` pour celle qui était en non conformité —, sur le même poste. La présence n'en est
+pas touchée : un opérateur en pause reste présent.
 
 ---
 
@@ -148,8 +150,6 @@ porter `dateDeSurvenue`, l'heure réelle conservée quand le pupitre a été hor
 POST /api/atelier/journees                 { "id": "<uuid geste>", "operateur": "<uuid operateur>" }
 POST /api/atelier/suivis/{id}/pointages    { "id": "<uuid geste>", "type": "DEBUT", "operateur": "<uuid>", "poste": "<uuid poste>" }
 POST /api/atelier/suivis/{id}/pointages    { "id": "<uuid geste>", "type": "NON_CONFORMITE", "operateur": "<uuid>", "poste": "<uuid poste>" }
-POST /api/atelier/journees/pointages       { "id": "<uuid geste>", "operateur": "<uuid>", "type": "PAUSE" }
-POST /api/atelier/journees/pointages       { "id": "<uuid geste>", "operateur": "<uuid>", "type": "REPRISE" }
 POST /api/atelier/suivis/{id}/pointages    { "id": "<uuid geste>", "type": "FIN", "operateur": "<uuid>", "poste": "<uuid poste>" }
 POST /api/atelier/journees/pointages       { "id": "<uuid geste>", "operateur": "<uuid>", "type": "DEPART" }
 ```
@@ -162,16 +162,15 @@ Trois pièges :
   l'entreprise, elle est absorbée : `200` et la journée en cours, rien d'ajouté — un poste de nuit peut se
   réidentifier à 3 h. Au-delà, la journée en cours est **abandonnée** et l'arrivée en ouvre une nouvelle (`201`).
 - **Un geste de présence sans journée ouverte en ouvre une** (`201`), comme sur une journée abandonnée : arrivée
-  implicite puis geste. **Un geste redondant** — pause déjà en pause, reprise déjà présent — **est absorbé** (`200`,
-  rien d'ajouté). Restent refusés, définitivement, l'opérateur, le poste ou l'élément inconnu (404), le geste rejoué dans le désordre
+  implicite puis geste. **Un geste redondant** — une arrivée égarée sur cette route pour un opérateur déjà présent —
+  **est absorbé** (`200`, rien d'ajouté). Restent refusés, définitivement, l'opérateur, le poste ou l'élément inconnu (404), le geste rejoué dans le désordre
   (409) et l'UUID réutilisé avec un autre contenu (409).
 - **Arrêter une activité qui n'est pas en cours, ou un élément clôturé, est absorbé** (`200`). Démarrer ou pointer
   une non conformité sur un élément clôturé reste refusé (`409 suivi-d-atelier-cloture`) : c'est le seul refus à
   afficher à l'opérateur, « OF clôturé, vous ne pouvez plus pointer dessus ».
 - **Deux saisies simultanées ne sont plus un refus** : le serveur rejoue lui-même l'écriture devancée.
 - **Un geste reçu pour une journée abandonnée ouvre une nouvelle journée** (`201`) : une arrivée implicite à l'heure
-  du geste, sous un identifiant du serveur, puis le geste. Une reprise s'y réduit à l'arrivée ; un départ tardif
-  donne une journée de durée nulle. Le seuil se juge sur l'heure du geste (`dateDeSurvenue`), pas sur sa réception.
+  du geste, sous un identifiant du serveur, puis le geste. Un départ tardif donne une journée de durée nulle. Le seuil se juge sur l'heure du geste (`dateDeSurvenue`), pas sur sa réception.
 - **Une reprise après non conformité se pointe comme un `DEBUT`.** Il n'existe pas de type « reprise ». Ce qui change,
   c'est la `categorie` de l'activité, qui repasse de `NON_CONFORMITE` à `TRAVAIL`.
 - **Un `DEBUT` sur une activité déjà en cours la relance** au lieu d'être refusé, de même qu'une `NON_CONFORMITE` sur
@@ -319,23 +318,25 @@ stocké : une ligne disparaît dès que la régularisation la résout. Un type i
 GET /api/atelier/suivis/{id}/temps-effectif
 ```
 
-Rend les intervalles bruts **ramenés aux fenêtres de présence** des opérateurs. Un `DEBUT` à 8 h suivi d'une pause de
-midi et d'une reprise à 13 h produit **deux** intervalles, alors qu'un seul pointage a eu lieu. Un intervalle sans
-`fin` est encore en cours — c'est un affichage « depuis 8 h 00 », pas une donnée manquante.
+Rend les intervalles bruts **ramenés aux fenêtres de présence** des opérateurs. Un `DEBUT` à 8 h que l'opérateur
+n'arrête jamais produit un intervalle fermé à son départ, sans que la fin ait été pointée. La pause de midi, pointée par
+un `FIN` et un `DEBUT`, en produit deux. Un intervalle sans `fin` est encore en cours — c'est un affichage « depuis
+8 h 00 », pas une donnée manquante.
 
 Un intervalle **`presume: true`** repose sur une fin de journée présumée : l'opérateur n'a pas pointé son départ, et sa
 journée, abandonnée au-delà de l'amplitude maximale, a été fermée à son dernier fait connu. L'afficher comme « à
 confirmer » ; il redevient pointé dès que le gestionnaire régularise le départ.
 
-### Présence et paie
+### Présence
 
 `GET /api/atelier/journees/{id}` expose **à la fois** :
 
-- `amplitude` — de l'arrivée au départ, pauses comprises ;
-- `fenetres` — les intervalles de présence effective, pauses retirées.
+- `amplitude` — de l'arrivée au départ ;
+- `fenetres` — les intervalles de présence, un par venue : pour une journée pointée d'une traite, la même période que
+  l'amplitude.
 
-Le back-end **ne choisit pas** laquelle compte pour la paie : la question est ouverte côté client. Ne pas en câbler une
-en dur dans un écran de synthèse sans l'avoir tranchée.
+La pause n'y figure pas : un opérateur en pause reste présent. La présence ne sert pas à payer — l'objectif est de
+savoir qui travaille sur quoi et combien un OF a coûté en temps.
 
 `amplitude` est **absente tant que la journée est ouverte** (pas de départ), et une `fenetre` sans `fin` est en cours.
 
@@ -364,9 +365,9 @@ Deux statuts du tableau ci-dessous n'en portent pas : le **400** de Bean Validat
 | 404    | Suivi, journée, événement ou élément de fabrication introuvable ; ou aucune journée ouverte pour cet opérateur.                                                                                |
 | 409    | Élément déjà engagé, élément clôturé, événement déjà annulé, transition impossible, événement antérieur à l'engagement, UUID réutilisé, **chevauchement de journées**, **saisie concurrente**. |
 
-Les **409 de transition** sont les plus fréquents à l'usage : une `REPRISE` sans `PAUSE`, une `FIN` sans activité en
-cours, un `DEPART` sur une journée déjà fermée. Ils portent un `message` explicite — l'afficher plutôt que
-le remplacer par un texte générique.
+Les **409 de transition** viennent d'un geste rejoué dans le désordre ou d'une correction qui casse l'enchaînement :
+un `DEPART` daté avant l'arrivée de sa journée, une `FIN` datée avant le dernier fait de son activité. Ils portent un
+`message` explicite — l'afficher plutôt que le remplacer par un texte générique.
 
 Le **chevauchement de journées** ne vient que d'un acte du gestionnaire : une régularisation ou une correction de
 présence qui ferait se toucher deux journées du même opérateur, jugées du premier au dernier fait connu. Régulariser

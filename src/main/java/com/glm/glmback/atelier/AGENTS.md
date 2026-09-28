@@ -10,8 +10,9 @@ Le **pointage et sa correction**, et rien d'autre. Trois actes :
 
 1. **Engager** un élément de fabrication en atelier — geste métier explicite du back-office, distinct de la création de
    l'élément — puis le **clôturer** ou rouvrir la clôture.
-2. **Enregistrer les pointages** : la présence de l'opérateur (arrivée, pause, reprise, départ) d'un côté, son travail
-   sur un élément engagé (début, non conformité, fin) de l'autre.
+2. **Enregistrer les pointages** : la présence de l'opérateur (arrivée, départ) d'un côté, son travail sur un élément
+   engagé (début, non conformité, fin) de l'autre. La pause n'est pas un pointage du serveur : le pupitre la traduit
+   en fins, puis en débuts ([ADR 0002](../../../../../../../documentation/adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)).
 3. **Corriger** ces saisies : `regularise` (saisie oubliée), `annule` (saisie en trop), `corrige` (saisie fausse).
 
 Il en déduit, à la lecture seulement, les intervalles de temps passé — jamais stockés.
@@ -27,7 +28,8 @@ Ne rien ajouter ici qui relève de :
 - **le référentiel des ressources** — opérateur → postes autorisés, taux ; poste → libellé, nature, coût horaire. Ces
   données sont **lues par port** (`OperateursConnus`, `PostesConnus`, `Habilitations`), jamais possédées ici. Le
   journal ne retient que `OperateurId` et `PosteDeTravailId` ;
-- **la paie** — le contexte expose `amplitude()` et `fenetres()`, il ne choisit pas laquelle compte ;
+- **la paie** — la présence ne sert pas à payer ; le contexte expose `amplitude()` et `fenetres()` sans en faire une
+  mesure de paie ;
 - **le cycle de vie de l'élément de fabrication** lui-même, qui appartient à `elementdefabrication` ;
 - **le fuseau horaire et le jour calendaire** — une `JourneeDeTravail` est bornée par une arrivée et un départ, pas par
   une date. Aucun `ZoneId`, aucun `LocalDate` dans ce contexte.
@@ -52,9 +54,10 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
 - **Horodatage bitemporel** sur chaque événement : date de survenue (métier) et date d'enregistrement (technique). Une
   régularisation se reconnaît à l'écart entre les deux, jamais à l'identité de l'auteur.
 - **Un événement annulé reste au journal**, porteur de son `Annulation`. Le repli l'écarte ; personne ne le supprime.
-- **La pause et le départ sont des faits de l'opérateur, écrits une seule fois.** Ne jamais les recopier dans le journal
-  des éléments : c'est ce qui donne au client son bouton unique, et ce qui permet à une seule régularisation de départ
-  de refermer tous les éléments de la journée.
+- **Le départ est un fait de l'opérateur, écrit une seule fois ; la pause n'existe pas pour le serveur, le pupitre la
+  traduit en fins d'activité.** Ne jamais recopier le départ dans le journal des éléments : c'est ce qui permet à une
+  seule régularisation de départ de refermer tous les éléments de la journée. Ne jamais réintroduire de pause dans la
+  présence : elle se lit dans le journal des éléments, par les fins et les débuts que le pupitre y pointe.
 - **Le poste de travail et la `NatureDOperation` sont toujours facultatifs.** L'application vise un maximum
   d'entreprises clientes ; celles qui n'ont ni parc machine ni métiers distincts laissent les deux vides et retrouvent
   un comportement cohérent, pas un cas dégradé.
@@ -70,7 +73,7 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
   règle vit dans les automates recopiés de `pupitre` et `coutderevient` : les trois changent ensemble.
 - **Une journée sans départ au-delà du seuil est abandonnée**, et le geste suivant de l'opérateur en ouvre une
   nouvelle ; sous le seuil, une arrivée est absorbée. Seuls les actes du gestionnaire peuvent être refusés pour
-  chevauchement de deux journées. Détail dans `contexte-metier.md`, section « La présence, base de la paie ».
+  chevauchement de deux journées. Détail dans `contexte-metier.md`, section « La présence, de l'arrivée au départ ».
 - **Une journée fermée plus de 24 h après son arrivée se lit comme abandonnée** (D13, issue #59) : pour le temps effectif
   seulement : `estPresumeePour` la ferme à sa fin présumée, le dernier fait **de la fenêtre de recherche**, départ exclu. `estAbandonneePour`, qui décide
   de la saisie et des anomalies, ne change pas. Entre le seuil et 24 h,
