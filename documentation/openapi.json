@@ -189,7 +189,7 @@
         "type" : "object"
       },
       "RestActiviteDuPupitre" : {
-        "description" : "Une activite ouverte sur cet element : qui travaille, sur quel poste, dans quel etat, depuis quand.\n\nUne non conformite ne ferme pas l'activite — ce temps-la se compte aussi. C'est la categorie qui change, pas\nl'etat de l'element.\n",
+        "description" : "Une activite ouverte sur cet element : qui travaille, sur quel poste, dans quel etat, depuis quand.\n\nUne transition ouvre une activite distincte de l autre categorie. Les activites a resoudre et celles dont\nl echeance est atteinte ne sont pas actionnables et ne figurent pas ici.\n",
         "properties" : {
           "categorie" : {
             "description" : "TRAVAIL ou NON_CONFORMITE.",
@@ -201,8 +201,18 @@
             "format" : "date-time",
             "type" : "string"
           },
+          "echeance" : {
+            "description" : "Echeance de l activite : elle cesse d etre en cours a cet instant inclus.",
+            "format" : "date-time",
+            "type" : "string"
+          },
           "operateur" : {
             "description" : "Identifiant de l'operateur en activite.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "ouverture" : {
+            "description" : "Identite stable de l activite, conservee apres correction de son ouvrant.",
             "format" : "uuid",
             "type" : "string"
           },
@@ -212,7 +222,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "categorie", "depuis", "operateur" ],
+        "required" : [ "categorie", "depuis", "echeance", "operateur", "ouverture" ],
         "type" : "object"
       },
       "RestActiviteEnCours" : {
@@ -1561,7 +1571,7 @@
         "type" : "object"
       },
       "RestReferentielDuPupitre" : {
-        "description" : "Tout ce que le pupitre met en cache pour continuer a fonctionner sans reseau, en un seul instantane.\n\nRien n'est stocke : operateurs, habilitations, elements pointables et activites en cours sont relus et replies a\nchaque appel, dans une transaction unique. C'est cette unicite qui fait de la reponse une version instantanee,\nqu'une lecture paginee ne pourrait pas garantir.\n",
+        "description" : "Tout ce que le pupitre met en cache pour continuer a fonctionner sans reseau, en un seul appel.\n\nOperateurs, habilitations et elements pointables sont relus dans une transaction unique, sans pagination.\nLes activites interpretees par atelier sont lues dans sa projection et leur expiration est jugee a genereLe.\nLes requetes successives ne garantissent pas un instantane face aux ecritures concurrentes.\n",
         "properties" : {
           "genereLe" : {
             "description" : "Instant ou le serveur a produit cet instantane. C'est la version : elle dit de quand date ce que l'ecran affiche.",
@@ -1812,7 +1822,7 @@
             "type" : "array"
           },
           "etat" : {
-            "description" : "EN_ATTENTE, EN_COURS ou INTERROMPU. Deduit du journal.",
+            "description" : "EN_ATTENTE, EN_COURS ou INTERROMPU. Juge sur les seules activites interpretables a genereLe.",
             "enum" : [ "EN_ATTENTE", "EN_COURS", "INTERROMPU" ],
             "type" : "string"
           },

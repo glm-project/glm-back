@@ -1,6 +1,6 @@
 package com.glm.glmback.pupitre.infrastructure.secondary;
 
-import com.glm.glmback.pupitre.domain.JournalDuPupitre;
+import com.glm.glmback.pupitre.domain.ActiviteSansFin;
 import com.glm.glmback.pupitre.domain.NomDElement;
 import com.glm.glmback.pupitre.domain.SuiviDuPupitre;
 import com.glm.glmback.pupitre.domain.SuiviDuPupitreId;
@@ -12,6 +12,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.hibernate.annotations.Immutable;
 
@@ -19,9 +20,9 @@ import org.hibernate.annotations.Immutable;
  * Vue en lecture seule de la table des suivis d'atelier.
  *
  * <p>
- * Aucune projection de l'atelier n'est mappee : la cloture est un fait, pas une projection, et
+ * La cloture est un fait :
  * {@code clotureDateDeSurvenue} suffit a ecarter des la requete les elements qui n'acceptent plus de pointage. L'etat
- * rendu au pupitre, lui, se deduit du journal comme chez l'atelier.
+ * rendu au pupitre se juge sur les activites interpretables projetees par l atelier.
  * </p>
  *
  * <p>
@@ -60,12 +61,13 @@ class SuiviDuPupitreEntity {
     return elementId;
   }
 
-  SuiviDuPupitre toDomain(JournalDuPupitre journal, String reference) {
+  SuiviDuPupitre toDomain(List<ActiviteSansFin> activites, boolean dejaPointe, String reference) {
     return SuiviDuPupitre.builder()
       .id(new SuiviDuPupitreId(id))
       .nom(new NomDElement(elementNom))
       .reference(reference)
       .type(elementType)
-      .journal(journal);
+      .activites(activites)
+      .dejaPointe(dejaPointe);
   }
 }

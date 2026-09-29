@@ -571,18 +571,16 @@ s'approprier l'acquisition de connexion du multi-tenant ; le détail est dans le
 ### La lecture passe par la base, jamais par un import
 
 `atelier`, `operateur`, `postedetravail` et `elementdefabrication` étant annotés `@BusinessContext`, ce contexte
-déclare ses propres entités JPA en lecture seule sur leurs tables. Il rejoue donc — pour la **quatrième** fois du
-projet — sa propre version du repli du journal d'atelier, avec une différence assumée : un pointage que l'automate
-refuse est **ignoré** plutôt que refusé, comme `syntheseheures` le fait de la présence. Un écran d'atelier ne doit
-jamais s'éteindre parce qu'un journal est bizarre.
+porte ses propres entités JPA en lecture seule. Il lit l'interprétation projetée dans `activite_d_atelier`, sans
+rejouer le journal d'atelier : seules les activités interprétables sans fin réelle peuvent être courantes.
+L'échéance est inclusive : à début plus 13 h pile, l'activité disparaît de la liste. La correction d'un début
+déplace cette échéance et conserve l'identité de l'activité, rendue dans `ouverture` ; le pupitre peut donc viser
+la même activité après cette correction. Le suivi est `EN_COURS` si l'une de ces activités l'est à `genereLe`,
+sinon `INTERROMPU` s'il porte un événement actif, sinon `EN_ATTENTE`.
 
-Une exception, et une seule : l'**état de présence** se lit sur la colonne de projection `journee_de_travail.etat`
-plutôt qu'en repliant le journal. Ce qu'on demande ici est l'état courant de tous les opérateurs à la fois ; le
-replier supposerait de rapporter tous les journaux de présence ouverts à chaque synchronisation pour n'en garder que
-la dernière valeur.
-
-Le filet est le scénario Cucumber, qui engage, pointe, annule et clôture par l'API d'`atelier` — présence comprise —
-puis relit par celle du pupitre : il échoue dès que les deux contextes cessent de lire les mêmes colonnes.
+L'état de présence des opérateurs reste lu sur la projection des journées. Les scénarios Cucumber écrivent par
+l'API d'atelier puis relisent par le référentiel, avec correction, annulation, échéance et conflit : ils vérifient
+les colonnes réellement partagées entre les deux contextes.
 
 ### Le nom vient du suivi, la référence du référentiel
 

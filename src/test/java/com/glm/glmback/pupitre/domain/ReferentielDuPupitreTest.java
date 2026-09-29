@@ -37,14 +37,10 @@ class ReferentielDuPupitreTest {
    */
   @Test
   void shouldPorterLaDateDeSonInstantane() {
-    ReferentielDuPupitre referentiel = new ReferentielDuPupitre(
-      LE_10_MAI_2026_A_8H,
-      List.of(OPERATEUR_DUPONT),
-      List.of(suiviOf42(JournalDuPupitre.vide()))
-    );
+    ReferentielDuPupitre referentiel = new ReferentielDuPupitre(LE_10_MAI_2026_A_8H, List.of(OPERATEUR_DUPONT), List.of(suiviOf42Vierge()));
 
     assertThat(referentiel.genereLe()).isEqualTo(LE_10_MAI_2026_A_8H);
     assertThat(referentiel.operateurs()).containsExactly(OPERATEUR_DUPONT);
-    assertThat(referentiel.suivis()).containsExactly(suiviOf42(JournalDuPupitre.vide()));
+    assertThat(referentiel.suivis()).containsExactly(suiviOf42Vierge());
   }
 }

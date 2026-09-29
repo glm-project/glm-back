@@ -21,7 +21,7 @@ class ReferentielsDuPupitreServiceTest {
   void shouldDaterLInstantaneDeLHeureDuPort() {
     ReferentielsDuPupitreService service = ReferentielsDuPupitreService.builder()
       .operateurs(presences -> List.of(OPERATEUR_DUPONT))
-      .suivis(() -> List.of(suiviOf42(JournalDuPupitre.vide())))
+      .suivis(() -> List.of(suiviOf42Vierge()))
       .presences(() -> new JourneesEnCours(Map.of()))
       .seuil(() -> AMPLITUDE_MAXIMALE_13H)
       .clock(() -> LE_10_MAI_2026_A_9H);
@@ -30,7 +30,7 @@ class ReferentielsDuPupitreServiceTest {
 
     assertThat(referentiel.genereLe()).isEqualTo(LE_10_MAI_2026_A_9H);
     assertThat(referentiel.operateurs()).containsExactly(OPERATEUR_DUPONT);
-    assertThat(referentiel.suivis()).containsExactly(suiviOf42(JournalDuPupitre.vide()));
+    assertThat(referentiel.suivis()).containsExactly(suiviOf42Vierge());
   }
 
   @Test

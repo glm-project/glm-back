@@ -171,6 +171,70 @@ Feature: Le referentiel que le pupitre met en cache
     When je lis le referentiel du pupitre a "2026-05-11T18:00:00Z"
     Then "OF 4007" ne figure pas au referentiel du pupitre
 
+  Scenario: Une activite que rien n'a terminee quitte les activites en cours a son echeance
+    # Chaque activite porte son ouverture, que visera une fin ou une transition, et son echeance, son debut plus
+    # 13 heures : le pupitre hors ligne la sait expiree a cet instant sans attendre le referentiel suivant.
+    Given le pupitre fabrique "OF 4101"
+    And "OF 4101" est engage au pupitre a "2026-05-18T07:00:00Z"
+    And au pupitre, "dupont" ouvre "A" en "DEBUT" sur "OF 4101" au poste "fraiseuse" a "2026-05-18T08:00:00Z"
+    When je lis le referentiel du pupitre a "2026-05-18T20:59:00Z"
+    Then "OF 4101" figure au referentiel du pupitre dans l'etat "EN_COURS"
+    And les activites de "OF 4101" au referentiel du pupitre sont
+      | operateur | poste     | categorie | depuis               | ouverture | echeance             |
+      | dupont    | fraiseuse | TRAVAIL   | 2026-05-18T08:00:00Z | A         | 2026-05-18T21:00:00Z |
+    # A 21:00 pile, l'activite est terminee automatiquement : elle n'est plus en cours, et le reste ensuite.
+    When je lis le referentiel du pupitre a "2026-05-18T21:00:00Z"
+    Then "OF 4101" figure au referentiel du pupitre dans l'etat "INTERROMPU"
+    And "OF 4101" ne porte aucune activite au referentiel du pupitre
+    When je lis le referentiel du pupitre a "2026-05-19T09:00:00Z"
+    Then "OF 4101" ne porte aucune activite au referentiel du pupitre
+
+  Scenario: Un debut corrige de 08 h a 12 h, lu a 22 h, redevient en cours
+    Given le pupitre fabrique "OF 4102"
+    And "OF 4102" est engage au pupitre a "2026-05-19T07:00:00Z"
+    And au pupitre, "dupont" ouvre "A" en "DEBUT" sur "OF 4102" au poste "fraiseuse" a "2026-05-19T08:00:00Z"
+    When je lis le referentiel du pupitre a "2026-05-19T22:00:00Z"
+    Then "OF 4102" ne porte aucune activite au referentiel du pupitre
+    # La correction deplace l'echeance de 21:00 a 01:00 : l'activite redevient en cours, sous la meme ouverture.
+    Given au pupitre, le gestionnaire corrige a "2026-05-19T22:00:00Z" l'heure du geste "A" sur "OF 4102" en "2026-05-19T12:00:00Z"
+    When je lis le referentiel du pupitre a "2026-05-19T22:00:00Z"
+    Then "OF 4102" figure au referentiel du pupitre dans l'etat "EN_COURS"
+    And les activites de "OF 4102" au referentiel du pupitre sont
+      | operateur | poste     | categorie | depuis               | ouverture | echeance             |
+      | dupont    | fraiseuse | TRAVAIL   | 2026-05-19T12:00:00Z | A         | 2026-05-20T01:00:00Z |
+
+  Scenario: Deux gestes a la meme heure se rangent sans leur date d'enregistrement
+    # La relance B et la fin de A sont pointees hors ligne a 10:00 et recues dans cet ordre. A heure egale, la fin
+    # passe avant l'ouverture, quel que soit l'ordre de reception : A se termine a 10:00, et B est en cours.
+    Given le pupitre fabrique "OF 4103"
+    And "OF 4103" est engage au pupitre a "2026-05-20T07:00:00Z"
+    And au pupitre, "dupont" ouvre "A" en "DEBUT" sur "OF 4103" au poste "fraiseuse" a "2026-05-20T08:00:00Z"
+    And au pupitre, "dupont" ouvre "B" en "DEBUT" sur "OF 4103" au poste "fraiseuse" a "2026-05-20T10:00:00Z", recu a "2026-05-20T10:05:00Z"
+    And au pupitre, "dupont" termine "A" par "F" sur "OF 4103" au poste "fraiseuse" a "2026-05-20T10:00:00Z", recu a "2026-05-20T10:10:00Z"
+    When je lis le referentiel du pupitre a "2026-05-20T11:00:00Z"
+    Then "OF 4103" figure au referentiel du pupitre dans l'etat "EN_COURS"
+    And les activites de "OF 4103" au referentiel du pupitre sont
+      | operateur | poste     | categorie | depuis               | ouverture |
+      | dupont    | fraiseuse | TRAVAIL   | 2026-05-20T10:00:00Z | B         |
+
+  Scenario: Une sequence en conflit ne laisse aucune activite en cours, contrairement a une nouvelle ouverture
+    # A est remplacee par la non conformite B a 12:00, puis terminee a 17:00 : A et B sont a resoudre. Le pupitre ne
+    # deduit aucune activite courante d'une sequence en conflit ; seule une nouvelle ouverture a un sens.
+    Given le pupitre fabrique "OF 4104"
+    And "OF 4104" est engage au pupitre a "2026-05-21T07:00:00Z"
+    And au pupitre, "dupont" ouvre "A" en "DEBUT" sur "OF 4104" au poste "fraiseuse" a "2026-05-21T08:00:00Z"
+    And au pupitre, "dupont" passe "A" en "NON_CONFORMITE" sous le nom "B" sur "OF 4104" au poste "fraiseuse" a "2026-05-21T12:00:00Z"
+    And au pupitre, "dupont" termine "A" par "F" sur "OF 4104" au poste "fraiseuse" a "2026-05-21T17:00:00Z"
+    When je lis le referentiel du pupitre a "2026-05-21T17:30:00Z"
+    Then "OF 4104" figure au referentiel du pupitre dans l'etat "INTERROMPU"
+    And "OF 4104" ne porte aucune activite au referentiel du pupitre
+    Given au pupitre, "dupont" ouvre "C" en "DEBUT" sur "OF 4104" au poste "fraiseuse" a "2026-05-21T18:00:00Z"
+    When je lis le referentiel du pupitre a "2026-05-21T18:30:00Z"
+    Then "OF 4104" figure au referentiel du pupitre dans l'etat "EN_COURS"
+    And les activites de "OF 4104" au referentiel du pupitre sont
+      | operateur | poste     | categorie | depuis               | ouverture |
+      | dupont    | fraiseuse | TRAVAIL   | 2026-05-21T18:00:00Z | C         |
+
   Scenario: Un element sans reference garde une tuile nominale
     Given le pupitre fabrique "PRD 4011" sans reference
     And "PRD 4011" est engage au pupitre a "2026-05-11T07:00:00Z"

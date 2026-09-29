@@ -5,6 +5,7 @@ import com.glm.glmback.pupitre.domain.ReferenceDElement;
 import com.glm.glmback.pupitre.domain.SuiviDuPupitre;
 import com.glm.glmback.pupitre.domain.TypeDElementEngage;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,19 +33,22 @@ record RestSuiviDuPupitre(
   String reference,
   @Schema(description = "ORDRE_DE_FABRICATION ou PRODUIT, copie a l'engagement.", requiredMode = Schema.RequiredMode.REQUIRED)
   TypeDElementEngage type,
-  @Schema(description = "EN_ATTENTE, EN_COURS ou INTERROMPU. Deduit du journal.", requiredMode = Schema.RequiredMode.REQUIRED)
+  @Schema(
+    description = "EN_ATTENTE, EN_COURS ou INTERROMPU. Juge sur les seules activites interpretables a genereLe.",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
   EtatDuSuivi etat,
   @Schema(description = "Les activites ouvertes a cet instant.", requiredMode = Schema.RequiredMode.REQUIRED)
   List<RestActiviteDuPupitre> activites
 ) {
-  static RestSuiviDuPupitre from(SuiviDuPupitre suivi) {
+  static RestSuiviDuPupitre from(SuiviDuPupitre suivi, Instant evaluation) {
     return new RestSuiviDuPupitre(
       suivi.id().uuid(),
       suivi.nom().value(),
       suivi.reference().map(ReferenceDElement::value).orElse(null),
       suivi.type(),
-      suivi.etat(),
-      suivi.activitesEnCours().stream().map(RestActiviteDuPupitre::from).toList()
+      suivi.etatA(evaluation),
+      suivi.activitesEnCoursA(evaluation).stream().map(RestActiviteDuPupitre::from).toList()
     );
   }
 }
