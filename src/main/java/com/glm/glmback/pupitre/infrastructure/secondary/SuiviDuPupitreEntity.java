@@ -19,7 +19,7 @@ import org.hibernate.annotations.Immutable;
  * Vue en lecture seule de la table des suivis d'atelier.
  *
  * <p>
- * La colonne de projection {@code etat} n'est pas mappee : la cloture est un fait, pas une projection, et
+ * Aucune projection de l'atelier n'est mappee : la cloture est un fait, pas une projection, et
  * {@code clotureDateDeSurvenue} suffit a ecarter des la requete les elements qui n'acceptent plus de pointage. L'etat
  * rendu au pupitre, lui, se deduit du journal comme chez l'atelier.
  * </p>

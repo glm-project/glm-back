@@ -12,7 +12,7 @@ import org.hibernate.annotations.Immutable;
  * Vue en lecture seule d'un passage en atelier, reduite a ce qui referme son journal.
  *
  * <p>
- * La colonne {@code etat} n'est pas lue : c'est une projection de l'atelier, et le journal reste la source de verite.
+ * Aucune projection de l'atelier n'est lue : le journal reste la source de verite.
  * Seule la date de cloture compte ici, comme fermeture finale des activites que personne n'a arretees.
  * </p>
  *

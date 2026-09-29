@@ -57,7 +57,7 @@ l'objet naît et meurt dans l'appel.
 - **L'arrondi se fait à la ligne, une seule fois.** Les tranches se somment à l'échelle de travail (6 décimales), la
   ligne construit son `Montant` qui arrondit au centime, et le rapport totalise des lignes **déjà arrondies** — sans
   quoi l'écran afficherait un total qui n'est pas la somme de ce qu'il montre.
-- **Le journal reste la source de vérité.** `suivi_d_atelier.etat` n'est jamais lu ; seule
+- **Le journal reste la source de vérité.** Aucune projection de l'atelier n'est lue ; seule
   `cloture_date_de_survenue` sert, comme fermeture finale des activités que personne n'a arrêtées.
 - **Un intervalle dont le début ne tombe dans aucune journée connue est rendu intact**, puis fermé à l'horloge :
   c'est la présence qui manque, et le domaine ne masque pas l'anomalie derrière un temps amputé. C'est la règle

@@ -201,8 +201,8 @@ GET /api/atelier/suivis?etats=EN_ATTENTE&etats=EN_COURS&etats=INTERROMPU
 Les filtres sont **tous facultatifs** — cet écran ne défile pas et n'a aucune notion de date. `etats` absent ne filtre
 rien. `debut`/`fin` ne servent qu'au back-office, et **une borne seule est ignorée** : il faut les deux.
 
-Limite actuelle : le filtre `etats` ne juge pas encore l'échéance. Un élément dont la seule activité est échue sans fin
-réelle est encore retenu par `etats=EN_COURS`, alors que sa ligne affiche `INTERROMPU` ; se fier à l'`etat` de la ligne.
+Le filtre `etats` juge l'état à l'instant de la lecture, le même que celui de chaque ligne rendue : un élément dont la
+seule activité a atteint son échéance sort de `etats=EN_COURS` et entre dans `etats=INTERROMPU`, sans aucune écriture.
 
 La liste rend une page de **`RestSuiviDAtelierEnGrille`**, sans propriété `journal` (ni tableau vide, ni valeur
 `null`). Tous les autres champs sont conservés : `id`, `element`, `nom`, `type`, `engagePar`, `engageLe`, `etat`,

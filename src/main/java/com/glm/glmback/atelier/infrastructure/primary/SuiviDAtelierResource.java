@@ -63,7 +63,8 @@ class SuiviDAtelierResource {
 
     Tous les filtres sont facultatifs : l'ecran des operateurs veut tous les elements actifs d'un coup, sans notion de
     date. Le parametre etats accepte plusieurs valeurs (?etats=EN_ATTENTE&etats=EN_COURS) ; absent, il ne filtre rien.
-    La periode, quand elle est fournie, porte sur la date d'engagement.
+    L'etat se juge a l'instant de la lecture, celui de chaque ligne rendue : un element dont la seule activite a atteint
+    son echeance n'est plus EN_COURS. La periode, quand elle est fournie, porte sur la date d'engagement.
 
     Chaque ligne conserve l'etat et les activites en cours, mais ne contient pas de journal.
     Le journal complet, annules compris, se consulte via GET /api/atelier/suivis/{id}.

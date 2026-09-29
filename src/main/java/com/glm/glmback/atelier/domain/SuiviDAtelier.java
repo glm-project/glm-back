@@ -136,28 +136,11 @@ public record SuiviDAtelier(
   }
 
   public EtatDAtelier etat(Instant evaluation) {
-    return etat(!activitesEnCours(evaluation).isEmpty());
-  }
-
-  /**
-   * L'etat que le journal donne sans juger aucune echeance : une activite sans fin reelle y reste en cours. Il ne sert
-   * plus qu'a la projection {@code etat}, qui filtre le tableau d'atelier, tant qu'elle ne se juge pas a l'instant de
-   * la lecture.
-   */
-  public EtatDAtelier etatSansEcheance() {
-    return etat(
-      activites()
-        .stream()
-        .anyMatch(activite -> activite.fin().isEmpty())
-    );
-  }
-
-  private EtatDAtelier etat(boolean activiteEnCours) {
     if (estCloture()) {
       return EtatDAtelier.CLOTURE;
     }
 
-    if (activiteEnCours) {
+    if (!activitesEnCours(evaluation).isEmpty()) {
       return EtatDAtelier.EN_COURS;
     }
 

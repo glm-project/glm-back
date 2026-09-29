@@ -177,8 +177,11 @@ public final class SuivisDAtelierService {
     return repository.get(id).orElseThrow(() -> new SuiviDAtelierIntrouvableException(id));
   }
 
-  public Page<SuiviDAtelier> list(Optional<Periode> periode, Set<EtatDAtelier> etats, Pageable pageable) {
-    return repository.list(new SuiviDAtelierCriteria(periode, etats), pageable);
+  /**
+   * Les suivis dont l'etat, a l'instant d'evaluation fourni, est l'un de ceux demandes.
+   */
+  public Page<SuiviDAtelier> list(Optional<Periode> periode, Set<EtatDAtelier> etats, Instant evaluation, Pageable pageable) {
+    return repository.list(new SuiviDAtelierCriteria(periode, etats, evaluation), pageable);
   }
 
   private EvenementDAtelier regularisation(RegularisationAEnregistrer commande, EvenementDAtelierId evenement) {

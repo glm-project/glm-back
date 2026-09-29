@@ -69,9 +69,9 @@ activités encore ouvertes ; `SuiviDuPupitre.etat()` en déduit `EN_ATTENTE`, `E
   produit la réponse, pas quand le référentiel a changé pour la dernière fois. Dater le dernier changement
   supposerait d'horodater les modifications d'`operateur`, `poste_de_travail` et `operateur_poste`, qui ne portent
   aucune colonne de modification.
-- **Le journal reste la source de vérité.** L'état et les activités **d'un élément** se déduisent du repli. La
-  colonne de projection `suivi_d_atelier.etat` n'est même pas mappée : c'est `cloture_date_de_survenue` qui écarte
-  les éléments clôturés, parce que la clôture est un fait et non une projection.
+- **Le journal reste la source de vérité.** L'état et les activités **d'un élément** se déduisent du repli. Aucune
+  projection de l'atelier n'est lue : c'est `cloture_date_de_survenue` qui écarte les éléments clôturés, parce que la
+  clôture est un fait et non une projection.
 - **L'état de présence, lui, se lit sur la projection `journee_de_travail.etat`**, et c'est la seule exception. Ce
   qu'on demande ici est l'état courant de **tous** les opérateurs à la fois : le replier supposerait de rapporter
   tous les journaux de présence ouverts à chaque synchronisation, pour n'en garder que la dernière valeur. La

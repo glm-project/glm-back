@@ -1,11 +1,11 @@
 package com.glm.glmback.atelier.infrastructure.secondary;
 
+import com.glm.glmback.atelier.domain.Activite;
 import com.glm.glmback.atelier.domain.Auteur;
 import com.glm.glmback.atelier.domain.Cloture;
 import com.glm.glmback.atelier.domain.ElementEngage;
 import com.glm.glmback.atelier.domain.ElementEngageId;
 import com.glm.glmback.atelier.domain.Engagement;
-import com.glm.glmback.atelier.domain.EtatDAtelier;
 import com.glm.glmback.atelier.domain.EvenementDAtelier;
 import com.glm.glmback.atelier.domain.Horodatage;
 import com.glm.glmback.atelier.domain.JournalDAtelier;
@@ -33,13 +33,14 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * La ligne d'un suivi d'atelier, et son journal.
+ * La ligne d'un suivi d'atelier, son journal, et la projection de ses activites.
  *
  * <p>
- * {@code etat} est une projection : elle s'ecrit depuis le domaine a chaque enregistrement et n'est jamais relue par
- * {@link #toDomain()}, qui rejoue toujours le journal. Le journal reste donc la seule source de verite, et cette
- * colonne n'est qu'un index qui rend le filtre de l'ecran d'atelier exprimable en SQL. Elle ne depend que du journal,
- * jamais de l'instant courant : elle est donc stable entre deux ecritures.
+ * Les activites sont une projection : elles s'ecrivent depuis le domaine a chaque enregistrement et ne sont jamais
+ * relues par {@link #toDomain()}, qui rejoue toujours le journal. Le journal reste donc la seule source de verite, et
+ * cette table n'est qu'un index qui rend le filtre de l'ecran d'atelier exprimable en SQL. Elle ne depend que du
+ * journal, jamais de l'instant courant : elle est donc stable entre deux ecritures, et c'est la lecture qui juge
+ * l'echeance.
  * </p>
  */
 @Entity
@@ -68,13 +69,12 @@ class SuiviDAtelierEntity {
   @Column(name = "cloture_date_d_enregistrement")
   private Instant clotureDateDEnregistrement;
 
-  @Enumerated(EnumType.STRING)
-  @Column(length = 20)
-  private EtatDAtelier etat;
-
   @OneToMany(mappedBy = "suivi", cascade = CascadeType.ALL)
   @OrderBy("dateDeSurvenue, id")
   private List<EvenementDAtelierEntity> journal = new ArrayList<>();
+
+  @OneToMany(mappedBy = "suivi", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<ActiviteDAtelierEntity> activites = new ArrayList<>();
 
   protected SuiviDAtelierEntity() {
     // Constructeur requis par JPA.
@@ -137,7 +137,6 @@ class SuiviDAtelierEntity {
    */
   void reconcilie(SuiviDAtelier suivi) {
     reporteLaCloture(suivi.cloture());
-    etat = suivi.etatSansEcheance();
 
     Map<UUID, EvenementDAtelierEntity> connus = journal
       .stream()
@@ -146,6 +145,7 @@ class SuiviDAtelierEntity {
       .journal()
       .evenements()
       .forEach(evenement -> rapproche(connus, evenement));
+    projette(suivi.activites());
   }
 
   SuiviDAtelier toDomain() {
@@ -156,6 +156,31 @@ class SuiviDAtelierEntity {
       .journal(new JournalDAtelier(journal.stream().map(EvenementDAtelierEntity::toDomain).toList()));
 
     return cloture().map(suivi::cloture).orElse(suivi);
+  }
+
+  /**
+   * Reecrit la projection des activites, rapprochee elle aussi par identifiant : une activite que l'interpretation ne
+   * donne plus disparait, une activite connue recoit ses valeurs courantes, une nouvelle est inseree. Supprimer puis
+   * reinserer la meme identite dans un seul flush violerait la cle primaire, Hibernate ordonnant les insertions avant
+   * les suppressions.
+   */
+  private void projette(List<Activite> interpretees) {
+    Map<UUID, Activite> parIdentite = interpretees
+      .stream()
+      .collect(Collectors.toMap(activite -> activite.id().uuid(), Function.identity()));
+    activites.removeIf(projetee -> !parIdentite.containsKey(projetee.id()));
+    Map<UUID, ActiviteDAtelierEntity> projetees = activites
+      .stream()
+      .collect(Collectors.toMap(ActiviteDAtelierEntity::id, Function.identity()));
+
+    interpretees.forEach(activite -> {
+      ActiviteDAtelierEntity projetee = projetees.get(activite.id().uuid());
+      if (projetee == null) {
+        activites.add(ActiviteDAtelierEntity.from(this, activite));
+      } else {
+        projetee.reporte(activite);
+      }
+    });
   }
 
   private void rapproche(Map<UUID, EvenementDAtelierEntity> connus, EvenementDAtelier evenement) {

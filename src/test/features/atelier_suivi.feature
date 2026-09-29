@@ -580,6 +580,28 @@ Feature: Suivi des elements engages en atelier
     Then la reponse a le statut http 200
     And la liste des elements engages contient au moins 1 elements
 
+  Scenario: Un element dont l'activite atteint son echeance n'est plus en cours au tableau d'atelier
+    # Le filtre juge l'etat a l'instant de la lecture : sans aucune ecriture, l'element passe d'en cours a interrompu
+    # quand son activite atteint son echeance, 13 h apres son debut.
+    Given il est "2026-04-06T07:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 2023"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 2023                 |
+    And j'ai engage l'element "OF 2023" en atelier
+    And il est "2026-04-06T08:00:00Z"
+    And j'ai pointe sur "OF 2023"
+      | type      | DEBUT       |
+      | operateur | dupont      |
+      | poste     | fraiseuse-1 |
+    Given il est "2026-04-06T20:59:00Z"
+    When je liste les elements engages dans l'etat "EN_COURS" entre "2026-04-06T00:00:00Z" et "2026-04-06T23:59:59Z"
+    Then la liste des elements engages contient "OF 2023"
+    Given il est "2026-04-06T21:00:00Z"
+    When je liste les elements engages dans l'etat "EN_COURS" entre "2026-04-06T00:00:00Z" et "2026-04-06T23:59:59Z"
+    Then la liste des elements engages ne contient pas "OF 2023"
+    When je liste les elements engages dans l'etat "INTERROMPU" entre "2026-04-06T00:00:00Z" et "2026-04-06T23:59:59Z"
+    Then la liste des elements engages contient "OF 2023"
+
   Scenario: Un operateur peut pointer mais pas engager
     Given l'entreprise a cree l'element de fabrication "OF 2011"
       | type      | ORDRE_DE_FABRICATION |

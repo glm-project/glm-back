@@ -664,7 +664,9 @@ class SuivisDAtelierServiceTest {
   void shouldListerLesSuivisActifsSansPeriode() {
     SuiviDAtelier engage = engage();
 
-    assertThat(atelier.list(Optional.empty(), Set.of(EtatDAtelier.EN_ATTENTE), firstPageOfTen()).content()).containsExactly(engage);
+    assertThat(
+      atelier.list(Optional.empty(), Set.of(EtatDAtelier.EN_ATTENTE), LE_10_MAI_2026_A_7H, firstPageOfTen()).content()
+    ).containsExactly(engage);
   }
 
   private SuiviDAtelier engage() {

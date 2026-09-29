@@ -174,7 +174,7 @@ public class SuivisDAtelierApplicationService {
   @Transactional(readOnly = true)
   public Page<LectureDuSuivi> list(Optional<Periode> periode, Set<EtatDAtelier> etats, Pageable pageable) {
     Instant evaluation = clock.now();
-    Page<SuiviDAtelier> suivis = suivisDAtelier.list(periode, etats, pageable);
+    Page<SuiviDAtelier> suivis = suivisDAtelier.list(periode, etats, evaluation, pageable);
 
     return Page.<LectureDuSuivi>builder()
       .content(

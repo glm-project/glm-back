@@ -71,8 +71,8 @@ class PointagesDeLaSyntheseIT {
     UUID id = UUID.randomUUID();
     entityManager
       .createNativeQuery(
-        "insert into suivi_d_atelier (id, element_id, element_nom, element_type, engagement_auteur, engagement_date, etat) "
-          + "values (?, ?, 'OF-IT', 'ORDRE_DE_FABRICATION', 'leroy', ?, 'EN_COURS')"
+        "insert into suivi_d_atelier (id, element_id, element_nom, element_type, engagement_auteur, engagement_date) "
+          + "values (?, ?, 'OF-IT', 'ORDRE_DE_FABRICATION', 'leroy', ?)"
       )
       .setParameter(1, id)
       .setParameter(2, UUID.randomUUID())

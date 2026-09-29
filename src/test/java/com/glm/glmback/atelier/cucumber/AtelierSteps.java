@@ -258,6 +258,11 @@ public class AtelierSteps {
     rest.get(SUIVIS_URI + "?debut=" + debut + "&fin=" + fin);
   }
 
+  @When("je liste les elements engages dans l'etat {string} entre {string} et {string}")
+  public void jeListeLesElementsEngagesDansLEtatEntre(String etat, String debut, String fin) {
+    rest.get(SUIVIS_URI + "?etats=" + etat + "&debut=" + debut + "&fin=" + fin);
+  }
+
   @When("je liste les elements engages depuis {string} sans borne de fin")
   public void jeListeLesElementsEngagesDepuis(String debut) {
     rest.get(SUIVIS_URI + "?debut=" + debut);
@@ -418,6 +423,16 @@ public class AtelierSteps {
   @Then("la liste des elements engages contient {int} elements")
   public void laListeDesElementsEngagesContient(int count) {
     assertThatLastResponse().hasElement("$.content").withElementsCount(count);
+  }
+
+  @Then("la liste des elements engages contient {string}")
+  public void laListeDesElementsEngagesContientLElement(String alias) {
+    assertThat(identifiantsDeLaListe()).contains(suivis.get(alias));
+  }
+
+  @Then("la liste des elements engages ne contient pas {string}")
+  public void laListeDesElementsEngagesNeContientPasLElement(String alias) {
+    assertThat(identifiantsDeLaListe()).doesNotContain(suivis.get(alias));
   }
 
   @Then("la liste des elements engages contient au moins {int} elements")
@@ -661,6 +676,11 @@ public class AtelierSteps {
   @Then("la liste des journees contient {int} journees")
   public void laListeDesJourneesContient(int count) {
     assertThatLastResponse().hasElement("$.content").withElementsCount(count);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static List<String> identifiantsDeLaListe() {
+    return (List<String>) CucumberRestTestContext.getElement("$.content[*].id");
   }
 
   @SuppressWarnings("unchecked")

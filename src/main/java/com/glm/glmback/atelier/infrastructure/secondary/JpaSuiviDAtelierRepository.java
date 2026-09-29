@@ -1,6 +1,7 @@
 package com.glm.glmback.atelier.infrastructure.secondary;
 
 import com.glm.glmback.atelier.domain.ElementEngageId;
+import com.glm.glmback.atelier.domain.EtatDAtelier;
 import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.Periode;
 import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
@@ -12,11 +13,16 @@ import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -89,8 +95,9 @@ class JpaSuiviDAtelierRepository implements SuiviDAtelierRepository {
    * Traduit en SQL les regles que {@link SuiviDAtelierCriteria#matches} porte pour le domaine.
    *
    * <p>
-   * L'etat n'etant pas stocke mais projete, c'est la seule facon de filtrer sans ramener toute l'entreprise. Les deux
-   * expressions de la meme regle sont confrontees par un test de parite plutot que laissees a se croire d'accord.
+   * L'etat n'etant pas stocke, il se juge sur la projection des activites, a l'instant d'evaluation des criteres :
+   * c'est la seule facon de filtrer sans ramener toute l'entreprise. Les deux expressions de la meme regle sont
+   * confrontees par un test de parite plutot que laissees a se croire d'accord.
    * </p>
    */
   private static Specification<SuiviDAtelierEntity> correspondA(SuiviDAtelierCriteria criteria) {
@@ -101,10 +108,61 @@ class JpaSuiviDAtelierRepository implements SuiviDAtelierRepository {
         .ifPresent(periode -> predicats.add(constructeur.between(racine.get("engagementDate"), periode.debut(), periode.fin())));
 
       if (!criteria.etats().isEmpty()) {
-        predicats.add(racine.get("etat").in(criteria.etats()));
+        EtatALaLecture etat = new EtatALaLecture(racine, requete, constructeur, criteria.evaluation());
+        predicats.add(constructeur.or(criteria.etats().stream().map(etat::est).toArray(Predicate[]::new)));
       }
 
       return constructeur.and(predicats.toArray(Predicate[]::new));
     };
+  }
+
+  /**
+   * L'etat d'un suivi, exprime en SQL a l'instant d'evaluation : cloture, sinon en cours s'il porte une activite sans
+   * fin reelle dont l'echeance n'est pas atteinte, sinon interrompu s'il porte un evenement actif, sinon en attente.
+   */
+  private record EtatALaLecture(
+    Root<SuiviDAtelierEntity> suivi,
+    CriteriaQuery<?> requete,
+    CriteriaBuilder constructeur,
+    Instant evaluation
+  ) {
+    Predicate est(EtatDAtelier etat) {
+      return switch (etat) {
+        case CLOTURE -> cloture();
+        case EN_COURS -> constructeur.and(constructeur.not(cloture()), constructeur.exists(activiteEnCours()));
+        case INTERROMPU -> constructeur.and(
+          constructeur.not(cloture()),
+          constructeur.exists(evenementActif()),
+          constructeur.not(constructeur.exists(activiteEnCours()))
+        );
+        case EN_ATTENTE -> constructeur.and(constructeur.not(cloture()), constructeur.not(constructeur.exists(evenementActif())));
+      };
+    }
+
+    private Predicate cloture() {
+      return constructeur.isNotNull(suivi.get("clotureDateDeSurvenue"));
+    }
+
+    private Subquery<UUID> activiteEnCours() {
+      Subquery<UUID> sousRequete = requete.subquery(UUID.class);
+      Root<ActiviteDAtelierEntity> activite = sousRequete.from(ActiviteDAtelierEntity.class);
+
+      return sousRequete
+        .select(activite.get("id"))
+        .where(
+          constructeur.equal(activite.get("suivi"), suivi),
+          constructeur.isNull(activite.get("fin")),
+          constructeur.greaterThan(activite.get("echeance"), evaluation)
+        );
+    }
+
+    private Subquery<UUID> evenementActif() {
+      Subquery<UUID> sousRequete = requete.subquery(UUID.class);
+      Root<EvenementDAtelierEntity> evenement = sousRequete.from(EvenementDAtelierEntity.class);
+
+      return sousRequete
+        .select(evenement.get("id"))
+        .where(constructeur.equal(evenement.get("suivi"), suivi), constructeur.isNull(evenement.get("annulationDate")));
+    }
   }
 }

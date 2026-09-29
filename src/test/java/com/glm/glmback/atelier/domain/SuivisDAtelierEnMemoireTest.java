@@ -52,7 +52,7 @@ class SuivisDAtelierEnMemoireTest {
     SuiviDAtelier suivi = suivis.create(suiviDAtelierEngage());
 
     assertThat(
-      suivis.list(new SuiviDAtelierCriteria(Optional.of(journeeDu10Mai2026()), Set.of()), firstPageOfTen()).content()
+      suivis.list(new SuiviDAtelierCriteria(Optional.of(journeeDu10Mai2026()), Set.of(), LE_10_MAI_2026_A_17H), firstPageOfTen()).content()
     ).containsExactly(suivi);
   }
 }

@@ -154,7 +154,8 @@ front — le tenir à jour avec le contrat.
 
 - `JpaSuiviDAtelierRepository` et `JpaJourneeDeTravailRepository` écrivent chacun leur agrégat sur deux tables — la
   ligne de l'agrégat et son journal —, l'agrégat étant reconstruit en entier par le domaine mais **rapproché par
-  identifiant** côté persistance : un pointage coûte l'insertion d'une ligne, jamais la réécriture du journal ;
+  identifiant** côté persistance : un pointage coûte l'insertion d'une ligne, jamais la réécriture du journal. Le
+  suivi y ajoute la projection de ses activités, `activite_d_atelier`, rapprochée de la même façon ;
 - `ElementsDeFabricationEngageables` lit la table `element_de_fabrication` par une entité en lecture seule propre à
   l'atelier : aucun import de `elementdefabrication`, l'invariant tient ;
 - `OperateursDuReferentiel`, `PostesDeTravailDuReferentiel` et `HabilitationsDuReferentiel` lisent de la même façon
@@ -165,15 +166,17 @@ front — le tenir à jour avec le contrat.
 
 ### Les colonnes de projection ne contredisent pas « le journal est la source de vérité »
 
-`suivi_d_atelier.etat`, `journee_de_travail.etat`, `.debut` et `.fin` sont **dérivées du journal, écrites depuis le
-domaine à chaque enregistrement, et jamais relues** : `toDomain()` rejoue toujours le journal et ignore ces colonnes.
-Ce sont des index, pas un état stocké — sans eux, filtrer l'écran d'atelier sur `etats` ou retrouver la journée
-contenant un instant obligerait à ramener toute l'entreprise en mémoire à chaque lecture de temps effectif. Elles ne
-dépendent que du journal, jamais de l'instant courant, donc restent justes entre deux écritures.
+La table `activite_d_atelier` et les colonnes `journee_de_travail.etat`, `.debut` et `.fin` sont **dérivées du
+journal, écrites depuis le domaine à chaque enregistrement, et jamais relues** : `toDomain()` rejoue toujours le journal
+et les ignore. Ce sont des index, pas un état stocké — sans eux, filtrer l'écran d'atelier sur `etats` ou retrouver la
+journée contenant un instant obligerait à ramener toute l'entreprise en mémoire à chaque lecture de temps effectif.
+Elles ne dépendent que du journal, jamais de l'instant courant, donc restent justes entre deux écritures.
 
-`suivi_d_atelier.etat` ne juge pas encore l'échéance : il est écrit par `SuiviDAtelier.etatSansEcheance()`, qui tient
-pour en cours une activité échue sans fin réelle. Le filtre `etats` du tableau d'atelier peut donc retenir en `EN_COURS`
-un suivi que sa lecture dit `INTERROMPU`.
+`activite_d_atelier` porte, par activité de `SuiviDAtelier.activites()`, son identité, son ouvrant actif, sa clé, sa
+nature, sa catégorie, son début, son échéance et sa fin réelle, rapprochés par identité à chaque écriture. Jamais de
+fin automatique ni d'anomalie, qui dépendent de l'instant : le filtre `etats` juge l'état à l'instant d'évaluation de
+`SuiviDAtelierCriteria`, une activité sans fin réelle étant en cours tant que son échéance n'est pas atteinte. C'est
+aussi la projection que les autres contextes liront, plutôt que de réinterpréter le journal.
 
 Leur contrepartie : `SuiviDAtelierCriteria.matches` et `JourneeDeTravailCriteria.matches` ne sont plus appelées par la
 production, qui traduit les mêmes règles en SQL. C'est `PariteDesRepositoriesDAtelierIT` qui rétablit par l'exécution

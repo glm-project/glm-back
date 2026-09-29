@@ -35,7 +35,9 @@ import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurityContexts;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.pagination.domain.Page;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -309,7 +311,7 @@ class JpaSuiviDAtelierRepositoryIT {
     inTransaction(() -> suivis.create(ancien));
     inTransaction(() -> suivis.create(recent));
 
-    Page<SuiviDAtelier> page = inTransaction(() -> suivis.list(criteres(new Periode(lundi, mardi), Set.of()), firstPageOfTen()));
+    Page<SuiviDAtelier> page = inTransaction(() -> suivis.list(criteres(new Periode(lundi, mardi), Set.of(), mardi), firstPageOfTen()));
 
     assertThat(page.content()).containsExactly(recent, ancien);
     assertThat(page.totalElementsCount()).isEqualTo(2);
@@ -322,7 +324,7 @@ class JpaSuiviDAtelierRepositoryIT {
     inTransaction(() -> suivis.create(suiviEngageA(engagement)));
 
     Page<SuiviDAtelier> page = inTransaction(() ->
-      suivis.list(criteres(new Periode(engagement.plusSeconds(1), engagement.plusSeconds(2)), Set.of()), firstPageOfTen())
+      suivis.list(criteres(new Periode(engagement.plusSeconds(1), engagement.plusSeconds(2)), Set.of(), engagement), firstPageOfTen())
     );
 
     assertThat(page.content()).isEmpty();
@@ -339,11 +341,61 @@ class JpaSuiviDAtelierRepositoryIT {
     inTransaction(() -> suivis.create(enCours));
 
     Periode semaine = new Periode(lundi, mardi);
-    Page<SuiviDAtelier> ouverts = inTransaction(() -> suivis.list(criteres(semaine, Set.of(EtatDAtelier.EN_COURS)), firstPageOfTen()));
-    Page<SuiviDAtelier> tous = inTransaction(() -> suivis.list(criteres(semaine, Set.of()), firstPageOfTen()));
+    Instant lecture = mardi.plusSeconds(7200);
+    Page<SuiviDAtelier> ouverts = inTransaction(() ->
+      suivis.list(criteres(semaine, Set.of(EtatDAtelier.EN_COURS), lecture), firstPageOfTen())
+    );
+    Page<SuiviDAtelier> tous = inTransaction(() -> suivis.list(criteres(semaine, Set.of(), lecture), firstPageOfTen()));
 
     assertThat(ouverts.content()).containsExactly(enCours);
     assertThat(tous.content()).containsExactly(enCours, enAttente);
+  }
+
+  /**
+   * Un suivi dont l'activite a atteint son echeance n'est plus en cours : l'etat se juge a l'instant de la lecture, sur
+   * la projection de ses activites, sans aucune ecriture depuis.
+   */
+  @Test
+  @WithTenant(IMPECCMOLD)
+  void shouldFiltrerLEtatALInstantDeLaLecture() {
+    Instant engagement = Instant.parse("2040-03-08T07:00:00Z");
+    Instant echeance = engagement.plusSeconds(3600).plus(Duration.ofHours(13));
+    SuiviDAtelier enCours = suiviEngageA(engagement).enregistre(debutSurFraiseuse1A(engagement.plusSeconds(3600)));
+    inTransaction(() -> suivis.create(enCours));
+    Periode jour = new Periode(engagement, engagement);
+
+    assertThat(liste(jour, EtatDAtelier.EN_COURS, echeance.minusSeconds(1))).containsExactly(enCours);
+    assertThat(liste(jour, EtatDAtelier.EN_COURS, echeance)).isEmpty();
+    assertThat(liste(jour, EtatDAtelier.INTERROMPU, echeance)).containsExactly(enCours);
+  }
+
+  /**
+   * La projection suit chaque ecriture : un debut corrige y deplace l'echeance de la meme activite, une fin la
+   * termine, et l'annulation de son ouvrant la retire.
+   */
+  @Test
+  @WithTenant(IMPECCMOLD)
+  void shouldReecrireLaProjectionDesActivitesAChaqueEcriture() {
+    Instant engagement = Instant.parse("2040-03-09T07:00:00Z");
+    Instant a22h = engagement.plus(Duration.ofHours(15));
+    EvenementDAtelier debut = debutSurFraiseuse1A(engagement.plusSeconds(3600));
+    SuiviDAtelier engage = suiviEngageA(engagement).enregistre(debut);
+    inTransaction(() -> suivis.create(engage));
+    Periode jour = new Periode(engagement, engagement);
+    assertThat(liste(jour, EtatDAtelier.EN_COURS, a22h)).isEmpty();
+
+    SuiviDAtelier corrige = engage.corrige(debut.id(), annulation(a22h), debutSurFraiseuse1A(engagement.plus(Duration.ofHours(5))));
+    inTransaction(() -> suivis.update(corrige));
+    assertThat(liste(jour, EtatDAtelier.EN_COURS, a22h)).containsExactly(corrige);
+
+    SuiviDAtelier termine = corrige.enregistre(finDe(debut).a(engagement.plus(Duration.ofHours(6))));
+    inTransaction(() -> suivis.update(termine));
+    assertThat(liste(jour, EtatDAtelier.INTERROMPU, a22h)).containsExactly(termine);
+
+    EvenementDAtelier relance = debutSurFraiseuse2A(engagement.plus(Duration.ofHours(7)));
+    SuiviDAtelier sansRelance = termine.enregistre(relance).annule(relance.id(), annulation(a22h));
+    inTransaction(() -> suivis.update(sansRelance));
+    assertThat(liste(jour, EtatDAtelier.INTERROMPU, a22h)).containsExactly(sansRelance);
   }
 
   @Test
@@ -352,7 +404,9 @@ class JpaSuiviDAtelierRepositoryIT {
     SuiviDAtelier engage = suiviEngageA(Instant.parse("2040-03-07T07:00:00Z"));
     inTransaction(() -> suivis.create(engage));
 
-    Page<SuiviDAtelier> page = inTransaction(() -> suivis.list(new SuiviDAtelierCriteria(Optional.empty(), Set.of()), firstPageOfTen()));
+    Page<SuiviDAtelier> page = inTransaction(() ->
+      suivis.list(new SuiviDAtelierCriteria(Optional.empty(), Set.of(), Instant.parse("2040-03-07T08:00:00Z")), firstPageOfTen())
+    );
 
     assertThat(page.totalElementsCount()).isPositive();
   }
@@ -382,7 +436,7 @@ class JpaSuiviDAtelierRepositoryIT {
     TenantSecurityContexts.authenticateOn(KATILYS);
     Optional<SuiviDAtelier> chezKatilys = inTransaction(() -> suivis.get(engage.id()));
     Page<SuiviDAtelier> pageChezKatilys = inTransaction(() ->
-      suivis.list(criteres(new Periode(engagement, engagement), Set.of()), firstPageOfTen())
+      suivis.list(criteres(new Periode(engagement, engagement), Set.of(), engagement), firstPageOfTen())
     );
 
     assertThat(chezKatilys).isEmpty();
@@ -439,8 +493,16 @@ class JpaSuiviDAtelierRepositoryIT {
       .horodatage(Horodatage.saisiA(date));
   }
 
-  private static SuiviDAtelierCriteria criteres(Periode periode, Set<EtatDAtelier> etats) {
-    return new SuiviDAtelierCriteria(Optional.of(periode), etats);
+  private List<SuiviDAtelier> liste(Periode periode, EtatDAtelier etat, Instant evaluation) {
+    return inTransaction(() -> suivis.list(criteres(periode, Set.of(etat), evaluation), firstPageOfTen())).content();
+  }
+
+  private static Annulation annulation(Instant date) {
+    return new Annulation(AUTEUR_LEROY, date, MOTIF_ERREUR_DE_SAISIE);
+  }
+
+  private static SuiviDAtelierCriteria criteres(Periode periode, Set<EtatDAtelier> etats, Instant evaluation) {
+    return new SuiviDAtelierCriteria(Optional.of(periode), etats, evaluation);
   }
 
   private static SuiviDAtelier suiviEngageA(Instant date) {

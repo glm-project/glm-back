@@ -49,14 +49,29 @@ class PariteDesRepositoriesDAtelierIT {
   @Autowired
   private TransactionTemplate transactions;
 
+  /**
+   * L'etat se juge a l'instant d'evaluation des criteres : juste avant l'echeance de l'activite de mardi, puis a
+   * l'echeance pile, ou elle cesse d'etre en cours sans aucune ecriture. Le jeu couvre chaque etat, y compris un suivi
+   * en attente dont le seul pointage est annule et une activite terminee au-dela de son echeance par une
+   * regularisation.
+   */
   @Test
   @WithTenant("impeccmold")
   void shouldRendreLesMemesSuivisQueLeDoubleEnMemoire() {
     Instant lundi = Instant.parse("2042-01-05T07:00:00Z");
     Instant mardi = Instant.parse("2042-01-06T07:00:00Z");
     Instant mercredi = Instant.parse("2042-01-07T07:00:00Z");
+    Instant echeanceDeMardi = mardi.plusSeconds(3600).plus(Duration.ofHours(13));
+    EvenementDAtelier annule = debutA(lundi.plusSeconds(7200));
+    EvenementDAtelier termine = debutA(lundi.plusSeconds(3600 * 3));
+    EvenementDAtelier prolonge = debutA(lundi.plusSeconds(3600 * 4));
     List<SuiviDAtelier> jeu = List.of(
       suiviEngageA(lundi),
+      suiviEngageA(lundi.plusSeconds(3600))
+        .enregistre(annule)
+        .annule(annule.id(), new Annulation(AUTEUR_LEROY, mercredi, MOTIF_ERREUR_DE_SAISIE)),
+      suiviEngageA(lundi.plusSeconds(3600 * 2)).enregistre(termine).enregistre(finDe(termine).a(lundi.plusSeconds(3600 * 5))),
+      suiviEngageA(lundi.plusSeconds(3600 * 3)).enregistre(prolonge).enregistre(finRegulariseeA(prolonge, mercredi)),
       suiviEngageA(mardi).enregistre(debutA(mardi.plusSeconds(3600))),
       suiviEngageA(mercredi).cloture(new Cloture(AUTEUR_LEROY, Horodatage.saisiA(mercredi.plusSeconds(36000))))
     );
@@ -68,18 +83,35 @@ class PariteDesRepositoriesDAtelierIT {
     });
 
     Periode semaine = new Periode(lundi, mercredi);
-    for (Set<EtatDAtelier> etats : List.of(
-      Set.<EtatDAtelier>of(),
-      Set.of(EtatDAtelier.EN_COURS),
-      Set.of(EtatDAtelier.CLOTURE, EtatDAtelier.EN_ATTENTE)
-    )) {
-      SuiviDAtelierCriteria criteres = new SuiviDAtelierCriteria(Optional.of(semaine), etats);
-      Page<SuiviDAtelier> attendue = enMemoire.list(criteres, PREMIERE_PAGE);
-      Page<SuiviDAtelier> obtenue = inTransaction(() -> suivisPersistes.list(criteres, PREMIERE_PAGE));
+    for (Instant evaluation : List.of(echeanceDeMardi.minusSeconds(1), echeanceDeMardi)) {
+      for (Set<EtatDAtelier> etats : List.of(
+        Set.<EtatDAtelier>of(),
+        Set.of(EtatDAtelier.EN_COURS),
+        Set.of(EtatDAtelier.INTERROMPU),
+        Set.of(EtatDAtelier.CLOTURE, EtatDAtelier.EN_ATTENTE),
+        Set.of(EtatDAtelier.EN_COURS, EtatDAtelier.INTERROMPU)
+      )) {
+        SuiviDAtelierCriteria criteres = new SuiviDAtelierCriteria(Optional.of(semaine), etats, evaluation);
+        Page<SuiviDAtelier> attendue = enMemoire.list(criteres, PREMIERE_PAGE);
+        Page<SuiviDAtelier> obtenue = inTransaction(() -> suivisPersistes.list(criteres, PREMIERE_PAGE));
 
-      assertThat(obtenue.content()).describedAs("etats %s", etats).containsExactlyElementsOf(attendue.content());
-      assertThat(obtenue.totalElementsCount()).isEqualTo(attendue.totalElementsCount());
+        assertThat(obtenue.content()).describedAs("etats %s a %s", etats, evaluation).containsExactlyElementsOf(attendue.content());
+        assertThat(obtenue.totalElementsCount()).isEqualTo(attendue.totalElementsCount());
+      }
     }
+    assertThat(
+      enMemoire
+        .list(new SuiviDAtelierCriteria(Optional.of(semaine), Set.of(EtatDAtelier.EN_COURS), echeanceDeMardi), PREMIERE_PAGE)
+        .content()
+    ).isEmpty();
+    assertThat(
+      enMemoire
+        .list(
+          new SuiviDAtelierCriteria(Optional.of(semaine), Set.of(EtatDAtelier.EN_COURS), echeanceDeMardi.minusSeconds(1)),
+          PREMIERE_PAGE
+        )
+        .content()
+    ).hasSize(1);
   }
 
   @Test
@@ -130,6 +162,23 @@ class PariteDesRepositoriesDAtelierIT {
       .element(new ElementEngage(new ElementEngageId(UUID.randomUUID()), NOM_OF_2026_000042, TypeDElementEngage.ORDRE_DE_FABRICATION))
       .engagement(new Engagement(AUTEUR_LEROY, date))
       .journal(JournalDAtelier.vide());
+  }
+
+  private static EvenementDAtelier finRegulariseeA(EvenementDAtelier ouvrant, Instant date) {
+    return EvenementDAtelier.builder()
+      .id(EvenementDAtelierId.newId())
+      .type(TypeDEvenementDAtelier.FIN)
+      .intention(IntentionDePointage.FIN)
+      .activite(Optional.empty())
+      .activiteVisee(ouvrant.activite())
+      .operateur(OPERATEUR_ID_DUPONT)
+      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
+      .nature(Optional.of(NATURE_FRAISAGE))
+      .coutHoraire(Optional.of(COUT_HORAIRE_FRAISEUSE_1))
+      .tauxHoraire(Optional.of(TAUX_HORAIRE_DUPONT))
+      .auteur(AUTEUR_LEROY)
+      .origine(OrigineDuPointage.REGULARISATION)
+      .horodatage(Horodatage.saisiA(date));
   }
 
   private static EvenementDAtelier debutA(Instant date) {
