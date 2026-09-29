@@ -55,9 +55,8 @@ class SuiviDAtelierTest {
 
   @Test
   void shouldRefermerLIntervallePrecedentSurUneSaisieOubliee() {
-    SuiviDAtelier suivi = suiviDAtelierEngage()
-      .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))
-      .enregistre(finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_17H));
+    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(debut).enregistre(finDe(debut).a(LE_10_MAI_2026_A_17H));
 
     SuiviDAtelier regularise = suivi.enregistre(nonConformiteSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H));
 
@@ -75,10 +74,11 @@ class SuiviDAtelierTest {
    */
   @Test
   void shouldMenerDeuxPostesDeFrontSurLeMemeElement() {
+    EvenementDAtelier debutSurFraiseuse2 = debutSurFraiseuse2ParDupontA(LE_10_MAI_2026_A_9H);
     SuiviDAtelier suivi = suiviDAtelierEngage()
       .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))
-      .enregistre(debutSurFraiseuse2ParDupontA(LE_10_MAI_2026_A_9H))
-      .enregistre(finSurFraiseuse2ParDupontA(LE_10_MAI_2026_A_12H));
+      .enregistre(debutSurFraiseuse2)
+      .enregistre(finDe(debutSurFraiseuse2).a(LE_10_MAI_2026_A_12H));
 
     assertThat(suivi.activitesEnCours()).extracting(ActiviteEnCours::poste).containsExactly(Optional.of(POSTE_ID_FRAISEUSE_1));
     assertThat(suivi.activites()).hasSize(2);
@@ -98,7 +98,7 @@ class SuiviDAtelierTest {
   @Test
   void shouldCorrigerUneSaisieFausseEnUnSeulActe() {
     EvenementDAtelier debutFautif = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(debutFautif).enregistre(finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H));
+    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(debutFautif).enregistre(finDe(debutFautif).a(LE_10_MAI_2026_A_12H));
 
     SuiviDAtelier corrige = suivi.corrige(
       debutFautif.id(),
@@ -117,7 +117,7 @@ class SuiviDAtelierTest {
   @Test
   void shouldRefuserLaMemeCorrectionJoueeEnDeuxTemps() {
     EvenementDAtelier debutFautif = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(debutFautif).enregistre(finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H));
+    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(debutFautif).enregistre(finDe(debutFautif).a(LE_10_MAI_2026_A_12H));
     Annulation annulation = annulationParLeroy();
 
     assertThatThrownBy(() -> suivi.annule(debutFautif.id(), annulation)).isExactlyInstanceOf(TransitionDAtelierInterditeException.class);
@@ -175,9 +175,8 @@ class SuiviDAtelierTest {
 
   @Test
   void shouldBeInterrompuQuandToutesLesActivitesSontCloses() {
-    SuiviDAtelier suivi = suiviDAtelierEngage()
-      .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))
-      .enregistre(finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H));
+    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(debut).enregistre(finDe(debut).a(LE_10_MAI_2026_A_12H));
 
     assertThat(suivi.etat()).isEqualTo(EtatDAtelier.INTERROMPU);
   }
@@ -200,10 +199,11 @@ class SuiviDAtelierTest {
 
   @Test
   void shouldEtreInterrompuQuandUneActiviteRelanceeEstArretee() {
+    EvenementDAtelier relance = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H);
     SuiviDAtelier suivi = suiviDAtelierEngage()
       .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))
-      .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H))
-      .enregistre(finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_17H));
+      .enregistre(relance)
+      .enregistre(finDe(relance).a(LE_10_MAI_2026_A_17H));
 
     assertThat(suivi.etat()).isEqualTo(EtatDAtelier.INTERROMPU);
     assertThat(suivi.activitesEnCours()).isEmpty();

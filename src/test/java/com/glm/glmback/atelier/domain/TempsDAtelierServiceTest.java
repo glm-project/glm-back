@@ -36,11 +36,8 @@ class TempsDAtelierServiceTest {
   @Test
   void shouldScinderLeTravailALaPauseDeMidiPointeeSurLElement() {
     journees.create(journeeDeDupontDe7HA17H());
-    SuiviDAtelierId suivi = enAtelier(
-      avecPauseDeMidi(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))).enregistre(
-        finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_17H)
-      )
-    );
+    EvenementDAtelier reprise = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H);
+    SuiviDAtelierId suivi = enAtelier(avecPauseDeMidiPuis(reprise).enregistre(finDe(reprise).a(LE_10_MAI_2026_A_17H)));
 
     assertThat(temps.tempsEffectif(suivi))
       .extracting(IntervalleDActivite::debut, IntervalleDActivite::fin)
@@ -101,11 +98,8 @@ class TempsDAtelierServiceTest {
    */
   @Test
   void shouldRendreIntactUnIntervalleSansAucunePresenceConnue() {
-    SuiviDAtelierId suivi = enAtelier(
-      suiviDAtelierEngage()
-        .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))
-        .enregistre(finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_17H))
-    );
+    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    SuiviDAtelierId suivi = enAtelier(suiviDAtelierEngage().enregistre(debut).enregistre(finDe(debut).a(LE_10_MAI_2026_A_17H)));
 
     assertThat(temps.tempsEffectif(suivi))
       .singleElement()
@@ -121,11 +115,8 @@ class TempsDAtelierServiceTest {
   @Test
   void shouldEcarterUnTravailEntierementHorsDesFenetresDePresence() {
     journees.create(journeeDeDupontDe7HA17H());
-    SuiviDAtelierId suivi = enAtelier(
-      suiviDAtelierEngage()
-        .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_17H))
-        .enregistre(finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_20H))
-    );
+    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_17H);
+    SuiviDAtelierId suivi = enAtelier(suiviDAtelierEngage().enregistre(debut).enregistre(finDe(debut).a(LE_10_MAI_2026_A_20H)));
 
     assertThat(temps.tempsEffectif(suivi)).isEmpty();
   }
@@ -133,11 +124,12 @@ class TempsDAtelierServiceTest {
   @Test
   void shouldNeRienAjouterAuTempsEffectifSurUnDoubleAppui() {
     journees.create(journeeDeDupontDe7HA17H());
+    EvenementDAtelier secondAppui = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H.plusSeconds(3));
     SuiviDAtelierId suivi = enAtelier(
       suiviDAtelierEngage()
         .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))
-        .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H.plusSeconds(3)))
-        .enregistre(finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H))
+        .enregistre(secondAppui)
+        .enregistre(finDe(secondAppui).a(LE_10_MAI_2026_A_12H))
     );
 
     assertThat(temps.tempsEffectif(suivi))
@@ -156,12 +148,8 @@ class TempsDAtelierServiceTest {
   @Test
   void shouldArreterUnTravailALaFinPresumeeDUneJourneeAbandonnee() {
     journees.create(journeeDeDupontOuverteA7H());
-    SuiviDAtelierId of42 = enAtelier(avecPauseDeMidi(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))));
-    enAtelier(
-      suiviDAtelierEngage()
-        .enregistre(debutSurFraiseuse2ParDupontA(LE_10_MAI_2026_A_9H))
-        .enregistre(finSurFraiseuse2ParDupontA(LE_10_MAI_2026_A_16H))
-    );
+    SuiviDAtelierId of42 = enAtelier(avecPauseDeMidi());
+    enAtelier(of43De9HA16H());
     maintenant.set(LE_11_MAI_2026_A_9H);
 
     assertThat(temps.tempsEffectif(of42))
@@ -181,16 +169,8 @@ class TempsDAtelierServiceTest {
     journees.create(
       JourneeDeTravail.ouverte(JourneeDeTravailId.newId(), OPERATEUR_ID_DUPONT).enregistre(arriveeDeDupontA(LE_11_MAI_2026_A_7H))
     );
-    SuiviDAtelierId of42 = enAtelier(
-      avecPauseDeMidi(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))).enregistre(
-        debutSurFraiseuse1ParDupontA(LE_11_MAI_2026_A_7H.plusSeconds(300))
-      )
-    );
-    enAtelier(
-      suiviDAtelierEngage()
-        .enregistre(debutSurFraiseuse2ParDupontA(LE_10_MAI_2026_A_9H))
-        .enregistre(finSurFraiseuse2ParDupontA(LE_10_MAI_2026_A_16H))
-    );
+    SuiviDAtelierId of42 = enAtelier(avecPauseDeMidi().enregistre(debutSurFraiseuse1ParDupontA(LE_11_MAI_2026_A_7H.plusSeconds(300))));
+    enAtelier(of43De9HA16H());
     maintenant.set(LE_11_MAI_2026_A_9H);
 
     assertThat(temps.tempsEffectif(of42))
@@ -214,7 +194,7 @@ class TempsDAtelierServiceTest {
   @Test
   void shouldIgnorerLesPointagesDUnAutreOperateur() {
     journees.create(journeeDeDupontOuverteA7H());
-    SuiviDAtelierId of42 = enAtelier(avecPauseDeMidi(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))));
+    SuiviDAtelierId of42 = enAtelier(avecPauseDeMidi());
     enAtelier(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParMartinA(LE_10_MAI_2026_A_17H)));
     maintenant.set(LE_11_MAI_2026_A_9H);
 
@@ -226,7 +206,7 @@ class TempsDAtelierServiceTest {
   @Test
   void shouldRemplacerLePresumeParLePointeApresRegularisation() {
     journees.create(journeeDeDupontOuverteA7H().enregistre(departRegulariseParLeroyA(LE_10_MAI_2026_A_17H)));
-    SuiviDAtelierId of42 = enAtelier(avecPauseDeMidi(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))));
+    SuiviDAtelierId of42 = enAtelier(avecPauseDeMidi());
     maintenant.set(LE_11_MAI_2026_A_9H15);
 
     assertThat(temps.tempsEffectif(of42))
@@ -259,11 +239,8 @@ class TempsDAtelierServiceTest {
   void shouldChercherLaFinPresumeeDansLeSeuilCourant() {
     journees.create(journeeDeDupontOuverteA7H());
     SuiviDAtelierId of42 = enAtelier(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)));
-    enAtelier(
-      suiviDAtelierEngage()
-        .enregistre(debutSurFraiseuse2ParDupontA(LE_10_MAI_2026_A_9H))
-        .enregistre(finSurFraiseuse2ParDupontA(LE_10_MAI_2026_A_17H.plusSeconds(3600)))
-    );
+    EvenementDAtelier debutDeLOf43 = debutSurFraiseuse2ParDupontA(LE_10_MAI_2026_A_9H);
+    enAtelier(suiviDAtelierEngage().enregistre(debutDeLOf43).enregistre(finDe(debutDeLOf43).a(LE_10_MAI_2026_A_17H.plusSeconds(3600))));
     maintenant.set(LE_11_MAI_2026_A_9H);
     seuil.set(AMPLITUDE_MAXIMALE_10H);
 
@@ -294,12 +271,8 @@ class TempsDAtelierServiceTest {
   @Test
   void shouldArreterUnTravailALaFinPresumeeDUneJourneeDePlusDe24H() {
     journees.create(journeeDeDupontDu10A7HAu11A9H());
-    SuiviDAtelierId of42 = enAtelier(avecPauseDeMidi(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))));
-    enAtelier(
-      suiviDAtelierEngage()
-        .enregistre(debutSurFraiseuse2ParDupontA(LE_10_MAI_2026_A_9H))
-        .enregistre(finSurFraiseuse2ParDupontA(LE_10_MAI_2026_A_16H))
-    );
+    SuiviDAtelierId of42 = enAtelier(avecPauseDeMidi());
+    enAtelier(of43De9HA16H());
     maintenant.set(LE_11_MAI_2026_A_9H15);
 
     assertThat(temps.tempsEffectif(of42))
@@ -311,12 +284,26 @@ class TempsDAtelierServiceTest {
   }
 
   /**
-   * La pause de midi telle que le pupitre la pointe sur l'activite de Dupont : une fin a 12 h, un debut a 13 h.
+   * L'OF 42 de Dupont sur la fraiseuse 1, avec la pause de midi telle que le pupitre la pointe : un debut a 8 h, sa fin
+   * a 12 h, un debut a 13 h.
    */
-  private static SuiviDAtelier avecPauseDeMidi(SuiviDAtelier suivi) {
-    return suivi
-      .enregistre(finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H))
-      .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H));
+  private static SuiviDAtelier avecPauseDeMidi() {
+    return avecPauseDeMidiPuis(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H));
+  }
+
+  private static SuiviDAtelier avecPauseDeMidiPuis(EvenementDAtelier reprise) {
+    EvenementDAtelier matin = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+
+    return suiviDAtelierEngage().enregistre(matin).enregistre(finDe(matin).a(LE_10_MAI_2026_A_12H)).enregistre(reprise);
+  }
+
+  /**
+   * L'OF 43 de Dupont sur la fraiseuse 2, de 9 h a 16 h.
+   */
+  private static SuiviDAtelier of43De9HA16H() {
+    EvenementDAtelier debut = debutSurFraiseuse2ParDupontA(LE_10_MAI_2026_A_9H);
+
+    return suiviDAtelierEngage().enregistre(debut).enregistre(finDe(debut).a(LE_10_MAI_2026_A_16H));
   }
 
   private SuiviDAtelierId enAtelier(SuiviDAtelier suivi) {

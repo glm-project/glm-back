@@ -73,6 +73,14 @@ public final class AtelierFixture {
 
   private AtelierFixture() {}
 
+  /**
+   * Un geste d'atelier dont tout est connu, sauf l'heure a laquelle il survient.
+   */
+  @FunctionalInterface
+  public interface GesteADater {
+    EvenementDAtelier a(Instant date);
+  }
+
   public static Periode journeeDu10Mai2026() {
     return new Periode(LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_17H);
   }
@@ -113,12 +121,13 @@ public final class AtelierFixture {
   }
 
   public static List<SuiviDAtelier> suivisDAtelierEnAttenteEnCoursInterrompuEtCloture() {
-    SuiviDAtelier enCours = suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H));
+    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    SuiviDAtelier enCours = suiviDAtelierEngage().enregistre(debut);
     return List.of(
       suiviDAtelierEngage(),
       enCours,
       enCours.enregistre(nonConformiteSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H)),
-      enCours.enregistre(finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H)),
+      enCours.enregistre(finDe(debut).a(LE_10_MAI_2026_A_9H)),
       enCours.cloture(clotureParLeroyA(LE_10_MAI_2026_A_9H)),
       suiviDAtelierEngage().enregistre(debutSansPosteParDupontA(LE_10_MAI_2026_A_8H))
     );
@@ -128,19 +137,13 @@ public final class AtelierFixture {
     SuiviDAtelier suivi = suiviDAtelierEngage();
     for (int jour = 0; jour < 24; jour++) {
       Instant debut = LE_10_MAI_2026_A_8H.plusSeconds(jour * 86400L);
+      EvenementDAtelier debutDeDupont = debutSurFraiseuse1ParDupontA(debut);
+      EvenementDAtelier debutDeMartin = debutSurFraiseuse1ParMartinA(debut.plusSeconds(60));
       suivi = suivi
-        .enregistre(debutSurFraiseuse1ParDupontA(debut))
-        .enregistre(debutSurFraiseuse1ParMartinA(debut.plusSeconds(60)))
-        .enregistre(finSurFraiseuse1ParDupontA(debut.plusSeconds(28800)))
-        .enregistre(
-          pointageDAtelier(
-            TypeDEvenementDAtelier.FIN,
-            OPERATEUR_ID_MARTIN,
-            Optional.of(POSTE_ID_FRAISEUSE_1),
-            AUTEUR_MARTIN,
-            Horodatage.saisiA(debut.plusSeconds(28860))
-          )
-        );
+        .enregistre(debutDeDupont)
+        .enregistre(debutDeMartin)
+        .enregistre(finDe(debutDeDupont).a(debut.plusSeconds(28800)))
+        .enregistre(finDe(debutDeMartin).a(debut.plusSeconds(28860)));
     }
     Instant debut = LE_10_MAI_2026_A_8H.plusSeconds(24 * 86400L);
     return suivi
@@ -174,16 +177,8 @@ public final class AtelierFixture {
     return pointageDeDupont(TypeDEvenementDAtelier.NON_CONFORMITE, POSTE_ID_FRAISEUSE_1, date);
   }
 
-  public static EvenementDAtelier finSurFraiseuse1ParDupontA(Instant date) {
-    return pointageDeDupont(TypeDEvenementDAtelier.FIN, POSTE_ID_FRAISEUSE_1, date);
-  }
-
   public static EvenementDAtelier debutSurFraiseuse2ParDupontA(Instant date) {
     return pointageDeDupont(TypeDEvenementDAtelier.DEBUT, POSTE_ID_FRAISEUSE_2, date);
-  }
-
-  public static EvenementDAtelier finSurFraiseuse2ParDupontA(Instant date) {
-    return pointageDeDupont(TypeDEvenementDAtelier.FIN, POSTE_ID_FRAISEUSE_2, date);
   }
 
   public static EvenementDAtelier debutSansPosteParDupontA(Instant date) {
@@ -202,6 +197,14 @@ public final class AtelierFixture {
 
   public static EvenementDAtelier debutSurFraiseuse1RegulariseParLeroyA(Instant date) {
     return regularisationParLeroy(TypeDEvenementDAtelier.DEBUT, date);
+  }
+
+  /**
+   * La fin pointee sur l'activite qu'ouvre ce debut, par celui qui l'a ouverte : il ne reste qu'a la dater.
+   */
+  public static GesteADater finDe(EvenementDAtelier ouvrant) {
+    return date ->
+      pointageDAtelier(TypeDEvenementDAtelier.FIN, ouvrant.operateur(), ouvrant.poste(), ouvrant.auteur(), Horodatage.saisiA(date));
   }
 
   public static EvenementDAtelier finSurFraiseuse1RegulariseeParLeroyA(Instant date) {

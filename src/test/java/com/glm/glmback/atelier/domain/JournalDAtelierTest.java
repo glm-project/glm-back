@@ -44,8 +44,8 @@ class JournalDAtelierTest {
 
   @Test
   void shouldTrierLesEvenementsParDateDeSurvenue() {
-    EvenementDAtelier fin = finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H);
     EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier fin = finDe(debut).a(LE_10_MAI_2026_A_12H);
 
     JournalDAtelier journal = new JournalDAtelier(List.of(fin, debut));
 
@@ -74,7 +74,7 @@ class JournalDAtelierTest {
 
   @Test
   void shouldRefuserUneTransitionInterdite() {
-    List<EvenementDAtelier> finSansDebut = List.of(finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H));
+    List<EvenementDAtelier> finSansDebut = List.of(finDe(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)).a(LE_10_MAI_2026_A_12H));
 
     assertThatThrownBy(() -> new JournalDAtelier(finSansDebut))
       .isExactlyInstanceOf(TransitionDAtelierInterditeException.class)
@@ -120,9 +120,8 @@ class JournalDAtelierTest {
 
   @Test
   void shouldFermerUnIntervalleSurLEvenementSuivantDeLaMemeActivite() {
-    JournalDAtelier journal = new JournalDAtelier(
-      List.of(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H), finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H))
-    );
+    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    JournalDAtelier journal = new JournalDAtelier(List.of(debut, finDe(debut).a(LE_10_MAI_2026_A_12H)));
 
     assertThat(journal.intervalles(Optional.empty()))
       .singleElement()
@@ -151,9 +150,8 @@ class JournalDAtelierTest {
 
   @Test
   void shouldNOuvrirAucunIntervalleSurUneFin() {
-    JournalDAtelier journal = new JournalDAtelier(
-      List.of(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H), finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H))
-    );
+    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    JournalDAtelier journal = new JournalDAtelier(List.of(debut, finDe(debut).a(LE_10_MAI_2026_A_12H)));
 
     assertThat(journal.intervalles(Optional.of(LE_10_MAI_2026_A_17H))).hasSize(1);
   }
@@ -210,7 +208,7 @@ class JournalDAtelierTest {
   @Test
   void shouldRefuserUneAnnulationQuiLaisseraitUneFinOrpheline() {
     EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    JournalDAtelier journal = new JournalDAtelier(List.of(debut, finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H)));
+    JournalDAtelier journal = new JournalDAtelier(List.of(debut, finDe(debut).a(LE_10_MAI_2026_A_12H)));
     Annulation annulation = annulationParLeroy();
 
     assertThatThrownBy(() -> journal.annule(debut.id(), annulation)).isExactlyInstanceOf(TransitionDAtelierInterditeException.class);
@@ -219,7 +217,7 @@ class JournalDAtelierTest {
   @Test
   void shouldCorrigerUnEvenementEnUnSeulActe() {
     EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    JournalDAtelier journal = new JournalDAtelier(List.of(debut, finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H)));
+    JournalDAtelier journal = new JournalDAtelier(List.of(debut, finDe(debut).a(LE_10_MAI_2026_A_12H)));
 
     JournalDAtelier corrige = journal.corrige(
       debut.id(),
@@ -249,9 +247,8 @@ class JournalDAtelierTest {
 
   @Test
   void shouldRefermerLIntervallePrecedentSurUneInsertionRetroactive() {
-    JournalDAtelier journal = new JournalDAtelier(
-      List.of(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H), finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H))
-    );
+    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    JournalDAtelier journal = new JournalDAtelier(List.of(debut, finDe(debut).a(LE_10_MAI_2026_A_13H)));
 
     JournalDAtelier regularise = journal.enregistre(nonConformiteSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H));
 
@@ -300,12 +297,9 @@ class JournalDAtelierTest {
    */
   @Test
   void shouldNeRienAjouterSurUnDoubleAppuiSimultane() {
+    EvenementDAtelier secondAppui = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     JournalDAtelier journal = new JournalDAtelier(
-      List.of(
-        debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H),
-        debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H),
-        finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H)
-      )
+      List.of(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H), secondAppui, finDe(secondAppui).a(LE_10_MAI_2026_A_12H))
     );
 
     List<IntervalleDActivite> intervalles = journal.intervalles(Optional.empty());
@@ -321,12 +315,9 @@ class JournalDAtelierTest {
 
   @Test
   void shouldNeRienAjouterSurUnDoubleAppuiDecale() {
+    EvenementDAtelier secondAppui = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H.plusSeconds(3));
     JournalDAtelier journal = new JournalDAtelier(
-      List.of(
-        debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H),
-        debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H.plusSeconds(3)),
-        finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H)
-      )
+      List.of(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H), secondAppui, finDe(secondAppui).a(LE_10_MAI_2026_A_12H))
     );
 
     assertThat(duree(journal.intervalles(Optional.empty()))).isEqualTo(Duration.ofHours(4));
@@ -334,12 +325,9 @@ class JournalDAtelierTest {
 
   @Test
   void shouldArreterUneActiviteRelancee() {
+    EvenementDAtelier relance = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H);
     JournalDAtelier journal = new JournalDAtelier(
-      List.of(
-        debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H),
-        debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H),
-        finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_17H)
-      )
+      List.of(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H), relance, finDe(relance).a(LE_10_MAI_2026_A_17H))
     );
 
     assertThat(journal.intervalles(Optional.of(LE_11_MAI_2026_A_9H15)))
@@ -352,9 +340,8 @@ class JournalDAtelierTest {
 
   @Test
   void shouldScinderSansLeChangerUnIntervalleParUnDebutRegulariseRetroactivement() {
-    JournalDAtelier journal = new JournalDAtelier(
-      List.of(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H), finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_17H))
-    );
+    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    JournalDAtelier journal = new JournalDAtelier(List.of(debut, finDe(debut).a(LE_10_MAI_2026_A_17H)));
 
     JournalDAtelier regularise = journal.enregistre(debutSurFraiseuse1RegulariseParLeroyA(LE_10_MAI_2026_A_12H));
 
@@ -371,7 +358,7 @@ class JournalDAtelierTest {
   void shouldAnnulerLaRelanceDUneActivite() {
     EvenementDAtelier relance = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H);
     JournalDAtelier journal = new JournalDAtelier(
-      List.of(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H), relance, finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_17H))
+      List.of(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H), relance, finDe(relance).a(LE_10_MAI_2026_A_17H))
     );
 
     JournalDAtelier corrige = journal.annule(relance.id(), annulationParLeroy());
@@ -387,9 +374,8 @@ class JournalDAtelierTest {
   @Test
   void shouldAnnulerLePremierDebutDUneActiviteRelancee() {
     EvenementDAtelier premier = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    JournalDAtelier journal = new JournalDAtelier(
-      List.of(premier, debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H), finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_17H))
-    );
+    EvenementDAtelier relance = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H);
+    JournalDAtelier journal = new JournalDAtelier(List.of(premier, relance, finDe(relance).a(LE_10_MAI_2026_A_17H)));
 
     JournalDAtelier corrige = journal.annule(premier.id(), annulationParLeroy());
 
@@ -402,7 +388,7 @@ class JournalDAtelierTest {
   void shouldCorrigerUneNonConformiteEnRelance() {
     EvenementDAtelier nonConformite = nonConformiteSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H);
     JournalDAtelier journal = new JournalDAtelier(
-      List.of(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H), nonConformite, finSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_17H))
+      List.of(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H), nonConformite, finDe(nonConformite).a(LE_10_MAI_2026_A_17H))
     );
 
     JournalDAtelier corrige = journal.corrige(
