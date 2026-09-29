@@ -15,13 +15,21 @@ import org.junit.jupiter.api.Test;
  * sont conserves sans qu'aucune de leurs lectures ne soit choisie.
  */
 @UnitTest
-class SequenceDActivitesTest {
+class JournalDAtelierInterpretationTest {
 
   private static final Instant LE_10_MAI_2026_A_10H = Instant.parse("2026-05-10T10:00:00Z");
   private static final Instant LE_10_MAI_2026_A_11H = Instant.parse("2026-05-10T11:00:00Z");
   private static final Instant LE_10_MAI_2026_A_21H = Instant.parse("2026-05-10T21:00:00Z");
   private static final Instant LE_10_MAI_2026_A_22H = Instant.parse("2026-05-10T22:00:00Z");
   private static final Instant LE_10_MAI_2026_A_23H = Instant.parse("2026-05-10T23:00:00Z");
+
+  private static List<Activite> activites(List<EvenementDAtelier> faits, Optional<Instant> cloture) {
+    return new JournalDAtelier(faits).activites(cloture);
+  }
+
+  private static List<SequenceEnConflit> conflits(List<EvenementDAtelier> faits, Optional<Instant> cloture) {
+    return new JournalDAtelier(faits).conflits(cloture);
+  }
 
   /**
    * FIN 23 h apres fin automatique 21 h : la fin pointee apres l'echeance est conservee sans effet ; l'activite garde
@@ -31,7 +39,7 @@ class SequenceDActivitesTest {
   void shouldConserverSansEffetUneFinPointeeApresLEcheance() {
     EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
 
-    List<Activite> activites = SequenceDActivites.activites(List.of(travail, finDe(travail).a(LE_10_MAI_2026_A_23H)), Optional.empty());
+    List<Activite> activites = activites(List.of(travail, finDe(travail).a(LE_10_MAI_2026_A_23H)), Optional.empty());
 
     assertThat(activites)
       .singleElement()
@@ -51,7 +59,7 @@ class SequenceDActivitesTest {
     EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     EvenementDAtelier nonConformite = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_23H);
 
-    List<Activite> activites = SequenceDActivites.activites(List.of(travail, nonConformite), Optional.empty());
+    List<Activite> activites = activites(List.of(travail, nonConformite), Optional.empty());
 
     assertThat(activites)
       .extracting(Activite::ouvrant, Activite::debut, Activite::fin)
@@ -67,10 +75,7 @@ class SequenceDActivitesTest {
   void shouldTerminerAuDelaDeLEcheanceParUneFinRegularisee() {
     EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
 
-    List<Activite> activites = SequenceDActivites.activites(
-      List.of(travail, finRegulariseeParLeroyDe(travail).a(LE_10_MAI_2026_A_23H)),
-      Optional.empty()
-    );
+    List<Activite> activites = activites(List.of(travail, finRegulariseeParLeroyDe(travail).a(LE_10_MAI_2026_A_23H)), Optional.empty());
 
     assertThat(activites)
       .singleElement()
@@ -89,7 +94,7 @@ class SequenceDActivitesTest {
     EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     EvenementDAtelier nonConformite = passageEnNonConformiteRegulariseParLeroyDe(travail).a(LE_10_MAI_2026_A_23H);
 
-    List<Activite> activites = SequenceDActivites.activites(List.of(travail, nonConformite), Optional.empty());
+    List<Activite> activites = activites(List.of(travail, nonConformite), Optional.empty());
 
     assertThat(activites)
       .extracting(Activite::ouvrant, Activite::fin)
@@ -106,7 +111,7 @@ class SequenceDActivitesTest {
     EvenementDAtelier finPointee = finDe(travail).a(Instant.parse("2026-05-10T22:00:00Z"));
     EvenementDAtelier finRegularisee = finRegulariseeParLeroyDe(travail).a(LE_10_MAI_2026_A_23H);
 
-    List<Activite> activites = SequenceDActivites.activites(List.of(travail, finPointee, finRegularisee), Optional.empty());
+    List<Activite> activites = activites(List.of(travail, finPointee, finRegularisee), Optional.empty());
 
     assertThat(activites).singleElement().extracting(Activite::fin).isEqualTo(Optional.of(LE_10_MAI_2026_A_23H));
   }
@@ -118,7 +123,7 @@ class SequenceDActivitesTest {
   void shouldTerminerParUneFinPointeeExactementALEcheance() {
     EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
 
-    List<Activite> activites = SequenceDActivites.activites(List.of(travail, finDe(travail).a(LE_10_MAI_2026_A_21H)), Optional.empty());
+    List<Activite> activites = activites(List.of(travail, finDe(travail).a(LE_10_MAI_2026_A_21H)), Optional.empty());
 
     assertThat(activites)
       .singleElement()
@@ -136,7 +141,7 @@ class SequenceDActivitesTest {
     EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     EvenementDAtelier nonConformite = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_21H);
 
-    List<Activite> activites = SequenceDActivites.activites(List.of(travail, nonConformite), Optional.empty());
+    List<Activite> activites = activites(List.of(travail, nonConformite), Optional.empty());
 
     assertThat(activites)
       .extracting(Activite::ouvrant, Activite::fin)
@@ -151,7 +156,7 @@ class SequenceDActivitesTest {
     EvenementDAtelier premiere = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     EvenementDAtelier relance = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H);
 
-    List<Activite> activites = SequenceDActivites.activites(List.of(premiere, relance), Optional.empty());
+    List<Activite> activites = activites(List.of(premiere, relance), Optional.empty());
 
     assertThat(activites)
       .extracting(Activite::ouvrant, Activite::fin)
@@ -167,7 +172,7 @@ class SequenceDActivitesTest {
     EvenementDAtelier premiere = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     EvenementDAtelier relance = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_23H);
 
-    List<Activite> activites = SequenceDActivites.activites(List.of(premiere, relance), Optional.empty());
+    List<Activite> activites = activites(List.of(premiere, relance), Optional.empty());
 
     assertThat(activites)
       .extracting(Activite::ouvrant, Activite::fin)
@@ -181,7 +186,7 @@ class SequenceDActivitesTest {
   void shouldNePasProlongerParLaClotureUneActiviteDejaEchue() {
     EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
 
-    List<Activite> activites = SequenceDActivites.activites(List.of(travail), Optional.of(LE_10_MAI_2026_A_23H));
+    List<Activite> activites = activites(List.of(travail), Optional.of(LE_10_MAI_2026_A_23H));
 
     assertThat(activites).singleElement().extracting(Activite::fin).isEqualTo(Optional.empty());
   }
@@ -193,7 +198,7 @@ class SequenceDActivitesTest {
   void shouldTerminerALaClotureUneActiviteEncoreVivante() {
     EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
 
-    List<Activite> activites = SequenceDActivites.activites(List.of(travail), Optional.of(LE_10_MAI_2026_A_17H));
+    List<Activite> activites = activites(List.of(travail), Optional.of(LE_10_MAI_2026_A_17H));
 
     assertThat(activites).singleElement().extracting(Activite::fin).isEqualTo(Optional.of(LE_10_MAI_2026_A_17H));
   }
@@ -210,10 +215,10 @@ class SequenceDActivitesTest {
     EvenementDAtelier finDuTravail = finDe(travail).a(LE_10_MAI_2026_A_17H);
     List<EvenementDAtelier> faits = List.of(travail, nonConformite, finDuTravail);
 
-    assertThat(SequenceDActivites.activites(faits, Optional.empty()))
+    assertThat(activites(faits, Optional.empty()))
       .extracting(Activite::ouvrant, Activite::fin, Activite::aResoudre)
       .containsExactly(tuple(travail, Optional.empty(), true), tuple(nonConformite, Optional.empty(), true));
-    assertThat(SequenceDActivites.conflits(faits, Optional.empty()))
+    assertThat(conflits(faits, Optional.empty()))
       .singleElement()
       .satisfies(conflit -> {
         assertThat(conflit.cle()).isEqualTo(cleDeFraiseuse1DeDupont());
@@ -233,10 +238,10 @@ class SequenceDActivitesTest {
     EvenementDAtelier finDeA = finDe(a).a(LE_10_MAI_2026_A_11H);
     List<EvenementDAtelier> faits = List.of(a, b, finDeA);
 
-    assertThat(SequenceDActivites.activites(faits, Optional.empty()))
+    assertThat(activites(faits, Optional.empty()))
       .extracting(Activite::ouvrant, Activite::fin, Activite::aResoudre)
       .containsExactly(tuple(a, Optional.empty(), true), tuple(b, Optional.empty(), true));
-    assertThat(SequenceDActivites.conflits(faits, Optional.empty()))
+    assertThat(conflits(faits, Optional.empty()))
       .singleElement()
       .satisfies(conflit -> {
         assertThat(conflit.activites()).containsExactly(activiteDe(a), activiteDe(b));
@@ -255,13 +260,13 @@ class SequenceDActivitesTest {
     EvenementDAtelier seconde = finDe(travail).a(LE_10_MAI_2026_A_10H.plusSeconds(2));
     List<EvenementDAtelier> faits = List.of(travail, premiere, seconde);
 
-    assertThat(SequenceDActivites.activites(faits, Optional.empty()))
+    assertThat(activites(faits, Optional.empty()))
       .singleElement()
       .satisfies(activite -> {
         assertThat(activite.aResoudre()).isTrue();
         assertThat(activite.fin()).isEmpty();
       });
-    assertThat(SequenceDActivites.conflits(faits, Optional.empty()))
+    assertThat(conflits(faits, Optional.empty()))
       .singleElement()
       .satisfies(conflit -> assertThat(conflit.pointages()).containsExactly(travail.id(), premiere.id(), seconde.id()));
   }
@@ -277,10 +282,10 @@ class SequenceDActivitesTest {
     EvenementDAtelier nonConformite = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_11H);
     List<EvenementDAtelier> faits = List.of(travail, fin, nonConformite);
 
-    assertThat(SequenceDActivites.activites(faits, Optional.empty()))
+    assertThat(activites(faits, Optional.empty()))
       .extracting(Activite::ouvrant, Activite::aResoudre)
       .containsExactly(tuple(travail, true), tuple(nonConformite, true));
-    assertThat(SequenceDActivites.conflits(faits, Optional.empty()))
+    assertThat(conflits(faits, Optional.empty()))
       .singleElement()
       .satisfies(conflit -> assertThat(conflit.pointages()).containsExactly(travail.id(), fin.id(), nonConformite.id()));
   }
@@ -297,11 +302,11 @@ class SequenceDActivitesTest {
       EvenementDAtelier travailSurTravail = passageEnTravailDe(travail).a(heure);
       List<EvenementDAtelier> faits = List.of(travail, travailSurTravail);
 
-      assertThat(SequenceDActivites.activites(faits, Optional.empty()))
+      assertThat(activites(faits, Optional.empty()))
         .describedAs("transition a %s", heure)
         .extracting(Activite::ouvrant, Activite::aResoudre)
         .containsExactly(tuple(travail, true), tuple(travailSurTravail, true));
-      assertThat(SequenceDActivites.conflits(faits, Optional.empty())).describedAs("transition a %s", heure).hasSize(1);
+      assertThat(conflits(faits, Optional.empty())).describedAs("transition a %s", heure).hasSize(1);
     }
   }
 
@@ -316,10 +321,10 @@ class SequenceDActivitesTest {
     EvenementDAtelier nonConformite = passageEnNonConformiteDe(a).a(LE_10_MAI_2026_A_23H);
     List<EvenementDAtelier> faits = List.of(a, b, nonConformite);
 
-    assertThat(SequenceDActivites.activites(faits, Optional.empty()))
+    assertThat(activites(faits, Optional.empty()))
       .extracting(Activite::ouvrant, Activite::aResoudre)
       .containsExactly(tuple(a, true), tuple(b, true), tuple(nonConformite, true));
-    assertThat(SequenceDActivites.conflits(faits, Optional.empty()))
+    assertThat(conflits(faits, Optional.empty()))
       .singleElement()
       .satisfies(conflit -> assertThat(conflit.pointages()).containsExactly(a.id(), b.id(), nonConformite.id()));
   }
@@ -336,10 +341,10 @@ class SequenceDActivitesTest {
     EvenementDAtelier finRegularisee = finRegulariseeParLeroyDe(travail).a(LE_10_MAI_2026_A_23H);
     List<EvenementDAtelier> faits = List.of(travail, nonConformite, finRegularisee);
 
-    assertThat(SequenceDActivites.activites(faits, Optional.empty()))
+    assertThat(activites(faits, Optional.empty()))
       .extracting(Activite::ouvrant, Activite::aResoudre)
       .containsExactly(tuple(travail, true), tuple(nonConformite, true));
-    assertThat(SequenceDActivites.conflits(faits, Optional.empty()))
+    assertThat(conflits(faits, Optional.empty()))
       .singleElement()
       .satisfies(conflit -> assertThat(conflit.pointages()).containsExactly(travail.id(), nonConformite.id(), finRegularisee.id()));
   }
@@ -355,10 +360,10 @@ class SequenceDActivitesTest {
     EvenementDAtelier finRegularisee = finRegulariseeParLeroyDe(a).a(LE_10_MAI_2026_A_23H);
     List<EvenementDAtelier> faits = List.of(a, b, finRegularisee);
 
-    assertThat(SequenceDActivites.activites(faits, Optional.empty()))
+    assertThat(activites(faits, Optional.empty()))
       .extracting(Activite::ouvrant, Activite::aResoudre)
       .containsExactly(tuple(a, true), tuple(b, true));
-    assertThat(SequenceDActivites.conflits(faits, Optional.empty())).singleElement();
+    assertThat(conflits(faits, Optional.empty())).singleElement();
   }
 
   /**
@@ -371,13 +376,13 @@ class SequenceDActivitesTest {
     EvenementDAtelier finAnterieure = finDe(travail).a(LE_10_MAI_2026_A_9H);
     List<EvenementDAtelier> faits = List.of(finAnterieure, travail);
 
-    assertThat(SequenceDActivites.activites(faits, Optional.empty()))
+    assertThat(activites(faits, Optional.empty()))
       .singleElement()
       .satisfies(activite -> {
         assertThat(activite.aResoudre()).isTrue();
         assertThat(activite.fin()).isEmpty();
       });
-    assertThat(SequenceDActivites.conflits(faits, Optional.empty()))
+    assertThat(conflits(faits, Optional.empty()))
       .singleElement()
       .satisfies(conflit -> assertThat(conflit.pointages()).containsExactly(finAnterieure.id(), travail.id()));
   }
@@ -396,7 +401,7 @@ class SequenceDActivitesTest {
     EvenementDAtelier apres = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H);
     List<EvenementDAtelier> faits = List.of(avant, finAvant, a, b, finDeA, apres);
 
-    assertThat(SequenceDActivites.activites(faits, Optional.empty()))
+    assertThat(activites(faits, Optional.empty()))
       .extracting(Activite::ouvrant, Activite::fin, Activite::aResoudre)
       .containsExactly(
         tuple(avant, Optional.of(LE_10_MAI_2026_A_7H30), false),
@@ -404,7 +409,7 @@ class SequenceDActivitesTest {
         tuple(b, Optional.empty(), true),
         tuple(apres, Optional.empty(), false)
       );
-    assertThat(SequenceDActivites.conflits(faits, Optional.empty()))
+    assertThat(conflits(faits, Optional.empty()))
       .singleElement()
       .satisfies(conflit -> assertThat(conflit.activites()).containsExactly(activiteDe(a), activiteDe(b)));
   }
@@ -421,8 +426,8 @@ class SequenceDActivitesTest {
     EvenementDAtelier finDeB = finDe(b).a(LE_10_MAI_2026_A_12H);
     List<EvenementDAtelier> faits = List.of(a, b, finDeA, finDeB);
 
-    assertThat(SequenceDActivites.activites(faits, Optional.empty())).extracting(Activite::aResoudre).containsExactly(true, true);
-    assertThat(SequenceDActivites.conflits(faits, Optional.empty()))
+    assertThat(activites(faits, Optional.empty())).extracting(Activite::aResoudre).containsExactly(true, true);
+    assertThat(conflits(faits, Optional.empty()))
       .singleElement()
       .satisfies(conflit -> assertThat(conflit.pointages()).containsExactly(a.id(), b.id(), finDeA.id(), finDeB.id()));
   }
@@ -442,10 +447,10 @@ class SequenceDActivitesTest {
     EvenementDAtelier finDeD = finDe(d).a(LE_10_MAI_2026_A_20H);
     List<EvenementDAtelier> faits = List.of(a, b, finDeA, c, finDeC, d, e, finDeD);
 
-    assertThat(SequenceDActivites.activites(faits, Optional.empty()))
+    assertThat(activites(faits, Optional.empty()))
       .extracting(Activite::ouvrant, Activite::aResoudre)
       .containsExactly(tuple(a, true), tuple(b, true), tuple(c, false), tuple(d, true), tuple(e, true));
-    assertThat(SequenceDActivites.conflits(faits, Optional.empty()))
+    assertThat(conflits(faits, Optional.empty()))
       .extracting(SequenceEnConflit::activites)
       .containsExactly(List.of(activiteDe(a), activiteDe(b)), List.of(activiteDe(d), activiteDe(e)));
   }
@@ -459,7 +464,7 @@ class SequenceDActivitesTest {
     EvenementDAtelier b = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_10H);
     List<EvenementDAtelier> faits = List.of(a, b, finDe(a).a(LE_10_MAI_2026_A_11H));
 
-    assertThat(SequenceDActivites.activites(faits, Optional.of(LE_10_MAI_2026_A_17H)))
+    assertThat(activites(faits, Optional.of(LE_10_MAI_2026_A_17H)))
       .extracting(Activite::fin, Activite::aResoudre)
       .containsExactly(tuple(Optional.empty(), true), tuple(Optional.empty(), true));
   }
@@ -474,9 +479,9 @@ class SequenceDActivitesTest {
     EvenementDAtelier fin = finDe(travail).a(LE_10_MAI_2026_A_22H);
     EvenementDAtelier nonConformite = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_23H);
 
-    assertThat(SequenceDActivites.conflits(List.of(travail, fin), Optional.empty())).isEmpty();
-    assertThat(SequenceDActivites.conflits(List.of(travail, nonConformite), Optional.empty())).isEmpty();
-    assertThat(SequenceDActivites.activites(List.of(travail, fin, nonConformite), Optional.empty()))
+    assertThat(conflits(List.of(travail, fin), Optional.empty())).isEmpty();
+    assertThat(conflits(List.of(travail, nonConformite), Optional.empty())).isEmpty();
+    assertThat(activites(List.of(travail, fin, nonConformite), Optional.empty()))
       .extracting(Activite::aResoudre)
       .containsExactly(false, false);
   }
@@ -488,10 +493,8 @@ class SequenceDActivitesTest {
   void shouldNeLaisserAucunConflitPourUnGesteExactementALEcheance() {
     EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
 
-    assertThat(SequenceDActivites.conflits(List.of(travail, finDe(travail).a(LE_10_MAI_2026_A_21H)), Optional.empty())).isEmpty();
-    assertThat(
-      SequenceDActivites.conflits(List.of(travail, passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_21H)), Optional.empty())
-    ).isEmpty();
+    assertThat(conflits(List.of(travail, finDe(travail).a(LE_10_MAI_2026_A_21H)), Optional.empty())).isEmpty();
+    assertThat(conflits(List.of(travail, passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_21H)), Optional.empty())).isEmpty();
   }
 
   private static ActiviteId activiteDe(EvenementDAtelier ouvrant) {
