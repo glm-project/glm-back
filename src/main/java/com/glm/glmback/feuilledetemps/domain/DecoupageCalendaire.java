@@ -51,12 +51,7 @@ public final class DecoupageCalendaire {
   /**
    * La plage donnee, ramenee a la semaine et scindee a chaque minuit traverse.
    *
-   * <p>
-   * Une plage encore ouverte fait exception : elle ne rend que le jour ou elle a commence. Sans depart enregistre,
-   * rien ne dit que l'operateur etait encore la le lendemain — l'etaler jusqu'a la fin de la semaine affirmerait une
-   * presence que personne n'a pointee, la ou l'atelier refuse deja qu'un travail jamais arrete coure jusqu'au jour
-   * suivant.
-   * </p>
+   * Une plage sans fin et sans instant d'evaluation n'indique que son jour de debut.
    */
   public List<PlageDUnJour> plages(Plage plage) {
     if (plage.estOuverte()) {
@@ -118,7 +113,7 @@ public final class DecoupageCalendaire {
     while (curseur.isBefore(finRetenue)) {
       Instant minuitSuivant = jour.plusDays(1).atStartOfDay(zone).toInstant();
       Instant borne = minuitSuivant.isBefore(finRetenue) ? minuitSuivant : finRetenue;
-      plages.add(new PlageDUnJour(jour, new Plage(curseur, Optional.of(borne), plage.presumee())));
+      plages.add(new PlageDUnJour(jour, new Plage(curseur, Optional.of(borne))));
       curseur = borne;
       jour = jour.plusDays(1);
     }

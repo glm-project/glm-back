@@ -5,32 +5,19 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import java.util.List;
 
-@Schema(
-  description = """
-  Un jour du calendrier de l'entreprise, la presence et le travail qui lui reviennent.
-
-  Les sept jours sont toujours rendus, meme vides : un trou obligerait le lecteur a deviner s'il manque une journee
-  ou si l'operateur n'etait pas la.
-  """
-)
+@Schema(description = "Un des sept jours de la semaine ISO, avec ses portions d'activite, meme vides.")
 record RestJourDeLaSemaine(
   @Schema(description = "Date du jour, dans le fuseau de l'entreprise.", example = "2026-05-11") LocalDate jour,
-  @Schema(description = "Fenetres de presence de ce jour, dans l'ordre des heures.") List<RestPlage> presence,
   @Schema(
     description = """
-    Les periodes de travail de ce jour, dans l'ordre des debuts, independamment de la presence.
-    Deux elements travailles en meme temps donnent deux activites qui se chevauchent ; deux activites commencees
-    au meme instant se departagent par l'identifiant de l'element.
+    Les portions d'activite de ce jour, triees par debut, element puis identite stable de l'activite.
+    Deux elements travailles en meme temps donnent deux portions qui se chevauchent.
     """,
     requiredMode = Schema.RequiredMode.REQUIRED
   )
   List<RestActiviteDeLaFeuilleDeTemps> activites
 ) {
   static RestJourDeLaSemaine from(JourDeLaSemaine jour) {
-    return new RestJourDeLaSemaine(
-      jour.jour(),
-      jour.presence().stream().map(RestPlage::from).toList(),
-      jour.activites().stream().map(RestActiviteDeLaFeuilleDeTemps::from).toList()
-    );
+    return new RestJourDeLaSemaine(jour.jour(), jour.activites().stream().map(RestActiviteDeLaFeuilleDeTemps::from).toList());
   }
 }

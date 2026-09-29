@@ -243,64 +243,51 @@ L'identité (nom, prénom) est **unique par entreprise**. Le **matricule** est l
 
 Première **projection transverse** du projet : un contexte purement lecteur, qui ne possède aucune table et
 recalcule tout à chaque appel. Il répond à une seule question — _qu'a fait cette personne cette semaine, jour par
-jour_ — et c'est ce qui le sépare d'`atelier`.
+jour_ — à partir des activités interprétées par `atelier`.
 
 ### Pourquoi il n'est pas dans atelier
 
-`atelier` s'interdit explicitement le calendrier : une `JourneeDeTravail` y est bornée par une arrivée et un départ,
-jamais par une date, et aucun `ZoneId` ni `LocalDate` n'entre dans ce contexte. Une feuille de temps hebdomadaire
-n'est faite que de ça. C'est ici, et nulle part avant, que minuit existe — et c'est minuit qui décide à quel jour
-appartient une heure de travail. Une équipe de nuit compte sur deux jours ; l'atelier ne saurait pas le dire.
-
-Le découpage était annoncé : les index `(operateur, date_de_survenue)` et `(poste, date_de_survenue)` d'
-`evenement_d_atelier` sont commentés dans le changelog comme ne servant pas l'atelier lui-même, mais « les
-projections transverses des contextes à venir ». `feuilledetemps` est le premier de ces consommateurs.
+`atelier` manipule des instants et s'interdit le calendrier : aucun `ZoneId` ni `LocalDate` n'entre dans ce
+contexte. La feuille ramène les activités aux jours de l'entreprise et aux semaines ISO. Une équipe de nuit
+compte sur deux jours, et une activité du dimanche peut recouvrir le lundi de la semaine suivante.
 
 ### La lecture passe par la base, jamais par un import
 
 `atelier`, `operateur` et `postedetravail` étant annotés `@BusinessContext`, ce contexte déclare ses propres entités
-JPA en lecture seule. Il lit les activités qu'atelier projette à chaque écriture dans `activite_d_atelier`,
-avec l'élément porté par leur suivi, et ne réinterprète aucun journal d'activité.
+JPA `@Immutable`. Il lit la projection `activite_d_atelier`, avec l'élément porté par le suivi, et l'identité de
+l'opérateur dans le référentiel. Il ne rejoue aucun journal et ne propose aucune écriture.
 
-Le filet est le scénario Cucumber : il écrit par l'API d'atelier puis lit la feuille de temps. Relances,
-transitions ciblées, fins reçues tardivement, régularisations, corrections, annulations et clôtures doivent y
-restituer l'interprétation du propriétaire. Les seules règles ajoutées à la lecture sont l'état à l'instant
-d'évaluation et le découpage calendaire. La présence garde encore son repli séparé.
+Le filet est le scénario Cucumber : il écrit par l'API d'atelier puis lit la feuille. Relances, transitions
+ciblées, fins reçues tardivement, régularisations, corrections, annulations et clôtures restituent
+l'interprétation du propriétaire. Les règles ajoutées sont l'état à l'instant de lecture et le découpage calendaire.
 
 ### Ce que la feuille montre
 
-Sept jours toujours, du lundi au dimanche de la semaine ISO demandée, vides compris : un trou obligerait le lecteur
-à deviner s'il manque une journée ou si l'opérateur n'était pas là. L'année est celle des semaines ISO, qui diffère
-de l'année civile à ses bornes — la semaine 1 de 2026 commence le 29 décembre 2025.
-
+Sept jours toujours, du lundi au dimanche de la semaine ISO demandée, vides compris. L'année est celle des
+semaines ISO, qui diffère de l'année civile à ses bornes : la semaine 1 de 2026 commence le 29 décembre 2025.
 La semaine est toujours explicite, jamais « la semaine courante ».
 
-**Une plage encore ouverte ne dépasse pas son propre jour.** Sans départ pointé et sous le seuil, rien ne dit que
-l'opérateur était encore là le lendemain ; l'étaler jusqu'à la fin de la semaine affirmerait une présence que personne
-n'a saisie. C'est la transposition de la règle qu'`atelier` applique déjà à un travail jamais arrêté.
-
-**Une journée abandonnée est fermée à sa fin présumée** (lot 5 de [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md)) : sans départ et au-delà du seuil d'amplitude, lu dans la table du paramétrage, sa dernière fenêtre ouverte se ferme au dernier fait connu — son dernier pointage de présence, ou le dernier pointage d'OF de l'opérateur s'il est plus tardif et tombe entre l'arrivée et l'arrivée plus le seuil. Ce qui en découle est marqué **présumé**, à confirmer par une régularisation du départ. Juger l'abandon suppose de savoir quand on lit : ce contexte reçoit donc une horloge, comme `coutderevient`, et deux appels espacés ne rendent plus forcément la même chose. La semaine, elle, reste toujours explicite.
-
-**Une journée fermée plus de 24 h après son arrivée se lit comme abandonnée** ([D13](strategie/bornes-de-fin-de-journee.md), issue #59) : elle n'a pas pu être vécue d'une traite, et son départ ne dit rien de l'heure à laquelle l'opérateur est parti. Elle se ferme à sa fin présumée, le dernier fait connu **entre l'arrivée et l'arrivée plus le seuil** — ses faits au-delà, départ compris, ne comptent pas — et ce qui dépasse disparaît. Rien n'est réécrit, et elle reste signalée en amplitude excessive. Entre le seuil et 24 h, une journée fermée compte entière. 24 h est une borne physique, jamais un paramètre de l'entreprise.
-
-À instant égal, l'arrivée passe devant dans le repli : l'arrivée implicite d'un geste tardif partage l'heure de ce geste. Chaque plage de la feuille porte `presumee`.
-
-**Le travail par élément** : chaque jour rend ses activités — l'élément, le poste et la nature facultatifs,
-travail ou non-conformité, de quelle heure à quelle heure. La sélection porte sur les activités qui **recouvrent**
-la semaine, même commencées avant elle et sans pointage de la semaine. Une régularisation peut établir une fin bien
-au-delà de 13 h : aucune borne basse fixe sur le début ne permet de les retrouver toutes.
+Chaque jour rend les portions d'activité : élément, poste et nature facultatifs, catégorie travail ou
+non-conformité, début et fin éventuelle. La sélection porte sur les activités qui **recouvrent** la semaine,
+même commencées avant elle et sans pointage de la semaine. Une régularisation peut établir une fin bien au-delà
+de 13 h, voire de la semaine : aucune borne basse fixe sur le début ne permet de les retrouver toutes.
 
 L'instant courant est relevé une seule fois. Une activité avec fin réelle est `TERMINEE`, même si cette fin dépasse
 l'échéance. À défaut, elle est `EN_COURS` avant l'échéance et `TERMINEE_AUTOMATIQUEMENT` dès celle-ci, à cette borne,
 avec son anomalie visible par l'état. Une activité en conflit est `A_RESOUDRE`, sans fin : l'échéance ne la tranche pas.
-La feuille ne calcule aucune durée. Les portions gardent l'identité stable, l'état et les bornes de l'activité entière,
-avec une fin seulement pour les deux états terminés. Les bornes des portions sont coupées à minuit et à la semaine ;
-celles de l'activité restent intactes. Une activité en cours rend une indication sans fin sur chacun des jours atteints à l'instant de lecture, dans la
+La feuille ne calcule aucune durée. Chaque portion garde l'identité stable, l'état et les bornes de l'activité entière,
+avec une fin seulement pour les deux états terminés. Les portions terminées sont coupées aux minuits locaux et aux
+limites de la semaine ; les bornes de l'activité restent intactes.
+
+Une activité en cours rend une indication sans fin sur chacun des jours atteints à l'instant de lecture, dans la
 semaine : commencée dimanche à 22 h et lue lundi à 1 h, elle apparaît lundi avec son début entier, sans fin à minuit.
 Une fin lundi à 3 h remplace ensuite cette indication par les portions terminées, 2 h dimanche et 3 h lundi.
+Une activité à résoudre indique actuellement son jour de début ; son étendue calendaire sera complétée avec la
+borne de conflit dans la tranche suivante du chantier.
 
-Elle nomme l'élément, jamais le suivi : un élément réengagé après clôture reste le même élément. Ni libellé de poste
-ni fiche d'élément ici — la synthèse des heures les porte. Aucun départ ni seuil de présence ne modifie le travail.
+La feuille nomme l'élément, jamais le suivi : un élément réengagé après clôture reste le même élément. Ni libellé
+de poste ni fiche d'élément ici — la synthèse des heures les porte. Les activités sont triées par début de portion,
+élément puis identité stable. Le contrat de la feuille ne porte aucune présence ni temps présumé.
 
 ### Points ouverts
 

@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 @UnitTest
 class FeuilleDeTempsTest {
 
-  private static final JourDeLaSemaine LUNDI_SANS_PRESENCE = new JourDeLaSemaine(LUNDI_11_MAI_2026, List.of(), List.of());
+  private static final JourDeLaSemaine LUNDI_SANS_ACTIVITE = new JourDeLaSemaine(LUNDI_11_MAI_2026, List.of());
 
   @Test
   void shouldNotBuildWithoutOperateur() {
@@ -38,7 +38,7 @@ class FeuilleDeTempsTest {
 
   @Test
   void shouldNotBuildWithNullJour() {
-    List<JourDeLaSemaine> jours = Arrays.asList(LUNDI_SANS_PRESENCE, null);
+    List<JourDeLaSemaine> jours = Arrays.asList(LUNDI_SANS_ACTIVITE, null);
 
     assertThatThrownBy(() -> new FeuilleDeTemps(OPERATEUR_CONNU_DUPONT, SEMAINE_20_DE_2026, jours))
       .isExactlyInstanceOf(NullElementInCollectionException.class)
@@ -47,10 +47,10 @@ class FeuilleDeTempsTest {
 
   @Test
   void shouldPorterLOperateurResoluSaSemaineEtSesJours() {
-    FeuilleDeTemps feuille = new FeuilleDeTemps(OPERATEUR_CONNU_DUPONT, SEMAINE_20_DE_2026, List.of(LUNDI_SANS_PRESENCE));
+    FeuilleDeTemps feuille = new FeuilleDeTemps(OPERATEUR_CONNU_DUPONT, SEMAINE_20_DE_2026, List.of(LUNDI_SANS_ACTIVITE));
 
     assertThat(feuille.operateur()).isEqualTo(OPERATEUR_CONNU_DUPONT);
     assertThat(feuille.semaine()).isEqualTo(SEMAINE_20_DE_2026);
-    assertThat(feuille.jours()).containsExactly(LUNDI_SANS_PRESENCE);
+    assertThat(feuille.jours()).containsExactly(LUNDI_SANS_ACTIVITE);
   }
 }

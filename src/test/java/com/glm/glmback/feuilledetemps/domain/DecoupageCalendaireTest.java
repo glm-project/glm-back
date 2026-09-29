@@ -117,8 +117,7 @@ class DecoupageCalendaireTest {
   }
 
   /**
-   * Une plage ouverte ne court pas jusqu'a la fin de la semaine : sans depart, rien ne dit que l'operateur etait la
-   * le lendemain, et l'atelier applique deja la meme regle a un travail jamais arrete.
+   * Une plage ouverte sans evaluation n'indique que son jour de debut.
    */
   @Test
   void shouldRendreUnePlageOuverteSurSonSeulJour() {
@@ -142,21 +141,12 @@ class DecoupageCalendaireTest {
     return new Plage(debut, Optional.of(fin));
   }
 
-  @Test
-  void shouldGarderLaPresomptionDUnePlageScindeeAMinuit() {
-    List<PlageDUnJour> plages = decoupage().plages(new Plage(le(11, 22), Optional.of(le(12, 2)), true));
-
-    assertThat(plages)
-      .extracting(plage -> plage.plage().presumee())
-      .containsExactly(true, true);
-  }
-
   private static Instant le(int jourDeMai, int heure) {
     return LocalDateTime.of(2026, 5, jourDeMai, heure, 0).atZone(PARIS).toInstant();
   }
 
   /**
-   * Un poste de nuit se coupe a minuit comme la presence : l'activite garde son element, son poste et sa categorie
+   * Un poste de nuit se coupe a minuit : l'activite garde son element, son poste et sa categorie
    * sur chacun des deux jours.
    */
 

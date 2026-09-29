@@ -1,8 +1,7 @@
 Feature: Feuille de temps hebdomadaire d'un operateur
 
-  # L'atelier ne connait ni fuseau horaire ni jour calendaire : une journee de travail y va d'une arrivee a un
-  # depart, et rien n'y dit a quel jour appartient une heure. La feuille de temps est le premier contexte a ramener
-  # ces instants au calendrier de l'entreprise, semaine par semaine et jour par jour.
+  # La feuille ramene les activites interpretees par atelier au calendrier de l'entreprise.
+  # Elle conserve les bornes entieres et les coupe aux minuits locaux et aux semaines ISO.
   #
   # Les heures des scenarios sont en UTC, l'entreprise lit ses jours a Paris : en mai, 8h locales font 06:00Z.
   Background:
@@ -27,87 +26,8 @@ Feature: Feuille de temps hebdomadaire d'un operateur
       | 2026-05-15 |
       | 2026-05-16 |
       | 2026-05-17 |
-    And la feuille de temps ne porte aucune presence
-
-  Scenario: Une journee se lit dans le jour qui la porte, pause de midi comprise
-    Given "dupont" est arrive a "2026-05-11T06:00:00Z"
-    And "dupont" a pointe "DEPART" a "2026-05-11T15:00:00Z"
-    When je consulte la feuille de temps de "dupont" pour la semaine 20 de 2026
-    Then la reponse a le statut http 200
-    # La pause de midi se pointe sur les ordres, jamais sur la presence : la journee se lit en une seule fenetre, de
-    # l'arrivee au depart.
-    And la presence du "2026-05-11" est
-      | debut                | fin                  |
-      | 2026-05-11T06:00:00Z | 2026-05-11T15:00:00Z |
-    And la presence du "2026-05-12" est vide
-
-  Scenario: Une equipe de nuit compte sur les deux jours qu'elle traverse
-    Given "dupont" est arrive a "2026-05-13T20:00:00Z"
-    And "dupont" a pointe "DEPART" a "2026-05-14T00:00:00Z"
-    When je consulte la feuille de temps de "dupont" pour la semaine 20 de 2026
-    Then la reponse a le statut http 200
-    # Minuit a Paris, c'est 22:00Z : c'est la que la venue bascule d'un jour a l'autre.
-    And la presence du "2026-05-13" est
-      | debut                | fin                  |
-      | 2026-05-13T20:00:00Z | 2026-05-13T22:00:00Z |
-    And la presence du "2026-05-14" est
-      | debut                | fin                  |
-      | 2026-05-13T22:00:00Z | 2026-05-14T00:00:00Z |
-
-  Scenario: Une journee sans depart reste ouverte, sur son seul jour
-    Given "dupont" est arrive a "2026-05-15T06:00:00Z"
-    When je consulte la feuille de temps de "dupont" pour la semaine 20 de 2026
-    Then la reponse a le statut http 200
-    And la presence du "2026-05-15" commence a "2026-05-15T06:00:00Z" et n'est pas terminee
-    And la presence du "2026-05-16" est vide
-
-  Scenario: Une journee abandonnee signale sa plage presumee
-    # E2 de la strategie « bornes de fin de journee », lot 5 : lu mardi, lundi s'arrete a son dernier fait connu, un
-    # ordre demarre a 16 h. Sans depart, la journee n'a qu'une plage, presumee en entier jusqu'a la regularisation du
-    # depart.
-    Given "dupont" est arrive a "2026-05-11T05:00:00Z"
-    And "dupont" a demarre un ordre de fabrication a "2026-05-11T14:00:00Z"
-    And il est "2026-05-12T08:00:00Z"
-    When je consulte la feuille de temps de "dupont" pour la semaine 20 de 2026
-    Then la reponse a le statut http 200
-    And la presence du "2026-05-11" est
-      | debut                | fin                  | presumee |
-      | 2026-05-11T05:00:00Z | 2026-05-11T14:00:00Z | true     |
-    Given le depart de "dupont" est regularise a "2026-05-11T15:00:00Z"
-    When je consulte la feuille de temps de "dupont" pour la semaine 20 de 2026
-    Then la presence du "2026-05-11" est
-      | debut                | fin                  | presumee |
-      | 2026-05-11T05:00:00Z | 2026-05-11T15:00:00Z | false    |
-
-  Scenario: Une journee fermee de plus de 24 h s'arrete a sa fin presumee
-    # Issue #59 : lundi, Dupont ne pointe pas son depart ; le gestionnaire le saisit mercredi sur la meme journee. Plus
-    # de 24 h ne se vivent pas d'une traite : lundi s'arrete a son dernier fait connu, un ordre demarre a 16 h, et
-    # mardi comme mercredi restent vides au lieu de compter 24 h.
-    Given "dupont" est arrive a "2026-05-11T05:00:00Z"
-    And "dupont" a demarre un ordre de fabrication a "2026-05-11T14:00:00Z"
-    And il est "2026-05-13T10:00:00Z"
-    And le depart de "dupont" est regularise a "2026-05-13T08:00:00Z"
-    And la reponse a le statut http 201
-    When je consulte la feuille de temps de "dupont" pour la semaine 20 de 2026
-    Then la reponse a le statut http 200
-    And la presence du "2026-05-11" est
-      | debut                | fin                  | presumee |
-      | 2026-05-11T05:00:00Z | 2026-05-11T14:00:00Z | true     |
-    And la presence du "2026-05-12" est vide
-    And la presence du "2026-05-13" est vide
-
-  Scenario: Un poste de nuit du dimanche au lundi se lit sur deux semaines
-    # E7 : minuit a Paris, 22:00Z, coupe la venue entre la semaine 19 et la semaine 20.
-    Given "dupont" est arrive a "2026-05-10T18:00:00Z"
-    And "dupont" a pointe "DEPART" a "2026-05-11T06:00:00Z"
-    When je consulte la feuille de temps de "dupont" pour la semaine 19 de 2026
-    Then la presence du "2026-05-10" est
-      | debut                | fin                  |
-      | 2026-05-10T18:00:00Z | 2026-05-10T22:00:00Z |
-    When je consulte la feuille de temps de "dupont" pour la semaine 20 de 2026
-    Then la presence du "2026-05-11" est
-      | debut                | fin                  |
-      | 2026-05-10T22:00:00Z | 2026-05-11T06:00:00Z |
+    And la feuille de temps ne porte aucune activite
+    And la feuille de temps ne porte aucun champ de presence
 
   Scenario: Un intervalle termine sans arrivee garde toutes ses bornes
     Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
@@ -119,6 +39,7 @@ Feature: Feuille de temps hebdomadaire d'un operateur
     Then les activites du "2026-05-11" sont
       | element | debut                | fin                  |
       | carter  | 2026-05-11T06:00:00Z | 2026-05-11T08:00:00Z |
+    And la feuille de temps ne porte aucun champ de presence
 
   Scenario: Un poste de nuit termine sans arrivee est coupe entre deux semaines
     Given l'element "carter" est engage en atelier a "2026-05-10T17:00:00Z"
@@ -135,7 +56,7 @@ Feature: Feuille de temps hebdomadaire d'un operateur
       | element | debut                | fin                  |
       | carter  | 2026-05-10T22:00:00Z | 2026-05-11T06:00:00Z |
 
-  # Le travail par element est coupe a minuit, sans reduction a la presence.
+  # Le travail par element est coupe aux minuits locaux.
   Scenario: Une fin coupe le travail et un debut le relance
     Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And "martin" pointe "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:05:00Z"
@@ -154,7 +75,6 @@ Feature: Feuille de temps hebdomadaire d'un operateur
     And "martin" pointe "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:05:00Z"
     And "martin" pointe "NON_CONFORMITE" sur l'element "carter" au poste "DMU 50" a "2026-05-11T08:00:00Z"
     And "martin" pointe "FIN" sur l'element "carter" au poste "DMU 50" a "2026-05-11T09:00:00Z"
-    And "martin" a pointe "DEPART" a "2026-05-11T15:00:00Z"
     When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
     Then les activites du "2026-05-11" sont
       | element | categorie      | debut                | fin                  |
@@ -225,7 +145,6 @@ Feature: Feuille de temps hebdomadaire d'un operateur
     Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And "martin" pointe "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:05:00Z"
     And l'element "carter" est cloture a "2026-05-11T09:00:00Z"
-    And "martin" a pointe "DEPART" a "2026-05-11T15:00:00Z"
     When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
     Then les activites du "2026-05-11" sont
       | element | debut                | fin                  |
@@ -248,7 +167,6 @@ Feature: Feuille de temps hebdomadaire d'un operateur
     Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And "martin" pointe "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:05:00Z"
     And le dernier pointage sur l'element "carter" est annule a "2026-05-11T06:00:00Z"
-    And "martin" a pointe "DEPART" a "2026-05-11T15:00:00Z"
     When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
     Then le "2026-05-11" ne porte aucune activite
 
@@ -502,3 +420,33 @@ Feature: Feuille de temps hebdomadaire d'un operateur
     Then les activites du "2026-05-11" sont
       | debut                | fin                  | idActivite | etat     | debutActivite        | finActivite          |
       | 2026-05-10T22:00:00Z | 2026-05-11T01:00:00Z | A          | TERMINEE | 2026-05-10T20:00:00Z | 2026-05-11T01:00:00Z |
+
+  Scenario: Une fin visee sur le travail deja transforme conserve les activites a resoudre
+    Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type           | intention  | cible | operateur | survenue             |
+      | A     | DEBUT          | OUVERTURE  |       | martin    | 2026-05-11T06:00:00Z |
+      | N     | NON_CONFORMITE | TRANSITION | A     | martin    | 2026-05-11T10:00:00Z |
+      | F     | FIN            | FIN        | A     | martin    | 2026-05-11T15:00:00Z |
+    And il est "2026-05-11T20:00:00Z"
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
+    Then les activites du "2026-05-11" sont
+      | idActivite | categorie      | etat       | debut                | fin | debutActivite        | finActivite |
+      | A          | TRAVAIL        | A_RESOUDRE | 2026-05-11T06:00:00Z |     | 2026-05-11T06:00:00Z |             |
+      | N          | NON_CONFORMITE | A_RESOUDRE | 2026-05-11T10:00:00Z |     | 2026-05-11T10:00:00Z |             |
+
+  Scenario: Une feuille de temps et ses activites restent dans leur entreprise
+    Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type  | intention | cible | operateur | survenue             |
+      | A     | DEBUT | OUVERTURE |       | martin    | 2026-05-11T06:00:00Z |
+      | F     | FIN   | FIN       | A     | martin    | 2026-05-11T08:00:00Z |
+    Given I am logged in as "gestionnaire" with role "GESTIONNAIRE" for tenant "katilys"
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
+    Then la reponse a le statut http 404
+    Given I am logged in as "gestionnaire" with role "GESTIONNAIRE" for tenant "impeccmold"
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
+    Then la reponse a le statut http 200
+    And les activites du "2026-05-11" sont
+      | idActivite | element | etat     | debut                | fin                  |
+      | A          | carter  | TERMINEE | 2026-05-11T06:00:00Z | 2026-05-11T08:00:00Z |

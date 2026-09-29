@@ -8,7 +8,7 @@ import java.util.List;
   description = """
   L'historique calendaire d'un operateur sur une semaine ISO.
 
-  Rien n'est stocke : la feuille est recalculee a chaque lecture depuis les journaux de l'atelier, pour qu'une saisie
+  Rien n'est stocke : la feuille est recalculee a chaque lecture depuis les activites interpretees par atelier, pour qu'une saisie
   regularisee apres coup compte a l'heure ou le travail a eu lieu.
   """
 )

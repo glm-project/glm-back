@@ -38,11 +38,11 @@ class FeuilleDeTempsResource {
   @Operation(
     summary = "Lire la feuille de temps hebdomadaire d'un operateur",
     description = """
-    Rend les sept jours de la semaine ISO demandee, chacun portant les fenetres de presence et les periodes de
-    travail par element qui lui reviennent dans le fuseau horaire de l'entreprise.
+    Rend les sept jours de la semaine ISO demandee, chacun portant les portions d'activite qui lui reviennent
+    dans le fuseau horaire de l'entreprise.
 
     Le travail est lu dans la projection des activites interpretees par atelier, selectionnee par recouvrement :
-    une activite commencee avant la semaine reste visible. La presence ne modifie jamais ses bornes. Chaque portion
+    une activite commencee avant la semaine reste visible. Chaque portion
     porte l'identite stable, l'etat et les bornes entieres de l'activite, en plus de ses bornes coupees a minuit et a
     la semaine. Une fin reelle est conservee ; sans elle, l'activite est terminee automatiquement a son echeance des
     qu'elle est atteinte. Cet etat signale l'anomalie. Une activite en cours ou a resoudre n'a pas de fin.
@@ -52,9 +52,8 @@ class FeuilleDeTempsResource {
     La semaine est toujours explicite : aucune semaine courante implicite. L'annee est celle des semaines ISO, qui
     differe de l'annee civile a ses bornes — la semaine 1 de 2026 commence le 29 decembre 2025.
 
-    Une journee sans depart au-dela de l'amplitude maximale de l'entreprise est abandonnee : sa derniere plage se
-    ferme a son dernier fait connu et porte presumee. C'est l'instant de lecture qui en decide, donc deux appels
-    espaces peuvent differer.
+    L'instant courant est releve une seule fois par lecture pour evaluer toutes les activites. Deux appels
+    espaces peuvent donc differer.
     """
   )
   @ApiResponse(responseCode = "200", description = "La feuille de temps de la semaine demandee.")
