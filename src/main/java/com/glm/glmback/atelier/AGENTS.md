@@ -197,7 +197,8 @@ Deux scénarios métier de référence, à lire avant toute modification du mod�
 - `src/test/java/com/glm/glmback/atelier/domain/VieDeLAtelierTest.java` — une journée complète en appels directs, avec
   le verbatim client en javadoc de chaque assertion ;
 - `src/test/features/atelier_suivi.feature` — la même journée rejouée en HTTP, avec `atelier_presence.feature` pour la
-  présence seule, et `atelier_intentions.feature` pour l'intention et l'activité visée des pointages.
+  présence seule, `atelier_intentions.feature` pour l'intention et l'activité visée des pointages, et
+  `atelier_echeance.feature` pour l'échéance et la fin automatique des activités.
 
 Les scénarios écrits avant l'intention la font déduire du journal par `EcrituresDuJournalDAtelier`, comme le ferait le
 pupitre ; tout nouveau scénario donne son intention et sa cible.

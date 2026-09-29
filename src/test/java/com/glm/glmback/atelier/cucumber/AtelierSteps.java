@@ -298,6 +298,11 @@ public class AtelierSteps {
       .withValue(depuis);
   }
 
+  @Then("les activites en cours sont")
+  public void lesActivitesEnCoursSont(List<Map<String, String>> attendues) {
+    assertThatLastResponse().hasElement("$.activitesEnCours").containingExactly(attendues);
+  }
+
   @Then("l'evenement {int} du suivi a l'intention {string}")
   public void lEvenementDuSuiviALIntention(int rang, String intention) {
     assertThatLastResponse().hasElement("$.journal[" + rang + "].intention").withValue(intention);

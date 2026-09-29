@@ -48,7 +48,7 @@ qui saisit n'est pas forcément celui dont on compte le temps.
 ### Le journal est la seule vérité
 
 Aucun état, aucun compteur, aucun intervalle n'est stocké. `etat`, `activitesEnCours`, `amplitude`, `fenetres` et le
-temps effectif sont **recalculés du journal à chaque lecture**.
+temps effectif sont **recalculés du journal à chaque lecture**, à l'instant de cette lecture.
 
 Conséquence directe pour le front : après toute écriture, la réponse contient déjà l'agrégat entièrement recalculé.
 **Ne jamais reconstruire l'état côté client** en appliquant l'événement localement — re-rendre depuis la réponse.
@@ -125,6 +125,36 @@ suspendue, en `DEBUT` — ou en `NON_CONFORMITE` pour celle qui était en non co
 ouvre une activité nouvelle : elle ne vise pas celle d'avant la pause. La présence n'en est pas touchée : un opérateur
 en pause reste présent.
 
+### Une activité oubliée se termine automatiquement à son échéance
+
+Une activité que rien n'a terminée se termine automatiquement à son **échéance** : son début plus 13 heures écoulées,
+sans fuseau — le passage à l'heure d'été ne l'allonge ni ne la raccourcit. Rien n'est écrit au journal : la fin
+automatique se lit à l'instant où le serveur répond. Un travail commencé à 8 h et jamais arrêté est en cours à 20 h 59 ;
+à 21 h, et à toute lecture ultérieure, il est terminé à 21 h, avec une anomalie.
+
+Ce que les réponses en montrent :
+
+- `activitesEnCours[]`, du détail comme de la grille, ne contient que les activités **en cours à l'instant de la
+  lecture** : une activité échue en sort d'elle-même, et l'élément passe `INTERROMPU` si plus rien n'y est en cours.
+  Chaque activité porte son `ouverture` — l'identité que visera une fin ou une transition — et son `echeance`.
+- `GET …/temps-effectif` rend chaque intervalle avec son `activite` et `finAutomatique` : vrai quand l'activité est
+  terminée automatiquement à son échéance, faute de fin réelle. C'est l'anomalie à signaler ; `fin` vaut alors
+  l'échéance, ou le départ si la présence ramène l'intervalle en deçà.
+- Deux lectures espacées peuvent différer au voisinage d'une échéance : c'est l'instant de lecture qui tranche.
+
+La même échéance vaut pour les gestes, jugés sur leur heure métier, quel que soit le moment où ils arrivent :
+
+- un geste pointé **au plus tard à l'échéance** de l'activité qu'il vise la termine à son heure, même reçu le
+  lendemain : la fin pointée à 17 h et publiée après une coupure réseau remplace la fin automatique et retire
+  l'anomalie. Un geste pile à l'échéance l'emporte ;
+- une **fin pointée après l'échéance** est enregistrée (`201`) mais sans effet : l'activité garde ses 13 h et son
+  anomalie. Ce n'est pas un refus : le pupitre ne la rejoue pas ;
+- une **transition pointée après l'échéance** de sa cible ouvre la nouvelle activité à son heure ; la cible garde sa
+  borne automatique, et rien n'est compté entre les deux. Une relance après l'échéance laisse le même trou ;
+- une **clôture** postérieure à l'échéance ne prolonge rien ;
+- seul le gestionnaire établit une fin réelle au-delà de l'échéance, en **régularisant** la fin ou la transition
+  (`POST …/regularisations`). Corriger un début déplace l'échéance : l'activité peut redevenir en cours.
+
 ### Un pointage dit son intention et vise son activité
 
 Le type d'un pointage ne dit pas ce qu'il fait d'une activité : son **intention** le dit, et elle est requise, sans
@@ -153,7 +183,8 @@ régularisation et la correction.
   `activite-visee-incoherente`. Ces deux refus sont définitifs : rejouer le même geste ne changera rien.
 - **Un geste qui contredit le journal est aujourd'hui refusé** en **409** `transition-d-atelier-interdite` : sa cible
   est déjà terminée ou remplacée à son heure, son ouvrant est annulé, ou la transition vise une activité de sa propre
-  catégorie. Une transition dont la cible n'est plus en cours ne devient jamais une ouverture.
+  catégorie. Une transition dont la cible n'est plus en cours ne devient jamais une ouverture. Une cible échue, elle,
+  ne contredit rien (voir l'échéance ci-dessus).
 
 ---
 
@@ -169,6 +200,9 @@ GET /api/atelier/suivis?etats=EN_ATTENTE&etats=EN_COURS&etats=INTERROMPU
 
 Les filtres sont **tous facultatifs** — cet écran ne défile pas et n'a aucune notion de date. `etats` absent ne filtre
 rien. `debut`/`fin` ne servent qu'au back-office, et **une borne seule est ignorée** : il faut les deux.
+
+Limite actuelle : le filtre `etats` ne juge pas encore l'échéance. Un élément dont la seule activité est échue sans fin
+réelle est encore retenu par `etats=EN_COURS`, alors que sa ligne affiche `INTERROMPU` ; se fier à l'`etat` de la ligne.
 
 La liste rend une page de **`RestSuiviDAtelierEnGrille`**, sans propriété `journal` (ni tableau vide, ni valeur
 `null`). Tous les autres champs sont conservés : `id`, `element`, `nom`, `type`, `engagePar`, `engageLe`, `etat`,
@@ -202,7 +236,8 @@ Trois pièges :
   implicite puis geste. **Un geste redondant** — une arrivée égarée sur cette route pour un opérateur déjà présent —
   **est absorbé** (`200`, rien d'ajouté). Restent refusés, définitivement, l'opérateur, le poste ou l'élément inconnu (404), le geste rejoué dans le désordre
   (409) et l'UUID réutilisé avec un autre contenu (409).
-- **Arrêter une activité déjà arrêtée, ou un élément clôturé, est absorbé** (`200`) : c'est le double appui. Démarrer
+- **Arrêter une activité déjà arrêtée, ou un élément clôturé, est absorbé** (`200`) : c'est le double appui. Arrêter
+  une activité échue, elle, est enregistré sans effet (`201`). Démarrer
   ou pointer une non conformité sur un élément clôturé reste refusé (`409 suivi-d-atelier-cloture`) : c'est le seul
   refus à afficher à l'opérateur, « OF clôturé, vous ne pouvez plus pointer dessus ».
 - **Deux saisies simultanées ne sont plus un refus** : le serveur rejoue lui-même l'écriture devancée.
@@ -226,12 +261,12 @@ Trois pièges :
 
 Les états d'un élément :
 
-| `etat`       | Sens                                                               |
-| ------------ | ------------------------------------------------------------------ |
-| `EN_ATTENTE` | Engagé, aucun pointage actif. Personne n'y a encore touché.        |
-| `EN_COURS`   | Au moins une activité ouverte — **y compris en non conformité**.   |
-| `INTERROMPU` | Il y a eu du travail, mais plus personne n'y est.                  |
-| `CLOTURE`    | Clôturé. N'accepte plus de pointage (409), mais reste corrigeable. |
+| `etat`       | Sens                                                                                        |
+| ------------ | ------------------------------------------------------------------------------------------- |
+| `EN_ATTENTE` | Engagé, aucun pointage actif. Personne n'y a encore touché.                                 |
+| `EN_COURS`   | Au moins une activité en cours à l'instant de la lecture — **y compris en non conformité**. |
+| `INTERROMPU` | Il y a eu du travail, mais plus aucune activité n'est en cours : terminée, ou échue.        |
+| `CLOTURE`    | Clôturé. N'accepte plus de pointage (409), mais reste corrigeable.                          |
 
 Attention : une non conformité **ne fait pas** passer à `INTERROMPU`. L'activité reste ouverte — ce temps-là se compte
 aussi —, seule sa `categorie` change. Pour signaler visuellement une non conformité, lire
@@ -367,6 +402,9 @@ Rend les intervalles bruts **ramenés aux fenêtres de présence** des opérateu
 n'arrête jamais produit un intervalle fermé à son départ, sans que la fin ait été pointée. La pause de midi, pointée par
 un `FIN` et un `DEBUT`, en produit deux. Un intervalle sans `fin` est encore en cours — c'est un affichage « depuis
 8 h 00 », pas une donnée manquante.
+
+Chaque intervalle porte son `activite`, l'identité de l'activité dont il vient. `finAutomatique: true` signale une
+activité terminée automatiquement à son échéance : sans départ connu, `fin` vaut l'échéance, 13 h après le début.
 
 Un intervalle **`presume: true`** repose sur une fin de journée présumée : l'opérateur n'a pas pointé son départ, et sa
 journée, abandonnée au-delà de l'amplitude maximale, a été fermée à son dernier fait connu. L'afficher comme « à

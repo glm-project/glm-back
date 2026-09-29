@@ -86,6 +86,7 @@ class ActiviteTest {
     assertThat(lue.estOuvert()).isTrue();
     assertThat(lue.finAutomatique()).isFalse();
     assertThat(lue.evenement()).isEqualTo(ouvrant.id());
+    assertThat(lue.activite()).isEqualTo(ActiviteId.ouvertePar(ouvrant.id()));
     assertThat(lue.cle()).isEqualTo(cleDeFraiseuse1DeDupont());
     assertThat(lue.nature()).contains(NATURE_FRAISAGE);
     assertThat(lue.categorie()).isEqualTo(CategorieDActivite.TRAVAIL);

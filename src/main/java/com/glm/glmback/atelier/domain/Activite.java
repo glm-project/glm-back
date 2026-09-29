@@ -78,6 +78,7 @@ public record Activite(EvenementDAtelier ouvrant, Optional<Instant> fin) {
   private IntervalleDActivite intervalle(Optional<Instant> bornee, boolean finAutomatique) {
     return IntervalleDActivite.builder()
       .evenement(ouvrant.id())
+      .activite(id())
       .operateur(ouvrant.operateur())
       .poste(ouvrant.poste())
       .nature(ouvrant.nature())

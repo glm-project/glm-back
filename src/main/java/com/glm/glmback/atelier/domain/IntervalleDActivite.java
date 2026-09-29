@@ -14,6 +14,7 @@ import java.util.Optional;
  */
 public record IntervalleDActivite(
   EvenementDAtelierId evenement,
+  ActiviteId activite,
   OperateurId operateur,
   Optional<PosteDeTravailId> poste,
   Optional<NatureDOperation> nature,
@@ -25,6 +26,7 @@ public record IntervalleDActivite(
 ) {
   public IntervalleDActivite {
     Assert.notNull("evenement", evenement);
+    Assert.notNull("activite", activite);
     Assert.notNull("operateur", operateur);
     Assert.notNull("poste de travail", poste);
     Assert.notNull("nature de l'operation", nature);
@@ -36,14 +38,15 @@ public record IntervalleDActivite(
 
   static IntervalleDActiviteEvenementBuilder builder() {
     return evenement ->
-      operateur ->
-        poste ->
-          nature ->
-            categorie ->
-              debut ->
-                fin ->
-                  finAutomatique ->
-                    new IntervalleDActivite(evenement, operateur, poste, nature, categorie, debut, fin, finAutomatique, false);
+      activite ->
+        operateur ->
+          poste ->
+            nature ->
+              categorie ->
+                debut ->
+                  fin ->
+                    finAutomatique ->
+                      new IntervalleDActivite(evenement, activite, operateur, poste, nature, categorie, debut, fin, finAutomatique, false);
   }
 
   /**
@@ -56,6 +59,7 @@ public record IntervalleDActivite(
       .map(part ->
         new IntervalleDActivite(
           evenement,
+          activite,
           operateur,
           poste,
           nature,
@@ -77,7 +81,11 @@ public record IntervalleDActivite(
   }
 
   interface IntervalleDActiviteEvenementBuilder {
-    IntervalleDActiviteOperateurBuilder evenement(EvenementDAtelierId evenement);
+    IntervalleDActiviteActiviteBuilder evenement(EvenementDAtelierId evenement);
+  }
+
+  interface IntervalleDActiviteActiviteBuilder {
+    IntervalleDActiviteOperateurBuilder activite(ActiviteId activite);
   }
 
   interface IntervalleDActiviteOperateurBuilder {

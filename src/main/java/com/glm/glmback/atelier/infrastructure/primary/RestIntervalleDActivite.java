@@ -10,20 +10,36 @@ import java.util.UUID;
 
 @Schema(
   description = """
-  Du temps passe sur un element, deduit du journal et jamais stocke.
+  Du temps passe sur un element, deduit du journal et jamais stocke, tel qu'il se lit a l'instant de la lecture.
 
   Le temps effectif est l'intersection des intervalles bruts avec les fenetres de presence de l'operateur : c'est
-  pourquoi un depart referme un intervalle que l'operateur n'a jamais arrete.
+  pourquoi un depart referme un intervalle que l'operateur n'a jamais arrete. Une activite que rien n'a terminee avant
+  son echeance, son debut plus 13 heures, y est terminee automatiquement a cette echeance, avec une anomalie.
   """
 )
 record RestIntervalleDActivite(
   @Schema(description = "Evenement qui a ouvert l'intervalle.") UUID evenement,
+  @Schema(
+    description = "Activite de l'intervalle : l'identifiant de son pointage ouvrant d'origine, celui que vise une fin ou une transition.",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  UUID activite,
   @Schema(description = "Operateur concerne.") RestOperateur operateur,
   @Schema(description = "Poste de travail, facultatif.") RestPosteDeTravail poste,
   @Schema(description = "Nature de l'operation, facultative.") String nature,
   @Schema(description = "TRAVAIL ou NON_CONFORMITE.") CategorieDActivite categorie,
   @Schema(description = "Debut de l'intervalle.") Instant debut,
-  @Schema(description = "Fin de l'intervalle, absente s'il est encore en cours.") Instant fin,
+  @Schema(description = "Fin de l'intervalle, absente s'il est encore en cours. Pour une activite terminee automatiquement, son echeance.")
+  Instant fin,
+  @Schema(
+    description = """
+    Vrai si l'activite de l'intervalle est terminee automatiquement a son echeance, faute de fin reelle : c'est une
+    anomalie, qu'une fin pointee au plus tard a l'echeance, ou regularisee, retire au recalcul. Elle suit l'activite,
+    meme quand la presence ramene l'intervalle en deca de son echeance.
+    """,
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  boolean finAutomatique,
   @Schema(
     description = """
     Vrai si l'intervalle repose sur une fin de journee presumee : l'operateur n'a pas pointe son depart, et sa
@@ -37,12 +53,14 @@ record RestIntervalleDActivite(
   static RestIntervalleDActivite from(IntervalleDActivite intervalle, AnnuaireDAtelier annuaire) {
     return new RestIntervalleDActivite(
       intervalle.evenement().uuid(),
+      intervalle.activite().uuid(),
       RestOperateur.resolu(annuaire, intervalle.operateur()),
       RestPosteDeTravail.resolu(annuaire, intervalle.poste()),
       intervalle.nature().map(NatureDOperation::value).orElse(null),
       intervalle.categorie(),
       intervalle.debut(),
       intervalle.fin().orElse(null),
+      intervalle.finAutomatique(),
       intervalle.presume()
     );
   }

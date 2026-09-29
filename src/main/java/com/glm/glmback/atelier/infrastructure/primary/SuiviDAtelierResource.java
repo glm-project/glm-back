@@ -42,7 +42,9 @@ import org.springframework.web.bind.annotation.RestController;
   Deux publics se partagent ces routes. L'operateur (role USER) consulte le tableau des elements actifs et pointe son
   travail. Le gestionnaire (role GESTIONNAIRE) engage les elements, les cloture et corrige les saisies.
 
-  Rien de ce qui se deduit n'est stocke : etat, activites en cours et temps sont recalcules du journal a chaque lecture.
+  Rien de ce qui se deduit n'est stocke : etat, activites en cours et temps sont recalcules du journal a chaque lecture,
+  a l'instant de cette lecture. Une activite que rien n'a terminee se termine automatiquement a son echeance, son debut
+  plus 13 heures, sans qu'aucun evenement ne soit ecrit.
   """
 )
 class SuiviDAtelierResource {
@@ -113,7 +115,8 @@ class SuiviDAtelierResource {
     Les intervalles bruts du journal, ramenes aux fenetres de presence des operateurs.
 
     C'est ici qu'un depart referme ce que l'operateur a oublie d'arreter, sans avoir eu besoin d'etre recopie dans le
-    journal de l'element. Un intervalle sans fin est encore en cours.
+    journal de l'element. Un intervalle sans fin est encore en cours a l'instant de la lecture. Une activite que rien n'a
+    terminee avant son echeance y est terminee automatiquement, a cette echeance, et signalee par finAutomatique.
     """
   )
   @ApiResponse(responseCode = "404", description = "Suivi introuvable.")
@@ -142,8 +145,14 @@ class SuiviDAtelierResource {
     ouverture, en debut ou en non conformite, a la reprise.
     """
   )
-  @ApiResponse(responseCode = "201", description = "Le pointage est enregistre.")
-  @ApiResponse(responseCode = "200", description = "Le geste identique est rejoue, ou l'arret sans effet est absorbe.")
+  @ApiResponse(
+    responseCode = "201",
+    description = "Le pointage est enregistre, y compris une fin pointee apres l'echeance de sa cible, conservee sans effet."
+  )
+  @ApiResponse(
+    responseCode = "200",
+    description = "Le geste identique est rejoue, ou l'arret d'une activite deja arretee, ou d'un element cloture, est absorbe."
+  )
   @ApiResponse(
     responseCode = "400",
     description = "Le corps est invalide, intention et cible comprises, ou la date de survenue est future."

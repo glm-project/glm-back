@@ -216,7 +216,7 @@
         "type" : "object"
       },
       "RestActiviteEnCours" : {
-        "description" : "Ce que l'ecran d'atelier affiche : qui fait quoi, dans quel etat, depuis quand.",
+        "description" : "Ce que l'ecran d'atelier affiche : qui fait quoi, dans quel etat, depuis quand, et jusqu'a quand au plus tard.\n\nSeules les activites en cours a l'instant de la lecture y figurent : une activite dont l'echeance est atteinte en\nsort, terminee automatiquement.\n",
         "properties" : {
           "categorie" : {
             "description" : "TRAVAIL ou NON_CONFORMITE.",
@@ -228,16 +228,26 @@
             "format" : "date-time",
             "type" : "string"
           },
+          "echeance" : {
+            "description" : "Echeance de l'activite : son debut plus 13 heures ecoulees. Si rien ne la termine avant, elle se termine\nautomatiquement a cet instant, avec une anomalie.\n",
+            "format" : "date-time",
+            "type" : "string"
+          },
           "operateur" : {
             "$ref" : "#/components/schemas/RestOperateurDAtelier",
             "description" : "Operateur en activite, absent si la fiche n'est plus resolue au referentiel."
+          },
+          "ouverture" : {
+            "description" : "Identite de l'activite : l'identifiant de son pointage ouvrant d'origine. C'est elle qu'une fin ou une transition\nvise dans `cible`, y compris apres la correction de ce pointage.\n",
+            "format" : "uuid",
+            "type" : "string"
           },
           "poste" : {
             "$ref" : "#/components/schemas/RestPosteDAtelier",
             "description" : "Poste de travail, facultatif."
           }
         },
-        "required" : [ "categorie", "depuis" ],
+        "required" : [ "categorie", "depuis", "echeance", "ouverture" ],
         "type" : "object"
       },
       "RestAmplitudeMaximale" : {
@@ -839,8 +849,13 @@
         "type" : "object"
       },
       "RestIntervalleDActivite" : {
-        "description" : "Du temps passe sur un element, deduit du journal et jamais stocke.\n\nLe temps effectif est l'intersection des intervalles bruts avec les fenetres de presence de l'operateur : c'est\npourquoi un depart referme un intervalle que l'operateur n'a jamais arrete.\n",
+        "description" : "Du temps passe sur un element, deduit du journal et jamais stocke, tel qu'il se lit a l'instant de la lecture.\n\nLe temps effectif est l'intersection des intervalles bruts avec les fenetres de presence de l'operateur : c'est\npourquoi un depart referme un intervalle que l'operateur n'a jamais arrete. Une activite que rien n'a terminee avant\nson echeance, son debut plus 13 heures, y est terminee automatiquement a cette echeance, avec une anomalie.\n",
         "properties" : {
+          "activite" : {
+            "description" : "Activite de l'intervalle : l'identifiant de son pointage ouvrant d'origine, celui que vise une fin ou une transition.",
+            "format" : "uuid",
+            "type" : "string"
+          },
           "categorie" : {
             "description" : "TRAVAIL ou NON_CONFORMITE.",
             "enum" : [ "TRAVAIL", "NON_CONFORMITE" ],
@@ -857,9 +872,13 @@
             "type" : "string"
           },
           "fin" : {
-            "description" : "Fin de l'intervalle, absente s'il est encore en cours.",
+            "description" : "Fin de l'intervalle, absente s'il est encore en cours. Pour une activite terminee automatiquement, son echeance.",
             "format" : "date-time",
             "type" : "string"
+          },
+          "finAutomatique" : {
+            "description" : "Vrai si l'activite de l'intervalle est terminee automatiquement a son echeance, faute de fin reelle : c'est une\nanomalie, qu'une fin pointee au plus tard a l'echeance, ou regularisee, retire au recalcul. Elle suit l'activite,\nmeme quand la presence ramene l'intervalle en deca de son echeance.\n",
+            "type" : "boolean"
           },
           "nature" : {
             "description" : "Nature de l'operation, facultative.",
@@ -878,7 +897,7 @@
             "type" : "boolean"
           }
         },
-        "required" : [ "presume" ],
+        "required" : [ "activite", "finAutomatique", "presume" ],
         "type" : "object"
       },
       "RestJourDeLaSemaine" : {
@@ -1625,7 +1644,7 @@
         "description" : "Le suivi en atelier d'un element engage.\n\nSon etat, ses activites en cours et son temps ne sont **jamais stockes** : tout est deduit du journal a chaque\nlecture. C'est ce qui permet a une saisie rattrapee de compter a l'heure ou elle a reellement eu lieu.\n",
         "properties" : {
           "activitesEnCours" : {
-            "description" : "Les activites ouvertes a cet instant.",
+            "description" : "Les activites en cours a l'instant de la lecture ; une activite dont l'echeance est atteinte n'y figure plus.",
             "items" : {
               "$ref" : "#/components/schemas/RestActiviteEnCours"
             },
@@ -1656,7 +1675,7 @@
             "type" : "string"
           },
           "etat" : {
-            "description" : "EN_ATTENTE, EN_COURS, INTERROMPU ou CLOTURE. Deduit du journal.",
+            "description" : "EN_ATTENTE, EN_COURS, INTERROMPU ou CLOTURE. Deduit du journal a l'instant de la lecture.",
             "enum" : [ "EN_ATTENTE", "EN_COURS", "INTERROMPU", "CLOTURE" ],
             "type" : "string"
           },
@@ -1690,7 +1709,7 @@
         "description" : "Une ligne du tableau d'atelier, sans le journal des evenements.\nL'etat et les activites en cours restent deduits du journal a chaque lecture.\nLe journal complet, annules compris, se consulte via GET /api/atelier/suivis/{id}.\n",
         "properties" : {
           "activitesEnCours" : {
-            "description" : "Les activites ouvertes a cet instant.",
+            "description" : "Les activites en cours a l'instant de la lecture ; une activite dont l'echeance est atteinte n'y figure plus.",
             "items" : {
               "$ref" : "#/components/schemas/RestActiviteEnCours"
             },
@@ -1721,7 +1740,7 @@
             "type" : "string"
           },
           "etat" : {
-            "description" : "EN_ATTENTE, EN_COURS, INTERROMPU ou CLOTURE. Deduit du journal.",
+            "description" : "EN_ATTENTE, EN_COURS, INTERROMPU ou CLOTURE. Deduit du journal a l'instant de la lecture.",
             "enum" : [ "EN_ATTENTE", "EN_COURS", "INTERROMPU", "CLOTURE" ],
             "type" : "string"
           },
@@ -2726,7 +2745,7 @@
                 }
               }
             },
-            "description" : "Le geste identique est rejoue, ou l'arret sans effet est absorbe."
+            "description" : "Le geste identique est rejoue, ou l'arret d'une activite deja arretee, ou d'un element cloture, est absorbe."
           },
           "201" : {
             "content" : {
@@ -2736,7 +2755,7 @@
                 }
               }
             },
-            "description" : "Le pointage est enregistre."
+            "description" : "Le pointage est enregistre, y compris une fin pointee apres l'echeance de sa cible, conservee sans effet."
           },
           "400" : {
             "content" : {
@@ -2844,7 +2863,7 @@
     },
     "/api/atelier/suivis/{id}/temps-effectif" : {
       "get" : {
-        "description" : "Les intervalles bruts du journal, ramenes aux fenetres de presence des operateurs.\n\nC'est ici qu'un depart referme ce que l'operateur a oublie d'arreter, sans avoir eu besoin d'etre recopie dans le\njournal de l'element. Un intervalle sans fin est encore en cours.\n",
+        "description" : "Les intervalles bruts du journal, ramenes aux fenetres de presence des operateurs.\n\nC'est ici qu'un depart referme ce que l'operateur a oublie d'arreter, sans avoir eu besoin d'etre recopie dans le\njournal de l'element. Un intervalle sans fin est encore en cours a l'instant de la lecture. Une activite que rien n'a\nterminee avant son echeance y est terminee automatiquement, a cette echeance, et signalee par finAutomatique.\n",
         "operationId" : "tempsEffectif",
         "parameters" : [ {
           "in" : "path",
@@ -3693,9 +3712,6 @@
     "bearer-jwt" : [ ]
   } ],
   "tags" : [ {
-    "description" : "Le suivi des elements de fabrication mis en atelier.\n\nDeux publics se partagent ces routes. L'operateur (role USER) consulte le tableau des elements actifs et pointe son\ntravail. Le gestionnaire (role GESTIONNAIRE) engage les elements, les cloture et corrige les saisies.\n\nRien de ce qui se deduit n'est stocke : etat, activites en cours et temps sont recalcules du journal a chaque lecture.\n",
-    "name" : "Atelier - elements engages"
-  }, {
     "description" : "La presence des operateurs : arrivee, depart.\n\nUne journee de travail est une venue, bornee par une arrivee et un depart. Ce n'est pas un jour calendaire : le\ncontexte ne connait ni fuseau horaire ni date.\n\nLe depart est ecrit une seule fois, ici, et jamais recopie dans le journal des elements. C'est ce qui permet a une\nseule regularisation de depart de refermer tous les elements de la journee. La pause n'est pas un evenement de\npresence : le pupitre la pointe sur les elements, par une fin puis un debut sur chaque activite.\n",
     "name" : "Atelier - presence des operateurs"
   }, {
@@ -3704,6 +3720,9 @@
   }, {
     "description" : "Le temps passe sur un element de fabrication, valorise par nature d'operation.",
     "name" : "Couts de revient"
+  }, {
+    "description" : "Le suivi des elements de fabrication mis en atelier.\n\nDeux publics se partagent ces routes. L'operateur (role USER) consulte le tableau des elements actifs et pointe son\ntravail. Le gestionnaire (role GESTIONNAIRE) engage les elements, les cloture et corrige les saisies.\n\nRien de ce qui se deduit n'est stocke : etat, activites en cours et temps sont recalcules du journal a chaque lecture,\na l'instant de cette lecture. Une activite que rien n'a terminee se termine automatiquement a son echeance, son debut\nplus 13 heures, sans qu'aucun evenement ne soit ecrit.\n",
+    "name" : "Atelier - elements engages"
   }, {
     "description" : "Le referentiel de ce sur quoi les operateurs pointent : une machine, un etabli, un four, une salle.\n\nChaque poste porte la nature du travail qui s'y fait. C'est de la que vient le metier exerce a un instant donne :\nl'operateur qui demarre sur le poste de soudure soude, celui qui demarre sur un tour tourne. Rien de tout cela n'est\ndeclare sur la personne.\n\nLe gestionnaire declare et revise les postes ; l'operateur (role USER) les consulte.\n",
     "name" : "Postes de travail"

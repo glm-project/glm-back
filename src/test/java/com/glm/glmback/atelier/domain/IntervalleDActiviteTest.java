@@ -23,6 +23,26 @@ class IntervalleDActiviteTest {
   }
 
   @Test
+  void shouldNotBuildWithoutActivite() {
+    assertThatThrownBy(() ->
+      new IntervalleDActivite(
+        EVENEMENT,
+        null,
+        OPERATEUR_ID_DUPONT,
+        Optional.of(POSTE_ID_FRAISEUSE_1),
+        Optional.of(NATURE_FRAISAGE),
+        CategorieDActivite.TRAVAIL,
+        LE_10_MAI_2026_A_8H,
+        Optional.empty(),
+        false,
+        false
+      )
+    )
+      .isExactlyInstanceOf(MissingMandatoryValueException.class)
+      .hasMessageContaining("activite");
+  }
+
+  @Test
   void shouldNotBuildWithoutDebut() {
     assertThatThrownBy(() -> intervalle(EVENEMENT, null, Optional.empty()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
@@ -41,6 +61,7 @@ class IntervalleDActiviteTest {
     assertThatThrownBy(() ->
       new IntervalleDActivite(
         EVENEMENT,
+        ActiviteId.ouvertePar(EVENEMENT),
         OPERATEUR_ID_DUPONT,
         null,
         Optional.of(NATURE_FRAISAGE),
@@ -60,6 +81,7 @@ class IntervalleDActiviteTest {
     assertThatThrownBy(() ->
       new IntervalleDActivite(
         EVENEMENT,
+        ActiviteId.ouvertePar(EVENEMENT),
         OPERATEUR_ID_DUPONT,
         Optional.of(POSTE_ID_FRAISEUSE_1),
         null,
@@ -79,6 +101,7 @@ class IntervalleDActiviteTest {
     assertThatThrownBy(() ->
       new IntervalleDActivite(
         EVENEMENT,
+        ActiviteId.ouvertePar(EVENEMENT),
         null,
         Optional.of(POSTE_ID_FRAISEUSE_1),
         Optional.of(NATURE_FRAISAGE),
@@ -98,6 +121,7 @@ class IntervalleDActiviteTest {
     assertThatThrownBy(() ->
       new IntervalleDActivite(
         EVENEMENT,
+        ActiviteId.ouvertePar(EVENEMENT),
         OPERATEUR_ID_DUPONT,
         Optional.of(POSTE_ID_FRAISEUSE_1),
         Optional.of(NATURE_FRAISAGE),
@@ -204,6 +228,7 @@ class IntervalleDActiviteTest {
   void shouldGarderSaFinAutomatiqueDansUneFenetreDePresence() {
     IntervalleDActivite echu = IntervalleDActivite.builder()
       .evenement(EVENEMENT)
+      .activite(ActiviteId.ouvertePar(EVENEMENT))
       .operateur(OPERATEUR_ID_DUPONT)
       .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
       .nature(Optional.of(NATURE_FRAISAGE))
@@ -225,6 +250,7 @@ class IntervalleDActiviteTest {
   private static IntervalleDActivite intervalle(EvenementDAtelierId evenement, Instant debut, Optional<Instant> fin) {
     return IntervalleDActivite.builder()
       .evenement(evenement)
+      .activite(ActiviteId.ouvertePar(EVENEMENT))
       .operateur(OPERATEUR_ID_DUPONT)
       .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
       .nature(Optional.of(NATURE_FRAISAGE))

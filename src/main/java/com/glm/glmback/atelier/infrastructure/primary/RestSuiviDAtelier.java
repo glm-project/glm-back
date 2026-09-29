@@ -36,13 +36,19 @@ record RestSuiviDAtelier(
   )
   String engagePar,
   @Schema(description = "Instant de l'engagement.", requiredMode = Schema.RequiredMode.REQUIRED) Instant engageLe,
-  @Schema(description = "EN_ATTENTE, EN_COURS, INTERROMPU ou CLOTURE. Deduit du journal.", requiredMode = Schema.RequiredMode.REQUIRED)
+  @Schema(
+    description = "EN_ATTENTE, EN_COURS, INTERROMPU ou CLOTURE. Deduit du journal a l'instant de la lecture.",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
   EtatDAtelier etat,
   @Schema(description = "Utilisateur ayant cloture l'element, absent tant qu'il ne l'est pas.") String cloturePar,
   @Schema(description = "Instant metier de la cloture, absent tant que l'element n'est pas cloture.") Instant clotureLe,
   @Schema(description = "Le journal complet, annules compris, du plus ancien au plus recent.", requiredMode = Schema.RequiredMode.REQUIRED)
   List<RestEvenementDAtelier> journal,
-  @Schema(description = "Les activites ouvertes a cet instant.", requiredMode = Schema.RequiredMode.REQUIRED)
+  @Schema(
+    description = "Les activites en cours a l'instant de la lecture ; une activite dont l'echeance est atteinte n'y figure plus.",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
   List<RestActiviteEnCours> activitesEnCours
 ) {
   static RestSuiviDAtelier from(LectureDuSuivi lecture, AnnuaireDAtelier annuaire) {

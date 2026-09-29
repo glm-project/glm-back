@@ -54,7 +54,10 @@ final class RestSyntheseDeSuiviDAtelier {
   private final Instant engageLe;
 
   @JsonProperty
-  @Schema(description = "EN_ATTENTE, EN_COURS, INTERROMPU ou CLOTURE. Deduit du journal.", requiredMode = Schema.RequiredMode.REQUIRED)
+  @Schema(
+    description = "EN_ATTENTE, EN_COURS, INTERROMPU ou CLOTURE. Deduit du journal a l'instant de la lecture.",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
   private final EtatDAtelier etat;
 
   @JsonProperty
@@ -66,7 +69,10 @@ final class RestSyntheseDeSuiviDAtelier {
   private final Instant clotureLe;
 
   @JsonProperty
-  @Schema(description = "Les activites ouvertes a cet instant.", requiredMode = Schema.RequiredMode.REQUIRED)
+  @Schema(
+    description = "Les activites en cours a l'instant de la lecture ; une activite dont l'echeance est atteinte n'y figure plus.",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
   private final List<RestActiviteEnCours> activitesEnCours;
 
   private RestSyntheseDeSuiviDAtelier(LectureDuSuivi lecture, AnnuaireDAtelier annuaire) {
