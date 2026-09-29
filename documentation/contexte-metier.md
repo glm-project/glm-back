@@ -259,13 +259,13 @@ projections transverses des contextes à venir ». `feuilledetemps` est le premi
 ### La lecture passe par la base, jamais par un import
 
 `atelier`, `operateur` et `postedetravail` étant annotés `@BusinessContext`, ce contexte déclare ses propres entités
-JPA en lecture seule sur leurs tables — exactement ce que fait déjà `atelier` sur `element_de_fabrication`. Il
-rejoue donc **sa propre** version du repli de présence.
+JPA en lecture seule. Il lit les activités qu'atelier projette à chaque écriture dans `activite_d_atelier`,
+avec l'élément porté par leur suivi, et ne réinterprète aucun journal d'activité.
 
-Cette duplication est assumée : le partage passerait soit par un import interdit, soit par le shared kernel, qui est
-en anglais et ne peut pas accueillir du vocabulaire d'atelier. Le filet qui tient les deux implémentations alignées
-est le scénario Cucumber, qui pointe par l'API d'`atelier` et relit par celle de la feuille de temps — il échoue dès
-que les deux contextes cessent de lire les mêmes colonnes.
+Le filet est le scénario Cucumber : il écrit par l'API d'atelier puis lit la feuille de temps. Relances,
+transitions ciblées, fins reçues tardivement, régularisations, corrections, annulations et clôtures doivent y
+restituer l'interprétation du propriétaire. Les seules règles ajoutées à la lecture sont l'état à l'instant
+d'évaluation et le découpage calendaire. La présence garde encore son repli séparé.
 
 ### Ce que la feuille montre
 
@@ -285,12 +285,20 @@ n'a saisie. C'est la transposition de la règle qu'`atelier` applique déjà à 
 
 À instant égal, l'arrivée passe devant dans le repli : l'arrivée implicite d'un geste tardif partage l'heure de ce geste. Chaque plage de la feuille porte `presumee`.
 
-**Le travail par élément** : chaque jour rend ses activités — l'élément, le poste, la nature figée à la saisie,
-travail ou non-conformité, de quelle heure à quelle heure. Les pointages de l'opérateur sur chaque suivi sont encore
-rejoués poste par poste, puis coupés à minuit et bornés à la semaine. Leurs bornes sont celles du travail : une activité
-sans arrivée reste visible, un départ ne la termine pas et les journées ne la rendent pas présumée. Une activité
-encore ouverte ne rend pour l'instant que son jour de début. Elle nomme l'élément, jamais le suivi : un élément
-réengagé après clôture reste le même élément. Ni libellé de poste ni fiche d'élément ici — la synthèse des heures les porte.
+**Le travail par élément** : chaque jour rend ses activités — l'élément, le poste et la nature facultatifs,
+travail ou non-conformité, de quelle heure à quelle heure. La sélection porte sur les activités qui **recouvrent**
+la semaine, même commencées avant elle et sans pointage de la semaine. Une régularisation peut établir une fin bien
+au-delà de 13 h : aucune borne basse fixe sur le début ne permet de les retrouver toutes.
+
+L'instant courant est relevé une seule fois. Une activité avec fin réelle est `TERMINEE`, même si cette fin dépasse
+l'échéance. À défaut, elle est `EN_COURS` avant l'échéance et `TERMINEE_AUTOMATIQUEMENT` dès celle-ci, à cette borne,
+avec son anomalie visible par l'état. Une activité en conflit est `A_RESOUDRE`, sans fin : l'échéance ne la tranche pas.
+La feuille ne calcule aucune durée. Les portions gardent l'identité stable, l'état et les bornes de l'activité entière,
+avec une fin seulement pour les deux états terminés. Les bornes des portions sont coupées à minuit et à la semaine ;
+celles de l'activité restent intactes. Une activité encore ouverte ne rend pour l'instant que son jour de début.
+
+Elle nomme l'élément, jamais le suivi : un élément réengagé après clôture reste le même élément. Ni libellé de poste
+ni fiche d'élément ici — la synthèse des heures les porte. Aucun départ ni seuil de présence ne modifie le travail.
 
 ### Points ouverts
 

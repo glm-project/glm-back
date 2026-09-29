@@ -29,11 +29,9 @@ n'écrit rien, et recalcule tout à chaque appel.
 persistance — l'objet naît et meurt dans l'appel. Chaque jour porte sa `presence` (des `Plage`) et ses `activites`
 (des `IntervalleDActivite` : une `Activite` — élément, poste, nature, catégorie — et sa `Plage`).
 
-`FeuillesDeTempsService` est la fabrique : elle demande les journées qui **recouvrent** la semaine, les lit à
-l'instant présent (fin présumée comprise), les replie en fenêtres de présence, puis passe chaque fenêtre au
-`DecoupageCalendaire`, seul détenteur du fuseau horaire. Le travail suit le même chemin : les `SuiviDuTravail` de
-l'opérateur sont repliés par leur `JournalDAtelier`, puis coupés par le même
-découpage.
+`FeuillesDeTempsService` est la fabrique : elle lit les activités interprétées par atelier, les évalue à l'instant
+courant relevé une seule fois, puis les coupe avec `DecoupageCalendaire`, seul détenteur du fuseau horaire. La présence
+est encore lue séparément et n'intervient pas dans ces activités.
 
 ## Invariants à ne pas casser
 
@@ -51,41 +49,29 @@ découpage.
   la ferme à sa fin présumée, le dernier fait **de la fenêtre de recherche**, départ exclu. Entre le seuil et 24 h,
   une journée fermée compte entière. 24 h est une borne physique, jamais un paramètre : la constante vit dans
   `JourneeDeTravail`, recopiée dans `atelier`, `feuilledetemps`, `syntheseheures` et `coutderevient`.
-- **Le repli du travail rejoue l'automate d'atelier par poste**, l'opérateur étant fixé : un début sur une activité
-  en cours la relance, une non-conformité ouvre une reprise, une fin sans activité est ignorée. Un intervalle court
-  jusqu'au pointage suivant sur le même poste, sinon jusqu'à la clôture du suivi, sinon il reste ouvert. Les
-  événements annulés sont écartés dès le SQL.
-- **Le port rend tout le journal des suivis touchés**, restreint à l'opérateur : une non-conformité de la semaine peut
-  suivre un début de la semaine d'avant. La période ne sert qu'à choisir les suivis ; elle part de la plus précoce des
-  arrivées des journées lues, ou du lundi s'il est antérieur.
-- **Le travail garde les bornes données par son journal**, indépendamment des journées de présence. Une activité
-  commencée sans arrivée reste visible ; aucun départ ni seuil de présence ne la termine ou ne la rend présumée.
+- **Atelier possède l'interprétation.** `ActivitesDeLOperateur` rend sa projection `activite_d_atelier`, lue par
+  une entité propre `@Immutable` : aucun journal d'activité ni automate n'est rejoué ici.
+- **La sélection se fait par recouvrement**, sur le début et la fin réelle ou l'échéance, jamais par un pointage
+  de la semaine ou une arrivée. Aucune borne basse fixe du début : une régularisation peut établir plus de 13 h.
+- **L'état est explicite** : `TERMINEE`, `TERMINEE_AUTOMATIQUEMENT`, `EN_COURS`, `A_RESOUDRE`. Une fin réelle
+  est conservée, même au-delà de l'échéance ; à défaut, l'échéance atteinte termine automatiquement l'activité.
+  Une activité à résoudre reste sans fin, et l'échéance ne résout pas son conflit.
+- **Chaque portion conserve l'activité entière** : son identité stable, son état, son début et sa fin éventuelle.
+  La fin n'existe que pour une activité terminée ou terminée automatiquement. La portion est coupée aux minuits et
+  aux limites de la semaine, sans déplacer ces bornes entières.
 - **Une activité ouverte ne rend que son jour de début**, comme une plage de présence ouverte.
-- **La réduction, l'écart hors journée et le découpage changent avec `syntheseheures`**, qui les applique aux mêmes
-  intervalles pour en tirer les durées : l'écran « Temps opérationnel » du front dessine les unes et additionne les
-  autres. Les tableaux parallèles de `feuille_de_temps.feature` et `synthese_des_heures.feature` sont le filet.
 - **Une activité porte l'élément, jamais le suivi** : un élément réengagé après clôture reste le même élément.
-- **La semaine est toujours explicite.** Aucune « semaine courante » implicite. L'horloge ne sert qu'à juger
-  l'abandon d'une journée : deux appels espacés peuvent donc différer.
+- **La semaine est toujours explicite.** Aucune « semaine courante » implicite. L'horloge sert à évaluer
+  l'expiration des activités et l'abandon d'une journée : deux appels espacés peuvent donc différer.
 - **Aucun import de `atelier`, `operateur` ni `postedetravail`**, tous annotés `@BusinessContext`. Ce contexte
   déclare ses propres entités JPA `@Immutable` sur leurs tables.
 
-## La duplication du repli est assumée
+## La couture avec atelier
 
-`EtatDePresence`, `TypeDEvenementDePresence` et le repli en fenêtres de `JourneeDeTravail` sont une **seconde
-implémentation** de ce qu'`atelier` fait déjà. `EtatDActivite`, `TypeDEvenementDAtelier` et `JournalDAtelier` en sont
-une autre, celle du journal d'un élément : cinq automates d'atelier vivent désormais dans le projet (`atelier`,
-`pupitre`, `coutderevient`, `feuilledetemps`, `syntheseheures`) et changent ensemble. C'est le prix de la
-frontière : le partage passerait soit par un import interdit, soit par le shared kernel, qui est en anglais et ne peut
-pas accueillir du vocabulaire d'atelier.
-
-Deux filets tiennent les deux implémentations alignées :
-
-- les tests unitaires de chaque côté, écrits sur les mêmes transitions ;
-- `src/test/features/feuille_de_temps.feature`, qui **pointe par l'API d'atelier** et **relit par celle-ci**, donc
-  échoue dès que les deux contextes cessent de lire les mêmes colonnes ou de rejouer le même automate.
-
-Modifier l'automate d'un côté sans l'autre est un bug : le scénario Cucumber est là pour le dire.
+`src/test/features/feuille_de_temps.feature` écrit réellement par l'API d'atelier puis lit la feuille : relances,
+transitions ciblées, fins reçues tardivement, régularisations, corrections, annulations et clôtures doivent restituer
+les faits projetés par leur propriétaire. Le calendrier est prouvé par le service et `DecoupageCalendaireTest`.
+La présence conserve pour l'instant son repli propre.
 
 ## Les adapters ne peuvent pas porter le nom de ceux d'atelier
 
@@ -96,18 +82,17 @@ ici. La contrainte ne vaut que pour les classes annotées : les records du domai
 (`Nom`, `OperateurId`, `JourneeDeTravail`…) portent volontairement le même nom que leurs jumeaux d'atelier, puisque
 c'est le même mot du langage métier.
 
-Hibernate enregistre de même chaque entité sous son nom simple : ce contexte a pris `TravailDeLaFeuilleDeTemps`,
-`SuiviDeLaFeuilleDeTempsEntity` et `PointageDAtelierDeLaFeuilleDeTempsEntity`, dont les colonnes reprennent une à une
+Hibernate enregistre de même chaque entité sous son nom simple : ce contexte a pris `ActivitesDeLaFeuilleDeTemps`,
+`ActiviteDeLaFeuilleDeTempsEntity` et `SuiviDeLaFeuilleDeTempsEntity`, dont les colonnes reprennent une à une
 le nommage des entités propriétaires d'`atelier`.
 
 ## Ports sortants
 
 `PresenceDeLOperateur`, `OperateursConnus`, `FuseauHoraireDeLEntreprise`, `SeuilDAmplitude`, `PointagesDAtelier`,
-`TravailDeLOperateur`, `Clock`.
+`ActivitesDeLOperateur`, `Clock`.
 
-`TravailDeLOperateur` est servi par trois requêtes, jamais une par suivi : les identifiants des suivis où l'opérateur a
-pointé sur la période (index `ix_evenement_d_atelier_operateur`), ces suivis, puis leurs journaux triés par date et
-identifiant.
+`ActivitesDeLOperateur` est servi par une requête qui joint les activités à leur suivi pour lire l'identifiant
+d'élément. Le tri final porte sur le début de portion, l'élément puis l'identité stable de l'activité.
 
 `FuseauHoraireDeLEntreprise` est une **donnée de paramétrage**, donc un port : `FuseauHoraireFixe` rend
 `Europe/Paris` pour l'instant, sur le patron assumé d'`InMemoryPrefixesDElementsDeFabrication`. Le jour où une

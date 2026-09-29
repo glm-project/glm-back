@@ -30,14 +30,16 @@ public final class FeuillesDeTempsService {
    */
   private static final Comparator<IntervalleDUnJour> PAR_DEBUT = Comparator.<IntervalleDUnJour, Instant>comparing(intervalle ->
     intervalle.intervalle().plage().debut()
-  ).thenComparing(intervalle -> intervalle.intervalle().activite().element().uuid());
+  )
+    .thenComparing(intervalle -> intervalle.intervalle().activite().element().uuid())
+    .thenComparing(intervalle -> intervalle.intervalle().lecture().id().uuid());
 
   private final PresenceDeLOperateur presences;
   private final OperateursConnus operateurs;
   private final FuseauHoraireDeLEntreprise fuseau;
   private final SeuilDAmplitude seuil;
   private final PointagesDAtelier pointages;
-  private final TravailDeLOperateur travail;
+  private final ActivitesDeLOperateur activites;
   private final Clock clock;
 
   private FeuillesDeTempsService(
@@ -46,7 +48,7 @@ public final class FeuillesDeTempsService {
     FuseauHoraireDeLEntreprise fuseau,
     SeuilDAmplitude seuil,
     PointagesDAtelier pointages,
-    TravailDeLOperateur travail,
+    ActivitesDeLOperateur activites,
     Clock clock
   ) {
     this.presences = presences;
@@ -54,7 +56,7 @@ public final class FeuillesDeTempsService {
     this.fuseau = fuseau;
     this.seuil = seuil;
     this.pointages = pointages;
-    this.travail = travail;
+    this.activites = activites;
     this.clock = clock;
   }
 
@@ -63,23 +65,24 @@ public final class FeuillesDeTempsService {
       operateurs ->
         fuseau ->
           seuil ->
-            pointages -> travail -> clock -> new FeuillesDeTempsService(presences, operateurs, fuseau, seuil, pointages, travail, clock);
+            pointages ->
+              activites -> clock -> new FeuillesDeTempsService(presences, operateurs, fuseau, seuil, pointages, activites, clock);
   }
 
   public FeuilleDeTemps historique(OperateurId operateur, SemaineCalendaire semaine) {
     OperateurConnu connu = operateurs.get(operateur).orElseThrow(() -> new OperateurInconnuException(operateur));
     DecoupageCalendaire decoupage = new DecoupageCalendaire(semaine, fuseau.zone());
-    List<JourneeDeTravail> journees = journeesDeLaSemaine(operateur, decoupage);
+    Instant evaluation = clock.now();
+    List<JourneeDeTravail> journees = journeesDeLaSemaine(operateur, decoupage, evaluation);
 
     return new FeuilleDeTemps(
       connu,
       semaine,
-      jours(decoupage, presenceDeLaSemaine(journees, decoupage), travailDeLaSemaine(operateur, journees, decoupage))
+      jours(decoupage, presenceDeLaSemaine(journees, decoupage), travailDeLaSemaine(operateur, decoupage, evaluation))
     );
   }
 
-  private List<JourneeDeTravail> journeesDeLaSemaine(OperateurId operateur, DecoupageCalendaire decoupage) {
-    Instant maintenant = clock.now();
+  private List<JourneeDeTravail> journeesDeLaSemaine(OperateurId operateur, DecoupageCalendaire decoupage, Instant maintenant) {
     AmplitudeMaximale amplitude = seuil.amplitudeMaximale();
 
     return presences
@@ -98,26 +101,11 @@ public final class FeuillesDeTempsService {
       .toList();
   }
 
-  /**
-   * Les suivis se cherchent depuis la plus precoce des arrivees, ou le lundi s'il est anterieur : un poste de nuit
-   * arrive le dimanche a pu demarrer son travail avant minuit.
-   */
-  private List<IntervalleDUnJour> travailDeLaSemaine(
-    OperateurId operateur,
-    List<JourneeDeTravail> journees,
-    DecoupageCalendaire decoupage
-  ) {
-    Instant depuis = journees
+  private List<IntervalleDUnJour> travailDeLaSemaine(OperateurId operateur, DecoupageCalendaire decoupage, Instant evaluation) {
+    return activites
+      .recouvrant(operateur, decoupage.debut(), decoupage.finExclusive())
       .stream()
-      .flatMap(journee -> journee.arrivee().stream())
-      .filter(arrivee -> arrivee.isBefore(decoupage.debut()))
-      .min(Comparator.naturalOrder())
-      .orElse(decoupage.debut());
-
-    return travail
-      .suivis(operateur, depuis, decoupage.finExclusive())
-      .stream()
-      .flatMap(suivi -> suivi.intervalles().stream())
+      .map(activite -> activite.a(evaluation))
       .flatMap(intervalle -> decoupage.intervalles(intervalle).stream())
       .sorted(PAR_DEBUT)
       .toList();
@@ -174,7 +162,7 @@ public final class FeuillesDeTempsService {
   }
 
   public interface FeuillesDeTempsServiceTravailBuilder {
-    FeuillesDeTempsServiceClockBuilder travail(TravailDeLOperateur travail);
+    FeuillesDeTempsServiceClockBuilder activites(ActivitesDeLOperateur activites);
   }
 
   public interface FeuillesDeTempsServiceClockBuilder {

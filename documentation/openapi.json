@@ -146,8 +146,12 @@
         "type" : "object"
       },
       "RestActiviteDeLaFeuilleDeTemps" : {
-        "description" : "Une periode de travail de l'operateur sur un element, ramenee au jour qui la porte.\n\nUne activite sans fin est en cours : l'operateur ne l'a pas arretee, et la cloture du suivi ne l'a pas\nrefermee. Elle ne s'etend jamais au-dela de son jour de debut.\n",
+        "description" : "Une periode de travail de l'operateur sur un element, ramenee au jour qui la porte.\n\nLe champ activite porte l'identite, les bornes entieres et l'etat explicite. Une activite en cours ou a resoudre\nn'a pas de fin ; une fin automatique porte l'echeance et signale son anomalie.\n",
         "properties" : {
+          "activite" : {
+            "$ref" : "#/components/schemas/RestActiviteInterpreteeDeLaFeuilleDeTemps",
+            "description" : "L'activite entiere et son etat a la lecture."
+          },
           "categorie" : {
             "description" : "Du bon travail, ou sa reprise sur non conformite.",
             "enum" : [ "TRAVAIL", "NON_CONFORMITE" ],
@@ -181,7 +185,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "categorie", "debut", "element" ],
+        "required" : [ "activite", "categorie", "debut", "element" ],
         "type" : "object"
       },
       "RestActiviteDuPupitre" : {
@@ -254,6 +258,33 @@
           }
         },
         "required" : [ "categorie", "depuis", "echeance", "ouverture" ],
+        "type" : "object"
+      },
+      "RestActiviteInterpreteeDeLaFeuilleDeTemps" : {
+        "description" : "L'activite entiere interpretee par atelier, avant son decoupage calendaire.",
+        "properties" : {
+          "debut" : {
+            "description" : "Debut de l'activite entiere.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "etat" : {
+            "description" : "TERMINEE_AUTOMATIQUEMENT signale l'anomalie de fin automatique.",
+            "enum" : [ "TERMINEE", "TERMINEE_AUTOMATIQUEMENT", "EN_COURS", "A_RESOUDRE" ],
+            "type" : "string"
+          },
+          "fin" : {
+            "description" : "Fin de l'activite entiere, seulement si elle est terminee ou terminee automatiquement.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "description" : "Identite stable de l'activite, conservee apres correction.",
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "required" : [ "debut", "etat", "id" ],
         "type" : "object"
       },
       "RestAmplitudeMaximale" : {
@@ -3178,7 +3209,7 @@
     },
     "/api/feuilles-de-temps/{operateurId}" : {
       "get" : {
-        "description" : "Rend les sept jours de la semaine ISO demandee, chacun portant les fenetres de presence et les periodes de\ntravail par element qui lui reviennent dans le fuseau horaire de l'entreprise.\n\nLe travail est rejoue depuis les pointages d'element de l'operateur, poste par poste : un debut sur une activite\nen cours la relance, une non conformite ouvre une reprise, une fin sans activite est ignoree. Une periode court\njusqu'au pointage suivant sur le meme poste, sinon jusqu'a la cloture du suivi, sinon elle reste ouverte. Elle est\nensuite reduite aux fenetres de presence de la journee ou elle a commence : un depart la referme, une fenetre\npresumee la rend presumee, et un travail commence hors de toute journee n'est pas rendu. Elle est enfin coupee a\nminuit ; ouverte, elle ne rend que son jour de debut. Les evenements annules n'apparaissent jamais.\n\nLa semaine est toujours explicite : aucune semaine courante implicite. L'annee est celle des semaines ISO, qui\ndiffere de l'annee civile a ses bornes — la semaine 1 de 2026 commence le 29 decembre 2025.\n\nUne journee sans depart au-dela de l'amplitude maximale de l'entreprise est abandonnee : sa derniere plage se\nferme a son dernier fait connu et porte presumee. C'est l'instant de lecture qui en decide, donc deux appels\nespaces peuvent differer.\n",
+        "description" : "Rend les sept jours de la semaine ISO demandee, chacun portant les fenetres de presence et les periodes de\ntravail par element qui lui reviennent dans le fuseau horaire de l'entreprise.\n\nLe travail est lu dans la projection des activites interpretees par atelier, selectionnee par recouvrement :\nune activite commencee avant la semaine reste visible. La presence ne modifie jamais ses bornes. Chaque portion\nporte l'identite stable, l'etat et les bornes entieres de l'activite, en plus de ses bornes coupees a minuit et a\nla semaine. Une fin reelle est conservee ; sans elle, l'activite est terminee automatiquement a son echeance des\nqu'elle est atteinte. Cet etat signale l'anomalie. Une activite en cours ou a resoudre n'a pas de fin.\nUne activite ouverte ne rend pour l'instant que son jour de debut.\n\nLa semaine est toujours explicite : aucune semaine courante implicite. L'annee est celle des semaines ISO, qui\ndiffere de l'annee civile a ses bornes — la semaine 1 de 2026 commence le 29 decembre 2025.\n\nUne journee sans depart au-dela de l'amplitude maximale de l'entreprise est abandonnee : sa derniere plage se\nferme a son dernier fait connu et porte presumee. C'est l'instant de lecture qui en decide, donc deux appels\nespaces peuvent differer.\n",
         "operationId" : "get_5",
         "parameters" : [ {
           "description" : "Identifiant de l'operateur dans le referentiel.",

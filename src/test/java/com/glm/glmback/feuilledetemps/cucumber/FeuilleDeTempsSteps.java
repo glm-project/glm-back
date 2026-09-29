@@ -54,6 +54,7 @@ public class FeuilleDeTempsSteps {
   private final Map<String, String> elements = new HashMap<>();
   private final Map<String, String> suivis = new HashMap<>();
   private final Map<String, String> pointages = new HashMap<>();
+  private final Map<String, Map<String, Object>> corpsDesPointages = new HashMap<>();
   private String dernierPointage;
 
   @Given("la feuille de temps suit l'operateur {string}")
@@ -130,7 +131,7 @@ public class FeuilleDeTempsSteps {
   public void recoitLesPointages(String element, List<Map<String, String>> pointagesRecus) {
     for (Map<String, String> pointage : pointagesRecus) {
       String survenue = pointage.get("survenue");
-      horloge.ilEst(Instant.parse(pointage.getOrDefault("reception", survenue)));
+      horloge.ilEst(Instant.parse(java.util.Optional.ofNullable(pointage.get("reception")).orElse(survenue)));
       dernierPointage = UUID.randomUUID().toString();
       Map<String, Object> corps = new HashMap<>();
       corps.put("id", dernierPointage);
@@ -144,10 +145,33 @@ public class FeuilleDeTempsSteps {
       if (pointage.containsKey("cible")) {
         corps.put("cible", pointages.get(pointage.get("cible")));
       }
-      ecritures.pointe(suivis.get(element), corps);
+      if ("REGULARISATION".equals(pointage.get("acte"))) {
+        corps.remove("id");
+        ecritures.regularise(suivis.get(element), corps);
+      } else {
+        ecritures.pointe(suivis.get(element), corps);
+      }
       assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage explicite doit etre accepte").isTrue();
       pointages.put(pointage.get("alias"), dernierPointage);
+      corpsDesPointages.put(pointage.get("alias"), corps);
     }
+  }
+
+  @Given("la feuille de temps corrige le pointage {string} sur {string} a {string} vers {string}")
+  public void corrigeLHeure(String alias, String element, String reception, String survenue) {
+    horloge.ilEst(Instant.parse(reception));
+    Map<String, Object> corps = new HashMap<>(corpsDesPointages.get(alias));
+    corps.remove("id");
+    corps.put("motif", "heure erronee");
+    corps.put("dateDeSurvenue", survenue);
+    ecritures.corrige(suivis.get(element), pointages.get(alias), corps);
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("la correction doit etre acceptee").isTrue();
+  }
+
+  @Then("le suivi de la feuille de temps de {string} ne porte aucun conflit")
+  public void nePorteAucunConflit(String element) {
+    rest.get(SUIVIS_URI + "/" + suivis.get(element));
+    assertThat((List<?>) CucumberRestTestContext.getElement("$.conflits")).isEmpty();
   }
 
   @Given("le dernier pointage sur l'element {string} est annule a {string}")
@@ -263,7 +287,7 @@ public class FeuilleDeTempsSteps {
     for (int rang = 0; rang < attendues.size(); rang++) {
       Map<String, String> attendue = attendues.get(rang);
       Map<String, Object> lue = activites.get(rang);
-      attendue.forEach((cle, valeur) -> assertThat(lue.get(cle)).as(cle).isEqualTo(attendu(cle, valeur)));
+      attendue.forEach((cle, valeur) -> assertThat(valeurLue(lue, cle)).as(cle).isEqualTo(attendu(cle, valeur)));
     }
   }
 
@@ -276,8 +300,20 @@ public class FeuilleDeTempsSteps {
     return switch (cle) {
       case "element" -> elements.get(valeur);
       case "poste" -> postes.get(valeur);
-      case "presumee" -> Boolean.valueOf(valeur);
+      case "idActivite" -> pointages.get(valeur);
       default -> valeur;
+    };
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Object valeurLue(Map<String, Object> portion, String cle) {
+    Map<String, Object> activite = (Map<String, Object>) portion.get("activite");
+    return switch (cle) {
+      case "idActivite" -> activite.get("id");
+      case "etat" -> activite.get("etat");
+      case "debutActivite" -> activite.get("debut");
+      case "finActivite" -> activite.get("fin");
+      default -> portion.get(cle);
     };
   }
 

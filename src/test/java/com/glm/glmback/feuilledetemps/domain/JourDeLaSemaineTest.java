@@ -61,7 +61,10 @@ class JourDeLaSemaineTest {
 
   @Test
   void shouldNotBuildWithNullActivite() {
-    List<IntervalleDActivite> activites = Arrays.asList(new IntervalleDActivite(activiteDeTravailDuCarterSurLaDmu50(), DE_8H_A_12H), null);
+    List<IntervalleDActivite> activites = Arrays.asList(
+      new IntervalleDActivite(activiteDeTravailDuCarterSurLaDmu50(), DE_8H_A_12H, travailDuCarterLuSur(DE_8H_A_12H)),
+      null
+    );
 
     assertThatThrownBy(() -> new JourDeLaSemaine(LUNDI_11_MAI_2026, List.of(), activites))
       .isExactlyInstanceOf(NullElementInCollectionException.class)
@@ -70,7 +73,11 @@ class JourDeLaSemaineTest {
 
   @Test
   void shouldPorterSesActivites() {
-    IntervalleDActivite travail = new IntervalleDActivite(activiteDeTravailDuCarterSurLaDmu50(), DE_8H_A_12H);
+    IntervalleDActivite travail = new IntervalleDActivite(
+      activiteDeTravailDuCarterSurLaDmu50(),
+      DE_8H_A_12H,
+      travailDuCarterLuSur(DE_8H_A_12H)
+    );
 
     assertThat(new JourDeLaSemaine(LUNDI_11_MAI_2026, List.of(DE_8H_A_12H), List.of(travail)).activites()).containsExactly(travail);
   }

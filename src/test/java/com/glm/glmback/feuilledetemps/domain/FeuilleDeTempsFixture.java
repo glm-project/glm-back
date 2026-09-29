@@ -64,6 +64,9 @@ public final class FeuilleDeTempsFixture {
   public static final Prenom PRENOM_JEAN = new Prenom("Jean");
   public static final OperateurConnu OPERATEUR_CONNU_DUPONT = new OperateurConnu(OPERATEUR_ID_DUPONT, NOM_DUPONT, PRENOM_JEAN);
 
+  public static final ActiviteId ACTIVITE_ID_DU_CARTER = new ActiviteId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
+  public static final ActiviteId ACTIVITE_ID_DE_LA_BRIDE = new ActiviteId(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
+
   private FeuilleDeTempsFixture() {}
 
   public static EvenementDePresence arriveeA(Instant date) {
@@ -112,34 +115,6 @@ public final class FeuilleDeTempsFixture {
     return new JourneeDeTravail(List.of(arriveeA(LE_DIMANCHE_10_MAI_2026_A_20H), departA(LE_LUNDI_11_MAI_2026_A_8H)));
   }
 
-  public static PointageDAtelier debutSurLaDmu50A(Instant date) {
-    return surLaDmu50(TypeDEvenementDAtelier.DEBUT, date);
-  }
-
-  public static PointageDAtelier nonConformiteSurLaDmu50A(Instant date) {
-    return surLaDmu50(TypeDEvenementDAtelier.NON_CONFORMITE, date);
-  }
-
-  public static PointageDAtelier finSurLaDmu50A(Instant date) {
-    return surLaDmu50(TypeDEvenementDAtelier.FIN, date);
-  }
-
-  public static PointageDAtelier debutAuTourA(Instant date) {
-    return auTour(TypeDEvenementDAtelier.DEBUT, date);
-  }
-
-  public static PointageDAtelier finAuTourA(Instant date) {
-    return auTour(TypeDEvenementDAtelier.FIN, date);
-  }
-
-  public static PointageDAtelier debutSansPosteA(Instant date) {
-    return PointageDAtelier.builder()
-      .type(TypeDEvenementDAtelier.DEBUT)
-      .poste(Optional.empty())
-      .nature(Optional.empty())
-      .dateDeSurvenue(date);
-  }
-
   public static Activite activiteDeTravailDuCarterSurLaDmu50() {
     return Activite.builder()
       .element(ELEMENT_ID_CARTER)
@@ -172,20 +147,26 @@ public final class FeuilleDeTempsFixture {
       .categorie(CategorieDActivite.TRAVAIL);
   }
 
-  private static PointageDAtelier surLaDmu50(TypeDEvenementDAtelier type, Instant date) {
-    return PointageDAtelier.builder()
-      .type(type)
-      .poste(Optional.of(POSTE_ID_DMU_50))
-      .nature(Optional.of(NATURE_FRAISAGE))
-      .dateDeSurvenue(date);
+  public static ActiviteInterpretee travailDuCarterOuvertA8H() {
+    return ActiviteInterpretee.builder()
+      .id(ACTIVITE_ID_DU_CARTER)
+      .activite(activiteDeTravailDuCarterSurLaDmu50())
+      .plage(new Plage(LE_LUNDI_11_MAI_2026_A_8H, Optional.empty()))
+      .echeance(Instant.parse("2026-05-11T19:00:00Z"))
+      .aResoudre(false);
   }
 
-  private static PointageDAtelier auTour(TypeDEvenementDAtelier type, Instant date) {
-    return PointageDAtelier.builder()
-      .type(type)
-      .poste(Optional.of(POSTE_ID_TOUR))
-      .nature(Optional.of(NATURE_TOURNAGE))
-      .dateDeSurvenue(date);
+  public static ActiviteInterpretee travailDuCarterDe8HA10H() {
+    return ActiviteInterpretee.builder()
+      .id(ACTIVITE_ID_DU_CARTER)
+      .activite(activiteDeTravailDuCarterSurLaDmu50())
+      .plage(new Plage(LE_LUNDI_11_MAI_2026_A_8H, Optional.of(LE_LUNDI_11_MAI_2026_A_10H)))
+      .echeance(Instant.parse("2026-05-11T19:00:00Z"))
+      .aResoudre(false);
+  }
+
+  public static ActiviteLue travailDuCarterLuSur(Plage plage) {
+    return new ActiviteLue(ACTIVITE_ID_DU_CARTER, plage.estOuverte() ? EtatDActivite.EN_COURS : EtatDActivite.TERMINEE, plage);
   }
 
   private static Instant aParis(int jourDeMai, int heure) {

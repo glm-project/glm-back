@@ -13,8 +13,8 @@ import java.util.UUID;
   description = """
   Une periode de travail de l'operateur sur un element, ramenee au jour qui la porte.
 
-  Une activite sans fin est en cours : l'operateur ne l'a pas arretee, et la cloture du suivi ne l'a pas
-  refermee. Elle ne s'etend jamais au-dela de son jour de debut.
+  Le champ activite porte l'identite, les bornes entieres et l'etat explicite. Une activite en cours ou a resoudre
+  n'a pas de fin ; une fin automatique porte l'echeance et signale son anomalie.
   """
 )
 record RestActiviteDeLaFeuilleDeTemps(
@@ -29,7 +29,9 @@ record RestActiviteDeLaFeuilleDeTemps(
   CategorieDActivite categorie,
   @Schema(description = "Debut de l'activite.", example = "2026-09-21T05:05:00Z", requiredMode = Schema.RequiredMode.REQUIRED)
   Instant debut,
-  @Schema(description = "Fin de l'activite, absente tant qu'elle est en cours.", example = "2026-09-21T10:00:00Z") Instant fin
+  @Schema(description = "Fin de l'activite, absente tant qu'elle est en cours.", example = "2026-09-21T10:00:00Z") Instant fin,
+  @Schema(description = "L'activite entiere et son etat a la lecture.", requiredMode = Schema.RequiredMode.REQUIRED)
+  RestActiviteInterpreteeDeLaFeuilleDeTemps activite
 ) {
   static RestActiviteDeLaFeuilleDeTemps from(IntervalleDActivite intervalle) {
     return new RestActiviteDeLaFeuilleDeTemps(
@@ -38,7 +40,8 @@ record RestActiviteDeLaFeuilleDeTemps(
       intervalle.activite().nature().map(NatureDOperation::value).orElse(null),
       intervalle.activite().categorie(),
       intervalle.plage().debut(),
-      intervalle.plage().fin().orElse(null)
+      intervalle.plage().fin().orElse(null),
+      RestActiviteInterpreteeDeLaFeuilleDeTemps.from(intervalle.lecture())
     );
   }
 }

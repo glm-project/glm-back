@@ -259,3 +259,223 @@ Feature: Feuille de temps hebdomadaire d'un operateur
   Scenario: Une semaine hors bornes est refusee
     When je consulte la feuille de temps de "dupont" pour la semaine 54 de 2026
     Then la reponse a le statut http 400
+
+  Scenario: Une activite oubliee est terminee automatiquement a treize heures
+    Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type  | intention | operateur | poste  | survenue             |
+      | A     | DEBUT | OUVERTURE | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+    And il est "2026-05-11T19:00:00Z"
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
+    Then les activites du "2026-05-11" sont
+      | element | debut                | fin                  | idActivite | etat                     | debutActivite        | finActivite          |
+      | carter  | 2026-05-11T06:00:00Z | 2026-05-11T19:00:00Z | A          | TERMINEE_AUTOMATIQUEMENT | 2026-05-11T06:00:00Z | 2026-05-11T19:00:00Z |
+
+  Scenario: A vingt heures cinquante-neuf une activite sans poste est encore en cours
+    Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type  | intention | operateur | survenue             |
+      | A     | DEBUT | OUVERTURE | dupont    | 2026-05-11T06:00:00Z |
+    And il est "2026-05-11T18:59:00Z"
+    When je consulte la feuille de temps de "dupont" pour la semaine 20 de 2026
+    Then les activites du "2026-05-11" sont
+      | element | poste | nature | debut                | fin | idActivite | etat     | debutActivite        | finActivite |
+      | carter  |       |        | 2026-05-11T06:00:00Z |     | A          | EN_COURS | 2026-05-11T06:00:00Z |             |
+
+  Scenario: La fin automatique du dimanche se retrouve sans pointage du lundi
+    Given l'element "carter" est engage en atelier a "2026-05-10T17:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type  | intention | operateur | poste  | survenue             |
+      | A     | DEBUT | OUVERTURE | martin    | DMU 50 | 2026-05-10T20:00:00Z |
+    And il est "2026-05-11T10:00:00Z"
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
+    Then les activites du "2026-05-11" sont
+      | debut                | fin                  | idActivite | etat                     | debutActivite        | finActivite          |
+      | 2026-05-10T22:00:00Z | 2026-05-11T09:00:00Z | A          | TERMINEE_AUTOMATIQUEMENT | 2026-05-10T20:00:00Z | 2026-05-11T09:00:00Z |
+    When je consulte la feuille de temps de "martin" pour la semaine 19 de 2026
+    Then les activites du "2026-05-10" sont
+      | debut                | fin                  | etat                     | debutActivite        | finActivite          |
+      | 2026-05-10T20:00:00Z | 2026-05-10T22:00:00Z | TERMINEE_AUTOMATIQUEMENT | 2026-05-10T20:00:00Z | 2026-05-11T09:00:00Z |
+
+  Scenario: Une fin du lundi partage une activite du dimanche entre deux semaines
+    Given l'element "carter" est engage en atelier a "2026-05-10T17:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type  | intention | cible | operateur | poste  | survenue             |
+      | A     | DEBUT | OUVERTURE |       | martin    | DMU 50 | 2026-05-10T20:00:00Z |
+      | F     | FIN   | FIN       | A     | martin    | DMU 50 | 2026-05-11T01:00:00Z |
+    When je consulte la feuille de temps de "martin" pour la semaine 19 de 2026
+    Then les activites du "2026-05-10" sont
+      | debut                | fin                  | idActivite | etat     | debutActivite        | finActivite          |
+      | 2026-05-10T20:00:00Z | 2026-05-10T22:00:00Z | A          | TERMINEE | 2026-05-10T20:00:00Z | 2026-05-11T01:00:00Z |
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
+    Then les activites du "2026-05-11" sont
+      | debut                | fin                  | idActivite | etat     | debutActivite        | finActivite          |
+      | 2026-05-10T22:00:00Z | 2026-05-11T01:00:00Z | A          | TERMINEE | 2026-05-10T20:00:00Z | 2026-05-11T01:00:00Z |
+
+  Scenario: Une relance avant echeance termine sa precedente activite
+    Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type  | intention | operateur | poste  | survenue             |
+      | A     | DEBUT | OUVERTURE | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | B     | DEBUT | OUVERTURE | martin    | DMU 50 | 2026-05-11T12:00:00Z |
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
+    Then les activites du "2026-05-11" sont
+      | debut                | fin                  | idActivite | etat     |
+      | 2026-05-11T06:00:00Z | 2026-05-11T12:00:00Z | A          | TERMINEE |
+      | 2026-05-11T12:00:00Z |                      | B          | EN_COURS |
+
+  Scenario: Une relance apres echeance conserve un trou entre les activites
+    Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type  | intention | operateur | poste  | survenue             |
+      | A     | DEBUT | OUVERTURE | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | B     | DEBUT | OUVERTURE | martin    | DMU 50 | 2026-05-11T21:00:00Z |
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
+    Then les activites du "2026-05-11" sont
+      | debut                | fin                  | idActivite | etat                     |
+      | 2026-05-11T06:00:00Z | 2026-05-11T19:00:00Z | A          | TERMINEE_AUTOMATIQUEMENT |
+      | 2026-05-11T21:00:00Z |                      | B          | EN_COURS                 |
+
+  Scenario: Le passage de travail a NC termine seulement le travail vise
+    Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type           | intention  | cible | operateur | poste  | survenue             |
+      | A     | DEBUT          | OUVERTURE  |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | N     | NON_CONFORMITE | TRANSITION | A     | martin    | DMU 50 | 2026-05-11T10:00:00Z |
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
+    Then les activites du "2026-05-11" sont
+      | categorie      | debut                | fin                  | idActivite | etat     |
+      | TRAVAIL        | 2026-05-11T06:00:00Z | 2026-05-11T10:00:00Z | A          | TERMINEE |
+      | NON_CONFORMITE | 2026-05-11T10:00:00Z |                      | N          | EN_COURS |
+
+  Scenario: Une fin a dix-sept heures recue le lendemain remplace la fin automatique
+    Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type  | intention | cible | operateur | poste  | survenue             | reception            |
+      | A     | DEBUT | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z | 2026-05-11T06:00:00Z |
+      | F     | FIN   | FIN       | A     | martin    | DMU 50 | 2026-05-11T15:00:00Z | 2026-05-12T08:00:00Z |
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
+    Then les activites du "2026-05-11" sont
+      | debut                | fin                  | idActivite | etat     |
+      | 2026-05-11T06:00:00Z | 2026-05-11T15:00:00Z | A          | TERMINEE |
+
+  Scenario: Une fin pointee a vingt-trois heures conserve la borne automatique sans conflit
+    Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type  | intention | cible | operateur | poste  | survenue             |
+      | A     | DEBUT | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | F     | FIN   | FIN       | A     | martin    | DMU 50 | 2026-05-11T21:00:00Z |
+    Then le suivi de la feuille de temps de "carter" ne porte aucun conflit
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
+    Then les activites du "2026-05-11" sont
+      | debut                | fin                  | idActivite | etat                     |
+      | 2026-05-11T06:00:00Z | 2026-05-11T19:00:00Z | A          | TERMINEE_AUTOMATIQUEMENT |
+
+  Scenario: Une transition pointee apres echeance ouvre une NC sans prolonger le travail
+    Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type           | intention  | cible | operateur | poste  | survenue             |
+      | A     | DEBUT          | OUVERTURE  |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | N     | NON_CONFORMITE | TRANSITION | A     | martin    | DMU 50 | 2026-05-11T21:00:00Z |
+    Then le suivi de la feuille de temps de "carter" ne porte aucun conflit
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
+    Then les activites du "2026-05-11" sont
+      | categorie      | debut                | fin                  | idActivite | etat                     |
+      | TRAVAIL        | 2026-05-11T06:00:00Z | 2026-05-11T19:00:00Z | A          | TERMINEE_AUTOMATIQUEMENT |
+      | NON_CONFORMITE | 2026-05-11T21:00:00Z |                      | N          | EN_COURS                 |
+
+  Scenario: Une fin regularisee apres echeance prolonge reellement le travail
+    Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type  | intention | cible | operateur | poste  | survenue             | acte           |
+      | A     | DEBUT | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z | POINTAGE       |
+      | F     | FIN   | FIN       | A     | martin    | DMU 50 | 2026-05-11T21:00:00Z | REGULARISATION |
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
+    Then les activites du "2026-05-11" sont
+      | debut                | fin                  | idActivite | etat     |
+      | 2026-05-11T06:00:00Z | 2026-05-11T21:00:00Z | A          | TERMINEE |
+
+  Scenario: Une transition recue le lendemain conserve ses heures metier et sa propre echeance
+    Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type           | intention  | cible | operateur | poste  | survenue             | reception            |
+      | A     | DEBUT          | OUVERTURE  |       | martin    | DMU 50 | 2026-05-11T06:00:00Z | 2026-05-11T06:00:00Z |
+      | N     | NON_CONFORMITE | TRANSITION | A     | martin    | DMU 50 | 2026-05-11T10:00:00Z | 2026-05-12T08:00:00Z |
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
+    Then les activites du "2026-05-11" sont
+      | categorie      | debut                | fin                  | idActivite | etat                     | finActivite          |
+      | TRAVAIL        | 2026-05-11T06:00:00Z | 2026-05-11T10:00:00Z | A          | TERMINEE                 | 2026-05-11T10:00:00Z |
+      | NON_CONFORMITE | 2026-05-11T10:00:00Z | 2026-05-11T22:00:00Z | N          | TERMINEE_AUTOMATIQUEMENT | 2026-05-11T23:00:00Z |
+    And les activites du "2026-05-12" sont
+      | categorie      | debut                | fin                  | idActivite | etat                     |
+      | NON_CONFORMITE | 2026-05-11T22:00:00Z | 2026-05-11T23:00:00Z | N          | TERMINEE_AUTOMATIQUEMENT |
+
+  Scenario: Une fin exactement a echeance recue le lendemain est une fin reelle
+    Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type  | intention | cible | operateur | poste  | survenue             | reception            |
+      | A     | DEBUT | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z | 2026-05-11T06:00:00Z |
+      | F     | FIN   | FIN       | A     | martin    | DMU 50 | 2026-05-11T19:00:00Z | 2026-05-12T08:00:00Z |
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
+    Then les activites du "2026-05-11" sont
+      | debut                | fin                  | idActivite | etat     |
+      | 2026-05-11T06:00:00Z | 2026-05-11T19:00:00Z | A          | TERMINEE |
+
+  Scenario: La correction du debut garde son identite et rend le travail de nouveau en cours
+    Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type  | intention | operateur | poste  | survenue             |
+      | A     | DEBUT | OUVERTURE | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+    And la feuille de temps corrige le pointage "A" sur "carter" a "2026-05-11T20:00:00Z" vers "2026-05-11T10:00:00Z"
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
+    Then les activites du "2026-05-11" sont
+      | debut                | fin | idActivite | etat     | debutActivite        | finActivite |
+      | 2026-05-11T10:00:00Z |     | A          | EN_COURS | 2026-05-11T10:00:00Z |             |
+
+  Scenario: Une cloture apres echeance conserve la fin automatique
+    Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type  | intention | operateur | poste  | survenue             |
+      | A     | DEBUT | OUVERTURE | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+    And l'element "carter" est cloture a "2026-05-11T21:00:00Z"
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
+    Then les activites du "2026-05-11" sont
+      | debut                | fin                  | idActivite | etat                     |
+      | 2026-05-11T06:00:00Z | 2026-05-11T19:00:00Z | A          | TERMINEE_AUTOMATIQUEMENT |
+
+  Scenario: Une fin avant cloture recue apres cloture remplace sa borne
+    Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type  | intention | operateur | poste  | survenue             |
+      | A     | DEBUT | OUVERTURE | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+    And l'element "carter" est cloture a "2026-05-11T18:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type | intention | cible | operateur | poste  | survenue             | reception            |
+      | F     | FIN  | FIN       | A     | martin    | DMU 50 | 2026-05-11T15:00:00Z | 2026-05-12T08:00:00Z |
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
+    Then les activites du "2026-05-11" sont
+      | debut                | fin                  | idActivite | etat     |
+      | 2026-05-11T06:00:00Z | 2026-05-11T15:00:00Z | A          | TERMINEE |
+
+  Scenario: Une regularisation tres longue recouvre la semaine sans borne basse de debut
+    Given l'element "carter" est engage en atelier a "2026-05-01T04:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type  | intention | cible | operateur | poste  | survenue             | acte           |
+      | A     | DEBUT | OUVERTURE |       | martin    | DMU 50 | 2026-05-01T06:00:00Z | POINTAGE       |
+      | F     | FIN   | FIN       | A     | martin    | DMU 50 | 2026-05-11T08:00:00Z | REGULARISATION |
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
+    Then les activites du "2026-05-11" sont
+      | debut                | fin                  | idActivite | etat     | debutActivite        |
+      | 2026-05-10T22:00:00Z | 2026-05-11T08:00:00Z | A          | TERMINEE | 2026-05-01T06:00:00Z |
+
+  Scenario: Annuler la fin fait reapparaitre la borne automatique
+    Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type  | intention | cible | operateur | poste  | survenue             |
+      | A     | DEBUT | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | F     | FIN   | FIN       | A     | martin    | DMU 50 | 2026-05-11T15:00:00Z |
+    And le dernier pointage sur l'element "carter" est annule a "2026-05-12T08:00:00Z"
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
+    Then les activites du "2026-05-11" sont
+      | debut                | fin                  | idActivite | etat                     |
+      | 2026-05-11T06:00:00Z | 2026-05-11T19:00:00Z | A          | TERMINEE_AUTOMATIQUEMENT |

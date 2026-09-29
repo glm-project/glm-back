@@ -157,28 +157,29 @@ class DecoupageCalendaireTest {
    * Un poste de nuit se coupe a minuit comme la presence : l'activite garde son element, son poste et sa categorie
    * sur chacun des deux jours.
    */
-  @Test
-  void shouldScinderUneActiviteAMinuitEnGardantSonActivite() {
-    DecoupageCalendaire decoupage = new DecoupageCalendaire(SEMAINE_20_DE_2026, PARIS);
-    Activite activite = FeuilleDeTempsFixture.activiteDeTravailDuCarterSurLaDmu50();
-    IntervalleDActivite deNuit = new IntervalleDActivite(
-      activite,
-      new Plage(Instant.parse("2026-05-11T20:00:00Z"), Optional.of(Instant.parse("2026-05-12T01:00:00Z")))
-    );
 
-    assertThat(decoupage.intervalles(deNuit)).containsExactly(
+  @Test
+  void shouldScinderUneActiviteAMinuitEnGardantSesBornesEntieres() {
+    Activite activite = FeuilleDeTempsFixture.activiteDeTravailDuCarterSurLaDmu50();
+    Plage entiere = new Plage(Instant.parse("2026-05-11T20:00:00Z"), Optional.of(Instant.parse("2026-05-12T01:00:00Z")));
+    ActiviteLue lecture = FeuilleDeTempsFixture.travailDuCarterLuSur(entiere);
+    IntervalleDActivite deNuit = new IntervalleDActivite(activite, entiere, lecture);
+
+    assertThat(decoupage().intervalles(deNuit)).containsExactly(
       new IntervalleDUnJour(
         LocalDate.of(2026, 5, 11),
         new IntervalleDActivite(
           activite,
-          new Plage(Instant.parse("2026-05-11T20:00:00Z"), Optional.of(Instant.parse("2026-05-11T22:00:00Z")))
+          new Plage(Instant.parse("2026-05-11T20:00:00Z"), Optional.of(Instant.parse("2026-05-11T22:00:00Z"))),
+          lecture
         )
       ),
       new IntervalleDUnJour(
         LocalDate.of(2026, 5, 12),
         new IntervalleDActivite(
           activite,
-          new Plage(Instant.parse("2026-05-11T22:00:00Z"), Optional.of(Instant.parse("2026-05-12T01:00:00Z")))
+          new Plage(Instant.parse("2026-05-11T22:00:00Z"), Optional.of(Instant.parse("2026-05-12T01:00:00Z"))),
+          lecture
         )
       )
     );
@@ -186,12 +187,13 @@ class DecoupageCalendaireTest {
 
   @Test
   void shouldRendreUneActiviteOuverteSurSonSeulJour() {
-    DecoupageCalendaire decoupage = new DecoupageCalendaire(SEMAINE_20_DE_2026, PARIS);
+    Plage plage = new Plage(Instant.parse("2026-05-11T20:00:00Z"), Optional.empty());
     IntervalleDActivite enCours = new IntervalleDActivite(
       FeuilleDeTempsFixture.activiteDeTravailDuCarterSurLaDmu50(),
-      new Plage(Instant.parse("2026-05-11T20:00:00Z"), Optional.empty())
+      plage,
+      FeuilleDeTempsFixture.travailDuCarterLuSur(plage)
     );
 
-    assertThat(decoupage.intervalles(enCours)).containsExactly(new IntervalleDUnJour(LocalDate.of(2026, 5, 11), enCours));
+    assertThat(decoupage().intervalles(enCours)).containsExactly(new IntervalleDUnJour(LocalDate.of(2026, 5, 11), enCours));
   }
 }
