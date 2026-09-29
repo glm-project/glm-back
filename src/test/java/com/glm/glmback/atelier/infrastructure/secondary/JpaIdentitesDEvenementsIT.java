@@ -293,7 +293,7 @@ class JpaIdentitesDEvenementsIT {
   private static EmpreinteDEvenement arrivee(Optional<Instant> date) {
     return EmpreinteDEvenement.builder()
       .nature(NatureDeGesteDuPupitre.ARRIVEE)
-      .cible(Optional.empty())
+      .suivi(Optional.empty())
       .operateur(UUID.fromString("00000000-0000-0000-0000-000000000001"))
       .type("ARRIVEE")
       .poste(Optional.empty())

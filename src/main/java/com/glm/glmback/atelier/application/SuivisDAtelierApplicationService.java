@@ -98,7 +98,7 @@ public class SuivisDAtelierApplicationService {
         commande.evenement().uuid(),
         EmpreinteDEvenement.builder()
           .nature(NatureDeGesteDuPupitre.POINTAGE_D_ATELIER)
-          .cible(Optional.of(commande.suivi().uuid()))
+          .suivi(Optional.of(commande.suivi().uuid()))
           .operateur(commande.operateur().uuid())
           .type(commande.type().name())
           .poste(commande.poste().map(poste -> poste.uuid()))

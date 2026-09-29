@@ -73,7 +73,7 @@ public class JourneesDeTravailApplicationService {
         commande.evenement().uuid(),
         EmpreinteDEvenement.builder()
           .nature(NatureDeGesteDuPupitre.ARRIVEE)
-          .cible(Optional.empty())
+          .suivi(Optional.empty())
           .operateur(commande.operateur().uuid())
           .type(commande.type().name())
           .poste(Optional.empty())
@@ -104,7 +104,7 @@ public class JourneesDeTravailApplicationService {
         commande.evenement().uuid(),
         EmpreinteDEvenement.builder()
           .nature(NatureDeGesteDuPupitre.POINTAGE_DE_PRESENCE)
-          .cible(Optional.empty())
+          .suivi(Optional.empty())
           .operateur(commande.operateur().uuid())
           .type(commande.type().name())
           .poste(Optional.empty())

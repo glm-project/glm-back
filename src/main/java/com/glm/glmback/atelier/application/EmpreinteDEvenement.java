@@ -5,10 +5,16 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
-/** Le contenu stable d'un geste du pupitre, independant de l'etat courant des agregats. */
+/**
+ * Le contenu stable d'un geste du pupitre, independant de l'etat courant des agregats.
+ *
+ * <p>
+ * Le suivi est celui d'un pointage d'element ; la presence n'en a pas.
+ * </p>
+ */
 public record EmpreinteDEvenement(
   NatureDeGesteDuPupitre nature,
-  Optional<UUID> cible,
+  Optional<UUID> suivi,
   UUID operateur,
   String type,
   Optional<UUID> poste,
@@ -16,7 +22,7 @@ public record EmpreinteDEvenement(
 ) {
   public EmpreinteDEvenement {
     Assert.notNull("nature", nature);
-    Assert.notNull("cible", cible);
+    Assert.notNull("suivi", suivi);
     Assert.notNull("operateur", operateur);
     Assert.notBlank("type", type);
     Assert.notNull("poste", poste);
@@ -24,7 +30,7 @@ public record EmpreinteDEvenement(
   }
 
   private EmpreinteDEvenement(Builder builder) {
-    this(builder.nature, builder.cible, builder.operateur, builder.type, builder.poste, builder.dateDeSurvenue);
+    this(builder.nature, builder.suivi, builder.operateur, builder.type, builder.poste, builder.dateDeSurvenue);
   }
 
   public static EmpreinteDEvenementNatureBuilder builder() {
@@ -32,11 +38,11 @@ public record EmpreinteDEvenement(
   }
 
   public interface EmpreinteDEvenementNatureBuilder {
-    EmpreinteDEvenementCibleBuilder nature(NatureDeGesteDuPupitre nature);
+    EmpreinteDEvenementSuiviBuilder nature(NatureDeGesteDuPupitre nature);
   }
 
-  public interface EmpreinteDEvenementCibleBuilder {
-    EmpreinteDEvenementOperateurBuilder cible(Optional<UUID> cible);
+  public interface EmpreinteDEvenementSuiviBuilder {
+    EmpreinteDEvenementOperateurBuilder suivi(Optional<UUID> suivi);
   }
 
   public interface EmpreinteDEvenementOperateurBuilder {
@@ -58,7 +64,7 @@ public record EmpreinteDEvenement(
   private static final class Builder
     implements
       EmpreinteDEvenementNatureBuilder,
-      EmpreinteDEvenementCibleBuilder,
+      EmpreinteDEvenementSuiviBuilder,
       EmpreinteDEvenementOperateurBuilder,
       EmpreinteDEvenementTypeBuilder,
       EmpreinteDEvenementPosteBuilder,
@@ -66,21 +72,21 @@ public record EmpreinteDEvenement(
   {
 
     private NatureDeGesteDuPupitre nature;
-    private Optional<UUID> cible;
+    private Optional<UUID> suivi;
     private UUID operateur;
     private String type;
     private Optional<UUID> poste;
     private Optional<Instant> dateDeSurvenue;
 
     @Override
-    public EmpreinteDEvenementCibleBuilder nature(NatureDeGesteDuPupitre nature) {
+    public EmpreinteDEvenementSuiviBuilder nature(NatureDeGesteDuPupitre nature) {
       this.nature = nature;
       return this;
     }
 
     @Override
-    public EmpreinteDEvenementOperateurBuilder cible(Optional<UUID> cible) {
-      this.cible = cible;
+    public EmpreinteDEvenementOperateurBuilder suivi(Optional<UUID> suivi) {
+      this.suivi = suivi;
       return this;
     }
 

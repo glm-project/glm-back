@@ -69,7 +69,7 @@ class JpaIdentitesDEvenements implements IdentitesDEvenements {
         )
         .setParameter(1, evenement)
         .setParameter(2, empreinte.nature().name())
-        .setParameter(3, empreinte.cible().orElse(null))
+        .setParameter(3, empreinte.suivi().orElse(null))
         .setParameter(4, empreinte.operateur())
         .setParameter(5, empreinte.type())
         .setParameter(6, empreinte.poste().orElse(null))
@@ -99,7 +99,7 @@ class JpaIdentitesDEvenements implements IdentitesDEvenements {
     return empreinte.equals(
       EmpreinteDEvenement.builder()
         .nature(com.glm.glmback.atelier.application.NatureDeGesteDuPupitre.valueOf((String) ligne[1]))
-        .cible(Optional.ofNullable((UUID) ligne[2]))
+        .suivi(Optional.ofNullable((UUID) ligne[2]))
         .operateur((UUID) ligne[3])
         .type((String) ligne[4])
         .poste(Optional.ofNullable((UUID) ligne[5]))
