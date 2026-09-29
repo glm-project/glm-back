@@ -82,12 +82,20 @@ public record SuiviDAtelier(
     journal.exigeLActiviteViseePar(geste);
   }
 
-  public List<IntervalleDActivite> activites() {
-    return journal.intervalles(cloture.map(Cloture::dateDeSurvenue));
+  public List<Activite> activites() {
+    return journal.activites(cloture.map(Cloture::dateDeSurvenue));
+  }
+
+  public List<IntervalleDActivite> intervalles() {
+    return activites().stream().map(Activite::intervalle).toList();
   }
 
   public List<ActiviteEnCours> activitesEnCours() {
-    return activites().stream().filter(IntervalleDActivite::estOuvert).map(ActiviteEnCours::of).toList();
+    return activites()
+      .stream()
+      .filter(activite -> activite.fin().isEmpty())
+      .map(ActiviteEnCours::of)
+      .toList();
   }
 
   /**

@@ -67,7 +67,7 @@ La **présence sans affectation** — le temps de présence sans élément ratta
 
 ### Le temps effectif, croisement des deux journaux
 
-`SuiviDAtelier.activites()` produit des intervalles **bruts** : ils ignorent la présence. `TempsDAtelierService.tempsEffectif` les ramène aux fenêtres de présence de l'opérateur, en intersectant chaque intervalle avec les fenêtres de **la journée où il a commencé**. Une seule règle, deux effets :
+`SuiviDAtelier.intervalles()` produit des intervalles **bruts** : ils ignorent la présence. `TempsDAtelierService.tempsEffectif` les ramène aux fenêtres de présence de l'opérateur, en intersectant chaque intervalle avec les fenêtres de **la journée où il a commencé**. Une seule règle, deux effets :
 
 - un départ **tronque** ce que l'opérateur a oublié d'arrêter — un `FIN` manquant ne produit plus un intervalle infini ;
 - une régularisation de départ **corrige d'un coup tous les éléments** de la journée, là où un départ recopié par élément aurait demandé autant de corrections que d'éléments, et n'aurait jamais rattrapé un début inséré après coup.

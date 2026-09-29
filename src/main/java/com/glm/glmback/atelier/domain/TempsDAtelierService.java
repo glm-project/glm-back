@@ -39,7 +39,7 @@ public final class TempsDAtelierService {
     SuiviDAtelier suivi = suivis.get(id).orElseThrow(() -> new SuiviDAtelierIntrouvableException(id));
 
     return suivi
-      .activites()
+      .intervalles()
       .stream()
       .flatMap(intervalle -> effectif(intervalle, evaluation).stream())
       .toList();

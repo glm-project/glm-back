@@ -36,8 +36,8 @@ public record JournalDAtelier(List<EvenementDAtelier> evenements) {
     .thenComparingInt(evenement -> evenement.intention().rangAHeureEgale())
     .thenComparing(EvenementDAtelier::id);
 
-  private static final Comparator<IntervalleDActivite> PAR_DEBUT = Comparator.comparing(IntervalleDActivite::debut).thenComparing(
-    IntervalleDActivite::evenement
+  private static final Comparator<Activite> PAR_DEBUT = Comparator.comparing(Activite::debut).thenComparing(activite ->
+    activite.ouvrant().id()
   );
 
   public JournalDAtelier {
@@ -104,8 +104,12 @@ public record JournalDAtelier(List<EvenementDAtelier> evenements) {
     return actifs(evenements);
   }
 
-  public List<IntervalleDActivite> intervalles(Optional<Instant> fermetureFinale) {
-    return intervalles(evenements, fermetureFinale);
+  /**
+   * Les activites que les faits actifs de chaque cle interpretent, la cloture refermant a son heure celle qui reste en
+   * cours.
+   */
+  public List<Activite> activites(Optional<Instant> cloture) {
+    return activites(evenements, cloture);
   }
 
   private void exige(EvenementDAtelierId id) {
@@ -147,7 +151,7 @@ public record JournalDAtelier(List<EvenementDAtelier> evenements) {
   }
 
   private static void valide(List<EvenementDAtelier> evenements) {
-    intervalles(evenements, Optional.empty());
+    activites(evenements, Optional.empty());
   }
 
   private static List<EvenementDAtelier> actifs(List<EvenementDAtelier> evenements) {
@@ -157,13 +161,13 @@ public record JournalDAtelier(List<EvenementDAtelier> evenements) {
       .toList();
   }
 
-  private static List<IntervalleDActivite> intervalles(List<EvenementDAtelier> evenements, Optional<Instant> fermetureFinale) {
+  private static List<Activite> activites(List<EvenementDAtelier> evenements, Optional<Instant> cloture) {
     return actifs(evenements)
       .stream()
       .collect(Collectors.groupingBy(EvenementDAtelier::cle, LinkedHashMap::new, Collectors.toList()))
       .values()
       .stream()
-      .flatMap(faits -> SequenceDActivites.intervalles(faits, fermetureFinale).stream())
+      .flatMap(faits -> SequenceDActivites.activites(faits, cloture).stream())
       .sorted(PAR_DEBUT)
       .toList();
   }

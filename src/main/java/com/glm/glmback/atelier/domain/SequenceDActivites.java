@@ -26,42 +26,31 @@ final class SequenceDActivites {
 
   private SequenceDActivites() {}
 
-  static List<IntervalleDActivite> intervalles(List<EvenementDAtelier> faits, Optional<Instant> fermetureFinale) {
-    List<IntervalleDActivite> intervalles = new ArrayList<>();
-    Optional<EvenementDAtelier> enCours = Optional.empty();
+  static List<Activite> activites(List<EvenementDAtelier> faits, Optional<Instant> cloture) {
+    List<Activite> activites = new ArrayList<>();
+    Optional<Activite> enCours = Optional.empty();
 
     for (EvenementDAtelier fait : faits) {
       if (fait.intention().viseUneActivite() && !termine(enCours, fait)) {
         throw new TransitionDAtelierInterditeException(fait);
       }
 
-      enCours.ifPresent(ouvrant -> intervalles.add(intervalle(ouvrant, Optional.of(fait.dateDeSurvenue()))));
-      enCours = fait.intention().ouvreUneActivite() ? Optional.of(fait) : Optional.empty();
+      enCours.ifPresent(activite -> activites.add(activite.termineeA(fait.dateDeSurvenue())));
+      enCours = fait.intention().ouvreUneActivite() ? Optional.of(Activite.ouvertePar(fait)) : Optional.empty();
     }
-    enCours.ifPresent(ouvrant -> intervalles.add(intervalle(ouvrant, fermetureFinale)));
+    enCours.ifPresent(activite -> activites.add(cloture.map(activite::termineeA).orElse(activite)));
 
-    return intervalles;
+    return activites;
   }
 
   /**
    * Vrai si le geste vise l'activite en cours et peut la terminer : toujours pour une fin, pour une transition
    * seulement vers l'autre categorie.
    */
-  private static boolean termine(Optional<EvenementDAtelier> enCours, EvenementDAtelier geste) {
+  private static boolean termine(Optional<Activite> enCours, EvenementDAtelier geste) {
     return enCours
-      .filter(ouvrant -> ouvrant.activite().equals(geste.activiteVisee()))
-      .filter(ouvrant -> geste.intention() == IntentionDePointage.FIN || ouvrant.type() != geste.type())
+      .filter(activite -> geste.activiteVisee().filter(activite.id()::equals).isPresent())
+      .filter(activite -> geste.intention() == IntentionDePointage.FIN || activite.ouvrant().type() != geste.type())
       .isPresent();
-  }
-
-  private static IntervalleDActivite intervalle(EvenementDAtelier ouvrant, Optional<Instant> fin) {
-    return IntervalleDActivite.builder()
-      .evenement(ouvrant.id())
-      .operateur(ouvrant.operateur())
-      .poste(ouvrant.poste())
-      .nature(ouvrant.nature())
-      .categorie(ouvrant.type().categorie().orElseThrow())
-      .debut(ouvrant.dateDeSurvenue())
-      .fin(fin);
   }
 }

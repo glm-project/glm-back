@@ -39,7 +39,7 @@ class JournalDAtelierTest {
 
     assertThat(journal.evenements()).isEmpty();
     assertThat(journal.actifs()).isEmpty();
-    assertThat(journal.intervalles(Optional.empty())).isEmpty();
+    assertThat(journal.activites(Optional.empty())).isEmpty();
   }
 
   @Test
@@ -106,8 +106,8 @@ class JournalDAtelierTest {
       List.of(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H), debutSurFraiseuse1ParMartinA(LE_10_MAI_2026_A_9H))
     );
 
-    assertThat(journal.intervalles(Optional.empty()))
-      .extracting(IntervalleDActivite::operateur)
+    assertThat(journal.activites(Optional.empty()))
+      .extracting(activite -> activite.cle().operateur())
       .containsExactly(OPERATEUR_ID_DUPONT, OPERATEUR_ID_MARTIN);
   }
 
@@ -121,8 +121,8 @@ class JournalDAtelierTest {
       List.of(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H), debutSurFraiseuse2ParDupontA(LE_10_MAI_2026_A_9H))
     );
 
-    assertThat(journal.intervalles(Optional.empty()))
-      .extracting(IntervalleDActivite::poste, IntervalleDActivite::fin)
+    assertThat(journal.activites(Optional.empty()))
+      .extracting(activite -> activite.cle().poste(), Activite::fin)
       .containsExactly(
         tuple(Optional.of(POSTE_ID_FRAISEUSE_1), Optional.empty()),
         tuple(Optional.of(POSTE_ID_FRAISEUSE_2), Optional.empty())
@@ -133,9 +133,9 @@ class JournalDAtelierTest {
   void shouldJouerUneActiviteUniqueQuandAucunPosteNEstRenseigne() {
     JournalDAtelier journal = new JournalDAtelier(List.of(debutSansPosteParDupontA(LE_10_MAI_2026_A_8H)));
 
-    assertThat(journal.intervalles(Optional.empty()))
+    assertThat(journal.activites(Optional.empty()))
       .singleElement()
-      .satisfies(intervalle -> assertThat(intervalle.poste()).isEmpty());
+      .satisfies(activite -> assertThat(activite.cle().poste()).isEmpty());
   }
 
   @Test
@@ -143,13 +143,13 @@ class JournalDAtelierTest {
     EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     JournalDAtelier journal = new JournalDAtelier(List.of(debut, finDe(debut).a(LE_10_MAI_2026_A_12H)));
 
-    assertThat(journal.intervalles(Optional.empty()))
+    assertThat(journal.activites(Optional.empty()))
       .singleElement()
-      .satisfies(intervalle -> {
-        assertThat(intervalle.evenement()).isEqualTo(debut.id());
-        assertThat(intervalle.categorie()).isEqualTo(CategorieDActivite.TRAVAIL);
-        assertThat(intervalle.debut()).isEqualTo(LE_10_MAI_2026_A_8H);
-        assertThat(intervalle.fin()).contains(LE_10_MAI_2026_A_12H);
+      .satisfies(activite -> {
+        assertThat(activite.ouvrant()).isEqualTo(debut);
+        assertThat(activite.categorie()).isEqualTo(CategorieDActivite.TRAVAIL);
+        assertThat(activite.debut()).isEqualTo(LE_10_MAI_2026_A_8H);
+        assertThat(activite.fin()).contains(LE_10_MAI_2026_A_12H);
       });
   }
 
@@ -157,16 +157,18 @@ class JournalDAtelierTest {
   void shouldLaisserOuvertLeDernierIntervalleDUneActivite() {
     JournalDAtelier journal = new JournalDAtelier(List.of(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)));
 
-    assertThat(journal.intervalles(Optional.empty())).singleElement().matches(IntervalleDActivite::estOuvert);
+    assertThat(journal.activites(Optional.empty()))
+      .singleElement()
+      .matches(activite -> activite.fin().isEmpty());
   }
 
   @Test
   void shouldFermerLeDernierIntervalleSurLaFermetureFinale() {
     JournalDAtelier journal = new JournalDAtelier(List.of(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)));
 
-    assertThat(journal.intervalles(Optional.of(LE_10_MAI_2026_A_17H)))
+    assertThat(journal.activites(Optional.of(LE_10_MAI_2026_A_17H)))
       .singleElement()
-      .satisfies(intervalle -> assertThat(intervalle.fin()).contains(LE_10_MAI_2026_A_17H));
+      .satisfies(activite -> assertThat(activite.fin()).contains(LE_10_MAI_2026_A_17H));
   }
 
   @Test
@@ -174,7 +176,7 @@ class JournalDAtelierTest {
     EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     JournalDAtelier journal = new JournalDAtelier(List.of(debut, finDe(debut).a(LE_10_MAI_2026_A_12H)));
 
-    assertThat(journal.intervalles(Optional.of(LE_10_MAI_2026_A_17H))).hasSize(1);
+    assertThat(journal.activites(Optional.of(LE_10_MAI_2026_A_17H))).hasSize(1);
   }
 
   @Test
@@ -183,8 +185,8 @@ class JournalDAtelierTest {
       List.of(nonConformiteSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H), debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H))
     );
 
-    assertThat(journal.intervalles(Optional.empty()))
-      .extracting(IntervalleDActivite::categorie)
+    assertThat(journal.activites(Optional.empty()))
+      .extracting(Activite::categorie)
       .containsExactly(CategorieDActivite.NON_CONFORMITE, CategorieDActivite.TRAVAIL);
   }
 
@@ -200,12 +202,12 @@ class JournalDAtelierTest {
 
     JournalDAtelier journal = new JournalDAtelier(List.of(travail, nonConformite, reprise, finDe(reprise).a(LE_10_MAI_2026_A_13H)));
 
-    assertThat(journal.intervalles(Optional.empty()))
-      .extracting(IntervalleDActivite::evenement, IntervalleDActivite::categorie, IntervalleDActivite::debut, IntervalleDActivite::fin)
+    assertThat(journal.activites(Optional.empty()))
+      .extracting(Activite::ouvrant, Activite::categorie, Activite::debut, Activite::fin)
       .containsExactly(
-        tuple(travail.id(), CategorieDActivite.TRAVAIL, LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_9H)),
-        tuple(nonConformite.id(), CategorieDActivite.NON_CONFORMITE, LE_10_MAI_2026_A_9H, Optional.of(LE_10_MAI_2026_A_12H)),
-        tuple(reprise.id(), CategorieDActivite.TRAVAIL, LE_10_MAI_2026_A_12H, Optional.of(LE_10_MAI_2026_A_13H))
+        tuple(travail, CategorieDActivite.TRAVAIL, LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_9H)),
+        tuple(nonConformite, CategorieDActivite.NON_CONFORMITE, LE_10_MAI_2026_A_9H, Optional.of(LE_10_MAI_2026_A_12H)),
+        tuple(reprise, CategorieDActivite.TRAVAIL, LE_10_MAI_2026_A_12H, Optional.of(LE_10_MAI_2026_A_13H))
       );
   }
 
@@ -308,7 +310,7 @@ class JournalDAtelierTest {
 
     assertThat(corrige.evenements()).hasSize(1);
     assertThat(corrige.actifs()).isEmpty();
-    assertThat(corrige.intervalles(Optional.empty())).isEmpty();
+    assertThat(corrige.activites(Optional.empty())).isEmpty();
   }
 
   @Test
@@ -357,12 +359,12 @@ class JournalDAtelierTest {
 
     JournalDAtelier corrige = journal.corrige(debut.id(), annulationParLeroy(), remplacant);
 
-    assertThat(corrige.intervalles(Optional.empty()))
+    assertThat(corrige.activites(Optional.empty()))
       .singleElement()
-      .satisfies(intervalle -> {
-        assertThat(intervalle.evenement()).isEqualTo(remplacant.id());
-        assertThat(intervalle.debut()).isEqualTo(LE_10_MAI_2026_A_7H30);
-        assertThat(intervalle.fin()).contains(LE_10_MAI_2026_A_12H);
+      .satisfies(activite -> {
+        assertThat(activite.ouvrant().id()).isEqualTo(remplacant.id());
+        assertThat(activite.debut()).isEqualTo(LE_10_MAI_2026_A_7H30);
+        assertThat(activite.fin()).contains(LE_10_MAI_2026_A_12H);
       });
     assertThat(corrige.evenement(remplacant.id()))
       .get()
@@ -383,11 +385,11 @@ class JournalDAtelierTest {
 
     JournalDAtelier termine = corrige.enregistre(finDe(debut).a(LE_10_MAI_2026_A_12H));
 
-    assertThat(termine.intervalles(Optional.empty()))
+    assertThat(termine.activites(Optional.empty()))
       .singleElement()
-      .satisfies(intervalle -> {
-        assertThat(intervalle.debut()).isEqualTo(LE_10_MAI_2026_A_7H30);
-        assertThat(intervalle.fin()).contains(LE_10_MAI_2026_A_12H);
+      .satisfies(activite -> {
+        assertThat(activite.debut()).isEqualTo(LE_10_MAI_2026_A_7H30);
+        assertThat(activite.fin()).contains(LE_10_MAI_2026_A_12H);
       });
   }
 
@@ -428,8 +430,8 @@ class JournalDAtelierTest {
 
     JournalDAtelier regularise = journal.enregistre(passageEnNonConformiteDe(debut).a(LE_10_MAI_2026_A_12H));
 
-    assertThat(regularise.intervalles(Optional.empty()))
-      .extracting(IntervalleDActivite::debut, IntervalleDActivite::categorie, IntervalleDActivite::fin)
+    assertThat(regularise.activites(Optional.empty()))
+      .extracting(Activite::debut, Activite::categorie, Activite::fin)
       .containsExactly(
         tuple(LE_10_MAI_2026_A_8H, CategorieDActivite.TRAVAIL, Optional.of(LE_10_MAI_2026_A_12H)),
         tuple(LE_10_MAI_2026_A_12H, CategorieDActivite.NON_CONFORMITE, Optional.of(LE_10_MAI_2026_A_13H)),
@@ -447,8 +449,8 @@ class JournalDAtelierTest {
       List.of(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H), debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H))
     );
 
-    assertThat(journal.intervalles(Optional.empty()))
-      .extracting(IntervalleDActivite::categorie, IntervalleDActivite::debut, IntervalleDActivite::fin)
+    assertThat(journal.activites(Optional.empty()))
+      .extracting(Activite::categorie, Activite::debut, Activite::fin)
       .containsExactly(
         tuple(CategorieDActivite.TRAVAIL, LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_13H)),
         tuple(CategorieDActivite.TRAVAIL, LE_10_MAI_2026_A_13H, Optional.empty())
@@ -461,8 +463,8 @@ class JournalDAtelierTest {
       List.of(nonConformiteSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H), nonConformiteSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H))
     );
 
-    assertThat(journal.intervalles(Optional.empty()))
-      .extracting(IntervalleDActivite::categorie, IntervalleDActivite::debut, IntervalleDActivite::fin)
+    assertThat(journal.activites(Optional.empty()))
+      .extracting(Activite::categorie, Activite::debut, Activite::fin)
       .containsExactly(
         tuple(CategorieDActivite.NON_CONFORMITE, LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_13H)),
         tuple(CategorieDActivite.NON_CONFORMITE, LE_10_MAI_2026_A_13H, Optional.empty())
@@ -479,15 +481,15 @@ class JournalDAtelierTest {
       List.of(ouvertureNumero(1, LE_10_MAI_2026_A_8H), secondAppui, finDe(secondAppui).a(LE_10_MAI_2026_A_12H))
     );
 
-    List<IntervalleDActivite> intervalles = journal.intervalles(Optional.empty());
+    List<Activite> activites = journal.activites(Optional.empty());
 
-    assertThat(intervalles)
-      .extracting(IntervalleDActivite::debut, IntervalleDActivite::fin)
+    assertThat(activites)
+      .extracting(Activite::debut, Activite::fin)
       .containsExactly(
         tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_8H)),
         tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H))
       );
-    assertThat(duree(intervalles)).isEqualTo(Duration.ofHours(4));
+    assertThat(duree(activites)).isEqualTo(Duration.ofHours(4));
   }
 
   @Test
@@ -497,7 +499,7 @@ class JournalDAtelierTest {
       List.of(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H), secondAppui, finDe(secondAppui).a(LE_10_MAI_2026_A_12H))
     );
 
-    assertThat(duree(journal.intervalles(Optional.empty()))).isEqualTo(Duration.ofHours(4));
+    assertThat(duree(journal.activites(Optional.empty()))).isEqualTo(Duration.ofHours(4));
   }
 
   @Test
@@ -507,8 +509,8 @@ class JournalDAtelierTest {
       List.of(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H), relance, finDe(relance).a(LE_10_MAI_2026_A_17H))
     );
 
-    assertThat(journal.intervalles(Optional.of(LE_11_MAI_2026_A_9H15)))
-      .extracting(IntervalleDActivite::debut, IntervalleDActivite::fin)
+    assertThat(journal.activites(Optional.of(LE_11_MAI_2026_A_9H15)))
+      .extracting(Activite::debut, Activite::fin)
       .containsExactly(
         tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_13H)),
         tuple(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_17H))
@@ -535,8 +537,8 @@ class JournalDAtelierTest {
 
     JournalDAtelier corrige = journal.annule(relance.id(), annulationParLeroy());
 
-    assertThat(corrige.intervalles(Optional.empty()))
-      .extracting(IntervalleDActivite::debut, IntervalleDActivite::fin)
+    assertThat(corrige.activites(Optional.empty()))
+      .extracting(Activite::debut, Activite::fin)
       .containsExactly(tuple(LE_10_MAI_2026_A_8H, Optional.empty()));
   }
 
@@ -551,8 +553,8 @@ class JournalDAtelierTest {
 
     JournalDAtelier corrige = journal.annule(premier.id(), annulationParLeroy());
 
-    assertThat(corrige.intervalles(Optional.empty()))
-      .extracting(IntervalleDActivite::debut, IntervalleDActivite::fin)
+    assertThat(corrige.activites(Optional.empty()))
+      .extracting(Activite::debut, Activite::fin)
       .containsExactly(tuple(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_17H)));
   }
 
@@ -571,8 +573,8 @@ class JournalDAtelierTest {
       debutSurFraiseuse1RegulariseParLeroyA(LE_10_MAI_2026_A_12H)
     );
 
-    assertThat(corrige.intervalles(Optional.empty()))
-      .extracting(IntervalleDActivite::categorie, IntervalleDActivite::debut, IntervalleDActivite::fin)
+    assertThat(corrige.activites(Optional.empty()))
+      .extracting(Activite::categorie, Activite::debut, Activite::fin)
       .containsExactly(
         tuple(CategorieDActivite.TRAVAIL, LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H)),
         tuple(CategorieDActivite.TRAVAIL, LE_10_MAI_2026_A_12H, Optional.of(LE_10_MAI_2026_A_17H))
@@ -584,10 +586,10 @@ class JournalDAtelierTest {
     assertThat(JournalDAtelier.vide().evenement(EvenementDAtelierId.newId())).isEmpty();
   }
 
-  private static Duration duree(List<IntervalleDActivite> intervalles) {
-    return intervalles
+  private static Duration duree(List<Activite> activites) {
+    return activites
       .stream()
-      .map(intervalle -> Duration.between(intervalle.debut(), intervalle.fin().orElseThrow()))
+      .map(activite -> Duration.between(activite.debut(), activite.fin().orElseThrow()))
       .reduce(Duration.ZERO, Duration::plus);
   }
 

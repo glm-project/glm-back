@@ -577,7 +577,7 @@ class SuivisDAtelierServiceTest {
 
     assertThat(corrige.activites())
       .singleElement()
-      .satisfies(intervalle -> assertThat(intervalle.debut()).isEqualTo(LE_10_MAI_2026_A_8H));
+      .satisfies(activite -> assertThat(activite.debut()).isEqualTo(LE_10_MAI_2026_A_8H));
   }
 
   /**

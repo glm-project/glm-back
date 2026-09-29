@@ -61,7 +61,7 @@ class SuiviDAtelierTest {
     SuiviDAtelier regularise = suivi.enregistre(passageEnNonConformiteDe(debut).a(LE_10_MAI_2026_A_12H));
 
     assertThat(regularise.activites())
-      .extracting(IntervalleDActivite::debut, IntervalleDActivite::fin, IntervalleDActivite::categorie)
+      .extracting(Activite::debut, Activite::fin, Activite::categorie)
       .containsExactly(
         tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H), CategorieDActivite.TRAVAIL),
         tuple(LE_10_MAI_2026_A_12H, Optional.of(LE_10_MAI_2026_A_17H), CategorieDActivite.NON_CONFORMITE),
@@ -81,8 +81,8 @@ class SuiviDAtelierTest {
     SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(travail).enregistre(nonConformite);
 
     assertThat(suivi.activites())
-      .extracting(IntervalleDActivite::evenement, IntervalleDActivite::fin)
-      .containsExactly(tuple(travail.id(), Optional.of(LE_10_MAI_2026_A_12H)), tuple(nonConformite.id(), Optional.empty()));
+      .extracting(Activite::ouvrant, Activite::fin)
+      .containsExactly(tuple(travail, Optional.of(LE_10_MAI_2026_A_12H)), tuple(nonConformite, Optional.empty()));
     assertThat(suivi.activitesEnCours())
       .singleElement()
       .satisfies(activite -> {
@@ -154,9 +154,9 @@ class SuiviDAtelierTest {
 
     assertThat(corrige.activites())
       .singleElement()
-      .satisfies(intervalle -> {
-        assertThat(intervalle.debut()).isEqualTo(LE_10_MAI_2026_A_7H30);
-        assertThat(intervalle.fin()).contains(LE_10_MAI_2026_A_12H);
+      .satisfies(activite -> {
+        assertThat(activite.debut()).isEqualTo(LE_10_MAI_2026_A_7H30);
+        assertThat(activite.fin()).contains(LE_10_MAI_2026_A_12H);
       });
   }
 
@@ -179,7 +179,7 @@ class SuiviDAtelierTest {
     assertThat(cloture.activitesEnCours()).isEmpty();
     assertThat(cloture.activites())
       .singleElement()
-      .satisfies(intervalle -> assertThat(intervalle.fin()).contains(LE_10_MAI_2026_A_17H));
+      .satisfies(activite -> assertThat(activite.fin()).contains(LE_10_MAI_2026_A_17H));
   }
 
   @Test
@@ -195,7 +195,7 @@ class SuiviDAtelierTest {
 
     assertThat(corrige.activites())
       .singleElement()
-      .satisfies(intervalle -> assertThat(intervalle.debut()).isEqualTo(LE_10_MAI_2026_A_7H30));
+      .satisfies(activite -> assertThat(activite.debut()).isEqualTo(LE_10_MAI_2026_A_7H30));
   }
 
   @Test

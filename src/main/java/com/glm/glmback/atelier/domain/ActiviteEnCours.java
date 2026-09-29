@@ -14,8 +14,8 @@ public record ActiviteEnCours(CleDActivite activite, CategorieDActivite categori
     Assert.notNull("depuis", depuis);
   }
 
-  static ActiviteEnCours of(IntervalleDActivite intervalle) {
-    return new ActiviteEnCours(intervalle.cle(), intervalle.categorie(), intervalle.debut());
+  static ActiviteEnCours of(Activite activite) {
+    return new ActiviteEnCours(activite.cle(), activite.categorie(), activite.debut());
   }
 
   public OperateurId operateur() {
