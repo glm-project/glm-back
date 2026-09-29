@@ -14,4 +14,5 @@
   <include file="008-identite_evenement_atelier_intention.xml" relativeToChangelogFile="true" />
   <include file="009-activite_d_atelier.xml" relativeToChangelogFile="true" />
   <include file="010-activite_d_atelier_a_resoudre.xml" relativeToChangelogFile="true" />
+  <include file="011-activite_d_atelier_operateur.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>

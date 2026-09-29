@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <changeSet id="activite_d_atelier_operateur" author="glm">
+    <comment>
+      Les lectures du temps d'un operateur - feuille de temps, synthese des heures, partage du cout humain - retrouvent
+      ses activites dans la projection plutot qu'en rejouant les journaux : elles les cherchent par operateur, en
+      recouvrement d'une periode, sans borne basse sure sur le debut. L'index ne change rien a ce que la table porte.
+    </comment>
+
+    <createIndex indexName="ix_activite_d_atelier_operateur" tableName="activite_d_atelier">
+      <column name="operateur_id" />
+      <column name="debut" />
+    </createIndex>
+  </changeSet>
+</databaseChangeLog>
