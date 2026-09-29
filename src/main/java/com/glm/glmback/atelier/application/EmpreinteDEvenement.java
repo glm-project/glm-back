@@ -9,7 +9,8 @@ import java.util.UUID;
  * Le contenu stable d'un geste du pupitre, independant de l'etat courant des agregats.
  *
  * <p>
- * Le suivi est celui d'un pointage d'element ; la presence n'en a pas.
+ * Le suivi, l'intention et l'activite visee sont ceux d'un pointage d'element ; la presence n'en a pas. Un meme
+ * identifiant rejoue avec une autre intention ou une autre cible n'est donc pas le meme geste.
  * </p>
  */
 public record EmpreinteDEvenement(
@@ -17,6 +18,8 @@ public record EmpreinteDEvenement(
   Optional<UUID> suivi,
   UUID operateur,
   String type,
+  Optional<String> intention,
+  Optional<UUID> activiteVisee,
   Optional<UUID> poste,
   Optional<Instant> dateDeSurvenue
 ) {
@@ -25,12 +28,23 @@ public record EmpreinteDEvenement(
     Assert.notNull("suivi", suivi);
     Assert.notNull("operateur", operateur);
     Assert.notBlank("type", type);
+    Assert.notNull("intention", intention);
+    Assert.notNull("activiteVisee", activiteVisee);
     Assert.notNull("poste", poste);
     Assert.notNull("dateDeSurvenue", dateDeSurvenue);
   }
 
   private EmpreinteDEvenement(Builder builder) {
-    this(builder.nature, builder.suivi, builder.operateur, builder.type, builder.poste, builder.dateDeSurvenue);
+    this(
+      builder.nature,
+      builder.suivi,
+      builder.operateur,
+      builder.type,
+      builder.intention,
+      builder.activiteVisee,
+      builder.poste,
+      builder.dateDeSurvenue
+    );
   }
 
   public static EmpreinteDEvenementNatureBuilder builder() {
@@ -50,7 +64,15 @@ public record EmpreinteDEvenement(
   }
 
   public interface EmpreinteDEvenementTypeBuilder {
-    EmpreinteDEvenementPosteBuilder type(String type);
+    EmpreinteDEvenementIntentionBuilder type(String type);
+  }
+
+  public interface EmpreinteDEvenementIntentionBuilder {
+    EmpreinteDEvenementActiviteViseeBuilder intention(Optional<String> intention);
+  }
+
+  public interface EmpreinteDEvenementActiviteViseeBuilder {
+    EmpreinteDEvenementPosteBuilder activiteVisee(Optional<UUID> activiteVisee);
   }
 
   public interface EmpreinteDEvenementPosteBuilder {
@@ -67,6 +89,8 @@ public record EmpreinteDEvenement(
       EmpreinteDEvenementSuiviBuilder,
       EmpreinteDEvenementOperateurBuilder,
       EmpreinteDEvenementTypeBuilder,
+      EmpreinteDEvenementIntentionBuilder,
+      EmpreinteDEvenementActiviteViseeBuilder,
       EmpreinteDEvenementPosteBuilder,
       EmpreinteDEvenementDateDeSurvenueBuilder
   {
@@ -75,6 +99,8 @@ public record EmpreinteDEvenement(
     private Optional<UUID> suivi;
     private UUID operateur;
     private String type;
+    private Optional<String> intention;
+    private Optional<UUID> activiteVisee;
     private Optional<UUID> poste;
     private Optional<Instant> dateDeSurvenue;
 
@@ -97,8 +123,20 @@ public record EmpreinteDEvenement(
     }
 
     @Override
-    public EmpreinteDEvenementPosteBuilder type(String type) {
+    public EmpreinteDEvenementIntentionBuilder type(String type) {
       this.type = type;
+      return this;
+    }
+
+    @Override
+    public EmpreinteDEvenementActiviteViseeBuilder intention(Optional<String> intention) {
+      this.intention = intention;
+      return this;
+    }
+
+    @Override
+    public EmpreinteDEvenementPosteBuilder activiteVisee(Optional<UUID> activiteVisee) {
+      this.activiteVisee = activiteVisee;
       return this;
     }
 

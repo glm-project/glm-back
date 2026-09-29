@@ -62,8 +62,9 @@ class JpaIdentitesDEvenements implements IdentitesDEvenements {
         .createNativeQuery(
           """
           insert into identite_evenement_atelier
-            (id, rejouable, nature, cible_id, operateur_id, type_evenement, poste_id, date_de_survenue_fournie, date_de_survenue)
-          values (?, true, ?, ?, ?, ?, ?, ?, ?)
+            (id, rejouable, nature, cible_id, operateur_id, type_evenement, intention, activite_visee_id, poste_id,
+             date_de_survenue_fournie, date_de_survenue)
+          values (?, true, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           on conflict (id) do nothing
           """
         )
@@ -72,9 +73,11 @@ class JpaIdentitesDEvenements implements IdentitesDEvenements {
         .setParameter(3, empreinte.suivi().orElse(null))
         .setParameter(4, empreinte.operateur())
         .setParameter(5, empreinte.type())
-        .setParameter(6, empreinte.poste().orElse(null))
-        .setParameter(7, empreinte.dateDeSurvenue().isPresent())
-        .setParameter(8, empreinte.dateDeSurvenue().map(Instant::toString).orElse(null))
+        .setParameter(6, empreinte.intention().orElse(null))
+        .setParameter(7, empreinte.activiteVisee().orElse(null))
+        .setParameter(8, empreinte.poste().orElse(null))
+        .setParameter(9, empreinte.dateDeSurvenue().isPresent())
+        .setParameter(10, empreinte.dateDeSurvenue().map(Instant::toString).orElse(null))
         .executeUpdate()
       == 1
     );
@@ -86,7 +89,7 @@ class JpaIdentitesDEvenements implements IdentitesDEvenements {
       .createNativeQuery(
         """
         select rejouable, nature, cible_id, operateur_id, type_evenement, poste_id, date_de_survenue_fournie,
-               type_agregat, agregat_id, date_de_survenue
+               type_agregat, agregat_id, date_de_survenue, intention, activite_visee_id
         from identite_evenement_atelier where id = ?
         """
       )
@@ -102,6 +105,8 @@ class JpaIdentitesDEvenements implements IdentitesDEvenements {
         .suivi(Optional.ofNullable((UUID) ligne[2]))
         .operateur((UUID) ligne[3])
         .type((String) ligne[4])
+        .intention(Optional.ofNullable((String) ligne[10]))
+        .activiteVisee(Optional.ofNullable((UUID) ligne[11]))
         .poste(Optional.ofNullable((UUID) ligne[5]))
         .dateDeSurvenue(Optional.ofNullable((String) ligne[9]).map(Instant::parse))
     );

@@ -76,6 +76,8 @@ public class JourneesDeTravailApplicationService {
           .suivi(Optional.empty())
           .operateur(commande.operateur().uuid())
           .type(commande.type().name())
+          .intention(Optional.empty())
+          .activiteVisee(Optional.empty())
           .poste(Optional.empty())
           .dateDeSurvenue(commande.dateDeSurvenue())
       );
@@ -107,6 +109,8 @@ public class JourneesDeTravailApplicationService {
           .suivi(Optional.empty())
           .operateur(commande.operateur().uuid())
           .type(commande.type().name())
+          .intention(Optional.empty())
+          .activiteVisee(Optional.empty())
           .poste(Optional.empty())
           .dateDeSurvenue(commande.dateDeSurvenue())
       );

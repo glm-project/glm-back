@@ -95,6 +95,9 @@ tests sont le seul endroit qui les tient.
 `saisie-concurrente` est le seul code sur lequel **rejouer** l'appel est la bonne réaction : la saisie était valide,
 un autre pointage s'est glissé entre la lecture et l'écriture.
 
+`identifiant-evenement-reutilise` refuse un identifiant de geste déjà réservé pour un autre contenu : autre nature,
+suivi, opérateur, type, poste ou date fournie, et pour un pointage d'atelier autre intention ou autre cible.
+
 `activite-visee-introuvable` et `activite-visee-incoherente` refusent une transition ou une fin dont la cible n'est
 pas une activité de ce suivi, ou appartient à un autre opérateur ou à un autre poste. Ils valent pour le pointage, la
 régularisation et la correction, et sont définitifs : le même geste rejoué reçoit le même refus.

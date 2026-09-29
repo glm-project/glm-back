@@ -1,5 +1,6 @@
 package com.glm.glmback.atelier.application;
 
+import com.glm.glmback.atelier.domain.ActiviteId;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelierService;
 import com.glm.glmback.atelier.domain.AnnulationAEnregistrer;
@@ -101,6 +102,8 @@ public class SuivisDAtelierApplicationService {
           .suivi(Optional.of(commande.suivi().uuid()))
           .operateur(commande.operateur().uuid())
           .type(commande.type().name())
+          .intention(Optional.of(commande.intention().name()))
+          .activiteVisee(commande.activiteVisee().map(ActiviteId::uuid))
           .poste(commande.poste().map(poste -> poste.uuid()))
           .dateDeSurvenue(commande.dateDeSurvenue())
       );

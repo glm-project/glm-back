@@ -46,6 +46,11 @@ import org.springframework.web.context.request.RequestContextHolder;
 @IntegrationTest
 class JpaIdentitesDEvenementsIT {
 
+  private static final UUID OPERATEUR = UUID.fromString("00000000-0000-0000-0000-000000000001");
+  private static final UUID SUIVI = UUID.fromString("00000000-0000-0000-0000-000000000002");
+  private static final UUID CIBLE = UUID.fromString("00000000-0000-0000-0000-000000000003");
+  private static final UUID AUTRE_CIBLE = UUID.fromString("00000000-0000-0000-0000-000000000004");
+
   @MockitoBean
   private Clock clock;
 
@@ -238,6 +243,58 @@ class JpaIdentitesDEvenementsIT {
     assertThat(refus).isExactlyInstanceOf(IdentifiantDEvenementReutiliseException.class);
   }
 
+  /**
+   * Le rejeu d'un geste d'atelier porte la meme intention et la meme cible que son premier envoi : il est reconnu.
+   */
+  @Test
+  @WithTenant("impeccmold")
+  void shouldReplayTheSameTargetedGesture() {
+    // GIVEN
+    UUID evenement = UUID.randomUUID();
+    AgregatDEvenement suivi = suiviIdentifiePar(UUID.randomUUID());
+    reserveEtAssocie(evenement, finVisant(CIBLE), suivi);
+
+    // WHEN
+    ReservationDEvenement rejeu = inTransaction(() -> identites.reserve(evenement, finVisant(CIBLE)));
+
+    // THEN
+    assertThat(rejeu.agregat()).contains(suivi);
+  }
+
+  @Test
+  @WithTenant("impeccmold")
+  void shouldRejectTheSameIdentityWithAnotherTarget() {
+    // GIVEN
+    UUID evenement = UUID.randomUUID();
+    reserveEtAssocie(evenement, finVisant(CIBLE), suiviIdentifiePar(UUID.randomUUID()));
+
+    // WHEN
+    Throwable refus = catchThrowable(() -> inTransaction(() -> identites.reserve(evenement, finVisant(AUTRE_CIBLE))));
+
+    // THEN
+    assertThat(refus).isExactlyInstanceOf(IdentifiantDEvenementReutiliseException.class);
+  }
+
+  @Test
+  @WithTenant("impeccmold")
+  void shouldRejectTheSameIdentityWithAnotherIntention() {
+    // GIVEN
+    UUID evenement = UUID.randomUUID();
+    reserveEtAssocie(
+      evenement,
+      gesteDAtelier("DEBUT", Optional.of("TRANSITION"), Optional.of(CIBLE)),
+      suiviIdentifiePar(UUID.randomUUID())
+    );
+
+    // WHEN
+    Throwable refus = catchThrowable(() ->
+      inTransaction(() -> identites.reserve(evenement, gesteDAtelier("DEBUT", Optional.of("OUVERTURE"), Optional.empty())))
+    );
+
+    // THEN
+    assertThat(refus).isExactlyInstanceOf(IdentifiantDEvenementReutiliseException.class);
+  }
+
   @Test
   @WithTenant("impeccmold")
   void shouldNeverAllocateAServerIdentityTwice() {
@@ -290,14 +347,36 @@ class JpaIdentitesDEvenementsIT {
     return new AgregatDEvenement(TypeDAgregatDEvenement.JOURNEE_DE_TRAVAIL, id);
   }
 
+  private static AgregatDEvenement suiviIdentifiePar(UUID id) {
+    return new AgregatDEvenement(TypeDAgregatDEvenement.SUIVI_D_ATELIER, id);
+  }
+
   private static EmpreinteDEvenement arrivee(Optional<Instant> date) {
     return EmpreinteDEvenement.builder()
       .nature(NatureDeGesteDuPupitre.ARRIVEE)
       .suivi(Optional.empty())
-      .operateur(UUID.fromString("00000000-0000-0000-0000-000000000001"))
+      .operateur(OPERATEUR)
       .type("ARRIVEE")
+      .intention(Optional.empty())
+      .activiteVisee(Optional.empty())
       .poste(Optional.empty())
       .dateDeSurvenue(date);
+  }
+
+  private static EmpreinteDEvenement finVisant(UUID cible) {
+    return gesteDAtelier("FIN", Optional.of("FIN"), Optional.of(cible));
+  }
+
+  private static EmpreinteDEvenement gesteDAtelier(String type, Optional<String> intention, Optional<UUID> cible) {
+    return EmpreinteDEvenement.builder()
+      .nature(NatureDeGesteDuPupitre.POINTAGE_D_ATELIER)
+      .suivi(Optional.of(SUIVI))
+      .operateur(OPERATEUR)
+      .type(type)
+      .intention(intention)
+      .activiteVisee(cible)
+      .poste(Optional.empty())
+      .dateDeSurvenue(Optional.of(Instant.parse("2042-01-01T12:00:00Z")));
   }
 
   private <T> T inTransaction(java.util.function.Supplier<T> action) {

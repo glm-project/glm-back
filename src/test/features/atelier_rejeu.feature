@@ -79,6 +79,75 @@ Feature: Rejeu durable des gestes du pupitre
     And le journal du suivi contient 1 evenements
     And l'evenement 0 du suivi a survenu a "2026-05-10T08:00:00Z" et a ete saisi a "2026-05-10T09:00:00Z" par "user"
 
+  Scenario: Une fin ciblee rejouee apres une interruption reseau ne cree pas de doublon
+    # Le pupitre a pointe la fin hors ligne, a 12 h ; la reponse a son premier envoi s'est perdue. Il renvoie le meme
+    # corps, meme identifiant, meme heure et meme cible : le serveur le reconnait.
+    Given l'entreprise a cree l'element de fabrication "OF reseau"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | reseau               |
+    And j'ai engage l'element "OF reseau" en atelier
+    And il est "2026-05-10T08:00:00Z"
+    And I am logged in as "user" with role "USER"
+    And j'ai pointe sur "OF reseau"
+      | id        | 00000000-0000-0000-0000-000000000301 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont                               |
+    Given il est "2026-05-10T13:00:00Z"
+    When je pointe sur "OF reseau"
+      | id             | 00000000-0000-0000-0000-000000000302 |
+      | type           | FIN                                  |
+      | intention      | FIN                                  |
+      | cible          | 00000000-0000-0000-0000-000000000301 |
+      | operateur      | dupont                               |
+      | dateDeSurvenue | 2026-05-10T12:00:00Z                 |
+    Then la reponse a le statut http 201
+    Given il est "2026-05-10T14:00:00Z"
+    When je rejoue le dernier geste du pupitre
+    Then la reponse a le statut http 200
+    And le journal du suivi contient 2 evenements
+    And l'evenement 1 du suivi a l'identifiant "00000000-0000-0000-0000-000000000302"
+    And l'evenement 1 du suivi vise l'activite de l'evenement 0
+    And l'evenement 1 du suivi a survenu a "2026-05-10T12:00:00Z" et a ete saisi a "2026-05-10T13:00:00Z" par "user"
+
+  Scenario: Un identifiant reutilise avec une autre cible ou une autre intention est refuse
+    Given l'entreprise a cree l'element de fabrication "OF cible"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | cible                |
+    And j'ai engage l'element "OF cible" en atelier
+    And il est "2026-05-10T08:00:00Z"
+    And j'ai pointe sur "OF cible"
+      | id        | 00000000-0000-0000-0000-000000000311 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont                               |
+    Given il est "2026-05-10T09:00:00Z"
+    And j'ai pointe sur "OF cible"
+      | id        | 00000000-0000-0000-0000-000000000312 |
+      | type      | NON_CONFORMITE                       |
+      | intention | TRANSITION                           |
+      | cible     | 00000000-0000-0000-0000-000000000311 |
+      | operateur | dupont                               |
+    Given il est "2026-05-10T10:00:00Z"
+    When je pointe sur "OF cible"
+      | id        | 00000000-0000-0000-0000-000000000312 |
+      | type      | NON_CONFORMITE                       |
+      | intention | TRANSITION                           |
+      | cible     | 4d7c2a19-8e03-4b56-9f21-c0a1b2d3e4f5 |
+      | operateur | dupont                               |
+    Then la reponse a le statut http 409
+    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:identifiant-evenement-reutilise"
+    When je pointe sur "OF cible"
+      | id        | 00000000-0000-0000-0000-000000000312 |
+      | type      | NON_CONFORMITE                       |
+      | intention | OUVERTURE                            |
+      | operateur | dupont                               |
+    Then la reponse a le statut http 409
+    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:identifiant-evenement-reutilise"
+    When je consulte "OF cible"
+    Then le journal du suivi contient 2 evenements
+    And l'evenement 1 du suivi vise l'activite de l'evenement 0
+
   Scenario: Une arrivee acceptee reste soumise aux droits lors du rejeu
     Given I am logged in as "user" with role "USER"
     When j'arrive

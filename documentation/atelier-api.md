@@ -220,8 +220,9 @@ Trois pièges :
 - Un poste fourni doit être **habilité pour cet opérateur**, sans quoi 409. Filtrer la liste des postes sur la fiche de
   l'opérateur choisi évite d'avoir à traiter ce refus.
 - Un envoi accepté répond **201**. Rejouer exactement le même corps répond **200**, sans créer de second événement ;
-  conserver donc l'UUID dans la file offline jusqu'à l'acquittement. Réutiliser cet UUID avec un autre contenu répond
-  409 (`identifiant-evenement-reutilise`). Une date future répond 400 et ne réserve pas l'UUID.
+  conserver donc l'UUID dans la file offline jusqu'à l'acquittement, avec son intention et sa cible. Réutiliser cet UUID
+  avec un autre contenu — une autre intention ou une autre cible comprises — répond 409
+  (`identifiant-evenement-reutilise`). Une date future répond 400 et ne réserve pas l'UUID.
 
 Les états d'un élément :
 
