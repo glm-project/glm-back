@@ -276,6 +276,8 @@ La feuille accepte un instant `evaluation` facultatif et rend celui effectivemen
 l'heure du serveur est relevée une seule fois. Cet instant gouverne l'expiration et les jours atteints par les
 activités en cours. Le même instant peut être transmis à la synthèse pour composer le relevé ; les faits connus
 restent interprétés même postérieurs à cet instant, sans lecture historique ni transaction commune garantie.
+Un instant passé est accepté. La borne future est l'heure du serveur plus deux minutes, incluse ; elle est vérifiée
+avec un seul relevé d'horloge. Un dépassement ou un instant fourni vide ou mal formé répond 400, sans rapport.
 
 Une activité avec fin réelle est `TERMINEE`, même si cette fin dépasse
 l'échéance. À défaut, elle est `EN_COURS` avant l'échéance et `TERMINEE_AUTOMATIQUEMENT` dès celle-ci, à cette borne,

@@ -1,6 +1,7 @@
 package com.glm.glmback.feuilledetemps.domain;
 
 import com.glm.glmback.shared.time.domain.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Comparator;
@@ -14,6 +15,8 @@ import java.util.stream.Collectors;
  * L'instant d'evaluation est releve une seule fois ; seul le decoupage connait le calendrier de l'entreprise.
  */
 public final class FeuillesDeTempsService {
+
+  private static final Duration TOLERANCE_FUTURE = Duration.ofMinutes(2);
 
   private static final Comparator<IntervalleDUnJour> PAR_DEBUT = Comparator.<IntervalleDUnJour, Instant>comparing(intervalle ->
     intervalle.intervalle().plage().debut()
@@ -49,7 +52,11 @@ public final class FeuillesDeTempsService {
   public FeuilleDeTemps historique(OperateurId operateur, SemaineCalendaire semaine, Optional<Instant> evaluationDemandee) {
     OperateurConnu connu = operateurs.get(operateur).orElseThrow(() -> new OperateurInconnuException(operateur));
     DecoupageCalendaire decoupage = new DecoupageCalendaire(semaine, fuseau.zone());
-    Instant evaluation = evaluationDemandee.orElseGet(clock::now);
+    Instant maintenant = clock.now();
+    Instant evaluation = evaluationDemandee.orElse(maintenant);
+    if (evaluation.isAfter(maintenant.plus(TOLERANCE_FUTURE))) {
+      throw new EvaluationFutureException(evaluation);
+    }
 
     return FeuilleDeTemps.builder()
       .operateur(connu)

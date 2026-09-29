@@ -487,8 +487,9 @@ telle quelle, sans `fin`, elle n'a aucune durée à compter tant que le gestionn
 `GET /api/feuilles-de-temps/{operateurId}?annee=2026&semaine=20&evaluation=2026-05-11T20:59:59Z`
 accepte un instant ISO-8601 facultatif. Sans lui, l'heure du serveur est relevée une seule fois ; la réponse porte
 `evaluation`, l'instant effectivement utilisé pour l'expiration et les jours atteints par les activités en cours.
-Un instant mal formé répond 400. Les faits connus restent interprétés même postérieurs à cet instant : il ne
-s'agit pas d'une lecture historique. La semaine, le fuseau et les rôles de lecture gardent leurs règles.
+Un instant passé est accepté, ainsi qu'un instant jusqu'à l'heure du serveur plus deux minutes, borne incluse.
+Au-delà, la réponse est 400 `evaluation-future`, sans rapport. Un instant fourni vide ou mal formé répond aussi 400.
+Les faits connus restent interprétés même postérieurs à cet instant : il ne s'agit pas d'une lecture historique. La semaine, le fuseau et les rôles de lecture gardent leurs règles.
 
 ### Présence
 

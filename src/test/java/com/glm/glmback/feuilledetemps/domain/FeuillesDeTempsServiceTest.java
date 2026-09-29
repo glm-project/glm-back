@@ -173,6 +173,39 @@ class FeuillesDeTempsServiceTest {
   }
 
   @Test
+  void shouldAppliquerLInstantChoisiAuDecoupageEnRelevantLeServeurUneSeuleFois() {
+    java.util.concurrent.atomic.AtomicInteger lectures = new java.util.concurrent.atomic.AtomicInteger();
+    ActiviteInterpretee nuit = ActiviteInterpretee.builder()
+      .id(ACTIVITE_ID_DU_CARTER)
+      .activite(activiteDeTravailDuCarterSurLaDmu50())
+      .plage(new Plage(Instant.parse("2026-05-10T20:00:00Z"), Optional.empty()))
+      .echeance(Instant.parse("2026-05-11T09:00:00Z"))
+      .aResoudre(false);
+    FeuillesDeTempsService service = FeuillesDeTempsService.builder()
+      .operateurs(REFERENTIEL)
+      .fuseau(A_PARIS)
+      .activites(ActivitesEnMemoire.avec(List.of(nuit)))
+      .clock(() -> lectures.getAndIncrement() == 0 ? Instant.parse("2026-05-11T09:00:05Z") : LE_MARDI_12_MAI_2026_A_10H);
+
+    FeuilleDeTemps feuille = service.historique(
+      OPERATEUR_ID_DUPONT,
+      SEMAINE_20_DE_2026,
+      Optional.of(Instant.parse("2026-05-10T23:00:00Z"))
+    );
+
+    assertThat(lectures.get()).isEqualTo(1);
+    assertThat(feuille.evaluation()).isEqualTo(Instant.parse("2026-05-10T23:00:00Z"));
+    assertThat(activitesDu(feuille, LUNDI_11_MAI_2026))
+      .singleElement()
+      .satisfies(intervalle -> {
+        assertThat(intervalle.lecture().etat()).isEqualTo(EtatDActivite.EN_COURS);
+        assertThat(intervalle.plage().debut()).isEqualTo(Instant.parse("2026-05-10T22:00:00Z"));
+        assertThat(intervalle.plage().fin()).isEmpty();
+      });
+    assertThat(activitesDu(feuille, MARDI_12_MAI_2026)).isEmpty();
+  }
+
+  @Test
   void shouldDepartagerDeuxActivitesSimultaneesParLElementPuisParLIdentite() {
     ActiviteInterpretee bride = ActiviteInterpretee.builder()
       .id(ACTIVITE_ID_DE_LA_BRIDE)

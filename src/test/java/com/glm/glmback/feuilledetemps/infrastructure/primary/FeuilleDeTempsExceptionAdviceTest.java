@@ -4,6 +4,7 @@ import static com.glm.glmback.feuilledetemps.domain.FeuilleDeTempsFixture.*;
 import static org.springframework.http.HttpStatus.*;
 
 import com.glm.glmback.UnitTest;
+import com.glm.glmback.feuilledetemps.domain.EvaluationFutureException;
 import com.glm.glmback.feuilledetemps.domain.OperateurInconnuException;
 import com.glm.glmback.shared.error.infrastructure.primary.ExceptionAdviceContract;
 import com.glm.glmback.shared.error.infrastructure.primary.PublishedProblem;
@@ -24,6 +25,11 @@ class FeuilleDeTempsExceptionAdviceTest extends ExceptionAdviceContract {
         new OperateurInconnuException(OPERATEUR_ID_DUPONT),
         "urn:glm:erreur:feuille-de-temps:operateur-introuvable",
         NOT_FOUND
+      ),
+      new PublishedProblem(
+        new EvaluationFutureException(LE_MARDI_12_MAI_2026_A_10H),
+        "urn:glm:erreur:feuille-de-temps:evaluation-future",
+        BAD_REQUEST
       )
     );
   }

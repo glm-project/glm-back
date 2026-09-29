@@ -2,6 +2,7 @@ package com.glm.glmback.cucumber.rest;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
+import java.util.Map;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.test.web.servlet.client.RestTestClient;
@@ -16,6 +17,10 @@ public class CucumberRestClient {
 
   public void get(String uri) {
     restClient.get().uri(uri).exchange();
+  }
+
+  public void get(String uri, Map<String, ?> variables) {
+    restClient.get().uri(uri, variables).exchange();
   }
 
   public void post(String uri, String content) {

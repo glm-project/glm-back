@@ -42,6 +42,69 @@ Feature: Feuille de temps hebdomadaire d'un operateur
       | A          | EN_COURS | 2026-05-11T08:00:00Z |             |     |
     And la feuille de temps est evaluee a "2026-05-11T20:59:59Z"
 
+  Scenario: La feuille refuse le depassement minimal des deux minutes futures
+    Given il est "2026-05-11T21:00:05Z"
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026 avec evaluation "2026-05-11T21:02:05.000000001Z"
+    Then la reponse a le statut http 400
+    And la reponse porte le code d'erreur "urn:glm:erreur:feuille-de-temps:evaluation-future"
+    And la feuille de temps refusee ne porte aucun rapport
+
+  Scenario Outline: La feuille accepte un instant passe et la limite future incluse
+    Given il est "2026-05-11T21:00:05Z"
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026 avec evaluation "<evaluation>"
+    Then la reponse a le statut http 200
+    And la feuille de temps est evaluee a "<echo>"
+    And la feuille de temps ne porte aucune activite
+
+    Examples:
+      | evaluation                     | echo                           |
+      | 2020-01-01T00:00:00Z           | 2020-01-01T00:00:00Z           |
+      | 2026-05-11T21:02:05Z           | 2026-05-11T21:02:05Z           |
+      | 2026-05-11T21:02:04.999999999Z | 2026-05-11T21:02:04.999999999Z |
+      | 2026-05-11T23:02:05+02:00      | 2026-05-11T21:02:05Z           |
+
+  Scenario: La feuille refuse un instant mal forme
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026 avec evaluation "pas-un-instant"
+    Then la reponse a le statut http 400
+    And la feuille de temps refusee ne porte aucun rapport
+
+  Scenario: La feuille refuse un instant vide explicitement fourni
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026 avec evaluation ""
+    Then la reponse a le statut http 400
+    And la feuille de temps refusee ne porte aucun rapport
+
+  Scenario: L'instant choisi exactement a echeance termine automatiquement la feuille
+    Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type  | intention | operateur | poste  | survenue             |
+      | A     | DEBUT | OUVERTURE | martin    | DMU 50 | 2026-05-11T08:00:00Z |
+    And il est "2026-05-11T21:00:05Z"
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026 avec evaluation "2026-05-11T21:00:00Z"
+    Then la reponse a le statut http 200
+    And la feuille de temps est evaluee a "2026-05-11T21:00:00Z"
+    And les activites du "2026-05-11" sont
+      | idActivite | etat                     | debutActivite        | finActivite          | fin                  |
+      | A          | TERMINEE_AUTOMATIQUEMENT | 2026-05-11T08:00:00Z | 2026-05-11T21:00:00Z | 2026-05-11T21:00:00Z |
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
+    Then la feuille de temps est evaluee a "2026-05-11T21:00:05Z"
+    And les activites du "2026-05-11" sont
+      | idActivite | etat                     | finActivite          |
+      | A          | TERMINEE_AUTOMATIQUEMENT | 2026-05-11T21:00:00Z |
+
+  Scenario: La feuille interprete une fin connue apres l'instant choisi sans lecture historique
+    Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type  | intention | cible | operateur | survenue             |
+      | A     | DEBUT | OUVERTURE |       | martin    | 2026-05-11T08:00:00Z |
+      | F     | FIN   | FIN       | A     | martin    | 2026-05-11T21:00:00Z |
+    And il est "2026-05-11T21:00:05Z"
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026 avec evaluation "2026-05-11T20:59:59Z"
+    Then la reponse a le statut http 200
+    And la feuille de temps est evaluee a "2026-05-11T20:59:59Z"
+    And les activites du "2026-05-11" sont
+      | idActivite | etat     | debutActivite        | finActivite          |
+      | A          | TERMINEE | 2026-05-11T08:00:00Z | 2026-05-11T21:00:00Z |
+
   Scenario: Un intervalle termine sans arrivee garde toutes ses bornes
     Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la feuille de temps recoit sur l'element "carter" les pointages

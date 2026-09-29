@@ -139,9 +139,10 @@ segment de contexte, et lui seul, qui les distingue.
 
 ### `feuille-de-temps` — `urn:glm:erreur:feuille-de-temps:`
 
-| Code                    | Statut | `title`               | Exception                   |
-| ----------------------- | ------ | --------------------- | --------------------------- |
-| `operateur-introuvable` | 404    | operateur introuvable | `OperateurInconnuException` |
+| Code                    | Statut | `title`                    | Exception                   |
+| ----------------------- | ------ | -------------------------- | --------------------------- |
+| `operateur-introuvable` | 404    | operateur introuvable      | `OperateurInconnuException` |
+| `evaluation-future`     | 400    | instant d'evaluation futur | `EvaluationFutureException` |
 
 ## Ajouter une erreur
 
