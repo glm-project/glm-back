@@ -53,6 +53,7 @@ public class FeuilleDeTempsSteps {
   private final Map<String, String> postes = new HashMap<>();
   private final Map<String, String> elements = new HashMap<>();
   private final Map<String, String> suivis = new HashMap<>();
+  private final Map<String, String> pointages = new HashMap<>();
   private String dernierPointage;
 
   @Given("la feuille de temps suit l'operateur {string}")
@@ -123,6 +124,30 @@ public class FeuilleDeTempsSteps {
     );
     ecritures.pointe(suivis.get(element), corps);
     assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage de l'element doit etre accepte").isTrue();
+  }
+
+  @Given("la feuille de temps recoit sur l'element {string} les pointages")
+  public void recoitLesPointages(String element, List<Map<String, String>> pointagesRecus) {
+    for (Map<String, String> pointage : pointagesRecus) {
+      String survenue = pointage.get("survenue");
+      horloge.ilEst(Instant.parse(pointage.getOrDefault("reception", survenue)));
+      dernierPointage = UUID.randomUUID().toString();
+      Map<String, Object> corps = new HashMap<>();
+      corps.put("id", dernierPointage);
+      corps.put("type", pointage.get("type"));
+      corps.put("intention", pointage.get("intention"));
+      corps.put("operateur", operateurs.get(pointage.get("operateur")));
+      corps.put("dateDeSurvenue", survenue);
+      if (pointage.containsKey("poste")) {
+        corps.put("poste", postes.get(pointage.get("poste")));
+      }
+      if (pointage.containsKey("cible")) {
+        corps.put("cible", pointages.get(pointage.get("cible")));
+      }
+      ecritures.pointe(suivis.get(element), corps);
+      assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage explicite doit etre accepte").isTrue();
+      pointages.put(pointage.get("alias"), dernierPointage);
+    }
   }
 
   @Given("le dernier pointage sur l'element {string} est annule a {string}")

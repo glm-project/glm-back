@@ -216,6 +216,18 @@ class FeuillesDeTempsServiceTest {
   }
 
   @Test
+  void shouldGarderLesBornesDuTravailTermineSansArrivee() {
+    FeuilleDeTemps feuille = historiqueDeDupont(
+      PresencesEnMemoire.sansJournee(),
+      TravailEnMemoire.avec(List.of(suiviDuCarter(debutSurLaDmu50A(LE_LUNDI_11_MAI_2026_A_8H), finSurLaDmu50A(LE_LUNDI_11_MAI_2026_A_10H))))
+    );
+
+    assertThat(activitesDu(feuille, LUNDI_11_MAI_2026)).containsExactly(
+      travailDuCarter(LE_LUNDI_11_MAI_2026_A_8H, Optional.of(LE_LUNDI_11_MAI_2026_A_10H))
+    );
+  }
+
+  @Test
   void shouldNeRendreAucuneActiviteSansTravail() {
     FeuilleDeTemps feuille = historiqueDeDupont(PresencesEnMemoire.avec(List.of(journeeDuLundiDe8HA17H())));
 
@@ -249,15 +261,13 @@ class FeuillesDeTempsServiceTest {
   }
 
   @Test
-  void shouldRefermerAuDepartUnTravailJamaisArrete() {
+  void shouldGarderOuvertUnTravailQueLeDepartNeTerminePas() {
     FeuilleDeTemps feuille = historiqueDeDupont(
       PresencesEnMemoire.avec(List.of(journeeDuLundiDe8HA17H())),
       TravailEnMemoire.avec(List.of(suiviDuCarter(debutSurLaDmu50A(LE_LUNDI_11_MAI_2026_A_9H))))
     );
 
-    assertThat(activitesDu(feuille, LUNDI_11_MAI_2026)).containsExactly(
-      travailDuCarter(LE_LUNDI_11_MAI_2026_A_9H, Optional.of(LE_LUNDI_11_MAI_2026_A_17H))
-    );
+    assertThat(activitesDu(feuille, LUNDI_11_MAI_2026)).containsExactly(travailDuCarter(LE_LUNDI_11_MAI_2026_A_9H, Optional.empty()));
   }
 
   @Test
@@ -272,13 +282,13 @@ class FeuillesDeTempsServiceTest {
   }
 
   @Test
-  void shouldEcarterUnTravailCommenceHorsDeTouteJournee() {
+  void shouldGarderUnTravailCommenceHorsDeTouteJournee() {
     FeuilleDeTemps feuille = historiqueDeDupont(
       PresencesEnMemoire.avec(List.of(journeeDuLundiDe8HA17H())),
       TravailEnMemoire.avec(List.of(suiviDuCarter(debutSurLaDmu50A(LE_LUNDI_11_MAI_2026_A_18H))))
     );
 
-    assertThat(feuille.jours()).allSatisfy(jour -> assertThat(jour.activites()).isEmpty());
+    assertThat(activitesDu(feuille, LUNDI_11_MAI_2026)).containsExactly(travailDuCarter(LE_LUNDI_11_MAI_2026_A_18H, Optional.empty()));
   }
 
   /**
@@ -296,23 +306,6 @@ class FeuillesDeTempsServiceTest {
     );
     assertThat(activitesDu(feuille, MARDI_12_MAI_2026)).containsExactly(
       travailDuCarter(LE_MARDI_12_MAI_2026_A_MINUIT, Optional.of(LE_MARDI_12_MAI_2026_A_1H))
-    );
-  }
-
-  @Test
-  void shouldPresumerLeTravailDUneJourneeAbandonnee() {
-    FeuilleDeTemps feuille = service(
-      PresencesEnMemoire.avec(List.of(journeeDuLundiDe7HSansDepart())),
-      TravailEnMemoire.avec(List.of(suiviDuCarter(debutSurLaDmu50A(LE_LUNDI_11_MAI_2026_A_8H)))),
-      (operateur, periode) -> Optional.of(LE_LUNDI_11_MAI_2026_A_16H),
-      LE_MARDI_12_MAI_2026_A_10H
-    ).historique(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
-
-    assertThat(activitesDu(feuille, LUNDI_11_MAI_2026)).containsExactly(
-      new IntervalleDActivite(
-        activiteDeTravailDuCarterSurLaDmu50(),
-        new Plage(LE_LUNDI_11_MAI_2026_A_8H, Optional.of(LE_LUNDI_11_MAI_2026_A_16H), true)
-      )
     );
   }
 
@@ -334,14 +327,8 @@ class FeuillesDeTempsServiceTest {
     );
 
     assertThat(activitesDu(feuille, LUNDI_11_MAI_2026)).containsExactly(
-      new IntervalleDActivite(
-        activiteDeTravailDuCarterAuTour(),
-        new Plage(LE_LUNDI_11_MAI_2026_A_9H, Optional.of(LE_LUNDI_11_MAI_2026_A_17H))
-      ),
-      new IntervalleDActivite(
-        activiteDeTravailDeLaBrideSurLaDmu50(),
-        new Plage(LE_LUNDI_11_MAI_2026_A_10H, Optional.of(LE_LUNDI_11_MAI_2026_A_17H))
-      )
+      new IntervalleDActivite(activiteDeTravailDuCarterAuTour(), new Plage(LE_LUNDI_11_MAI_2026_A_9H, Optional.empty())),
+      new IntervalleDActivite(activiteDeTravailDeLaBrideSurLaDmu50(), new Plage(LE_LUNDI_11_MAI_2026_A_10H, Optional.empty()))
     );
   }
 

@@ -146,7 +146,7 @@
         "type" : "object"
       },
       "RestActiviteDeLaFeuilleDeTemps" : {
-        "description" : "Une periode de travail de l'operateur sur un element, deja reduite a sa presence et ramenee au jour qui la porte.\n\nUne activite sans fin est en cours : l'operateur ne l'a pas arretee, et ni son depart ni la cloture du suivi ne l'ont\nrefermee. Elle ne s'etend jamais au-dela de son jour de debut.\n",
+        "description" : "Une periode de travail de l'operateur sur un element, ramenee au jour qui la porte.\n\nUne activite sans fin est en cours : l'operateur ne l'a pas arretee, et la cloture du suivi ne l'a pas\nrefermee. Elle ne s'etend jamais au-dela de son jour de debut.\n",
         "properties" : {
           "categorie" : {
             "description" : "Du bon travail, ou sa reprise sur non conformite.",
@@ -179,13 +179,9 @@
             "description" : "Le poste pointe, s'il l'a ete. Son libelle est dans la synthese des heures.",
             "format" : "uuid",
             "type" : "string"
-          },
-          "presumee" : {
-            "description" : "Vrai si l'activite est bornee par la fin presumee d'une journee abandonnee : a confirmer par une regularisation du\ndepart.\n",
-            "type" : "boolean"
           }
         },
-        "required" : [ "categorie", "debut", "element", "presumee" ],
+        "required" : [ "categorie", "debut", "element" ],
         "type" : "object"
       },
       "RestActiviteDuPupitre" : {
@@ -947,7 +943,7 @@
         "description" : "Un jour du calendrier de l'entreprise, la presence et le travail qui lui reviennent.\n\nLes sept jours sont toujours rendus, meme vides : un trou obligerait le lecteur a deviner s'il manque une journee\nou si l'operateur n'etait pas la.\n",
         "properties" : {
           "activites" : {
-            "description" : "Les periodes de travail de ce jour, dans l'ordre des debuts. Chacune est reduite aux fenetres de presence de la\njournee ou elle a commence : un depart referme ce que l'operateur a oublie d'arreter, et un travail commence hors\nde toute journee n'est pas rendu. Deux elements travailles en meme temps donnent deux activites qui se chevauchent ;\ndeux activites commencees au meme instant se departagent par l'identifiant de l'element.\n",
+            "description" : "Les periodes de travail de ce jour, dans l'ordre des debuts, independamment de la presence.\nDeux elements travailles en meme temps donnent deux activites qui se chevauchent ; deux activites commencees\nau meme instant se departagent par l'identifiant de l'element.\n",
             "items" : {
               "$ref" : "#/components/schemas/RestActiviteDeLaFeuilleDeTemps"
             },

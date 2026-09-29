@@ -18,8 +18,7 @@ import java.util.stream.Collectors;
  * </p>
  *
  * <p>
- * Le travail suit le meme chemin : les suivis de l'operateur sont replies en intervalles d'activite, reduits aux
- * fenetres de la journee ou chacun a commence, puis coupes aux memes minuits.
+ * Le travail est lu sans condition de presence, puis coupe aux memes minuits.
  * </p>
  */
 public final class FeuillesDeTempsService {
@@ -114,13 +113,11 @@ public final class FeuillesDeTempsService {
       .filter(arrivee -> arrivee.isBefore(decoupage.debut()))
       .min(Comparator.naturalOrder())
       .orElse(decoupage.debut());
-    ReductionALaPresence reduction = new ReductionALaPresence(journees);
 
     return travail
       .suivis(operateur, depuis, decoupage.finExclusive())
       .stream()
       .flatMap(suivi -> suivi.intervalles().stream())
-      .flatMap(intervalle -> reduction.reduit(intervalle).stream())
       .flatMap(intervalle -> decoupage.intervalles(intervalle).stream())
       .sorted(PAR_DEBUT)
       .toList();

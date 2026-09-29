@@ -11,9 +11,9 @@ import java.util.UUID;
 @Schema(
   name = "RestActiviteDeLaFeuilleDeTemps",
   description = """
-  Une periode de travail de l'operateur sur un element, deja reduite a sa presence et ramenee au jour qui la porte.
+  Une periode de travail de l'operateur sur un element, ramenee au jour qui la porte.
 
-  Une activite sans fin est en cours : l'operateur ne l'a pas arretee, et ni son depart ni la cloture du suivi ne l'ont
+  Une activite sans fin est en cours : l'operateur ne l'a pas arretee, et la cloture du suivi ne l'a pas
   refermee. Elle ne s'etend jamais au-dela de son jour de debut.
   """
 )
@@ -29,15 +29,7 @@ record RestActiviteDeLaFeuilleDeTemps(
   CategorieDActivite categorie,
   @Schema(description = "Debut de l'activite.", example = "2026-09-21T05:05:00Z", requiredMode = Schema.RequiredMode.REQUIRED)
   Instant debut,
-  @Schema(description = "Fin de l'activite, absente tant qu'elle est en cours.", example = "2026-09-21T10:00:00Z") Instant fin,
-  @Schema(
-    description = """
-    Vrai si l'activite est bornee par la fin presumee d'une journee abandonnee : a confirmer par une regularisation du
-    depart.
-    """,
-    requiredMode = Schema.RequiredMode.REQUIRED
-  )
-  boolean presumee
+  @Schema(description = "Fin de l'activite, absente tant qu'elle est en cours.", example = "2026-09-21T10:00:00Z") Instant fin
 ) {
   static RestActiviteDeLaFeuilleDeTemps from(IntervalleDActivite intervalle) {
     return new RestActiviteDeLaFeuilleDeTemps(
@@ -46,8 +38,7 @@ record RestActiviteDeLaFeuilleDeTemps(
       intervalle.activite().nature().map(NatureDOperation::value).orElse(null),
       intervalle.activite().categorie(),
       intervalle.plage().debut(),
-      intervalle.plage().fin().orElse(null),
-      intervalle.plage().presumee()
+      intervalle.plage().fin().orElse(null)
     );
   }
 }

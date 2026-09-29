@@ -18,10 +18,9 @@ record RestJourDeLaSemaine(
   @Schema(description = "Fenetres de presence de ce jour, dans l'ordre des heures.") List<RestPlage> presence,
   @Schema(
     description = """
-    Les periodes de travail de ce jour, dans l'ordre des debuts. Chacune est reduite aux fenetres de presence de la
-    journee ou elle a commence : un depart referme ce que l'operateur a oublie d'arreter, et un travail commence hors
-    de toute journee n'est pas rendu. Deux elements travailles en meme temps donnent deux activites qui se chevauchent ;
-    deux activites commencees au meme instant se departagent par l'identifiant de l'element.
+    Les periodes de travail de ce jour, dans l'ordre des debuts, independamment de la presence.
+    Deux elements travailles en meme temps donnent deux activites qui se chevauchent ; deux activites commencees
+    au meme instant se departagent par l'identifiant de l'element.
     """,
     requiredMode = Schema.RequiredMode.REQUIRED
   )

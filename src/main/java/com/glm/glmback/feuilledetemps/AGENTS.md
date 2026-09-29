@@ -32,7 +32,7 @@ persistance — l'objet naît et meurt dans l'appel. Chaque jour porte sa `prese
 `FeuillesDeTempsService` est la fabrique : elle demande les journées qui **recouvrent** la semaine, les lit à
 l'instant présent (fin présumée comprise), les replie en fenêtres de présence, puis passe chaque fenêtre au
 `DecoupageCalendaire`, seul détenteur du fuseau horaire. Le travail suit le même chemin : les `SuiviDuTravail` de
-l'opérateur sont repliés par leur `JournalDAtelier`, réduits par `ReductionALaPresence`, puis coupés par le même
+l'opérateur sont repliés par leur `JournalDAtelier`, puis coupés par le même
 découpage.
 
 ## Invariants à ne pas casser
@@ -58,13 +58,8 @@ découpage.
 - **Le port rend tout le journal des suivis touchés**, restreint à l'opérateur : une non-conformité de la semaine peut
   suivre un début de la semaine d'avant. La période ne sert qu'à choisir les suivis ; elle part de la plus précoce des
   arrivées des journées lues, ou du lundi s'il est antérieur.
-- **Un intervalle est réduit aux fenêtres de la journée où il a commencé**, lue comme la présence. La journée qui
-  contient un instant est, comme dans `atelier`, la plus récente dont l'arrivée précède l'instant et que son départ
-  pointé ne finit pas avant lui. Un départ referme ce qui n'a pas été arrêté ; une fenêtre présumée rend l'intervalle
-  présumé ; une intersection réduite à un instant ne rend rien.
-- **Un début hors de toute journée est écarté**, là où `TempsDAtelierService` le rend intact : sans présence, aucun jour
-  ne peut l'accueillir sans arbitraire, et l'anomalie reste visible sur `GET /api/atelier/suivis/{id}/temps-effectif`.
-  L'API d'`atelier` ouvre une arrivée implicite à chaque geste : le cas n'est atteignable qu'en unitaire.
+- **Le travail garde les bornes données par son journal**, indépendamment des journées de présence. Une activité
+  commencée sans arrivée reste visible ; aucun départ ni seuil de présence ne la termine ou ne la rend présumée.
 - **Une activité ouverte ne rend que son jour de début**, comme une plage de présence ouverte.
 - **La réduction, l'écart hors journée et le découpage changent avec `syntheseheures`**, qui les applique aux mêmes
   intervalles pour en tirer les durées : l'écran « Temps opérationnel » du front dessine les unes et additionne les
@@ -124,4 +119,4 @@ Lot 1 livré : la **présence**, semaine par semaine et jour par jour, jusqu'à 
 /api/feuilles-de-temps/{operateurId}?annee={}&semaine={}`.
 
 Lot 2 livré : le **travail par élément** — chaque jour rend ses `activites`, avec l'élément, le poste, la nature, la
-catégorie et `presumee`, selon les invariants ci-dessus.
+catégorie selon les invariants ci-dessus.

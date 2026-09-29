@@ -285,15 +285,12 @@ n'a saisie. C'est la transposition de la règle qu'`atelier` applique déjà à 
 
 À instant égal, l'arrivée passe devant dans le repli : l'arrivée implicite d'un geste tardif partage l'heure de ce geste. Chaque plage de la feuille porte `presumee`.
 
-**Le travail par élément** (lot 2) : chaque jour rend aussi ses activités — l'élément, le poste, la nature figée à la
-saisie, travail ou non-conformité, de quelle heure à quelle heure. Les pointages de l'opérateur sur chaque suivi sont
-rejoués poste par poste avec l'automate d'atelier, puis chaque intervalle est réduit aux fenêtres de présence de la
-journée où il a commencé : un départ referme ce que l'opérateur a oublié d'arrêter, et une fenêtre présumée rend le
-travail présumé. Un début qui ne tombe dans aucune journée de présence est **écarté**, là où `TempsDAtelierService` le
-rend intact : sans présence, aucun jour ne peut l'accueillir sans arbitraire, et l'anomalie reste visible sur
-`GET /api/atelier/suivis/{id}/temps-effectif`. Comme la présence, une activité est coupée à minuit, et une activité
-encore ouverte ne rend que son jour de début. Elle nomme l'élément, jamais le suivi : un élément réengagé après
-clôture reste le même élément. Ni libellé de poste ni fiche d'élément ici — la synthèse des heures les porte.
+**Le travail par élément** : chaque jour rend ses activités — l'élément, le poste, la nature figée à la saisie,
+travail ou non-conformité, de quelle heure à quelle heure. Les pointages de l'opérateur sur chaque suivi sont encore
+rejoués poste par poste, puis coupés à minuit et bornés à la semaine. Leurs bornes sont celles du travail : une activité
+sans arrivée reste visible, un départ ne la termine pas et les journées ne la rendent pas présumée. Une activité
+encore ouverte ne rend pour l'instant que son jour de début. Elle nomme l'élément, jamais le suivi : un élément
+réengagé après clôture reste le même élément. Ni libellé de poste ni fiche d'élément ici — la synthèse des heures les porte.
 
 ### Points ouverts
 

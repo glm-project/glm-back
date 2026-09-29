@@ -26,23 +26,4 @@ class IntervalleDActiviteTest {
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("plage");
   }
-
-  @Test
-  void shouldGarderSonActiviteEnSeReduisantAUneFenetre() {
-    IntervalleDActivite intervalle = new IntervalleDActivite(activiteDeTravailDuCarterSurLaDmu50(), DE_8H_A_12H);
-
-    assertThat(intervalle.reduitA(new Plage(LE_LUNDI_11_MAI_2026_A_9H, Optional.of(LE_LUNDI_11_MAI_2026_A_17H)))).contains(
-      new IntervalleDActivite(
-        activiteDeTravailDuCarterSurLaDmu50(),
-        new Plage(LE_LUNDI_11_MAI_2026_A_9H, Optional.of(LE_LUNDI_11_MAI_2026_A_12H))
-      )
-    );
-  }
-
-  @Test
-  void shouldNeRienRendreHorsDeLaFenetre() {
-    IntervalleDActivite intervalle = new IntervalleDActivite(activiteDeTravailDuCarterSurLaDmu50(), DE_8H_A_12H);
-
-    assertThat(intervalle.reduitA(new Plage(LE_LUNDI_11_MAI_2026_A_13H, Optional.empty()))).isEmpty();
-  }
 }
