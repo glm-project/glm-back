@@ -313,3 +313,240 @@ Feature: Sequences en conflit
     Then le temps effectif contient
       | activite                             | debut                | fin                  | finAutomatique | aResoudre |
       | 00000000-0000-0000-0000-000000000671 | 2026-07-17T08:00:00Z | 2026-07-17T11:00:00Z | false          | false     |
+
+  Scenario: Le gestionnaire resout le conflit en annulant la transition erronee
+    Given il est "2026-07-20T07:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 7001"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 7001                 |
+    And j'ai engage l'element "OF 7001" en atelier
+    And il est "2026-07-20T08:00:00Z"
+    And j'ai pointe sur "OF 7001"
+      | id        | 00000000-0000-0000-0000-000000000701 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
+    Given il est "2026-07-20T12:00:00Z"
+    And j'ai pointe sur "OF 7001"
+      | id        | 00000000-0000-0000-0000-000000000702 |
+      | type      | NON_CONFORMITE                       |
+      | intention | TRANSITION                           |
+      | cible     | 00000000-0000-0000-0000-000000000701 |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
+    Given il est "2026-07-20T17:00:00Z"
+    And j'ai pointe sur "OF 7001"
+      | id        | 00000000-0000-0000-0000-000000000703 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | cible     | 00000000-0000-0000-0000-000000000701 |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
+    Given il est "2026-07-21T09:00:00Z"
+    When j'annule l'evenement 1 de "OF 7001"
+      | motif | Pas de non conformite ce jour-la |
+    # Le conflit disparait au recalcul ; la transition reste au journal, annulee.
+    Then la reponse a le statut http 200
+    And le suivi n'a aucune sequence en conflit
+    And le journal du suivi contient 3 evenements
+    And l'evenement 1 du suivi est annule avec le motif "Pas de non conformite ce jour-la"
+    When je consulte le temps effectif de "OF 7001"
+    Then le temps effectif contient
+      | activite                             | categorie | debut                | fin                  | finAutomatique | aResoudre |
+      | 00000000-0000-0000-0000-000000000701 | TRAVAIL   | 2026-07-20T08:00:00Z | 2026-07-20T17:00:00Z | false          | false     |
+
+  Scenario: Le gestionnaire resout le conflit en corrigeant la fin de A en fin de la non conformite
+    Given il est "2026-07-22T07:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 7002"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 7002                 |
+    And j'ai engage l'element "OF 7002" en atelier
+    And il est "2026-07-22T08:00:00Z"
+    And j'ai pointe sur "OF 7002"
+      | id        | 00000000-0000-0000-0000-000000000711 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
+    Given il est "2026-07-22T12:00:00Z"
+    And j'ai pointe sur "OF 7002"
+      | id        | 00000000-0000-0000-0000-000000000712 |
+      | type      | NON_CONFORMITE                       |
+      | intention | TRANSITION                           |
+      | cible     | 00000000-0000-0000-0000-000000000711 |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
+    Given il est "2026-07-22T17:00:00Z"
+    And j'ai pointe sur "OF 7002"
+      | id        | 00000000-0000-0000-0000-000000000713 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | cible     | 00000000-0000-0000-0000-000000000711 |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
+    Given il est "2026-07-23T09:00:00Z"
+    When je corrige l'evenement 2 de "OF 7002"
+      | motif          | La fin terminait la non conformite   |
+      | type           | FIN                                  |
+      | intention      | FIN                                  |
+      | cible          | 00000000-0000-0000-0000-000000000712 |
+      | operateur      | dupont                               |
+      | poste          | fraiseuse-1                          |
+      | dateDeSurvenue | 2026-07-22T17:00:00Z                 |
+    # La fin corrigee reste au journal, annulee, avec son remplacant.
+    Then la reponse a le statut http 200
+    And le suivi n'a aucune sequence en conflit
+    And le journal du suivi contient 4 evenements
+    When je consulte le temps effectif de "OF 7002"
+    Then le temps effectif contient
+      | activite                             | categorie      | debut                | fin                  | finAutomatique | aResoudre |
+      | 00000000-0000-0000-0000-000000000711 | TRAVAIL        | 2026-07-22T08:00:00Z | 2026-07-22T12:00:00Z | false          | false     |
+      | 00000000-0000-0000-0000-000000000712 | NON_CONFORMITE | 2026-07-22T12:00:00Z | 2026-07-22T17:00:00Z | false          | false     |
+
+  Scenario: Une resolution en plusieurs actes passe par des etats intermediaires en conflit
+    # Le gestionnaire insere une non conformite de 12 h a 14 h dans un travail pointe de 08 h a 17 h : chacune des
+    # deux transitions qu'il regularise laisse la fin de 17 h contredire le journal, jusqu'a ce qu'il la reporte sur le
+    # travail repris.
+    Given il est "2026-07-24T07:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 7003"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 7003                 |
+    And j'ai engage l'element "OF 7003" en atelier
+    And il est "2026-07-24T08:00:00Z"
+    And j'ai pointe sur "OF 7003"
+      | id        | 00000000-0000-0000-0000-000000000721 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
+    Given il est "2026-07-24T17:00:00Z"
+    And j'ai pointe sur "OF 7003"
+      | id        | 00000000-0000-0000-0000-000000000722 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | cible     | 00000000-0000-0000-0000-000000000721 |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
+    Given il est "2026-07-25T09:00:00Z"
+    When je regularise sur "OF 7003"
+      | type           | NON_CONFORMITE                       |
+      | intention      | TRANSITION                           |
+      | cible          | 00000000-0000-0000-0000-000000000721 |
+      | operateur      | dupont                               |
+      | poste          | fraiseuse-1                          |
+      | dateDeSurvenue | 2026-07-24T12:00:00Z                 |
+    Then la reponse a le statut http 201
+    And le suivi porte 1 sequence en conflit
+    When je regularise sur "OF 7003" en visant l'activite de l'evenement 1
+      | type           | DEBUT                |
+      | intention      | TRANSITION           |
+      | operateur      | dupont               |
+      | poste          | fraiseuse-1          |
+      | dateDeSurvenue | 2026-07-24T14:00:00Z |
+    Then la reponse a le statut http 201
+    And le suivi porte 1 sequence en conflit
+    When je corrige l'evenement 3 de "OF 7003" en visant l'activite de l'evenement 2
+      | motif          | Fin du travail repris |
+      | type           | FIN                   |
+      | intention      | FIN                   |
+      | operateur      | dupont                |
+      | poste          | fraiseuse-1           |
+      | dateDeSurvenue | 2026-07-24T17:00:00Z  |
+    Then la reponse a le statut http 200
+    And le suivi n'a aucune sequence en conflit
+    And le journal du suivi contient 5 evenements
+    When je consulte le temps effectif de "OF 7003"
+    Then le temps effectif contient
+      | categorie      | debut                | fin                  | finAutomatique | aResoudre |
+      | TRAVAIL        | 2026-07-24T08:00:00Z | 2026-07-24T12:00:00Z | false          | false     |
+      | NON_CONFORMITE | 2026-07-24T12:00:00Z | 2026-07-24T14:00:00Z | false          | false     |
+      | TRAVAIL        | 2026-07-24T14:00:00Z | 2026-07-24T17:00:00Z | false          | false     |
+
+  Scenario: Un conflit se resout sur un element cloture, dont la cloture reste acquise
+    Given il est "2026-07-27T07:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 7004"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 7004                 |
+    And j'ai engage l'element "OF 7004" en atelier
+    And il est "2026-07-27T08:00:00Z"
+    And j'ai pointe sur "OF 7004"
+      | id        | 00000000-0000-0000-0000-000000000731 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
+    Given il est "2026-07-27T10:00:00Z"
+    And j'ai pointe sur "OF 7004"
+      | id        | 00000000-0000-0000-0000-000000000732 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
+    Given il est "2026-07-27T11:00:00Z"
+    And j'ai pointe sur "OF 7004"
+      | id        | 00000000-0000-0000-0000-000000000733 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | cible     | 00000000-0000-0000-0000-000000000731 |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
+    Given il est "2026-07-27T13:00:00Z"
+    When je cloture "OF 7004"
+      | dateDeSurvenue | 2026-07-27T12:00:00Z |
+    Then le suivi a l'etat "CLOTURE"
+    And le suivi porte 1 sequence en conflit
+    When j'annule l'evenement 2 de "OF 7004"
+      | motif | Fin pointee sur la mauvaise activite |
+    # Sans la fin contradictoire, la relance court jusqu'a la cloture, qui reste acquise.
+    Then la reponse a le statut http 200
+    And le suivi a l'etat "CLOTURE"
+    And le suivi n'a aucune sequence en conflit
+    When je consulte le temps effectif de "OF 7004"
+    Then le temps effectif contient
+      | activite                             | debut                | fin                  | finAutomatique | aResoudre |
+      | 00000000-0000-0000-0000-000000000731 | 2026-07-27T08:00:00Z | 2026-07-27T10:00:00Z | false          | false     |
+      | 00000000-0000-0000-0000-000000000732 | 2026-07-27T10:00:00Z | 2026-07-27T12:00:00Z | false          | false     |
+
+  Scenario: Un debut corrige de 08 h a 12 h, lu a 22 h, garde les gestes qui visent son activite
+    Given il est "2026-07-28T07:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 7005"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 7005                 |
+    And j'ai engage l'element "OF 7005" en atelier
+    And il est "2026-07-28T08:00:00Z"
+    And j'ai pointe sur "OF 7005"
+      | id        | 00000000-0000-0000-0000-000000000741 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
+    Given il est "2026-07-28T22:00:00Z"
+    When je corrige l'evenement 0 de "OF 7005"
+      | motif          | Demarre a midi       |
+      | type           | DEBUT                |
+      | intention      | OUVERTURE            |
+      | operateur      | dupont               |
+      | poste          | fraiseuse-1          |
+      | dateDeSurvenue | 2026-07-28T12:00:00Z |
+    # L'echeance passe de 21 h a 01 h : l'activite redevient en cours, sous l'identite de son pointage d'origine.
+    Then la reponse a le statut http 200
+    And le suivi a l'etat "EN_COURS"
+    And les activites en cours sont
+      | categorie | depuis               | ouverture                            | echeance             |
+      | TRAVAIL   | 2026-07-28T12:00:00Z | 00000000-0000-0000-0000-000000000741 | 2026-07-29T01:00:00Z |
+    # La fin que le pupitre pointe en visant ce pointage d'origine termine l'activite corrigee, sans conflit.
+    Given il est "2026-07-28T23:00:00Z"
+    When je pointe sur "OF 7005"
+      | id        | 00000000-0000-0000-0000-000000000742 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | cible     | 00000000-0000-0000-0000-000000000741 |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
+    Then la reponse a le statut http 201
+    And le suivi n'a aucune sequence en conflit
+    When je consulte le temps effectif de "OF 7005"
+    Then le temps effectif contient
+      | activite                             | debut                | fin                  | finAutomatique | aResoudre |
+      | 00000000-0000-0000-0000-000000000741 | 2026-07-28T12:00:00Z | 2026-07-28T23:00:00Z | false          | false     |

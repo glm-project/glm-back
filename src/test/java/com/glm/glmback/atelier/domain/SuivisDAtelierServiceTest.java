@@ -16,6 +16,9 @@ import org.junit.jupiter.api.Test;
 class SuivisDAtelierServiceTest {
 
   private static final ElementEngageId ELEMENT_INCONNU = new ElementEngageId(UUID.randomUUID());
+  private static final Instant LE_10_MAI_2026_A_14H = Instant.parse("2026-05-10T14:00:00Z");
+  private static final Instant A_22H = Instant.parse("2026-05-10T22:00:00Z");
+  private static final Instant A_23H = Instant.parse("2026-05-10T23:00:00Z");
 
   private final AtomicReference<Instant> maintenant = new AtomicReference<>(LE_10_MAI_2026_A_7H);
   private final SuivisDAtelierEnMemoire suivis = new SuivisDAtelierEnMemoire();
@@ -721,8 +724,220 @@ class SuivisDAtelierServiceTest {
     ).containsExactly(engage);
   }
 
+  /**
+   * Resolution par annulation : travail A a 08 h, transition A -> NC a 12 h, fin de A a 17 h. Le gestionnaire annule la
+   * transition erronee : le conflit disparait au recalcul, A va de 08 h a 17 h, et la transition reste au journal,
+   * annulee.
+   */
+  @Test
+  void shouldResoudreUnConflitEnAnnulantLaTransitionErronee() {
+    SuiviDAtelier engage = engage();
+    PointageAEnregistrer travail = pointeA(debutSurFraiseuse1(engage.id()), LE_10_MAI_2026_A_8H);
+    PointageAEnregistrer nonConformite = pointeA(
+      gesteVisant(travail, TypeDEvenementDAtelier.NON_CONFORMITE, IntentionDePointage.TRANSITION),
+      LE_10_MAI_2026_A_12H
+    );
+    pointeA(gesteVisant(travail, TypeDEvenementDAtelier.FIN, IntentionDePointage.FIN), LE_10_MAI_2026_A_17H);
+    assertThat(atelier.get(engage.id()).conflits()).hasSize(1);
+    maintenant.set(LE_11_MAI_2026_A_9H15);
+
+    SuiviDAtelier resolu = atelier.annule(
+      AnnulationAEnregistrer.builder()
+        .suivi(engage.id())
+        .evenement(nonConformite.evenement())
+        .auteur(AUTEUR_LEROY)
+        .motif(MOTIF_ERREUR_DE_SAISIE)
+    );
+
+    assertThat(resolu.conflits()).isEmpty();
+    assertThat(resolu.activites())
+      .extracting(Activite::debut, Activite::fin, Activite::aResoudre)
+      .containsExactly(tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_17H), false));
+    assertThat(resolu.journal().evenements()).hasSize(3);
+    assertThat(resolu.journal().evenement(nonConformite.evenement())).get().matches(EvenementDAtelier::estAnnule);
+  }
+
+  /**
+   * Resolution par correction : la fin de A a 17 h devient celle de la non conformite. A va de 08 h a 12 h, la non
+   * conformite de 12 h a 17 h ; la fin corrigee reste au journal, annulee, avec son remplacant.
+   */
+  @Test
+  void shouldResoudreUnConflitEnCorrigeantLaFinSurLActiviteRemplacante() {
+    SuiviDAtelier engage = engage();
+    PointageAEnregistrer travail = pointeA(debutSurFraiseuse1(engage.id()), LE_10_MAI_2026_A_8H);
+    PointageAEnregistrer nonConformite = pointeA(
+      gesteVisant(travail, TypeDEvenementDAtelier.NON_CONFORMITE, IntentionDePointage.TRANSITION),
+      LE_10_MAI_2026_A_12H
+    );
+    PointageAEnregistrer finDuTravail = pointeA(
+      gesteVisant(travail, TypeDEvenementDAtelier.FIN, IntentionDePointage.FIN),
+      LE_10_MAI_2026_A_17H
+    );
+    maintenant.set(LE_11_MAI_2026_A_9H15);
+
+    SuiviDAtelier resolu = atelier.corrige(
+      new CorrectionAEnregistrer(
+        finDuTravail.evenement(),
+        MOTIF_ERREUR_DE_SAISIE,
+        regularisationVisant(
+          engage.id(),
+          ActiviteId.ouvertePar(nonConformite.evenement()),
+          TypeDEvenementDAtelier.FIN,
+          LE_10_MAI_2026_A_17H
+        )
+      )
+    );
+
+    assertThat(resolu.conflits()).isEmpty();
+    assertThat(resolu.activites())
+      .extracting(Activite::categorie, Activite::debut, Activite::fin)
+      .containsExactly(
+        tuple(CategorieDActivite.TRAVAIL, LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H)),
+        tuple(CategorieDActivite.NON_CONFORMITE, LE_10_MAI_2026_A_12H, Optional.of(LE_10_MAI_2026_A_17H))
+      );
+    assertThat(resolu.journal().evenements()).hasSize(4);
+  }
+
+  /**
+   * Une resolution en plusieurs actes passe par des etats intermediaires en conflit, tous admis : le gestionnaire
+   * insere une non conformite de 12 h a 14 h dans un travail de 08 h a 17 h, par deux transitions regularisees, puis
+   * reporte la fin sur le travail repris.
+   */
+  @Test
+  void shouldResoudreUnConflitEnPlusieursActesParDesEtatsIntermediairesEnConflit() {
+    SuiviDAtelier engage = engage();
+    PointageAEnregistrer travail = pointeA(debutSurFraiseuse1(engage.id()), LE_10_MAI_2026_A_8H);
+    PointageAEnregistrer finDuTravail = pointeA(
+      gesteVisant(travail, TypeDEvenementDAtelier.FIN, IntentionDePointage.FIN),
+      LE_10_MAI_2026_A_17H
+    );
+    maintenant.set(LE_11_MAI_2026_A_9H15);
+    EvenementDAtelierId nonConformite = EvenementDAtelierId.newId();
+    EvenementDAtelierId reprise = EvenementDAtelierId.newId();
+
+    SuiviDAtelier premierActe = atelier.regularise(
+      regularisationVisant(
+        engage.id(),
+        ActiviteId.ouvertePar(travail.evenement()),
+        TypeDEvenementDAtelier.NON_CONFORMITE,
+        LE_10_MAI_2026_A_12H
+      ),
+      nonConformite
+    );
+    SuiviDAtelier secondActe = atelier.regularise(
+      regularisationVisant(engage.id(), ActiviteId.ouvertePar(nonConformite), TypeDEvenementDAtelier.DEBUT, LE_10_MAI_2026_A_14H),
+      reprise
+    );
+    SuiviDAtelier resolu = atelier.corrige(
+      new CorrectionAEnregistrer(
+        finDuTravail.evenement(),
+        MOTIF_ERREUR_DE_SAISIE,
+        regularisationVisant(engage.id(), ActiviteId.ouvertePar(reprise), TypeDEvenementDAtelier.FIN, LE_10_MAI_2026_A_17H)
+      )
+    );
+
+    assertThat(premierActe.conflits()).hasSize(1);
+    assertThat(secondActe.conflits()).hasSize(1);
+    assertThat(resolu.conflits()).isEmpty();
+    assertThat(resolu.activites())
+      .extracting(Activite::categorie, Activite::debut, Activite::fin)
+      .containsExactly(
+        tuple(CategorieDActivite.TRAVAIL, LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H)),
+        tuple(CategorieDActivite.NON_CONFORMITE, LE_10_MAI_2026_A_12H, Optional.of(LE_10_MAI_2026_A_14H)),
+        tuple(CategorieDActivite.TRAVAIL, LE_10_MAI_2026_A_14H, Optional.of(LE_10_MAI_2026_A_17H))
+      );
+  }
+
+  /**
+   * Un conflit se resout aussi sur un suivi cloture : l'annulation de la fin contradictoire rend a la relance la fin
+   * que lui donne la cloture, qui reste acquise.
+   */
+  @Test
+  void shouldResoudreUnConflitSurUnSuiviClotureSansToucherALaCloture() {
+    SuiviDAtelier engage = engage();
+    PointageAEnregistrer premiere = pointeA(debutSurFraiseuse1(engage.id()), LE_10_MAI_2026_A_8H);
+    pointeA(debutSurFraiseuse1(engage.id()), LE_10_MAI_2026_A_9H);
+    PointageAEnregistrer finDeLaPremiere = pointeA(
+      gesteVisant(premiere, TypeDEvenementDAtelier.FIN, IntentionDePointage.FIN),
+      LE_10_MAI_2026_A_12H
+    );
+    maintenant.set(LE_10_MAI_2026_A_17H);
+    atelier.cloture(new ClotureAEnregistrer(engage.id(), AUTEUR_LEROY, Optional.of(LE_10_MAI_2026_A_16H)));
+
+    SuiviDAtelier resolu = atelier.annule(
+      AnnulationAEnregistrer.builder()
+        .suivi(engage.id())
+        .evenement(finDeLaPremiere.evenement())
+        .auteur(AUTEUR_LEROY)
+        .motif(MOTIF_ERREUR_DE_SAISIE)
+    );
+
+    assertThat(resolu.conflits()).isEmpty();
+    assertThat(resolu.etat(LE_10_MAI_2026_A_17H)).isEqualTo(EtatDAtelier.CLOTURE);
+    assertThat(resolu.activites())
+      .extracting(Activite::debut, Activite::fin)
+      .containsExactly(
+        tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_9H)),
+        tuple(LE_10_MAI_2026_A_9H, Optional.of(LE_10_MAI_2026_A_16H))
+      );
+  }
+
+  /**
+   * Debut corrige de 08 h a 12 h, lu a 22 h : l'activite redevient en cours jusqu'a 01 h, et la fin que le pupitre
+   * pointe ensuite en visant l'activite d'origine la termine, sans conflit.
+   */
+  @Test
+  void shouldRattacherAuDebutCorrigeLaFinQuiViseSonActivite() {
+    SuiviDAtelier engage = engage();
+    PointageAEnregistrer debut = pointeA(debutSurFraiseuse1(engage.id()), LE_10_MAI_2026_A_8H);
+    maintenant.set(A_22H);
+    atelier.corrige(
+      new CorrectionAEnregistrer(debut.evenement(), MOTIF_ERREUR_DE_SAISIE, regularisationDeDebutA(engage.id(), LE_10_MAI_2026_A_12H))
+    );
+    assertThat(atelier.get(engage.id()).etat(A_22H)).isEqualTo(EtatDAtelier.EN_COURS);
+
+    pointeA(gesteVisant(debut, TypeDEvenementDAtelier.FIN, IntentionDePointage.FIN), A_23H);
+
+    SuiviDAtelier termine = atelier.get(engage.id());
+    assertThat(termine.conflits()).isEmpty();
+    assertThat(termine.activites())
+      .singleElement()
+      .satisfies(activite -> {
+        assertThat(activite.id()).isEqualTo(ActiviteId.ouvertePar(debut.evenement()));
+        assertThat(activite.debut()).isEqualTo(LE_10_MAI_2026_A_12H);
+        assertThat(activite.fin()).contains(A_23H);
+      });
+  }
+
   private SuiviDAtelier engage() {
     return atelier.engage(new EngagementAEnregistrer(ELEMENT_OF_2026_000042, AUTEUR_LEROY));
+  }
+
+  private PointageAEnregistrer pointeA(PointageAEnregistrer pointage, Instant instant) {
+    maintenant.set(instant);
+    atelier.pointe(pointage);
+
+    return pointage;
+  }
+
+  /**
+   * Un geste que le gestionnaire regularise sur l'activite visee : une fin pour une fin, une transition sinon.
+   */
+  private static RegularisationAEnregistrer regularisationVisant(
+    SuiviDAtelierId suivi,
+    ActiviteId visee,
+    TypeDEvenementDAtelier type,
+    Instant date
+  ) {
+    return RegularisationAEnregistrer.builder()
+      .suivi(suivi)
+      .type(type)
+      .intention(type == TypeDEvenementDAtelier.FIN ? IntentionDePointage.FIN : IntentionDePointage.TRANSITION)
+      .activiteVisee(Optional.of(visee))
+      .operateur(OPERATEUR_ID_DUPONT)
+      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
+      .auteur(AUTEUR_LEROY)
+      .dateDeSurvenue(date);
   }
 
   private static PointageAEnregistrer debutSurFraiseuse1(SuiviDAtelierId suivi) {

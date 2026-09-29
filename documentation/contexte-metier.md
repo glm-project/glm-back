@@ -141,6 +141,8 @@ Un journal ne se réécrit pas : l'événement erroné reste, porteur d'une `Ann
 
 `corrige` n'est pas la composition des deux autres, et c'est le point non évident : le remplaçant d'un début corrigé garde l'activité qu'il ouvrait, et les gestes qui la visaient y restent rattachés. Annuler ce début puis régulariser sa version corrigée ouvrirait une autre activité, et laisserait en conflit la fin qui visait la première.
 
+Ce sont aussi les actes qui **résolvent une séquence en conflit** : annuler la transition erronée, ou corriger la fin qui visait l'activité remplacée pour qu'elle termine sa remplaçante. Aucun n'est refusé parce qu'il crée ou laisse une contradiction ; une résolution en plusieurs actes traverse donc des états intermédiaires en conflit, et le recalcul retire le conflit dès que les faits redeviennent cohérents.
+
 **La clôture ne fige rien pour le gestionnaire.** Elle ferme le pointage aux opérateurs ; régularisation, annulation et correction restent admises, et la clôture elle-même se déplace ou s'annule. Le seul invariant qui subsiste est de cohérence, pas de permission : aucun événement daté après la clôture.
 
 ### Le temps réparti

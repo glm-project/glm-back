@@ -161,6 +161,20 @@ public class AtelierSteps {
     ecritures.regularise(suivis.get(alias), resolu(donnees));
   }
 
+  /**
+   * Regularise un geste qui vise l'activite qu'ouvre l'evenement de ce rang du journal : de quoi viser une activite
+   * ouverte par un acte du gestionnaire, dont l'identifiant vient du serveur.
+   */
+  @When("je regularise sur {string} en visant l'activite de l'evenement {int}")
+  public void jeRegulariseSurEnVisantLActiviteDe(String alias, int ouvrant, Map<String, String> donnees) {
+    ecritures.regularise(suivis.get(alias), visant(alias, ouvrant, donnees));
+  }
+
+  @When("je corrige l'evenement {int} de {string} en visant l'activite de l'evenement {int}")
+  public void jeCorrigeLEvenementDeEnVisantLActiviteDe(int rang, String alias, int ouvrant, Map<String, String> donnees) {
+    ecritures.corrige(suivis.get(alias), evenementDAtelier(alias, rang), visant(alias, ouvrant, donnees));
+  }
+
   @When("j'annule l'evenement {int} de {string}")
   public void jAnnuleLEvenementDe(int rang, String alias, Map<String, String> donnees) {
     rest.post(
@@ -307,6 +321,11 @@ public class AtelierSteps {
   @Then("les activites en cours sont")
   public void lesActivitesEnCoursSont(List<Map<String, String>> attendues) {
     assertThatLastResponse().hasElement("$.activitesEnCours").containingExactly(attendues);
+  }
+
+  @Then("le suivi porte {int} sequence(s) en conflit")
+  public void leSuiviPorteSequencesEnConflit(int nombre) {
+    assertThatLastResponse().hasElement("$.conflits").withElementsCount(nombre);
   }
 
   @Then("le suivi n'a aucune sequence en conflit")
@@ -746,6 +765,17 @@ public class AtelierSteps {
   private Map<String, String> resoluAvecIdentifiant(Map<String, String> donnees) {
     Map<String, String> corps = resolu(donnees);
     corps.putIfAbsent("id", UUID.randomUUID().toString());
+    return corps;
+  }
+
+  /**
+   * Le corps donne, dont la cible est l'activite qu'ouvre l'evenement de ce rang du journal.
+   */
+  private Map<String, String> visant(String alias, int ouvrant, Map<String, String> donnees) {
+    rest.get(SUIVIS_URI + "/" + suivis.get(alias));
+    Map<String, String> corps = resolu(donnees);
+    corps.put("cible", elementDeLaDerniereReponse("$.journal[" + ouvrant + "].activite"));
+
     return corps;
   }
 

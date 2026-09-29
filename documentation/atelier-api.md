@@ -410,7 +410,23 @@ et la clôture elle-même se déplace (`PUT`) ou s'annule (`DELETE`). Ne pas gri
 
 `PUT .../evenements/{evtId}` est une **correction** : une annulation et une régularisation en un seul appel. Le journal
 en ressort avec deux événements de plus, pas un — l'ancien annulé, le nouveau à l'heure corrigée. Le remplaçant d'un
-pointage ouvrant garde son `activite` : la fin qui visait l'activité la termine toujours.
+pointage ouvrant garde son `activite` : la fin qui visait l'activité la termine toujours. Corriger un début de 8 h à
+12 h, lu à 22 h, rend l'activité en cours jusqu'à son échéance de 1 h, et la fin que le pupitre pointe ensuite en
+visant le pointage d'origine la termine.
+
+**Une séquence en conflit se résout par ces mêmes actes**, et disparaît de `conflits` au recalcul dès que les faits
+redeviennent cohérents ; les pointages et corrections restent au journal. Travail A à 8 h, transition vers une non
+conformité à 12 h, fin de A à 17 h :
+
+- annuler la transition erronée (`POST …/evenements/{transition}/annulation`) rend A de 8 h à 17 h ;
+- corriger la fin de A en fin de la non conformité (`PUT …/evenements/{fin}`, `cible` = l'activité de la non
+  conformité, `dateDeSurvenue` 17 h) rend A de 8 h à 12 h, puis la non conformité de 12 h à 17 h.
+
+Une résolution en plusieurs actes passe par des états intermédiaires en conflit, tous admis : chaque réponse rend la
+séquence telle que les faits la laissent. Une régularisation, une correction ou une annulation n'est jamais refusée
+parce qu'elle crée ou laisse une contradiction ; les refus qui ne tiennent pas à une contradiction demeurent — cible
+introuvable ou d'un autre poste, habilitation, événement antérieur à l'engagement ou postérieur à la clôture,
+événement déjà annulé.
 
 ### Paramétrage de l'entreprise
 
