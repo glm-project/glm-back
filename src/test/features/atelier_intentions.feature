@@ -154,6 +154,9 @@ Feature: Intention et activite visee des pointages d'atelier
     And le journal du suivi contient 3 evenements
     And le suivi a 0 activites en cours
     And le suivi a l'etat "INTERROMPU"
+    And le suivi porte une seule sequence en conflit, de "dupont" sur "fraiseuse-1"
+      | activites | 00000000-0000-0000-0000-000000000221, 00000000-0000-0000-0000-000000000223                                       |
+      | pointages | 00000000-0000-0000-0000-000000000221, 00000000-0000-0000-0000-000000000222, 00000000-0000-0000-0000-000000000223 |
 
   Scenario: Une fin qui vise une activite remplacee ne termine jamais sa remplacante
     # A a 8 h, relance B a 10 h, puis une fin qui vise encore A. Le geste contradictoire est conserve : la sequence est
@@ -189,6 +192,9 @@ Feature: Intention et activite visee des pointages d'atelier
     Then le suivi a 0 activites en cours
     And le suivi a l'etat "INTERROMPU"
     And le journal du suivi contient 3 evenements
+    And le suivi porte une seule sequence en conflit, de "dupont" sur "fraiseuse-1"
+      | activites | 00000000-0000-0000-0000-000000000231, 00000000-0000-0000-0000-000000000232                                       |
+      | pointages | 00000000-0000-0000-0000-000000000231, 00000000-0000-0000-0000-000000000232, 00000000-0000-0000-0000-000000000233 |
 
   Scenario: Une fin qui vise une activite introuvable dans ce suivi est refusee
     Given il est "2026-05-10T08:00:00Z"

@@ -86,6 +86,25 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
   (`ActiviteViseeIncoherenteException`, 409), avant toute autre décision, absorption comprise. Un geste qui contredit
   le journal — cible déjà terminée, remplacée ou annulée, transition vers sa propre catégorie — n'est jamais refusé :
   il ne termine jamais une autre activité que sa cible, et sa séquence est en conflit (`SequenceEnConflit`).
+- **Aucune contradiction n'est refusée, par aucune écriture** : pointage, régularisation, correction et annulation
+  enregistrent le fait, et l'interprétation rend une séquence en conflit au lieu de lever. Une exception levée par
+  l'interprétation bloquerait aussi la relecture du suivi. Sont contradictoires : un geste qui vise une activité
+  remplacée strictement avant lui, déjà terminée par une fin réelle — double appui compris —, pas encore ouverte à son
+  heure ou dont l'ouverture est annulée ; une transition vers sa propre catégorie, vers une cible échue pendant qu'une
+  autre activité est en cours, ou vers une cible que seul le gestionnaire a prolongée au-delà de son échéance. Une
+  cible seulement échue ne contredit rien.
+- **Une séquence en conflit est dérivée, jamais stockée comme état.** Elle ne dépend que de l'ensemble des faits
+  actifs, jamais de leur ordre de réception, et disparaît au recalcul quand une correction ou une annulation rend les
+  faits cohérents. Une contradiction couvre la zone qui va du début de sa cible à l'heure du geste : la cible,
+  l'activité qu'ouvre le geste et toute activité de la clé qui chevauche la zone sont **à résoudre** ; les autres
+  activités, de la clé comme des autres clés, gardent leur interprétation. Les contradictions qui partagent une
+  activité, ou une même cible annulée, forment une seule séquence ; ses pointages sont ses gestes contradictoires et
+  tout fait actif qui ouvre ou vise l'une de ses activités.
+- **Une activité à résoudre n'est ni en cours ni terminée** (`Activite.aResoudre`) : sans fin, ni réelle ni
+  automatique, que ni l'échéance ni la clôture ne lui donnent, et hors du temps effectif chiffré. L'état du suivi se
+  juge sur ses seules activités interprétables ; le conflit se lit à part, sans valeur d'état propre.
+- **Une fin sur un suivi clôturé se juge sur son heure métier** : survenue avant la clôture, elle est enregistrée et
+  appliquée, la clôture restant acquise ; survenue après, elle est absorbée, une fois sa cible contrôlée.
 - **Une activité que rien n'a terminée se termine automatiquement à son échéance** : son début plus 13 heures
   écoulées (`Echeance`), neutres au changement d'heure. Ce délai est la règle de l'atelier, pas une donnée de
   paramétrage : il reste une constante du domaine. Rien n'est écrit ni planifié : `Activite` ne dépend que des faits
@@ -173,9 +192,10 @@ journée contenant un instant obligerait à ramener toute l'entreprise en mémoi
 Elles ne dépendent que du journal, jamais de l'instant courant, donc restent justes entre deux écritures.
 
 `activite_d_atelier` porte, par activité de `SuiviDAtelier.activites()`, son identité, son ouvrant actif, sa clé, sa
-nature, sa catégorie, son début, son échéance et sa fin réelle, rapprochés par identité à chaque écriture. Jamais de
-fin automatique ni d'anomalie, qui dépendent de l'instant : le filtre `etats` juge l'état à l'instant d'évaluation de
-`SuiviDAtelierCriteria`, une activité sans fin réelle étant en cours tant que son échéance n'est pas atteinte. C'est
+nature, sa catégorie, son début, son échéance, sa fin réelle et si elle est à résoudre, rapprochés par identité à
+chaque écriture. Jamais de fin automatique ni d'anomalie, qui dépendent de l'instant : le filtre `etats` juge l'état à
+l'instant d'évaluation de `SuiviDAtelierCriteria`, une activité interprétable sans fin réelle étant en cours tant que
+son échéance n'est pas atteinte. C'est
 aussi la projection que les autres contextes liront, plutôt que de réinterpréter le journal.
 
 Leur contrepartie : `SuiviDAtelierCriteria.matches` et `JourneeDeTravailCriteria.matches` ne sont plus appelées par la
@@ -200,8 +220,9 @@ Deux scénarios métier de référence, à lire avant toute modification du mod�
 - `src/test/java/com/glm/glmback/atelier/domain/VieDeLAtelierTest.java` — une journée complète en appels directs, avec
   le verbatim client en javadoc de chaque assertion ;
 - `src/test/features/atelier_suivi.feature` — la même journée rejouée en HTTP, avec `atelier_presence.feature` pour la
-  présence seule, `atelier_intentions.feature` pour l'intention et l'activité visée des pointages, et
-  `atelier_echeance.feature` pour l'échéance et la fin automatique des activités.
+  présence seule, `atelier_intentions.feature` pour l'intention et l'activité visée des pointages,
+  `atelier_echeance.feature` pour l'échéance et la fin automatique des activités, et `atelier_conflits.feature` pour
+  les séquences en conflit et leur résolution.
 
 Les scénarios écrits avant l'intention la font déduire du journal par `EcrituresDuJournalDAtelier`, comme le ferait le
 pupitre ; tout nouveau scénario donne son intention et sa cible.

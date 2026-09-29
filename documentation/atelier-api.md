@@ -47,8 +47,8 @@ qui saisit n'est pas forcément celui dont on compte le temps.
 
 ### Le journal est la seule vérité
 
-Aucun état, aucun compteur, aucun intervalle n'est stocké. `etat`, `activitesEnCours`, `amplitude`, `fenetres` et le
-temps effectif sont **recalculés du journal à chaque lecture**, à l'instant de cette lecture.
+Aucun état, aucun compteur, aucun intervalle n'est stocké. `etat`, `activitesEnCours`, `conflits`, `amplitude`,
+`fenetres` et le temps effectif sont **recalculés du journal à chaque lecture**, à l'instant de cette lecture.
 
 Conséquence directe pour le front : après toute écriture, la réponse contient déjà l'agrégat entièrement recalculé.
 **Ne jamais reconstruire l'état côté client** en appliquant l'événement localement — re-rendre depuis la réponse.
@@ -183,8 +183,47 @@ régularisation et la correction.
   `activite-visee-incoherente`. Ces deux refus sont définitifs : rejouer le même geste ne changera rien.
 - **Un geste qui contredit le journal n'est jamais refusé** : sa cible est déjà terminée ou remplacée à son heure, son
   ouvrant est annulé, ou la transition vise une activité de sa propre catégorie. Il est enregistré (`201`), et la
-  séquence est **en conflit** jusqu'à ce que le gestionnaire la résolve. Une transition dont la cible n'est plus en
-  cours ne devient jamais une ouverture. Une cible échue, elle, ne contredit rien (voir l'échéance ci-dessus).
+  séquence est **en conflit** jusqu'à ce que le gestionnaire la résolve (voir ci-dessous). Une transition dont la cible
+  n'est plus en cours ne devient jamais une ouverture. Une cible échue, elle, ne contredit rien (voir l'échéance
+  ci-dessus).
+
+### Des pointages contradictoires restent en conflit, jusqu'à la décision du gestionnaire
+
+Le serveur ne choisit jamais entre deux pointages qui se contredisent, quel que soit leur ordre d'arrivée. Travail A à
+8 h, transition de A vers une non conformité à 12 h, fin de A à 17 h : que la transition arrive avant la fin ou le
+lendemain, après elle, les trois faits sont conservés, la fin ne termine pas la non conformité et la transition n'est
+pas ignorée. La séquence est **en conflit**. Un fait déjà accepté devient donc contradictoire à l'arrivée d'un fait
+antérieur.
+
+Sont en conflit : une fin ou une transition qui vise une activité déjà remplacée avant son heure (relance ou
+transition), déjà terminée par une fin — le double appui sur « arrêter » compris —, pas encore ouverte à son heure, ou
+dont l'ouverture est annulée ; une transition vers sa propre catégorie ; une transition qui vise une activité échue
+pendant qu'une autre est en cours sur le même poste. Une régularisation, une correction ou une annulation qui crée ou
+laisse une contradiction est admise de la même façon. Ne sont pas en conflit : un geste qui vise une activité
+seulement échue, ou pointé pile à son échéance.
+
+Ce que les réponses en montrent :
+
+- `conflits[]`, dans `RestSuiviDAtelier` — le détail et la réponse de chaque écriture —, une entrée par séquence :
+  `operateur` et `poste` résolus, `activites`, les identités des activités **à résoudre** dans l'ordre de leur
+  ouverture, et `pointages`, les identifiants des faits de la séquence dans l'ordre du journal. Tableau vide quand le
+  journal est cohérent. La grille (`GET /api/atelier/suivis`) ne le porte pas : il se lit sur le détail.
+- Une activité à résoudre n'est **ni en cours ni terminée** : absente d'`activitesEnCours`, sans fin, sans durée, et
+  son échéance ne la termine pas. L'`etat` du suivi se juge sur les seules activités interprétables : une nouvelle
+  ouverture après le conflit est en cours, et l'élément avec elle.
+- `GET …/temps-effectif` rend son intervalle avec `aResoudre: true`, sans `fin` : aucune durée n'est à présenter comme
+  définitive, et elle ne vaut pas zéro. `finAutomatique` y est toujours faux.
+- Hors de la séquence, les activités du même poste gardent leur lecture : ce qui précède la contradiction, et
+  l'ouverture pointée après elle.
+
+**Pour le pupitre, un pointage conservé en conflit est un succès.** Il est acquitté `201` — `200` au rejeu, sans second
+fait — et son identifiant figure dans `conflits[].pointages` : c'est ce qui le distingue d'un refus (`4xx`), et il ne
+doit pas être republié. Sur un poste dont une séquence est en conflit, seule une nouvelle **ouverture** a un sens : ne
+viser par une fin ou une transition aucune activité listée dans `conflits[].activites`.
+
+**Pour le gestionnaire, le conflit se résout par les actes existants**, correction et annulation, et disparaît au
+recalcul dès que les faits redeviennent cohérents ; l'historique garde pointages et corrections (voir l'écran
+back-office).
 
 ---
 
@@ -204,9 +243,9 @@ rien. `debut`/`fin` ne servent qu'au back-office, et **une borne seule est ignor
 Le filtre `etats` juge l'état à l'instant de la lecture, le même que celui de chaque ligne rendue : un élément dont la
 seule activité a atteint son échéance sort de `etats=EN_COURS` et entre dans `etats=INTERROMPU`, sans aucune écriture.
 
-La liste rend une page de **`RestSuiviDAtelierEnGrille`**, sans propriété `journal` (ni tableau vide, ni valeur
-`null`). Tous les autres champs sont conservés : `id`, `element`, `nom`, `type`, `engagePar`, `engageLe`, `etat`,
-`cloturePar`, `clotureLe` et `activitesEnCours`. L'état et les activités restent calculés par le serveur depuis
+La liste rend une page de **`RestSuiviDAtelierEnGrille`**, sans propriétés `journal` ni `conflits` (ni tableau vide, ni
+valeur `null`). Tous les autres champs sont conservés : `id`, `element`, `nom`, `type`, `engagePar`, `engageLe`,
+`etat`, `cloturePar`, `clotureLe` et `activitesEnCours`. L'état et les activités restent calculés par le serveur depuis
 le journal ; ce changement allège la réponse HTTP et le cache du pupitre, pas la relecture en base.
 
 Le journal complet, **événements annulés compris**, se lit via `GET /api/atelier/suivis/{id}`, qui conserve
@@ -407,6 +446,8 @@ un `FIN` et un `DEBUT`, en produit deux. Un intervalle sans `fin` est encore en 
 
 Chaque intervalle porte son `activite`, l'identité de l'activité dont il vient. `finAutomatique: true` signale une
 activité terminée automatiquement à son échéance : sans départ connu, `fin` vaut l'échéance, 13 h après le début.
+`aResoudre: true` signale une activité d'une séquence en conflit : rendue telle quelle, sans `fin`, elle n'a aucune
+durée à compter tant que le gestionnaire n'a pas tranché.
 
 Un intervalle **`presume: true`** repose sur une fin de journée présumée : l'opérateur n'a pas pointé son départ, et sa
 journée, abandonnée au-delà de l'amplitude maximale, a été fermée à son dernier fait connu. L'afficher comme « à

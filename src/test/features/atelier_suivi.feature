@@ -43,9 +43,9 @@ Feature: Suivi des elements engages en atelier
     When j'annule l'evenement 1 de "OF 2962"
       | motif | Pointe sur le mauvais ordre |
     Then le journal du suivi contient 2 evenements
-    And je retiens les informations du suivi hors journal
+    And je retiens les informations du suivi hors journal et conflits
     When je liste les elements engages entre "2026-07-02T00:00:00Z" et "2026-07-03T00:00:00Z"
-    Then la grille contient les memes informations sans aucun journal
+    Then la grille contient les memes informations sans journal ni conflits
     When je consulte "OF 2962"
     Then le journal du suivi contient 2 evenements
     And l'evenement 1 du suivi est annule avec le motif "Pointe sur le mauvais ordre"
@@ -363,6 +363,9 @@ Feature: Suivi des elements engages en atelier
     Then la reponse a le statut http 201
     And le journal du suivi contient 3 evenements
     And le suivi a l'etat "INTERROMPU"
+    And le suivi porte une seule sequence en conflit, de "dupont" sur "fraiseuse-1"
+      | activites | 00000000-0000-0000-0000-000000000271                                                                             |
+      | pointages | 00000000-0000-0000-0000-000000000271, 00000000-0000-0000-0000-000000000272, 00000000-0000-0000-0000-000000000273 |
 
   Scenario: Cloturer un element, puis le rouvrir
     Given il est "2026-05-10T08:00:00Z"

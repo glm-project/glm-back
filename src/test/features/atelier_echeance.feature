@@ -31,9 +31,9 @@ Feature: Echeance et fin automatique des activites
       | categorie | depuis               | ouverture                            | echeance             |
       | TRAVAIL   | 2026-06-01T08:00:00Z | 00000000-0000-0000-0000-000000000501 | 2026-06-01T21:00:00Z |
     # La grille rend la meme activite en cours, avec son pointage ouvrant et son echeance.
-    And je retiens les informations du suivi hors journal
+    And je retiens les informations du suivi hors journal et conflits
     When je liste les elements engages entre "2026-06-01T00:00:00Z" et "2026-06-01T23:59:59Z"
-    Then la grille contient les memes informations sans aucun journal
+    Then la grille contient les memes informations sans journal ni conflits
     When je consulte le temps effectif de "OF 5001"
     Then le temps effectif contient
       | activite                             | debut                | fin | finAutomatique |

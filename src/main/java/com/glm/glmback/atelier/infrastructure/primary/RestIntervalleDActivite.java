@@ -29,7 +29,12 @@ record RestIntervalleDActivite(
   @Schema(description = "Nature de l'operation, facultative.") String nature,
   @Schema(description = "TRAVAIL ou NON_CONFORMITE.") CategorieDActivite categorie,
   @Schema(description = "Debut de l'intervalle.") Instant debut,
-  @Schema(description = "Fin de l'intervalle, absente s'il est encore en cours. Pour une activite terminee automatiquement, son echeance.")
+  @Schema(
+    description = """
+    Fin de l'intervalle, absente s'il est encore en cours ou a resoudre. Pour une activite terminee automatiquement, son
+    echeance.
+    """
+  )
   Instant fin,
   @Schema(
     description = """
@@ -40,6 +45,15 @@ record RestIntervalleDActivite(
     requiredMode = Schema.RequiredMode.REQUIRED
   )
   boolean finAutomatique,
+  @Schema(
+    description = """
+    Vrai si l'activite de l'intervalle est a resoudre : des pointages contradictoires la concernent, dans une sequence
+    en conflit. Elle n'est alors ni en cours ni terminee, n'a ni fin ni duree a compter, et son echeance ne la termine
+    pas. Une correction ou une annulation du gestionnaire la rend de nouveau interpretable, au recalcul.
+    """,
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  boolean aResoudre,
   @Schema(
     description = """
     Vrai si l'intervalle repose sur une fin de journee presumee : l'operateur n'a pas pointe son depart, et sa
@@ -61,6 +75,7 @@ record RestIntervalleDActivite(
       intervalle.debut(),
       intervalle.fin().orElse(null),
       intervalle.finAutomatique(),
+      intervalle.aResoudre(),
       intervalle.presume()
     );
   }

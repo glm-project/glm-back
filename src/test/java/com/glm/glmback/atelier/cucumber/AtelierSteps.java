@@ -12,6 +12,7 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -308,6 +309,34 @@ public class AtelierSteps {
     assertThatLastResponse().hasElement("$.activitesEnCours").containingExactly(attendues);
   }
 
+  @Then("le suivi n'a aucune sequence en conflit")
+  public void leSuiviNAAucuneSequenceEnConflit() {
+    assertThatLastResponse().hasElement("$.conflits").withElementsCount(0);
+  }
+
+  /**
+   * Les activites et les pointages de l'unique sequence en conflit du suivi, dans l'ordre ou il les rend : ses
+   * activites dans l'ordre de leur ouverture, ses pointages dans celui du journal.
+   */
+  @Then("le suivi porte une seule sequence en conflit, de {string} sur {string}")
+  public void leSuiviPorteUneSeuleSequenceEnConflit(String operateur, String poste, Map<String, String> sequence) {
+    assertThatLastResponse()
+      .hasElement("$.conflits")
+      .withElementsCount(1)
+      .and()
+      .hasElement("$.conflits[0].operateur.id")
+      .withValue(idDeLOperateur(operateur))
+      .and()
+      .hasElement("$.conflits[0].poste.id")
+      .withValue(postes.get(poste))
+      .and()
+      .hasElement("$.conflits[0].activites")
+      .withValues(identifiants(sequence.get("activites")))
+      .and()
+      .hasElement("$.conflits[0].pointages")
+      .withValues(identifiants(sequence.get("pointages")));
+  }
+
   @Then("l'evenement {int} du suivi a l'intention {string}")
   public void lEvenementDuSuiviALIntention(int rang, String intention) {
     assertThatLastResponse().hasElement("$.journal[" + rang + "].intention").withValue(intention);
@@ -404,20 +433,22 @@ public class AtelierSteps {
     assertThat(CucumberRestTestContext.countEntries("$[?(!@.fin)]")).isZero();
   }
 
-  @Then("je retiens les informations du suivi hors journal")
+  @Then("je retiens les informations du suivi hors journal et conflits")
   @SuppressWarnings("unchecked")
-  public void jeRetiensLesInformationsDuSuiviHorsJournal() {
+  public void jeRetiensLesInformationsDuSuiviHorsJournalEtConflits() {
     suiviSansJournal = new HashMap<>((Map<String, Object>) CucumberRestTestContext.getElement("$"));
     suiviSansJournal.remove("journal");
+    suiviSansJournal.remove("conflits");
   }
 
-  @Then("la grille contient les memes informations sans aucun journal")
-  public void laGrilleContientLesMemesInformationsSansAucunJournal() {
+  @Then("la grille contient les memes informations sans journal ni conflits")
+  public void laGrilleContientLesMemesInformationsSansJournalNiConflits() {
     assertThatLastResponse()
       .hasOkStatus()
       .hasElement("$.content[?(@.id == '" + suiviSansJournal.get("id") + "')]")
       .withValue(List.of(suiviSansJournal));
     assertThatLastResponse().hasElement("$.content[*].journal").withElementsCount(0);
+    assertThatLastResponse().hasElement("$.content[*].conflits").withElementsCount(0);
   }
 
   @Then("la liste des elements engages contient {int} elements")
@@ -716,6 +747,13 @@ public class AtelierSteps {
     Map<String, String> corps = resolu(donnees);
     corps.putIfAbsent("id", UUID.randomUUID().toString());
     return corps;
+  }
+
+  /**
+   * Une liste d'identifiants separes par des virgules ; une cellule vide n'en porte aucun.
+   */
+  private static List<String> identifiants(String liste) {
+    return liste == null ? List.of() : Arrays.stream(liste.split(",")).map(String::trim).toList();
   }
 
   private String idDeLOperateur(String alias) {

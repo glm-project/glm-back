@@ -94,6 +94,16 @@ Une activité encore en cours ne compte rien. Oubliée, elle ne court pas pour a
 
 Chaque transition ouvre une activité distincte, avec sa propre échéance : travail à 8 h puis non conformité à 12 h donnent 4 h de travail terminées à 12 h et une non conformité en cours jusqu'à 1 h le lendemain. Corriger un début recalcule tout : à 22 h, un début corrigé de 8 h à 12 h repousse l'échéance à 1 h, et l'activité redevient en cours, sans anomalie.
 
+### Les séquences en conflit
+
+Un atelier pointe hors ligne, depuis plusieurs pupitres, et le gestionnaire rattrape après coup : deux faits peuvent se contredire, et le second arriver avant le premier. Travail A à 8 h, passage de A en non conformité à 12 h, fin de A à 17 h : la fin dit A en cours jusqu'à 17 h, la transition dit qu'elle a cessé à 12 h. **Le serveur ne choisit pas.** Il ne refuse aucun des deux, ne rattache pas la fin à la non conformité et n'ignore pas la transition, quel que soit leur ordre d'arrivée : les faits sont conservés, et leur séquence est **en conflit** jusqu'à ce que le gestionnaire corrige ou annule ce qui est faux. Un refus aurait fait dépendre le journal de l'ordre de réception, et fait perdre un geste réel ; une interprétation silencieuse aurait chiffré un temps que personne n'a validé.
+
+Se contredisent : un geste qui vise une activité remplacée avant son heure, déjà terminée par une fin — le double appui sur « arrêter » compris —, pas encore ouverte à son heure ou dont l'ouverture est annulée ; une transition vers sa propre catégorie, qui serait une relance déguisée ; une transition qui vise une activité échue alors qu'une autre est en cours sur le poste, et qu'elle ne peut ouvrir sans la terminer. Ne se contredisent pas : un geste qui vise une activité seulement échue, que la règle des 13 h suffit à lire, ou pointé pile à son échéance.
+
+La contradiction couvre ce qui sépare le début de la cible de l'heure du geste. La cible, l'activité qu'ouvre le geste et toute activité du même poste qui chevauche cette zone sont **à résoudre** : ni en cours, ni terminées, sans durée ni coût chiffrés, et la fin automatique ne les tranche pas. Les autres gardent leur lecture, en particulier la nouvelle ouverture pointée après le conflit, seule action qu'un pupitre propose encore sur ce poste. L'état de l'élément se juge sur ses seules activités interprétables ; le conflit se lit à part, dans la réponse du suivi, et ne se stocke jamais : il disparaît au recalcul dès que les faits redeviennent cohérents. L'historique ne garde que les pointages et les corrections.
+
+Une fin survenue avant la clôture de l'élément, mais reçue après elle, est enregistrée à son heure : la clôture ne prime pas sur un geste qui l'a précédée. Survenue après, elle n'arrête plus rien.
+
 ### L'activité, un opérateur sur un poste de travail
 
 `CleDActivite` est le couple (`OperateurId`, `Optional<PosteDeTravailId>`). Le poste de travail est ce que l'opérateur engage en pointant : une machine chez le client de référence, un établi, un four, une salle ailleurs.
