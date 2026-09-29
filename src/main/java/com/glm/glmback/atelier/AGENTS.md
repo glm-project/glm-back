@@ -120,8 +120,10 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
 - **Une ouverture sur une activité déjà en cours la relance**, elle n'est jamais refusée (décision D9 de
   [bornes-de-fin-de-journee.md](../../../../../../../documentation/strategie/bornes-de-fin-de-journee.md)). Les
   replis recopiés de `pupitre`, `coutderevient`, `feuilledetemps` et `syntheseheures` relisent encore le journal par
-  type seul et départagent les gestes simultanés sur leur date d'enregistrement : ils ne rendent les mêmes intervalles
-  que l'atelier que si aucune clé ne porte deux gestes à la même heure.
+  type seul, sans échéance ni séquence en conflit, et départagent les gestes simultanés sur leur date d'enregistrement :
+  ils ne rendent les mêmes intervalles que l'atelier que si aucune clé ne porte deux gestes à la même heure ni de
+  contradiction. Sur une séquence en conflit, une fin qui vise une activité remplacée y termine encore sa remplaçante,
+  tant qu'ils ne lisent pas la projection `activite_d_atelier`.
 - **À heure métier égale, le journal range la fin, puis la transition, puis l'ouverture**, et départage enfin par
   l'identifiant : jamais par la date d'enregistrement, qui ferait dépendre le journal de l'ordre de réception.
 - **Une journée sans départ au-delà du seuil est abandonnée**, et le geste suivant de l'opérateur en ouvre une
