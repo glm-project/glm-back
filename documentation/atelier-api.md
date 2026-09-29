@@ -335,8 +335,6 @@ leurs postes habilités, et les éléments encore pointables avec leurs activit�
       "nom": "Dupont",
       "prenom": "Jean",
       "matricule": "049",
-      "etat": "PRESENT",
-      "presentJusqua": "2026-09-14T20:00:00Z",
       "postes": [{ "id": "…", "libelle": "Fraiseuse 1" }]
     }
   ],
@@ -356,7 +354,8 @@ leurs postes habilités, et les éléments encore pointables avec leurs activit�
           "ouverture": "…",
           "echeance": "2026-09-14T21:02:00Z"
         }
-      ]
+      ],
+      "conflits": []
     }
   ]
 }
@@ -367,7 +366,7 @@ leurs postes habilités, et les éléments encore pointables avec leurs activit�
 - **Elle n'est pas paginée, et c'est le point.** Tout est lu en un appel et une transaction unique : plus de boucle
   de pages à écrire, ni de gardes sur les totaux, les doublons ou les pages vides — ces trois gardes existaient
   contre le recousage de pages, qui n'existe plus. En revanche la réponse **n'est pas un instantané strict** : les
-  opérateurs et les suivis sont lus par deux requêtes successives sous l'isolation par défaut de PostgreSQL, et un
+  opérateurs et les suivis sont lus par des requêtes successives sous l'isolation par défaut de PostgreSQL, et un
   changement validé entre les deux se voit dans la seconde. Concrètement, une activité en cours peut désigner un
   opérateur absent de la liste jointe — afficher l'identifiant brut plutôt que planter, l'appel suivant recollera.
   Une version antérieure de ce document annonçait une lecture répétable : elle n'a jamais fonctionné et a été
@@ -376,18 +375,9 @@ leurs postes habilités, et les éléments encore pointables avec leurs activit�
   afficher « référentiel du 14/09 à 09:31 » et mesurer un retard. Elle **change à chaque appel**, y compris quand
   rien n'a bougé : ce n'est pas la date du dernier changement, et s'en servir pour décider d'un rafraîchissement
   n'aurait aucun sens. Il n'y a ni `ETag` ni `304`.
-- **`etat` dit quelles commandes de présence proposer.** `ABSENT` ou `PRESENT` : c'est l'état de la
-  journée en cours de l'opérateur, **tant qu'elle n'est pas abandonnée**. Une journée sans départ dont l'amplitude
-  dépasse le seuil de l'entreprise (13 h par défaut) est abandonnée, et l'opérateur redevient `ABSENT` : le pupitre ne
-  lui propose plus que l'arrivée. `ABSENT` vaut aussi pour qui n'a aucune journée en cours ; il reste dans la liste,
-  qui rend les opérateurs **désignables**, pas les opérateurs présents. C'est ce champ qui dit, hors ligne compris,
-  s'il faut proposer l'arrivée ou le départ. La pause n'est pas un état de présence : un opérateur en pause reste
-  `PRESENT`, et c'est le pupitre qui sait, par son propre journal, qu'une pause est en cours.
-  **`presentJusqua`** dit jusqu'à quand : l'arrivée plus le seuil. Hors ligne, le pupitre bascule seul l'opérateur à
-  `ABSENT` passé cet instant, sans attendre le référentiel suivant. Il est absent quand l'opérateur est `ABSENT`.
-  Ce que l'état ne porte pas, volontairement : **aucun instant de début** — pas de « présent depuis 7 h 02 »,
-  l'écran n'affiche que l'état — et **aucun marqueur d'idempotence** : les gestes locaux pas encore reflétés se replient avec
-  le marqueur que le pupitre tient déjà lui-même, comme pour les pointages.
+- **Les opérateurs sont désignables indépendamment de leurs activités.** Ils portent leurs habilitations,
+  sans `etat` ni `presentJusqua` : ce référentiel ne lit plus la présence.
+
 - **Les activités sont interprétées par atelier**, puis leur expiration est évaluée à `genereLe`. Une activité
   à résoudre, terminée par un fait ou échue est absente d'`activites`. `ouverture` est l'identité stable à viser
   par une fin ou une transition, conservée après correction ; `echeance` permet l'expiration hors ligne, à cet

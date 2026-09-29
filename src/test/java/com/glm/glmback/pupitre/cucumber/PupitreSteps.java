@@ -43,7 +43,6 @@ public class PupitreSteps {
   private static final String OPERATEURS_URI = "/api/operateurs";
   private static final String ELEMENTS_URI = "/api/elements-de-fabrication";
   private static final String SUIVIS_URI = "/api/atelier/suivis";
-  private static final String JOURNEES_URI = "/api/atelier/journees";
   private static final String REFERENTIEL_URI = "/api/pupitre/referentiel";
   private static final ObjectMapper JSON = JsonMapper.builder().build();
   private static final AtomicInteger SEQUENCE = new AtomicInteger();
@@ -69,6 +68,7 @@ public class PupitreSteps {
   private final Map<String, String> matricules = new HashMap<>();
   private final Map<String, String> elements = new HashMap<>();
   private final Map<String, String> references = new HashMap<>();
+  private final Map<String, String> nomsDAtelier = new HashMap<>();
   private final Map<String, String> suivis = new HashMap<>();
   private final Map<String, String> gestes = new HashMap<>();
   private final Map<String, Map<String, Object>> corpsDesGestes = new HashMap<>();
@@ -120,21 +120,13 @@ public class PupitreSteps {
     horloge.ilEst(Instant.parse(instant));
     rest.post(SUIVIS_URI, JSON.writeValueAsString(Map.of("element", elements.get(alias))));
     suivis.put(alias, id());
+    nomsDAtelier.put(alias, String.valueOf(CucumberRestTestContext.getElement("$.nom")));
   }
 
-  @Given("au pupitre, {string} prend son poste a {string}")
-  public void prendSonPosteA(String operateur, String instant) {
-    horloge.ilEst(Instant.parse(instant));
-    rest.post(JOURNEES_URI, JSON.writeValueAsString(Map.of("id", UUID.randomUUID(), "operateur", operateurs.get(operateur))));
-  }
-
-  @Given("au pupitre, {string} pointe sa presence {string} a {string}")
-  public void pointeSaPresence(String operateur, String type, String instant) {
-    horloge.ilEst(Instant.parse(instant));
-    rest.post(
-      JOURNEES_URI + "/pointages",
-      JSON.writeValueAsString(Map.of("id", UUID.randomUUID(), "operateur", operateurs.get(operateur), "type", type))
-    );
+  @Given("la reference de {string} devient {string} au referentiel de fabrication")
+  public void changeLaReference(String element, String reference) {
+    rest.put(ELEMENTS_URI + "/" + elements.get(element), JSON.writeValueAsString(Map.of("reference", reference)));
+    references.put(element, reference);
   }
 
   @Given("au pupitre, {string} pointe {string} sur {string} au poste {string} a {string}")
@@ -264,19 +256,9 @@ public class PupitreSteps {
     assertThat(operateur(alias)).containsEntry("nom", alias).containsEntry("matricule", matricules.get(alias));
   }
 
-  @Then("{string} est {string} au referentiel du pupitre")
-  public void estDansLEtatDePresence(String alias, String etat) {
-    assertThat(operateur(alias)).containsEntry("etat", etat);
-  }
-
-  @Then("{string} reste present jusqu'a {string} au referentiel du pupitre")
-  public void restePresentJusqua(String alias, String instant) {
-    assertThat(operateur(alias)).containsEntry("presentJusqua", instant);
-  }
-
-  @Then("{string} n'a aucune echeance de presence au referentiel du pupitre")
-  public void nAAucuneEcheanceDePresence(String alias) {
-    assertThat(operateur(alias).get("presentJusqua")).isNull();
+  @Then("{string} ne porte aucun etat ni echeance de presence au referentiel du pupitre")
+  public void nePorteAucunePresence(String alias) {
+    assertThat(operateur(alias)).doesNotContainKeys("etat", "presentJusqua");
   }
 
   @Then("les postes proposes a {string} sont")
@@ -296,7 +278,7 @@ public class PupitreSteps {
     assertThat(suivi(element))
       .containsEntry("reference", references.get(element))
       .containsEntry("type", "ORDRE_DE_FABRICATION")
-      .hasEntrySatisfying("nom", nom -> assertThat(String.valueOf(nom)).startsWith("OF-"));
+      .containsEntry("nom", nomsDAtelier.get(element));
   }
 
   @Then("{string} ne porte aucune activite au referentiel du pupitre")

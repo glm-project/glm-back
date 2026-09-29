@@ -8,8 +8,8 @@ Responsabilité, frontières et invariants de ce contexte. Les règles de code c
 
 **Alimenter le cache local du poste d'atelier, pour qu'il continue à collecter sans réseau.** Un seul acte : rendre,
 en un appel et dans une transaction unique, tout ce que le pupitre doit garder sur disque — les opérateurs
-désignables avec leurs habilitations et leur **état de présence courant**, les éléments encore pointables avec leurs
-activités en cours — et la **date** de cet instantané.
+désignables avec leurs habilitations, les éléments encore pointables avec leurs
+activités en cours et leurs conflits — et la **date** de cet instantané.
 
 C'est une **projection transverse**, comme `feuilledetemps`, `coutderevient` et `syntheseheures` : un contexte
 purement lecteur, qui ne possède aucune table, n'écrit rien, et recalcule tout à chaque appel.
@@ -19,13 +19,7 @@ purement lecteur, qui ne possède aucune table, n'écrit rien, et recalcule tout
 - **Le pointage lui-même et sa correction** : le pupitre écrit par l'API d'`atelier`, jamais par ici. Ce contexte ne
   propose aucune écriture, et n'en proposera pas — le chemin d'écriture idempotent existe déjà chez `atelier`
   (identifiants de geste créés au pupitre, rejeu à 200, registre `identite_evenement_atelier`).
-- **L'écriture de la présence** — arrivée et départ s'écrivent par l'API d'`atelier`. Ce contexte en **lit** l'état
-  courant, `ABSENT` ou `PRESENT`, et rien d'autre : la pause n'est pas un état de présence, le pupitre la traduit en
-  fins d'activité ([ADR 0002](../../../../../../../documentation/adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)).
-  Il ne lit pas non plus l'instant du dernier événement — « présent depuis 7 h 02 »
-  supposerait de replier le journal de présence de tous les opérateurs à chaque appel, et donnerait une seconde
-  source de durée en désaccord visible avec celles que le pupitre fige déjà —, ni aucun marqueur d'idempotence, que
-  le pupitre tient lui-même pour replier ses gestes locaux, comme il le fait des pointages.
+- **La présence** : aucun état ni échéance de présence, aucune lecture des journées ni du paramétrage.
 - **Le référentiel lui-même** : créer, modifier ou supprimer un opérateur, un poste ou un élément appartient à
   `operateur`, `postedetravail` et `elementdefabrication`.
 - **La valorisation** — ni taux horaire d'opérateur, ni coût horaire de poste. Ces montants ne sont même pas mappés
@@ -39,11 +33,7 @@ purement lecteur, qui ne possède aucune table, n'écrit rien, et recalcule tout
 `ReferentielDuPupitre` : un `genereLe`, une liste d'`OperateurDuPupitre`, une liste de `SuiviDuPupitre`. Aucune
 identité, aucune persistance — l'objet naît et meurt dans l'appel.
 
-`ReferentielsDuPupitreService` est la fabrique : elle relève les présences, les remet à la lecture des opérateurs,
-assemble les deux collections et les date par le port `Clock`. C'est le seul endroit où les deux lectures se
-rejoignent — l'adapter des opérateurs ne fait qu'interroger le relevé, il ne décide de rien.
-
-`PresencesDesOperateurs` porte la règle de correspondance : qu'aucune journée en cours ne nomme est `ABSENT`.
+`ReferentielsDuPupitreService` assemble les opérateurs et les suivis, et les date par le port `Clock`.
 
 `SuiviDuPupitre` lit les activités interprétables sans fin projetées par atelier. `ActiviteSansFin` transmet
 leur identité stable et leur échéance ; `etatA` et `activitesEnCoursA` évaluent leur expiration à `genereLe`.
@@ -78,18 +68,10 @@ une nouvelle ouverture cohérente peut rester en cours sur le même suivi.
   `genereLe`. Une correction conserve l'identité de l'activité et peut déplacer son début et son échéance.
   L'identité rendue dans `ouverture` vient d'`activite_d_atelier.id`, jamais de l'ouvrant actif corrigé.
   `cloture_date_de_survenue` continue d'écarter les suivis clôturés.
-- **L'état de présence, lui, se lit sur la projection `journee_de_travail.etat`**, et c'est la seule exception. Ce
-  qu'on demande ici est l'état courant de **tous** les opérateurs à la fois : le replier supposerait de rapporter
-  tous les journaux de présence ouverts à chaque synchronisation, pour n'en garder que la dernière valeur. La
-  journée en cours est choisie comme l'atelier la choisit — la plus récemment commencée parmi celles dont l'état
-  n'est pas `ABSENT`. Le domaine juge ensuite, à l'instant du référentiel, si elle est **abandonnée** : au-delà de
-  l'arrivée plus le seuil (`SeuilDuPupitre`, lu dans la table `parametrage`), l'opérateur est `ABSENT`. Sinon, il
-  porte `presentJusqua`. Le filet reste `pupitre_referentiel.feature`, qui pointe la présence par l'API d'`atelier`.
-- **Un opérateur sans journée en cours n'est jamais omis.** La liste rend les opérateurs _désignables_, pas les
-  opérateurs présents : son état vaut `ABSENT`, et il reste offert au pupitre.
-- **Le relevé des présences est une requête, pas une par opérateur.** Il entre par le paramètre de
-  `OperateursDuPupitre.tous`, de sorte que l'opérateur naisse complet — c'est cette forme qui rend impossible la
-  lecture par opérateur, qu'aucun test ne rattraperait.
+- **Un opérateur sans activité n'est jamais omis.** La liste rend les opérateurs désignables et leurs postes
+  habilités, indépendamment des pointages ; elle ne porte ni `etat` ni `presentJusqua`.
+- **Les lectures se font par ensembles.** Opérateurs et habilitations, activités, conflits et références se lisent
+  sans requête par opérateur, suivi ou séquence.
 - **Un élément clôturé est absent**, et `EtatDuSuivi` ne porte donc pas de valeur `CLOTURE` : elle n'aurait aucun
   porteur.
 - **Le nom de l'élément vient du suivi, sa référence du référentiel.** Le nom est copié à l'engagement — un élément
@@ -106,7 +88,7 @@ simple par défaut : deux classes homonymes dans des packages différents refuse
 pris `OperateurConnuEntity`, `PosteConnuEntity`, `ElementEngageableEntity`, `SuiviDAtelierEntity`,
 `JourneeDeTravailEntity` et `EvenementDAtelierEntity` ; `feuilledetemps` ses `*LectureEntity`, `coutderevient` ses
 `*ValoriseEntity`, `syntheseheures` ses `*SyntheseEntity`. Ce contexte prend `*DuPupitreEntity`, et ses adapters
-`OperateursDuReferentielDuPupitre` / `SuivisOuvertsDuReferentielDuPupitre` / `PresencesDuReferentielDuPupitre`.
+`OperateursDuReferentielDuPupitre` / `SuivisOuvertsDuReferentielDuPupitre`.
 
 Même règle côté Cucumber : le glue est scanné depuis la racine `com.glm.glmback`, et un même texte de step défini
 dans deux classes fait échouer **toute** la suite. `PupitreSteps` porte donc son propre phrasé (« au pupitre, … »,
@@ -114,12 +96,12 @@ dans deux classes fait échouer **toute** la suite. `PupitreSteps` porte donc so
 
 ## Ports sortants
 
-`OperateursDuPupitre`, `SuivisOuvertsDuPupitre`, `PresencesDuPupitre`, `SeuilDuPupitre`, `Clock`.
+`OperateursDuPupitre`, `SuivisOuvertsDuPupitre`, `Clock`.
 
-Les trois premiers rendent tout d'un coup, sans critères ni pagination : c'est leur raison d'être. Les adapters
-lisent `operateur`, `operateur_poste`, `poste_de_travail`, `suivi_d_atelier`, `evenement_d_atelier`,
-`activite_d_atelier`, `journee_de_travail`, `element_de_fabrication` et `parametrage`, et **écartent les événements annulés dès le SQL** — les rapporter pour les filtrer ensuite
-ferait porter au domaine une correction qui ne le regarde pas.
+Les deux lecteurs rendent tout d'un coup, sans critères ni pagination. Leurs entités propres `@Immutable`
+lisent `operateur`, `operateur_poste`, `poste_de_travail`, `suivi_d_atelier`, `activite_d_atelier`,
+`sequence_en_conflit`, `pointage_en_conflit` et `element_de_fabrication`. Une requête scalaire sur
+`evenement_d_atelier` relève les suivis portant au moins un pointage actif, sans rapporter leur journal.
 
 ## État d'avancement
 

@@ -6,14 +6,12 @@ import static org.assertj.core.api.Assertions.*;
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.pupitre.domain.ActiviteSansFin;
 import com.glm.glmback.pupitre.domain.CategorieDActivite;
-import com.glm.glmback.pupitre.domain.EtatDePresence;
 import com.glm.glmback.pupitre.domain.EtatDuSuivi;
 import com.glm.glmback.pupitre.domain.OperateurDuPupitre;
 import com.glm.glmback.pupitre.domain.ReferentielDuPupitre;
 import com.glm.glmback.pupitre.domain.SuiviDuPupitre;
 import com.glm.glmback.pupitre.domain.TypeDElementEngage;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 @UnitTest
@@ -38,8 +36,6 @@ class RestReferentielDuPupitreTest {
     assertThat(operateur.nom()).isEqualTo("Dupont");
     assertThat(operateur.prenom()).isEqualTo("Jean");
     assertThat(operateur.matricule()).isEqualTo("049");
-    assertThat(operateur.etat()).isEqualTo(EtatDePresence.PRESENT);
-    assertThat(operateur.presentJusqua()).isEqualTo(LE_10_MAI_2026_A_20H);
     assertThat(operateur.postes()).containsExactly(
       new RestPosteDuPupitre(POSTE_ID_FRAISEUSE_1.uuid(), "Fraiseuse 1"),
       new RestPosteDuPupitre(POSTE_ID_FRAISEUSE_2.uuid(), "Fraiseuse 2")
@@ -53,12 +49,9 @@ class RestReferentielDuPupitreTest {
       .nom(NOM_DUPONT)
       .prenom(PRENOM_JEAN)
       .matricule(null)
-      .etat(EtatDePresence.ABSENT)
-      .presentJusqua(Optional.empty())
       .postes(List.of());
 
     assertThat(RestOperateurDuPupitre.from(sansMatricule).matricule()).isNull();
-    assertThat(RestOperateurDuPupitre.from(sansMatricule).presentJusqua()).isNull();
   }
 
   @Test

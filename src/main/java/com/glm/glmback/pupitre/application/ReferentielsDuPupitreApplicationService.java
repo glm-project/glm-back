@@ -1,10 +1,8 @@
 package com.glm.glmback.pupitre.application;
 
 import com.glm.glmback.pupitre.domain.OperateursDuPupitre;
-import com.glm.glmback.pupitre.domain.PresencesDuPupitre;
 import com.glm.glmback.pupitre.domain.ReferentielDuPupitre;
 import com.glm.glmback.pupitre.domain.ReferentielsDuPupitreService;
-import com.glm.glmback.pupitre.domain.SeuilDuPupitre;
 import com.glm.glmback.pupitre.domain.SuivisOuvertsDuPupitre;
 import com.glm.glmback.shared.time.domain.Clock;
 import org.springframework.security.access.annotation.Secured;
@@ -15,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
  * Orchestration de la lecture du referentiel du pupitre.
  *
  * <p>
- * Rien a ecrire : le contexte ne fait que relire les tables des referentiels et le journal de l'atelier.
+ * Rien a ecrire : le contexte ne fait que relire les tables des referentiels et la projection de l'atelier.
  * </p>
  */
 @Service
@@ -23,19 +21,8 @@ public class ReferentielsDuPupitreApplicationService {
 
   private final ReferentielsDuPupitreService referentiels;
 
-  public ReferentielsDuPupitreApplicationService(
-    OperateursDuPupitre operateurs,
-    SuivisOuvertsDuPupitre suivis,
-    PresencesDuPupitre presences,
-    SeuilDuPupitre seuil,
-    Clock clock
-  ) {
-    this.referentiels = ReferentielsDuPupitreService.builder()
-      .operateurs(operateurs)
-      .suivis(suivis)
-      .presences(presences)
-      .seuil(seuil)
-      .clock(clock);
+  public ReferentielsDuPupitreApplicationService(OperateursDuPupitre operateurs, SuivisOuvertsDuPupitre suivis, Clock clock) {
+    this.referentiels = ReferentielsDuPupitreService.builder().operateurs(operateurs).suivis(suivis).clock(clock);
   }
 
   /**

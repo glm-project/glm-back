@@ -1296,11 +1296,6 @@
       "RestOperateurDuPupitre" : {
         "description" : "Un operateur designable au pupitre, et les postes sur lesquels il peut pointer.\n\nPas de taux horaire, contrairement a GET /api/operateurs : un ecran d'atelier partage n'a aucune raison de recevoir\nce que le rapport de cout de revient reserve au gestionnaire. Le matricule, lui, est ce que l'operateur tape : il\ndesigne, il ne prouve rien, et un operateur qui n'en a pas n'est pas designable.\n",
         "properties" : {
-          "etat" : {
-            "description" : "Etat de presence courant, celui de la journee en cours de l'operateur.\n\nABSENT vaut pour un operateur sans journee en cours, et ne le retire pas de la liste : elle rend les operateurs\ndesignables, pas les operateurs presents. C'est cet etat qui dit a l'ecran d'atelier s'il faut proposer\nl'arrivee ou le depart, y compris hors ligne. La pause n'en est pas un : un operateur en pause reste present,\net c'est le pupitre qui la traduit en fins d'activite.\n",
-            "enum" : [ "ABSENT", "PRESENT" ],
-            "type" : "string"
-          },
           "id" : {
             "description" : "Identifiant de l'operateur. C'est lui, et lui seul, que le pupitre renvoie en pointant.",
             "format" : "uuid",
@@ -1327,14 +1322,9 @@
             "description" : "Prenom.",
             "example" : "Jean",
             "type" : "string"
-          },
-          "presentJusqua" : {
-            "description" : "Instant jusqu'auquel l'operateur reste present sans nouveau geste : son arrivee plus l'amplitude maximale de\nl'entreprise. Au-dela, sa journee est abandonnee et il redevient ABSENT : le pupitre hors ligne bascule seul a cet\ninstant, et ne propose plus que l'arrivee. Absent quand l'operateur est ABSENT.\n",
-            "format" : "date-time",
-            "type" : "string"
           }
         },
-        "required" : [ "etat", "id", "nom", "postes", "prenom" ],
+        "required" : [ "id", "nom", "postes", "prenom" ],
         "type" : "object"
       },
       "RestParametrage" : {
@@ -3703,7 +3693,7 @@
     },
     "/api/pupitre/referentiel" : {
       "get" : {
-        "description" : "Rend en une seule reponse les operateurs designables avec leurs habilitations et leur etat de presence, et les\nelements sur lesquels on peut encore pointer avec leurs activites en cours. C'est la lecture que le pupitre\nrejoue a chaque synchronisation pour rafraichir son cache local.\n\nVolontairement non paginee : la pagination est exactement ce qui empeche de prouver une version instantanee du\nreferentiel, puisque rien ne garantit que deux pages viennent du meme etat de la base. Tout est ici lu dans une\ntransaction unique.\n\n`etat` dit quelles commandes de presence l'ecran peut offrir, y compris hors ligne : c'est l'etat de la journee\nen cours de l'operateur, sans borne de date. Un operateur sans journee en cours vaut ABSENT et reste rendu, la\nliste etant celle des operateurs designables et non des operateurs presents.\n\n`genereLe` est la version de cet instantane. Elle change a chaque appel, y compris quand rien n'a bouge : elle\ndit quand le serveur a produit la reponse, pas quand le referentiel a change pour la derniere fois.\n\nCe que la reponse ne porte pas, et n'a pas a porter : aucun montant — ni taux horaire d'operateur, ni cout\nhoraire de poste —, aucun journal d'evenements, aucun element cloture, et aucun instant de presence.\n",
+        "description" : "Rend en une seule reponse les operateurs designables avec leurs habilitations, et les\nelements sur lesquels on peut encore pointer avec leurs activites en cours et leurs conflits. C'est la lecture que le pupitre\nrejoue a chaque synchronisation pour rafraichir son cache local.\n\nVolontairement non paginee : la pagination est exactement ce qui empeche de prouver une version instantanee du\nreferentiel, puisque rien ne garantit que deux pages viennent du meme etat de la base. Tout est ici lu dans une\ntransaction unique, sous READ COMMITTED : les requetes successives ne garantissent pas un instantane strict.\n\nLes operateurs restent designables sans activite, sans etat ni echeance de presence. Les activites a resoudre\nsont exclues des activites en cours et leurs identites sont rendues dans les conflits. Une ouverture coherente\npeut etre en cours a cote d'un conflit. L'expiration des activites se juge a genereLe.\n\n`genereLe` est la version de cet instantane. Elle change a chaque appel, y compris quand rien n'a bouge : elle\ndit quand le serveur a produit la reponse, pas quand le referentiel a change pour la derniere fois.\n\nCe que la reponse ne porte pas, et n'a pas a porter : aucun montant — ni taux horaire d'operateur, ni cout\nhoraire de poste —, aucun journal d'evenements, aucun element cloture, et aucun instant de presence.\n",
         "operationId" : "referentiel",
         "responses" : {
           "200" : {

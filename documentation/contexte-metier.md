@@ -375,7 +375,7 @@ feuille de temps qui l'écarte : ici, l'anomalie doit rester chiffrée plutôt q
 déclare ses propres entités JPA en lecture seule sur leurs tables. Il rejoue donc **sa propre** version du repli du
 journal d'atelier, et — pour la troisième fois du projet — du repli de présence.
 
-Ces deux replis sont **tolérants**, comme ceux de `syntheseheures` et `pupitre` : un geste que l'automate refuse —
+Ces deux replis sont **tolérants**, comme ceux de `syntheseheures` : un geste que l'automate refuse —
 un départ sans arrivée, une fin sans activité en cours — est ignoré, et le rapport se calcule sur ce qui reste. Le
 calcul du coût ne doit jamais répondre `500` (issue #54). À instant égal, l'arrivée passe devant : l'arrivée implicite
 d'un geste tardif partage l'heure de ce geste, et la base rendait les deux dans l'ordre de leurs identifiants.
@@ -534,22 +534,15 @@ Quatre défauts en découlaient, tous du ressort du back :
 
 ### Ce que la route rend, et ce qu'elle ne rend pas
 
-Les opérateurs désignables — identité, matricule, postes habilités, **état de présence** —, les éléments encore
-pointables — identité, nom d'atelier, référence, type, état, activités en cours —, et `genereLe`.
+Les opérateurs désignables — identité, matricule, postes habilités —, les éléments encore pointables — identité,
+nom d'atelier, référence, type, état, activités en cours, conflits —, et `genereLe`. Un opérateur sans activité
+reste rendu avec toutes ses habilitations.
 
-L'**état de présence**, `ABSENT` ou `PRESENT`, est ce qui permet à l'écran d'atelier de proposer, hors ligne compris,
-l'arrivée ou le départ. La pause n'en est pas un ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)) :
-un opérateur en pause reste présent, et c'est le journal du pupitre qui sait qu'une pause est en cours. C'est l'état de la journée en cours de l'opérateur, choisie comme l'atelier la choisit, **tant
-qu'elle n'est pas abandonnée** : au-delà du seuil d'amplitude, lu dans la table du paramétrage, l'opérateur redevient
-`ABSENT`. Chaque opérateur présent porte `presentJusqua`, son arrivée plus le seuil, pour que le pupitre hors ligne le
-bascule seul. Un opérateur sans journée en cours vaut `ABSENT` et reste rendu : la liste est celle des opérateurs
-_désignables_, pas des opérateurs présents.
+La route ne rend aucun état ni échéance de présence : `operateurs[].etat` et `presentJusqua` sont retirés.
+Elle ne lit plus les journées ni le paramétrage. La suppression globale de la présence appartient à un lot suivant.
 
 Elle ne rend **ni montant** (taux horaire, coût horaire : les entités de lecture ne les mappent même pas), **ni
-journal d'événements**, **ni élément clôturé**, **aucun instant de présence** — « présent depuis 7 h 02 »
-supposerait de replier le journal de présence de tous les opérateurs à chaque appel, et donnerait une seconde source
-de durée en désaccord visible avec celles que le pupitre fige déjà —, et **aucune métadonnée d'engagement ou de
-clôture** : rien de tout cela n'est lu par un écran d'atelier.
+journal d'événements**, **ni élément clôturé**, ni métadonnée d'engagement ou de clôture.
 
 ### `genereLe` est la version, et c'est une date
 
@@ -591,9 +584,8 @@ et les identités des pointages, dans leur ordre métier. Cette liste vient de `
 Un rejeu ne la duplique pas, une résolution la retire à l’écriture suivante. Aucune de ces activités n’est
 actionnable, mais une nouvelle ouverture cohérente peut être en cours à côté du conflit.
 
-L'état de présence des opérateurs reste lu sur la projection des journées. Les scénarios Cucumber écrivent par
-l'API d'atelier puis relisent par le référentiel, avec correction, annulation, échéance et conflit : ils vérifient
-les colonnes réellement partagées entre les deux contextes.
+Les scénarios Cucumber écrivent par l'API d'atelier puis relisent par le référentiel, avec correction, annulation,
+échéance et conflit : ils vérifient les colonnes réellement partagées entre les deux contextes.
 
 ### Le nom vient du suivi, la référence du référentiel
 
