@@ -48,6 +48,9 @@ rejoignent — l'adapter des opérateurs ne fait qu'interroger le relevé, il ne
 `SuiviDuPupitre` lit les activités interprétables sans fin projetées par atelier. `ActiviteSansFin` transmet
 leur identité stable et leur échéance ; `etatA` et `activitesEnCoursA` évaluent leur expiration à `genereLe`.
 Un événement actif distingue `INTERROMPU` de `EN_ATTENTE` quand aucune activité n’est en cours.
+`SequenceEnConflitDuPupitre` restitue la clé et les identités ordonnées projetées par atelier, y compris
+une séquence sans activité ou sans poste. Les activités du conflit sont exclues des activités en cours ;
+une nouvelle ouverture cohérente peut rester en cours sur le même suivi.
 
 ## Invariants à ne pas casser
 

@@ -585,6 +585,12 @@ déplace cette échéance et conserve l'identité de l'activité, rendue dans `o
 la même activité après cette correction. Le suivi est `EN_COURS` si l'une de ces activités l'est à `genereLe`,
 sinon `INTERROMPU` s'il porte un événement actif, sinon `EN_ATTENTE`.
 
+Chaque suivi rend aussi `conflits` : le couple opérateur/poste, les identités stables des activités à résoudre
+et les identités des pointages, dans leur ordre métier. Cette liste vient de `sequence_en_conflit` et
+`pointage_en_conflit`, sans repli local. Une séquence sans activité reste rendue ; un poste absent reste absent.
+Un rejeu ne la duplique pas, une résolution la retire à l’écriture suivante. Aucune de ces activités n’est
+actionnable, mais une nouvelle ouverture cohérente peut être en cours à côté du conflit.
+
 L'état de présence des opérateurs reste lu sur la projection des journées. Les scénarios Cucumber écrivent par
 l'API d'atelier puis relisent par le référentiel, avec correction, annulation, échéance et conflit : ils vérifient
 les colonnes réellement partagées entre les deux contextes.

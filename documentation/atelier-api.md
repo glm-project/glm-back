@@ -402,6 +402,11 @@ leurs postes habilités, et les éléments encore pointables avec leurs activit�
   est celle du référentiel, relue à chaque appel. Un élément supprimé du référentiel garde sa tuile et perd sa seule
   référence.
 
+Chaque suivi du référentiel porte aussi `conflits[]` : `operateur`, `poste` facultatif, `activites[]`
+(identités stables, éventuellement aucune) et `pointages[]` (identités des faits dans l’ordre métier).
+Les activités en conflit ne figurent jamais dans `activites[]` du suivi. Une ouverture cohérente peut y être
+en cours alors que le conflit reste rendu ; le gestionnaire le résout par les actes décrits ci-dessous.
+
 L'écriture, elle, ne change pas : ce sont toujours les `POST` de l'écran d'atelier ci-dessus, avec l'UUID de geste
 créé par le pupitre et la `dateDeSurvenue` conservée hors ligne.
 

@@ -1,6 +1,5 @@
 package com.glm.glmback.pupitre.infrastructure.secondary;
 
-import com.glm.glmback.pupitre.domain.ActiviteSansFin;
 import com.glm.glmback.pupitre.domain.NomDElement;
 import com.glm.glmback.pupitre.domain.SuiviDuPupitre;
 import com.glm.glmback.pupitre.domain.SuiviDuPupitreId;
@@ -12,7 +11,6 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 import org.hibernate.annotations.Immutable;
 
@@ -61,13 +59,7 @@ class SuiviDuPupitreEntity {
     return elementId;
   }
 
-  SuiviDuPupitre toDomain(List<ActiviteSansFin> activites, boolean dejaPointe, String reference) {
-    return SuiviDuPupitre.builder()
-      .id(new SuiviDuPupitreId(id))
-      .nom(new NomDElement(elementNom))
-      .reference(reference)
-      .type(elementType)
-      .activites(activites)
-      .dejaPointe(dejaPointe);
+  SuiviDuPupitre.SuiviDuPupitreActivitesBuilder toDomain(String reference) {
+    return SuiviDuPupitre.builder().id(new SuiviDuPupitreId(id)).nom(new NomDElement(elementNom)).reference(reference).type(elementType);
   }
 }

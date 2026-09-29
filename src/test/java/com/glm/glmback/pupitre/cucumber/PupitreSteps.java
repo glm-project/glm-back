@@ -340,6 +340,66 @@ public class PupitreSteps {
     assertThat(CucumberRestTestContext.getResponse().orElseThrow()).doesNotContain("tauxHoraire", "coutHoraire");
   }
 
+  @Given("au pupitre, {string} ouvre {string} en {string} sur {string} sans poste a {string}")
+  public void ouvreSansPoste(String operateur, String geste, String type, String element, String instant) {
+    ouvreRecu(operateur, geste, type, element, null, instant, instant);
+  }
+
+  @Given("au pupitre, {string} termine {string} par {string} sur {string} sans poste a {string}")
+  public void termineSansPoste(String operateur, String cible, String geste, String element, String instant) {
+    termineRecu(operateur, cible, geste, element, null, instant, instant);
+  }
+
+  @Then("{string} ne porte aucun conflit au referentiel du pupitre")
+  public void nePorteAucunConflit(String element) {
+    assertThat(suivi(element)).containsKey("conflits");
+    assertThat(conflits(element)).isEmpty();
+  }
+
+  @Then("le conflit de {string} au referentiel du pupitre ne porte aucun poste")
+  public void leConflitNePorteAucunPoste(String element) {
+    assertThat(conflits(element))
+      .singleElement()
+      .satisfies(conflit -> assertThat(conflit).doesNotContainKey("poste"));
+  }
+
+  @Then("les conflits de {string} au referentiel du pupitre sont")
+  public void lesConflitsSont(String element, List<Map<String, String>> attendus) {
+    assertThat(suivi(element)).containsKey("conflits");
+    List<Map<String, String>> resumes = conflits(element)
+      .stream()
+      .map(conflit -> {
+        Map<String, String> ligne = new LinkedHashMap<>();
+        ligne.put("operateur", alias(operateurs, String.valueOf(conflit.get("operateur"))));
+        ligne.put("poste", alias(postes, String.valueOf(conflit.get("poste"))));
+        ligne.put("activites", identitesNommees(conflit.get("activites")));
+        ligne.put("pointages", identitesNommees(conflit.get("pointages")));
+        return ligne;
+      })
+      .toList();
+    List<Map<String, String>> normalises = attendus
+      .stream()
+      .map(attendu -> {
+        Map<String, String> ligne = new LinkedHashMap<>(attendu);
+        ligne.replaceAll((colonne, valeur) -> valeur == null ? "" : valeur);
+        return ligne;
+      })
+      .toList();
+    assertThat(resumes).isEqualTo(normalises);
+  }
+
+  @SuppressWarnings("unchecked")
+  private String identitesNommees(Object identites) {
+    return ((List<String>) identites).stream()
+      .map(identite -> alias(gestes, identite))
+      .collect(java.util.stream.Collectors.joining(","));
+  }
+
+  @SuppressWarnings("unchecked")
+  private List<Map<String, Object>> conflits(String element) {
+    return (List<Map<String, Object>>) suivi(element).get("conflits");
+  }
+
   private Map<String, Object> geste(String operateur, String poste, String instant, String type, String intention, String cible) {
     Map<String, Object> corps = new LinkedHashMap<>();
     corps.put("id", UUID.randomUUID().toString());
@@ -349,7 +409,9 @@ public class PupitreSteps {
       corps.put("cible", cible);
     }
     corps.put("operateur", operateurs.get(operateur));
-    corps.put("poste", postes.get(poste));
+    if (poste != null) {
+      corps.put("poste", postes.get(poste));
+    }
     corps.put("dateDeSurvenue", instant);
 
     return corps;

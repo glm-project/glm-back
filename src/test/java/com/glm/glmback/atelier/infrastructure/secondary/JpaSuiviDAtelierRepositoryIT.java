@@ -535,6 +535,31 @@ class JpaSuiviDAtelierRepositoryIT {
     assertThat(conflitsProjetes(resolu.id())).isEmpty();
   }
 
+  @Test
+  @WithTenant(IMPECCMOLD)
+  void shouldRapprocherUnConflitDontLOuvrantEstCorrige() {
+    Instant engagement = Instant.parse("2041-03-13T07:00:00Z");
+    EvenementDAtelier premiere = debutSurFraiseuse1A(engagement.plusSeconds(3600));
+    EvenementDAtelier relance = debutSurFraiseuse1A(engagement.plusSeconds(7200));
+    SuiviDAtelier enConflit = suiviEngageA(engagement)
+      .enregistre(premiere)
+      .enregistre(relance)
+      .enregistre(finDe(premiere).a(engagement.plusSeconds(10800)));
+    inTransaction(() -> suivis.create(enConflit));
+
+    SuiviDAtelier corrige = enConflit.corrige(
+      premiere.id(),
+      annulation(engagement.plusSeconds(14400)),
+      debutSurFraiseuse1A(engagement.plusSeconds(1800))
+    );
+    inTransaction(() -> suivis.update(corrige));
+
+    assertThat(conflitsProjetes(corrige.id())).isEqualTo(corrige.conflits());
+    assertThat(corrige.conflits())
+      .singleElement()
+      .satisfies(sequence -> assertThat(sequence.activites()).contains(premiere.activite().orElseThrow()));
+  }
+
   private List<SequenceEnConflit> conflitsProjetes(SuiviDAtelierId suivi) {
     return inTransaction(() ->
       lignes("select id, operateur_id, poste_id from sequence_en_conflit where suivi_id = :suivi order by id", suivi.uuid())

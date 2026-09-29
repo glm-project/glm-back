@@ -376,6 +376,39 @@
         },
         "type" : "object"
       },
+      "RestConflitDuPupitre" : {
+        "description" : "Sequence interpretee en conflit par atelier. Aucune de ses activites n est actionnable ; une nouvelle ouverture reste possible.",
+        "properties" : {
+          "activites" : {
+            "description" : "Identites stables des activites a resoudre, dans l ordre des ouvertures. Peut etre vide.",
+            "items" : {
+              "format" : "uuid",
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "operateur" : {
+            "description" : "Operateur de la sequence.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "pointages" : {
+            "description" : "Identites des pointages de la sequence, dans l ordre du journal.",
+            "items" : {
+              "format" : "uuid",
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "poste" : {
+            "description" : "Poste de la sequence, absent si aucun poste n a ete pointe.",
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "required" : [ "activites", "operateur", "pointages" ],
+        "type" : "object"
+      },
       "RestCorrection" : {
         "description" : "La correction d'une saisie fausse : une annulation et une regularisation jouees en un seul acte.\n\nL'evenement d'origine reste au journal, annule, et le remplacant y prend sa place a l'heure corrigee. Le remplacant\nd'un pointage qui ouvrait une activite reprend l'identite de cette activite : les gestes qui la visaient y restent\nrattaches.\n",
         "properties" : {
@@ -1821,6 +1854,13 @@
             },
             "type" : "array"
           },
+          "conflits" : {
+            "description" : "Sequences en conflit a resoudre par le gestionnaire.",
+            "items" : {
+              "$ref" : "#/components/schemas/RestConflitDuPupitre"
+            },
+            "type" : "array"
+          },
           "etat" : {
             "description" : "EN_ATTENTE, EN_COURS ou INTERROMPU. Juge sur les seules activites interpretables a genereLe.",
             "enum" : [ "EN_ATTENTE", "EN_COURS", "INTERROMPU" ],
@@ -1847,7 +1887,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "activites", "etat", "id", "nom", "type" ],
+        "required" : [ "activites", "conflits", "etat", "id", "nom", "type" ],
         "type" : "object"
       },
       "RestSyntheseDesHeures" : {

@@ -21,6 +21,7 @@ public record SuiviDuPupitre(
   Optional<ReferenceDElement> reference,
   TypeDElementEngage type,
   List<ActiviteSansFin> activites,
+  List<SequenceEnConflitDuPupitre> conflits,
   boolean dejaPointe
 ) {
   public SuiviDuPupitre {
@@ -30,6 +31,8 @@ public record SuiviDuPupitre(
     Assert.notNull("type de l'element", type);
     Assert.field("activites", activites).notNull().noNullElement();
     activites = List.copyOf(activites);
+    Assert.field("conflits", conflits).notNull().noNullElement();
+    conflits = List.copyOf(conflits);
   }
 
   /**
@@ -40,7 +43,9 @@ public record SuiviDuPupitre(
     return id ->
       nom ->
         reference ->
-          type -> activites -> dejaPointe -> new SuiviDuPupitre(id, nom, ReferenceDElement.of(reference), type, activites, dejaPointe);
+          type ->
+            activites ->
+              conflits -> dejaPointe -> new SuiviDuPupitre(id, nom, ReferenceDElement.of(reference), type, activites, conflits, dejaPointe);
   }
 
   /**
@@ -84,7 +89,11 @@ public record SuiviDuPupitre(
   }
 
   public interface SuiviDuPupitreActivitesBuilder {
-    SuiviDuPupitreDejaPointeBuilder activites(List<ActiviteSansFin> activites);
+    SuiviDuPupitreConflitsBuilder activites(List<ActiviteSansFin> activites);
+  }
+
+  public interface SuiviDuPupitreConflitsBuilder {
+    SuiviDuPupitreDejaPointeBuilder conflits(List<SequenceEnConflitDuPupitre> conflits);
   }
 
   public interface SuiviDuPupitreDejaPointeBuilder {

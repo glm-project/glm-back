@@ -15,4 +15,13 @@ interface SpringDataActivitesDuPupitreRepository extends JpaRepository<ActiviteD
     """
   )
   List<ActiviteDuPupitreEntity> sansFinDesSuivis(Set<UUID> suivis);
+
+  @Query(
+    """
+    select activite from ActiviteDuPupitreEntity activite
+    where activite.suiviId in :suivis and activite.sequenceId is not null
+    order by activite.sequenceId, activite.ordreDansSequence
+    """
+  )
+  List<ActiviteDuPupitreEntity> enConflitDesSuivis(Set<UUID> suivis);
 }

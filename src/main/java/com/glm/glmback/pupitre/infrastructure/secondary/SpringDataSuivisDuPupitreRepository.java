@@ -22,4 +22,14 @@ interface SpringDataSuivisDuPupitreRepository extends JpaRepository<SuiviDuPupit
     nativeQuery = true
   )
   Set<UUID> suivisPointes(Set<UUID> suivis);
+
+  @Query(
+    """
+    select distinct sequence from SequenceEnConflitDuPupitreEntity sequence
+    left join fetch sequence.pointages
+    where sequence.suiviId in :suivis
+    order by sequence.id
+    """
+  )
+  List<SequenceEnConflitDuPupitreEntity> conflitsDesSuivis(Set<UUID> suivis);
 }
