@@ -195,6 +195,14 @@ l'instant d'évaluation de `SuiviDAtelierCriteria`, une activité interprétable
 son échéance n'est pas atteinte. C'est
 aussi la projection que les autres contextes liront, plutôt que de réinterpréter le journal.
 
+Les séquences en conflit sont projetées dans `sequence_en_conflit` et leurs pointages dans
+`pointage_en_conflit`. L'identité technique d'une séquence est celle de son premier pointage dans l'ordre du
+journal ; elle n'est pas une identité métier exposée. Les positions conservent l'ordre des pointages et des
+activités, ces dernières rattachées par `activite_d_atelier.sequence_id`. Une séquence sans activité à résoudre
+reste projetée. Le rapprochement à chaque écriture retire les séquences résolues ; `toDomain()` les ignore.
+`JpaSuiviDAtelierRepositoryIT` confronte leurs clés et leurs deux listes au domaine, puis vérifie réécriture et
+résolution. Les contextes lecteurs peuvent les lire par leurs propres entités immuables.
+
 Leur contrepartie : `SuiviDAtelierCriteria.matches` et `JourneeDeTravailCriteria.matches` ne sont plus appelées par la
 production, qui traduit les mêmes règles en SQL. C'est `PariteDesRepositoriesDAtelierIT` qui rétablit par l'exécution
 la garantie que donnait le code partagé — le modifier en même temps que l'une des deux expressions de la règle.

@@ -4,6 +4,7 @@ import com.glm.glmback.atelier.domain.Activite;
 import com.glm.glmback.atelier.domain.CategorieDActivite;
 import com.glm.glmback.atelier.domain.NatureDOperation;
 import com.glm.glmback.atelier.domain.PosteDeTravailId;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -60,6 +61,12 @@ class ActiviteDAtelierEntity {
   @Column(name = "a_resoudre")
   private boolean aResoudre;
 
+  @ManyToOne(fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+  @JoinColumn(name = "sequence_id")
+  private SequenceEnConflitDAtelierEntity sequence;
+
+  private Integer ordreDansSequence;
+
   protected ActiviteDAtelierEntity() {
     // Constructeur requis par JPA.
   }
@@ -72,6 +79,11 @@ class ActiviteDAtelierEntity {
 
   static ActiviteDAtelierEntity from(SuiviDAtelierEntity suivi, Activite activite) {
     return new ActiviteDAtelierEntity(suivi, activite);
+  }
+
+  void rattacheA(SequenceEnConflitDAtelierEntity conflit, Integer ordre) {
+    sequence = conflit;
+    ordreDansSequence = ordre;
   }
 
   UUID id() {

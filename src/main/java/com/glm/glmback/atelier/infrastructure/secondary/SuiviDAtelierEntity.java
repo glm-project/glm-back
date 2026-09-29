@@ -10,6 +10,7 @@ import com.glm.glmback.atelier.domain.EvenementDAtelier;
 import com.glm.glmback.atelier.domain.Horodatage;
 import com.glm.glmback.atelier.domain.JournalDAtelier;
 import com.glm.glmback.atelier.domain.NomDElement;
+import com.glm.glmback.atelier.domain.SequenceEnConflit;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.TypeDElementEngage;
@@ -24,6 +25,7 @@ import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -75,6 +77,9 @@ class SuiviDAtelierEntity {
 
   @OneToMany(mappedBy = "suivi", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<ActiviteDAtelierEntity> activites = new ArrayList<>();
+
+  @OneToMany(mappedBy = "suivi", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<SequenceEnConflitDAtelierEntity> conflits = new ArrayList<>();
 
   protected SuiviDAtelierEntity() {
     // Constructeur requis par JPA.
@@ -145,7 +150,7 @@ class SuiviDAtelierEntity {
       .journal()
       .evenements()
       .forEach(evenement -> rapproche(connus, evenement));
-    projette(suivi.activites());
+    projette(suivi.activites(), suivi.conflits());
   }
 
   SuiviDAtelier toDomain() {
@@ -164,7 +169,8 @@ class SuiviDAtelierEntity {
    * reinserer la meme identite dans un seul flush violerait la cle primaire, Hibernate ordonnant les insertions avant
    * les suppressions.
    */
-  private void projette(List<Activite> interpretees) {
+  private void projette(List<Activite> interpretees, List<SequenceEnConflit> sequences) {
+    Map<UUID, RattachementAuConflit> rattachements = projetteLesConflits(sequences);
     Map<UUID, Activite> parIdentite = interpretees
       .stream()
       .collect(Collectors.toMap(activite -> activite.id().uuid(), Function.identity()));
@@ -176,12 +182,47 @@ class SuiviDAtelierEntity {
     interpretees.forEach(activite -> {
       ActiviteDAtelierEntity projetee = projetees.get(activite.id().uuid());
       if (projetee == null) {
-        activites.add(ActiviteDAtelierEntity.from(this, activite));
+        projetee = ActiviteDAtelierEntity.from(this, activite);
+        activites.add(projetee);
       } else {
         projetee.reporte(activite);
       }
+      RattachementAuConflit rattachement = rattachements.get(activite.id().uuid());
+      if (rattachement == null) {
+        projetee.rattacheA(null, null);
+      } else {
+        projetee.rattacheA(rattachement.sequence(), rattachement.ordre());
+      }
     });
   }
+
+  private Map<UUID, RattachementAuConflit> projetteLesConflits(List<SequenceEnConflit> sequences) {
+    Set<UUID> identites = sequences
+      .stream()
+      .map(sequence -> sequence.pointages().getFirst().uuid())
+      .collect(Collectors.toSet());
+    conflits.removeIf(projete -> !identites.contains(projete.id()));
+    Map<UUID, SequenceEnConflitDAtelierEntity> connus = conflits
+      .stream()
+      .collect(Collectors.toMap(SequenceEnConflitDAtelierEntity::id, Function.identity()));
+    Map<UUID, RattachementAuConflit> rattachements = new HashMap<>();
+    sequences.forEach(sequence -> {
+      UUID idSequence = sequence.pointages().getFirst().uuid();
+      SequenceEnConflitDAtelierEntity projetee = connus.get(idSequence);
+      if (projetee == null) {
+        projetee = SequenceEnConflitDAtelierEntity.from(this, sequence);
+        conflits.add(projetee);
+      } else {
+        projetee.reporte(sequence);
+      }
+      for (int ordre = 0; ordre < sequence.activites().size(); ordre++) {
+        rattachements.put(sequence.activites().get(ordre).uuid(), new RattachementAuConflit(projetee, ordre));
+      }
+    });
+    return rattachements;
+  }
+
+  private record RattachementAuConflit(SequenceEnConflitDAtelierEntity sequence, int ordre) {}
 
   private void rapproche(Map<UUID, EvenementDAtelierEntity> connus, EvenementDAtelier evenement) {
     EvenementDAtelierEntity connu = connus.get(evenement.id().uuid());

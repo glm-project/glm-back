@@ -167,6 +167,13 @@ L'écran des opérateurs veut tous les éléments actifs d'un coup, sans rien qu
 
 Les quatre couches existent désormais, et les deux agrégats sont persistés en PostgreSQL, dans le schéma de l'entreprise courante. Chacun occupe deux tables : la ligne de l'agrégat et son journal ; le suivi y ajoute la projection de ses activités. Le journal restant la seule source de vérité, l'état n'est jamais stocké _comme état_ — mais des **projections** sont écrites à chaque écriture et jamais relues pour reconstruire l'agrégat : `etat`, `debut` et `fin` pour la journée, la table `activite_d_atelier` pour le suivi. Celle-ci ne porte que ce qui ne dépend pas de l'instant — début, échéance, fin réelle — et le filtre des états du tableau d'atelier la juge à l'instant de la lecture. Sans elles, filtrer l'écran d'atelier sur les états ou retrouver la journée contenant un instant obligerait à ramener toute l'entreprise en mémoire.
 
+L'atelier projette aussi ses séquences en conflit, pour que les lecteurs les retrouvent après un redémarrage :
+`sequence_en_conflit` porte le suivi et le couple opérateur/poste, `pointage_en_conflit` les identités ordonnées de
+ses faits actifs, et `activite_d_atelier` le rattachement ordonné de ses activités à résoudre. Une séquence peut
+n'avoir aucune activité, notamment après l'annulation d'un ouvrant encore visé. Ces tables sont écrites uniquement
+par atelier, depuis `SuiviDAtelier.conflits()` ; elles sont rapprochées à chaque écriture et disparaissent après
+résolution. Elles ne servent jamais à reconstituer le suivi, qui rejoue son journal.
+
 Le modèle est relationnel plutôt qu'un journal sérialisé en `jsonb`, parce que les projections à venir — coût de revient, paie, synthèses — filtrent et groupent sur des attributs d'**événement** à travers tous les agrégats : un index les sert directement, là où un document devrait être désérialisé en entier pour être presque tout jeté. Les index `(operateur, date_de_survenue)` et `(poste, date_de_survenue)` sont posés dès maintenant à cette fin, et un contexte lecteur n'aura qu'à poser dessus une entité en lecture seule, comme `atelier` le fait déjà sur `element_de_fabrication`.
 
 `ElementsEngageables` lit la table `element_de_fabrication` par une entité en lecture seule propre à l'atelier, sans jamais importer le contexte voisin. `OperateursConnus`, `PostesConnus` et `Habilitations` font de même sur `operateur`, `poste_de_travail` et `operateur_poste`.

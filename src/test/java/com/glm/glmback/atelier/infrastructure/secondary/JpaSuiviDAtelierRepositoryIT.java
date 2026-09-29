@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.*;
 import com.glm.glmback.IntegrationTest;
 import com.glm.glmback.atelier.domain.ActiviteId;
 import com.glm.glmback.atelier.domain.Annulation;
+import com.glm.glmback.atelier.domain.CleDActivite;
 import com.glm.glmback.atelier.domain.Cloture;
 import com.glm.glmback.atelier.domain.CoutHoraire;
 import com.glm.glmback.atelier.domain.ElementEngage;
@@ -19,10 +20,12 @@ import com.glm.glmback.atelier.domain.Horodatage;
 import com.glm.glmback.atelier.domain.IntentionDePointage;
 import com.glm.glmback.atelier.domain.JournalDAtelier;
 import com.glm.glmback.atelier.domain.NatureDOperation;
+import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.OrigineDuPointage;
 import com.glm.glmback.atelier.domain.Periode;
 import com.glm.glmback.atelier.domain.PosteDeTravailId;
 import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
+import com.glm.glmback.atelier.domain.SequenceEnConflit;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierCriteria;
 import com.glm.glmback.atelier.domain.SuiviDAtelierDejaExistantException;
@@ -35,6 +38,7 @@ import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurityContexts;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.pagination.domain.Page;
+import jakarta.persistence.EntityManager;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -63,6 +67,9 @@ class JpaSuiviDAtelierRepositoryIT {
 
   @Autowired
   private TransactionTemplate transactions;
+
+  @Autowired
+  private EntityManager entities;
 
   @AfterEach
   void cleanup() {
@@ -462,6 +469,110 @@ class JpaSuiviDAtelierRepositoryIT {
 
     assertThat(chezKatilys).isEmpty();
     assertThat(pageChezKatilys.content()).isEmpty();
+  }
+
+  @Test
+  @WithTenant(IMPECCMOLD)
+  void shouldProjeterFidelementLesSequencesEnConflit() {
+    Instant engagement = Instant.parse("2041-03-10T07:00:00Z");
+    EvenementDAtelier premiere = debutSurFraiseuse1A(engagement.plusSeconds(3600));
+    EvenementDAtelier relance = debutSurFraiseuse1A(engagement.plusSeconds(7200));
+    SuiviDAtelier enConflit = suiviEngageA(engagement)
+      .enregistre(premiere)
+      .enregistre(relance)
+      .enregistre(finDe(premiere).a(engagement.plusSeconds(10800)));
+    inTransaction(() -> suivis.create(enConflit));
+
+    assertThat(conflitsProjetes(enConflit.id())).isEqualTo(enConflit.conflits());
+  }
+
+  @Test
+  @WithTenant(IMPECCMOLD)
+  void shouldReecrireLaProjectionDuConflitPuisLaRetirerApresResolution() {
+    Instant engagement = Instant.parse("2041-03-11T07:00:00Z");
+    EvenementDAtelier premiere = debutSurFraiseuse1A(engagement.plusSeconds(3600));
+    EvenementDAtelier relance = debutSurFraiseuse1A(engagement.plusSeconds(7200));
+    SuiviDAtelier enConflit = suiviEngageA(engagement)
+      .enregistre(premiere)
+      .enregistre(relance)
+      .enregistre(finDe(premiere).a(engagement.plusSeconds(10800)));
+    inTransaction(() -> suivis.create(enConflit));
+    SuiviDAtelier encoreEnConflit = enConflit.enregistre(finDe(relance).a(engagement.plusSeconds(14400)));
+    inTransaction(() -> suivis.update(encoreEnConflit));
+    assertThat(conflitsProjetes(encoreEnConflit.id())).isEqualTo(encoreEnConflit.conflits());
+
+    SuiviDAtelier resolu = encoreEnConflit
+      .annule(relance.id(), annulation(engagement.plusSeconds(18000)))
+      .annule(encoreEnConflit.journal().evenements().getLast().id(), annulation(engagement.plusSeconds(18000)));
+    inTransaction(() -> suivis.update(resolu));
+    assertThat(resolu.conflits()).isEmpty();
+    assertThat(conflitsProjetes(resolu.id())).isEmpty();
+    assertThat(inTransaction(() -> suivis.get(resolu.id()))).contains(resolu);
+  }
+
+  @Test
+  @WithTenant(IMPECCMOLD)
+  void shouldProjeterUnConflitSansActiviteAResoudreEtSansPoste() {
+    Instant engagement = Instant.parse("2041-03-12T07:00:00Z");
+    EvenementDAtelier ouverture = debutSansPosteParDupontA(engagement.plusSeconds(3600));
+    EvenementDAtelier fin = finDe(ouverture).a(engagement.plusSeconds(7200));
+    SuiviDAtelier enConflit = suiviEngageA(engagement)
+      .enregistre(ouverture)
+      .enregistre(fin)
+      .annule(ouverture.id(), annulation(engagement.plusSeconds(10800)));
+    assertThat(enConflit.conflits())
+      .singleElement()
+      .satisfies(sequence -> {
+        assertThat(sequence.activites()).isEmpty();
+        assertThat(sequence.poste()).isEmpty();
+        assertThat(sequence.pointages()).containsExactly(fin.id());
+      });
+    inTransaction(() -> suivis.create(enConflit));
+    assertThat(conflitsProjetes(enConflit.id())).isEqualTo(enConflit.conflits());
+
+    SuiviDAtelier resolu = enConflit.annule(fin.id(), annulation(engagement.plusSeconds(14400)));
+    inTransaction(() -> suivis.update(resolu));
+    assertThat(conflitsProjetes(resolu.id())).isEmpty();
+  }
+
+  private List<SequenceEnConflit> conflitsProjetes(SuiviDAtelierId suivi) {
+    return inTransaction(() ->
+      lignes("select id, operateur_id, poste_id from sequence_en_conflit where suivi_id = :suivi order by id", suivi.uuid())
+        .stream()
+        .map(ligne -> {
+          UUID sequence = (UUID) ligne[0];
+          List<ActiviteId> activites = identites(
+            "select id from activite_d_atelier where sequence_id = :suivi order by ordre_dans_sequence",
+            sequence
+          )
+            .stream()
+            .map(ActiviteId::new)
+            .toList();
+          List<EvenementDAtelierId> pointages = identites(
+            "select evenement_id from pointage_en_conflit where sequence_id = :suivi order by ordre",
+            sequence
+          )
+            .stream()
+            .map(EvenementDAtelierId::new)
+            .toList();
+          return new SequenceEnConflit(
+            new CleDActivite(new OperateurId((UUID) ligne[1]), Optional.ofNullable((UUID) ligne[2]).map(PosteDeTravailId::new)),
+            activites,
+            pointages
+          );
+        })
+        .toList()
+    );
+  }
+
+  @SuppressWarnings("unchecked")
+  private List<Object[]> lignes(String sql, UUID identite) {
+    return entities.createNativeQuery(sql).setParameter("suivi", identite).getResultList();
+  }
+
+  @SuppressWarnings("unchecked")
+  private List<UUID> identites(String sql, UUID identite) {
+    return entities.createNativeQuery(sql, UUID.class).setParameter("suivi", identite).getResultList();
   }
 
   private List<SuiviDAtelier> liste(Periode periode, EtatDAtelier etat, Instant evaluation) {
