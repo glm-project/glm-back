@@ -87,7 +87,7 @@ class JpaSuiviDAtelierRepositoryIT {
 
     SuiviDAtelier relu = inTransaction(() -> suivis.get(engage.id())).orElseThrow();
     assertThat(relu).isEqualTo(engage);
-    assertThat(relu.etat()).isEqualTo(EtatDAtelier.EN_COURS);
+    assertThat(relu.etat(engagement.plusSeconds(7200))).isEqualTo(EtatDAtelier.EN_COURS);
   }
 
   /**
@@ -214,7 +214,7 @@ class JpaSuiviDAtelierRepositoryIT {
 
     SuiviDAtelier relu = inTransaction(() -> suivis.get(engage.id())).orElseThrow();
     assertThat(relu).isEqualTo(cloture);
-    assertThat(relu.etat()).isEqualTo(EtatDAtelier.CLOTURE);
+    assertThat(relu.etat(engagement.plusSeconds(36000))).isEqualTo(EtatDAtelier.CLOTURE);
   }
 
   @Test
@@ -230,7 +230,7 @@ class JpaSuiviDAtelierRepositoryIT {
 
     SuiviDAtelier relu = inTransaction(() -> suivis.get(engage.id())).orElseThrow();
     assertThat(relu).isEqualTo(poursuivi);
-    assertThat(relu.etat()).isEqualTo(EtatDAtelier.INTERROMPU);
+    assertThat(relu.etat(engagement.plusSeconds(7200))).isEqualTo(EtatDAtelier.INTERROMPU);
   }
 
   @Test
@@ -247,7 +247,7 @@ class JpaSuiviDAtelierRepositoryIT {
     SuiviDAtelier relu = inTransaction(() -> suivis.get(engage.id())).orElseThrow();
     assertThat(relu).isEqualTo(annule);
     assertThat(relu.journal().evenements()).hasSize(1);
-    assertThat(relu.etat()).isEqualTo(EtatDAtelier.EN_ATTENTE);
+    assertThat(relu.etat(engagement.plusSeconds(10800))).isEqualTo(EtatDAtelier.EN_ATTENTE);
   }
 
   @Test

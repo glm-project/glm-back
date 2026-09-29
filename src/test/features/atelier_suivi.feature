@@ -403,7 +403,9 @@ Feature: Suivi des elements engages en atelier
       | poste          | fraiseuse-1          |
       | dateDeSurvenue | 2026-05-10T09:00:00Z |
     Then la reponse a le statut http 201
-    And le suivi a l'etat "EN_COURS"
+    # Rattrape le lendemain, le debut de 9 h a deja atteint son echeance de 22 h : l'activite est terminee
+    # automatiquement, et plus personne n'est sur l'element.
+    And le suivi a l'etat "INTERROMPU"
     When je consulte "OF 2007"
     # Une regularisation se reconnait a l'acte qui l'a saisie, jamais a l'ecart de ses deux dates ni a l'identite de
     # son auteur.

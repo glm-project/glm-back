@@ -280,6 +280,39 @@ class TempsDAtelierServiceTest {
   }
 
   /**
+   * Sans presence connue, l'activite que rien n'a terminee est rendue a sa fin automatique, a 21 h, avec son anomalie.
+   */
+  @Test
+  void shouldRendreSaFinAutomatiqueAUneActiviteEchueSansPresence() {
+    SuiviDAtelierId suivi = enAtelier(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)));
+    maintenant.set(LE_11_MAI_2026_A_9H);
+
+    assertThat(temps.tempsEffectif(suivi, maintenant.get()))
+      .singleElement()
+      .satisfies(intervalle -> {
+        assertThat(intervalle.fin()).contains(Instant.parse("2026-05-10T21:00:00Z"));
+        assertThat(intervalle.finAutomatique()).isTrue();
+      });
+  }
+
+  /**
+   * L'anomalie suit l'activite : ramenee a la presence de sa journee, l'activite terminee automatiquement le reste.
+   */
+  @Test
+  void shouldSignalerLaFinAutomatiqueDUneActiviteRameneeALaPresence() {
+    journees.create(journeeDeDupontDe7HA17H());
+    SuiviDAtelierId suivi = enAtelier(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H)));
+    maintenant.set(LE_11_MAI_2026_A_9H);
+
+    assertThat(temps.tempsEffectif(suivi, maintenant.get()))
+      .singleElement()
+      .satisfies(intervalle -> {
+        assertThat(intervalle.fin()).contains(LE_10_MAI_2026_A_17H);
+        assertThat(intervalle.finAutomatique()).isTrue();
+      });
+  }
+
+  /**
    * L'OF 42 de Dupont sur la fraiseuse 1, avec la pause de midi telle que le pupitre la pointe : un debut a 8 h, sa fin
    * a 12 h, un debut a 13 h.
    */

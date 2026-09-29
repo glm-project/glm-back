@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
+import com.glm.glmback.atelier.domain.LectureDuSuivi;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.shared.pagination.domain.Page;
 import java.util.List;
@@ -25,11 +26,12 @@ class RestSyntheseDeSuiviDAtelierTest {
   @MethodSource("suivis")
   void shouldKeepEveryDetailFieldExceptJournal(SuiviDAtelier suivi) {
     AnnuaireDAtelier annuaire = annuaireDeDupontEtMartin();
-    ObjectNode detail = (ObjectNode) JSON.valueToTree(RestSuiviDAtelier.from(suivi, annuaire));
+    LectureDuSuivi lecture = new LectureDuSuivi(suivi, LE_10_MAI_2026_A_17H);
+    ObjectNode detail = (ObjectNode) JSON.valueToTree(RestSuiviDAtelier.from(lecture, annuaire));
     assertThat(detail.has("journal")).isTrue();
     detail.remove("journal");
 
-    ObjectNode grille = (ObjectNode) JSON.valueToTree(RestSyntheseDeSuiviDAtelier.from(suivi, annuaire));
+    ObjectNode grille = (ObjectNode) JSON.valueToTree(RestSyntheseDeSuiviDAtelier.from(lecture, annuaire));
     assertThat(grille).isEqualTo(detail);
   }
 
@@ -47,7 +49,7 @@ class RestSyntheseDeSuiviDAtelierTest {
       .content(
         suivis
           .stream()
-          .map(suivi -> RestSuiviDAtelier.from(suivi, annuaire))
+          .map(suivi -> RestSuiviDAtelier.from(new LectureDuSuivi(suivi, LE_10_MAI_2026_A_17H), annuaire))
           .toList()
       )
       .currentPage(0)
@@ -57,7 +59,7 @@ class RestSyntheseDeSuiviDAtelierTest {
       .content(
         suivis
           .stream()
-          .map(suivi -> RestSyntheseDeSuiviDAtelier.from(suivi, annuaire))
+          .map(suivi -> RestSyntheseDeSuiviDAtelier.from(new LectureDuSuivi(suivi, LE_10_MAI_2026_A_17H), annuaire))
           .toList()
       )
       .currentPage(0)

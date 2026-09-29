@@ -25,7 +25,7 @@ public record SuiviDAtelierCriteria(Optional<Periode> periode, Set<EtatDAtelier>
   }
 
   public boolean matches(SuiviDAtelier suivi) {
-    return correspondALaPeriode(suivi) && (etats.isEmpty() || etats.contains(suivi.etat()));
+    return correspondALaPeriode(suivi) && (etats.isEmpty() || etats.contains(suivi.etatSansEcheance()));
   }
 
   private boolean correspondALaPeriode(SuiviDAtelier suivi) {

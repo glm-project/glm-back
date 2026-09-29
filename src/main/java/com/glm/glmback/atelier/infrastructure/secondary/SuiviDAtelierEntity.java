@@ -137,7 +137,7 @@ class SuiviDAtelierEntity {
    */
   void reconcilie(SuiviDAtelier suivi) {
     reporteLaCloture(suivi.cloture());
-    etat = suivi.etat();
+    etat = suivi.etatSansEcheance();
 
     Map<UUID, EvenementDAtelierEntity> connus = journal
       .stream()

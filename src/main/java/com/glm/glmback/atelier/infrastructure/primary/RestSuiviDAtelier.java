@@ -3,6 +3,7 @@ package com.glm.glmback.atelier.infrastructure.primary;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
 import com.glm.glmback.atelier.domain.Cloture;
 import com.glm.glmback.atelier.domain.EtatDAtelier;
+import com.glm.glmback.atelier.domain.LectureDuSuivi;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.TypeDElementEngage;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -44,7 +45,9 @@ record RestSuiviDAtelier(
   @Schema(description = "Les activites ouvertes a cet instant.", requiredMode = Schema.RequiredMode.REQUIRED)
   List<RestActiviteEnCours> activitesEnCours
 ) {
-  static RestSuiviDAtelier from(SuiviDAtelier suivi, AnnuaireDAtelier annuaire) {
+  static RestSuiviDAtelier from(LectureDuSuivi lecture, AnnuaireDAtelier annuaire) {
+    SuiviDAtelier suivi = lecture.suivi();
+
     return new RestSuiviDAtelier(
       suivi.id().uuid(),
       suivi.element().id().uuid(),
@@ -52,7 +55,7 @@ record RestSuiviDAtelier(
       suivi.element().type(),
       suivi.engagement().auteur().value(),
       suivi.engagement().date(),
-      suivi.etat(),
+      lecture.etat(),
       suivi
         .cloture()
         .map(cloture -> cloture.auteur().value())
@@ -64,7 +67,7 @@ record RestSuiviDAtelier(
         .stream()
         .map(evenement -> RestEvenementDAtelier.from(evenement, annuaire))
         .toList(),
-      suivi
+      lecture
         .activitesEnCours()
         .stream()
         .map(activite -> RestActiviteEnCours.from(activite, annuaire))

@@ -86,6 +86,18 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
   (`ActiviteViseeIncoherenteException`, 409), avant toute autre décision, absorption comprise. Un geste qui contredit
   le journal — cible déjà terminée, remplacée ou annulée, transition vers sa propre catégorie — est encore refusé par
   `TransitionDAtelierInterditeException` : il ne termine jamais une autre activité que sa cible.
+- **Une activité que rien n'a terminée se termine automatiquement à son échéance** : son début plus 13 heures
+  écoulées (`Echeance`), neutres au changement d'heure. Ce délai est la règle de l'atelier, pas une donnée de
+  paramétrage : il reste une constante du domaine. Rien n'est écrit ni planifié : `Activite` ne dépend que des faits
+  actifs, et seule sa lecture à un instant d'évaluation (`Activite.a`) la dit en cours, terminée à sa fin réelle, ou
+  terminée automatiquement à l'échéance avec une anomalie, que seule une fin réelle retire. L'instant vient de
+  l'horloge du service applicatif (`LectureDuSuivi`, `TempsDAtelierService.tempsEffectif`), jamais d'une horloge
+  enfouie dans le domaine.
+- **L'interprétation applique l'échéance sans instant de lecture**, sur les seules heures métier
+  (`SequenceDActivites`). Un geste pointé au plus tard à l'échéance de sa cible la termine à son heure, un geste pile à
+  l'échéance l'emportant sur la fin automatique. Pointée après, une fin est conservée sans effet, et une transition
+  ouvre sa nouvelle activité à son heure, en laissant un trou. Une relance ou une clôture ne prolonge jamais une
+  activité échue. Seule une régularisation — fin ou transition — termine une activité au-delà de son échéance.
 - **Une ouverture sur une activité déjà en cours la relance**, elle n'est jamais refusée (décision D9 de
   [bornes-de-fin-de-journee.md](../../../../../../../documentation/strategie/bornes-de-fin-de-journee.md)). Les
   replis recopiés de `pupitre`, `coutderevient`, `feuilledetemps` et `syntheseheures` relisent encore le journal par
@@ -158,6 +170,10 @@ domaine à chaque enregistrement, et jamais relues** : `toDomain()` rejoue toujo
 Ce sont des index, pas un état stocké — sans eux, filtrer l'écran d'atelier sur `etats` ou retrouver la journée
 contenant un instant obligerait à ramener toute l'entreprise en mémoire à chaque lecture de temps effectif. Elles ne
 dépendent que du journal, jamais de l'instant courant, donc restent justes entre deux écritures.
+
+`suivi_d_atelier.etat` ne juge pas encore l'échéance : il est écrit par `SuiviDAtelier.etatSansEcheance()`, qui tient
+pour en cours une activité échue sans fin réelle. Le filtre `etats` du tableau d'atelier peut donc retenir en `EN_COURS`
+un suivi que sa lecture dit `INTERROMPU`.
 
 Leur contrepartie : `SuiviDAtelierCriteria.matches` et `JourneeDeTravailCriteria.matches` ne sont plus appelées par la
 production, qui traduit les mêmes règles en SQL. C'est `PariteDesRepositoriesDAtelierIT` qui rétablit par l'exécution

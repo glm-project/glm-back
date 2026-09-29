@@ -16,7 +16,8 @@ import java.util.Optional;
  *
  * <p>
  * La fin est reelle ou absente : elle vient d'un geste qui termine l'activite, ou de la cloture du suivi. Elle ne
- * depend jamais de l'instant ou on lit.
+ * depend jamais de l'instant ou on lit. Seule la lecture a un instant d'evaluation, {@link #a(Instant)}, decide si une
+ * activite sans fin reelle est encore en cours ou deja terminee automatiquement a son echeance.
  * </p>
  */
 public record Activite(EvenementDAtelier ouvrant, Optional<Instant> fin) {
@@ -50,7 +51,31 @@ public record Activite(EvenementDAtelier ouvrant, Optional<Instant> fin) {
     return ouvrant.dateDeSurvenue();
   }
 
-  IntervalleDActivite intervalle() {
+  public Echeance echeance() {
+    return Echeance.apres(debut());
+  }
+
+  /**
+   * L'activite telle qu'elle se lit a l'instant d'evaluation : terminee a sa fin reelle si un fait l'a terminee ;
+   * sinon terminee automatiquement a son echeance, avec une anomalie, des que l'echeance est atteinte ; sinon en cours.
+   * C'est le seul endroit ou l'instant de lecture intervient.
+   */
+  public IntervalleDActivite a(Instant evaluation) {
+    if (fin.isEmpty() && echeance().estAtteinteA(evaluation)) {
+      return intervalle(Optional.of(echeance().value()), true);
+    }
+
+    return intervalle(fin, false);
+  }
+
+  /**
+   * Vrai si aucun fait n'a termine l'activite et que son echeance n'est pas encore atteinte a l'instant d'evaluation.
+   */
+  public boolean estEnCoursA(Instant evaluation) {
+    return fin.isEmpty() && !echeance().estAtteinteA(evaluation);
+  }
+
+  private IntervalleDActivite intervalle(Optional<Instant> bornee, boolean finAutomatique) {
     return IntervalleDActivite.builder()
       .evenement(ouvrant.id())
       .operateur(ouvrant.operateur())
@@ -58,6 +83,7 @@ public record Activite(EvenementDAtelier ouvrant, Optional<Instant> fin) {
       .nature(ouvrant.nature())
       .categorie(categorie())
       .debut(debut())
-      .fin(fin);
+      .fin(bornee)
+      .finAutomatique(finAutomatique);
   }
 }

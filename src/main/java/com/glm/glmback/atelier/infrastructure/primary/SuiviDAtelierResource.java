@@ -4,8 +4,8 @@ import com.glm.glmback.atelier.application.SuivisDAtelierApplicationService;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
 import com.glm.glmback.atelier.domain.EtatDAtelier;
 import com.glm.glmback.atelier.domain.IntervalleDActivite;
+import com.glm.glmback.atelier.domain.LectureDuSuivi;
 import com.glm.glmback.atelier.domain.Periode;
-import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
@@ -75,10 +75,10 @@ class SuiviDAtelierResource {
     @RequestParam(defaultValue = "0") int page,
     @RequestParam(defaultValue = "20") int size
   ) {
-    Page<SuiviDAtelier> resultat = applicationService.list(periode(debut, fin), etats(etats), new Pageable(page, size));
-    AnnuaireDAtelier annuaire = applicationService.annuairePourSuivis(resultat.content());
+    Page<LectureDuSuivi> resultat = applicationService.list(periode(debut, fin), etats(etats), new Pageable(page, size));
+    AnnuaireDAtelier annuaire = applicationService.annuairePourSuivis(resultat.content().stream().map(LectureDuSuivi::suivi).toList());
 
-    return RestPage.from(resultat, suivi -> RestSyntheseDeSuiviDAtelier.from(suivi, annuaire));
+    return RestPage.from(resultat, lecture -> RestSyntheseDeSuiviDAtelier.from(lecture, annuaire));
   }
 
   @PostMapping
@@ -229,8 +229,8 @@ class SuiviDAtelierResource {
   /**
    * Le suivi rendu avec ses ressources resolues : le journal ne stockant que des identifiants, l'affichage les relit.
    */
-  private RestSuiviDAtelier rendu(SuiviDAtelier suivi) {
-    return RestSuiviDAtelier.from(suivi, applicationService.annuairePour(suivi));
+  private RestSuiviDAtelier rendu(LectureDuSuivi lecture) {
+    return RestSuiviDAtelier.from(lecture, applicationService.annuairePour(lecture.suivi()));
   }
 
   private static Optional<Periode> periode(Instant debut, Instant fin) {

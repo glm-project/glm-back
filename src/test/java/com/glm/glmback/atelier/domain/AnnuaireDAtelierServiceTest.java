@@ -38,7 +38,7 @@ class AnnuaireDAtelierServiceTest {
   void shouldResoudreLesRessourcesDesIntervalles() {
     List<IntervalleDActivite> intervalles = suiviDAtelierEngage()
       .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))
-      .intervalles();
+      .intervalles(LE_10_MAI_2026_A_17H);
 
     AnnuaireDAtelier annuaire = annuaires.pourIntervalles(intervalles);
 

@@ -47,6 +47,7 @@ class IntervalleDActiviteTest {
         CategorieDActivite.TRAVAIL,
         LE_10_MAI_2026_A_8H,
         Optional.empty(),
+        false,
         false
       )
     )
@@ -65,6 +66,7 @@ class IntervalleDActiviteTest {
         CategorieDActivite.TRAVAIL,
         LE_10_MAI_2026_A_8H,
         Optional.empty(),
+        false,
         false
       )
     )
@@ -83,6 +85,7 @@ class IntervalleDActiviteTest {
         CategorieDActivite.TRAVAIL,
         LE_10_MAI_2026_A_8H,
         Optional.empty(),
+        false,
         false
       )
     )
@@ -101,6 +104,7 @@ class IntervalleDActiviteTest {
         null,
         LE_10_MAI_2026_A_8H,
         Optional.empty(),
+        false,
         false
       )
     )
@@ -193,6 +197,27 @@ class IntervalleDActiviteTest {
     assertThat(reduit.presume()).isFalse();
   }
 
+  /**
+   * La fin automatique est une anomalie de l'activite : ramenee a une fenetre de presence, elle reste signalee.
+   */
+  @Test
+  void shouldGarderSaFinAutomatiqueDansUneFenetreDePresence() {
+    IntervalleDActivite echu = IntervalleDActivite.builder()
+      .evenement(EVENEMENT)
+      .operateur(OPERATEUR_ID_DUPONT)
+      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
+      .nature(Optional.of(NATURE_FRAISAGE))
+      .categorie(CategorieDActivite.TRAVAIL)
+      .debut(LE_10_MAI_2026_A_8H)
+      .fin(Optional.of(LE_10_MAI_2026_A_20H))
+      .finAutomatique(true);
+
+    IntervalleDActivite reduit = echu.reduitA(new FenetreDePresence(LE_10_MAI_2026_A_9H, Optional.of(LE_10_MAI_2026_A_17H))).orElseThrow();
+
+    assertThat(reduit.fin()).contains(LE_10_MAI_2026_A_17H);
+    assertThat(reduit.finAutomatique()).isTrue();
+  }
+
   private static IntervalleDActivite intervalleFerme() {
     return intervalle(EVENEMENT, LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H));
   }
@@ -205,6 +230,7 @@ class IntervalleDActiviteTest {
       .nature(Optional.of(NATURE_FRAISAGE))
       .categorie(CategorieDActivite.TRAVAIL)
       .debut(debut)
-      .fin(fin);
+      .fin(fin)
+      .finAutomatique(false);
   }
 }

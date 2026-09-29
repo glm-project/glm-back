@@ -45,6 +45,62 @@ class PointageDAtelierJamaisRefuseTest {
     assertThat(arrete.journal().evenements()).hasSize(2);
   }
 
+  /**
+   * FIN 23 h apres fin automatique 21 h : la fin pointee apres l'echeance de sa cible n'est pas un double appui. Elle
+   * est enregistree, sans effet : l'activite garde sa borne automatique.
+   */
+  @Test
+  void shouldConserverUneFinPointeeApresLEcheanceDeSaCible() {
+    SuiviDAtelier engage = engage();
+    PointageAEnregistrer debut = ouverture(engage.id(), TypeDEvenementDAtelier.DEBUT);
+    pointeA(debut, LE_10_MAI_2026_A_8H);
+
+    PointageDAtelierTraite fin = pointeA(finDe(debut), Instant.parse("2026-05-10T23:00:00Z"));
+
+    assertThat(fin.absorbe()).isFalse();
+    assertThat(fin.suivi().journal().actifs()).hasSize(2);
+    assertThat(fin.suivi().activites()).singleElement().extracting(Activite::fin).isEqualTo(Optional.empty());
+  }
+
+  /**
+   * FIN 17 h recue apres la fin automatique de 21 h : rejouee le lendemain avec l'heure de son geste, elle termine
+   * l'activite a 17 h.
+   */
+  @Test
+  void shouldTerminerASonHeureUneFinRejoueeApresLEcheance() {
+    SuiviDAtelier engage = engage();
+    PointageAEnregistrer debut = ouverture(engage.id(), TypeDEvenementDAtelier.DEBUT);
+    pointeA(debut, LE_10_MAI_2026_A_8H);
+    maintenant.set(LE_11_MAI_2026_A_9H15);
+
+    PointageDAtelierTraite fin = atelier.pointe(finRejoueeA(debut, LE_10_MAI_2026_A_17H));
+
+    assertThat(fin.absorbe()).isFalse();
+    assertThat(fin.suivi().intervalles(LE_11_MAI_2026_A_9H15))
+      .singleElement()
+      .satisfies(intervalle -> {
+        assertThat(intervalle.fin()).contains(LE_10_MAI_2026_A_17H);
+        assertThat(intervalle.finAutomatique()).isFalse();
+      });
+  }
+
+  /**
+   * Une seconde fin n'est un double appui que si rien n'a repris sur le poste : quand une relance y est en cours, elle
+   * contredit le journal.
+   */
+  @Test
+  void shouldToujoursRefuserUneSecondeFinQuandUneRelanceEstEnCours() {
+    SuiviDAtelier engage = engage();
+    PointageAEnregistrer debut = ouverture(engage.id(), TypeDEvenementDAtelier.DEBUT);
+    pointeA(debut, LE_10_MAI_2026_A_8H);
+    pointeA(finDe(debut), LE_10_MAI_2026_A_9H);
+    pointeA(ouverture(engage.id(), TypeDEvenementDAtelier.DEBUT), LE_10_MAI_2026_A_12H);
+    maintenant.set(LE_10_MAI_2026_A_13H);
+    PointageAEnregistrer seconde = finDe(debut);
+
+    assertThatThrownBy(() -> atelier.pointe(seconde)).isExactlyInstanceOf(TransitionDAtelierInterditeException.class);
+  }
+
   @Test
   void shouldEnregistrerUneFinDUneActiviteEnCours() {
     SuiviDAtelier engage = engage();
@@ -54,7 +110,7 @@ class PointageDAtelierJamaisRefuseTest {
     PointageDAtelierTraite fin = pointeA(finDe(debut), LE_10_MAI_2026_A_12H);
 
     assertThat(fin.absorbe()).isFalse();
-    assertThat(fin.suivi().etat()).isEqualTo(EtatDAtelier.INTERROMPU);
+    assertThat(fin.suivi().etat(LE_10_MAI_2026_A_12H)).isEqualTo(EtatDAtelier.INTERROMPU);
   }
 
   /**

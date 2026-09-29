@@ -5,11 +5,11 @@ import java.time.Instant;
 import java.util.Optional;
 
 /**
- * Du temps affecte a un operateur, un poste de travail et une categorie, produit par le repli du journal.
+ * Du temps affecte a un operateur, un poste de travail et une categorie : une activite lue a un instant d'evaluation.
  *
  * <p>
- * Un intervalle sans fin est encore en cours : le repli se fait sans horloge, seule une sommation aurait besoin de
- * savoir quand on est.
+ * Un intervalle sans fin est encore en cours a cet instant. Une fin automatique est l'echeance d'une activite que rien
+ * n'a terminee avant qu'elle ne tombe : elle porte une anomalie, que seule une fin reelle retire.
  * </p>
  */
 public record IntervalleDActivite(
@@ -20,6 +20,7 @@ public record IntervalleDActivite(
   CategorieDActivite categorie,
   Instant debut,
   Optional<Instant> fin,
+  boolean finAutomatique,
   boolean presume
 ) {
   public IntervalleDActivite {
@@ -37,7 +38,12 @@ public record IntervalleDActivite(
     return evenement ->
       operateur ->
         poste ->
-          nature -> categorie -> debut -> fin -> new IntervalleDActivite(evenement, operateur, poste, nature, categorie, debut, fin, false);
+          nature ->
+            categorie ->
+              debut ->
+                fin ->
+                  finAutomatique ->
+                    new IntervalleDActivite(evenement, operateur, poste, nature, categorie, debut, fin, finAutomatique, false);
   }
 
   /**
@@ -48,7 +54,17 @@ public record IntervalleDActivite(
     return fenetre
       .intersection(debut, fin)
       .map(part ->
-        new IntervalleDActivite(evenement, operateur, poste, nature, categorie, part.debut(), part.fin(), presume || part.presumee())
+        new IntervalleDActivite(
+          evenement,
+          operateur,
+          poste,
+          nature,
+          categorie,
+          part.debut(),
+          part.fin(),
+          finAutomatique,
+          presume || part.presumee()
+        )
       );
   }
 
@@ -85,6 +101,10 @@ public record IntervalleDActivite(
   }
 
   interface IntervalleDActiviteFinBuilder {
-    IntervalleDActivite fin(Optional<Instant> fin);
+    IntervalleDActiviteFinAutomatiqueBuilder fin(Optional<Instant> fin);
+  }
+
+  interface IntervalleDActiviteFinAutomatiqueBuilder {
+    IntervalleDActivite finAutomatique(boolean finAutomatique);
   }
 }

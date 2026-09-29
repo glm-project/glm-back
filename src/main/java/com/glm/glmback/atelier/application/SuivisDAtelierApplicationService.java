@@ -12,6 +12,7 @@ import com.glm.glmback.atelier.domain.EtatDAtelier;
 import com.glm.glmback.atelier.domain.Habilitations;
 import com.glm.glmback.atelier.domain.IntervalleDActivite;
 import com.glm.glmback.atelier.domain.JourneeDeTravailRepository;
+import com.glm.glmback.atelier.domain.LectureDuSuivi;
 import com.glm.glmback.atelier.domain.OperateursConnus;
 import com.glm.glmback.atelier.domain.Periode;
 import com.glm.glmback.atelier.domain.PointageAEnregistrer;
@@ -27,6 +28,7 @@ import com.glm.glmback.atelier.domain.TempsDAtelierService;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import com.glm.glmback.shared.time.domain.Clock;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -44,6 +46,11 @@ import org.springframework.transaction.support.TransactionTemplate;
  * <p>
  * Le pointage est ouvert a l'operateur ; l'engagement, la cloture et les trois actes de correction sont reserves au
  * gestionnaire. C'est la frontiere entre les deux surfaces de l'API.
+ * </p>
+ *
+ * <p>
+ * C'est ici que se lit l'horloge des lectures : chaque suivi rendu l'est a l'instant d'evaluation du moment, que le
+ * domaine recoit explicitement.
  * </p>
  */
 @Service
@@ -84,18 +91,18 @@ public class SuivisDAtelierApplicationService {
 
   @Secured("ROLE_GESTIONNAIRE")
   @Transactional
-  public SuiviDAtelier engage(EngagementAEnregistrer commande) {
-    return suivisDAtelier.engage(commande);
+  public LectureDuSuivi engage(EngagementAEnregistrer commande) {
+    return lu(suivisDAtelier.engage(commande));
   }
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
   @Transactional
-  public SuiviDAtelier pointe(PointageAEnregistrer commande) {
+  public LectureDuSuivi pointe(PointageAEnregistrer commande) {
     return pointeDuPupitre(commande).agregat();
   }
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
-  public ResultatDEcriture<SuiviDAtelier> pointeDuPupitre(PointageAEnregistrer commande) {
+  public ResultatDEcriture<LectureDuSuivi> pointeDuPupitre(PointageAEnregistrer commande) {
     return SaisieConcurrenteRejouee.executer(transactions, () -> {
       ReservationDEvenement reservation = identites.reserve(
         commande.evenement().uuid(),
@@ -110,63 +117,76 @@ public class SuivisDAtelierApplicationService {
           .dateDeSurvenue(commande.dateDeSurvenue())
       );
       if (reservation.estUnRejeu()) {
-        return new ResultatDEcriture<>(suivisDAtelier.get(new SuiviDAtelierId(reservation.agregat().orElseThrow().id())), true);
+        return new ResultatDEcriture<>(lu(suivisDAtelier.get(new SuiviDAtelierId(reservation.agregat().orElseThrow().id()))), true);
       }
       PointageDAtelierTraite traite = suivisDAtelier.pointe(commande);
       identites.associe(
         commande.evenement().uuid(),
         new AgregatDEvenement(TypeDAgregatDEvenement.SUIVI_D_ATELIER, traite.suivi().id().uuid())
       );
-      return new ResultatDEcriture<>(traite.suivi(), traite.absorbe());
+      return new ResultatDEcriture<>(lu(traite.suivi()), traite.absorbe());
     });
   }
 
   @Secured("ROLE_GESTIONNAIRE")
   @Transactional
-  public SuiviDAtelier regularise(RegularisationAEnregistrer commande) {
+  public LectureDuSuivi regularise(RegularisationAEnregistrer commande) {
     UUID evenement = reserveIdentiteServeur();
     SuiviDAtelier suivi = suivisDAtelier.regularise(commande, new com.glm.glmback.atelier.domain.EvenementDAtelierId(evenement));
     identites.associe(evenement, new AgregatDEvenement(TypeDAgregatDEvenement.SUIVI_D_ATELIER, suivi.id().uuid()));
-    return suivi;
+    return lu(suivi);
   }
 
   @Secured("ROLE_GESTIONNAIRE")
   @Transactional
-  public SuiviDAtelier annule(AnnulationAEnregistrer commande) {
-    return suivisDAtelier.annule(commande);
+  public LectureDuSuivi annule(AnnulationAEnregistrer commande) {
+    return lu(suivisDAtelier.annule(commande));
   }
 
   @Secured("ROLE_GESTIONNAIRE")
   @Transactional
-  public SuiviDAtelier corrige(CorrectionAEnregistrer commande) {
+  public LectureDuSuivi corrige(CorrectionAEnregistrer commande) {
     UUID evenement = reserveIdentiteServeur();
     SuiviDAtelier suivi = suivisDAtelier.corrige(commande, new com.glm.glmback.atelier.domain.EvenementDAtelierId(evenement));
     identites.associe(evenement, new AgregatDEvenement(TypeDAgregatDEvenement.SUIVI_D_ATELIER, suivi.id().uuid()));
-    return suivi;
+    return lu(suivi);
   }
 
   @Secured("ROLE_GESTIONNAIRE")
   @Transactional
-  public SuiviDAtelier cloture(ClotureAEnregistrer commande) {
-    return suivisDAtelier.cloture(commande);
+  public LectureDuSuivi cloture(ClotureAEnregistrer commande) {
+    return lu(suivisDAtelier.cloture(commande));
   }
 
   @Secured("ROLE_GESTIONNAIRE")
   @Transactional
-  public SuiviDAtelier annuleLaCloture(SuiviDAtelierId id) {
-    return suivisDAtelier.annuleLaCloture(id);
+  public LectureDuSuivi annuleLaCloture(SuiviDAtelierId id) {
+    return lu(suivisDAtelier.annuleLaCloture(id));
   }
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
   @Transactional(readOnly = true)
-  public SuiviDAtelier get(SuiviDAtelierId id) {
-    return suivisDAtelier.get(id);
+  public LectureDuSuivi get(SuiviDAtelierId id) {
+    return lu(suivisDAtelier.get(id));
   }
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
   @Transactional(readOnly = true)
-  public Page<SuiviDAtelier> list(Optional<Periode> periode, Set<EtatDAtelier> etats, Pageable pageable) {
-    return suivisDAtelier.list(periode, etats, pageable);
+  public Page<LectureDuSuivi> list(Optional<Periode> periode, Set<EtatDAtelier> etats, Pageable pageable) {
+    Instant evaluation = clock.now();
+    Page<SuiviDAtelier> suivis = suivisDAtelier.list(periode, etats, pageable);
+
+    return Page.<LectureDuSuivi>builder()
+      .content(
+        suivis
+          .content()
+          .stream()
+          .map(suivi -> new LectureDuSuivi(suivi, evaluation))
+          .toList()
+      )
+      .currentPage(suivis.currentPage())
+      .pageSize(suivis.pageSize())
+      .totalElementsCount(suivis.totalElementsCount());
   }
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
@@ -191,6 +211,10 @@ public class SuivisDAtelierApplicationService {
   @Transactional(readOnly = true)
   public AnnuaireDAtelier annuairePourIntervalles(Collection<IntervalleDActivite> intervalles) {
     return annuaires.pourIntervalles(intervalles);
+  }
+
+  private LectureDuSuivi lu(SuiviDAtelier suivi) {
+    return new LectureDuSuivi(suivi, clock.now());
   }
 
   private UUID reserveIdentiteServeur() {

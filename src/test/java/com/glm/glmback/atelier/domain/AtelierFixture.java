@@ -226,6 +226,13 @@ public final class AtelierFixture {
   }
 
   /**
+   * Le passage en non conformite que le gestionnaire regularise sur l'activite de Dupont qu'ouvre ce debut.
+   */
+  public static GesteADater passageEnNonConformiteRegulariseParLeroyDe(EvenementDAtelier ouvrant) {
+    return regularisationParLeroy(TypeDEvenementDAtelier.NON_CONFORMITE, IntentionDePointage.TRANSITION, ouvrant.activite());
+  }
+
+  /**
    * La fin que le gestionnaire regularise sur l'activite de Dupont qu'ouvre ce debut.
    */
   public static GesteADater finRegulariseeParLeroyDe(EvenementDAtelier ouvrant) {

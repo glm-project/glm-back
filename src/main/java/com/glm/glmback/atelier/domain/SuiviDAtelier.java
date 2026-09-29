@@ -1,6 +1,7 @@
 package com.glm.glmback.atelier.domain;
 
 import com.glm.glmback.shared.error.domain.Assert;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -11,6 +12,12 @@ import java.util.Optional;
  * Pointage et regularisation sont le meme acte du domaine, {@link #enregistre(EvenementDAtelier)} : ils ne different
  * que par la provenance de la date de survenue, decidee en amont. C'est ce qui rend la correction sure, elle repasse
  * par exactement les memes invariants.
+ * </p>
+ *
+ * <p>
+ * Ses activites ne dependent que du journal. Tout ce qui depend de l'heure a laquelle on lit — l'etat, les activites
+ * en cours, les intervalles — se lit a un instant d'evaluation explicite, que l'appelant fournit : une activite que
+ * rien n'a terminee y est terminee automatiquement des que son echeance est atteinte.
  * </p>
  *
  * <p>
@@ -86,42 +93,71 @@ public record SuiviDAtelier(
     return journal.activites(cloture.map(Cloture::dateDeSurvenue));
   }
 
-  public List<IntervalleDActivite> intervalles() {
-    return activites().stream().map(Activite::intervalle).toList();
-  }
-
-  public List<ActiviteEnCours> activitesEnCours() {
+  public List<IntervalleDActivite> intervalles(Instant evaluation) {
     return activites()
       .stream()
-      .filter(activite -> activite.fin().isEmpty())
+      .map(activite -> activite.a(evaluation))
+      .toList();
+  }
+
+  public List<ActiviteEnCours> activitesEnCours(Instant evaluation) {
+    return activites()
+      .stream()
+      .filter(activite -> activite.estEnCoursA(evaluation))
       .map(ActiviteEnCours::of)
       .toList();
   }
 
   /**
-   * Vrai si l'evenement arrete une activite qui n'est pas en cours, sans etre date avant son dernier fait : le double
-   * appui sur « arreter », qui ne change rien. Date avant, ce serait un geste rejoue dans le desordre.
+   * Vrai si l'evenement arrete une activite deja arretee par une fin reelle, sans etre date avant le dernier fait de
+   * son poste, et sans qu'aucune activite n'y soit en cours a son heure : le double appui sur « arreter », qui ne
+   * change rien. Date avant, ce serait un geste rejoue dans le desordre. Une fin qui vise une activite echue, elle, est
+   * conservee : elle n'arrete rien, mais c'est un fait.
    */
   public boolean arreteUneActiviteAbsente(EvenementDAtelier evenement) {
+    Instant heure = evenement.dateDeSurvenue();
+    List<Activite> activitesDuPoste = activites()
+      .stream()
+      .filter(activite -> activite.cle().equals(evenement.cle()))
+      .toList();
+
     return (
-      evenement.type() == TypeDEvenementDAtelier.FIN
-      && activitesEnCours()
+      evenement.intention() == IntentionDePointage.FIN
+      && activitesDuPoste
         .stream()
-        .noneMatch(activite -> activite.activite().equals(evenement.cle()))
+        .anyMatch(activite -> evenement.activiteVisee().filter(activite.id()::equals).isPresent() && activite.fin().isPresent())
+      && activitesDuPoste.stream().noneMatch(activite -> activite.estEnCoursA(heure))
       && journal
         .actifs()
         .stream()
         .filter(fait -> fait.cle().equals(evenement.cle()))
-        .noneMatch(fait -> evenement.dateDeSurvenue().isBefore(fait.dateDeSurvenue()))
+        .noneMatch(fait -> heure.isBefore(fait.dateDeSurvenue()))
     );
   }
 
-  public EtatDAtelier etat() {
+  public EtatDAtelier etat(Instant evaluation) {
+    return etat(!activitesEnCours(evaluation).isEmpty());
+  }
+
+  /**
+   * L'etat que le journal donne sans juger aucune echeance : une activite sans fin reelle y reste en cours. Il ne sert
+   * plus qu'a la projection {@code etat}, qui filtre le tableau d'atelier, tant qu'elle ne se juge pas a l'instant de
+   * la lecture.
+   */
+  public EtatDAtelier etatSansEcheance() {
+    return etat(
+      activites()
+        .stream()
+        .anyMatch(activite -> activite.fin().isEmpty())
+    );
+  }
+
+  private EtatDAtelier etat(boolean activiteEnCours) {
     if (estCloture()) {
       return EtatDAtelier.CLOTURE;
     }
 
-    if (!activitesEnCours().isEmpty()) {
+    if (activiteEnCours) {
       return EtatDAtelier.EN_COURS;
     }
 

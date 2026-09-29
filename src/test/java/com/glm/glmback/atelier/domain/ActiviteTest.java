@@ -7,6 +7,7 @@ import com.glm.glmback.UnitTest;
 import com.glm.glmback.shared.error.domain.MissingMandatoryValueException;
 import com.glm.glmback.shared.error.domain.NotAfterTimeException;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
@@ -67,16 +68,68 @@ class ActiviteTest {
   }
 
   @Test
-  void shouldSeLireEnIntervalleOuvertParSonPointage() {
+  void shouldEcheoirTreizeHeuresApresSonDebut() {
+    Activite activite = Activite.ouvertePar(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H));
+
+    assertThat(activite.echeance()).isEqualTo(Echeance.apres(LE_10_MAI_2026_A_8H));
+  }
+
+  /**
+   * Activite a 08:00, lecture a 20:59 : elle est encore en cours, sans fin ni anomalie.
+   */
+  @Test
+  void shouldEtreEnCoursAvantSonEcheance() {
     EvenementDAtelier ouvrant = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
 
-    IntervalleDActivite intervalle = Activite.ouvertePar(ouvrant).termineeA(LE_10_MAI_2026_A_12H).intervalle();
+    IntervalleDActivite lue = Activite.ouvertePar(ouvrant).a(Instant.parse("2026-05-10T20:59:00Z"));
 
-    assertThat(intervalle.evenement()).isEqualTo(ouvrant.id());
-    assertThat(intervalle.cle()).isEqualTo(cleDeFraiseuse1DeDupont());
-    assertThat(intervalle.nature()).contains(NATURE_FRAISAGE);
-    assertThat(intervalle.categorie()).isEqualTo(CategorieDActivite.TRAVAIL);
-    assertThat(intervalle.debut()).isEqualTo(LE_10_MAI_2026_A_8H);
-    assertThat(intervalle.fin()).contains(LE_10_MAI_2026_A_12H);
+    assertThat(lue.estOuvert()).isTrue();
+    assertThat(lue.finAutomatique()).isFalse();
+    assertThat(lue.evenement()).isEqualTo(ouvrant.id());
+    assertThat(lue.cle()).isEqualTo(cleDeFraiseuse1DeDupont());
+    assertThat(lue.nature()).contains(NATURE_FRAISAGE);
+    assertThat(lue.categorie()).isEqualTo(CategorieDActivite.TRAVAIL);
+    assertThat(lue.debut()).isEqualTo(LE_10_MAI_2026_A_8H);
+  }
+
+  /**
+   * Activite a 08:00, aucune fin a 21:00 : elle est terminee automatiquement a son echeance, avec une anomalie.
+   */
+  @Test
+  void shouldSeTerminerAutomatiquementASonEcheance() {
+    Activite activite = Activite.ouvertePar(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H));
+
+    IntervalleDActivite lue = activite.a(Instant.parse("2026-05-10T21:00:00Z"));
+
+    assertThat(lue.fin()).contains(Instant.parse("2026-05-10T21:00:00Z"));
+    assertThat(lue.finAutomatique()).isTrue();
+  }
+
+  /**
+   * Lue le lendemain, elle garde la meme borne : l'echeance, pas l'instant de la lecture.
+   */
+  @Test
+  void shouldGarderSaFinAutomatiqueALaLectureDuLendemain() {
+    Activite activite = Activite.ouvertePar(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H));
+
+    IntervalleDActivite lue = activite.a(LE_11_MAI_2026_A_9H15);
+
+    assertThat(lue.fin()).contains(Instant.parse("2026-05-10T21:00:00Z"));
+    assertThat(lue.finAutomatique()).isTrue();
+  }
+
+  /**
+   * Une fin reelle ne depend pas de l'instant de lecture, et ne laisse aucune anomalie, meme au-dela de l'echeance.
+   */
+  @Test
+  void shouldSeLireASaFinReelleQuelQueSoitLInstant() {
+    Activite terminee = Activite.ouvertePar(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)).termineeA(LE_10_MAI_2026_A_12H);
+
+    assertThat(List.of(LE_10_MAI_2026_A_9H, LE_11_MAI_2026_A_9H15))
+      .map(terminee::a)
+      .allSatisfy(lue -> {
+        assertThat(lue.fin()).contains(LE_10_MAI_2026_A_12H);
+        assertThat(lue.finAutomatique()).isFalse();
+      });
   }
 }

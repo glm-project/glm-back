@@ -78,6 +78,22 @@ Borner l'intervalle à sa journée est aussi ce qui empêche un travail jamais a
 
 **Une journée abandonnée se ferme à sa fin présumée**, calculée à la lecture et jamais stockée : le dernier fait connu, qu'il soit son dernier événement de présence ou le dernier pointage d'OF de l'opérateur (tous éléments confondus) survenu entre l'arrivée et l'arrivée plus le seuil. La fenêtre ainsi fermée est **présumée**, et les intervalles qui s'y réduisent portent `presume` : le temps effectif distingue ce qui a été pointé de ce qui reste à confirmer. Dans l'exemple de référence, l'OF 42 de lundi vaut 7 h, toutes présumées — sans départ, la journée n'a qu'une fenêtre, présumée en entier —, et la nuit n'est plus comptée. Un travail commencé dans une journée abandonnée après sa fin présumée ne vaut rien : la fin présumée n'invente jamais d'heures. Une journée encore sous le seuil reste ouverte, c'est du travail en cours ; une régularisation du départ remplace le présumé par le pointé. **Une journée fermée plus de 24 h après son arrivée se lit comme abandonnée pour le temps effectif** ([D13](strategie/bornes-de-fin-de-journee.md), issue #59) : elle n'a pas pu être vécue d'une traite, et son départ ne dit rien de l'heure à laquelle l'opérateur est parti. Elle se ferme à sa fin présumée, le dernier fait connu **entre l'arrivée et l'arrivée plus le seuil** — ses faits au-delà, départ compris, ne comptent pas — et ce qui dépasse disparaît. Rien n'est réécrit, et elle reste signalée en amplitude excessive. Entre le seuil et 24 h, une journée fermée compte entière. 24 h est une borne physique, jamais un paramètre de l'entreprise. Pour la saisie, elle n'est pas abandonnée : un geste reçu ensuite ne la concerne pas.
 
+### La fin automatique à l'échéance
+
+Une activité encore en cours ne compte rien. Oubliée, elle ne court pas pour autant indéfiniment : **son échéance est son début plus 13 heures écoulées** (`Echeance`), jamais 13 heures d'horloge murale — le passage à l'heure d'été ou d'hiver ne l'allonge ni ne la raccourcit. Une activité que rien n'a terminée avant son échéance est **terminée automatiquement** à cet instant, et porte une **anomalie**. Travail à 8 h sans aucune fin : lu à 20 h 59, il est en cours ; lu à 21 h, ou le lendemain, il est terminé à 21 h. Le délai est la règle de l'atelier, pas un paramètre de l'entreprise.
+
+**Rien n'est écrit.** Ni événement de clôture automatique ni traitement planifié : l'interprétation du journal donne des activités qui ne dépendent que des faits, avec leur fin réelle quand un geste ou la clôture les a terminées. Seule leur lecture, à un **instant d'évaluation** explicite, décide si une activité sans fin réelle est encore en cours ou déjà terminée automatiquement. Cet instant vient de l'horloge du service applicatif. La première lecture après une indisponibilité retrouve donc la même borne, sans rattrapage.
+
+**La même échéance gouverne l'interprétation**, sans instant de lecture, sur les seules heures métier :
+
+- un geste pointé **au plus tard à l'échéance** de l'activité qu'il vise la termine à son heure, même reçu après elle : une fin pointée à 17 h et reçue le lendemain donne 9 h, et retire l'anomalie. Un geste pile à l'échéance l'emporte sur la fin automatique ;
+- une fin pointée **après l'échéance** est conservée sans effet : l'activité garde sa borne de 21 h et son anomalie, sans que la séquence soit en conflit ;
+- une transition pointée après l'échéance de sa cible laisse à celle-ci sa borne automatique et ouvre la nouvelle activité à son heure : travail à 8 h, non conformité visant ce travail à 23 h, rien n'est compté entre 21 h et 23 h ;
+- une relance après l'échéance laisse le même trou, et une clôture postérieure à l'échéance ne prolonge rien ;
+- **seul le gestionnaire** établit une fin réelle au-delà de l'échéance, par une fin ou une transition régularisée : la fin automatique est une borne par défaut, pas un plafond.
+
+Chaque transition ouvre une activité distincte, avec sa propre échéance : travail à 8 h puis non conformité à 12 h donnent 4 h de travail terminées à 12 h et une non conformité en cours jusqu'à 1 h le lendemain. Corriger un début recalcule tout : à 22 h, un début corrigé de 8 h à 12 h repousse l'échéance à 1 h, et l'activité redevient en cours, sans anomalie.
+
 ### L'activité, un opérateur sur un poste de travail
 
 `CleDActivite` est le couple (`OperateurId`, `Optional<PosteDeTravailId>`). Le poste de travail est ce que l'opérateur engage en pointant : une machine chez le client de référence, un établi, un four, une salle ailleurs.

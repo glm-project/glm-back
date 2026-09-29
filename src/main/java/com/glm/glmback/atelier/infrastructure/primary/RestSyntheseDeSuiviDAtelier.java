@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
 import com.glm.glmback.atelier.domain.Cloture;
 import com.glm.glmback.atelier.domain.EtatDAtelier;
+import com.glm.glmback.atelier.domain.LectureDuSuivi;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.TypeDElementEngage;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -68,27 +69,28 @@ final class RestSyntheseDeSuiviDAtelier {
   @Schema(description = "Les activites ouvertes a cet instant.", requiredMode = Schema.RequiredMode.REQUIRED)
   private final List<RestActiviteEnCours> activitesEnCours;
 
-  private RestSyntheseDeSuiviDAtelier(SuiviDAtelier suivi, AnnuaireDAtelier annuaire) {
+  private RestSyntheseDeSuiviDAtelier(LectureDuSuivi lecture, AnnuaireDAtelier annuaire) {
+    SuiviDAtelier suivi = lecture.suivi();
     id = suivi.id().uuid();
     element = suivi.element().id().uuid();
     nom = suivi.element().nom().value();
     type = suivi.element().type();
     engagePar = suivi.engagement().auteur().value();
     engageLe = suivi.engagement().date();
-    etat = suivi.etat();
+    etat = lecture.etat();
     cloturePar = suivi
       .cloture()
       .map(cloture -> cloture.auteur().value())
       .orElse(null);
     clotureLe = suivi.cloture().map(Cloture::dateDeSurvenue).orElse(null);
-    activitesEnCours = suivi
+    activitesEnCours = lecture
       .activitesEnCours()
       .stream()
       .map(activite -> RestActiviteEnCours.from(activite, annuaire))
       .toList();
   }
 
-  static RestSyntheseDeSuiviDAtelier from(SuiviDAtelier suivi, AnnuaireDAtelier annuaire) {
-    return new RestSyntheseDeSuiviDAtelier(suivi, annuaire);
+  static RestSyntheseDeSuiviDAtelier from(LectureDuSuivi lecture, AnnuaireDAtelier annuaire) {
+    return new RestSyntheseDeSuiviDAtelier(lecture, annuaire);
   }
 }

@@ -34,7 +34,7 @@ class SuivisDAtelierServiceTest {
 
     assertThat(suivi.element()).isEqualTo(elementEngageOf2026000042());
     assertThat(suivi.engagement()).isEqualTo(engagementParLeroy());
-    assertThat(suivi.etat()).isEqualTo(EtatDAtelier.EN_ATTENTE);
+    assertThat(suivi.etat(LE_10_MAI_2026_A_7H)).isEqualTo(EtatDAtelier.EN_ATTENTE);
   }
 
   @Test
@@ -135,7 +135,7 @@ class SuivisDAtelierServiceTest {
       .pointe(gesteVisant(debut, TypeDEvenementDAtelier.NON_CONFORMITE, IntentionDePointage.TRANSITION))
       .suivi();
 
-    assertThat(pointe.activitesEnCours())
+    assertThat(pointe.activitesEnCours(LE_10_MAI_2026_A_9H))
       .singleElement()
       .satisfies(activite -> {
         assertThat(activite.categorie()).isEqualTo(CategorieDActivite.NON_CONFORMITE);
@@ -470,7 +470,7 @@ class SuivisDAtelierServiceTest {
       )
       .suivi();
 
-    assertThat(pointe.activitesEnCours())
+    assertThat(pointe.activitesEnCours(LE_10_MAI_2026_A_7H))
       .extracting(ActiviteEnCours::poste)
       .containsExactlyInAnyOrder(Optional.of(POSTE_ID_FRAISEUSE_1), Optional.of(POSTE_ID_FRAISEUSE_2));
   }

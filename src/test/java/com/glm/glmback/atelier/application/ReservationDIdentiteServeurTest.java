@@ -17,6 +17,7 @@ import com.glm.glmback.atelier.domain.Habilitations;
 import com.glm.glmback.atelier.domain.IntentionDePointage;
 import com.glm.glmback.atelier.domain.JourneeDeTravail;
 import com.glm.glmback.atelier.domain.JourneeDeTravailRepository;
+import com.glm.glmback.atelier.domain.LectureDuSuivi;
 import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.OperateursConnus;
 import com.glm.glmback.atelier.domain.PointageAEnregistrer;
@@ -66,7 +67,7 @@ class ReservationDIdentiteServeurTest {
     SuivisDAtelierApplicationService service = prepareAtelier(suivi, identites);
 
     // WHEN
-    SuiviDAtelier resultat = regulariseTravail(service, suivi);
+    LectureDuSuivi resultat = regulariseTravail(service, suivi);
 
     // THEN
     assertTravailRegularise(resultat, refusee.get());
@@ -139,7 +140,7 @@ class ReservationDIdentiteServeurTest {
     assertThat(depart.dateDEnregistrement()).isEqualTo(LE_11_MAI_2026_A_9H15);
   }
 
-  private static SuiviDAtelier regulariseTravail(SuivisDAtelierApplicationService service, SuiviDAtelier suivi) {
+  private static LectureDuSuivi regulariseTravail(SuivisDAtelierApplicationService service, SuiviDAtelier suivi) {
     return service.regularise(
       RegularisationAEnregistrer.builder()
         .suivi(suivi.id())
@@ -153,9 +154,11 @@ class ReservationDIdentiteServeurTest {
     );
   }
 
-  private static void assertTravailRegularise(SuiviDAtelier resultat, UUID identiteRefusee) {
-    assertThat(resultat.etat()).isEqualTo(EtatDAtelier.EN_COURS);
-    assertThat(resultat.journal().evenements())
+  private static void assertTravailRegularise(LectureDuSuivi resultat, UUID identiteRefusee) {
+    // Lu le lendemain a 9 h 15, le travail regularise a 8 h a atteint son echeance de 21 h : il est termine.
+    assertThat(resultat.evaluation()).isEqualTo(LE_11_MAI_2026_A_9H15);
+    assertThat(resultat.etat()).isEqualTo(EtatDAtelier.INTERROMPU);
+    assertThat(resultat.suivi().journal().evenements())
       .singleElement()
       .satisfies(debut -> {
         assertThat(identiteRefusee).isNotNull();
@@ -236,7 +239,7 @@ class ReservationDIdentiteServeurTest {
       Mockito.mock(PostesConnus.class),
       Mockito.mock(Habilitations.class),
       () -> AMPLITUDE_MAXIMALE_13H,
-      Mockito.mock(Clock.class),
+      () -> LE_10_MAI_2026_A_17H,
       identites,
       new TransactionTemplate(Mockito.mock(PlatformTransactionManager.class))
     );
@@ -267,8 +270,8 @@ class ReservationDIdentiteServeurTest {
 
   private static List<SuiviDAtelier> rejoueAtelier(SuivisDAtelierApplicationService atelier, SuiviDAtelier suivi) {
     return List.of(
-      atelier.pointeDuPupitre(pointage(suivi.id().uuid(), OPERATEUR_ID_DUPONT, AUTEUR_DUPONT)).agregat(),
-      atelier.pointe(pointage(suivi.id().uuid(), OPERATEUR_ID_DUPONT, AUTEUR_DUPONT))
+      atelier.pointeDuPupitre(pointage(suivi.id().uuid(), OPERATEUR_ID_DUPONT, AUTEUR_DUPONT)).agregat().suivi(),
+      atelier.pointe(pointage(suivi.id().uuid(), OPERATEUR_ID_DUPONT, AUTEUR_DUPONT)).suivi()
     );
   }
 }
