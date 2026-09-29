@@ -59,7 +59,8 @@ est encore lue séparément et n'intervient pas dans ces activités.
 - **Chaque portion conserve l'activité entière** : son identité stable, son état, son début et sa fin éventuelle.
   La fin n'existe que pour une activité terminée ou terminée automatiquement. La portion est coupée aux minuits et
   aux limites de la semaine, sans déplacer ces bornes entières.
-- **Une activité ouverte ne rend que son jour de début**, comme une plage de présence ouverte.
+- **Une activité en cours rend une indication sans fin sur chaque jour atteint à l'instant de lecture**,
+  dans la semaine. Son début entier permet de lire « en cours depuis dimanche » sur lundi, sans durée à compter.
 - **Une activité porte l'élément, jamais le suivi** : un élément réengagé après clôture reste le même élément.
 - **La semaine est toujours explicite.** Aucune « semaine courante » implicite. L'horloge sert à évaluer
   l'expiration des activités et l'abandon d'une journée : deux appels espacés peuvent donc différer.

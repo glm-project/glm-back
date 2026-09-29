@@ -46,7 +46,8 @@ class FeuilleDeTempsResource {
     porte l'identite stable, l'etat et les bornes entieres de l'activite, en plus de ses bornes coupees a minuit et a
     la semaine. Une fin reelle est conservee ; sans elle, l'activite est terminee automatiquement a son echeance des
     qu'elle est atteinte. Cet etat signale l'anomalie. Une activite en cours ou a resoudre n'a pas de fin.
-    Une activite ouverte ne rend pour l'instant que son jour de debut.
+    Une activite en cours rend une indication sans fin sur chaque jour atteint a l'instant de lecture, dans la
+    semaine. Son debut entier permet de lire « en cours depuis dimanche » sur lundi, sans fin fabriquee a minuit.
 
     La semaine est toujours explicite : aucune semaine courante implicite. L'annee est celle des semaines ISO, qui
     differe de l'annee civile a ses bornes — la semaine 1 de 2026 commence le 29 decembre 2025.

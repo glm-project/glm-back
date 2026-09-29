@@ -479,3 +479,26 @@ Feature: Feuille de temps hebdomadaire d'un operateur
     Then les activites du "2026-05-11" sont
       | debut                | fin                  | idActivite | etat                     |
       | 2026-05-11T06:00:00Z | 2026-05-11T19:00:00Z | A          | TERMINEE_AUTOMATIQUEMENT |
+
+  Scenario: Une activite du dimanche est indiquee sur lundi sans fin a minuit puis terminee a trois heures
+    Given l'element "carter" est engage en atelier a "2026-05-10T17:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type  | intention | operateur | poste  | survenue             |
+      | A     | DEBUT | OUVERTURE | martin    | DMU 50 | 2026-05-10T20:00:00Z |
+    And il est "2026-05-10T23:00:00Z"
+    When je consulte la feuille de temps de "martin" pour la semaine 19 de 2026
+    Then les activites du "2026-05-10" sont
+      | debut                | fin | idActivite | etat     | debutActivite        | finActivite |
+      | 2026-05-10T20:00:00Z |     | A          | EN_COURS | 2026-05-10T20:00:00Z |             |
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
+    Then les activites du "2026-05-11" sont
+      | debut                | fin | idActivite | etat     | debutActivite        | finActivite |
+      | 2026-05-10T22:00:00Z |     | A          | EN_COURS | 2026-05-10T20:00:00Z |             |
+    And le "2026-05-12" ne porte aucune activite
+    Given la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type | intention | cible | operateur | poste  | survenue             |
+      | F     | FIN  | FIN       | A     | martin    | DMU 50 | 2026-05-11T01:00:00Z |
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
+    Then les activites du "2026-05-11" sont
+      | debut                | fin                  | idActivite | etat     | debutActivite        | finActivite          |
+      | 2026-05-10T22:00:00Z | 2026-05-11T01:00:00Z | A          | TERMINEE | 2026-05-10T20:00:00Z | 2026-05-11T01:00:00Z |

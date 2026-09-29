@@ -11,6 +11,8 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /**
  * La semaine 20 de 2026 va du lundi 11 au dimanche 17 mai, en heure d'ete : minuit a Paris, c'est 22h UTC la veille.
@@ -165,7 +167,7 @@ class DecoupageCalendaireTest {
     ActiviteLue lecture = FeuilleDeTempsFixture.travailDuCarterLuSur(entiere);
     IntervalleDActivite deNuit = new IntervalleDActivite(activite, entiere, lecture);
 
-    assertThat(decoupage().intervalles(deNuit)).containsExactly(
+    assertThat(decoupage().intervalles(deNuit, Instant.parse("2026-05-12T01:00:00Z"))).containsExactly(
       new IntervalleDUnJour(
         LocalDate.of(2026, 5, 11),
         new IntervalleDActivite(
@@ -194,6 +196,79 @@ class DecoupageCalendaireTest {
       FeuilleDeTempsFixture.travailDuCarterLuSur(plage)
     );
 
-    assertThat(decoupage().intervalles(enCours)).containsExactly(new IntervalleDUnJour(LocalDate.of(2026, 5, 11), enCours));
+    assertThat(decoupage().intervalles(enCours, Instant.parse("2026-05-11T20:00:00Z"))).containsExactly(
+      new IntervalleDUnJour(LocalDate.of(2026, 5, 11), enCours)
+    );
+  }
+
+  @Test
+  void shouldRendreSurLundiUneActiviteCommenceeDimancheEncoreEnCours() {
+    Plage entiere = new Plage(Instant.parse("2026-05-10T20:00:00Z"), Optional.empty());
+    ActiviteLue lecture = FeuilleDeTempsFixture.travailDuCarterLuSur(entiere);
+    IntervalleDActivite enCours = new IntervalleDActivite(FeuilleDeTempsFixture.activiteDeTravailDuCarterSurLaDmu50(), entiere, lecture);
+
+    assertThat(decoupage().intervalles(enCours, Instant.parse("2026-05-10T23:00:00Z"))).containsExactly(
+      new IntervalleDUnJour(
+        LocalDate.of(2026, 5, 11),
+        new IntervalleDActivite(enCours.activite(), new Plage(Instant.parse("2026-05-10T22:00:00Z"), Optional.empty()), lecture)
+      )
+    );
+  }
+
+  @Test
+  void shouldIndiquerUneActiviteEnCoursSeulementSurLesJoursAtteints() {
+    Plage entiere = new Plage(Instant.parse("2026-05-12T20:00:00Z"), Optional.empty());
+    IntervalleDActivite enCours = new IntervalleDActivite(
+      FeuilleDeTempsFixture.activiteDeTravailDuCarterSurLaDmu50(),
+      entiere,
+      FeuilleDeTempsFixture.travailDuCarterLuSur(entiere)
+    );
+
+    assertThat(decoupage().intervalles(enCours, Instant.parse("2026-05-12T23:00:00Z")))
+      .extracting(IntervalleDUnJour::jour)
+      .containsExactly(LocalDate.of(2026, 5, 12), LocalDate.of(2026, 5, 13));
+    assertThat(decoupage().intervalles(enCours, Instant.parse("2026-05-12T23:00:00Z"))).allSatisfy(portion -> {
+      assertThat(portion.intervalle().plage().fin()).isEmpty();
+      assertThat(portion.intervalle().lecture()).isEqualTo(enCours.lecture());
+    });
+  }
+
+  @ParameterizedTest
+  @CsvSource(
+    {
+      "13, 2026-03-28T19:00:00Z, 2026-03-28T23:00:00Z, 2026-03-29T08:00:00Z, 2026-03-28, 2026-03-29",
+      "43, 2026-10-24T18:00:00Z, 2026-10-24T22:00:00Z, 2026-10-25T07:00:00Z, 2026-10-24, 2026-10-25",
+    }
+  )
+  void shouldDecouperUneFinAutomatiqueAuxMinuitsLocauxAuChangementDHeure(
+    int semaine,
+    String debut,
+    String minuit,
+    String fin,
+    String premierJour,
+    String secondJour
+  ) {
+    ActiviteInterpretee travail = ActiviteInterpretee.builder()
+      .id(FeuilleDeTempsFixture.ACTIVITE_ID_DU_CARTER)
+      .activite(FeuilleDeTempsFixture.activiteDeTravailDuCarterSurLaDmu50())
+      .plage(new Plage(Instant.parse(debut), Optional.empty()))
+      .echeance(Instant.parse(fin))
+      .aResoudre(false);
+    IntervalleDActivite intervalle = travail.a(Instant.parse(fin));
+    DecoupageCalendaire calendrier = new DecoupageCalendaire(new SemaineCalendaire(2026, semaine), PARIS);
+
+    assertThat(calendrier.intervalles(intervalle, Instant.parse(fin)))
+      .extracting(IntervalleDUnJour::jour)
+      .containsExactly(LocalDate.parse(premierJour), LocalDate.parse(secondJour));
+    assertThat(calendrier.intervalles(intervalle, Instant.parse(fin)))
+      .extracting(portion -> portion.intervalle().plage())
+      .containsExactly(
+        new Plage(Instant.parse(debut), Optional.of(Instant.parse(minuit))),
+        new Plage(Instant.parse(minuit), Optional.of(Instant.parse(fin)))
+      );
+    assertThat(calendrier.intervalles(intervalle, Instant.parse(fin))).allSatisfy(portion -> {
+      assertThat(portion.intervalle().lecture()).isEqualTo(intervalle.lecture());
+      assertThat(portion.intervalle().lecture().etat()).isEqualTo(EtatDActivite.TERMINEE_AUTOMATIQUEMENT);
+    });
   }
 }

@@ -295,7 +295,9 @@ l'échéance. À défaut, elle est `EN_COURS` avant l'échéance et `TERMINEE_AU
 avec son anomalie visible par l'état. Une activité en conflit est `A_RESOUDRE`, sans fin : l'échéance ne la tranche pas.
 La feuille ne calcule aucune durée. Les portions gardent l'identité stable, l'état et les bornes de l'activité entière,
 avec une fin seulement pour les deux états terminés. Les bornes des portions sont coupées à minuit et à la semaine ;
-celles de l'activité restent intactes. Une activité encore ouverte ne rend pour l'instant que son jour de début.
+celles de l'activité restent intactes. Une activité en cours rend une indication sans fin sur chacun des jours atteints à l'instant de lecture, dans la
+semaine : commencée dimanche à 22 h et lue lundi à 1 h, elle apparaît lundi avec son début entier, sans fin à minuit.
+Une fin lundi à 3 h remplace ensuite cette indication par les portions terminées, 2 h dimanche et 3 h lundi.
 
 Elle nomme l'élément, jamais le suivi : un élément réengagé après clôture reste le même élément. Ni libellé de poste
 ni fiche d'élément ici — la synthèse des heures les porte. Aucun départ ni seuil de présence ne modifie le travail.

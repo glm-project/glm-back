@@ -106,7 +106,7 @@ public final class FeuillesDeTempsService {
       .recouvrant(operateur, decoupage.debut(), decoupage.finExclusive())
       .stream()
       .map(activite -> activite.a(evaluation))
-      .flatMap(intervalle -> decoupage.intervalles(intervalle).stream())
+      .flatMap(intervalle -> decoupage.intervalles(intervalle, evaluation).stream())
       .sorted(PAR_DEBUT)
       .toList();
   }
