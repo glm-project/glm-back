@@ -671,6 +671,7 @@ class SynthesesDesHeuresServiceTest {
       .seuil(() -> AMPLITUDE_MAXIMALE_13H)
       .pointages(pointages)
       .travail(travail)
+      .journal(travail::journal)
       .elements(REFERENTIEL_DES_ELEMENTS)
       .postes(REFERENTIEL_DES_POSTES)
       .clock(() -> maintenant);

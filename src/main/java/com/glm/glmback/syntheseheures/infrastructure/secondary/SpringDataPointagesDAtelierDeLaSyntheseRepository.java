@@ -40,6 +40,14 @@ interface SpringDataPointagesDAtelierDeLaSyntheseRepository extends JpaRepositor
     @Param("finExclusive") Instant finExclusive
   );
 
+  List<
+    PointageDAtelierDeLaSyntheseEntity
+  > findByOperateurIdAndAnnulationDateIsNullAndDateDeSurvenueGreaterThanEqualAndDateDeSurvenueLessThanOrderByDateDeSurvenueAscIdAsc(
+    UUID operateurId,
+    Instant debut,
+    Instant finExclusive
+  );
+
   /**
    * Le tri porte aussi sur l'identifiant : a horodatage egal, l'ordre du journal se departagerait au hasard, et le
    * repli du domaine, qui trie de facon stable sur la seule date de survenue, conserve celui-ci.

@@ -3,6 +3,7 @@ package com.glm.glmback.syntheseheures.application;
 import com.glm.glmback.shared.time.domain.Clock;
 import com.glm.glmback.syntheseheures.domain.ElementsDeFabrication;
 import com.glm.glmback.syntheseheures.domain.FuseauHoraireDeLEntreprise;
+import com.glm.glmback.syntheseheures.domain.JournalDeLOperateur;
 import com.glm.glmback.syntheseheures.domain.OperateurId;
 import com.glm.glmback.syntheseheures.domain.OperateursConnus;
 import com.glm.glmback.syntheseheures.domain.PointagesDAtelier;
@@ -38,6 +39,7 @@ public class SynthesesDesHeuresApplicationService {
     SeuilDAmplitude seuil,
     PointagesDAtelier pointages,
     TravailDeLOperateur travail,
+    JournalDeLOperateur journal,
     ElementsDeFabrication elements,
     PostesDeTravail postes,
     Clock clock
@@ -49,6 +51,7 @@ public class SynthesesDesHeuresApplicationService {
       .seuil(seuil)
       .pointages(pointages)
       .travail(travail)
+      .journal(journal)
       .elements(elements)
       .postes(postes)
       .clock(clock);

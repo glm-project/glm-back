@@ -57,6 +57,7 @@ public final class SynthesesDesHeuresService {
   private final SeuilDAmplitude seuil;
   private final PointagesDAtelier pointages;
   private final TravailDeLOperateur travail;
+  private final JournalDeLOperateur journal;
   private final ElementsDeFabrication elements;
   private final PostesDeTravail postes;
   private final Clock clock;
@@ -68,6 +69,7 @@ public final class SynthesesDesHeuresService {
     SeuilDAmplitude seuil,
     PointagesDAtelier pointages,
     TravailDeLOperateur travail,
+    JournalDeLOperateur journal,
     ElementsDeFabrication elements,
     PostesDeTravail postes,
     Clock clock
@@ -78,6 +80,7 @@ public final class SynthesesDesHeuresService {
     this.seuil = seuil;
     this.pointages = pointages;
     this.travail = travail;
+    this.journal = journal;
     this.elements = elements;
     this.postes = postes;
     this.clock = clock;
@@ -90,10 +93,22 @@ public final class SynthesesDesHeuresService {
           seuil ->
             pointages ->
               travail ->
-                elements ->
-                  postes ->
-                    clock ->
-                      new SynthesesDesHeuresService(presences, operateurs, fuseau, seuil, pointages, travail, elements, postes, clock);
+                journal ->
+                  elements ->
+                    postes ->
+                      clock ->
+                        new SynthesesDesHeuresService(
+                          presences,
+                          operateurs,
+                          fuseau,
+                          seuil,
+                          pointages,
+                          travail,
+                          journal,
+                          elements,
+                          postes,
+                          clock
+                        );
   }
 
   public SyntheseDesHeures synthese(OperateurId operateur, SemaineCalendaire semaine) {
@@ -114,9 +129,10 @@ public final class SynthesesDesHeuresService {
       .flatMap(intervalle -> reduction.reduit(intervalle).stream())
       .flatMap(intervalle -> decoupage.intervalles(intervalle).stream())
       .toList();
-    List<PointageDElement> pointagesDElement = suivis
+    List<JournalDElement> journaux = journal.dans(operateur, decoupage.debut(), decoupage.finExclusive());
+    List<PointageDElement> pointagesDElement = journaux
       .stream()
-      .flatMap(suivi -> suivi.pointages().stream())
+      .flatMap(entree -> entree.pointages().stream())
       .filter(pointage -> decoupage.jours().contains(jourDe(pointage)))
       .sorted(PAR_ELEMENT)
       .toList();
@@ -125,7 +141,13 @@ public final class SynthesesDesHeuresService {
       .operateur(connu)
       .semaine(semaine)
       .jours(jours(decoupage, journees, intervalles, pointagesDElement))
-      .elements(elementsDeLaSemaine(suivis, intervalles, pointagesDElement));
+      .elements(
+        elementsDeLaSemaine(
+          Stream.concat(suivis.stream().map(SuiviDuTravail::element), journaux.stream().map(JournalDElement::element)).toList(),
+          intervalles,
+          pointagesDElement
+        )
+      );
   }
 
   /**
@@ -219,13 +241,12 @@ public final class SynthesesDesHeuresService {
    * Les elements touches dans la semaine, par premiere apparition puis par nom, avec leur fiche relue au referentiel.
    */
   private List<ElementDeLaSynthese> elementsDeLaSemaine(
-    List<SuiviDuTravail> suivis,
+    List<ElementEngage> elementsEngages,
     List<IntervalleDUnJour> intervalles,
     List<PointageDElement> pointagesDElement
   ) {
-    Map<ElementId, ElementEngage> engages = suivis
+    Map<ElementId, ElementEngage> engages = elementsEngages
       .stream()
-      .map(SuiviDuTravail::element)
       .collect(Collectors.toMap(ElementEngage::id, Function.identity(), (premier, suivant) -> premier));
     Map<ElementId, Instant> apparitions = premieresApparitions(intervalles, pointagesDElement);
     Map<ElementId, FicheDElement> fiches = elements
@@ -412,7 +433,11 @@ public final class SynthesesDesHeuresService {
   }
 
   public interface SynthesesDesHeuresServiceTravailBuilder {
-    SynthesesDesHeuresServiceElementsBuilder travail(TravailDeLOperateur travail);
+    SynthesesDesHeuresServiceJournalBuilder travail(TravailDeLOperateur travail);
+  }
+
+  public interface SynthesesDesHeuresServiceJournalBuilder {
+    SynthesesDesHeuresServiceElementsBuilder journal(JournalDeLOperateur journal);
   }
 
   public interface SynthesesDesHeuresServiceElementsBuilder {

@@ -37,6 +37,13 @@ final class TravailEnMemoire implements TravailDeLOperateur {
     return suivis;
   }
 
+  List<JournalDElement> journal(OperateurId operateur, Instant debut, Instant finExclusive) {
+    return suivis
+      .stream()
+      .map(suivi -> new JournalDElement(suivi.element(), suivi.pointages()))
+      .toList();
+  }
+
   Instant depuisDemande() {
     return depuisDemande;
   }
