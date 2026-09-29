@@ -402,103 +402,62 @@ Il dérive des taux horaires des opérateurs, que le pupitre n'a aucune raison d
 
 ## syntheseheures
 
-Troisième **projection transverse** du projet, après `feuilledetemps` et `coutderevient` : un contexte purement
-lecteur, qui ne possède aucune table et recalcule tout à chaque appel. Il répond à une seule question — _combien
-d'heures cette personne a-t-elle été présente cette semaine, et sur quoi a-t-elle travaillé, jour par jour_ — et ne
-sert pas à la paie : ni feuille de paie, ni valorisation en euros, ni heures supplémentaires pour l'instant (règle non
-fournie par le client).
+Projection transverse purement lectrice : _combien de temps opérationnel cette personne a-t-elle accompli cette
+semaine, sur quels éléments, jour par jour_. Elle recalcule ses durées depuis les activités interprétées par
+`atelier` et ne calcule aucun montant.
 
 ### Pourquoi il n'est pas dans atelier
 
-Même raison que `feuilledetemps` : `atelier` s'interdit le calendrier, une `JourneeDeTravail` y est bornée par une
-arrivée et un départ, jamais par une date. C'est ici, et nulle part avant, que minuit décide à quel jour appartient
-une heure de travail.
+Atelier manipule des instants et ne connaît ni fuseau ni jour calendaire. La synthèse ramène ses activités au
+calendrier de l'entreprise, comme `feuilledetemps`, puis additionne les portions terminées. Les deux lectures
+possèdent leurs modèles et leurs adapters ; leurs scénarios Cucumber partagent les mêmes tableaux de faits.
 
 ### Ce que le relevé montre
 
-Sept jours toujours, du lundi au dimanche de la semaine ISO demandée, vides compris. Pour chaque jour : le **journal
-brut des pointages** horodatés (arrivée, départ), et la **durée** — la somme des fenêtres de présence closes. La pause
-n'étant pas un pointage de présence ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)), la
-durée la compte. Le total de la semaine est la somme des sept jours.
+Sept jours toujours, du lundi au dimanche de la semaine ISO explicite, vides compris. L'année est celle des
+semaines ISO, différente de l'année civile à ses bornes. Un poste de nuit se coupe aux minuits locaux,
+y compris entre deux semaines ; le changement d'heure conserve la durée réellement écoulée.
 
-La durée travaillée est celle qui est **pointée**. À côté, chaque jour et la semaine portent une **durée présumée**
-(`dureePresumee`, `dureePresumeeTotale`) : ce qu'une journée abandonnée compte jusqu'à sa fin présumée, et que
-l'assistante doit faire confirmer. Dans l'exemple de référence, lundi vaut 9 h présumées — sans départ, la journée n'a
-qu'une fenêtre, présumée en entier —, puis 10 h pointées une fois le départ régularisé. Un poste de nuit est coupé à minuit, dans
-le fuseau de l'entreprise, y compris quand minuit sépare deux semaines.
+Les activités sont sélectionnées par **recouvrement**, même commencées avant la semaine et sans pointage en son
+sein. Une régularisation peut établir une fin supérieure à 13 h, voire à une semaine : aucune borne basse fixe
+sur le début ne les retrouve toutes. L'instant de lecture est relevé une seule fois pour toutes les activités.
+La transaction en lecture seule ne garantit pas un instantané face aux écritures concurrentes.
 
-**Une journée abandonnée est fermée à sa fin présumée** (lot 5 de [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md)) : sans départ et au-delà du seuil d'amplitude, lu dans la table du paramétrage, sa dernière fenêtre ouverte se ferme au dernier fait connu — son dernier pointage de présence, ou le dernier pointage d'OF de l'opérateur s'il est plus tardif et tombe entre l'arrivée et l'arrivée plus le seuil. Ce qui en découle est marqué **présumé**, à confirmer par une régularisation du départ. Juger l'abandon suppose de savoir quand on lit : ce contexte reçoit donc une horloge, comme `coutderevient`, et deux appels espacés ne rendent plus forcément la même chose. La semaine, elle, reste toujours explicite.
+Une fin réelle conserve sa borne, même régularisée au-delà de l'échéance. Sans elle, l'activité ne produit aucune
+durée avant son échéance et compte dès celle-ci jusqu'à sa fin automatique. Les décisions de relance, transition,
+fin tardive, régularisation, correction, annulation et clôture sont celles d'atelier, projetées en base.
+Une activité à résoudre reste sans fin et n'est jamais réinterprétée par la synthèse ; les conflits et la
+complétude des totaux seront restitués dans la tranche suivante du relevé.
 
-**Une journée fermée plus de 24 h après son arrivée se lit comme abandonnée** ([D13](strategie/bornes-de-fin-de-journee.md), issue #59) : elle n'a pas pu être vécue d'une traite, et son départ ne dit rien de l'heure à laquelle l'opérateur est parti. Elle se ferme à sa fin présumée, le dernier fait connu **entre l'arrivée et l'arrivée plus le seuil** — ses faits au-delà, départ compris, ne comptent pas — et ce qui dépasse disparaît. Rien n'est réécrit, et elle reste signalée en amplitude excessive. Entre le seuil et 24 h, une journée fermée compte entière. 24 h est une borne physique, jamais un paramètre de l'entreprise.
+Les durées se **cumulent par élément** : deux éléments simultanés de 08 h à 09 h portent chacun une heure,
+le jour et la semaine deux heures. La NC est comprise une seule fois dans la durée totale et exposée aussi à part.
+Les sommes des jours et des éléments sont égales à la durée opérationnelle de la semaine. Une activité en cours
+conserve son élément sur chaque jour atteint, même sans pointage dans la semaine, sans durée comptabilisée.
 
-À instant égal, l'arrivée passe devant dans le repli : l'arrivée implicite d'un geste tardif partage l'heure de ce geste.
+Les éléments rendus portent une activité ou un pointage dans la semaine, par première apparition puis nom.
+Un réengagement reste le même élément. Le nom et le type viennent du suivi ; référence et description sont
+relues au référentiel, et peuvent être absentes. Les couples poste/nature suivent leur première apparition,
+activité et pointage confondus ; l'absence de poste ou de nature est nominale.
 
-### Le temps opérationnel
-
-À côté de la présence, le relevé rend le **temps opérationnel** : ce que l'opérateur a pointé sur ses éléments. Ses
-pointages sur chaque suivi sont rejoués poste par poste avec l'automate d'atelier, réduits aux fenêtres de présence
-de la journée où chaque intervalle a commencé — exactement comme la feuille de temps —, coupés à minuit, puis
-additionnés. Un intervalle clos compte en pointé, ou en présumé s'il est borné par la fin présumée d'une journée
-abandonnée ; un intervalle ouvert ne compte rien, comme une fenêtre de présence ouverte. Un début qui ne tombe dans
-aucune journée ne compte pas.
-
-**Le temps opérationnel n'est pas le temps effectif d'`atelier`**, bien qu'il en partage la base : même réduction aux
-fenêtres de la journée où le travail a commencé, même addition quand deux activités courent de front. Il en diffère
-sur deux points : un début hors de toute journée, rendu intact par le temps effectif, ne compte pas ici ; et il est
-coupé à minuit et borné à la semaine. Pour un même élément, la synthèse peut donc afficher moins que
-`GET /api/atelier/suivis/{id}/temps-effectif` : l'écart est une présence manquante, à régulariser dans `atelier`.
-La feuille de temps applique les mêmes règles pour en exposer les périodes : les deux changent ensemble.
-
-**Les durées se cumulent par élément** : une heure passée sur deux éléments compte sur chacun, et le temps
-opérationnel d'un jour peut donc dépasser sa présence. Chaque jour porte `dureeOperationnelle` et
-`dureeOperationnellePresumee`, la semaine leurs totaux, qui valent aussi la somme de ses éléments.
-
-La semaine rend ses **éléments** : tout élément qui porte un intervalle ou un pointage dans la semaine, par première
-apparition puis par nom. Chacun porte sa durée pointée (non-conformité comprise), la part de non-conformité, sa durée
-présumée, et un couple par poste et nature distincts — tout poste nommé au journal y trouve son libellé. Un
-réengagement après clôture reste le même élément. Le nom et
-le type viennent du suivi, qui les a copiés à l'engagement ; la référence et la description sont relues au
-référentiel, et absentes si l'élément a été supprimé ; le libellé du poste aussi.
-
-Le **journal brut** de chaque jour mêle la présence et tous les pointages d'élément de l'opérateur datés de ce jour,
-même hors de toute journée. À instant égal : l'arrivée, puis les pointages d'élément, puis le départ ; deux éléments
-pointés au même instant se départagent par leur identifiant, et un même élément garde l'ordre de son journal.
-
-### La résilience face aux anomalies du journal
-
-**Un pointage qui casse l'automate de présence n'empêche jamais la génération du relevé.** Contrairement à
-`feuilledetemps`, qui lève une exception sur la même situation, ce contexte l'**ignore silencieusement** — ni
-exception, ni marqueur exposé : le pointage fautif est simplement absent du relevé, comme s'il n'existait pas.
-
-Ce cas n'est en pratique **pas atteignable par l'API** : `atelier` valide tout le journal à chaque écriture, y
-compris une annulation, et refuse déjà celle qui laisserait un pointage orphelin
-(`409 transition-de-presence-interdite`). Conséquence assumée (YAGNI) : ce contexte ne porte **aucun champ
-`valide`/anomalie**, ni domaine ni API — un flag qui vaudrait toujours vrai ne porte aucune information. La
-résilience elle-même (ne jamais lever d'exception) reste une défense en profondeur légitime — donnée migrée,
-validation d'`atelier` amenée à évoluer, accès direct à la base — vérifiée par les tests unitaires du domaine, qui
-construisent l'incohérence directement ; aucun scénario Cucumber ne la couvre, faute de moyen de la déclencher.
-
-Le **catalogue transverse des anomalies** (toutes semaines, tous opérateurs confondus) et l'écran récapitulatif du
-gestionnaire ne vivent pas ici : une anomalie de transition est une propriété du **journal** lui-même, pas d'une
-semaine ni d'un rapport demandé. `atelier` possède déjà l'écran de correction du journal de présence
-(régularisation, annulation, correction) — c'est lui qui portera, plus tard, ce catalogue.
+Le **journal brut** est lu indépendamment des activités : tous les pointages actifs de l'opérateur datés de la
+semaine sont rendus, même sans activité interprétable. Leur ordre est l'heure métier, puis l'intention
+(fin, transition, ouverture), puis l'identité du pointage. L'heure d'enregistrement ne départage jamais.
+Chaque élément et chaque poste nommés au journal trouvent leur fiche ou leur libellé dans la synthèse.
 
 ### La lecture passe par la base, jamais par un import
 
-`atelier` étant annoté `@BusinessContext`, ce contexte déclare ses propres entités JPA en lecture seule sur ses
-tables — pour la troisième fois du projet, il rejoue **sa propre** version du repli de présence, tolérante aux
-anomalies, et pour la cinquième fois l'automate d'atelier. Il lit aussi `element_de_fabrication` et
-`poste_de_travail`, pour la référence, la description et le libellé.
+La synthèse déclare ses propres entités JPA `@Immutable` sur `activite_d_atelier`, `suivi_d_atelier`,
+`evenement_d_atelier` et les référentiels. Elle n'importe aucun contexte métier voisin, ne rejoue aucun journal
+et ne possède aucune table. Les activités sont lues en une requête, le journal en deux requêtes groupées ;
+les fiches et les postes sont aussi résolus par lots. Cucumber écrit réellement dans atelier puis lit le relevé,
+ce qui confronte la projection à son propriétaire.
 
 ### Points ouverts
 
-1. **La mesure d'heures retenue** — fermé le 28/09/2026, avec le point 2 d'`atelier` : la présence ne sert pas à
-   payer, et le relevé compte la pause ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)).
+1. **Le fuseau reste fixé à `Europe/Paris`** par un adapter derrière son port.
 2. **Les heures supplémentaires ne sont pas calculées**, faute de règle fournie par le client.
-3. **Le catalogue transverse des anomalies et l'écran récapitulatif du gestionnaire restent à concevoir**, côté
-   `atelier` (voir ci-dessus).
-4. **Aucune restriction sur qui lit le relevé de qui**, comme `feuilledetemps`, faute de lien entre un utilisateur
-   authentifié et une fiche du référentiel. À rouvrir avec le lot « utilisateur connecté ».
+3. **Aucune restriction sur qui lit le relevé de qui** : `USER` et `GESTIONNAIRE` lisent les opérateurs de leur
+   entreprise, faute de lien entre utilisateur authentifié et fiche d'opérateur.
 
 ## pupitre
 

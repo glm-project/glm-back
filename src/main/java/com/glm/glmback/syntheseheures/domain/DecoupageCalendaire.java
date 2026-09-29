@@ -51,12 +51,7 @@ public final class DecoupageCalendaire {
   /**
    * La plage donnee, ramenee a la semaine et scindee a chaque minuit traverse.
    *
-   * <p>
-   * Une plage encore ouverte fait exception : elle ne rend que le jour ou elle a commence. Sans depart enregistre,
-   * rien ne dit que l'operateur etait encore la le lendemain — l'etaler jusqu'a la fin de la semaine affirmerait une
-   * presence que personne n'a pointee, la ou l'atelier refuse deja qu'un travail jamais arrete coure jusqu'au jour
-   * suivant.
-   * </p>
+   * Une plage sans fin et sans instant d'evaluation n'indique que son jour de debut.
    */
   public List<PlageDUnJour> plages(Plage plage) {
     if (plage.estOuverte()) {
@@ -67,13 +62,29 @@ public final class DecoupageCalendaire {
   }
 
   /**
-   * L'intervalle d'activite coupe de la meme facon que la presence : ramene a la semaine, scinde a minuit, et rendu
-   * sur son seul jour de debut s'il est encore ouvert.
+   * Une activite terminee est scindee a minuit ; une activite en cours rend une indication sans fin sur chaque jour
+   * atteint a l'instant d'evaluation, en conservant ses bornes entieres.
    */
-  public List<IntervalleDUnJour> intervalles(IntervalleDActivite intervalle) {
-    return plages(intervalle.plage())
+  public List<IntervalleDUnJour> intervalles(IntervalleDActivite intervalle, Instant evaluation) {
+    List<PlageDUnJour> portions =
+      intervalle.lecture().etat() == EtatDActivite.EN_COURS
+        ? ouverteSurChaqueJour(intervalle.plage(), evaluation)
+        : plages(intervalle.plage());
+    return portions
       .stream()
       .map(plage -> new IntervalleDUnJour(plage.jour(), intervalle.sur(plage.plage())))
+      .toList();
+  }
+
+  private List<PlageDUnJour> ouverteSurChaqueJour(Plage plage, Instant evaluation) {
+    LocalDate premierJour = jourDe(plage.debut());
+    LocalDate dernierJour = jourDe(evaluation.isAfter(plage.debut()) ? evaluation : plage.debut());
+    return jours()
+      .stream()
+      .filter(jour -> !jour.isBefore(premierJour) && !jour.isAfter(dernierJour))
+      .map(jour ->
+        new PlageDUnJour(jour, new Plage(jour.equals(premierJour) ? plage.debut() : jour.atStartOfDay(zone).toInstant(), Optional.empty()))
+      )
       .toList();
   }
 
@@ -102,7 +113,7 @@ public final class DecoupageCalendaire {
     while (curseur.isBefore(finRetenue)) {
       Instant minuitSuivant = jour.plusDays(1).atStartOfDay(zone).toInstant();
       Instant borne = minuitSuivant.isBefore(finRetenue) ? minuitSuivant : finRetenue;
-      plages.add(new PlageDUnJour(jour, new Plage(curseur, Optional.of(borne), plage.presumee())));
+      plages.add(new PlageDUnJour(jour, new Plage(curseur, Optional.of(borne))));
       curseur = borne;
       jour = jour.plusDays(1);
     }

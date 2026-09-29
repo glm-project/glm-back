@@ -29,30 +29,8 @@ public record SyntheseDesHeures(
     return operateur -> semaine -> jours -> elements -> new SyntheseDesHeures(operateur, semaine, jours, elements);
   }
 
-  /**
-   * La duree travaillee de la semaine, somme des sept jours.
-   */
-  public Duration dureeTotale() {
-    return jours.stream().map(JourDeSynthese::duree).reduce(Duration.ZERO, Duration::plus);
-  }
-
-  /**
-   * La duree presumee de la semaine : ce qui reste a confirmer par une regularisation du depart.
-   */
-  public Duration dureePresumeeTotale() {
-    return jours.stream().map(JourDeSynthese::dureePresumee).reduce(Duration.ZERO, Duration::plus);
-  }
-
-  /**
-   * Le temps operationnel pointe de la semaine, somme des sept jours. Il se cumule par element, et peut donc depasser
-   * la presence.
-   */
   public Duration dureeOperationnelleTotale() {
     return jours.stream().map(JourDeSynthese::dureeOperationnelle).reduce(Duration.ZERO, Duration::plus);
-  }
-
-  public Duration dureeOperationnellePresumeeTotale() {
-    return jours.stream().map(JourDeSynthese::dureeOperationnellePresumee).reduce(Duration.ZERO, Duration::plus);
   }
 
   interface SyntheseDesHeuresOperateurBuilder {

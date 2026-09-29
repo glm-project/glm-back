@@ -10,21 +10,4 @@ public record JournalDElement(ElementEngage element, List<PointageDElement> poin
     Assert.notNull("pointages", pointages);
     pointages = List.copyOf(pointages);
   }
-
-  public static JournalDElement de(ElementEngage element, List<PointageDAtelier> pointages) {
-    return new JournalDElement(
-      element,
-      pointages
-        .stream()
-        .map(pointage ->
-          PointageDElement.builder()
-            .type(pointage.type())
-            .element(element.id())
-            .poste(pointage.poste())
-            .nature(pointage.nature())
-            .dateDeSurvenue(pointage.dateDeSurvenue())
-        )
-        .toList()
-    );
-  }
 }

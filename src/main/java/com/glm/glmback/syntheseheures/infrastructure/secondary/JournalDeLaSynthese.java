@@ -34,7 +34,14 @@ class JournalDeLaSynthese implements JournalDeLOperateur {
       .findByIdIn(parSuivi.keySet())
       .stream()
       .map(suivi ->
-        JournalDElement.de(suivi.element(), parSuivi.get(suivi.id()).stream().map(PointageDAtelierDeLaSyntheseEntity::toDomain).toList())
+        new JournalDElement(
+          suivi.element(),
+          parSuivi
+            .get(suivi.id())
+            .stream()
+            .map(pointage -> pointage.toDomain(suivi.element().id()))
+            .toList()
+        )
       )
       .toList();
   }

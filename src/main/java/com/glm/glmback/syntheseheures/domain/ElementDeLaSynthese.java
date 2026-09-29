@@ -20,7 +20,6 @@ public record ElementDeLaSynthese(
   Optional<DescriptionDElement> description,
   Duration duree,
   Duration dureeNonConformite,
-  Duration dureePresumee,
   List<PosteDeLElement> postes
 ) {
   public ElementDeLaSynthese {
@@ -29,20 +28,11 @@ public record ElementDeLaSynthese(
     Assert.notNull("description", description);
     Assert.notNull("duree", duree);
     Assert.notNull("duree de non conformite", dureeNonConformite);
-    Assert.notNull("duree presumee", dureePresumee);
     Assert.field("postes", postes).notNull().noNullElement();
   }
 
   private ElementDeLaSynthese(ElementDeLaSyntheseBuilder builder) {
-    this(
-      builder.element,
-      builder.reference,
-      builder.description,
-      builder.duree,
-      builder.dureeNonConformite,
-      builder.dureePresumee,
-      builder.postes
-    );
+    this(builder.element, builder.reference, builder.description, builder.duree, builder.dureeNonConformite, builder.postes);
   }
 
   static ElementDeLaSyntheseElementBuilder builder() {
@@ -56,7 +46,6 @@ public record ElementDeLaSynthese(
       ElementDeLaSyntheseDescriptionBuilder,
       ElementDeLaSyntheseDureeBuilder,
       ElementDeLaSyntheseDureeNonConformiteBuilder,
-      ElementDeLaSyntheseDureePresumeeBuilder,
       ElementDeLaSynthesePostesBuilder
   {
 
@@ -65,7 +54,6 @@ public record ElementDeLaSynthese(
     private Optional<DescriptionDElement> description;
     private Duration duree;
     private Duration dureeNonConformite;
-    private Duration dureePresumee;
     private List<PosteDeLElement> postes;
 
     @Override
@@ -97,15 +85,8 @@ public record ElementDeLaSynthese(
     }
 
     @Override
-    public ElementDeLaSyntheseDureePresumeeBuilder dureeNonConformite(Duration dureeNonConformite) {
+    public ElementDeLaSynthesePostesBuilder dureeNonConformite(Duration dureeNonConformite) {
       this.dureeNonConformite = dureeNonConformite;
-
-      return this;
-    }
-
-    @Override
-    public ElementDeLaSynthesePostesBuilder dureePresumee(Duration dureePresumee) {
-      this.dureePresumee = dureePresumee;
 
       return this;
     }
@@ -135,11 +116,7 @@ public record ElementDeLaSynthese(
   }
 
   interface ElementDeLaSyntheseDureeNonConformiteBuilder {
-    ElementDeLaSyntheseDureePresumeeBuilder dureeNonConformite(Duration dureeNonConformite);
-  }
-
-  interface ElementDeLaSyntheseDureePresumeeBuilder {
-    ElementDeLaSynthesePostesBuilder dureePresumee(Duration dureePresumee);
+    ElementDeLaSynthesePostesBuilder dureeNonConformite(Duration dureeNonConformite);
   }
 
   interface ElementDeLaSynthesePostesBuilder {

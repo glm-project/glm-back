@@ -1,11 +1,9 @@
 package com.glm.glmback.syntheseheures.domain;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -23,7 +21,6 @@ public final class SyntheseHeuresFixture {
 
   public static final SemaineCalendaire SEMAINE_19_DE_2026 = new SemaineCalendaire(2026, 19);
   public static final LocalDate DIMANCHE_10_MAI_2026 = LocalDate.of(2026, 5, 10);
-  public static final AmplitudeMaximale AMPLITUDE_MAXIMALE_13H = new AmplitudeMaximale(Duration.ofHours(13));
   public static final Instant LE_DIMANCHE_10_MAI_2026_A_20H = aParis(10, 20);
   public static final Instant LE_LUNDI_11_MAI_2026_A_7H = aParis(11, 7);
   public static final Instant LE_LUNDI_11_MAI_2026_A_16H = aParis(11, 16);
@@ -83,88 +80,19 @@ public final class SyntheseHeuresFixture {
   public static final Prenom PRENOM_JEAN = new Prenom("Jean");
   public static final OperateurConnu OPERATEUR_CONNU_DUPONT = new OperateurConnu(OPERATEUR_ID_DUPONT, NOM_DUPONT, PRENOM_JEAN);
 
+  public static final ActiviteId ACTIVITE_ID_DU_CARTER = new ActiviteId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
+  public static final ActiviteId ACTIVITE_ID_DE_LA_BRIDE = new ActiviteId(UUID.fromString("22222222-2222-2222-2222-222222222222"));
+
+  public static final Instant LE_LUNDI_11_MAI_2026_A_MINUIT = aParis(11, 0);
+
+  public static final Instant LE_MERCREDI_13_MAI_2026_A_8H = aParis(13, 8);
+
+  public static final PointageId POINTAGE_ID_1 = new PointageId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
+
+  public static final PointageId POINTAGE_ID_2 = new PointageId(UUID.fromString("00000000-0000-0000-0000-000000000002"));
+  public static final PointageId POINTAGE_ID_3 = new PointageId(UUID.fromString("00000000-0000-0000-0000-000000000003"));
+
   private SyntheseHeuresFixture() {}
-
-  public static EvenementDePresence arriveeA(Instant date) {
-    return new EvenementDePresence(TypeDEvenementDePresence.ARRIVEE, date);
-  }
-
-  public static EvenementDePresence departA(Instant date) {
-    return new EvenementDePresence(TypeDEvenementDePresence.DEPART, date);
-  }
-
-  public static JourneeDeTravail journeeDuLundiDe8HA17H() {
-    return new JourneeDeTravail(List.of(arriveeA(LE_LUNDI_11_MAI_2026_A_8H), departA(LE_LUNDI_11_MAI_2026_A_17H)));
-  }
-
-  public static JourneeDeTravail journeeDuLundi22HAuMardi2H() {
-    return new JourneeDeTravail(List.of(arriveeA(LE_LUNDI_11_MAI_2026_A_22H), departA(LE_MARDI_12_MAI_2026_A_2H)));
-  }
-
-  public static JourneeDeTravail journeeDuDimanchePrecedentDe8HA17H() {
-    return new JourneeDeTravail(List.of(arriveeA(LE_DIMANCHE_10_MAI_2026_A_8H), departA(LE_DIMANCHE_10_MAI_2026_A_17H)));
-  }
-
-  public static JourneeDeTravail journeeDuMardiOuverteA8H() {
-    return new JourneeDeTravail(List.of(arriveeA(LE_MARDI_12_MAI_2026_A_8H)));
-  }
-
-  /**
-   * Un depart pointe sans arrivee prealable : l'automate refuse cette transition, et le releve du mercredi l'ignore.
-   */
-  public static JourneeDeTravail journeeDuMercrediAvecDepartSansArrivee() {
-    return new JourneeDeTravail(List.of(departA(LE_MERCREDI_13_MAI_2026_A_12H)));
-  }
-
-  /**
-   * E2 : lundi, Dupont arrive a 7 h et part sans pointer son depart.
-   */
-  public static JourneeDeTravail journeeDuLundiDe7HSansDepart() {
-    return new JourneeDeTravail(List.of(arriveeA(LE_LUNDI_11_MAI_2026_A_7H)));
-  }
-
-  /**
-   * Issue #59 : lundi, Dupont arrive a 7 h, puis ne pointe plus rien avant un depart mercredi a midi, rattache a la
-   * meme journee par une version anterieure au lot 3.
-   */
-  public static JourneeDeTravail journeeDuLundi7HAuMercredi12H() {
-    return new JourneeDeTravail(List.of(arriveeA(LE_LUNDI_11_MAI_2026_A_7H), departA(LE_MERCREDI_13_MAI_2026_A_12H)));
-  }
-
-  /**
-   * E7 : un poste de nuit du dimanche 20 h au lundi 8 h, a cheval sur deux semaines.
-   */
-  public static JourneeDeTravail journeeDuDimanche20HAuLundi8H() {
-    return new JourneeDeTravail(List.of(arriveeA(LE_DIMANCHE_10_MAI_2026_A_20H), departA(LE_LUNDI_11_MAI_2026_A_8H)));
-  }
-
-  public static PointageDAtelier debutSurLaDmu50A(Instant date) {
-    return surLaDmu50(TypeDEvenementDAtelier.DEBUT, date);
-  }
-
-  public static PointageDAtelier nonConformiteSurLaDmu50A(Instant date) {
-    return surLaDmu50(TypeDEvenementDAtelier.NON_CONFORMITE, date);
-  }
-
-  public static PointageDAtelier finSurLaDmu50A(Instant date) {
-    return surLaDmu50(TypeDEvenementDAtelier.FIN, date);
-  }
-
-  public static PointageDAtelier debutAuTourA(Instant date) {
-    return auTour(TypeDEvenementDAtelier.DEBUT, date);
-  }
-
-  public static PointageDAtelier finAuTourA(Instant date) {
-    return auTour(TypeDEvenementDAtelier.FIN, date);
-  }
-
-  public static PointageDAtelier debutSansPosteA(Instant date) {
-    return PointageDAtelier.builder()
-      .type(TypeDEvenementDAtelier.DEBUT)
-      .poste(Optional.empty())
-      .nature(Optional.empty())
-      .dateDeSurvenue(date);
-  }
 
   public static Activite activiteDeTravailDuCarterSurLaDmu50() {
     return Activite.builder()
@@ -198,20 +126,17 @@ public final class SyntheseHeuresFixture {
       .categorie(CategorieDActivite.TRAVAIL);
   }
 
-  private static PointageDAtelier surLaDmu50(TypeDEvenementDAtelier type, Instant date) {
-    return PointageDAtelier.builder()
-      .type(type)
-      .poste(Optional.of(POSTE_ID_DMU_50))
-      .nature(Optional.of(NATURE_FRAISAGE))
-      .dateDeSurvenue(date);
+  public static ActiviteInterpretee travailDuCarterDe8HA10H() {
+    return ActiviteInterpretee.builder()
+      .id(ACTIVITE_ID_DU_CARTER)
+      .activite(activiteDeTravailDuCarterSurLaDmu50())
+      .plage(new Plage(LE_LUNDI_11_MAI_2026_A_8H, Optional.of(LE_LUNDI_11_MAI_2026_A_10H)))
+      .echeance(Instant.parse("2026-05-11T19:00:00Z"))
+      .aResoudre(false);
   }
 
-  private static PointageDAtelier auTour(TypeDEvenementDAtelier type, Instant date) {
-    return PointageDAtelier.builder()
-      .type(type)
-      .poste(Optional.of(POSTE_ID_TOUR))
-      .nature(Optional.of(NATURE_TOURNAGE))
-      .dateDeSurvenue(date);
+  public static ActiviteLue travailDuCarterLuSur(Plage plage) {
+    return new ActiviteLue(ACTIVITE_ID_DU_CARTER, plage.estOuverte() ? EtatDActivite.EN_COURS : EtatDActivite.TERMINEE, plage);
   }
 
   private static Instant aParis(int jourDeMai, int heure) {

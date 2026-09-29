@@ -13,7 +13,17 @@ class PointageDElementTest {
 
   @Test
   void shouldNotBuildWithoutType() {
-    assertThatThrownBy(() -> new PointageDElement(null, ELEMENT_ID_CARTER, Optional.empty(), Optional.empty(), LE_LUNDI_11_MAI_2026_A_8H))
+    assertThatThrownBy(() ->
+      new PointageDElement(
+        POINTAGE_ID_1,
+        IntentionDePointage.OUVERTURE,
+        null,
+        ELEMENT_ID_CARTER,
+        Optional.empty(),
+        Optional.empty(),
+        LE_LUNDI_11_MAI_2026_A_8H
+      )
+    )
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("type");
   }
@@ -21,7 +31,15 @@ class PointageDElementTest {
   @Test
   void shouldNotBuildWithoutElement() {
     assertThatThrownBy(() ->
-      new PointageDElement(TypeDEvenementDAtelier.DEBUT, null, Optional.empty(), Optional.empty(), LE_LUNDI_11_MAI_2026_A_8H)
+      new PointageDElement(
+        POINTAGE_ID_1,
+        IntentionDePointage.OUVERTURE,
+        TypeDEvenementDAtelier.DEBUT,
+        null,
+        Optional.empty(),
+        Optional.empty(),
+        LE_LUNDI_11_MAI_2026_A_8H
+      )
     )
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("element");
@@ -30,7 +48,15 @@ class PointageDElementTest {
   @Test
   void shouldNotBuildWithoutPoste() {
     assertThatThrownBy(() ->
-      new PointageDElement(TypeDEvenementDAtelier.DEBUT, ELEMENT_ID_CARTER, null, Optional.empty(), LE_LUNDI_11_MAI_2026_A_8H)
+      new PointageDElement(
+        POINTAGE_ID_1,
+        IntentionDePointage.OUVERTURE,
+        TypeDEvenementDAtelier.DEBUT,
+        ELEMENT_ID_CARTER,
+        null,
+        Optional.empty(),
+        LE_LUNDI_11_MAI_2026_A_8H
+      )
     )
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("poste de travail");
@@ -39,7 +65,15 @@ class PointageDElementTest {
   @Test
   void shouldNotBuildWithoutDateDeSurvenue() {
     assertThatThrownBy(() ->
-      new PointageDElement(TypeDEvenementDAtelier.DEBUT, ELEMENT_ID_CARTER, Optional.empty(), Optional.empty(), null)
+      new PointageDElement(
+        POINTAGE_ID_1,
+        IntentionDePointage.OUVERTURE,
+        TypeDEvenementDAtelier.DEBUT,
+        ELEMENT_ID_CARTER,
+        Optional.empty(),
+        Optional.empty(),
+        null
+      )
     )
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("date de survenue");
@@ -48,6 +82,8 @@ class PointageDElementTest {
   @Test
   void shouldPorterSonGesteSonElementSonPosteEtSaDate() {
     PointageDElement pointage = PointageDElement.builder()
+      .id(POINTAGE_ID_1)
+      .intention(IntentionDePointage.OUVERTURE)
       .type(TypeDEvenementDAtelier.NON_CONFORMITE)
       .element(ELEMENT_ID_CARTER)
       .poste(Optional.of(POSTE_ID_DMU_50))
@@ -64,7 +100,15 @@ class PointageDElementTest {
   @Test
   void shouldNotBuildWithoutNature() {
     assertThatThrownBy(() ->
-      new PointageDElement(TypeDEvenementDAtelier.DEBUT, ELEMENT_ID_CARTER, Optional.empty(), null, LE_LUNDI_11_MAI_2026_A_8H)
+      new PointageDElement(
+        POINTAGE_ID_1,
+        IntentionDePointage.OUVERTURE,
+        TypeDEvenementDAtelier.DEBUT,
+        ELEMENT_ID_CARTER,
+        Optional.empty(),
+        null,
+        LE_LUNDI_11_MAI_2026_A_8H
+      )
     )
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("nature de l'operation");

@@ -26,23 +26,17 @@ record RestElementDeLaSynthese(
   @Schema(description = "Reference de l'element, relue au referentiel.", example = "1015") String reference,
   @Schema(description = "Description de l'element, relue au referentiel.", example = "Carter de pompe") String description,
   @Schema(
-    description = "Duree pointee sur l'element dans la semaine, non conformite comprise.",
+    description = "Duree comptabilisee sur l'element dans la semaine, non conformite comprise.",
     example = "PT15H30M",
     requiredMode = Schema.RequiredMode.REQUIRED
   )
   Duration duree,
   @Schema(
-    description = "Part pointee de la duree passee en non conformite.",
+    description = "Part comptabilisee de la duree passee en non conformite.",
     example = "PT50M",
     requiredMode = Schema.RequiredMode.REQUIRED
   )
   Duration dureeNonConformite,
-  @Schema(
-    description = "Duree presumee sur l'element : son travail borne par la fin presumee d'une journee abandonnee.",
-    example = "PT0S",
-    requiredMode = Schema.RequiredMode.REQUIRED
-  )
-  Duration dureePresumee,
   @Schema(
     description = """
     Un couple par poste et nature distincts, dans l'ordre de premiere apparition, tire du travail comme des pointages :
@@ -61,7 +55,6 @@ record RestElementDeLaSynthese(
       element.description().map(DescriptionDElement::value).orElse(null),
       element.duree(),
       element.dureeNonConformite(),
-      element.dureePresumee(),
       element.postes().stream().map(RestPosteDeLElementDeLaSynthese::from).toList()
     );
   }

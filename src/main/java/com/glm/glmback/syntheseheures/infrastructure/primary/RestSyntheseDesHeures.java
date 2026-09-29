@@ -6,39 +6,21 @@ import java.time.Duration;
 import java.util.List;
 
 @Schema(
-  description = """
-  Le releve des heures d'un operateur sur une semaine ISO.
-
-  Rien n'est stocke : le releve est recalcule a chaque lecture depuis les journaux de l'atelier, pour qu'une saisie
-  regularisee apres coup compte a l'heure ou le travail a eu lieu. Ce n'est ni une feuille de paie ni un rapport de
-  paie : il expose du temps travaille, il ne calcule aucun montant.
-  """
+  description = "Temps operationnel d'un operateur sur une semaine ISO, recalcule depuis les activites interpretees par atelier. Aucun montant n'est calcule."
 )
 record RestSyntheseDesHeures(
-  @Schema(description = "L'operateur, resolu au referentiel.") RestOperateur operateur,
-  @Schema(description = "Annee ISO de la semaine. Attention, elle differe de l'annee civile aux changements d'annee.", example = "2026")
-  int annee,
+  @Schema(description = "Operateur resolu au referentiel.") RestOperateur operateur,
+  @Schema(description = "Annee des semaines ISO.", example = "2026") int annee,
   @Schema(description = "Numero de la semaine ISO.", example = "20") int semaine,
-  @Schema(description = "Les sept jours, du lundi au dimanche.") List<RestJourDeSynthese> jours,
-  @Schema(description = "Duree travaillee et pointee de la semaine, somme des sept jours.", example = "PT38H") Duration dureeTotale,
-  @Schema(description = "Duree presumee de la semaine, somme des sept jours.", example = "PT3H") Duration dureePresumeeTotale,
+  @Schema(description = "Les sept jours du lundi au dimanche, vides compris.") List<RestJourDeSynthese> jours,
   @Schema(
-    description = "Temps operationnel pointe de la semaine, somme des sept jours, et somme des durees des elements.",
-    example = "PT57H30M",
+    description = "Somme des durees des sept jours et des elements. Une activite encore en cours ne compte rien.",
+    example = "PT13H",
     requiredMode = Schema.RequiredMode.REQUIRED
   )
   Duration dureeOperationnelleTotale,
   @Schema(
-    description = "Temps operationnel presume de la semaine, somme des sept jours.",
-    example = "PT0S",
-    requiredMode = Schema.RequiredMode.REQUIRED
-  )
-  Duration dureeOperationnellePresumeeTotale,
-  @Schema(
-    description = """
-    Les elements travailles ou pointes dans la semaine, par premiere apparition (premiere periode de travail ou premier
-    pointage), puis par nom. Un element reengage apres cloture reste un seul element.
-    """,
+    description = "Elements portant une activite ou un pointage dans la semaine, par premiere apparition puis nom. Un element reengage reste un seul element.",
     requiredMode = Schema.RequiredMode.REQUIRED
   )
   List<RestElementDeLaSynthese> elements
@@ -49,10 +31,7 @@ record RestSyntheseDesHeures(
       synthese.semaine().annee(),
       synthese.semaine().numero(),
       synthese.jours().stream().map(RestJourDeSynthese::from).toList(),
-      synthese.dureeTotale(),
-      synthese.dureePresumeeTotale(),
       synthese.dureeOperationnelleTotale(),
-      synthese.dureeOperationnellePresumeeTotale(),
       synthese.elements().stream().map(RestElementDeLaSynthese::from).toList()
     );
   }

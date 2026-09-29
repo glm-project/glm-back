@@ -31,7 +31,6 @@ import tools.jackson.databind.json.JsonMapper;
 public class SyntheseDesHeuresSteps {
 
   private static final String OPERATEURS_URI = "/api/operateurs";
-  private static final String JOURNEES_URI = "/api/atelier/journees";
   private static final String SYNTHESES_URI = "/api/syntheses-des-heures";
   private static final String ELEMENTS_URI = "/api/elements-de-fabrication";
   private static final String SUIVIS_URI = "/api/atelier/suivis";
@@ -49,7 +48,8 @@ public class SyntheseDesHeuresSteps {
   private EcrituresDuJournalDAtelier ecritures;
 
   private final Map<String, String> operateurs = new HashMap<>();
-  private final Map<String, String> journees = new HashMap<>();
+  private final Map<String, String> pointages = new HashMap<>();
+  private final Map<String, Map<String, Object>> corpsDesPointages = new HashMap<>();
   private final Map<String, String> postes = new HashMap<>();
   private final Map<String, String> elements = new HashMap<>();
   private final Map<String, String> suivis = new HashMap<>();
@@ -134,6 +134,53 @@ public class SyntheseDesHeuresSteps {
     assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage de l'element doit etre accepte").isTrue();
   }
 
+  @Given("la synthese des heures recoit sur l'element {string} les pointages")
+  public void recoitLesPointages(String element, List<Map<String, String>> pointagesRecus) {
+    for (Map<String, String> pointage : pointagesRecus) {
+      String survenue = pointage.get("survenue");
+      horloge.ilEst(Instant.parse(java.util.Optional.ofNullable(pointage.get("reception")).orElse(survenue)));
+      dernierPointage = UUID.randomUUID().toString();
+      Map<String, Object> corps = new HashMap<>();
+      corps.put("id", dernierPointage);
+      corps.put("type", pointage.get("type"));
+      corps.put("intention", pointage.get("intention"));
+      corps.put("operateur", operateurs.get(pointage.get("operateur")));
+      corps.put("dateDeSurvenue", survenue);
+      if (pointage.containsKey("poste")) {
+        corps.put("poste", postes.get(pointage.get("poste")));
+      }
+      if (pointage.containsKey("cible")) {
+        corps.put("cible", pointages.get(pointage.get("cible")));
+      }
+      if ("REGULARISATION".equals(pointage.get("acte"))) {
+        corps.remove("id");
+        ecritures.regularise(suivis.get(element), corps);
+      } else {
+        ecritures.pointe(suivis.get(element), corps);
+      }
+      assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage explicite doit etre accepte").isTrue();
+      pointages.put(pointage.get("alias"), dernierPointage);
+      corpsDesPointages.put(pointage.get("alias"), corps);
+    }
+  }
+
+  @Given("la synthese des heures corrige le pointage {string} sur {string} a {string} vers {string}")
+  public void corrigeLHeure(String alias, String element, String reception, String survenue) {
+    horloge.ilEst(Instant.parse(reception));
+    Map<String, Object> corps = new HashMap<>(corpsDesPointages.get(alias));
+    corps.remove("id");
+    corps.put("motif", "heure erronee");
+    corps.put("dateDeSurvenue", survenue);
+    ecritures.corrige(suivis.get(element), pointages.get(alias), corps);
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("la correction doit etre acceptee").isTrue();
+  }
+
+  @Then("le suivi de la synthese des heures de {string} ne porte aucun conflit")
+  public void nePorteAucunConflit(String element) {
+    rest.get(SUIVIS_URI + "/" + suivis.get(element));
+    assertThat((List<?>) CucumberRestTestContext.getElement("$.conflits")).isEmpty();
+  }
+
   @Given("pour la synthese, le dernier pointage sur l'element {string} est annule a {string}")
   public void pourLaSyntheseLeDernierPointageEstAnnule(String element, String instant) {
     horloge.ilEst(Instant.parse(instant));
@@ -149,45 +196,6 @@ public class SyntheseDesHeuresSteps {
     horloge.ilEst(Instant.parse(instant));
     rest.put(SUIVIS_URI + "/" + suivis.get(element) + "/cloture", JSON.writeValueAsString(Map.of("dateDeSurvenue", instant)));
     assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("la cloture doit etre acceptee").isTrue();
-  }
-
-  @Given("{string} pointe son arrivee a {string}")
-  public void pointeSonArriveeA(String alias, String instant) {
-    horloge.ilEst(Instant.parse(instant));
-    rest.post(JOURNEES_URI, JSON.writeValueAsString(Map.of("id", UUID.randomUUID(), "operateur", operateurs.get(alias))));
-    journees.put(alias, String.valueOf(CucumberRestTestContext.getElement("$.id")));
-  }
-
-  /**
-   * Un ordre cree, engage et demarre a cet instant par l'operateur : de quoi donner a une journee abandonnee un
-   * dernier fait connu d'atelier, que le releve doit retrouver pour presumer sa fin.
-   */
-  @Given("{string} demarre un ordre de fabrication a {string}")
-  public void demarreUnOrdreDeFabricationA(String alias, String instant) {
-    horloge.ilEst(Instant.parse(instant));
-    Map<String, Object> element = Map.of("type", "ORDRE_DE_FABRICATION", "reference", "SYNTHESE-" + SEQUENCE.incrementAndGet());
-    rest.post(ELEMENTS_URI, JSON.writeValueAsString(element));
-    rest.post(SUIVIS_URI, JSON.writeValueAsString(Map.of("element", String.valueOf(CucumberRestTestContext.getElement("$.id")))));
-    String suivi = String.valueOf(CucumberRestTestContext.getElement("$.id"));
-    ecritures.pointe(suivi, Map.of("id", UUID.randomUUID(), "type", "DEBUT", "operateur", operateurs.get(alias)));
-    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage de l'ordre doit etre accepte").isTrue();
-  }
-
-  @Given("le gestionnaire regularise le depart de {string} a {string}")
-  public void leGestionnaireRegulariseLeDepartDeA(String alias, String instant) {
-    rest.post(
-      JOURNEES_URI + "/" + journees.get(alias) + "/regularisations",
-      JSON.writeValueAsString(Map.of("type", "DEPART", "dateDeSurvenue", instant))
-    );
-  }
-
-  @Given("{string} enregistre le pointage {string} a {string}")
-  public void enregistreLePointageA(String alias, String type, String instant) {
-    horloge.ilEst(Instant.parse(instant));
-    rest.post(
-      JOURNEES_URI + "/pointages",
-      JSON.writeValueAsString(Map.of("id", UUID.randomUUID(), "operateur", operateurs.get(alias), "type", type))
-    );
   }
 
   @When("je consulte la synthese des heures de {string} pour la semaine {int} de {int}")
@@ -211,7 +219,7 @@ public class SyntheseDesHeuresSteps {
   public void chaqueJourNePorteAucunPointageEtUneDureeDe(String duree) {
     assertThat(jours()).allSatisfy(jour -> {
       assertThat(pointagesDe(jour)).isEmpty();
-      assertThat(jour.get("duree")).isEqualTo(duree);
+      assertThat(jour.get("dureeOperationnelle")).isEqualTo(duree);
     });
   }
 
@@ -227,34 +235,9 @@ public class SyntheseDesHeuresSteps {
     assertThat(pointages).isEqualTo(attendus);
   }
 
-  @Then("le jour {string} a une duree de {string}")
-  public void leJourADuneDureeDe(String jour, String duree) {
-    assertThat(jourDe(jour).get("duree")).isEqualTo(duree);
-  }
-
-  @Then("le jour {string} a une duree presumee de {string}")
-  public void leJourAUneDureePresumeeDe(String jour, String duree) {
-    assertThat(jourDe(jour).get("dureePresumee")).isEqualTo(duree);
-  }
-
-  @Then("la duree presumee totale de la semaine est {string}")
-  public void laDureePresumeeTotaleDeLaSemaineEst(String duree) {
-    assertThat(CucumberRestTestContext.getElement("$.dureePresumeeTotale")).isEqualTo(duree);
-  }
-
-  @Then("la duree totale de la semaine est {string}")
-  public void laDureeTotaleDeLaSemaineEst(String duree) {
-    assertThat(CucumberRestTestContext.getElement("$.dureeTotale")).isEqualTo(duree);
-  }
-
   @Then("le jour {string} a une duree operationnelle de {string}")
   public void leJourAUneDureeOperationnelleDe(String jour, String duree) {
     assertThat(jourDe(jour).get("dureeOperationnelle")).isEqualTo(duree);
-  }
-
-  @Then("le jour {string} a une duree operationnelle presumee de {string}")
-  public void leJourAUneDureeOperationnellePresumeeDe(String jour, String duree) {
-    assertThat(jourDe(jour).get("dureeOperationnellePresumee")).isEqualTo(duree);
   }
 
   @Then("la duree operationnelle totale de la semaine est {string}")
@@ -262,14 +245,6 @@ public class SyntheseDesHeuresSteps {
     assertThat(CucumberRestTestContext.getElement("$.dureeOperationnelleTotale")).isEqualTo(duree);
   }
 
-  @Then("la duree operationnelle presumee totale de la semaine est {string}")
-  public void laDureeOperationnellePresumeeTotaleDeLaSemaineEst(String duree) {
-    assertThat(CucumberRestTestContext.getElement("$.dureeOperationnellePresumeeTotale")).isEqualTo(duree);
-  }
-
-  /**
-   * Le journal du jour, identifiants ramenes aux alias du scenario. Une cellule vide dit que le champ est absent.
-   */
   @Then("le journal du {string} est")
   public void leJournalDuEst(String jour, List<Map<String, String>> attendus) {
     compare(pointagesDu(jour), attendus);
@@ -287,7 +262,12 @@ public class SyntheseDesHeuresSteps {
   public void lElementDeLaSynthesePorteLesPostes(String element, List<Map<String, String>> attendus) {
     List<Map<String, Object>> lus = postesDe(elementDeLaSynthese(element))
       .stream()
-      .map(poste -> Map.<String, Object>of("poste", ((Map<?, ?>) poste.get("poste")).get("id"), "nature", poste.get("nature")))
+      .map(poste -> {
+        Map<String, Object> lu = new HashMap<>();
+        lu.put("poste", ((Map<?, ?>) poste.get("poste")).get("id"));
+        lu.put("nature", poste.get("nature"));
+        return lu;
+      })
       .toList();
 
     compare(lus, attendus);
@@ -296,6 +276,25 @@ public class SyntheseDesHeuresSteps {
   @Then("l'element {string} de la synthese porte sa fiche revisee")
   public void lElementDeLaSynthesePorteSaFicheRevisee(String element) {
     assertThat(elementDeLaSynthese(element)).containsAllEntriesOf(fichesRevisees.get(element));
+  }
+
+  @Then("la synthese ne porte aucun champ de presence ni temps presume")
+  @SuppressWarnings("unchecked")
+  public void nePorteAucunAncienChamp() {
+    Map<String, Object> synthese = (Map<String, Object>) CucumberRestTestContext.getElement("$");
+    assertThat(synthese).doesNotContainKeys("dureeTotale", "dureePresumeeTotale", "dureeOperationnellePresumeeTotale");
+    assertThat(jours()).allSatisfy(jour -> assertThat(jour).doesNotContainKeys("duree", "dureePresumee", "dureeOperationnellePresumee"));
+    assertThat(elementsDeLaSynthese()).allSatisfy(element -> assertThat(element).doesNotContainKey("dureePresumee"));
+  }
+
+  @Given("pour la synthese, le pointage {string} sur {string} est annule a {string}")
+  public void annuleLePointage(String alias, String element, String instant) {
+    horloge.ilEst(Instant.parse(instant));
+    rest.post(
+      SUIVIS_URI + "/" + suivis.get(element) + "/evenements/" + pointages.get(alias) + "/annulation",
+      JSON.writeValueAsString(Map.of("motif", "saisie en trop"))
+    );
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).isTrue();
   }
 
   private void compare(List<Map<String, Object>> lus, List<Map<String, String>> attendus) {

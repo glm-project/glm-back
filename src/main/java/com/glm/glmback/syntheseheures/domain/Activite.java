@@ -8,7 +8,7 @@ import java.util.Optional;
  * reprise.
  *
  * <p>
- * L'activite dit tout sauf quand : c'est ce qui permet de la couper sur les fenetres de presence puis a minuit sans
+ * L'activite dit tout sauf quand : c'est ce qui permet de la couper a minuit sans
  * jamais recopier ses composants.
  * </p>
  */

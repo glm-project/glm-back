@@ -18,25 +18,16 @@ class SyntheseDesHeuresTest {
 
   private static final JourDeSynthese LUNDI_8H = JourDeSynthese.builder()
     .jour(LocalDate.of(2026, 5, 11))
-    .pointages(List.of(arriveeA(LE_LUNDI_11_MAI_2026_A_8H)))
-    .duree(Duration.ofHours(8))
-    .dureePresumee(Duration.ofHours(1))
-    .dureeOperationnelle(Duration.ofHours(10))
-    .dureeOperationnellePresumee(Duration.ZERO);
-  private static final JourDeSynthese MARDI_SANS_PRESENCE = JourDeSynthese.builder()
+    .pointages(List.of())
+    .dureeOperationnelle(Duration.ofHours(10));
+  private static final JourDeSynthese MARDI_0H = JourDeSynthese.builder()
     .jour(LocalDate.of(2026, 5, 12))
     .pointages(List.of())
-    .duree(Duration.ZERO)
-    .dureePresumee(Duration.ZERO)
-    .dureeOperationnelle(Duration.ZERO)
-    .dureeOperationnellePresumee(Duration.ZERO);
-  private static final JourDeSynthese MERCREDI_PRESUME = JourDeSynthese.builder()
+    .dureeOperationnelle(Duration.ZERO);
+  private static final JourDeSynthese MERCREDI_1H = JourDeSynthese.builder()
     .jour(LocalDate.of(2026, 5, 13))
     .pointages(List.of())
-    .duree(Duration.ofHours(2))
-    .dureePresumee(Duration.ofHours(3))
-    .dureeOperationnelle(Duration.ofHours(1))
-    .dureeOperationnellePresumee(Duration.ofHours(4));
+    .dureeOperationnelle(Duration.ofHours(1));
 
   @Test
   void shouldNotBuildWithoutOperateur() {
@@ -78,31 +69,6 @@ class SyntheseDesHeuresTest {
   }
 
   @Test
-  void shouldSommerLaDureeDeChaqueJourPourLaDureeTotale() {
-    SyntheseDesHeures synthese = new SyntheseDesHeures(
-      OPERATEUR_CONNU_DUPONT,
-      SEMAINE_20_DE_2026,
-      List.of(LUNDI_8H, MARDI_SANS_PRESENCE),
-      List.of()
-    );
-
-    assertThat(synthese.dureeTotale()).isEqualTo(Duration.ofHours(8));
-  }
-
-  @Test
-  void shouldSommerLaDureePresumeeDeChaqueJour() {
-    SyntheseDesHeures synthese = new SyntheseDesHeures(
-      OPERATEUR_CONNU_DUPONT,
-      SEMAINE_20_DE_2026,
-      List.of(LUNDI_8H, MARDI_SANS_PRESENCE, MERCREDI_PRESUME),
-      List.of()
-    );
-
-    assertThat(synthese.dureeTotale()).isEqualTo(Duration.ofHours(10));
-    assertThat(synthese.dureePresumeeTotale()).isEqualTo(Duration.ofHours(4));
-  }
-
-  @Test
   void shouldNotBuildWithoutElements() {
     assertThatThrownBy(() -> new SyntheseDesHeures(OPERATEUR_CONNU_DUPONT, SEMAINE_20_DE_2026, List.of(), null))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
@@ -112,15 +78,7 @@ class SyntheseDesHeuresTest {
   @Test
   void shouldNotBuildWithNullElement() {
     List<ElementDeLaSynthese> elements = Arrays.asList(
-      new ElementDeLaSynthese(
-        ELEMENT_ENGAGE_CARTER,
-        Optional.empty(),
-        Optional.empty(),
-        Duration.ZERO,
-        Duration.ZERO,
-        Duration.ZERO,
-        List.of()
-      ),
+      new ElementDeLaSynthese(ELEMENT_ENGAGE_CARTER, Optional.empty(), Optional.empty(), Duration.ZERO, Duration.ZERO, List.of()),
       null
     );
 
@@ -134,10 +92,9 @@ class SyntheseDesHeuresTest {
     SyntheseDesHeures synthese = SyntheseDesHeures.builder()
       .operateur(OPERATEUR_CONNU_DUPONT)
       .semaine(SEMAINE_20_DE_2026)
-      .jours(List.of(LUNDI_8H, MARDI_SANS_PRESENCE, MERCREDI_PRESUME))
+      .jours(List.of(LUNDI_8H, MARDI_0H, MERCREDI_1H))
       .elements(List.of());
 
     assertThat(synthese.dureeOperationnelleTotale()).isEqualTo(Duration.ofHours(11));
-    assertThat(synthese.dureeOperationnellePresumeeTotale()).isEqualTo(Duration.ofHours(4));
   }
 }
