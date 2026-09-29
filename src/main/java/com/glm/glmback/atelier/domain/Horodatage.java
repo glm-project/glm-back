@@ -22,8 +22,9 @@ public record Horodatage(Instant dateDeSurvenue, Instant dateDEnregistrement) {
   }
 
   /**
-   * Vrai si le fait a ete enregistre apres coup. C'est le seul critere qui distingue une regularisation d'un pointage
-   * en direct : l'identite de l'auteur, elle, dit qui a saisi, pas quand.
+   * Vrai si le fait a ete enregistre apres coup. La presence en deduit sa regularisation ; le journal d'atelier, lui,
+   * la lit sur l'origine de l'evenement ({@link OrigineDuPointage}), un pointage rejoue hors ligne etant lui aussi
+   * differe. L'identite de l'auteur, elle, dit qui a saisi, pas quand.
    */
   public boolean estDifferee() {
     return !dateDEnregistrement.equals(dateDeSurvenue);

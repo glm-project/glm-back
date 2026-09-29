@@ -9,6 +9,7 @@ import com.glm.glmback.atelier.domain.Horodatage;
 import com.glm.glmback.atelier.domain.MotifDAnnulation;
 import com.glm.glmback.atelier.domain.NatureDOperation;
 import com.glm.glmback.atelier.domain.OperateurId;
+import com.glm.glmback.atelier.domain.OrigineDuPointage;
 import com.glm.glmback.atelier.domain.PosteDeTravailId;
 import com.glm.glmback.atelier.domain.TauxHoraire;
 import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
@@ -57,6 +58,10 @@ class EvenementDAtelierEntity {
 
   private String auteur;
 
+  @Enumerated(EnumType.STRING)
+  @Column(length = 20)
+  private OrigineDuPointage origine;
+
   private Instant dateDeSurvenue;
 
   @Column(name = "date_d_enregistrement")
@@ -82,6 +87,7 @@ class EvenementDAtelierEntity {
     coutHoraire = evenement.coutHoraire().map(CoutHoraire::value).orElse(null);
     tauxHoraire = evenement.tauxHoraire().map(TauxHoraire::value).orElse(null);
     auteur = evenement.auteur().value();
+    origine = evenement.origine();
     dateDeSurvenue = evenement.dateDeSurvenue();
     dateDEnregistrement = evenement.dateDEnregistrement();
     reporteLAnnulation(evenement);
@@ -121,6 +127,7 @@ class EvenementDAtelierEntity {
       .coutHoraire(Optional.ofNullable(coutHoraire).map(CoutHoraire::new))
       .tauxHoraire(Optional.ofNullable(tauxHoraire).map(TauxHoraire::new))
       .auteur(new Auteur(auteur))
+      .origine(origine)
       .horodatage(new Horodatage(dateDeSurvenue, dateDEnregistrement));
 
     return annulation().map(evenement::annule).orElse(evenement);

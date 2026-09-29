@@ -71,6 +71,36 @@ class SuivisDAtelierServiceTest {
       });
   }
 
+  /**
+   * Le pupitre reste hors ligne rejoue son geste apres coup, a l'heure ou il a eu lieu : la route des pointages en fait
+   * toujours un pointage, jamais une regularisation, quel que soit l'ecart entre les deux dates.
+   */
+  @Test
+  void shouldConserverCommeUnPointageUnGesteRejoueHorsLigne() {
+    SuiviDAtelier engage = engage();
+    maintenant.set(LE_10_MAI_2026_A_9H);
+
+    SuiviDAtelier pointe = atelier
+      .pointe(
+        PointageAEnregistrer.pupitreBuilder()
+          .suivi(engage.id())
+          .type(TypeDEvenementDAtelier.DEBUT)
+          .operateur(OPERATEUR_ID_DUPONT)
+          .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
+          .auteur(AUTEUR_DUPONT)
+          .dateDeSurvenue(Optional.of(LE_10_MAI_2026_A_8H))
+          .evenement(EvenementDAtelierId.newId())
+      )
+      .suivi();
+
+    assertThat(pointe.journal().actifs())
+      .singleElement()
+      .satisfies(evenement -> {
+        assertThat(evenement.origine()).isEqualTo(OrigineDuPointage.POINTAGE);
+        assertThat(evenement.estUneRegularisation()).isFalse();
+      });
+  }
+
   @Test
   void shouldPointerSansPosteDeTravail() {
     SuiviDAtelier engage = engage();
@@ -346,6 +376,25 @@ class SuivisDAtelierServiceTest {
   }
 
   /**
+   * C'est l'acte du gestionnaire qui fait la regularisation, pas l'ecart entre les deux dates : un fait regularise a
+   * l'heure meme de sa saisie en reste une.
+   */
+  @Test
+  void shouldConserverLOrigineDUneRegularisationSaisieALHeureDuFait() {
+    SuiviDAtelier engage = engage();
+    maintenant.set(LE_10_MAI_2026_A_8H);
+
+    SuiviDAtelier regularise = atelier.regularise(regularisationDeDebutA(engage.id(), LE_10_MAI_2026_A_8H));
+
+    assertThat(regularise.journal().actifs())
+      .singleElement()
+      .satisfies(evenement -> {
+        assertThat(evenement.origine()).isEqualTo(OrigineDuPointage.REGULARISATION);
+        assertThat(evenement.estUneRegularisation()).isTrue();
+      });
+  }
+
+  /**
    * La regularisation ecrit le meme evenement que le pointage : le cout et le taux horaires y sont donc figes de la
    * meme facon, sans quoi le back-office contournerait la capture que le pupitre applique.
    */
@@ -395,6 +444,30 @@ class SuivisDAtelierServiceTest {
     assertThat(corrige.activites())
       .singleElement()
       .satisfies(intervalle -> assertThat(intervalle.debut()).isEqualTo(LE_10_MAI_2026_A_8H));
+  }
+
+  /**
+   * Le remplacant d'une correction est un acte du gestionnaire, meme date de l'instant de sa saisie ; le pointage qu'il
+   * remplace garde son origine, annule au journal.
+   */
+  @Test
+  void shouldConserverLOrigineDuRemplacantDUneCorrection() {
+    SuiviDAtelier engage = engage();
+    maintenant.set(LE_10_MAI_2026_A_8H);
+    SuiviDAtelier pointe = atelier.pointe(debutSurFraiseuse1(engage.id())).suivi();
+    EvenementDAtelierId debutFautif = pointe.journal().actifs().getFirst().id();
+    maintenant.set(LE_10_MAI_2026_A_9H);
+
+    SuiviDAtelier corrige = atelier.corrige(
+      new CorrectionAEnregistrer(debutFautif, MOTIF_ERREUR_DE_SAISIE, regularisationDeDebutA(engage.id(), LE_10_MAI_2026_A_9H))
+    );
+
+    assertThat(corrige.journal().actifs())
+      .singleElement()
+      .satisfies(remplacant -> assertThat(remplacant.origine()).isEqualTo(OrigineDuPointage.REGULARISATION));
+    assertThat(corrige.journal().evenement(debutFautif))
+      .get()
+      .satisfies(corrigee -> assertThat(corrigee.origine()).isEqualTo(OrigineDuPointage.POINTAGE));
   }
 
   @Test

@@ -695,7 +695,7 @@
             "type" : "string"
           },
           "estUneRegularisation" : {
-            "description" : "Vrai lorsque la saisie a ete faite apres coup.",
+            "description" : "Vrai lorsque l'evenement a ete saisi par le gestionnaire, en regularisation ou comme remplacant d'une correction.\nUn pointage ne l'est jamais, meme rejoue hors ligne avec l'heure de son geste : une saisie differee se lit a l'ecart\nentre dateDeSurvenue et dateDEnregistrement.\n",
             "type" : "boolean"
           },
           "id" : {
@@ -1308,7 +1308,7 @@
         "description" : "Un pointage de l'operateur sur un element engage, date a l'instant present.",
         "properties" : {
           "dateDeSurvenue" : {
-            "description" : "Heure metier du geste. Absente, elle vaut l'instant de reception initial.",
+            "description" : "Heure metier du geste. Absente, elle vaut l'instant de reception initial. La fournir ne fait pas du pointage une regularisation.",
             "format" : "date-time",
             "type" : "string"
           },
@@ -1533,7 +1533,7 @@
         "type" : "object"
       },
       "RestRegularisation" : {
-        "description" : "Une saisie oubliee, rattrapee par le gestionnaire a l'heure ou elle a reellement eu lieu.\n\nL'evenement produit portera `dateDeSurvenue` (fournie ici) et `dateDEnregistrement` (l'instant courant) : c'est cet\necart, et lui seul, qui signale une regularisation.\n",
+        "description" : "Une saisie oubliee, rattrapee par le gestionnaire a l'heure ou elle a reellement eu lieu.\n\nL'evenement produit portera `dateDeSurvenue` (fournie ici) et `dateDEnregistrement` (l'instant courant), et restera\nune regularisation (`estUneRegularisation`) meme saisi a l'heure du fait : c'est l'acte qui la fait, jamais l'ecart\nentre les deux dates.\n",
         "properties" : {
           "dateDeSurvenue" : {
             "description" : "Heure metier a laquelle le fait a reellement eu lieu.",

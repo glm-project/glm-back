@@ -28,6 +28,7 @@ public record EvenementDAtelier(
   Optional<CoutHoraire> coutHoraire,
   Optional<TauxHoraire> tauxHoraire,
   Auteur auteur,
+  OrigineDuPointage origine,
   Horodatage horodatage,
   Optional<Annulation> annulation
 ) {
@@ -40,6 +41,7 @@ public record EvenementDAtelier(
     Assert.notNull("cout horaire", coutHoraire);
     Assert.notNull("taux horaire", tauxHoraire);
     Assert.notNull("auteur", auteur);
+    Assert.notNull("origine", origine);
     Assert.notNull("horodatage", horodatage);
     Assert.notNull("annulation", annulation);
   }
@@ -54,6 +56,7 @@ public record EvenementDAtelier(
       builder.coutHoraire,
       builder.tauxHoraire,
       builder.auteur,
+      builder.origine,
       builder.horodatage,
       Optional.empty()
     );
@@ -72,7 +75,19 @@ public record EvenementDAtelier(
       throw new EvenementDejaAnnuleException(id);
     }
 
-    return new EvenementDAtelier(id, type, operateur, poste, nature, coutHoraire, tauxHoraire, auteur, horodatage, Optional.of(annulation));
+    return new EvenementDAtelier(
+      id,
+      type,
+      operateur,
+      poste,
+      nature,
+      coutHoraire,
+      tauxHoraire,
+      auteur,
+      origine,
+      horodatage,
+      Optional.of(annulation)
+    );
   }
 
   public boolean estAnnule() {
@@ -80,11 +95,12 @@ public record EvenementDAtelier(
   }
 
   /**
-   * Vrai si le fait a ete enregistre apres coup, que ce soit par un gestionnaire ou par l'operateur lui-meme via une
-   * option de pointage en retard : c'est l'ecart entre les deux dates qui le dit, jamais l'identite de l'auteur.
+   * Vrai si le fait a ete porte au journal par un acte du gestionnaire — une regularisation, ou le remplacant d'une
+   * correction. C'est son origine qui le dit, jamais l'ecart entre les deux dates, qui caracterise aussi un pointage
+   * rejoue hors ligne, ni l'identite de l'auteur.
    */
   public boolean estUneRegularisation() {
-    return horodatage.estDifferee();
+    return origine == OrigineDuPointage.REGULARISATION;
   }
 
   public CleDActivite cle() {
@@ -109,6 +125,7 @@ public record EvenementDAtelier(
       EvenementDAtelierCoutHoraireBuilder,
       EvenementDAtelierTauxHoraireBuilder,
       EvenementDAtelierAuteurBuilder,
+      EvenementDAtelierOrigineBuilder,
       EvenementDAtelierHorodatageBuilder
   {
 
@@ -120,6 +137,7 @@ public record EvenementDAtelier(
     private Optional<CoutHoraire> coutHoraire;
     private Optional<TauxHoraire> tauxHoraire;
     private Auteur auteur;
+    private OrigineDuPointage origine;
     private Horodatage horodatage;
 
     @Override
@@ -172,8 +190,15 @@ public record EvenementDAtelier(
     }
 
     @Override
-    public EvenementDAtelierHorodatageBuilder auteur(Auteur auteur) {
+    public EvenementDAtelierOrigineBuilder auteur(Auteur auteur) {
       this.auteur = auteur;
+
+      return this;
+    }
+
+    @Override
+    public EvenementDAtelierHorodatageBuilder origine(OrigineDuPointage origine) {
+      this.origine = origine;
 
       return this;
     }
@@ -215,7 +240,11 @@ public record EvenementDAtelier(
   }
 
   public interface EvenementDAtelierAuteurBuilder {
-    EvenementDAtelierHorodatageBuilder auteur(Auteur auteur);
+    EvenementDAtelierOrigineBuilder auteur(Auteur auteur);
+  }
+
+  public interface EvenementDAtelierOrigineBuilder {
+    EvenementDAtelierHorodatageBuilder origine(OrigineDuPointage origine);
   }
 
   public interface EvenementDAtelierHorodatageBuilder {

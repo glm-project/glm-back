@@ -51,8 +51,11 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
 
 - **Le journal est la source de vérité.** Aucun état, aucun compteur, aucun intervalle n'est stocké : tout se déduit du
   repli. C'est la correction qui l'impose — une saisie rattrapée doit compter à l'heure où elle a eu lieu.
-- **Horodatage bitemporel** sur chaque événement : date de survenue (métier) et date d'enregistrement (technique). Une
-  régularisation se reconnaît à l'écart entre les deux, jamais à l'identité de l'auteur.
+- **Horodatage bitemporel** sur chaque événement : date de survenue (métier) et date d'enregistrement (technique).
+- **Une régularisation d'atelier se lit sur l'origine persistée de l'événement** (`OrigineDuPointage`) :
+  `REGULARISATION` pour la régularisation et le remplaçant d'une correction, `POINTAGE` pour toute la route des
+  pointages, même rejouée hors ligne avec l'heure du geste. C'est `SuivisDAtelierService` qui la fixe, d'après l'acte ;
+  ni l'écart des dates ni l'auteur ne la déduisent.
 - **Un événement annulé reste au journal**, porteur de son `Annulation`. Le repli l'écarte ; personne ne le supprime.
 - **Le départ est un fait de l'opérateur, écrit une seule fois ; la pause n'existe pas pour le serveur, le pupitre la
   traduit en fins d'activité.** Ne jamais recopier le départ dans le journal des éléments : c'est ce qui permet à une

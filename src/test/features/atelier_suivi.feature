@@ -101,6 +101,9 @@ Feature: Suivi des elements engages en atelier
     Then la reponse a le statut http 201
     And l'evenement 0 du suivi a l'identifiant "00000000-0000-0000-0000-000000000023"
     And l'evenement 0 du suivi a survenu a "2026-05-10T08:00:00Z" et a ete saisi a "2026-05-10T14:00:00Z" par "gestionnaire"
+    # Saisi apres coup, et par un gestionnaire : c'est pourtant un pointage, la route des pointages n'etant jamais celle
+    # d'une regularisation.
+    And l'evenement 0 du suivi n'est pas une regularisation
 
   Scenario: Un pointage d'atelier identique est rejoue sans second evenement
     Given il est "2026-05-10T06:00:00Z"
@@ -376,8 +379,25 @@ Feature: Suivi des elements engages en atelier
     Then la reponse a le statut http 201
     And le suivi a l'etat "EN_COURS"
     When je consulte "OF 2007"
-    # Une regularisation se reconnait a l'ecart de ses deux dates, jamais a l'identite de son auteur.
+    # Une regularisation se reconnait a l'acte qui l'a saisie, jamais a l'ecart de ses deux dates ni a l'identite de
+    # son auteur.
     Then l'evenement 0 du suivi est une regularisation de "dupont" saisie par "gestionnaire"
+
+  Scenario: Une regularisation saisie a l'heure du fait reste une regularisation
+    Given il est "2026-05-10T08:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 2022"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 2022                 |
+    And j'ai engage l'element "OF 2022" en atelier
+    Given il est "2026-05-10T09:00:00Z"
+    When je regularise sur "OF 2022"
+      | type           | DEBUT                |
+      | operateur      | dupont               |
+      | poste          | fraiseuse-1          |
+      | dateDeSurvenue | 2026-05-10T09:00:00Z |
+    Then la reponse a le statut http 201
+    And l'evenement 0 du suivi a survenu a "2026-05-10T09:00:00Z" et a ete saisi a "2026-05-10T09:00:00Z" par "gestionnaire"
+    And l'evenement 0 du suivi est une regularisation de "dupont" saisie par "gestionnaire"
 
   Scenario: Une saisie en trop est annulee, mais reste au journal
     Given il est "2026-05-10T08:00:00Z"
@@ -417,6 +437,9 @@ Feature: Suivi des elements engages en atelier
     Then la reponse a le statut http 200
     And le suivi a l'etat "EN_COURS"
     And le journal du suivi contient 2 evenements
+    # Le remplacant est un acte du gestionnaire ; le pointage qu'il remplace le reste, annule au journal.
+    And l'evenement 0 du suivi n'est pas une regularisation
+    And l'evenement 1 du suivi est une regularisation de "dupont" saisie par "gestionnaire"
 
   Scenario: Consulter un suivi inexistant renvoie 404
     When je consulte le suivi inconnu "7a4e2c91-6b83-4d05-9e17-f204a6b8c1d3"

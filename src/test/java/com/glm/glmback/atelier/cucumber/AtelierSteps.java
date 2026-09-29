@@ -301,6 +301,11 @@ public class AtelierSteps {
       .withValue(saisiPar);
   }
 
+  @Then("l'evenement {int} du suivi n'est pas une regularisation")
+  public void lEvenementDuSuiviNEstPasUneRegularisation(int rang) {
+    assertThatLastResponse().hasElement("$.journal[" + rang + "].estUneRegularisation").withValue(false);
+  }
+
   @Then("l'evenement {int} du suivi porte l'operateur {string} et le poste {string}")
   public void lEvenementDuSuiviPorteLeReferentiel(int rang, String operateur, String poste) {
     assertThatLastResponse()

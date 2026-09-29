@@ -86,8 +86,8 @@ class PointagesDeLaSyntheseIT {
     String annulation = annule ? "?" : "null";
     var requete = entityManager
       .createNativeQuery(
-        "insert into evenement_d_atelier (id, suivi_id, type, operateur_id, auteur, date_de_survenue, date_d_enregistrement, annulation_date) "
-          + "values (?, ?, 'DEBUT', ?, 'dupont', ?, ?, "
+        "insert into evenement_d_atelier (id, suivi_id, type, operateur_id, auteur, origine, date_de_survenue, date_d_enregistrement, annulation_date) "
+          + "values (?, ?, 'DEBUT', ?, 'dupont', 'POINTAGE', ?, ?, "
           + annulation
           + ")"
       )

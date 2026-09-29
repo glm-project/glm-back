@@ -142,6 +142,7 @@ class PariteDesRepositoriesDAtelierIT {
       .coutHoraire(Optional.of(COUT_HORAIRE_FRAISEUSE_1))
       .tauxHoraire(Optional.of(TAUX_HORAIRE_DUPONT))
       .auteur(AUTEUR_DUPONT)
+      .origine(OrigineDuPointage.POINTAGE)
       .horodatage(Horodatage.saisiA(date));
   }
 

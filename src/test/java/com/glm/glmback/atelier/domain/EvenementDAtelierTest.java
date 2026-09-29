@@ -39,6 +39,7 @@ class EvenementDAtelierTest {
       .coutHoraire(COUT_HORAIRE)
       .tauxHoraire(TAUX_HORAIRE)
       .auteur(AUTEUR_DUPONT)
+      .origine(OrigineDuPointage.POINTAGE)
       .horodatage(HORODATAGE);
 
     assertThat(evenement.id()).isEqualTo(ID);
@@ -49,6 +50,7 @@ class EvenementDAtelierTest {
     assertThat(evenement.coutHoraire()).contains(COUT_HORAIRE_FRAISEUSE_1);
     assertThat(evenement.tauxHoraire()).contains(TAUX_HORAIRE_DUPONT);
     assertThat(evenement.auteur()).isEqualTo(AUTEUR_DUPONT);
+    assertThat(evenement.origine()).isEqualTo(OrigineDuPointage.POINTAGE);
     assertThat(evenement.horodatage()).isEqualTo(HORODATAGE);
     assertThat(evenement.annulation()).isEmpty();
     assertThat(evenement.estAnnule()).isFalse();
@@ -65,6 +67,7 @@ class EvenementDAtelierTest {
       .coutHoraire(Optional.empty())
       .tauxHoraire(Optional.empty())
       .auteur(AUTEUR_DUPONT)
+      .origine(OrigineDuPointage.POINTAGE)
       .horodatage(HORODATAGE);
 
     assertThat(evenement.poste()).isEmpty();
@@ -95,28 +98,30 @@ class EvenementDAtelierTest {
   }
 
   @Test
-  void shouldBeUneRegularisationWhenEnregistreApresLeFait() {
+  void shouldBeUneRegularisationWhenRegulariseParLeGestionnaire() {
     EvenementDAtelier evenement = debutSurFraiseuse1RegulariseParLeroyA(LE_10_MAI_2026_A_8H);
 
     assertThat(evenement.estUneRegularisation()).isTrue();
   }
 
   /**
-   * Le pointage en retard que le client envisage : l'operateur saisit lui-meme, mais apres coup. C'est bien une
-   * regularisation, et c'est l'ecart des deux dates qui le dit — jamais l'identite de l'auteur.
+   * Un pupitre reste hors ligne rejoue son pointage apres coup, avec l'heure du geste : les deux dates s'ecartent,
+   * mais ce n'est pas un acte du gestionnaire. L'ecart ne fait donc pas la regularisation, l'origine seule la dit.
    */
   @Test
-  void shouldBeUneRegularisationSaisieParLOperateurLuiMeme() {
-    EvenementDAtelier evenement = EvenementDAtelier.builder()
-      .id(ID)
-      .type(TypeDEvenementDAtelier.DEBUT)
-      .operateur(OPERATEUR_ID_DUPONT)
-      .poste(SUR_FRAISEUSE_1)
-      .nature(EN_FRAISAGE)
-      .coutHoraire(COUT_HORAIRE)
-      .tauxHoraire(TAUX_HORAIRE)
-      .auteur(AUTEUR_DUPONT)
-      .horodatage(new Horodatage(LE_10_MAI_2026_A_8H, LE_10_MAI_2026_A_9H));
+  void shouldNotBeUneRegularisationWhenPointageEnregistreApresLeFait() {
+    EvenementDAtelier evenement = evenementNeDe(OrigineDuPointage.POINTAGE, new Horodatage(LE_10_MAI_2026_A_8H, LE_10_MAI_2026_A_9H));
+
+    assertThat(evenement.estUneRegularisation()).isFalse();
+  }
+
+  /**
+   * Le gestionnaire qui regularise un fait a l'heure meme ou il le saisit fait bien une regularisation : c'est son acte
+   * qui compte, pas l'ecart entre les deux dates.
+   */
+  @Test
+  void shouldBeUneRegularisationWhenRegulariseAuMomentDuFait() {
+    EvenementDAtelier evenement = evenementNeDe(OrigineDuPointage.REGULARISATION, Horodatage.saisiA(LE_10_MAI_2026_A_8H));
 
     assertThat(evenement.estUneRegularisation()).isTrue();
   }
@@ -139,6 +144,13 @@ class EvenementDAtelierTest {
 
     assertThat(annule.coutHoraire()).isEqualTo(COUT_HORAIRE);
     assertThat(annule.tauxHoraire()).isEqualTo(TAUX_HORAIRE);
+  }
+
+  @Test
+  void shouldConserverLOrigineALAnnulation() {
+    EvenementDAtelier annule = debutSurFraiseuse1RegulariseParLeroyA(LE_10_MAI_2026_A_8H).annule(annulationParLeroy());
+
+    assertThat(annule.origine()).isEqualTo(OrigineDuPointage.REGULARISATION);
   }
 
   @Test
@@ -169,6 +181,7 @@ class EvenementDAtelierTest {
             null,
             TAUX_HORAIRE,
             AUTEUR_DUPONT,
+            OrigineDuPointage.POINTAGE,
             HORODATAGE,
             Optional.empty()
           ),
@@ -185,6 +198,7 @@ class EvenementDAtelierTest {
             COUT_HORAIRE,
             null,
             AUTEUR_DUPONT,
+            OrigineDuPointage.POINTAGE,
             HORODATAGE,
             Optional.empty()
           ),
@@ -201,6 +215,7 @@ class EvenementDAtelierTest {
             COUT_HORAIRE,
             TAUX_HORAIRE,
             null,
+            OrigineDuPointage.POINTAGE,
             HORODATAGE,
             Optional.empty()
           ),
@@ -218,6 +233,24 @@ class EvenementDAtelierTest {
             TAUX_HORAIRE,
             AUTEUR_DUPONT,
             null,
+            HORODATAGE,
+            Optional.empty()
+          ),
+        "origine"
+      ),
+      construction(
+        () ->
+          new EvenementDAtelier(
+            ID,
+            TypeDEvenementDAtelier.DEBUT,
+            OPERATEUR_ID_DUPONT,
+            SUR_FRAISEUSE_1,
+            EN_FRAISAGE,
+            COUT_HORAIRE,
+            TAUX_HORAIRE,
+            AUTEUR_DUPONT,
+            OrigineDuPointage.POINTAGE,
+            null,
             Optional.empty()
           ),
         "horodatage"
@@ -233,6 +266,7 @@ class EvenementDAtelierTest {
             COUT_HORAIRE,
             TAUX_HORAIRE,
             AUTEUR_DUPONT,
+            OrigineDuPointage.POINTAGE,
             HORODATAGE,
             null
           ),
@@ -252,6 +286,32 @@ class EvenementDAtelierTest {
     Optional<PosteDeTravailId> poste,
     Optional<NatureDOperation> nature
   ) {
-    new EvenementDAtelier(id, type, operateur, poste, nature, COUT_HORAIRE, TAUX_HORAIRE, AUTEUR_DUPONT, HORODATAGE, Optional.empty());
+    new EvenementDAtelier(
+      id,
+      type,
+      operateur,
+      poste,
+      nature,
+      COUT_HORAIRE,
+      TAUX_HORAIRE,
+      AUTEUR_DUPONT,
+      OrigineDuPointage.POINTAGE,
+      HORODATAGE,
+      Optional.empty()
+    );
+  }
+
+  private static EvenementDAtelier evenementNeDe(OrigineDuPointage origine, Horodatage horodatage) {
+    return EvenementDAtelier.builder()
+      .id(ID)
+      .type(TypeDEvenementDAtelier.DEBUT)
+      .operateur(OPERATEUR_ID_DUPONT)
+      .poste(SUR_FRAISEUSE_1)
+      .nature(EN_FRAISAGE)
+      .coutHoraire(COUT_HORAIRE)
+      .tauxHoraire(TAUX_HORAIRE)
+      .auteur(AUTEUR_DUPONT)
+      .origine(origine)
+      .horodatage(horodatage);
   }
 }

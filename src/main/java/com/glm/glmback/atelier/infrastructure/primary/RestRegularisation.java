@@ -16,8 +16,9 @@ import java.util.UUID;
   description = """
   Une saisie oubliee, rattrapee par le gestionnaire a l'heure ou elle a reellement eu lieu.
 
-  L'evenement produit portera `dateDeSurvenue` (fournie ici) et `dateDEnregistrement` (l'instant courant) : c'est cet
-  ecart, et lui seul, qui signale une regularisation.
+  L'evenement produit portera `dateDeSurvenue` (fournie ici) et `dateDEnregistrement` (l'instant courant), et restera
+  une regularisation (`estUneRegularisation`) meme saisi a l'heure du fait : c'est l'acte qui la fait, jamais l'ecart
+  entre les deux dates.
   """
 )
 record RestRegularisation(

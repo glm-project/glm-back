@@ -33,7 +33,10 @@ record RestPointage(
   @Schema(description = "Identifiant du poste de travail. Toujours facultatif : une entreprise sans parc machine le laisse vide.")
   UUID poste,
 
-  @Schema(description = "Heure metier du geste. Absente, elle vaut l'instant de reception initial.") Instant dateDeSurvenue
+  @Schema(
+    description = "Heure metier du geste. Absente, elle vaut l'instant de reception initial. La fournir ne fait pas du pointage une regularisation."
+  )
+  Instant dateDeSurvenue
 ) {
   PointageAEnregistrer toDomain(SuiviDAtelierId suivi, Auteur auteur) {
     return PointageAEnregistrer.pupitreBuilder()

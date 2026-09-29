@@ -46,7 +46,14 @@ record RestEvenementDAtelier(
   @Schema(description = "Heure metier a laquelle le fait a eu lieu.", requiredMode = Schema.RequiredMode.REQUIRED) Instant dateDeSurvenue,
   @Schema(description = "Heure a laquelle la saisie a ete enregistree.", requiredMode = Schema.RequiredMode.REQUIRED)
   Instant dateDEnregistrement,
-  @Schema(description = "Vrai lorsque la saisie a ete faite apres coup.", requiredMode = Schema.RequiredMode.REQUIRED)
+  @Schema(
+    description = """
+    Vrai lorsque l'evenement a ete saisi par le gestionnaire, en regularisation ou comme remplacant d'une correction.
+    Un pointage ne l'est jamais, meme rejoue hors ligne avec l'heure de son geste : une saisie differee se lit a l'ecart
+    entre dateDeSurvenue et dateDEnregistrement.
+    """,
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
   boolean estUneRegularisation,
   @Schema(description = "Presente lorsque l'evenement a ete annule. L'evenement reste au journal.") RestAnnulation annulation
 ) {

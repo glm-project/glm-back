@@ -60,9 +60,15 @@ Chaque événement porte deux dates :
 - `dateDeSurvenue` — l'heure **métier**, celle où le fait a eu lieu ;
 - `dateDEnregistrement` — l'heure de la **saisie**.
 
-Une régularisation se reconnaît à l'écart entre les deux, exposé par le booléen `estUneRegularisation` — jamais à
-l'identité de l'auteur. Un affichage honnête montre l'heure métier, et signale la saisie différée (« pointé le 11/05
-à 9 h 15 pour le 10/05 à 17 h »).
+Un affichage honnête montre l'heure métier, et signale la saisie différée par l'écart entre les deux (« pointé le
+11/05 à 9 h 15 pour le 10/05 à 17 h »).
+
+Cet écart ne fait pas une régularisation : un pointage rejoué par un pupitre resté hors ligne arrive lui aussi après
+coup. Le booléen `estUneRegularisation` dit l'**acte** qui a porté le fait au journal : vrai pour une régularisation
+(`POST …/regularisations`) et pour le remplaçant d'une correction (`PUT …/evenements/{evtId}`), même saisis à l'heure
+du fait ; faux pour tout ce qui passe par `POST …/pointages`, quels que soient le rôle de l'utilisateur et la
+`dateDeSurvenue` fournie. Jamais l'identité de l'auteur. Pour la présence, `estUneRegularisation` reste l'écart entre
+les deux dates.
 
 Le booléen `estSaisiParUnTiers` **n'existe plus** : l'auteur est un identifiant de connexion et l'opérateur une fiche du
 référentiel, et rien ne relie encore les deux. Il reviendra le jour où l'authentification sera tranchée.

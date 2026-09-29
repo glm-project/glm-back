@@ -12,8 +12,9 @@ import java.util.Set;
  *
  * <p>
  * Un pointage se date sur l'horloge, une regularisation sur la valeur fournie ; la date d'enregistrement vaut
- * l'instant present dans les deux cas. L'agregat, lui, ne voit qu'un evenement deja horodate, ce qui lui epargne de
- * distinguer les deux actes.
+ * l'instant present dans les deux cas. C'est aussi ici que l'evenement recoit son origine : un pointage, meme rejoue
+ * hors ligne avec l'heure de son geste, ou une regularisation, qu'elle soit saisie seule ou comme remplacant d'une
+ * correction. L'agregat, lui, ne voit qu'un evenement deja horodate et qualifie.
  * </p>
  *
  * <p>
@@ -113,6 +114,7 @@ public final class SuivisDAtelierService {
       commande.operateur(),
       commande.poste(),
       commande.auteur(),
+      OrigineDuPointage.POINTAGE,
       horodatage
     );
 
@@ -177,6 +179,7 @@ public final class SuivisDAtelierService {
       commande.operateur(),
       commande.poste(),
       commande.auteur(),
+      OrigineDuPointage.REGULARISATION,
       new Horodatage(commande.dateDeSurvenue(), clock.now())
     );
   }
@@ -197,6 +200,7 @@ public final class SuivisDAtelierService {
     OperateurId operateur,
     Optional<PosteDeTravailId> poste,
     Auteur auteur,
+    OrigineDuPointage origine,
     Horodatage horodatage
   ) {
     OperateurConnu operateurConnu = operateurConnu(operateur);
@@ -211,6 +215,7 @@ public final class SuivisDAtelierService {
       .coutHoraire(posteConnu.flatMap(PosteConnu::coutHoraire))
       .tauxHoraire(operateurConnu.tauxHoraire())
       .auteur(auteur)
+      .origine(origine)
       .horodatage(horodatage);
   }
 

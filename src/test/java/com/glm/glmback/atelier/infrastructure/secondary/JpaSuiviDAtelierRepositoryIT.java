@@ -17,6 +17,7 @@ import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.Horodatage;
 import com.glm.glmback.atelier.domain.JournalDAtelier;
 import com.glm.glmback.atelier.domain.NatureDOperation;
+import com.glm.glmback.atelier.domain.OrigineDuPointage;
 import com.glm.glmback.atelier.domain.Periode;
 import com.glm.glmback.atelier.domain.PosteDeTravailId;
 import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
@@ -123,6 +124,27 @@ class JpaSuiviDAtelierRepositoryIT {
     assertThat(relu.journal().actifs())
       .singleElement()
       .satisfies(evenement -> assertThat(evenement.coutHoraire()).isEmpty());
+  }
+
+  /**
+   * L'origine d'un fait survit au round-trip base, et c'est elle qui dit la regularisation : le pointage rejoue hors
+   * ligne arrive apres coup sans en etre une, la fin regularisee a l'heure meme de sa saisie en reste une.
+   */
+  @Test
+  @WithTenant(IMPECCMOLD)
+  void shouldRelireLOrigineDeChaqueEvenement() {
+    Instant engagement = Instant.parse("2040-01-06T10:00:00Z");
+    SuiviDAtelier engage = suiviEngageA(engagement)
+      .enregistre(debutRejoueHorsLigne(engagement.plusSeconds(3600), engagement.plusSeconds(7200)))
+      .enregistre(finRegulariseeParLeroyA(engagement.plusSeconds(10800)));
+
+    inTransaction(() -> suivis.create(engage));
+
+    SuiviDAtelier relu = inTransaction(() -> suivis.get(engage.id())).orElseThrow();
+    assertThat(relu).isEqualTo(engage);
+    assertThat(relu.journal().actifs())
+      .extracting(EvenementDAtelier::origine)
+      .containsExactly(OrigineDuPointage.POINTAGE, OrigineDuPointage.REGULARISATION);
   }
 
   @Test
@@ -373,6 +395,7 @@ class JpaSuiviDAtelierRepositoryIT {
       .coutHoraire(Optional.empty())
       .tauxHoraire(Optional.empty())
       .auteur(AUTEUR_MARTIN)
+      .origine(OrigineDuPointage.POINTAGE)
       .horodatage(Horodatage.saisiA(date));
   }
 
@@ -414,6 +437,31 @@ class JpaSuiviDAtelierRepositoryIT {
     );
   }
 
+  private static EvenementDAtelier debutRejoueHorsLigne(Instant survenue, Instant enregistrement) {
+    return evenement(
+      TypeDEvenementDAtelier.DEBUT,
+      Optional.of(POSTE_ID_FRAISEUSE_1),
+      Optional.of(NATURE_FRAISAGE),
+      Optional.of(COUT_HORAIRE_FRAISEUSE_1),
+      Optional.of(TAUX_HORAIRE_DUPONT),
+      new Horodatage(survenue, enregistrement)
+    );
+  }
+
+  private static EvenementDAtelier finRegulariseeParLeroyA(Instant date) {
+    return EvenementDAtelier.builder()
+      .id(EvenementDAtelierId.newId())
+      .type(TypeDEvenementDAtelier.FIN)
+      .operateur(OPERATEUR_ID_DUPONT)
+      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
+      .nature(Optional.of(NATURE_FRAISAGE))
+      .coutHoraire(Optional.of(COUT_HORAIRE_FRAISEUSE_1))
+      .tauxHoraire(Optional.of(TAUX_HORAIRE_DUPONT))
+      .auteur(AUTEUR_LEROY)
+      .origine(OrigineDuPointage.REGULARISATION)
+      .horodatage(Horodatage.saisiA(date));
+  }
+
   private static EvenementDAtelier finSurFraiseuse1A(Instant date) {
     return evenement(
       TypeDEvenementDAtelier.FIN,
@@ -442,6 +490,7 @@ class JpaSuiviDAtelierRepositoryIT {
       .coutHoraire(coutHoraire)
       .tauxHoraire(tauxHoraire)
       .auteur(AUTEUR_DUPONT)
+      .origine(OrigineDuPointage.POINTAGE)
       .horodatage(horodatage);
   }
 

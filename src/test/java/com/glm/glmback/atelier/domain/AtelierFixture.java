@@ -133,7 +133,7 @@ public final class AtelierFixture {
         .enregistre(debutSurFraiseuse1ParMartinA(debut.plusSeconds(60)))
         .enregistre(finSurFraiseuse1ParDupontA(debut.plusSeconds(28800)))
         .enregistre(
-          evenementDAtelier(
+          pointageDAtelier(
             TypeDEvenementDAtelier.FIN,
             OPERATEUR_ID_MARTIN,
             Optional.of(POSTE_ID_FRAISEUSE_1),
@@ -148,7 +148,7 @@ public final class AtelierFixture {
       .enregistre(debutSurFraiseuse1ParMartinA(debut.plusSeconds(60)))
       .enregistre(nonConformiteSurFraiseuse1ParDupontA(debut.plusSeconds(120)))
       .enregistre(
-        evenementDAtelier(
+        pointageDAtelier(
           TypeDEvenementDAtelier.NON_CONFORMITE,
           OPERATEUR_ID_MARTIN,
           Optional.of(POSTE_ID_FRAISEUSE_1),
@@ -187,11 +187,11 @@ public final class AtelierFixture {
   }
 
   public static EvenementDAtelier debutSansPosteParDupontA(Instant date) {
-    return evenementDAtelier(TypeDEvenementDAtelier.DEBUT, OPERATEUR_ID_DUPONT, Optional.empty(), AUTEUR_DUPONT, Horodatage.saisiA(date));
+    return pointageDAtelier(TypeDEvenementDAtelier.DEBUT, OPERATEUR_ID_DUPONT, Optional.empty(), AUTEUR_DUPONT, Horodatage.saisiA(date));
   }
 
   public static EvenementDAtelier debutSurFraiseuse1ParMartinA(Instant date) {
-    return evenementDAtelier(
+    return pointageDAtelier(
       TypeDEvenementDAtelier.DEBUT,
       OPERATEUR_ID_MARTIN,
       Optional.of(POSTE_ID_FRAISEUSE_1),
@@ -249,20 +249,24 @@ public final class AtelierFixture {
   }
 
   private static EvenementDAtelier pointageDeDupont(TypeDEvenementDAtelier type, PosteDeTravailId poste, Instant date) {
-    return evenementDAtelier(type, OPERATEUR_ID_DUPONT, Optional.of(poste), AUTEUR_DUPONT, Horodatage.saisiA(date));
+    return pointageDAtelier(type, OPERATEUR_ID_DUPONT, Optional.of(poste), AUTEUR_DUPONT, Horodatage.saisiA(date));
   }
 
   private static EvenementDAtelier regularisationParLeroy(TypeDEvenementDAtelier type, Instant date) {
-    return evenementDAtelier(
-      type,
-      OPERATEUR_ID_DUPONT,
-      Optional.of(POSTE_ID_FRAISEUSE_1),
-      AUTEUR_LEROY,
-      new Horodatage(date, LE_11_MAI_2026_A_9H15)
-    );
+    return EvenementDAtelier.builder()
+      .id(EvenementDAtelierId.newId())
+      .type(type)
+      .operateur(OPERATEUR_ID_DUPONT)
+      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
+      .nature(Optional.of(NATURE_FRAISAGE))
+      .coutHoraire(Optional.of(COUT_HORAIRE_FRAISEUSE_1))
+      .tauxHoraire(Optional.of(TAUX_HORAIRE_DUPONT))
+      .auteur(AUTEUR_LEROY)
+      .origine(OrigineDuPointage.REGULARISATION)
+      .horodatage(new Horodatage(date, LE_11_MAI_2026_A_9H15));
   }
 
-  private static EvenementDAtelier evenementDAtelier(
+  private static EvenementDAtelier pointageDAtelier(
     TypeDEvenementDAtelier type,
     OperateurId operateur,
     Optional<PosteDeTravailId> poste,
@@ -278,6 +282,7 @@ public final class AtelierFixture {
       .coutHoraire(Optional.of(COUT_HORAIRE_FRAISEUSE_1))
       .tauxHoraire(Optional.of(TAUX_HORAIRE_DUPONT))
       .auteur(auteur)
+      .origine(OrigineDuPointage.POINTAGE)
       .horodatage(horodatage);
   }
 }
