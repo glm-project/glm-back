@@ -51,8 +51,7 @@ class VieDeLAtelierTest {
   private final TempsDAtelierService temps = TempsDAtelierService.builder()
     .suivis(suivis)
     .journees(journees)
-    .seuil(() -> AMPLITUDE_MAXIMALE_13H)
-    .clock(maintenant::get);
+    .seuil(() -> AMPLITUDE_MAXIMALE_13H);
 
   private SuiviDAtelierId premierOrdre;
   private SuiviDAtelierId secondOrdre;
@@ -113,7 +112,7 @@ class VieDeLAtelierTest {
    */
   @Test
   void shouldScinderLePremierOrdreASaPauseEtLeRefermerAuDepartRegularise() {
-    assertThat(temps.tempsEffectif(premierOrdre))
+    assertThat(temps.tempsEffectif(premierOrdre, maintenant.get()))
       .extracting(IntervalleDActivite::poste, IntervalleDActivite::debut, IntervalleDActivite::fin)
       .containsExactly(
         tuple(Optional.of(POSTE_ID_FRAISEUSE_1), LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H)),
@@ -127,7 +126,7 @@ class VieDeLAtelierTest {
    */
   @Test
   void shouldArreterLeSecondOrdreASaPropreFinPlutotQuAuDepart() {
-    assertThat(temps.tempsEffectif(secondOrdre))
+    assertThat(temps.tempsEffectif(secondOrdre, maintenant.get()))
       .extracting(IntervalleDActivite::poste, IntervalleDActivite::debut, IntervalleDActivite::fin)
       .containsExactly(
         tuple(Optional.of(POSTE_ID_FRAISEUSE_2), LE_10_MAI_2026_A_9H, Optional.of(LE_10_MAI_2026_A_12H)),
@@ -186,8 +185,8 @@ class VieDeLAtelierTest {
    */
   @Test
   void shouldRefermerTousLesOrdresRestesOuvertsSurLaSeuleRegularisationDeDepart() {
-    assertThat(temps.tempsEffectif(premierOrdre)).noneMatch(IntervalleDActivite::estOuvert);
-    assertThat(temps.tempsEffectif(secondOrdre)).noneMatch(IntervalleDActivite::estOuvert);
+    assertThat(temps.tempsEffectif(premierOrdre, maintenant.get())).noneMatch(IntervalleDActivite::estOuvert);
+    assertThat(temps.tempsEffectif(secondOrdre, maintenant.get())).noneMatch(IntervalleDActivite::estOuvert);
   }
 
   private void ilEst(Instant instant) {

@@ -1,6 +1,5 @@
 package com.glm.glmback.atelier.domain;
 
-import com.glm.glmback.shared.time.domain.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -14,32 +13,35 @@ import java.util.Optional;
  * ce que le croisement des deux journaux fait gratuitement. La pause de midi, elle, se lit dans le journal de
  * l'element, ou le pupitre l'a pointee par une fin et un debut.
  * </p>
+ *
+ * <p>
+ * L'instant d'evaluation vient de l'appelant : ce service n'a pas d'horloge, et tout ce qui depend de l'heure de la
+ * lecture se juge sur cet instant-la.
+ * </p>
  */
 public final class TempsDAtelierService {
 
   private final SuiviDAtelierRepository suivis;
   private final JourneeDeTravailRepository journees;
   private final SeuilDAmplitude seuil;
-  private final Clock clock;
 
-  private TempsDAtelierService(SuiviDAtelierRepository suivis, JourneeDeTravailRepository journees, SeuilDAmplitude seuil, Clock clock) {
+  private TempsDAtelierService(SuiviDAtelierRepository suivis, JourneeDeTravailRepository journees, SeuilDAmplitude seuil) {
     this.suivis = suivis;
     this.journees = journees;
     this.seuil = seuil;
-    this.clock = clock;
   }
 
   public static TempsDAtelierServiceSuivisBuilder builder() {
-    return suivis -> journees -> seuil -> clock -> new TempsDAtelierService(suivis, journees, seuil, clock);
+    return suivis -> journees -> seuil -> new TempsDAtelierService(suivis, journees, seuil);
   }
 
-  public List<IntervalleDActivite> tempsEffectif(SuiviDAtelierId id) {
+  public List<IntervalleDActivite> tempsEffectif(SuiviDAtelierId id, Instant evaluation) {
     SuiviDAtelier suivi = suivis.get(id).orElseThrow(() -> new SuiviDAtelierIntrouvableException(id));
 
     return suivi
       .activites()
       .stream()
-      .flatMap(intervalle -> effectif(intervalle).stream())
+      .flatMap(intervalle -> effectif(intervalle, evaluation).stream())
       .toList();
   }
 
@@ -52,13 +54,13 @@ public final class TempsDAtelierService {
    * masque pas l'anomalie derriere un temps ampute.
    * </p>
    */
-  private List<IntervalleDActivite> effectif(IntervalleDActivite intervalle) {
+  private List<IntervalleDActivite> effectif(IntervalleDActivite intervalle, Instant evaluation) {
     Optional<JourneeDeTravail> journee = journees.journeeContenant(intervalle.operateur(), intervalle.debut());
     if (journee.isEmpty()) {
       return List.of(intervalle);
     }
 
-    return fenetres(journee.orElseThrow())
+    return fenetres(journee.orElseThrow(), evaluation)
       .stream()
       .flatMap(fenetre -> intervalle.reduitA(fenetre).stream())
       .toList();
@@ -68,11 +70,10 @@ public final class TempsDAtelierService {
    * Le dernier pointage d'OF de l'operateur n'est cherche que pour une journee abandonnee, ou fermee plus de 24 h apres
    * son arrivee : les seules qui aient besoin d'une fin presumee.
    */
-  private List<FenetreDePresence> fenetres(JourneeDeTravail journee) {
-    Instant maintenant = clock.now();
+  private List<FenetreDePresence> fenetres(JourneeDeTravail journee, Instant evaluation) {
     AmplitudeMaximale amplitude = seuil.amplitudeMaximale();
 
-    if (!journee.estPresumeePour(maintenant, amplitude)) {
+    if (!journee.estPresumeePour(evaluation, amplitude)) {
       return journee.fenetres();
     }
 
@@ -80,7 +81,7 @@ public final class TempsDAtelierService {
       .fenetreDeRecherche(amplitude)
       .flatMap(recherche -> suivis.dernierPointageDe(journee.operateur(), recherche));
 
-    return journee.fenetresA(maintenant, amplitude, dernierPointage);
+    return journee.fenetresA(evaluation, amplitude, dernierPointage);
   }
 
   public interface TempsDAtelierServiceSuivisBuilder {
@@ -92,10 +93,6 @@ public final class TempsDAtelierService {
   }
 
   public interface TempsDAtelierServiceSeuilBuilder {
-    TempsDAtelierServiceClockBuilder seuil(SeuilDAmplitude seuil);
-  }
-
-  public interface TempsDAtelierServiceClockBuilder {
-    TempsDAtelierService clock(Clock clock);
+    TempsDAtelierService seuil(SeuilDAmplitude seuil);
   }
 }

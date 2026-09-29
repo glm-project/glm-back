@@ -16,17 +16,13 @@ class TempsDAtelierServiceTest {
   private final JourneesDeTravailEnMemoire journees = new JourneesDeTravailEnMemoire();
   private final AtomicReference<Instant> maintenant = new AtomicReference<>(LE_10_MAI_2026_A_17H);
   private final AtomicReference<AmplitudeMaximale> seuil = new AtomicReference<>(AMPLITUDE_MAXIMALE_13H);
-  private final TempsDAtelierService temps = TempsDAtelierService.builder()
-    .suivis(suivis)
-    .journees(journees)
-    .seuil(seuil::get)
-    .clock(maintenant::get);
+  private final TempsDAtelierService temps = TempsDAtelierService.builder().suivis(suivis).journees(journees).seuil(seuil::get);
 
   @Test
   void shouldNotReadTempsEffectifDUnSuiviInconnu() {
     SuiviDAtelierId inconnu = SuiviDAtelierId.newId();
 
-    assertThatThrownBy(() -> temps.tempsEffectif(inconnu)).isExactlyInstanceOf(SuiviDAtelierIntrouvableException.class);
+    assertThatThrownBy(() -> temps.tempsEffectif(inconnu, maintenant.get())).isExactlyInstanceOf(SuiviDAtelierIntrouvableException.class);
   }
 
   /**
@@ -39,7 +35,7 @@ class TempsDAtelierServiceTest {
     EvenementDAtelier reprise = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H);
     SuiviDAtelierId suivi = enAtelier(avecPauseDeMidiPuis(reprise).enregistre(finDe(reprise).a(LE_10_MAI_2026_A_17H)));
 
-    assertThat(temps.tempsEffectif(suivi))
+    assertThat(temps.tempsEffectif(suivi, maintenant.get()))
       .extracting(IntervalleDActivite::debut, IntervalleDActivite::fin)
       .containsExactly(
         tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H)),
@@ -56,7 +52,7 @@ class TempsDAtelierServiceTest {
     journees.create(journeeDeDupontDe7HA17H());
     SuiviDAtelierId suivi = enAtelier(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H)));
 
-    assertThat(temps.tempsEffectif(suivi))
+    assertThat(temps.tempsEffectif(suivi, maintenant.get()))
       .singleElement()
       .satisfies(intervalle -> {
         assertThat(intervalle.debut()).isEqualTo(LE_10_MAI_2026_A_13H);
@@ -76,10 +72,10 @@ class TempsDAtelierServiceTest {
 
     journees.update(ouverte.enregistre(departRegulariseParLeroyA(LE_10_MAI_2026_A_17H)));
 
-    assertThat(temps.tempsEffectif(premier))
+    assertThat(temps.tempsEffectif(premier, maintenant.get()))
       .singleElement()
       .satisfies(intervalle -> assertThat(intervalle.fin()).contains(LE_10_MAI_2026_A_17H));
-    assertThat(temps.tempsEffectif(second))
+    assertThat(temps.tempsEffectif(second, maintenant.get()))
       .singleElement()
       .satisfies(intervalle -> assertThat(intervalle.fin()).contains(LE_10_MAI_2026_A_17H));
   }
@@ -89,7 +85,7 @@ class TempsDAtelierServiceTest {
     journees.create(journeeDeDupontOuverteA7H());
     SuiviDAtelierId suivi = enAtelier(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)));
 
-    assertThat(temps.tempsEffectif(suivi)).singleElement().matches(IntervalleDActivite::estOuvert);
+    assertThat(temps.tempsEffectif(suivi, maintenant.get())).singleElement().matches(IntervalleDActivite::estOuvert);
   }
 
   /**
@@ -101,7 +97,7 @@ class TempsDAtelierServiceTest {
     EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     SuiviDAtelierId suivi = enAtelier(suiviDAtelierEngage().enregistre(debut).enregistre(finDe(debut).a(LE_10_MAI_2026_A_17H)));
 
-    assertThat(temps.tempsEffectif(suivi))
+    assertThat(temps.tempsEffectif(suivi, maintenant.get()))
       .singleElement()
       .satisfies(intervalle -> {
         assertThat(intervalle.debut()).isEqualTo(LE_10_MAI_2026_A_8H);
@@ -118,7 +114,7 @@ class TempsDAtelierServiceTest {
     EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_17H);
     SuiviDAtelierId suivi = enAtelier(suiviDAtelierEngage().enregistre(debut).enregistre(finDe(debut).a(LE_10_MAI_2026_A_20H)));
 
-    assertThat(temps.tempsEffectif(suivi)).isEmpty();
+    assertThat(temps.tempsEffectif(suivi, maintenant.get())).isEmpty();
   }
 
   @Test
@@ -132,7 +128,7 @@ class TempsDAtelierServiceTest {
         .enregistre(finDe(secondAppui).a(LE_10_MAI_2026_A_12H))
     );
 
-    assertThat(temps.tempsEffectif(suivi))
+    assertThat(temps.tempsEffectif(suivi, maintenant.get()))
       .extracting(IntervalleDActivite::debut, IntervalleDActivite::fin)
       .containsExactly(
         tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_8H.plusSeconds(3))),
@@ -152,7 +148,7 @@ class TempsDAtelierServiceTest {
     enAtelier(of43De9HA16H());
     maintenant.set(LE_11_MAI_2026_A_9H);
 
-    assertThat(temps.tempsEffectif(of42))
+    assertThat(temps.tempsEffectif(of42, maintenant.get()))
       .extracting(IntervalleDActivite::debut, IntervalleDActivite::fin, IntervalleDActivite::presume)
       .containsExactly(
         tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H), true),
@@ -173,7 +169,7 @@ class TempsDAtelierServiceTest {
     enAtelier(of43De9HA16H());
     maintenant.set(LE_11_MAI_2026_A_9H);
 
-    assertThat(temps.tempsEffectif(of42))
+    assertThat(temps.tempsEffectif(of42, maintenant.get()))
       .extracting(IntervalleDActivite::debut, IntervalleDActivite::fin, IntervalleDActivite::presume)
       .containsExactly(
         tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H), true),
@@ -188,7 +184,7 @@ class TempsDAtelierServiceTest {
     SuiviDAtelierId nuit = enAtelier(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_11_MAI_2026_A_3H)));
     maintenant.set(LE_11_MAI_2026_A_9H);
 
-    assertThat(temps.tempsEffectif(nuit)).isEmpty();
+    assertThat(temps.tempsEffectif(nuit, maintenant.get())).isEmpty();
   }
 
   @Test
@@ -198,7 +194,7 @@ class TempsDAtelierServiceTest {
     enAtelier(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParMartinA(LE_10_MAI_2026_A_17H)));
     maintenant.set(LE_11_MAI_2026_A_9H);
 
-    assertThat(temps.tempsEffectif(of42))
+    assertThat(temps.tempsEffectif(of42, maintenant.get()))
       .extracting(IntervalleDActivite::debut, IntervalleDActivite::fin)
       .containsExactly(tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H)));
   }
@@ -209,7 +205,7 @@ class TempsDAtelierServiceTest {
     SuiviDAtelierId of42 = enAtelier(avecPauseDeMidi());
     maintenant.set(LE_11_MAI_2026_A_9H15);
 
-    assertThat(temps.tempsEffectif(of42))
+    assertThat(temps.tempsEffectif(of42, maintenant.get()))
       .extracting(IntervalleDActivite::debut, IntervalleDActivite::fin, IntervalleDActivite::presume)
       .containsExactly(
         tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H), false),
@@ -223,7 +219,7 @@ class TempsDAtelierServiceTest {
     SuiviDAtelierId of42 = enAtelier(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)));
     maintenant.set(LE_10_MAI_2026_A_20H);
 
-    assertThat(temps.tempsEffectif(of42))
+    assertThat(temps.tempsEffectif(of42, maintenant.get()))
       .last()
       .satisfies(intervalle -> {
         assertThat(intervalle.fin()).isEmpty();
@@ -244,7 +240,7 @@ class TempsDAtelierServiceTest {
     maintenant.set(LE_11_MAI_2026_A_9H);
     seuil.set(AMPLITUDE_MAXIMALE_10H);
 
-    assertThat(temps.tempsEffectif(of42))
+    assertThat(temps.tempsEffectif(of42, maintenant.get()))
       .extracting(IntervalleDActivite::debut, IntervalleDActivite::fin, IntervalleDActivite::presume)
       .containsExactly(tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_9H), true));
   }
@@ -261,7 +257,7 @@ class TempsDAtelierServiceTest {
     SuiviDAtelierId of42 = enAtelier(suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_20H.plusSeconds(300))));
     maintenant.set(LE_11_MAI_2026_A_20H);
 
-    assertThat(temps.tempsEffectif(of42)).isEmpty();
+    assertThat(temps.tempsEffectif(of42, maintenant.get())).isEmpty();
   }
 
   /**
@@ -275,7 +271,7 @@ class TempsDAtelierServiceTest {
     enAtelier(of43De9HA16H());
     maintenant.set(LE_11_MAI_2026_A_9H15);
 
-    assertThat(temps.tempsEffectif(of42))
+    assertThat(temps.tempsEffectif(of42, maintenant.get()))
       .extracting(IntervalleDActivite::debut, IntervalleDActivite::fin, IntervalleDActivite::presume)
       .containsExactly(
         tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H), true),

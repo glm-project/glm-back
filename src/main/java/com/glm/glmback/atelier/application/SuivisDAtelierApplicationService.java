@@ -54,6 +54,7 @@ public class SuivisDAtelierApplicationService {
   private final AnnuaireDAtelierService annuaires;
   private final IdentitesDEvenements identites;
   private final TransactionTemplate transactions;
+  private final Clock clock;
 
   public SuivisDAtelierApplicationService(
     SuiviDAtelierRepository repository,
@@ -74,10 +75,11 @@ public class SuivisDAtelierApplicationService {
       .postes(postes)
       .habilitations(habilitations)
       .clock(clock);
-    this.tempsDAtelier = TempsDAtelierService.builder().suivis(repository).journees(journees).seuil(seuil).clock(clock);
+    this.tempsDAtelier = TempsDAtelierService.builder().suivis(repository).journees(journees).seuil(seuil);
     this.annuaires = new AnnuaireDAtelierService(operateurs, postes);
     this.identites = identites;
     this.transactions = transactions;
+    this.clock = clock;
   }
 
   @Secured("ROLE_GESTIONNAIRE")
@@ -170,7 +172,7 @@ public class SuivisDAtelierApplicationService {
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
   @Transactional(readOnly = true)
   public List<IntervalleDActivite> tempsEffectif(SuiviDAtelierId id) {
-    return tempsDAtelier.tempsEffectif(id);
+    return tempsDAtelier.tempsEffectif(id, clock.now());
   }
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
