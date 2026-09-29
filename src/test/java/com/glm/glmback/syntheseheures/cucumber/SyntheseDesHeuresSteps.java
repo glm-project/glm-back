@@ -3,6 +3,7 @@ package com.glm.glmback.syntheseheures.cucumber;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.cucumber.CucumberClock;
+import com.glm.glmback.cucumber.EcrituresDuJournalDAtelier;
 import com.glm.glmback.cucumber.rest.CucumberRestClient;
 import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
 import io.cucumber.java.en.Given;
@@ -43,6 +44,9 @@ public class SyntheseDesHeuresSteps {
 
   @Autowired
   private CucumberClock horloge;
+
+  @Autowired
+  private EcrituresDuJournalDAtelier ecritures;
 
   private final Map<String, String> operateurs = new HashMap<>();
   private final Map<String, String> journees = new HashMap<>();
@@ -126,7 +130,7 @@ public class SyntheseDesHeuresSteps {
       "poste",
       postes.get(poste)
     );
-    rest.post(SUIVIS_URI + "/" + suivis.get(element) + "/pointages", JSON.writeValueAsString(corps));
+    ecritures.pointe(suivis.get(element), corps);
     assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage de l'element doit etre accepte").isTrue();
   }
 
@@ -165,10 +169,7 @@ public class SyntheseDesHeuresSteps {
     rest.post(ELEMENTS_URI, JSON.writeValueAsString(element));
     rest.post(SUIVIS_URI, JSON.writeValueAsString(Map.of("element", String.valueOf(CucumberRestTestContext.getElement("$.id")))));
     String suivi = String.valueOf(CucumberRestTestContext.getElement("$.id"));
-    rest.post(
-      SUIVIS_URI + "/" + suivi + "/pointages",
-      JSON.writeValueAsString(Map.of("id", UUID.randomUUID(), "type", "DEBUT", "operateur", operateurs.get(alias)))
-    );
+    ecritures.pointe(suivi, Map.of("id", UUID.randomUUID(), "type", "DEBUT", "operateur", operateurs.get(alias)));
     assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage de l'ordre doit etre accepte").isTrue();
   }
 

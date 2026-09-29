@@ -3,6 +3,7 @@ package com.glm.glmback.pupitre.cucumber;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.cucumber.CucumberClock;
+import com.glm.glmback.cucumber.EcrituresDuJournalDAtelier;
 import com.glm.glmback.cucumber.rest.CucumberRestClient;
 import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
 import io.cucumber.java.en.Given;
@@ -57,6 +58,9 @@ public class PupitreSteps {
 
   @Autowired
   private CucumberClock horloge;
+
+  @Autowired
+  private EcrituresDuJournalDAtelier ecritures;
 
   private final Map<String, String> postes = new HashMap<>();
   private final Map<String, String> libelles = new HashMap<>();
@@ -253,7 +257,7 @@ public class PupitreSteps {
 
   private void pointe(String instant, String element, Map<String, Object> corps) {
     horloge.ilEst(Instant.parse(instant));
-    rest.post(SUIVIS_URI + "/" + suivis.get(element) + "/pointages", JSON.writeValueAsString(corps));
+    ecritures.pointe(suivis.get(element), corps);
     List<Map<String, Object>> journal = lus("$.journal");
     dernierEvenement = String.valueOf(journal.getLast().get("id"));
   }

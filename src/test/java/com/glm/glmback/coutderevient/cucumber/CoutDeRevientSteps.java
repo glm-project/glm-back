@@ -4,6 +4,7 @@ import static com.glm.glmback.cucumber.rest.CucumberRestAssertions.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.cucumber.CucumberClock;
+import com.glm.glmback.cucumber.EcrituresDuJournalDAtelier;
 import com.glm.glmback.cucumber.rest.CucumberRestClient;
 import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
 import io.cucumber.java.en.Given;
@@ -50,6 +51,9 @@ public class CoutDeRevientSteps {
 
   @Autowired
   private CucumberClock horloge;
+
+  @Autowired
+  private EcrituresDuJournalDAtelier ecritures;
 
   private final Map<String, String> postes = new HashMap<>();
   private final Map<String, String> operateurs = new HashMap<>();
@@ -141,14 +145,14 @@ public class CoutDeRevientSteps {
       "poste",
       postes.get(poste)
     );
-    rest.post(SUIVIS_URI + "/" + suivis.get(element) + "/pointages", JSON.writeValueAsString(corps));
+    ecritures.pointe(suivis.get(element), corps);
   }
 
   @Given("{string} pointe {string} sur {string} sans poste a {string}")
   public void pointeSurSansPoste(String operateur, String type, String element, String instant) {
     horloge.ilEst(Instant.parse(instant));
     Map<String, Object> corps = Map.of("id", UUID.randomUUID(), "type", type, "operateur", operateurs.get(operateur));
-    rest.post(SUIVIS_URI + "/" + suivis.get(element) + "/pointages", JSON.writeValueAsString(corps));
+    ecritures.pointe(suivis.get(element), corps);
   }
 
   @Given("{string} est cloture a {string}")

@@ -4,6 +4,8 @@ import static com.glm.glmback.cucumber.rest.CucumberRestAssertions.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.cucumber.CucumberClock;
+import com.glm.glmback.cucumber.EcrituresDuJournalDAtelier;
+import com.glm.glmback.cucumber.EcrituresDuJournalDAtelier.PointageEnvoye;
 import com.glm.glmback.cucumber.rest.CucumberRestClient;
 import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
 import io.cucumber.java.en.Given;
@@ -49,6 +51,9 @@ public class AtelierSteps {
 
   @Autowired
   private CucumberClock horloge;
+
+  @Autowired
+  private EcrituresDuJournalDAtelier ecritures;
 
   private final Map<String, String> elements = new HashMap<>();
   private Map<String, Object> suiviSansJournal;
@@ -135,7 +140,9 @@ public class AtelierSteps {
 
   @When("je pointe sur {string}")
   public void jePointeSur(String alias, Map<String, String> donnees) {
-    envoieGeste(SUIVIS_URI + "/" + suivis.get(alias) + "/pointages", resoluAvecIdentifiant(donnees));
+    PointageEnvoye pointage = ecritures.pointe(suivis.get(alias), resoluAvecIdentifiant(donnees));
+    dernierGesteUri = pointage.uri();
+    dernierGesteCorps = pointage.corps();
   }
 
   @Given("j'ai pointe sur {string}")
@@ -145,7 +152,7 @@ public class AtelierSteps {
 
   @When("je regularise sur {string}")
   public void jeRegulariseSur(String alias, Map<String, String> donnees) {
-    rest.post(SUIVIS_URI + "/" + suivis.get(alias) + "/regularisations", JSON.writeValueAsString(resolu(donnees)));
+    ecritures.regularise(suivis.get(alias), resolu(donnees));
   }
 
   @When("j'annule l'evenement {int} de {string}")
@@ -163,10 +170,7 @@ public class AtelierSteps {
 
   @When("je corrige l'evenement {int} de {string}")
   public void jeCorrigeLEvenementDe(int rang, String alias, Map<String, String> donnees) {
-    rest.put(
-      SUIVIS_URI + "/" + suivis.get(alias) + "/evenements/" + evenementDAtelier(alias, rang),
-      JSON.writeValueAsString(resolu(donnees))
-    );
+    ecritures.corrige(suivis.get(alias), evenementDAtelier(alias, rang), resolu(donnees));
   }
 
   @When("je cloture {string}")
@@ -380,7 +384,7 @@ public class AtelierSteps {
 
   @When("je pointe sur {string} sans identifiant de geste")
   public void jePointeSansIdentifiant(String alias, Map<String, String> donnees) {
-    rest.post(SUIVIS_URI + "/" + suivis.get(alias) + "/pointages", JSON.writeValueAsString(resolu(donnees)));
+    ecritures.pointe(suivis.get(alias), resolu(donnees));
   }
 
   @Given("je retiens la journee sous le nom {string}")
