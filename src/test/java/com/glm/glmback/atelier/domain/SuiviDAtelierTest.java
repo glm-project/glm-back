@@ -248,7 +248,7 @@ class SuiviDAtelierTest {
     assertThat(suivi.activitesEnCours(LE_10_MAI_2026_A_17H))
       .singleElement()
       .satisfies(activite -> {
-        assertThat(activite.activite()).isEqualTo(cleDeFraiseuse1DeDupont());
+        assertThat(activite.cle()).isEqualTo(cleDeFraiseuse1DeDupont());
         assertThat(activite.categorie()).isEqualTo(CategorieDActivite.TRAVAIL);
         assertThat(activite.depuis()).isEqualTo(LE_10_MAI_2026_A_13H);
       });

@@ -104,7 +104,7 @@ public record SuiviDAtelier(
     return activites()
       .stream()
       .filter(activite -> activite.estEnCoursA(evaluation))
-      .map(ActiviteEnCours::of)
+      .map(ActiviteEnCours::new)
       .toList();
   }
 

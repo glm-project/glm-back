@@ -12,30 +12,19 @@ class ActiviteEnCoursTest {
 
   @Test
   void shouldNotBuildWithoutActivite() {
-    assertThatThrownBy(() -> new ActiviteEnCours(null, CategorieDActivite.TRAVAIL, LE_10_MAI_2026_A_8H))
+    assertThatThrownBy(() -> new ActiviteEnCours(null))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("activite");
   }
 
   @Test
-  void shouldNotBuildWithoutCategorie() {
-    assertThatThrownBy(() -> new ActiviteEnCours(cleDeFraiseuse1DeDupont(), null, LE_10_MAI_2026_A_8H))
-      .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("categorie");
-  }
+  void shouldLireQuiFaitQuoiEtDepuisQuandSurSonActivite() {
+    ActiviteEnCours enCours = new ActiviteEnCours(Activite.ouvertePar(nonConformiteSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)));
 
-  @Test
-  void shouldNotBuildWithoutDepuis() {
-    assertThatThrownBy(() -> new ActiviteEnCours(cleDeFraiseuse1DeDupont(), CategorieDActivite.TRAVAIL, null))
-      .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("depuis");
-  }
-
-  @Test
-  void shouldReadOperateurEtPosteFromCle() {
-    ActiviteEnCours activite = new ActiviteEnCours(cleDeFraiseuse1DeDupont(), CategorieDActivite.TRAVAIL, LE_10_MAI_2026_A_8H);
-
-    assertThat(activite.operateur()).isEqualTo(OPERATEUR_ID_DUPONT);
-    assertThat(activite.poste()).contains(POSTE_ID_FRAISEUSE_1);
+    assertThat(enCours.cle()).isEqualTo(cleDeFraiseuse1DeDupont());
+    assertThat(enCours.operateur()).isEqualTo(OPERATEUR_ID_DUPONT);
+    assertThat(enCours.poste()).contains(POSTE_ID_FRAISEUSE_1);
+    assertThat(enCours.categorie()).isEqualTo(CategorieDActivite.NON_CONFORMITE);
+    assertThat(enCours.depuis()).isEqualTo(LE_10_MAI_2026_A_8H);
   }
 }
