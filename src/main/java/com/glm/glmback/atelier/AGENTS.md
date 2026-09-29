@@ -11,8 +11,10 @@ Le **pointage et sa correction**, et rien d'autre. Trois actes :
 1. **Engager** un élément de fabrication en atelier — geste métier explicite du back-office, distinct de la création de
    l'élément — puis le **clôturer** ou rouvrir la clôture.
 2. **Enregistrer les pointages** : la présence de l'opérateur (arrivée, départ) d'un côté, son travail sur un élément
-   engagé (début, non conformité, fin) de l'autre. La pause n'est pas un pointage du serveur : le pupitre la traduit
-   en fins, puis en débuts ([ADR 0002](../../../../../../../documentation/adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)).
+   engagé (début, non conformité, fin) de l'autre. Chaque pointage d'élément dit son intention — ouverture,
+   transition ou fin — et la transition comme la fin visent l'activité qu'elles remplacent ou terminent. La pause
+   n'est pas un pointage du serveur : le pupitre la traduit en fins, puis en ouvertures
+   ([ADR 0002](../../../../../../../documentation/adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)).
 3. **Corriger** ces saisies : `regularise` (saisie oubliée), `annule` (saisie en trop), `corrige` (saisie fausse).
 
 Il en déduit, à la lecture seulement, les intervalles de temps passé — jamais stockés.
@@ -71,10 +73,26 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
   patron que la nature : jamais relus depuis le référentiel après coup. Ils restent, comme la nature, entièrement
   facultatifs, et ne servent qu'à figer une valeur qui pourrait changer chez le voisin — le calcul lui-même n'entre
   pas dans ce contexte.
-- **Un début sur une activité déjà en cours la relance**, il n'est jamais refusé (décision D9 de
-  [bornes-de-fin-de-journee.md](../../../../../../../documentation/strategie/bornes-de-fin-de-journee.md)). La même
-  règle vit dans les automates recopiés de `pupitre`, `coutderevient`, `feuilledetemps` et `syntheseheures` : les
-  cinq changent ensemble.
+- **L'intention d'un pointage est explicite, jamais déduite de son type** (`IntentionDePointage`). Une ouverture crée
+  une activité ; une transition remplace l'activité qu'elle vise par une activité distincte de l'autre catégorie ; une
+  fin termine l'activité qu'elle vise. Seule une fin se pointe `FIN`, et seules la transition et la fin portent une
+  activité visée : `EvenementDAtelier` refuse toute autre combinaison. Aucune intention par défaut.
+- **Une activité s'identifie par son pointage ouvrant d'origine** (`ActiviteId`), que portent l'ouverture et la
+  transition. Le remplaçant d'une correction d'un ouvrant reprend l'`ActiviteId` du fait corrigé
+  (`EvenementDAtelier.enRemplacementDe`) : un geste vise une `ActiviteId`, jamais l'identifiant technique de l'ouvrant
+  actif, et se résout sur l'ouvrant actif qui la porte.
+- **Un geste ne touche que sa cible** (`SequenceDActivites`). Une cible absente de ce suivi est refusée
+  (`ActiviteViseeIntrouvableException`, 404), celle d'un autre opérateur ou d'un autre poste aussi
+  (`ActiviteViseeIncoherenteException`, 409), avant toute autre décision, absorption comprise. Un geste qui contredit
+  le journal — cible déjà terminée, remplacée ou annulée, transition vers sa propre catégorie — est encore refusé par
+  `TransitionDAtelierInterditeException` : il ne termine jamais une autre activité que sa cible.
+- **Une ouverture sur une activité déjà en cours la relance**, elle n'est jamais refusée (décision D9 de
+  [bornes-de-fin-de-journee.md](../../../../../../../documentation/strategie/bornes-de-fin-de-journee.md)). Les
+  replis recopiés de `pupitre`, `coutderevient`, `feuilledetemps` et `syntheseheures` relisent encore le journal par
+  type seul et départagent les gestes simultanés sur leur date d'enregistrement : ils ne rendent les mêmes intervalles
+  que l'atelier que si aucune clé ne porte deux gestes à la même heure.
+- **À heure métier égale, le journal range la fin, puis la transition, puis l'ouverture**, et départage enfin par
+  l'identifiant : jamais par la date d'enregistrement, qui ferait dépendre le journal de l'ordre de réception.
 - **Une journée sans départ au-delà du seuil est abandonnée**, et le geste suivant de l'opérateur en ouvre une
   nouvelle ; sous le seuil, une arrivée est absorbée. Seuls les actes du gestionnaire peuvent être refusés pour
   chevauchement de deux journées. Détail dans `contexte-metier.md`, section « La présence, de l'arrivée au départ ».
@@ -163,11 +181,14 @@ Deux scénarios métier de référence, à lire avant toute modification du mod�
 - `src/test/java/com/glm/glmback/atelier/domain/VieDeLAtelierTest.java` — une journée complète en appels directs, avec
   le verbatim client en javadoc de chaque assertion ;
 - `src/test/features/atelier_suivi.feature` — la même journée rejouée en HTTP, avec `atelier_presence.feature` pour la
-  présence seule.
+  présence seule, et `atelier_intentions.feature` pour l'intention et l'activité visée des pointages.
+
+Les scénarios écrits avant l'intention la font déduire du journal par `EcrituresDuJournalDAtelier`, comme le ferait le
+pupitre ; tout nouveau scénario donne son intention et sa cible.
 
 Les scénarios pilotent l'horloge (`CucumberClock`, step `Given il est "..."`). Deux pièges s'y rappellent seuls :
 **faire avancer l'horloge entre deux événements** — à horodatage identique, l'ordre du journal se départage sur
-l'identifiant, donc au hasard — et **ne jamais corriger vers une date postérieure à l'instant courant**, que
-`Horodatage` refuse.
+l'intention puis sur l'identifiant, donc au hasard entre deux gestes de même intention — et **ne jamais corriger vers
+une date postérieure à l'instant courant**, que `Horodatage` refuse.
 
 Les points encore ouverts sont listés en fin de section `atelier` dans `documentation/contexte-metier.md`.

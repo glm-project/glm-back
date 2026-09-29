@@ -14,6 +14,7 @@ import com.glm.glmback.atelier.domain.EtatDePresence;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.EvenementDePresenceId;
 import com.glm.glmback.atelier.domain.Habilitations;
+import com.glm.glmback.atelier.domain.IntentionDePointage;
 import com.glm.glmback.atelier.domain.JourneeDeTravail;
 import com.glm.glmback.atelier.domain.JourneeDeTravailRepository;
 import com.glm.glmback.atelier.domain.OperateurId;
@@ -109,6 +110,8 @@ class ReservationDIdentiteServeurTest {
     return PointageAEnregistrer.pupitreBuilder()
       .suivi(new SuiviDAtelierId(suivi))
       .type(TypeDEvenementDAtelier.DEBUT)
+      .intention(IntentionDePointage.OUVERTURE)
+      .activiteVisee(Optional.empty())
       .operateur(operateur)
       .poste(Optional.empty())
       .auteur(auteur)
@@ -141,6 +144,8 @@ class ReservationDIdentiteServeurTest {
       RegularisationAEnregistrer.builder()
         .suivi(suivi.id())
         .type(TypeDEvenementDAtelier.DEBUT)
+        .intention(IntentionDePointage.OUVERTURE)
+        .activiteVisee(Optional.empty())
         .operateur(OPERATEUR_ID_DUPONT)
         .poste(Optional.empty())
         .auteur(AUTEUR_LEROY)

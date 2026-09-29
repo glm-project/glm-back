@@ -58,7 +58,7 @@ public record SuiviDAtelier(
    * Annule un evenement et lui substitue sa version corrigee, en validant la seule sequence finale.
    *
    * <p>
-   * Enchainer une annulation puis une insertion ferait passer le journal par un etat intermediaire que l'automate
+   * Enchainer une annulation puis une insertion ferait passer le journal par un etat intermediaire que l'interpretation
    * refuserait a raison : annuler un debut y laisserait une fin orpheline. C'est ce qui justifie l'acte unique.
    * </p>
    */
@@ -72,6 +72,14 @@ public record SuiviDAtelier(
 
   public SuiviDAtelier annuleLaCloture() {
     return new SuiviDAtelier(id, element, engagement, journal, Optional.empty());
+  }
+
+  /**
+   * Refuse un geste qui vise une activite qu'aucun pointage de ce suivi n'a ouverte, ou celle d'un autre operateur ou
+   * d'un autre poste. Le refus precede toute autre decision sur le geste, absorption comprise.
+   */
+  public void exigeLActiviteViseePar(EvenementDAtelier geste) {
+    journal.exigeLActiviteViseePar(geste);
   }
 
   public List<IntervalleDActivite> activites() {

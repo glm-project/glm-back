@@ -126,7 +126,7 @@ public final class AtelierFixture {
     return List.of(
       suiviDAtelierEngage(),
       enCours,
-      enCours.enregistre(nonConformiteSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H)),
+      enCours.enregistre(passageEnNonConformiteDe(debut).a(LE_10_MAI_2026_A_9H)),
       enCours.enregistre(finDe(debut).a(LE_10_MAI_2026_A_9H)),
       enCours.cloture(clotureParLeroyA(LE_10_MAI_2026_A_9H)),
       suiviDAtelierEngage().enregistre(debutSansPosteParDupontA(LE_10_MAI_2026_A_8H))
@@ -146,19 +146,13 @@ public final class AtelierFixture {
         .enregistre(finDe(debutDeMartin).a(debut.plusSeconds(28860)));
     }
     Instant debut = LE_10_MAI_2026_A_8H.plusSeconds(24 * 86400L);
+    EvenementDAtelier debutDeDupont = debutSurFraiseuse1ParDupontA(debut);
+    EvenementDAtelier debutDeMartin = debutSurFraiseuse1ParMartinA(debut.plusSeconds(60));
     return suivi
-      .enregistre(debutSurFraiseuse1ParDupontA(debut))
-      .enregistre(debutSurFraiseuse1ParMartinA(debut.plusSeconds(60)))
-      .enregistre(nonConformiteSurFraiseuse1ParDupontA(debut.plusSeconds(120)))
-      .enregistre(
-        pointageDAtelier(
-          TypeDEvenementDAtelier.NON_CONFORMITE,
-          OPERATEUR_ID_MARTIN,
-          Optional.of(POSTE_ID_FRAISEUSE_1),
-          AUTEUR_MARTIN,
-          Horodatage.saisiA(debut.plusSeconds(180))
-        )
-      );
+      .enregistre(debutDeDupont)
+      .enregistre(debutDeMartin)
+      .enregistre(passageEnNonConformiteDe(debutDeDupont).a(debut.plusSeconds(120)))
+      .enregistre(passageEnNonConformiteDe(debutDeMartin).a(debut.plusSeconds(180)));
   }
 
   public static Annulation annulationParLeroy() {
@@ -170,45 +164,72 @@ public final class AtelierFixture {
   }
 
   public static EvenementDAtelier debutSurFraiseuse1ParDupontA(Instant date) {
-    return pointageDeDupont(TypeDEvenementDAtelier.DEBUT, POSTE_ID_FRAISEUSE_1, date);
+    return ouvertureDeDupont(TypeDEvenementDAtelier.DEBUT, POSTE_ID_FRAISEUSE_1, date);
   }
 
+  /**
+   * Une non conformite ouverte d'emblee, sans remplacer aucune activite : celle qu'on reprend apres une pause.
+   */
   public static EvenementDAtelier nonConformiteSurFraiseuse1ParDupontA(Instant date) {
-    return pointageDeDupont(TypeDEvenementDAtelier.NON_CONFORMITE, POSTE_ID_FRAISEUSE_1, date);
+    return ouvertureDeDupont(TypeDEvenementDAtelier.NON_CONFORMITE, POSTE_ID_FRAISEUSE_1, date);
   }
 
   public static EvenementDAtelier debutSurFraiseuse2ParDupontA(Instant date) {
-    return pointageDeDupont(TypeDEvenementDAtelier.DEBUT, POSTE_ID_FRAISEUSE_2, date);
+    return ouvertureDeDupont(TypeDEvenementDAtelier.DEBUT, POSTE_ID_FRAISEUSE_2, date);
   }
 
   public static EvenementDAtelier debutSansPosteParDupontA(Instant date) {
-    return pointageDAtelier(TypeDEvenementDAtelier.DEBUT, OPERATEUR_ID_DUPONT, Optional.empty(), AUTEUR_DUPONT, Horodatage.saisiA(date));
+    return pointageDAtelier(
+      TypeDEvenementDAtelier.DEBUT,
+      IntentionDePointage.OUVERTURE,
+      Optional.empty(),
+      new CleDActivite(OPERATEUR_ID_DUPONT, Optional.empty()),
+      AUTEUR_DUPONT,
+      Horodatage.saisiA(date)
+    );
   }
 
   public static EvenementDAtelier debutSurFraiseuse1ParMartinA(Instant date) {
     return pointageDAtelier(
       TypeDEvenementDAtelier.DEBUT,
-      OPERATEUR_ID_MARTIN,
-      Optional.of(POSTE_ID_FRAISEUSE_1),
+      IntentionDePointage.OUVERTURE,
+      Optional.empty(),
+      new CleDActivite(OPERATEUR_ID_MARTIN, Optional.of(POSTE_ID_FRAISEUSE_1)),
       AUTEUR_MARTIN,
       Horodatage.saisiA(date)
     );
   }
 
   public static EvenementDAtelier debutSurFraiseuse1RegulariseParLeroyA(Instant date) {
-    return regularisationParLeroy(TypeDEvenementDAtelier.DEBUT, date);
+    return regularisationParLeroy(TypeDEvenementDAtelier.DEBUT, IntentionDePointage.OUVERTURE, Optional.empty()).a(date);
   }
 
   /**
    * La fin pointee sur l'activite qu'ouvre ce debut, par celui qui l'a ouverte : il ne reste qu'a la dater.
    */
   public static GesteADater finDe(EvenementDAtelier ouvrant) {
-    return date ->
-      pointageDAtelier(TypeDEvenementDAtelier.FIN, ouvrant.operateur(), ouvrant.poste(), ouvrant.auteur(), Horodatage.saisiA(date));
+    return gesteVisant(ouvrant, TypeDEvenementDAtelier.FIN, IntentionDePointage.FIN);
   }
 
-  public static EvenementDAtelier finSurFraiseuse1RegulariseeParLeroyA(Instant date) {
-    return regularisationParLeroy(TypeDEvenementDAtelier.FIN, date);
+  /**
+   * Le passage en non conformite de l'activite qu'ouvre ce debut : il la remplace par une non conformite.
+   */
+  public static GesteADater passageEnNonConformiteDe(EvenementDAtelier ouvrant) {
+    return gesteVisant(ouvrant, TypeDEvenementDAtelier.NON_CONFORMITE, IntentionDePointage.TRANSITION);
+  }
+
+  /**
+   * La reprise du travail apres cette non conformite : elle la remplace par un travail.
+   */
+  public static GesteADater passageEnTravailDe(EvenementDAtelier ouvrant) {
+    return gesteVisant(ouvrant, TypeDEvenementDAtelier.DEBUT, IntentionDePointage.TRANSITION);
+  }
+
+  /**
+   * La fin que le gestionnaire regularise sur l'activite de Dupont qu'ouvre ce debut.
+   */
+  public static GesteADater finRegulariseeParLeroyDe(EvenementDAtelier ouvrant) {
+    return regularisationParLeroy(TypeDEvenementDAtelier.FIN, IntentionDePointage.FIN, ouvrant.activite());
   }
 
   public static JourneeDeTravail journeeDeDupontOuverteA7H() {
@@ -251,41 +272,73 @@ public final class AtelierFixture {
       .horodatage(Horodatage.saisiA(date));
   }
 
-  private static EvenementDAtelier pointageDeDupont(TypeDEvenementDAtelier type, PosteDeTravailId poste, Instant date) {
-    return pointageDAtelier(type, OPERATEUR_ID_DUPONT, Optional.of(poste), AUTEUR_DUPONT, Horodatage.saisiA(date));
+  private static EvenementDAtelier ouvertureDeDupont(TypeDEvenementDAtelier type, PosteDeTravailId poste, Instant date) {
+    return pointageDAtelier(
+      type,
+      IntentionDePointage.OUVERTURE,
+      Optional.empty(),
+      new CleDActivite(OPERATEUR_ID_DUPONT, Optional.of(poste)),
+      AUTEUR_DUPONT,
+      Horodatage.saisiA(date)
+    );
   }
 
-  private static EvenementDAtelier regularisationParLeroy(TypeDEvenementDAtelier type, Instant date) {
-    return EvenementDAtelier.builder()
-      .id(EvenementDAtelierId.newId())
-      .type(type)
-      .operateur(OPERATEUR_ID_DUPONT)
-      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
-      .nature(Optional.of(NATURE_FRAISAGE))
-      .coutHoraire(Optional.of(COUT_HORAIRE_FRAISEUSE_1))
-      .tauxHoraire(Optional.of(TAUX_HORAIRE_DUPONT))
-      .auteur(AUTEUR_LEROY)
-      .origine(OrigineDuPointage.REGULARISATION)
-      .horodatage(new Horodatage(date, LE_11_MAI_2026_A_9H15));
+  private static GesteADater gesteVisant(EvenementDAtelier ouvrant, TypeDEvenementDAtelier type, IntentionDePointage intention) {
+    return date -> pointageDAtelier(type, intention, ouvrant.activite(), ouvrant.cle(), ouvrant.auteur(), Horodatage.saisiA(date));
+  }
+
+  private static GesteADater regularisationParLeroy(
+    TypeDEvenementDAtelier type,
+    IntentionDePointage intention,
+    Optional<ActiviteId> activiteVisee
+  ) {
+    return date ->
+      evenementDAtelier(
+        type,
+        intention,
+        activiteVisee,
+        cleDeFraiseuse1DeDupont(),
+        AUTEUR_LEROY,
+        OrigineDuPointage.REGULARISATION,
+        new Horodatage(date, LE_11_MAI_2026_A_9H15)
+      );
   }
 
   private static EvenementDAtelier pointageDAtelier(
     TypeDEvenementDAtelier type,
-    OperateurId operateur,
-    Optional<PosteDeTravailId> poste,
+    IntentionDePointage intention,
+    Optional<ActiviteId> activiteVisee,
+    CleDActivite cle,
     Auteur auteur,
     Horodatage horodatage
   ) {
+    return evenementDAtelier(type, intention, activiteVisee, cle, auteur, OrigineDuPointage.POINTAGE, horodatage);
+  }
+
+  private static EvenementDAtelier evenementDAtelier(
+    TypeDEvenementDAtelier type,
+    IntentionDePointage intention,
+    Optional<ActiviteId> activiteVisee,
+    CleDActivite cle,
+    Auteur auteur,
+    OrigineDuPointage origine,
+    Horodatage horodatage
+  ) {
+    EvenementDAtelierId id = EvenementDAtelierId.newId();
+
     return EvenementDAtelier.builder()
-      .id(EvenementDAtelierId.newId())
+      .id(id)
       .type(type)
-      .operateur(operateur)
-      .poste(poste)
+      .intention(intention)
+      .activite(intention.ouvreUneActivite() ? Optional.of(ActiviteId.ouvertePar(id)) : Optional.empty())
+      .activiteVisee(activiteVisee)
+      .operateur(cle.operateur())
+      .poste(cle.poste())
       .nature(Optional.of(NATURE_FRAISAGE))
       .coutHoraire(Optional.of(COUT_HORAIRE_FRAISEUSE_1))
       .tauxHoraire(Optional.of(TAUX_HORAIRE_DUPONT))
       .auteur(auteur)
-      .origine(OrigineDuPointage.POINTAGE)
+      .origine(origine)
       .horodatage(horodatage);
   }
 }

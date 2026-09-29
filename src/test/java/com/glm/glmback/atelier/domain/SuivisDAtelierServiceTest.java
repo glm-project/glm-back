@@ -85,6 +85,8 @@ class SuivisDAtelierServiceTest {
         PointageAEnregistrer.pupitreBuilder()
           .suivi(engage.id())
           .type(TypeDEvenementDAtelier.DEBUT)
+          .intention(IntentionDePointage.OUVERTURE)
+          .activiteVisee(Optional.empty())
           .operateur(OPERATEUR_ID_DUPONT)
           .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
           .auteur(AUTEUR_DUPONT)
@@ -101,6 +103,116 @@ class SuivisDAtelierServiceTest {
       });
   }
 
+  /**
+   * Le pointage qui ouvre une activite lui donne son identite : la sienne. C'est elle que viseront sa fin ou sa
+   * transition.
+   */
+  @Test
+  void shouldDonnerAUneOuvertureLIdentiteDeSonActivite() {
+    SuiviDAtelier engage = engage();
+    PointageAEnregistrer debut = debutSurFraiseuse1(engage.id());
+
+    SuiviDAtelier pointe = atelier.pointe(debut).suivi();
+
+    assertThat(pointe.journal().actifs())
+      .singleElement()
+      .satisfies(evenement -> {
+        assertThat(evenement.intention()).isEqualTo(IntentionDePointage.OUVERTURE);
+        assertThat(evenement.activite()).contains(ActiviteId.ouvertePar(debut.evenement()));
+        assertThat(evenement.activiteVisee()).isEmpty();
+      });
+  }
+
+  @Test
+  void shouldRemplacerParUneTransitionLActiviteQuElleVise() {
+    SuiviDAtelier engage = engage();
+    maintenant.set(LE_10_MAI_2026_A_8H);
+    PointageAEnregistrer debut = debutSurFraiseuse1(engage.id());
+    atelier.pointe(debut);
+    maintenant.set(LE_10_MAI_2026_A_9H);
+
+    SuiviDAtelier pointe = atelier
+      .pointe(gesteVisant(debut, TypeDEvenementDAtelier.NON_CONFORMITE, IntentionDePointage.TRANSITION))
+      .suivi();
+
+    assertThat(pointe.activitesEnCours())
+      .singleElement()
+      .satisfies(activite -> {
+        assertThat(activite.categorie()).isEqualTo(CategorieDActivite.NON_CONFORMITE);
+        assertThat(activite.depuis()).isEqualTo(LE_10_MAI_2026_A_9H);
+      });
+  }
+
+  /**
+   * Une fin qui vise une activite qu'aucun pointage de ce suivi n'a ouverte est refusee, jamais absorbee : aucune
+   * activite n'est pourtant en cours sur son poste.
+   */
+  @Test
+  void shouldRefuserUneFinQuiViseUneActiviteIntrouvable() {
+    SuiviDAtelier engage = engage();
+    PointageAEnregistrer fin = gesteVisant(debutSurFraiseuse1(engage.id()), TypeDEvenementDAtelier.FIN, IntentionDePointage.FIN);
+
+    assertThatThrownBy(() -> atelier.pointe(fin)).isExactlyInstanceOf(ActiviteViseeIntrouvableException.class);
+    assertThat(atelier.get(engage.id()).journal().evenements()).isEmpty();
+  }
+
+  @Test
+  void shouldRefuserUneFinQuiViseLActiviteDUnAutrePoste() {
+    SuiviDAtelier engage = engage();
+    PointageAEnregistrer debut = debutSurFraiseuse1(engage.id());
+    atelier.pointe(debut);
+    PointageAEnregistrer finSurFraiseuse2 = PointageAEnregistrer.builder()
+      .suivi(engage.id())
+      .type(TypeDEvenementDAtelier.FIN)
+      .intention(IntentionDePointage.FIN)
+      .activiteVisee(Optional.of(ActiviteId.ouvertePar(debut.evenement())))
+      .operateur(OPERATEUR_ID_DUPONT)
+      .poste(Optional.of(POSTE_ID_FRAISEUSE_2))
+      .auteur(AUTEUR_DUPONT);
+
+    assertThatThrownBy(() -> atelier.pointe(finSurFraiseuse2)).isExactlyInstanceOf(ActiviteViseeIncoherenteException.class);
+  }
+
+  @Test
+  void shouldRefuserUneRegularisationQuiViseUneActiviteIntrouvable() {
+    SuiviDAtelier engage = engage();
+    maintenant.set(LE_11_MAI_2026_A_9H15);
+    RegularisationAEnregistrer fin = RegularisationAEnregistrer.builder()
+      .suivi(engage.id())
+      .type(TypeDEvenementDAtelier.FIN)
+      .intention(IntentionDePointage.FIN)
+      .activiteVisee(Optional.of(new ActiviteId(UUID.randomUUID())))
+      .operateur(OPERATEUR_ID_DUPONT)
+      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
+      .auteur(AUTEUR_LEROY)
+      .dateDeSurvenue(LE_10_MAI_2026_A_12H);
+
+    assertThatThrownBy(() -> atelier.regularise(fin)).isExactlyInstanceOf(ActiviteViseeIntrouvableException.class);
+  }
+
+  /**
+   * Le remplacant d'un debut corrige reprend l'activite de ce debut, sous sa propre identite de pointage.
+   */
+  @Test
+  void shouldConserverLActiviteDuDebutCorrige() {
+    SuiviDAtelier engage = engage();
+    maintenant.set(LE_10_MAI_2026_A_9H);
+    PointageAEnregistrer debut = debutSurFraiseuse1(engage.id());
+    atelier.pointe(debut);
+    maintenant.set(LE_11_MAI_2026_A_9H15);
+
+    SuiviDAtelier corrige = atelier.corrige(
+      new CorrectionAEnregistrer(debut.evenement(), MOTIF_ERREUR_DE_SAISIE, regularisationDeDebutA(engage.id(), LE_10_MAI_2026_A_8H))
+    );
+
+    assertThat(corrige.journal().actifs())
+      .singleElement()
+      .satisfies(remplacant -> {
+        assertThat(remplacant.id()).isNotEqualTo(debut.evenement());
+        assertThat(remplacant.activite()).contains(ActiviteId.ouvertePar(debut.evenement()));
+      });
+  }
+
   @Test
   void shouldPointerSansPosteDeTravail() {
     SuiviDAtelier engage = engage();
@@ -110,6 +222,8 @@ class SuivisDAtelierServiceTest {
         PointageAEnregistrer.builder()
           .suivi(engage.id())
           .type(TypeDEvenementDAtelier.DEBUT)
+          .intention(IntentionDePointage.OUVERTURE)
+          .activiteVisee(Optional.empty())
           .operateur(OPERATEUR_ID_DUPONT)
           .poste(Optional.empty())
           .auteur(AUTEUR_DUPONT)
@@ -134,6 +248,8 @@ class SuivisDAtelierServiceTest {
         PointageAEnregistrer.builder()
           .suivi(engage.id())
           .type(TypeDEvenementDAtelier.DEBUT)
+          .intention(IntentionDePointage.OUVERTURE)
+          .activiteVisee(Optional.empty())
           .operateur(OPERATEUR_ID_MARTIN)
           .poste(Optional.empty())
           .auteur(AUTEUR_MARTIN)
@@ -157,6 +273,8 @@ class SuivisDAtelierServiceTest {
         PointageAEnregistrer.builder()
           .suivi(engage.id())
           .type(TypeDEvenementDAtelier.DEBUT)
+          .intention(IntentionDePointage.OUVERTURE)
+          .activiteVisee(Optional.empty())
           .operateur(OPERATEUR_ID_DUPONT)
           .poste(Optional.of(POSTE_ID_FRAISEUSE_2))
           .auteur(AUTEUR_DUPONT)
@@ -192,6 +310,8 @@ class SuivisDAtelierServiceTest {
         PointageAEnregistrer.builder()
           .suivi(engage.id())
           .type(TypeDEvenementDAtelier.DEBUT)
+          .intention(IntentionDePointage.OUVERTURE)
+          .activiteVisee(Optional.empty())
           .operateur(OPERATEUR_ID_DUPONT)
           .poste(Optional.empty())
           .auteur(AUTEUR_DUPONT)
@@ -216,6 +336,8 @@ class SuivisDAtelierServiceTest {
         PointageAEnregistrer.builder()
           .suivi(engage.id())
           .type(TypeDEvenementDAtelier.DEBUT)
+          .intention(IntentionDePointage.OUVERTURE)
+          .activiteVisee(Optional.empty())
           .operateur(OPERATEUR_ID_DUPONT)
           .poste(Optional.of(POSTE_ID_FRAISEUSE_2))
           .auteur(AUTEUR_DUPONT)
@@ -247,6 +369,8 @@ class SuivisDAtelierServiceTest {
         PointageAEnregistrer.builder()
           .suivi(engage.id())
           .type(TypeDEvenementDAtelier.DEBUT)
+          .intention(IntentionDePointage.OUVERTURE)
+          .activiteVisee(Optional.empty())
           .operateur(OPERATEUR_ID_MARTIN)
           .poste(Optional.empty())
           .auteur(AUTEUR_MARTIN)
@@ -264,6 +388,8 @@ class SuivisDAtelierServiceTest {
     PointageAEnregistrer commande = PointageAEnregistrer.builder()
       .suivi(engage.id())
       .type(TypeDEvenementDAtelier.DEBUT)
+      .intention(IntentionDePointage.OUVERTURE)
+      .activiteVisee(Optional.empty())
       .operateur(new OperateurId(UUID.randomUUID()))
       .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
       .auteur(AUTEUR_LEROY);
@@ -277,6 +403,8 @@ class SuivisDAtelierServiceTest {
     PointageAEnregistrer commande = PointageAEnregistrer.builder()
       .suivi(engage.id())
       .type(TypeDEvenementDAtelier.DEBUT)
+      .intention(IntentionDePointage.OUVERTURE)
+      .activiteVisee(Optional.empty())
       .operateur(OPERATEUR_ID_DUPONT)
       .poste(Optional.of(new PosteDeTravailId(UUID.randomUUID())))
       .auteur(AUTEUR_DUPONT);
@@ -294,6 +422,8 @@ class SuivisDAtelierServiceTest {
     PointageAEnregistrer commande = PointageAEnregistrer.builder()
       .suivi(engage.id())
       .type(TypeDEvenementDAtelier.DEBUT)
+      .intention(IntentionDePointage.OUVERTURE)
+      .activiteVisee(Optional.empty())
       .operateur(OPERATEUR_ID_MARTIN)
       .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
       .auteur(AUTEUR_MARTIN);
@@ -312,6 +442,8 @@ class SuivisDAtelierServiceTest {
     RegularisationAEnregistrer commande = RegularisationAEnregistrer.builder()
       .suivi(engage.id())
       .type(TypeDEvenementDAtelier.DEBUT)
+      .intention(IntentionDePointage.OUVERTURE)
+      .activiteVisee(Optional.empty())
       .operateur(OPERATEUR_ID_MARTIN)
       .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
       .auteur(AUTEUR_LEROY)
@@ -330,6 +462,8 @@ class SuivisDAtelierServiceTest {
         PointageAEnregistrer.builder()
           .suivi(engage.id())
           .type(TypeDEvenementDAtelier.DEBUT)
+          .intention(IntentionDePointage.OUVERTURE)
+          .activiteVisee(Optional.empty())
           .operateur(OPERATEUR_ID_DUPONT)
           .poste(Optional.of(POSTE_ID_FRAISEUSE_2))
           .auteur(AUTEUR_DUPONT)
@@ -541,15 +675,34 @@ class SuivisDAtelierServiceTest {
     return PointageAEnregistrer.builder()
       .suivi(suivi)
       .type(TypeDEvenementDAtelier.DEBUT)
+      .intention(IntentionDePointage.OUVERTURE)
+      .activiteVisee(Optional.empty())
       .operateur(OPERATEUR_ID_DUPONT)
       .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
       .auteur(AUTEUR_DUPONT);
+  }
+
+  private static PointageAEnregistrer gesteVisant(
+    PointageAEnregistrer ouvrant,
+    TypeDEvenementDAtelier type,
+    IntentionDePointage intention
+  ) {
+    return PointageAEnregistrer.builder()
+      .suivi(ouvrant.suivi())
+      .type(type)
+      .intention(intention)
+      .activiteVisee(Optional.of(ActiviteId.ouvertePar(ouvrant.evenement())))
+      .operateur(ouvrant.operateur())
+      .poste(ouvrant.poste())
+      .auteur(ouvrant.auteur());
   }
 
   private static RegularisationAEnregistrer regularisationDeDebutA(SuiviDAtelierId suivi, Instant date) {
     return RegularisationAEnregistrer.builder()
       .suivi(suivi)
       .type(TypeDEvenementDAtelier.DEBUT)
+      .intention(IntentionDePointage.OUVERTURE)
+      .activiteVisee(Optional.empty())
       .operateur(OPERATEUR_ID_DUPONT)
       .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
       .auteur(AUTEUR_LEROY)

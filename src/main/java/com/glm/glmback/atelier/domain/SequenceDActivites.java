@@ -10,9 +10,16 @@ import java.util.Optional;
  * engage.
  *
  * <p>
- * Les faits arrivent dans l'ordre du journal. L'automate {@link EtatDActivite} les deroule : chaque fait qui laisse
- * l'activite ouverte commence un intervalle, ferme par le fait suivant de la meme cle ou, a defaut, par la fermeture
- * finale. Un fait que l'automate n'admet pas est refuse par {@link TransitionDAtelierInterditeException}.
+ * Les faits arrivent dans l'ordre du journal, et au plus une activite est en cours sur la cle. Une ouverture termine
+ * l'activite en cours a son heure (relance) et en ouvre une nouvelle. Une transition termine l'activite qu'elle vise et
+ * ouvre une activite distincte, de l'autre categorie. Une fin termine l'activite qu'elle vise, et elle seule : un geste
+ * ne touche jamais une autre activite que sa cible. La cloture, a defaut, ferme l'activite restee en cours.
+ * </p>
+ *
+ * <p>
+ * Un geste dont la cible n'est pas l'activite en cours a son heure — deja terminee, deja remplacee, annulee, ou de la
+ * meme categorie que la transition — contredit le journal : il est refuse par
+ * {@link TransitionDAtelierInterditeException}.
  * </p>
  */
 final class SequenceDActivites {
@@ -21,28 +28,40 @@ final class SequenceDActivites {
 
   static List<IntervalleDActivite> intervalles(List<EvenementDAtelier> faits, Optional<Instant> fermetureFinale) {
     List<IntervalleDActivite> intervalles = new ArrayList<>();
-    EtatDActivite etat = EtatDActivite.ABSENTE;
+    Optional<EvenementDAtelier> enCours = Optional.empty();
 
-    for (int rang = 0; rang < faits.size(); rang++) {
-      EvenementDAtelier fait = faits.get(rang);
-      EtatDActivite avant = etat;
-      etat = avant.apres(fait.type()).orElseThrow(() -> new TransitionDAtelierInterditeException(fait, avant));
+    for (EvenementDAtelier fait : faits) {
+      if (fait.intention().viseUneActivite() && !termine(enCours, fait)) {
+        throw new TransitionDAtelierInterditeException(fait);
+      }
 
-      Optional<Instant> fin = rang + 1 < faits.size() ? Optional.of(faits.get(rang + 1).dateDeSurvenue()) : fermetureFinale;
-      etat.categorie().ifPresent(categorie -> intervalles.add(intervalle(fait, categorie, fin)));
+      enCours.ifPresent(ouvrant -> intervalles.add(intervalle(ouvrant, Optional.of(fait.dateDeSurvenue()))));
+      enCours = fait.intention().ouvreUneActivite() ? Optional.of(fait) : Optional.empty();
     }
+    enCours.ifPresent(ouvrant -> intervalles.add(intervalle(ouvrant, fermetureFinale)));
 
     return intervalles;
   }
 
-  private static IntervalleDActivite intervalle(EvenementDAtelier fait, CategorieDActivite categorie, Optional<Instant> fin) {
+  /**
+   * Vrai si le geste vise l'activite en cours et peut la terminer : toujours pour une fin, pour une transition
+   * seulement vers l'autre categorie.
+   */
+  private static boolean termine(Optional<EvenementDAtelier> enCours, EvenementDAtelier geste) {
+    return enCours
+      .filter(ouvrant -> ouvrant.activite().equals(geste.activiteVisee()))
+      .filter(ouvrant -> geste.intention() == IntentionDePointage.FIN || ouvrant.type() != geste.type())
+      .isPresent();
+  }
+
+  private static IntervalleDActivite intervalle(EvenementDAtelier ouvrant, Optional<Instant> fin) {
     return IntervalleDActivite.builder()
-      .evenement(fait.id())
-      .operateur(fait.operateur())
-      .poste(fait.poste())
-      .nature(fait.nature())
-      .categorie(categorie)
-      .debut(fait.dateDeSurvenue())
+      .evenement(ouvrant.id())
+      .operateur(ouvrant.operateur())
+      .poste(ouvrant.poste())
+      .nature(ouvrant.nature())
+      .categorie(ouvrant.type().categorie().orElseThrow())
+      .debut(ouvrant.dateDeSurvenue())
       .fin(fin);
   }
 }

@@ -1,5 +1,7 @@
 package com.glm.glmback.atelier.infrastructure.primary;
 
+import com.glm.glmback.atelier.domain.ActiviteViseeIncoherenteException;
+import com.glm.glmback.atelier.domain.ActiviteViseeIntrouvableException;
 import com.glm.glmback.atelier.domain.AucuneJourneeDeTravailEnCoursException;
 import com.glm.glmback.atelier.domain.ChevauchementDeJourneesException;
 import com.glm.glmback.atelier.domain.DateDeSurvenueFutureException;
@@ -64,6 +66,16 @@ class AtelierExceptionAdvice {
   @ExceptionHandler(PosteDAtelierIntrouvableException.class)
   ProblemDetail handlePosteDAtelierIntrouvable(PosteDAtelierIntrouvableException e) {
     return ErreurDAtelier.POSTE_DE_TRAVAIL_INTROUVABLE.problem(e);
+  }
+
+  @ExceptionHandler(ActiviteViseeIntrouvableException.class)
+  ProblemDetail handleActiviteViseeIntrouvable(ActiviteViseeIntrouvableException e) {
+    return ErreurDAtelier.ACTIVITE_VISEE_INTROUVABLE.problem(e);
+  }
+
+  @ExceptionHandler(ActiviteViseeIncoherenteException.class)
+  ProblemDetail handleActiviteViseeIncoherente(ActiviteViseeIncoherenteException e) {
+    return ErreurDAtelier.ACTIVITE_VISEE_INCOHERENTE.problem(e);
   }
 
   @ExceptionHandler(OperateurNonHabiliteException.class)

@@ -4,12 +4,14 @@ import static com.glm.glmback.atelier.domain.AtelierFixture.*;
 import static org.springframework.http.HttpStatus.*;
 
 import com.glm.glmback.UnitTest;
+import com.glm.glmback.atelier.domain.ActiviteId;
+import com.glm.glmback.atelier.domain.ActiviteViseeIncoherenteException;
+import com.glm.glmback.atelier.domain.ActiviteViseeIntrouvableException;
 import com.glm.glmback.atelier.domain.AucuneJourneeDeTravailEnCoursException;
 import com.glm.glmback.atelier.domain.ChevauchementDeJourneesException;
 import com.glm.glmback.atelier.domain.DateDeSurvenueFutureException;
 import com.glm.glmback.atelier.domain.ElementDejaEngageException;
 import com.glm.glmback.atelier.domain.ElementEngageableIntrouvableException;
-import com.glm.glmback.atelier.domain.EtatDActivite;
 import com.glm.glmback.atelier.domain.EtatDePresence;
 import com.glm.glmback.atelier.domain.EvenementAvantEngagementException;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
@@ -92,6 +94,22 @@ class AtelierExceptionAdviceTest extends ExceptionAdviceContract {
         NOT_FOUND
       ),
       new PublishedProblem(
+        new ActiviteViseeIntrouvableException(
+          debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H),
+          new ActiviteId(java.util.UUID.randomUUID())
+        ),
+        "urn:glm:erreur:atelier:activite-visee-introuvable",
+        NOT_FOUND
+      ),
+      new PublishedProblem(
+        new ActiviteViseeIncoherenteException(
+          debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H),
+          new ActiviteId(java.util.UUID.randomUUID())
+        ),
+        "urn:glm:erreur:atelier:activite-visee-incoherente",
+        CONFLICT
+      ),
+      new PublishedProblem(
         new OperateurNonHabiliteException(OPERATEUR_ID_DUPONT, POSTE_ID_FRAISEUSE_1),
         "urn:glm:erreur:atelier:operateur-non-habilite",
         CONFLICT
@@ -118,7 +136,7 @@ class AtelierExceptionAdviceTest extends ExceptionAdviceContract {
         CONFLICT
       ),
       new PublishedProblem(
-        new TransitionDAtelierInterditeException(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H), EtatDActivite.EN_COURS),
+        new TransitionDAtelierInterditeException(finDe(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)).a(LE_10_MAI_2026_A_12H)),
         "urn:glm:erreur:atelier:transition-d-atelier-interdite",
         CONFLICT
       ),

@@ -51,7 +51,16 @@ class OpenApiConfigurationIT {
       )
       .andExpect(requiredFields("RestActiviteEnCours", "categorie", "depuis"))
       .andExpect(
-        requiredFields("RestEvenementDAtelier", "id", "type", "auteur", "dateDeSurvenue", "dateDEnregistrement", "estUneRegularisation")
+        requiredFields(
+          "RestEvenementDAtelier",
+          "id",
+          "type",
+          "intention",
+          "auteur",
+          "dateDeSurvenue",
+          "dateDEnregistrement",
+          "estUneRegularisation"
+        )
       )
       .andExpect(requiredFields("RestOperateur", "id", "nom", "prenom", "postes", "natures"))
       .andExpect(requiredFields("RestOperateurDAtelier", "id", "nom", "prenom"))

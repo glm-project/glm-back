@@ -120,9 +120,40 @@ lui.
 
 **La pause, à l'inverse, n'existe pas pour le serveur** ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)) :
 ni `PAUSE`, ni `REPRISE`, ni état « en pause ». Pour mettre un opérateur en pause, le pupitre **boucle sur ses
-activités en cours** et envoie un `FIN` par activité, sur son poste ; pour la reprendre, un `DEBUT` par activité
-suspendue — ou un `NON_CONFORMITE` pour celle qui était en non conformité —, sur le même poste. La présence n'en est
-pas touchée : un opérateur en pause reste présent.
+activités en cours** et envoie une fin par activité, qui la vise ; pour la reprendre, une **ouverture** par activité
+suspendue, en `DEBUT` — ou en `NON_CONFORMITE` pour celle qui était en non conformité —, sur le même poste. La reprise
+ouvre une activité nouvelle : elle ne vise pas celle d'avant la pause. La présence n'en est pas touchée : un opérateur
+en pause reste présent.
+
+### Un pointage dit son intention et vise son activité
+
+Le type d'un pointage ne dit pas ce qu'il fait d'une activité : son **intention** le dit, et elle est requise, sans
+valeur par défaut.
+
+| Geste                          | `type`           | `intention`  | `cible`                                  |
+| ------------------------------ | ---------------- | ------------ | ---------------------------------------- |
+| Ouvrir ou reprendre en travail | `DEBUT`          | `OUVERTURE`  | absente                                  |
+| Ouvrir ou reprendre en NC      | `NON_CONFORMITE` | `OUVERTURE`  | absente                                  |
+| Passer de NC à travail         | `DEBUT`          | `TRANSITION` | l'activité NC remplacée, requise         |
+| Passer de travail à NC         | `NON_CONFORMITE` | `TRANSITION` | l'activité de travail remplacée, requise |
+| Terminer                       | `FIN`            | `FIN`        | l'activité terminée, requise             |
+
+Toute autre combinaison répond **400** (Bean Validation, détail dans `errors`). La même forme vaut pour la
+régularisation et la correction.
+
+- **Une activité se désigne par l'identifiant de son pointage ouvrant d'origine.** Le journal le rend dans
+  `activite`, sur l'ouverture et la transition qui ouvrent l'activité ; la transition et la fin portent celle qu'elles
+  visent dans `cible`. Le remplaçant d'une correction d'un ouvrant garde l'`activite` du fait corrigé : les gestes qui
+  la visaient y restent rattachés, et un pupitre continue de viser l'identifiant du geste qu'il a lui-même envoyé.
+- **Un geste ne touche que sa cible.** Une fin termine l'activité qu'elle vise, jamais une autre ; une transition la
+  remplace par une activité distincte, de l'autre catégorie. Une ouverture termine à son heure l'activité en cours
+  sur le même poste : c'est la relance.
+- **La cible est une activité de ce suivi, du même opérateur et du même poste.** Introuvable dans ce suivi, elle répond
+  **404** `activite-visee-introuvable` ; ouverte par un autre opérateur ou sur un autre poste, **409**
+  `activite-visee-incoherente`. Ces deux refus sont définitifs : rejouer le même geste ne changera rien.
+- **Un geste qui contredit le journal est aujourd'hui refusé** en **409** `transition-d-atelier-interdite` : sa cible
+  est déjà terminée ou remplacée à son heure, son ouvrant est annulé, ou la transition vise une activité de sa propre
+  catégorie. Une transition dont la cible n'est plus en cours ne devient jamais une ouverture.
 
 ---
 
@@ -149,14 +180,14 @@ Le journal complet, **événements annulés compris**, se lit via `GET /api/atel
 migrer vers le détail. Côté `glm-front`, synchroniser le contrat avec `npm run api:sync && npm run api:types` ;
 la réévaluation de la limite de pagination de la grille reste un suivi côté front.
 
-Prise de poste, puis travail : chaque geste du pupitre porte un `id` UUID créé une fois par le front. Il peut aussi
-porter `dateDeSurvenue`, l'heure réelle conservée quand le pupitre a été hors ligne.
+Prise de poste, puis travail : chaque geste du pupitre porte un `id` UUID créé une fois par le front, et son
+intention. Il peut aussi porter `dateDeSurvenue`, l'heure réelle conservée quand le pupitre a été hors ligne.
 
 ```
 POST /api/atelier/journees                 { "id": "<uuid geste>", "operateur": "<uuid operateur>" }
-POST /api/atelier/suivis/{id}/pointages    { "id": "<uuid geste>", "type": "DEBUT", "operateur": "<uuid>", "poste": "<uuid poste>" }
-POST /api/atelier/suivis/{id}/pointages    { "id": "<uuid geste>", "type": "NON_CONFORMITE", "operateur": "<uuid>", "poste": "<uuid poste>" }
-POST /api/atelier/suivis/{id}/pointages    { "id": "<uuid geste>", "type": "FIN", "operateur": "<uuid>", "poste": "<uuid poste>" }
+POST /api/atelier/suivis/{id}/pointages    { "id": "<uuid A>", "type": "DEBUT", "intention": "OUVERTURE", "operateur": "<uuid>", "poste": "<uuid poste>" }
+POST /api/atelier/suivis/{id}/pointages    { "id": "<uuid B>", "type": "NON_CONFORMITE", "intention": "TRANSITION", "cible": "<uuid A>", "operateur": "<uuid>", "poste": "<uuid poste>" }
+POST /api/atelier/suivis/{id}/pointages    { "id": "<uuid C>", "type": "FIN", "intention": "FIN", "cible": "<uuid B>", "operateur": "<uuid>", "poste": "<uuid poste>" }
 POST /api/atelier/journees/pointages       { "id": "<uuid geste>", "operateur": "<uuid>", "type": "DEPART" }
 ```
 
@@ -171,17 +202,19 @@ Trois pièges :
   implicite puis geste. **Un geste redondant** — une arrivée égarée sur cette route pour un opérateur déjà présent —
   **est absorbé** (`200`, rien d'ajouté). Restent refusés, définitivement, l'opérateur, le poste ou l'élément inconnu (404), le geste rejoué dans le désordre
   (409) et l'UUID réutilisé avec un autre contenu (409).
-- **Arrêter une activité qui n'est pas en cours, ou un élément clôturé, est absorbé** (`200`). Démarrer ou pointer
-  une non conformité sur un élément clôturé reste refusé (`409 suivi-d-atelier-cloture`) : c'est le seul refus à
-  afficher à l'opérateur, « OF clôturé, vous ne pouvez plus pointer dessus ».
+- **Arrêter une activité déjà arrêtée, ou un élément clôturé, est absorbé** (`200`) : c'est le double appui. Démarrer
+  ou pointer une non conformité sur un élément clôturé reste refusé (`409 suivi-d-atelier-cloture`) : c'est le seul
+  refus à afficher à l'opérateur, « OF clôturé, vous ne pouvez plus pointer dessus ».
 - **Deux saisies simultanées ne sont plus un refus** : le serveur rejoue lui-même l'écriture devancée.
 - **Un geste reçu pour une journée abandonnée ouvre une nouvelle journée** (`201`) : une arrivée implicite à l'heure
   du geste, sous un identifiant du serveur, puis le geste. Un départ tardif donne une journée de durée nulle. Le seuil se juge sur l'heure du geste (`dateDeSurvenue`), pas sur sa réception.
-- **Une reprise après non conformité se pointe comme un `DEBUT`.** Il n'existe pas de type « reprise ». Ce qui change,
-  c'est la `categorie` de l'activité, qui repasse de `NON_CONFORMITE` à `TRAVAIL`.
-- **Un `DEBUT` sur une activité déjà en cours la relance** au lieu d'être refusé, de même qu'une `NON_CONFORMITE` sur
-  une non conformité en cours : la période précédente s'arrête à l'heure du geste, une nouvelle commence. L'opérateur
-  qui revient sur un élément resté ouvert la veille n'est jamais bloqué, et un double appui n'ajoute aucun temps.
+- **Une reprise du travail après non conformité se pointe `DEBUT`, en transition** qui vise la non conformité. Il
+  n'existe pas de type « reprise ». Ce qui change, c'est la `categorie` de l'activité ouverte, `TRAVAIL`.
+- **Une ouverture sur une activité déjà en cours la relance** au lieu d'être refusée : la période précédente s'arrête
+  à l'heure du geste, une nouvelle commence. L'opérateur qui revient sur un élément resté ouvert la veille n'est jamais
+  bloqué, et un double appui n'ajoute aucun temps.
+- **À heure métier égale**, le journal range la fin, puis la transition, puis l'ouverture, et départage enfin par
+  l'identifiant : jamais par l'heure de réception.
 - `poste` est **toujours facultatif**, comme la `nature`. Une entreprise sans parc machine les laisse vides et doit
   retrouver un comportement nominal, pas un cas dégradé. Ne jamais rendre le champ obligatoire côté formulaire.
 - Un poste fourni doit être **habilité pour cet opérateur**, sans quoi 409. Filtrer la liste des postes sur la fiche de
@@ -291,12 +324,16 @@ PUT    /api/atelier/suivis/{id}/evenements/{evtId}             corriger une sais
 
 Les mêmes trois actes existent sur `/api/atelier/journees/{id}/...` pour la présence.
 
+La régularisation et la correction portent `intention` et `cible` comme un pointage. Une fin oubliée se régularise
+donc sur l'activité qu'elle termine.
+
 **La clôture ne fige rien pour le gestionnaire** : régularisation, annulation et correction restent possibles ensuite,
 et la clôture elle-même se déplace (`PUT`) ou s'annule (`DELETE`). Ne pas griser les actions de correction sur un
 élément clôturé.
 
 `PUT .../evenements/{evtId}` est une **correction** : une annulation et une régularisation en un seul appel. Le journal
-en ressort avec deux événements de plus, pas un — l'ancien annulé, le nouveau à l'heure corrigée.
+en ressort avec deux événements de plus, pas un — l'ancien annulé, le nouveau à l'heure corrigée. Le remplaçant d'un
+pointage ouvrant garde son `activite` : la fin qui visait l'activité la termine toujours.
 
 ### Paramétrage de l'entreprise
 
@@ -365,16 +402,17 @@ sort de plusieurs contextes. Le catalogue complet est dans [documentation/codes-
 Deux statuts du tableau ci-dessous n'en portent pas : le **400** de Bean Validation, qui se lit par son `errors`
 (`Map<champ, message>`), et le **403**, qui vient de la chaîne de filtres sans corps du tout.
 
-| Statut | Cas                                                                                                                                                                                            |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 400    | Corps invalide (Bean Validation) — détail par champ dans `errors` — ou date de survenue future.                                                                                                |
-| 403    | Jeton sans entreprise connue, ou rôle insuffisant.                                                                                                                                             |
-| 404    | Suivi, journée, événement ou élément de fabrication introuvable ; ou aucune journée ouverte pour cet opérateur.                                                                                |
-| 409    | Élément déjà engagé, élément clôturé, événement déjà annulé, transition impossible, événement antérieur à l'engagement, UUID réutilisé, **chevauchement de journées**, **saisie concurrente**. |
+| Statut | Cas                                                                                                                                                                                                                                          |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 400    | Corps invalide (Bean Validation), intention et cible comprises — détail par champ dans `errors` — ou date de survenue future.                                                                                                                |
+| 403    | Jeton sans entreprise connue, ou rôle insuffisant.                                                                                                                                                                                           |
+| 404    | Suivi, journée, événement, élément de fabrication ou activité visée introuvable ; ou aucune journée ouverte pour cet opérateur.                                                                                                              |
+| 409    | Élément déjà engagé, élément clôturé, événement déjà annulé, activité visée d'un autre opérateur ou poste, transition impossible, événement antérieur à l'engagement, UUID réutilisé, **chevauchement de journées**, **saisie concurrente**. |
 
-Les **409 de transition** viennent d'un geste rejoué dans le désordre ou d'une correction qui casse l'enchaînement :
-un `DEPART` daté avant l'arrivée de sa journée, une `FIN` datée avant le dernier fait de son activité. Ils portent un
-`message` explicite — l'afficher plutôt que le remplacer par un texte générique.
+Les **409 de transition** viennent d'un geste rejoué dans le désordre ou d'une écriture qui contredit le journal :
+un `DEPART` daté avant l'arrivée de sa journée, une fin datée avant le début de l'activité qu'elle vise, un geste qui
+vise une activité déjà terminée, remplacée ou annulée. Ils portent un `message` explicite — l'afficher plutôt que le
+remplacer par un texte générique.
 
 Le **chevauchement de journées** ne vient que d'un acte du gestionnaire : une régularisation ou une correction de
 présence qui ferait se toucher deux journées du même opérateur, jugées du premier au dernier fait connu. Régulariser

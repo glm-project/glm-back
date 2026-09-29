@@ -1,8 +1,10 @@
 package com.glm.glmback.atelier.infrastructure.primary;
 
+import com.glm.glmback.atelier.domain.ActiviteId;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
 import com.glm.glmback.atelier.domain.CoutHoraire;
 import com.glm.glmback.atelier.domain.EvenementDAtelier;
+import com.glm.glmback.atelier.domain.IntentionDePointage;
 import com.glm.glmback.atelier.domain.NatureDOperation;
 import com.glm.glmback.atelier.domain.TauxHoraire;
 import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
@@ -26,10 +28,24 @@ record RestEvenementDAtelier(
   )
   UUID id,
   @Schema(
-    description = "Nature du pointage. Une reprise apres non conformite se pointe comme un DEBUT.",
+    description = "Nature du pointage. La reprise du travail apres une non conformite se pointe DEBUT, en transition.",
     requiredMode = Schema.RequiredMode.REQUIRED
   )
   TypeDEvenementDAtelier type,
+  @Schema(
+    description = "Ce que le pointage fait d'une activite : OUVERTURE, TRANSITION ou FIN.",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  IntentionDePointage intention,
+  @Schema(
+    description = """
+    Identite de l'activite qu'ouvre une ouverture ou une transition, absente pour une fin. C'est l'identifiant du
+    pointage ouvrant d'origine : le remplacant d'une correction garde celle de l'ouvrant qu'il corrige. C'est elle
+    qu'une transition ou une fin vise dans `cible`.
+    """
+  )
+  UUID activite,
+  @Schema(description = "Activite que vise une transition ou une fin, absente pour une ouverture.") UUID cible,
   @Schema(description = "Operateur dont le temps est affecte, absent si la fiche n'est plus resolue au referentiel.")
   RestOperateur operateur,
   @Schema(description = "Poste de travail, toujours facultatif.") RestPosteDeTravail poste,
@@ -61,6 +77,9 @@ record RestEvenementDAtelier(
     return new RestEvenementDAtelier(
       evenement.id().uuid(),
       evenement.type(),
+      evenement.intention(),
+      evenement.activite().map(ActiviteId::uuid).orElse(null),
+      evenement.activiteVisee().map(ActiviteId::uuid).orElse(null),
       RestOperateur.resolu(annuaire, evenement.operateur()),
       RestPosteDeTravail.resolu(annuaire, evenement.poste()),
       evenement.nature().map(NatureDOperation::value).orElse(null),

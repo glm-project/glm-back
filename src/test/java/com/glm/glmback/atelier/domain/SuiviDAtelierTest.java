@@ -56,16 +56,61 @@ class SuiviDAtelierTest {
   @Test
   void shouldRefermerLIntervallePrecedentSurUneSaisieOubliee() {
     EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(debut).enregistre(finDe(debut).a(LE_10_MAI_2026_A_17H));
+    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(debut).enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_17H));
 
-    SuiviDAtelier regularise = suivi.enregistre(nonConformiteSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H));
+    SuiviDAtelier regularise = suivi.enregistre(passageEnNonConformiteDe(debut).a(LE_10_MAI_2026_A_12H));
 
     assertThat(regularise.activites())
       .extracting(IntervalleDActivite::debut, IntervalleDActivite::fin, IntervalleDActivite::categorie)
       .containsExactly(
         tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H), CategorieDActivite.TRAVAIL),
-        tuple(LE_10_MAI_2026_A_12H, Optional.of(LE_10_MAI_2026_A_17H), CategorieDActivite.NON_CONFORMITE)
+        tuple(LE_10_MAI_2026_A_12H, Optional.of(LE_10_MAI_2026_A_17H), CategorieDActivite.NON_CONFORMITE),
+        tuple(LE_10_MAI_2026_A_17H, Optional.empty(), CategorieDActivite.TRAVAIL)
       );
+  }
+
+  /**
+   * Une transition termine l'activite qu'elle vise et en ouvre une distincte, de l'autre categorie : c'est elle qui
+   * est desormais en cours.
+   */
+  @Test
+  void shouldOuvrirUneActiviteDistincteParUneTransition() {
+    EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier nonConformite = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_12H);
+
+    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(travail).enregistre(nonConformite);
+
+    assertThat(suivi.activites())
+      .extracting(IntervalleDActivite::evenement, IntervalleDActivite::fin)
+      .containsExactly(tuple(travail.id(), Optional.of(LE_10_MAI_2026_A_12H)), tuple(nonConformite.id(), Optional.empty()));
+    assertThat(suivi.activitesEnCours())
+      .singleElement()
+      .satisfies(activite -> {
+        assertThat(activite.categorie()).isEqualTo(CategorieDActivite.NON_CONFORMITE);
+        assertThat(activite.depuis()).isEqualTo(LE_10_MAI_2026_A_12H);
+      });
+  }
+
+  /**
+   * Une fin ne termine que l'activite qu'elle vise : celle qu'une relance a remplacee ne lui laisse rien a terminer,
+   * et la relance reste en cours.
+   */
+  @Test
+  void shouldNeTerminerQueLActiviteViseeParUneFin() {
+    EvenementDAtelier premiere = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    SuiviDAtelier relance = suiviDAtelierEngage().enregistre(premiere).enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H));
+    EvenementDAtelier finDeLaPremiere = finDe(premiere).a(LE_10_MAI_2026_A_12H);
+
+    assertThatThrownBy(() -> relance.enregistre(finDeLaPremiere)).isExactlyInstanceOf(TransitionDAtelierInterditeException.class);
+    assertThat(relance.activitesEnCours()).extracting(ActiviteEnCours::depuis).containsExactly(LE_10_MAI_2026_A_9H);
+  }
+
+  @Test
+  void shouldRefuserUnGesteQuiViseUneActiviteAbsenteDuSuivi() {
+    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H));
+    EvenementDAtelier finDAilleurs = finDe(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)).a(LE_10_MAI_2026_A_12H);
+
+    assertThatThrownBy(() -> suivi.exigeLActiviteViseePar(finDAilleurs)).isExactlyInstanceOf(ActiviteViseeIntrouvableException.class);
   }
 
   /**
@@ -86,8 +131,9 @@ class SuiviDAtelierTest {
 
   @Test
   void shouldRepasserEnTravailQuandUneNonConformiteEnTropEstAnnulee() {
-    EvenementDAtelier nonConformite = nonConformiteSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H);
-    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)).enregistre(nonConformite);
+    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier nonConformite = passageEnNonConformiteDe(debut).a(LE_10_MAI_2026_A_9H);
+    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(debut).enregistre(nonConformite);
 
     SuiviDAtelier corrige = suivi.annule(nonConformite.id(), annulationParLeroy());
 

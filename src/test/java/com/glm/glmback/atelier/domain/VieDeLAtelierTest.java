@@ -66,21 +66,24 @@ class VieDeLAtelierTest {
     journeeDeDupont = presence.arrive(new ArriveeAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT)).journee().id();
 
     ilEst(LE_10_MAI_2026_A_8H);
-    atelier.pointe(pointage(premierOrdre, TypeDEvenementDAtelier.DEBUT, POSTE_ID_FRAISEUSE_1));
+    PointageAEnregistrer premierMatin = debut(premierOrdre, POSTE_ID_FRAISEUSE_1);
+    atelier.pointe(premierMatin);
 
     ilEst(LE_10_MAI_2026_A_9H);
-    atelier.pointe(pointage(secondOrdre, TypeDEvenementDAtelier.DEBUT, POSTE_ID_FRAISEUSE_2));
+    PointageAEnregistrer secondMatin = debut(secondOrdre, POSTE_ID_FRAISEUSE_2);
+    atelier.pointe(secondMatin);
 
     ilEst(LE_10_MAI_2026_A_12H);
-    atelier.pointe(pointage(premierOrdre, TypeDEvenementDAtelier.FIN, POSTE_ID_FRAISEUSE_1));
-    atelier.pointe(pointage(secondOrdre, TypeDEvenementDAtelier.FIN, POSTE_ID_FRAISEUSE_2));
+    atelier.pointe(fin(premierMatin));
+    atelier.pointe(fin(secondMatin));
 
     ilEst(LE_10_MAI_2026_A_13H);
-    atelier.pointe(pointage(premierOrdre, TypeDEvenementDAtelier.DEBUT, POSTE_ID_FRAISEUSE_1));
-    atelier.pointe(pointage(secondOrdre, TypeDEvenementDAtelier.DEBUT, POSTE_ID_FRAISEUSE_2));
+    atelier.pointe(debut(premierOrdre, POSTE_ID_FRAISEUSE_1));
+    PointageAEnregistrer secondApresMidi = debut(secondOrdre, POSTE_ID_FRAISEUSE_2);
+    atelier.pointe(secondApresMidi);
 
     ilEst(LE_10_MAI_2026_A_16H);
-    atelier.pointe(pointage(secondOrdre, TypeDEvenementDAtelier.FIN, POSTE_ID_FRAISEUSE_2));
+    atelier.pointe(fin(secondApresMidi));
 
     ilEst(LE_11_MAI_2026_A_9H15);
     presence.regularise(
@@ -195,13 +198,29 @@ class VieDeLAtelierTest {
     return atelier.engage(new EngagementAEnregistrer(element, AUTEUR_LEROY)).id();
   }
 
-  private static PointageAEnregistrer pointage(SuiviDAtelierId suivi, TypeDEvenementDAtelier type, PosteDeTravailId poste) {
+  private static PointageAEnregistrer debut(SuiviDAtelierId suivi, PosteDeTravailId poste) {
     return PointageAEnregistrer.builder()
       .suivi(suivi)
-      .type(type)
+      .type(TypeDEvenementDAtelier.DEBUT)
+      .intention(IntentionDePointage.OUVERTURE)
+      .activiteVisee(Optional.empty())
       .operateur(OPERATEUR_ID_DUPONT)
       .poste(Optional.of(poste))
       .auteur(AUTEUR_DUPONT);
+  }
+
+  /**
+   * La fin de l'activite qu'a ouverte ce debut, sur le meme ordre et le meme poste, telle que le pupitre la pointe.
+   */
+  private static PointageAEnregistrer fin(PointageAEnregistrer debut) {
+    return PointageAEnregistrer.builder()
+      .suivi(debut.suivi())
+      .type(TypeDEvenementDAtelier.FIN)
+      .intention(IntentionDePointage.FIN)
+      .activiteVisee(Optional.of(ActiviteId.ouvertePar(debut.evenement())))
+      .operateur(debut.operateur())
+      .poste(debut.poste())
+      .auteur(debut.auteur());
   }
 
   private static final class ElementsEngageablesFiges implements ElementsEngageables {

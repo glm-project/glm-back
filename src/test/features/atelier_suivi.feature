@@ -294,49 +294,75 @@ Feature: Suivi des elements engages en atelier
     And le journal du suivi contient 2 evenements
     And le suivi a 1 activites en cours
 
-  Scenario: Un debut regularise au milieu d'une activite la scinde sans la changer
+  Scenario: Un debut regularise au milieu d'une activite deja terminee contredit sa fin
+    # Le debut rattrape a 10 h ouvre une activite, donc remplace a son heure celle de 8 h : la fin de 12 h, qui la vise,
+    # la dirait terminee apres son remplacement. Tant que le serveur ne conserve pas de sequence en conflit, il refuse
+    # le geste contradictoire plutot que de choisir une interpretation.
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2092"
       | type      | ORDRE_DE_FABRICATION |
       | reference | 2092                 |
     And j'ai engage l'element "OF 2092" en atelier
     And j'ai pointe sur "OF 2092"
-      | type      | DEBUT       |
-      | operateur | dupont      |
-      | poste     | fraiseuse-1 |
+      | id        | 00000000-0000-0000-0000-000000000261 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
     Given il est "2026-05-10T12:00:00Z"
     And j'ai pointe sur "OF 2092"
-      | type      | FIN         |
-      | operateur | dupont      |
-      | poste     | fraiseuse-1 |
+      | id        | 00000000-0000-0000-0000-000000000262 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | cible     | 00000000-0000-0000-0000-000000000261 |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
     Given il est "2026-05-11T09:15:00Z"
     When je regularise sur "OF 2092"
       | type           | DEBUT                |
+      | intention      | OUVERTURE            |
       | operateur      | dupont               |
       | poste          | fraiseuse-1          |
       | dateDeSurvenue | 2026-05-10T10:00:00Z |
-    Then la reponse a le statut http 201
+    Then la reponse a le statut http 409
+    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:transition-d-atelier-interdite"
+    When je consulte "OF 2092"
+    Then le journal du suivi contient 2 evenements
     And le suivi a l'etat "INTERROMPU"
-    When je consulte le temps effectif de "OF 2092"
-    Then le temps effectif contient
-      | poste.libelle | debut                | fin                  |
-      | fraiseuse-1   | 2026-05-10T08:00:00Z | 2026-05-10T10:00:00Z |
-      | fraiseuse-1   | 2026-05-10T10:00:00Z | 2026-05-10T12:00:00Z |
 
-  Scenario: Arreter un element sans activite en cours est absorbe
-    # Lot 8a : le double appui sur « arreter » ne change rien et n'est jamais refuse.
+  Scenario: Arreter deux fois la meme activite est absorbe
+    # Lot 8a : le double appui sur « arreter » ne change rien et n'est jamais refuse. Les deux fins visent la meme
+    # activite ; la seconde n'a plus rien a terminer.
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2093"
       | type      | ORDRE_DE_FABRICATION |
       | reference | 2093                 |
     And j'ai engage l'element "OF 2093" en atelier
+    And j'ai pointe sur "OF 2093"
+      | id        | 00000000-0000-0000-0000-000000000271 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
+    Given il est "2026-05-10T10:00:00Z"
+    And j'ai pointe sur "OF 2093"
+      | id        | 00000000-0000-0000-0000-000000000272 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | cible     | 00000000-0000-0000-0000-000000000271 |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
+    Given il est "2026-05-10T10:00:02Z"
     When je pointe sur "OF 2093"
-      | type      | FIN         |
-      | operateur | dupont      |
-      | poste     | fraiseuse-1 |
+      | id        | 00000000-0000-0000-0000-000000000273 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | cible     | 00000000-0000-0000-0000-000000000271 |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
     Then la reponse a le statut http 200
-    And le journal du suivi contient 0 evenements
-    And le suivi a l'etat "EN_ATTENTE"
+    And le journal du suivi contient 2 evenements
+    And le suivi a l'etat "INTERROMPU"
 
   Scenario: Cloturer un element, puis le rouvrir
     Given il est "2026-05-10T08:00:00Z"

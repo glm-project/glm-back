@@ -357,11 +357,21 @@
         "type" : "object"
       },
       "RestCorrection" : {
-        "description" : "La correction d'une saisie fausse : une annulation et une regularisation jouees en un seul acte.\n\nL'evenement d'origine reste au journal, annule, et le remplacant y prend sa place a l'heure corrigee.\n",
+        "description" : "La correction d'une saisie fausse : une annulation et une regularisation jouees en un seul acte.\n\nL'evenement d'origine reste au journal, annule, et le remplacant y prend sa place a l'heure corrigee. Le remplacant\nd'un pointage qui ouvrait une activite reprend l'identite de cette activite : les gestes qui la visaient y restent\nrattaches.\n",
         "properties" : {
+          "cible" : {
+            "description" : "L'activite que vise une transition ou une fin, designee par l'identifiant de son pointage ouvrant d'origine. Requise\npour une transition ou une fin, absente pour une ouverture.\n",
+            "format" : "uuid",
+            "type" : "string"
+          },
           "dateDeSurvenue" : {
             "description" : "Heure metier corrigee.",
             "format" : "date-time",
+            "type" : "string"
+          },
+          "intention" : {
+            "description" : "Ce que le geste fait d'une activite : OUVERTURE, TRANSITION ou FIN, comme pour un pointage. Seule une fin se pointe\nFIN. Aucune valeur par defaut.\n",
+            "enum" : [ "OUVERTURE", "TRANSITION", "FIN" ],
             "type" : "string"
           },
           "motif" : {
@@ -387,7 +397,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "dateDeSurvenue", "motif", "operateur", "type" ],
+        "required" : [ "dateDeSurvenue", "intention", "motif", "operateur", "type" ],
         "type" : "object"
       },
       "RestCorrectionDePresence" : {
@@ -670,6 +680,11 @@
       "RestEvenementDAtelier" : {
         "description" : "Un evenement du journal d'un element engage.\n\nComme pour la presence, l'horodatage est bitemporel. Le depart de l'operateur **ne figure jamais ici** : c'est un\nfait de sa journee de travail, croise a la lecture. Sa pause, elle, s'y lit : une fin, puis un debut a la reprise.\n",
         "properties" : {
+          "activite" : {
+            "description" : "Identite de l'activite qu'ouvre une ouverture ou une transition, absente pour une fin. C'est l'identifiant du\npointage ouvrant d'origine : le remplacant d'une correction garde celle de l'ouvrant qu'il corrige. C'est elle\nqu'une transition ou une fin vise dans `cible`.\n",
+            "format" : "uuid",
+            "type" : "string"
+          },
           "annulation" : {
             "$ref" : "#/components/schemas/RestAnnulation",
             "description" : "Presente lorsque l'evenement a ete annule. L'evenement reste au journal."
@@ -677,6 +692,11 @@
           "auteur" : {
             "description" : "Utilisateur ayant saisi l'evenement.",
             "example" : "dupont",
+            "type" : "string"
+          },
+          "cible" : {
+            "description" : "Activite que vise une transition ou une fin, absente pour une ouverture.",
+            "format" : "uuid",
             "type" : "string"
           },
           "coutHoraire" : {
@@ -703,6 +723,11 @@
             "format" : "uuid",
             "type" : "string"
           },
+          "intention" : {
+            "description" : "Ce que le pointage fait d'une activite : OUVERTURE, TRANSITION ou FIN.",
+            "enum" : [ "OUVERTURE", "TRANSITION", "FIN" ],
+            "type" : "string"
+          },
           "nature" : {
             "description" : "Nature de l'operation, recopiee du poste a la saisie. Simple axe d'agregation.",
             "type" : "string"
@@ -721,12 +746,12 @@
             "type" : "number"
           },
           "type" : {
-            "description" : "Nature du pointage. Une reprise apres non conformite se pointe comme un DEBUT.",
+            "description" : "Nature du pointage. La reprise du travail apres une non conformite se pointe DEBUT, en transition.",
             "enum" : [ "DEBUT", "NON_CONFORMITE", "FIN" ],
             "type" : "string"
           }
         },
-        "required" : [ "auteur", "dateDEnregistrement", "dateDeSurvenue", "estUneRegularisation", "id", "type" ],
+        "required" : [ "auteur", "dateDEnregistrement", "dateDeSurvenue", "estUneRegularisation", "id", "intention", "type" ],
         "type" : "object"
       },
       "RestEvenementDePresence" : {
@@ -1307,6 +1332,11 @@
       "RestPointage" : {
         "description" : "Un pointage de l'operateur sur un element engage, date a l'instant present.",
         "properties" : {
+          "cible" : {
+            "description" : "L'activite que vise une transition ou une fin, designee par l'identifiant de son pointage ouvrant d'origine : celui\nque porte `activite` au journal. Requise pour une transition ou une fin, absente pour une ouverture. Elle doit etre\nune activite de ce suivi, du meme operateur et du meme poste.\n",
+            "format" : "uuid",
+            "type" : "string"
+          },
           "dateDeSurvenue" : {
             "description" : "Heure metier du geste. Absente, elle vaut l'instant de reception initial. La fournir ne fait pas du pointage une regularisation.",
             "format" : "date-time",
@@ -1315,6 +1345,11 @@
           "id" : {
             "description" : "Identifiant durable du geste, genere par le pupitre.",
             "format" : "uuid",
+            "type" : "string"
+          },
+          "intention" : {
+            "description" : "Ce que le geste fait d'une activite : OUVERTURE en cree une nouvelle, y compris en non conformite ou a la reprise\napres une pause ; TRANSITION remplace l'activite visee par une activite de l'autre categorie ; FIN termine l'activite\nvisee. Seule une fin se pointe FIN. Aucune valeur par defaut.\n",
+            "enum" : [ "OUVERTURE", "TRANSITION", "FIN" ],
             "type" : "string"
           },
           "operateur" : {
@@ -1328,12 +1363,12 @@
             "type" : "string"
           },
           "type" : {
-            "description" : "DEBUT, NON_CONFORMITE ou FIN. Une reprise apres non conformite se pointe comme un DEBUT.",
+            "description" : "DEBUT, NON_CONFORMITE ou FIN. La reprise du travail apres une non conformite se pointe DEBUT, en transition.",
             "enum" : [ "DEBUT", "NON_CONFORMITE", "FIN" ],
             "type" : "string"
           }
         },
-        "required" : [ "id", "operateur", "type" ],
+        "required" : [ "id", "intention", "operateur", "type" ],
         "type" : "object"
       },
       "RestPointageDePresence" : {
@@ -1535,9 +1570,19 @@
       "RestRegularisation" : {
         "description" : "Une saisie oubliee, rattrapee par le gestionnaire a l'heure ou elle a reellement eu lieu.\n\nL'evenement produit portera `dateDeSurvenue` (fournie ici) et `dateDEnregistrement` (l'instant courant), et restera\nune regularisation (`estUneRegularisation`) meme saisi a l'heure du fait : c'est l'acte qui la fait, jamais l'ecart\nentre les deux dates.\n",
         "properties" : {
+          "cible" : {
+            "description" : "L'activite que vise une transition ou une fin, designee par l'identifiant de son pointage ouvrant d'origine. Requise\npour une transition ou une fin, absente pour une ouverture.\n",
+            "format" : "uuid",
+            "type" : "string"
+          },
           "dateDeSurvenue" : {
             "description" : "Heure metier a laquelle le fait a reellement eu lieu.",
             "format" : "date-time",
+            "type" : "string"
+          },
+          "intention" : {
+            "description" : "Ce que le geste fait d'une activite : OUVERTURE, TRANSITION ou FIN, comme pour un pointage. Seule une fin se pointe\nFIN. Aucune valeur par defaut.\n",
+            "enum" : [ "OUVERTURE", "TRANSITION", "FIN" ],
             "type" : "string"
           },
           "operateur" : {
@@ -1556,7 +1601,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "dateDeSurvenue", "operateur", "type" ],
+        "required" : [ "dateDeSurvenue", "intention", "operateur", "type" ],
         "type" : "object"
       },
       "RestRegularisationDePresence" : {
@@ -2557,6 +2602,16 @@
           "required" : true
         },
         "responses" : {
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestSuiviDAtelier"
+                }
+              }
+            },
+            "description" : "Le corps est invalide, intention et cible comprises."
+          },
           "404" : {
             "content" : {
               "*/*" : {
@@ -2565,7 +2620,7 @@
                 }
               }
             },
-            "description" : "Suivi, evenement, operateur ou poste de travail introuvable."
+            "description" : "Suivi, evenement, operateur, poste de travail ou activite visee introuvable."
           },
           "409" : {
             "content" : {
@@ -2575,7 +2630,7 @@
                 }
               }
             },
-            "description" : "Operateur non habilite sur ce poste, evenement deja annule, ou transition impossible."
+            "description" : "Operateur non habilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, evenement deja annule,\nou transition impossible.\n"
           }
         },
         "summary" : "Corriger une saisie fausse",
@@ -2641,7 +2696,7 @@
     },
     "/api/atelier/suivis/{id}/pointages" : {
       "post" : {
-        "description" : "Le geste de l'operateur, date a l'instant present.\n\nNe jamais pointer ici un depart : c'est un fait de la journee de travail de l'operateur, ecrit une seule fois via\nPOST /api/atelier/journees/pointages. Une pause, elle, se pointe ici : une fin par activite en cours, puis un\ndebut, ou une non conformite, a la reprise.\n",
+        "description" : "Le geste de l'operateur, date a l'instant present.\n\nSon intention dit ce qu'il fait d'une activite : OUVERTURE en cree une, TRANSITION remplace l'activite visee par une\nactivite de l'autre categorie, FIN termine l'activite visee. La transition et la fin designent leur cible par\nl'identifiant du pointage ouvrant de l'activite.\n\nNe jamais pointer ici un depart : c'est un fait de la journee de travail de l'operateur, ecrit une seule fois via\nPOST /api/atelier/journees/pointages. Une pause, elle, se pointe ici : une fin par activite en cours, puis une\nouverture, en debut ou en non conformite, a la reprise.\n",
         "operationId" : "pointe",
         "parameters" : [ {
           "in" : "path",
@@ -2691,7 +2746,7 @@
                 }
               }
             },
-            "description" : "Le corps est invalide ou la date de survenue est future."
+            "description" : "Le corps est invalide, intention et cible comprises, ou la date de survenue est future."
           },
           "404" : {
             "content" : {
@@ -2701,7 +2756,7 @@
                 }
               }
             },
-            "description" : "Suivi, operateur ou poste de travail introuvable."
+            "description" : "Suivi, operateur, poste de travail ou activite visee introuvable."
           },
           "409" : {
             "content" : {
@@ -2711,7 +2766,7 @@
                 }
               }
             },
-            "description" : "Demarrer ou pointer une non conformite sur un element cloture (seul refus qu'afficher a l'operateur), operateur non\nhabilite sur ce poste, fin rejouee dans le desordre ou identifiant reutilise. Arreter une activite qui n'est pas en\ncours, ou un element cloture, est absorbe : 200.\n"
+            "description" : "Demarrer ou pointer une non conformite sur un element cloture (seul refus qu'afficher a l'operateur), operateur non\nhabilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, geste qui contredit le journal ou\nidentifiant reutilise. Arreter une activite deja arretee, ou un element cloture, est absorbe : 200.\n"
           }
         },
         "summary" : "Pointer un debut, une non conformite ou une fin",
@@ -2752,6 +2807,16 @@
             },
             "description" : "La regularisation est enregistree."
           },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestSuiviDAtelier"
+                }
+              }
+            },
+            "description" : "Le corps est invalide, intention et cible comprises."
+          },
           "404" : {
             "content" : {
               "*/*" : {
@@ -2760,7 +2825,7 @@
                 }
               }
             },
-            "description" : "Suivi, operateur ou poste de travail introuvable."
+            "description" : "Suivi, operateur, poste de travail ou activite visee introuvable."
           },
           "409" : {
             "content" : {
@@ -2770,7 +2835,7 @@
                 }
               }
             },
-            "description" : "Operateur non habilite sur ce poste, transition impossible, ou evenement anterieur a l'engagement."
+            "description" : "Operateur non habilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, transition impossible,\nou evenement anterieur a l'engagement.\n"
           }
         },
         "summary" : "Rattraper une saisie oubliee",

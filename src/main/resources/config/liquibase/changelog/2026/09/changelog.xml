@@ -10,4 +10,5 @@
   <include file="004-journee_amplitude.xml" relativeToChangelogFile="true" />
   <include file="005-suppression_evenements_de_pause.xml" relativeToChangelogFile="true" />
   <include file="006-evenement_d_atelier_origine.xml" relativeToChangelogFile="true" />
+  <include file="007-evenement_d_atelier_intention.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>

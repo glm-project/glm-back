@@ -75,8 +75,10 @@ tests sont le seul endroit qui les tient.
 | `element-de-fabrication-introuvable` | 404    | element de fabrication introuvable | `ElementEngageableIntrouvableException`   |
 | `operateur-introuvable`              | 404    | operateur introuvable              | `OperateurDAtelierIntrouvableException`   |
 | `poste-de-travail-introuvable`       | 404    | poste de travail introuvable       | `PosteDAtelierIntrouvableException`       |
+| `activite-visee-introuvable`         | 404    | activite visee introuvable         | `ActiviteViseeIntrouvableException`       |
 | `aucune-journee-de-travail-en-cours` | 404    | aucune journee de travail en cours | `AucuneJourneeDeTravailEnCoursException`  |
 | `operateur-non-habilite`             | 409    | operateur non habilite             | `OperateurNonHabiliteException`           |
+| `activite-visee-incoherente`         | 409    | activite visee incoherente         | `ActiviteViseeIncoherenteException`       |
 | `element-deja-engage`                | 409    | element deja engage                | `ElementDejaEngageException`              |
 | `journee-de-travail-deja-ouverte`    | 409    | journee de travail deja ouverte    | `JourneeDeTravailDejaOuverteException`    |
 | `chevauchement-de-journees`          | 409    | chevauchement de journees          | `ChevauchementDeJourneesException`        |
@@ -92,6 +94,13 @@ tests sont le seul endroit qui les tient.
 
 `saisie-concurrente` est le seul code sur lequel **rejouer** l'appel est la bonne réaction : la saisie était valide,
 un autre pointage s'est glissé entre la lecture et l'écriture.
+
+`activite-visee-introuvable` et `activite-visee-incoherente` refusent une transition ou une fin dont la cible n'est
+pas une activité de ce suivi, ou appartient à un autre opérateur ou à un autre poste. Ils valent pour le pointage, la
+régularisation et la correction, et sont définitifs : le même geste rejoué reçoit le même refus.
+`transition-d-atelier-interdite` refuse, sur ces trois écritures comme sur l'annulation, un geste qui contredit le
+journal : sa cible est déjà terminée ou remplacée à son heure, son ouvrant est annulé, ou la transition vise une
+activité de sa propre catégorie.
 
 ### `operateur` — `urn:glm:erreur:operateur:`
 
@@ -146,7 +155,8 @@ créée deux fois. `chevauchement-de-journees` ne répond qu'aux actes du gestio
 
 Depuis le lot 8a, les routes de pointage n'émettent plus `aucune-journee-de-travail-en-cours` que pour un geste rejoué
 dans une journée déjà fermée, ni `transition-de-presence-interdite` ou `transition-d-atelier-interdite` que pour un
-geste rejoué dans le désordre. Ces deux refus restent définitifs, comme `operateur-introuvable`,
+geste rejoué dans le désordre ou qui contredit le journal. Ces deux refus restent définitifs, comme
+`activite-visee-introuvable`, `activite-visee-incoherente`, `operateur-introuvable`,
 `poste-de-travail-introuvable`, `suivi-d-atelier-introuvable`, `identifiant-evenement-reutilise`,
 `operateur-non-habilite`, `evenement-anterieur-a-l-engagement` et `date-de-survenue-future` (lots 8b et 8c abandonnés). `suivi-d-atelier-cloture` n'y sort
 plus que pour un démarrage ou une non conformité — la seule erreur à afficher à l'opérateur. `saisie-concurrente`

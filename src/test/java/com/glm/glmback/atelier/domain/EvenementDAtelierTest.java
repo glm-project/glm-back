@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.*;
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.shared.error.domain.MissingMandatoryValueException;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -16,6 +17,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 class EvenementDAtelierTest {
 
   private static final EvenementDAtelierId ID = EvenementDAtelierId.newId();
+  private static final ActiviteId ACTIVITE = ActiviteId.ouvertePar(ID);
+  private static final ActiviteId ACTIVITE_VISEE = new ActiviteId(UUID.fromString("00000000-0000-0000-0000-000000000007"));
   private static final Horodatage HORODATAGE = Horodatage.saisiA(LE_10_MAI_2026_A_8H);
   private static final Optional<PosteDeTravailId> SUR_FRAISEUSE_1 = Optional.of(POSTE_ID_FRAISEUSE_1);
   private static final Optional<NatureDOperation> EN_FRAISAGE = Optional.of(NATURE_FRAISAGE);
@@ -33,6 +36,9 @@ class EvenementDAtelierTest {
     EvenementDAtelier evenement = EvenementDAtelier.builder()
       .id(ID)
       .type(TypeDEvenementDAtelier.DEBUT)
+      .intention(IntentionDePointage.OUVERTURE)
+      .activite(Optional.of(ACTIVITE))
+      .activiteVisee(Optional.empty())
       .operateur(OPERATEUR_ID_DUPONT)
       .poste(SUR_FRAISEUSE_1)
       .nature(EN_FRAISAGE)
@@ -44,6 +50,9 @@ class EvenementDAtelierTest {
 
     assertThat(evenement.id()).isEqualTo(ID);
     assertThat(evenement.type()).isEqualTo(TypeDEvenementDAtelier.DEBUT);
+    assertThat(evenement.intention()).isEqualTo(IntentionDePointage.OUVERTURE);
+    assertThat(evenement.activite()).contains(ACTIVITE);
+    assertThat(evenement.activiteVisee()).isEmpty();
     assertThat(evenement.operateur()).isEqualTo(OPERATEUR_ID_DUPONT);
     assertThat(evenement.poste()).contains(POSTE_ID_FRAISEUSE_1);
     assertThat(evenement.nature()).contains(NATURE_FRAISAGE);
@@ -61,6 +70,9 @@ class EvenementDAtelierTest {
     EvenementDAtelier evenement = EvenementDAtelier.builder()
       .id(ID)
       .type(TypeDEvenementDAtelier.DEBUT)
+      .intention(IntentionDePointage.OUVERTURE)
+      .activite(Optional.of(ACTIVITE))
+      .activiteVisee(Optional.empty())
       .operateur(OPERATEUR_ID_DUPONT)
       .poste(Optional.empty())
       .nature(Optional.empty())
@@ -163,10 +175,97 @@ class EvenementDAtelierTest {
       .hasMessageContaining("annule");
   }
 
+  @Test
+  void shouldBuildUneTransitionQuiOuvreUneActiviteEtEnViseUneAutre() {
+    EvenementDAtelier transition = geste(
+      TypeDEvenementDAtelier.NON_CONFORMITE,
+      IntentionDePointage.TRANSITION,
+      Optional.of(ACTIVITE),
+      Optional.of(ACTIVITE_VISEE)
+    );
+
+    assertThat(transition.intention()).isEqualTo(IntentionDePointage.TRANSITION);
+    assertThat(transition.activite()).contains(ACTIVITE);
+    assertThat(transition.activiteVisee()).contains(ACTIVITE_VISEE);
+  }
+
+  @Test
+  void shouldBuildUneFinQuiViseUneActiviteSansEnOuvrir() {
+    EvenementDAtelier fin = geste(TypeDEvenementDAtelier.FIN, IntentionDePointage.FIN, Optional.empty(), Optional.of(ACTIVITE_VISEE));
+
+    assertThat(fin.activite()).isEmpty();
+    assertThat(fin.activiteVisee()).contains(ACTIVITE_VISEE);
+  }
+
+  @ParameterizedTest
+  @MethodSource("gestesIncoherents")
+  void shouldNotBuildUnGesteIncoherent(
+    TypeDEvenementDAtelier type,
+    IntentionDePointage intention,
+    Optional<ActiviteId> activite,
+    Optional<ActiviteId> activiteVisee
+  ) {
+    assertThatThrownBy(() -> geste(type, intention, activite, activiteVisee))
+      .isExactlyInstanceOf(IntentionDePointageIncoherenteException.class)
+      .hasMessageContaining(type.name())
+      .hasMessageContaining(intention.name());
+  }
+
+  /**
+   * Le remplacant d'un debut corrige reprend l'activite de ce debut : la fin qui la visait la termine toujours.
+   */
+  @Test
+  void shouldReprendreLActiviteDeLOuvrantQuIlCorrige() {
+    EvenementDAtelier corrige = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier remplacant = debutSurFraiseuse1RegulariseParLeroyA(LE_10_MAI_2026_A_7H30);
+
+    EvenementDAtelier enPlace = remplacant.enRemplacementDe(corrige);
+
+    assertThat(enPlace.activite()).isEqualTo(corrige.activite());
+    assertThat(enPlace.id()).isEqualTo(remplacant.id());
+    assertThat(enPlace.dateDeSurvenue()).isEqualTo(LE_10_MAI_2026_A_7H30);
+  }
+
+  @Test
+  void shouldGarderSaPropreActiviteEnRemplacantUneFin() {
+    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier remplacant = debutSurFraiseuse1RegulariseParLeroyA(LE_10_MAI_2026_A_12H);
+
+    assertThat(remplacant.enRemplacementDe(finDe(debut).a(LE_10_MAI_2026_A_12H))).isEqualTo(remplacant);
+  }
+
+  @Test
+  void shouldNOuvrirAucuneActiviteEnRemplacantUnOuvrantParUneFin() {
+    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier fin = finDe(debut).a(LE_10_MAI_2026_A_12H);
+
+    assertThat(fin.enRemplacementDe(debut)).isEqualTo(fin);
+  }
+
+  private static Stream<Arguments> gestesIncoherents() {
+    Optional<ActiviteId> aucune = Optional.empty();
+    Optional<ActiviteId> ouverte = Optional.of(ACTIVITE);
+    Optional<ActiviteId> visee = Optional.of(ACTIVITE_VISEE);
+
+    return Stream.of(
+      Arguments.of(TypeDEvenementDAtelier.FIN, IntentionDePointage.OUVERTURE, ouverte, aucune),
+      Arguments.of(TypeDEvenementDAtelier.FIN, IntentionDePointage.TRANSITION, ouverte, visee),
+      Arguments.of(TypeDEvenementDAtelier.DEBUT, IntentionDePointage.FIN, aucune, visee),
+      Arguments.of(TypeDEvenementDAtelier.DEBUT, IntentionDePointage.OUVERTURE, aucune, aucune),
+      Arguments.of(TypeDEvenementDAtelier.DEBUT, IntentionDePointage.OUVERTURE, ouverte, visee),
+      Arguments.of(TypeDEvenementDAtelier.NON_CONFORMITE, IntentionDePointage.TRANSITION, ouverte, aucune),
+      Arguments.of(TypeDEvenementDAtelier.FIN, IntentionDePointage.FIN, aucune, aucune),
+      Arguments.of(TypeDEvenementDAtelier.FIN, IntentionDePointage.FIN, ouverte, visee)
+    );
+  }
+
   private static Stream<Arguments> composantsManquants() {
     return Stream.of(
       construction(() -> evenement(null, TypeDEvenementDAtelier.DEBUT, OPERATEUR_ID_DUPONT, SUR_FRAISEUSE_1, EN_FRAISAGE), "id"),
       construction(() -> evenement(ID, null, OPERATEUR_ID_DUPONT, SUR_FRAISEUSE_1, EN_FRAISAGE), "type"),
+      construction(() -> geste(null, Optional.of(ACTIVITE), Optional.empty()), "intention"),
+      construction(() -> geste(IntentionDePointage.OUVERTURE, null, Optional.empty()), "activite"),
+      construction(() -> geste(IntentionDePointage.OUVERTURE, Optional.of(ACTIVITE), null), "activite visee"),
       construction(() -> evenement(ID, TypeDEvenementDAtelier.DEBUT, null, SUR_FRAISEUSE_1, EN_FRAISAGE), "operateur"),
       construction(() -> evenement(ID, TypeDEvenementDAtelier.DEBUT, OPERATEUR_ID_DUPONT, null, EN_FRAISAGE), "poste de travail"),
       construction(() -> evenement(ID, TypeDEvenementDAtelier.DEBUT, OPERATEUR_ID_DUPONT, SUR_FRAISEUSE_1, null), "nature de l'operation"),
@@ -175,6 +274,9 @@ class EvenementDAtelierTest {
           new EvenementDAtelier(
             ID,
             TypeDEvenementDAtelier.DEBUT,
+            IntentionDePointage.OUVERTURE,
+            Optional.of(ACTIVITE),
+            Optional.empty(),
             OPERATEUR_ID_DUPONT,
             SUR_FRAISEUSE_1,
             EN_FRAISAGE,
@@ -192,6 +294,9 @@ class EvenementDAtelierTest {
           new EvenementDAtelier(
             ID,
             TypeDEvenementDAtelier.DEBUT,
+            IntentionDePointage.OUVERTURE,
+            Optional.of(ACTIVITE),
+            Optional.empty(),
             OPERATEUR_ID_DUPONT,
             SUR_FRAISEUSE_1,
             EN_FRAISAGE,
@@ -209,6 +314,9 @@ class EvenementDAtelierTest {
           new EvenementDAtelier(
             ID,
             TypeDEvenementDAtelier.DEBUT,
+            IntentionDePointage.OUVERTURE,
+            Optional.of(ACTIVITE),
+            Optional.empty(),
             OPERATEUR_ID_DUPONT,
             SUR_FRAISEUSE_1,
             EN_FRAISAGE,
@@ -226,6 +334,9 @@ class EvenementDAtelierTest {
           new EvenementDAtelier(
             ID,
             TypeDEvenementDAtelier.DEBUT,
+            IntentionDePointage.OUVERTURE,
+            Optional.of(ACTIVITE),
+            Optional.empty(),
             OPERATEUR_ID_DUPONT,
             SUR_FRAISEUSE_1,
             EN_FRAISAGE,
@@ -243,6 +354,9 @@ class EvenementDAtelierTest {
           new EvenementDAtelier(
             ID,
             TypeDEvenementDAtelier.DEBUT,
+            IntentionDePointage.OUVERTURE,
+            Optional.of(ACTIVITE),
+            Optional.empty(),
             OPERATEUR_ID_DUPONT,
             SUR_FRAISEUSE_1,
             EN_FRAISAGE,
@@ -260,6 +374,9 @@ class EvenementDAtelierTest {
           new EvenementDAtelier(
             ID,
             TypeDEvenementDAtelier.DEBUT,
+            IntentionDePointage.OUVERTURE,
+            Optional.of(ACTIVITE),
+            Optional.empty(),
             OPERATEUR_ID_DUPONT,
             SUR_FRAISEUSE_1,
             EN_FRAISAGE,
@@ -289,9 +406,40 @@ class EvenementDAtelierTest {
     new EvenementDAtelier(
       id,
       type,
+      IntentionDePointage.OUVERTURE,
+      Optional.of(ACTIVITE),
+      Optional.empty(),
       operateur,
       poste,
       nature,
+      COUT_HORAIRE,
+      TAUX_HORAIRE,
+      AUTEUR_DUPONT,
+      OrigineDuPointage.POINTAGE,
+      HORODATAGE,
+      Optional.empty()
+    );
+  }
+
+  private static void geste(IntentionDePointage intention, Optional<ActiviteId> activite, Optional<ActiviteId> activiteVisee) {
+    geste(TypeDEvenementDAtelier.DEBUT, intention, activite, activiteVisee);
+  }
+
+  private static EvenementDAtelier geste(
+    TypeDEvenementDAtelier type,
+    IntentionDePointage intention,
+    Optional<ActiviteId> activite,
+    Optional<ActiviteId> activiteVisee
+  ) {
+    return new EvenementDAtelier(
+      ID,
+      type,
+      intention,
+      activite,
+      activiteVisee,
+      OPERATEUR_ID_DUPONT,
+      SUR_FRAISEUSE_1,
+      EN_FRAISAGE,
       COUT_HORAIRE,
       TAUX_HORAIRE,
       AUTEUR_DUPONT,
@@ -305,6 +453,9 @@ class EvenementDAtelierTest {
     return EvenementDAtelier.builder()
       .id(ID)
       .type(TypeDEvenementDAtelier.DEBUT)
+      .intention(IntentionDePointage.OUVERTURE)
+      .activite(Optional.of(ACTIVITE))
+      .activiteVisee(Optional.empty())
       .operateur(OPERATEUR_ID_DUPONT)
       .poste(SUR_FRAISEUSE_1)
       .nature(EN_FRAISAGE)

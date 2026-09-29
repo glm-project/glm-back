@@ -84,20 +84,22 @@ class PointagesDeLaSyntheseIT {
 
   private void pointage(UUID suivi, UUID operateur, Instant date, boolean annule) {
     String annulation = annule ? "?" : "null";
+    UUID id = UUID.randomUUID();
     var requete = entityManager
       .createNativeQuery(
-        "insert into evenement_d_atelier (id, suivi_id, type, operateur_id, auteur, origine, date_de_survenue, date_d_enregistrement, annulation_date) "
-          + "values (?, ?, 'DEBUT', ?, 'dupont', 'POINTAGE', ?, ?, "
+        "insert into evenement_d_atelier (id, suivi_id, type, intention, activite_id, operateur_id, auteur, origine, date_de_survenue, date_d_enregistrement, annulation_date) "
+          + "values (?, ?, 'DEBUT', 'OUVERTURE', ?, ?, 'dupont', 'POINTAGE', ?, ?, "
           + annulation
           + ")"
       )
-      .setParameter(1, UUID.randomUUID())
+      .setParameter(1, id)
       .setParameter(2, suivi)
-      .setParameter(3, operateur)
-      .setParameter(4, date)
-      .setParameter(5, date);
+      .setParameter(3, id)
+      .setParameter(4, operateur)
+      .setParameter(5, date)
+      .setParameter(6, date);
     if (annule) {
-      requete.setParameter(6, date);
+      requete.setParameter(7, date);
     }
     requete.executeUpdate();
   }

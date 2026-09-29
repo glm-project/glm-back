@@ -150,6 +150,11 @@ public class AtelierSteps {
     jePointeSur(alias, donnees);
   }
 
+  @When("je pointe sur {string} sans intention")
+  public void jePointeSurSansIntention(String alias, Map<String, String> donnees) {
+    ecritures.pointeTelQuel(suivis.get(alias), resoluAvecIdentifiant(donnees));
+  }
+
   @When("je regularise sur {string}")
   public void jeRegulariseSur(String alias, Map<String, String> donnees) {
     ecritures.regularise(suivis.get(alias), resolu(donnees));
@@ -281,6 +286,49 @@ public class AtelierSteps {
   @Then("l'activite en cours est de categorie {string}")
   public void lActiviteEnCoursEstDeCategorie(String categorie) {
     assertThatLastResponse().hasElement("$.activitesEnCours[0].categorie").withValue(categorie);
+  }
+
+  @Then("l'activite en cours est de categorie {string} depuis {string}")
+  public void lActiviteEnCoursEstDeCategorieDepuis(String categorie, String depuis) {
+    assertThatLastResponse()
+      .hasElement("$.activitesEnCours[0].categorie")
+      .withValue(categorie)
+      .and()
+      .hasElement("$.activitesEnCours[0].depuis")
+      .withValue(depuis);
+  }
+
+  @Then("l'evenement {int} du suivi a l'intention {string}")
+  public void lEvenementDuSuiviALIntention(int rang, String intention) {
+    assertThatLastResponse().hasElement("$.journal[" + rang + "].intention").withValue(intention);
+  }
+
+  @Then("l'evenement {int} du suivi ouvre sa propre activite sans en viser aucune")
+  public void lEvenementDuSuiviOuvreSaPropreActivite(int rang) {
+    assertThat(elementDeLaDerniereReponse("$.journal[" + rang + "].activite")).isEqualTo(
+      elementDeLaDerniereReponse("$.journal[" + rang + "].id")
+    );
+    assertThat(CucumberRestTestContext.getElement("$.journal[" + rang + "].cible")).isNull();
+  }
+
+  @Then("l'evenement {int} du suivi vise l'activite de l'evenement {int}")
+  public void lEvenementDuSuiviViseLActiviteDe(int rang, int ouvrant) {
+    assertThat(elementDeLaDerniereReponse("$.journal[" + rang + "].cible"))
+      .isNotNull()
+      .isEqualTo(elementDeLaDerniereReponse("$.journal[" + ouvrant + "].activite"));
+  }
+
+  @Then("l'evenement {int} du suivi n'ouvre aucune activite")
+  public void lEvenementDuSuiviNOuvreAucuneActivite(int rang) {
+    assertThat(CucumberRestTestContext.getElement("$.journal[" + rang + "].activite")).isNull();
+  }
+
+  @Then("l'evenement {int} du suivi ouvre l'activite de l'evenement {int} sous son propre identifiant")
+  public void lEvenementDuSuiviOuvreLActiviteDe(int rang, int corrige) {
+    assertThat(elementDeLaDerniereReponse("$.journal[" + rang + "].activite"))
+      .isNotNull()
+      .isEqualTo(elementDeLaDerniereReponse("$.journal[" + corrige + "].activite"))
+      .isNotEqualTo(elementDeLaDerniereReponse("$.journal[" + rang + "].id"));
   }
 
   @Then("l'evenement {int} du suivi est annule avec le motif {string}")

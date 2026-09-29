@@ -5,6 +5,7 @@ import static com.glm.glmback.shared.pagination.domain.PaginationFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.IntegrationTest;
+import com.glm.glmback.atelier.domain.ActiviteId;
 import com.glm.glmback.atelier.domain.Annulation;
 import com.glm.glmback.atelier.domain.Cloture;
 import com.glm.glmback.atelier.domain.CoutHoraire;
@@ -15,6 +16,7 @@ import com.glm.glmback.atelier.domain.EtatDAtelier;
 import com.glm.glmback.atelier.domain.EvenementDAtelier;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.Horodatage;
+import com.glm.glmback.atelier.domain.IntentionDePointage;
 import com.glm.glmback.atelier.domain.JournalDAtelier;
 import com.glm.glmback.atelier.domain.NatureDOperation;
 import com.glm.glmback.atelier.domain.OrigineDuPointage;
@@ -134,9 +136,10 @@ class JpaSuiviDAtelierRepositoryIT {
   @WithTenant(IMPECCMOLD)
   void shouldRelireLOrigineDeChaqueEvenement() {
     Instant engagement = Instant.parse("2040-01-06T10:00:00Z");
+    EvenementDAtelier debut = debutRejoueHorsLigne(engagement.plusSeconds(3600), engagement.plusSeconds(7200));
     SuiviDAtelier engage = suiviEngageA(engagement)
-      .enregistre(debutRejoueHorsLigne(engagement.plusSeconds(3600), engagement.plusSeconds(7200)))
-      .enregistre(finRegulariseeParLeroyA(engagement.plusSeconds(10800)));
+      .enregistre(debut)
+      .enregistre(finRegulariseeParLeroyDe(debut, engagement.plusSeconds(10800)));
 
     inTransaction(() -> suivis.create(engage));
 
@@ -145,6 +148,38 @@ class JpaSuiviDAtelierRepositoryIT {
     assertThat(relu.journal().actifs())
       .extracting(EvenementDAtelier::origine)
       .containsExactly(OrigineDuPointage.POINTAGE, OrigineDuPointage.REGULARISATION);
+  }
+
+  /**
+   * L'intention et les activites d'un fait survivent au round-trip base : l'ouverture porte son activite, la transition
+   * la sienne et celle qu'elle remplace, la fin seulement celle qu'elle termine.
+   */
+  @Test
+  @WithTenant(IMPECCMOLD)
+  void shouldRelireLIntentionEtLesActivitesDeChaqueEvenement() {
+    Instant engagement = Instant.parse("2040-01-06T11:00:00Z");
+    EvenementDAtelier debut = debutSurFraiseuse1A(engagement.plusSeconds(3600));
+    EvenementDAtelier nonConformite = passageEnNonConformiteDe(debut).a(engagement.plusSeconds(7200));
+    SuiviDAtelier engage = suiviEngageA(engagement)
+      .enregistre(debut)
+      .enregistre(nonConformite)
+      .enregistre(finDe(nonConformite).a(engagement.plusSeconds(10800)));
+
+    inTransaction(() -> suivis.create(engage));
+
+    SuiviDAtelier relu = inTransaction(() -> suivis.get(engage.id())).orElseThrow();
+    assertThat(relu).isEqualTo(engage);
+    assertThat(relu.journal().actifs())
+      .extracting(EvenementDAtelier::intention, EvenementDAtelier::activite, EvenementDAtelier::activiteVisee)
+      .containsExactly(
+        tuple(IntentionDePointage.OUVERTURE, Optional.of(ActiviteId.ouvertePar(debut.id())), Optional.empty()),
+        tuple(
+          IntentionDePointage.TRANSITION,
+          Optional.of(ActiviteId.ouvertePar(nonConformite.id())),
+          Optional.of(ActiviteId.ouvertePar(debut.id()))
+        ),
+        tuple(IntentionDePointage.FIN, Optional.empty(), Optional.of(ActiviteId.ouvertePar(nonConformite.id())))
+      );
   }
 
   @Test
@@ -186,10 +221,11 @@ class JpaSuiviDAtelierRepositoryIT {
   @WithTenant(IMPECCMOLD)
   void shouldAjouterUnEvenementSansReecrireLesPrecedents() {
     Instant engagement = Instant.parse("2040-01-09T07:00:00Z");
-    SuiviDAtelier engage = suiviEngageA(engagement).enregistre(debutSurFraiseuse1A(engagement.plusSeconds(3600)));
+    EvenementDAtelier debut = debutSurFraiseuse1A(engagement.plusSeconds(3600));
+    SuiviDAtelier engage = suiviEngageA(engagement).enregistre(debut);
     inTransaction(() -> suivis.create(engage));
 
-    SuiviDAtelier poursuivi = engage.enregistre(finSurFraiseuse1A(engagement.plusSeconds(7200)));
+    SuiviDAtelier poursuivi = engage.enregistre(finDe(debut).a(engagement.plusSeconds(7200)));
     inTransaction(() -> suivis.update(poursuivi));
 
     SuiviDAtelier relu = inTransaction(() -> suivis.get(engage.id())).orElseThrow();
@@ -362,9 +398,8 @@ class JpaSuiviDAtelierRepositoryIT {
   @WithTenant(IMPECCMOLD)
   void shouldTrouverLeDernierPointageDUnOperateurSurUnePeriode() {
     Instant lundi = Instant.parse("2042-03-03T07:00:00Z");
-    SuiviDAtelier of42 = suiviEngageA(lundi)
-      .enregistre(debutSurFraiseuse1A(lundi.plusSeconds(3600)))
-      .enregistre(finSurFraiseuse1A(lundi.plusSeconds(10800)));
+    EvenementDAtelier debutDeLOf42 = debutSurFraiseuse1A(lundi.plusSeconds(3600));
+    SuiviDAtelier of42 = suiviEngageA(lundi).enregistre(debutDeLOf42).enregistre(finDe(debutDeLOf42).a(lundi.plusSeconds(10800)));
     EvenementDAtelier annule = debutSurFraiseuse2A(lundi.plusSeconds(14400));
     SuiviDAtelier of43 = suiviEngageA(lundi)
       .enregistre(debutSurFraiseuse2A(lundi.plusSeconds(9000)))
@@ -386,9 +421,14 @@ class JpaSuiviDAtelierRepositoryIT {
   }
 
   private static EvenementDAtelier debutDeMartinA(Instant date) {
+    EvenementDAtelierId id = EvenementDAtelierId.newId();
+
     return EvenementDAtelier.builder()
-      .id(EvenementDAtelierId.newId())
+      .id(id)
       .type(TypeDEvenementDAtelier.DEBUT)
+      .intention(IntentionDePointage.OUVERTURE)
+      .activite(Optional.of(ActiviteId.ouvertePar(id)))
+      .activiteVisee(Optional.empty())
       .operateur(OPERATEUR_ID_MARTIN)
       .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
       .nature(Optional.of(NATURE_FRAISAGE))
@@ -448,10 +488,13 @@ class JpaSuiviDAtelierRepositoryIT {
     );
   }
 
-  private static EvenementDAtelier finRegulariseeParLeroyA(Instant date) {
+  private static EvenementDAtelier finRegulariseeParLeroyDe(EvenementDAtelier ouvrant, Instant date) {
     return EvenementDAtelier.builder()
       .id(EvenementDAtelierId.newId())
       .type(TypeDEvenementDAtelier.FIN)
+      .intention(IntentionDePointage.FIN)
+      .activite(Optional.empty())
+      .activiteVisee(ouvrant.activite())
       .operateur(OPERATEUR_ID_DUPONT)
       .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
       .nature(Optional.of(NATURE_FRAISAGE))
@@ -462,17 +505,6 @@ class JpaSuiviDAtelierRepositoryIT {
       .horodatage(Horodatage.saisiA(date));
   }
 
-  private static EvenementDAtelier finSurFraiseuse1A(Instant date) {
-    return evenement(
-      TypeDEvenementDAtelier.FIN,
-      Optional.of(POSTE_ID_FRAISEUSE_1),
-      Optional.of(NATURE_FRAISAGE),
-      Optional.of(COUT_HORAIRE_FRAISEUSE_1),
-      Optional.of(TAUX_HORAIRE_DUPONT),
-      Horodatage.saisiA(date)
-    );
-  }
-
   private static EvenementDAtelier evenement(
     TypeDEvenementDAtelier type,
     Optional<PosteDeTravailId> poste,
@@ -481,9 +513,14 @@ class JpaSuiviDAtelierRepositoryIT {
     Optional<TauxHoraire> tauxHoraire,
     Horodatage horodatage
   ) {
+    EvenementDAtelierId id = EvenementDAtelierId.newId();
+
     return EvenementDAtelier.builder()
-      .id(EvenementDAtelierId.newId())
+      .id(id)
       .type(type)
+      .intention(IntentionDePointage.OUVERTURE)
+      .activite(Optional.of(ActiviteId.ouvertePar(id)))
+      .activiteVisee(Optional.empty())
       .operateur(OPERATEUR_ID_DUPONT)
       .poste(poste)
       .nature(nature)

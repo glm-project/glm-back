@@ -14,6 +14,11 @@ import java.util.Optional;
  * </p>
  *
  * <p>
+ * Son intention dit s'il ouvre une activite, remplace celle qu'il vise, ou la termine : le type seul ne le dit pas. La
+ * transition et la fin designent l'activite visee par l'identite de son pointage ouvrant.
+ * </p>
+ *
+ * <p>
  * L'operateur et l'auteur sont deux choses differentes : sur un pupitre partage, celui qui saisit n'est pas
  * necessairement celui dont on compte le temps. L'auteur vient toujours du jeton, jamais du corps de la requete.
  * </p>
@@ -21,6 +26,8 @@ import java.util.Optional;
 public record PointageAEnregistrer(
   SuiviDAtelierId suivi,
   TypeDEvenementDAtelier type,
+  IntentionDePointage intention,
+  Optional<ActiviteId> activiteVisee,
   OperateurId operateur,
   Optional<PosteDeTravailId> poste,
   Auteur auteur,
@@ -30,6 +37,8 @@ public record PointageAEnregistrer(
   public PointageAEnregistrer {
     Assert.notNull("suivi", suivi);
     Assert.notNull("type", type);
+    Assert.notNull("intention", intention);
+    Assert.notNull("activite visee", activiteVisee);
     Assert.notNull("operateur", operateur);
     Assert.notNull("poste de travail", poste);
     Assert.notNull("auteur", auteur);
@@ -40,17 +49,35 @@ public record PointageAEnregistrer(
   public static PointageAEnregistrerSuiviBuilder builder() {
     return suivi ->
       type ->
-        operateur ->
-          poste -> auteur -> new PointageAEnregistrer(suivi, type, operateur, poste, auteur, Optional.empty(), EvenementDAtelierId.newId());
+        intention ->
+          activiteVisee ->
+            operateur ->
+              poste ->
+                auteur ->
+                  new PointageAEnregistrer(
+                    suivi,
+                    type,
+                    intention,
+                    activiteVisee,
+                    operateur,
+                    poste,
+                    auteur,
+                    Optional.empty(),
+                    EvenementDAtelierId.newId()
+                  );
   }
 
   public static PointageDuPupitreSuiviBuilder pupitreBuilder() {
     return suivi ->
       type ->
-        operateur ->
-          poste ->
-            auteur ->
-              dateDeSurvenue -> evenement -> new PointageAEnregistrer(suivi, type, operateur, poste, auteur, dateDeSurvenue, evenement);
+        intention ->
+          activiteVisee ->
+            operateur ->
+              poste ->
+                auteur ->
+                  dateDeSurvenue ->
+                    evenement ->
+                      new PointageAEnregistrer(suivi, type, intention, activiteVisee, operateur, poste, auteur, dateDeSurvenue, evenement);
   }
 
   public interface PointageAEnregistrerSuiviBuilder {
@@ -58,7 +85,15 @@ public record PointageAEnregistrer(
   }
 
   public interface PointageAEnregistrerTypeBuilder {
-    PointageAEnregistrerOperateurBuilder type(TypeDEvenementDAtelier type);
+    PointageAEnregistrerIntentionBuilder type(TypeDEvenementDAtelier type);
+  }
+
+  public interface PointageAEnregistrerIntentionBuilder {
+    PointageAEnregistrerActiviteViseeBuilder intention(IntentionDePointage intention);
+  }
+
+  public interface PointageAEnregistrerActiviteViseeBuilder {
+    PointageAEnregistrerOperateurBuilder activiteVisee(Optional<ActiviteId> activiteVisee);
   }
 
   public interface PointageAEnregistrerOperateurBuilder {
@@ -78,7 +113,15 @@ public record PointageAEnregistrer(
   }
 
   public interface PointageDuPupitreTypeBuilder {
-    PointageDuPupitreOperateurBuilder type(TypeDEvenementDAtelier type);
+    PointageDuPupitreIntentionBuilder type(TypeDEvenementDAtelier type);
+  }
+
+  public interface PointageDuPupitreIntentionBuilder {
+    PointageDuPupitreActiviteViseeBuilder intention(IntentionDePointage intention);
+  }
+
+  public interface PointageDuPupitreActiviteViseeBuilder {
+    PointageDuPupitreOperateurBuilder activiteVisee(Optional<ActiviteId> activiteVisee);
   }
 
   public interface PointageDuPupitreOperateurBuilder {

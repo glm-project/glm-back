@@ -133,21 +133,28 @@ class SuiviDAtelierResource {
     description = """
     Le geste de l'operateur, date a l'instant present.
 
+    Son intention dit ce qu'il fait d'une activite : OUVERTURE en cree une, TRANSITION remplace l'activite visee par une
+    activite de l'autre categorie, FIN termine l'activite visee. La transition et la fin designent leur cible par
+    l'identifiant du pointage ouvrant de l'activite.
+
     Ne jamais pointer ici un depart : c'est un fait de la journee de travail de l'operateur, ecrit une seule fois via
-    POST /api/atelier/journees/pointages. Une pause, elle, se pointe ici : une fin par activite en cours, puis un
-    debut, ou une non conformite, a la reprise.
+    POST /api/atelier/journees/pointages. Une pause, elle, se pointe ici : une fin par activite en cours, puis une
+    ouverture, en debut ou en non conformite, a la reprise.
     """
   )
   @ApiResponse(responseCode = "201", description = "Le pointage est enregistre.")
   @ApiResponse(responseCode = "200", description = "Le geste identique est rejoue, ou l'arret sans effet est absorbe.")
-  @ApiResponse(responseCode = "400", description = "Le corps est invalide ou la date de survenue est future.")
-  @ApiResponse(responseCode = "404", description = "Suivi, operateur ou poste de travail introuvable.")
+  @ApiResponse(
+    responseCode = "400",
+    description = "Le corps est invalide, intention et cible comprises, ou la date de survenue est future."
+  )
+  @ApiResponse(responseCode = "404", description = "Suivi, operateur, poste de travail ou activite visee introuvable.")
   @ApiResponse(
     responseCode = "409",
     description = """
     Demarrer ou pointer une non conformite sur un element cloture (seul refus qu'afficher a l'operateur), operateur non
-    habilite sur ce poste, fin rejouee dans le desordre ou identifiant reutilise. Arreter une activite qui n'est pas en
-    cours, ou un element cloture, est absorbe : 200.
+    habilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, geste qui contredit le journal ou
+    identifiant reutilise. Arreter une activite deja arretee, ou un element cloture, est absorbe : 200.
     """
   )
   ResponseEntity<RestSuiviDAtelier> pointe(@PathVariable UUID id, @RequestBody @Valid RestPointage request) {
@@ -159,10 +166,14 @@ class SuiviDAtelierResource {
   @ResponseStatus(HttpStatus.CREATED)
   @Operation(summary = "Rattraper une saisie oubliee", description = "Premier des trois actes de correction.")
   @ApiResponse(responseCode = "201", description = "La regularisation est enregistree.")
-  @ApiResponse(responseCode = "404", description = "Suivi, operateur ou poste de travail introuvable.")
+  @ApiResponse(responseCode = "400", description = "Le corps est invalide, intention et cible comprises.")
+  @ApiResponse(responseCode = "404", description = "Suivi, operateur, poste de travail ou activite visee introuvable.")
   @ApiResponse(
     responseCode = "409",
-    description = "Operateur non habilite sur ce poste, transition impossible, ou evenement anterieur a l'engagement."
+    description = """
+    Operateur non habilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, transition impossible,
+    ou evenement anterieur a l'engagement.
+    """
   )
   RestSuiviDAtelier regularise(@PathVariable UUID id, @RequestBody @Valid RestRegularisation request) {
     return rendu(applicationService.regularise(request.toDomain(new SuiviDAtelierId(id), AuteurConnecte.get())));
@@ -181,8 +192,15 @@ class SuiviDAtelierResource {
     summary = "Corriger une saisie fausse",
     description = "Troisieme acte : une annulation et une regularisation en un seul appel."
   )
-  @ApiResponse(responseCode = "404", description = "Suivi, evenement, operateur ou poste de travail introuvable.")
-  @ApiResponse(responseCode = "409", description = "Operateur non habilite sur ce poste, evenement deja annule, ou transition impossible.")
+  @ApiResponse(responseCode = "400", description = "Le corps est invalide, intention et cible comprises.")
+  @ApiResponse(responseCode = "404", description = "Suivi, evenement, operateur, poste de travail ou activite visee introuvable.")
+  @ApiResponse(
+    responseCode = "409",
+    description = """
+    Operateur non habilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, evenement deja annule,
+    ou transition impossible.
+    """
+  )
   RestSuiviDAtelier corrige(@PathVariable UUID id, @PathVariable UUID evenementId, @RequestBody @Valid RestCorrection request) {
     return rendu(applicationService.corrige(request.toDomain(new SuiviDAtelierId(id), evenementId, AuteurConnecte.get())));
   }

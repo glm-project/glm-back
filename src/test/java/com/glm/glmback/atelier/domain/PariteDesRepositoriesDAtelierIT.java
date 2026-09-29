@@ -133,9 +133,14 @@ class PariteDesRepositoriesDAtelierIT {
   }
 
   private static EvenementDAtelier debutA(Instant date) {
+    EvenementDAtelierId id = EvenementDAtelierId.newId();
+
     return EvenementDAtelier.builder()
-      .id(EvenementDAtelierId.newId())
+      .id(id)
       .type(TypeDEvenementDAtelier.DEBUT)
+      .intention(IntentionDePointage.OUVERTURE)
+      .activite(Optional.of(ActiviteId.ouvertePar(id)))
+      .activiteVisee(Optional.empty())
       .operateur(OPERATEUR_ID_DUPONT)
       .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
       .nature(Optional.of(NATURE_FRAISAGE))

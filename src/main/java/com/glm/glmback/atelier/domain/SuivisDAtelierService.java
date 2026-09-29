@@ -18,6 +18,11 @@ import java.util.Set;
  * </p>
  *
  * <p>
+ * C'est encore ici qu'un pointage ouvrant recoit l'identite de l'activite qu'il ouvre : la sienne. Le remplacant
+ * d'une correction reprend celle de l'ouvrant qu'il corrige, au journal.
+ * </p>
+ *
+ * <p>
  * C'est aussi ici que les ressources sont resolues : l'operateur et le poste doivent exister, l'operateur doit etre
  * habilite sur le poste, et la nature de l'operation est recopiee <b>du poste</b>. Un operateur polyvalent declenche
  * un pointage par poste, et chacun sait de quel metier il releve parce que le poste le dit.
@@ -93,7 +98,8 @@ public final class SuivisDAtelierService {
    * <p>
    * Arreter une activite qui n'est pas en cours, ou un OF que la cloture a deja arrete, ne change rien : le geste est
    * absorbe. Une fin rejouee dans le desordre, datee avant le dernier fait de son activite, reste refusee, comme un
-   * operateur ou un poste inconnu.
+   * operateur ou un poste inconnu, et comme un geste qui vise une activite introuvable dans ce suivi ou d'une autre
+   * cle que la sienne.
    * </p>
    */
   public PointageDAtelierTraite pointe(PointageAEnregistrer commande) {
@@ -111,6 +117,8 @@ public final class SuivisDAtelierService {
     EvenementDAtelier evenement = evenement(
       commande.evenement(),
       commande.type(),
+      commande.intention(),
+      commande.activiteVisee(),
       commande.operateur(),
       commande.poste(),
       commande.auteur(),
@@ -118,6 +126,7 @@ public final class SuivisDAtelierService {
       horodatage
     );
 
+    suivi.exigeLActiviteViseePar(evenement);
     if (suivi.arreteUneActiviteAbsente(evenement)) {
       return new PointageDAtelierTraite(suivi, true);
     }
@@ -176,6 +185,8 @@ public final class SuivisDAtelierService {
     return evenement(
       evenement,
       commande.type(),
+      commande.intention(),
+      commande.activiteVisee(),
       commande.operateur(),
       commande.poste(),
       commande.auteur(),
@@ -197,6 +208,8 @@ public final class SuivisDAtelierService {
   private EvenementDAtelier evenement(
     EvenementDAtelierId evenement,
     TypeDEvenementDAtelier type,
+    IntentionDePointage intention,
+    Optional<ActiviteId> activiteVisee,
     OperateurId operateur,
     Optional<PosteDeTravailId> poste,
     Auteur auteur,
@@ -209,6 +222,9 @@ public final class SuivisDAtelierService {
     return EvenementDAtelier.builder()
       .id(evenement)
       .type(type)
+      .intention(intention)
+      .activite(intention.ouvreUneActivite() ? Optional.of(ActiviteId.ouvertePar(evenement)) : Optional.empty())
+      .activiteVisee(activiteVisee)
       .operateur(operateur)
       .poste(poste)
       .nature(posteConnu.map(PosteConnu::nature))
