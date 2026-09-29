@@ -225,6 +225,31 @@ class SuiviDAtelierTest {
       });
   }
 
+  @Test
+  void shouldRefuserDeDeplacerUnOuvrantEncoreViseParUneFinSurSonPoste() {
+    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(debut).enregistre(finDe(debut).a(LE_10_MAI_2026_A_12H));
+    EvenementDAtelier remplacementSurFraiseuse2 = debutSurFraiseuse2ParDupontA(LE_10_MAI_2026_A_8H);
+
+    assertThatThrownBy(() -> suivi.corrige(debut.id(), annulationParLeroy(), remplacementSurFraiseuse2))
+      .isExactlyInstanceOf(ActiviteViseeIncoherenteException.class)
+      .hasMessageContaining(debut.activite().orElseThrow().uuid().toString());
+  }
+
+  @Test
+  void shouldPouvoirDeplacerUnOuvrantApresAnnulationDeLaFinQuiLeVisait() {
+    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier fin = finDe(debut).a(LE_10_MAI_2026_A_12H);
+    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(debut).enregistre(fin).annule(fin.id(), annulationParLeroy());
+
+    SuiviDAtelier corrige = suivi.corrige(debut.id(), annulationParLeroy(), debutSurFraiseuse2ParDupontA(LE_10_MAI_2026_A_8H));
+
+    assertThat(corrige.conflits()).isEmpty();
+    assertThat(corrige.activites())
+      .singleElement()
+      .satisfies(activite -> assertThat(activite.cle().poste()).contains(POSTE_ID_FRAISEUSE_2));
+  }
+
   /**
    * La meme correction jouee en deux temps commence par un etat intermediaire en conflit, admis : annuler le debut
    * laisse sa fin sans activite a terminer.

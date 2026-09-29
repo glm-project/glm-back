@@ -82,6 +82,15 @@ public record JournalDAtelier(List<EvenementDAtelier> evenements) {
     EvenementDAtelier enPlace = remplacant.enRemplacementDe(corrige);
     List<EvenementDAtelier> corriges = remplace(corrige, evenement -> Stream.of(evenement.annule(annulation), enPlace));
     exigeLActiviteVisee(corriges, enPlace);
+    enPlace
+      .activite()
+      .ifPresent(activite ->
+        corriges
+          .stream()
+          .filter(fait -> !fait.estAnnule())
+          .filter(fait -> fait.activiteVisee().filter(activite::equals).isPresent())
+          .forEach(fait -> exigeLActiviteVisee(corriges, fait))
+      );
 
     return new JournalDAtelier(corriges);
   }

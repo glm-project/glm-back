@@ -102,6 +102,8 @@ Se contredisent : un geste qui vise une activité remplacée avant son heure, d�
 
 La contradiction couvre ce qui sépare le début de la cible de l'heure du geste. La cible, l'activité qu'ouvre le geste et toute activité du même poste qui chevauche cette zone sont **à résoudre** : ni en cours, ni terminées, sans durée ni coût chiffrés, et la fin automatique ne les tranche pas. Les autres gardent leur lecture, en particulier la nouvelle ouverture pointée après le conflit, seule action qu'un pupitre propose encore sur ce poste. L'état de l'élément se juge sur ses seules activités interprétables ; le conflit se lit à part, dans la réponse du suivi, et ne se stocke jamais : il disparaît au recalcul dès que les faits redeviennent cohérents. L'historique ne garde que les pointages et les corrections.
 
+La correction d'un ouvrant conserve l'identité de son activité. Elle ne peut donc pas la déplacer vers un autre couple opérateur/poste tant qu'un geste actif la vise depuis l'ancien : ce serait une cible incohérente, pas une contradiction de séquence. Le gestionnaire corrige ou annule d'abord ce geste, puis déplace l'ouvrant.
+
 Une fin survenue avant la clôture de l'élément, mais reçue après elle, est enregistrée à son heure : la clôture ne prime pas sur un geste qui l'a précédée. Survenue après, elle n'arrête plus rien.
 
 ### L'activité, un opérateur sur un poste de travail

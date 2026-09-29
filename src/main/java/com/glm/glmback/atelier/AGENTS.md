@@ -86,6 +86,9 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
   (`ActiviteViseeIncoherenteException`, 409), avant toute autre décision, absorption comprise. Un geste qui contredit
   le journal — cible déjà terminée, remplacée ou annulée, transition vers sa propre catégorie — n'est jamais refusé :
   il ne termine jamais une autre activité que sa cible, et sa séquence est en conflit (`SequenceEnConflit`).
+  Corriger l'ouvrant vers un autre couple opérateur/poste conserve son `ActiviteId` : si un geste actif vise encore
+  cette activité depuis l'ancienne clé, la correction est refusée (409). Annuler ou corriger d'abord ce geste permet
+  ensuite de déplacer l'ouvrant sans laisser une cible incohérente et une durée chiffrable sur la nouvelle clé.
 - **Aucune contradiction n'est refusée, par aucune écriture** : pointage, régularisation, correction et annulation
   enregistrent le fait, et l'interprétation rend une séquence en conflit au lieu de lever. Une exception levée par
   l'interprétation bloquerait aussi la relecture du suivi. Sont contradictoires : un geste qui vise une activité

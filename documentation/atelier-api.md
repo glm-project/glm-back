@@ -414,6 +414,10 @@ pointage ouvrant garde son `activite` : la fin qui visait l'activité la termine
 12 h, lu à 22 h, rend l'activité en cours jusqu'à son échéance de 1 h, et la fin que le pupitre pointe ensuite en
 visant le pointage d'origine la termine.
 
+Déplacer par correction un ouvrant vers un autre opérateur ou poste répond **409** `activite-visee-incoherente` si
+un geste actif vise encore cette activité depuis l'ancienne clé. Corriger ou annuler d'abord ce geste permet ensuite
+de déplacer l'ouvrant.
+
 **Une séquence en conflit se résout par ces mêmes actes**, et disparaît de `conflits` au recalcul dès que les faits
 redeviennent cohérents ; les pointages et corrections restent au journal. Travail A à 8 h, transition vers une non
 conformité à 12 h, fin de A à 17 h :
