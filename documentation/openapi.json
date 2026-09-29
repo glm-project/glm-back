@@ -893,6 +893,11 @@
             "format" : "int32",
             "type" : "integer"
           },
+          "evaluation" : {
+            "description" : "Instant effectivement utilise pour l'expiration et le decoupage des activites en cours.",
+            "format" : "date-time",
+            "type" : "string"
+          },
           "jours" : {
             "description" : "Les sept jours, du lundi au dimanche.",
             "items" : {
@@ -911,6 +916,7 @@
             "type" : "integer"
           }
         },
+        "required" : [ "evaluation" ],
         "type" : "object"
       },
       "RestIntervalleDActivite" : {
@@ -3145,7 +3151,7 @@
     },
     "/api/feuilles-de-temps/{operateurId}" : {
       "get" : {
-        "description" : "Rend les sept jours de la semaine ISO demandee, chacun portant les portions d'activite qui lui reviennent\ndans le fuseau horaire de l'entreprise.\n\nLe travail est lu dans la projection des activites interpretees par atelier, selectionnee par recouvrement :\nune activite commencee avant la semaine reste visible. Chaque portion\nporte l'identite stable, l'etat et les bornes entieres de l'activite, en plus de ses bornes coupees a minuit et a\nla semaine. Une fin reelle est conservee ; sans elle, l'activite est terminee automatiquement a son echeance des\nqu'elle est atteinte. Cet etat signale l'anomalie. Une activite en cours ou a resoudre n'a pas de fin.\nUne activite en cours rend une indication sans fin sur chaque jour atteint a l'instant de lecture, dans la\nsemaine. Son debut entier permet de lire « en cours depuis dimanche » sur lundi, sans fin fabriquee a minuit.\n\nLa semaine est toujours explicite : aucune semaine courante implicite. L'annee est celle des semaines ISO, qui\ndiffere de l'annee civile a ses bornes — la semaine 1 de 2026 commence le 29 decembre 2025.\n\nL'instant courant est releve une seule fois par lecture pour evaluer toutes les activites. Deux appels\nespaces peuvent donc differer.\n",
+        "description" : "Rend les sept jours de la semaine ISO demandee, chacun portant les portions d'activite qui lui reviennent\ndans le fuseau horaire de l'entreprise.\n\nLe travail est lu dans la projection des activites interpretees par atelier, selectionnee par recouvrement :\nune activite commencee avant la semaine reste visible. Chaque portion\nporte l'identite stable, l'etat et les bornes entieres de l'activite, en plus de ses bornes coupees a minuit et a\nla semaine. Une fin reelle est conservee ; sans elle, l'activite est terminee automatiquement a son echeance des\nqu'elle est atteinte. Cet etat signale l'anomalie. Une activite en cours ou a resoudre n'a pas de fin.\nUne activite en cours rend une indication sans fin sur chaque jour atteint a l'instant de lecture, dans la\nsemaine. Son debut entier permet de lire « en cours depuis dimanche » sur lundi, sans fin fabriquee a minuit.\n\nLa semaine est toujours explicite : aucune semaine courante implicite. L'annee est celle des semaines ISO, qui\ndiffere de l'annee civile a ses bornes — la semaine 1 de 2026 commence le 29 decembre 2025.\n\nL'instant evaluation facultatif decide de l'expiration et des jours atteints par les activites en cours.\nSans parametre, l'heure du serveur est relevee une seule fois. La reponse rend l'instant effectivement utilise.\nPasser le meme instant a la feuille et a la synthese assure la meme decision d'expiration ; les faits connus\nrestent lus, meme posterieurs a cet instant. Ce contrat ne garantit ni lecture historique ni transaction commune.\n",
         "operationId" : "get_5",
         "parameters" : [ {
           "description" : "Identifiant de l'operateur dans le referentiel.",
@@ -3180,6 +3186,15 @@
             "minimum" : 1,
             "type" : "integer"
           }
+        }, {
+          "description" : "Instant ISO-8601 utilise pour evaluer les activites. Par defaut, heure du serveur.",
+          "in" : "query",
+          "name" : "evaluation",
+          "required" : false,
+          "schema" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
         } ],
         "responses" : {
           "200" : {
@@ -3200,7 +3215,7 @@
                 }
               }
             },
-            "description" : "Annee ou numero de semaine hors bornes."
+            "description" : "Annee ou numero de semaine hors bornes, ou instant evaluation mal forme."
           },
           "404" : {
             "content" : {

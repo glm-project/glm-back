@@ -8,6 +8,8 @@ import com.glm.glmback.feuilledetemps.domain.OperateurId;
 import com.glm.glmback.feuilledetemps.domain.OperateursConnus;
 import com.glm.glmback.feuilledetemps.domain.SemaineCalendaire;
 import com.glm.glmback.shared.time.domain.Clock;
+import java.time.Instant;
+import java.util.Optional;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,7 +42,7 @@ public class FeuillesDeTempsApplicationService {
    */
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
   @Transactional(readOnly = true)
-  public FeuilleDeTemps historique(OperateurId operateur, SemaineCalendaire semaine) {
-    return feuillesDeTemps.historique(operateur, semaine);
+  public FeuilleDeTemps historique(OperateurId operateur, SemaineCalendaire semaine, Optional<Instant> evaluation) {
+    return feuillesDeTemps.historique(operateur, semaine, evaluation);
   }
 }

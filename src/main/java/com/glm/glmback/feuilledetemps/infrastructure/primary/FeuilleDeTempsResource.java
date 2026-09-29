@@ -9,6 +9,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,12 +54,14 @@ class FeuilleDeTempsResource {
     La semaine est toujours explicite : aucune semaine courante implicite. L'annee est celle des semaines ISO, qui
     differe de l'annee civile a ses bornes — la semaine 1 de 2026 commence le 29 decembre 2025.
 
-    L'instant courant est releve une seule fois par lecture pour evaluer toutes les activites. Deux appels
-    espaces peuvent donc differer.
+    L'instant evaluation facultatif decide de l'expiration et des jours atteints par les activites en cours.
+    Sans parametre, l'heure du serveur est relevee une seule fois. La reponse rend l'instant effectivement utilise.
+    Passer le meme instant a la feuille et a la synthese assure la meme decision d'expiration ; les faits connus
+    restent lus, meme posterieurs a cet instant. Ce contrat ne garantit ni lecture historique ni transaction commune.
     """
   )
   @ApiResponse(responseCode = "200", description = "La feuille de temps de la semaine demandee.")
-  @ApiResponse(responseCode = "400", description = "Annee ou numero de semaine hors bornes.")
+  @ApiResponse(responseCode = "400", description = "Annee ou numero de semaine hors bornes, ou instant evaluation mal forme.")
   @ApiResponse(responseCode = "404", description = "Operateur inconnu du referentiel.")
   RestFeuilleDeTemps get(
     @Parameter(description = "Identifiant de l'operateur dans le referentiel.") @PathVariable UUID operateurId,
@@ -66,8 +70,13 @@ class FeuilleDeTempsResource {
     ) int annee,
     @Parameter(description = "Numero de la semaine ISO.", example = "20") @RequestParam @Min(PREMIERE_SEMAINE) @Max(
       DERNIERE_SEMAINE
-    ) int semaine
+    ) int semaine,
+    @Parameter(description = "Instant ISO-8601 utilise pour evaluer les activites. Par defaut, heure du serveur.") @RequestParam(
+      required = false
+    ) Optional<Instant> evaluation
   ) {
-    return RestFeuilleDeTemps.from(applicationService.historique(new OperateurId(operateurId), new SemaineCalendaire(annee, semaine)));
+    return RestFeuilleDeTemps.from(
+      applicationService.historique(new OperateurId(operateurId), new SemaineCalendaire(annee, semaine), evaluation)
+    );
   }
 }

@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -42,11 +43,19 @@ public final class FeuillesDeTempsService {
   }
 
   public FeuilleDeTemps historique(OperateurId operateur, SemaineCalendaire semaine) {
+    return historique(operateur, semaine, Optional.empty());
+  }
+
+  public FeuilleDeTemps historique(OperateurId operateur, SemaineCalendaire semaine, Optional<Instant> evaluationDemandee) {
     OperateurConnu connu = operateurs.get(operateur).orElseThrow(() -> new OperateurInconnuException(operateur));
     DecoupageCalendaire decoupage = new DecoupageCalendaire(semaine, fuseau.zone());
-    Instant evaluation = clock.now();
+    Instant evaluation = evaluationDemandee.orElseGet(clock::now);
 
-    return new FeuilleDeTemps(connu, semaine, jours(decoupage, travailDeLaSemaine(operateur, decoupage, evaluation)));
+    return FeuilleDeTemps.builder()
+      .operateur(connu)
+      .semaine(semaine)
+      .evaluation(evaluation)
+      .jours(jours(decoupage, travailDeLaSemaine(operateur, decoupage, evaluation)));
   }
 
   private List<IntervalleDUnJour> travailDeLaSemaine(OperateurId operateur, DecoupageCalendaire decoupage, Instant evaluation) {

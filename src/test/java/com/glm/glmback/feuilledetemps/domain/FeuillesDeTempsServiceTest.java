@@ -168,6 +168,7 @@ class FeuillesDeTempsServiceTest {
     FeuilleDeTemps feuille = service.historique(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
 
     assertThat(lectures.get()).isEqualTo(1);
+    assertThat(feuille.evaluation()).isEqualTo(Instant.parse("2026-05-11T18:59:00Z"));
     assertThat(activitesDu(feuille, LUNDI_11_MAI_2026).getFirst().lecture().etat()).isEqualTo(EtatDActivite.EN_COURS);
   }
 

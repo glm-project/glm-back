@@ -2,6 +2,7 @@ package com.glm.glmback.feuilledetemps.infrastructure.primary;
 
 import com.glm.glmback.feuilledetemps.domain.FeuilleDeTemps;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.Instant;
 import java.util.List;
 
 @Schema(
@@ -13,6 +14,11 @@ import java.util.List;
   """
 )
 record RestFeuilleDeTemps(
+  @Schema(
+    description = "Instant effectivement utilise pour l'expiration et le decoupage des activites en cours.",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  Instant evaluation,
   @Schema(description = "L'operateur, resolu au referentiel.") RestOperateur operateur,
   @Schema(description = "Annee ISO de la semaine. Attention, elle differe de l'annee civile aux changements d'annee.", example = "2026")
   int annee,
@@ -21,6 +27,7 @@ record RestFeuilleDeTemps(
 ) {
   static RestFeuilleDeTemps from(FeuilleDeTemps feuille) {
     return new RestFeuilleDeTemps(
+      feuille.evaluation(),
       RestOperateur.from(feuille.operateur()),
       feuille.semaine().annee(),
       feuille.semaine().numero(),

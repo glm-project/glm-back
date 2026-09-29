@@ -29,6 +29,19 @@ Feature: Feuille de temps hebdomadaire d'un operateur
     And la feuille de temps ne porte aucune activite
     And la feuille de temps ne porte aucun champ de presence
 
+  Scenario: La feuille utilise l'instant choisi avant echeance malgre une reception apres echeance
+    Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type  | intention | operateur | poste  | survenue             |
+      | A     | DEBUT | OUVERTURE | martin    | DMU 50 | 2026-05-11T08:00:00Z |
+    And il est "2026-05-11T21:00:05Z"
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026 avec evaluation "2026-05-11T20:59:59Z"
+    Then la reponse a le statut http 200
+    And les activites du "2026-05-11" sont
+      | idActivite | etat     | debutActivite        | finActivite | fin |
+      | A          | EN_COURS | 2026-05-11T08:00:00Z |             |     |
+    And la feuille de temps est evaluee a "2026-05-11T20:59:59Z"
+
   Scenario: Un intervalle termine sans arrivee garde toutes ses bornes
     Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la feuille de temps recoit sur l'element "carter" les pointages

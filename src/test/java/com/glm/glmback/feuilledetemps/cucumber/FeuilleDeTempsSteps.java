@@ -194,6 +194,16 @@ public class FeuilleDeTempsSteps {
     consulte(operateurs.get(alias), semaine, annee);
   }
 
+  @When("je consulte la feuille de temps de {string} pour la semaine {int} de {int} avec evaluation {string}")
+  public void consulteAvecEvaluation(String alias, int semaine, int annee, String evaluation) {
+    rest.get(FEUILLES_URI + "/" + operateurs.get(alias) + "?annee=" + annee + "&semaine=" + semaine + "&evaluation=" + evaluation);
+  }
+
+  @Then("la feuille de temps est evaluee a {string}")
+  public void estEvalueeA(String evaluation) {
+    assertThat(CucumberRestTestContext.getElement("$.evaluation")).isEqualTo(evaluation);
+  }
+
   @When("je consulte la feuille de temps de l'operateur {string} pour la semaine {int} de {int}")
   public void jeConsulteLaFeuilleDeTempsDeLOperateur(String operateur, int semaine, int annee) {
     consulte(operateur, semaine, annee);

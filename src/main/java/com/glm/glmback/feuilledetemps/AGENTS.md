@@ -22,8 +22,11 @@ la feuille expose les identifiants de poste et d'élément sans lire leurs libel
   Aucun import des contextes `atelier`, `operateur` ou `postedetravail`, tous annotés `@BusinessContext`.
 - La sélection porte sur le recouvrement de la semaine par le début et la fin réelle ou l'échéance. Aucune borne
   basse fixe du début : une régularisation peut établir plus de 13 h, voire plus d'une semaine.
-- `FeuillesDeTempsService` relève `Clock.now()` une seule fois et transmet cet instant à toutes les activités.
-  La transaction en lecture seule ne garantit pas un instantané commun face aux écritures concurrentes.
+- `FeuillesDeTempsService` reçoit l'instant facultatif `evaluation`. Sans lui, l'heure du serveur est relevée
+  une seule fois ; l'instant utilisé gouverne l'expiration et le découpage des activités en cours, et la réponse
+  le rend. Passer le même instant à la feuille et à la synthèse assure la même décision d'expiration.
+  Les faits connus restent interprétés, même postérieurs à cet instant : aucune lecture historique ni
+  transaction commune entre les appels n'est garantie.
 - Les états sont `TERMINEE`, `TERMINEE_AUTOMATIQUEMENT`, `EN_COURS`, `A_RESOUDRE`. Une fin réelle est conservée,
   même au-delà de l'échéance. Sans elle, l'échéance atteinte termine automatiquement l'activité à cette borne.
   Une activité à résoudre reste sans fin ; l'échéance ne résout pas le conflit.

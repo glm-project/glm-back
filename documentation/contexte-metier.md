@@ -272,7 +272,12 @@ non-conformité, début et fin éventuelle. La sélection porte sur les activit�
 même commencées avant elle et sans pointage de la semaine. Une régularisation peut établir une fin bien au-delà
 de 13 h, voire de la semaine : aucune borne basse fixe sur le début ne permet de les retrouver toutes.
 
-L'instant courant est relevé une seule fois. Une activité avec fin réelle est `TERMINEE`, même si cette fin dépasse
+La feuille accepte un instant `evaluation` facultatif et rend celui effectivement utilisé. Sans paramètre,
+l'heure du serveur est relevée une seule fois. Cet instant gouverne l'expiration et les jours atteints par les
+activités en cours. Le même instant peut être transmis à la synthèse pour composer le relevé ; les faits connus
+restent interprétés même postérieurs à cet instant, sans lecture historique ni transaction commune garantie.
+
+Une activité avec fin réelle est `TERMINEE`, même si cette fin dépasse
 l'échéance. À défaut, elle est `EN_COURS` avant l'échéance et `TERMINEE_AUTOMATIQUEMENT` dès celle-ci, à cette borne,
 avec son anomalie visible par l'état. Une activité en conflit est `A_RESOUDRE`, sans fin : l'échéance ne la tranche pas.
 La feuille ne calcule aucune durée. Chaque portion garde l'identité stable, l'état et les bornes de l'activité entière,

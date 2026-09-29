@@ -482,6 +482,14 @@ activité terminée automatiquement à son échéance, faute de fin réelle : `f
 régularisée par le gestionnaire remplace. `aResoudre: true` signale une activité d'une séquence en conflit : rendue
 telle quelle, sans `fin`, elle n'a aucune durée à compter tant que le gestionnaire n'a pas tranché.
 
+### Évaluer la feuille de temps
+
+`GET /api/feuilles-de-temps/{operateurId}?annee=2026&semaine=20&evaluation=2026-05-11T20:59:59Z`
+accepte un instant ISO-8601 facultatif. Sans lui, l'heure du serveur est relevée une seule fois ; la réponse porte
+`evaluation`, l'instant effectivement utilisé pour l'expiration et les jours atteints par les activités en cours.
+Un instant mal formé répond 400. Les faits connus restent interprétés même postérieurs à cet instant : il ne
+s'agit pas d'une lecture historique. La semaine, le fuseau et les rôles de lecture gardent leurs règles.
+
 ### Présence
 
 `GET /api/atelier/journees/{id}` expose **à la fois** :
