@@ -21,7 +21,6 @@ enum ErreurDAtelier implements ProblemCode {
   EVENEMENT_DEJA_ANNULE(HttpStatus.CONFLICT, "evenement deja annule"),
   EVENEMENT_DE_PRESENCE_DEJA_ANNULE(HttpStatus.CONFLICT, "evenement de presence deja annule"),
   SUIVI_D_ATELIER_CLOTURE(HttpStatus.CONFLICT, "suivi d'atelier cloture"),
-  TRANSITION_D_ATELIER_INTERDITE(HttpStatus.CONFLICT, "transition d'atelier interdite"),
   TRANSITION_DE_PRESENCE_INTERDITE(HttpStatus.CONFLICT, "transition de presence interdite"),
   EVENEMENT_ANTERIEUR_A_L_ENGAGEMENT(HttpStatus.CONFLICT, "evenement anterieur a l'engagement"),
   SAISIE_CONCURRENTE(HttpStatus.CONFLICT, "saisie concurrente"),

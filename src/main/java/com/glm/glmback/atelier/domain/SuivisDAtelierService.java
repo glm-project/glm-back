@@ -92,22 +92,19 @@ public final class SuivisDAtelierService {
   }
 
   /**
-   * Un pointage d'atelier n'est jamais refuse a l'operateur, a une exception pres (lot 8a de la strategie « bornes de
-   * fin de journee ») : demarrer ou pointer une non conformite sur un OF cloture, qui n'est plus pointable.
+   * Un pointage d'atelier n'est jamais refuse a l'operateur parce qu'il contredit le journal : il est conserve, et sa
+   * sequence est en conflit. Demarrer ou pointer une non conformite sur un OF cloture, qui n'est plus pointable, reste
+   * refuse (lot 8a de la strategie « bornes de fin de journee »), comme un operateur ou un poste inconnu, et comme un
+   * geste qui vise une activite introuvable dans ce suivi ou d'une autre cle que la sienne.
    *
    * <p>
-   * Arreter une activite qui n'est pas en cours, ou un OF que la cloture a deja arrete, ne change rien : le geste est
-   * absorbe. Une fin rejouee dans le desordre, datee avant le dernier fait de son activite, reste refusee, comme un
-   * operateur ou un poste inconnu, et comme un geste qui vise une activite introuvable dans ce suivi ou d'une autre
-   * cle que la sienne.
+   * Une fin survenue avant la cloture de l'OF, mais recue apres elle, est enregistree a son heure. Survenue apres, elle
+   * ne change rien : la cloture a deja termine ce qu'elle terminerait, et le geste est absorbe.
    * </p>
    */
   public PointageDAtelierTraite pointe(PointageAEnregistrer commande) {
     SuiviDAtelier suivi = get(commande.suivi());
-    if (suivi.estCloture()) {
-      if (commande.type() == TypeDEvenementDAtelier.FIN) {
-        return new PointageDAtelierTraite(suivi, true);
-      }
+    if (suivi.estCloture() && commande.type() != TypeDEvenementDAtelier.FIN) {
       throw new SuiviDAtelierClotureException(suivi.id());
     }
 
@@ -127,7 +124,7 @@ public final class SuivisDAtelierService {
     );
 
     suivi.exigeLActiviteViseePar(evenement);
-    if (suivi.arreteUneActiviteAbsente(evenement)) {
+    if (suivi.estClotureAvant(evenement)) {
       return new PointageDAtelierTraite(suivi, true);
     }
 

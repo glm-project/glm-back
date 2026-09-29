@@ -8,10 +8,14 @@ import com.glm.glmback.shared.error.domain.MissingMandatoryValueException;
 import com.glm.glmback.shared.error.domain.NullElementInCollectionException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
 @UnitTest
@@ -88,16 +92,25 @@ class JournalDAtelierTest {
     assertThat(journal.evenements()).containsExactly(premier, second);
   }
 
+  /**
+   * Relu tel quel, un journal ne se refuse jamais : une fin dont la cible n'y est pas ouverte laisse une sequence en
+   * conflit sans activite, jamais une exception qui bloquerait la relecture.
+   */
   @Test
-  void shouldRefuserUneFinQuiNeViseAucuneActiviteEnCours() {
+  void shouldConserverEnConflitUneFinQuiNeViseAucuneActiviteDuJournal() {
     EvenementDAtelier jamaisEnregistre = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    List<EvenementDAtelier> finSansDebut = List.of(finDe(jamaisEnregistre).a(LE_10_MAI_2026_A_12H));
+    EvenementDAtelier finSansDebut = finDe(jamaisEnregistre).a(LE_10_MAI_2026_A_12H);
 
-    assertThatThrownBy(() -> new JournalDAtelier(finSansDebut))
-      .isExactlyInstanceOf(TransitionDAtelierInterditeException.class)
-      .hasMessageContaining("FIN")
-      .hasMessageContaining(OPERATEUR_ID_DUPONT.uuid().toString())
-      .hasMessageContaining(jamaisEnregistre.id().uuid().toString());
+    JournalDAtelier journal = new JournalDAtelier(List.of(finSansDebut));
+
+    assertThat(journal.activites(Optional.empty())).isEmpty();
+    assertThat(journal.conflits(Optional.empty()))
+      .singleElement()
+      .satisfies(conflit -> {
+        assertThat(conflit.cle()).isEqualTo(cleDeFraiseuse1DeDupont());
+        assertThat(conflit.activites()).isEmpty();
+        assertThat(conflit.pointages()).containsExactly(finSansDebut.id());
+      });
   }
 
   @Test
@@ -212,58 +225,115 @@ class JournalDAtelierTest {
   }
 
   /**
-   * Une transition de meme categorie contredit l'activite qu'elle vise : elle n'est pas une relance deguisee.
+   * Une transition de meme categorie n'est pas une relance deguisee : elle est conservee, et la sequence est en
+   * conflit.
    */
   @Test
-  void shouldRefuserUneTransitionVersLaMemeCategorie() {
+  void shouldConserverEnConflitUneTransitionVersLaMemeCategorie() {
     EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    List<EvenementDAtelier> travailSurTravail = List.of(travail, passageEnTravailDe(travail).a(LE_10_MAI_2026_A_9H));
+    EvenementDAtelier travailSurTravail = passageEnTravailDe(travail).a(LE_10_MAI_2026_A_9H);
 
-    assertThatThrownBy(() -> new JournalDAtelier(travailSurTravail))
-      .isExactlyInstanceOf(TransitionDAtelierInterditeException.class)
-      .hasMessageContaining("dans l'autre categorie");
+    JournalDAtelier journal = new JournalDAtelier(List.of(travail)).enregistre(travailSurTravail);
+
+    assertThat(journal.actifs()).containsExactly(travail, travailSurTravail);
+    assertThat(journal.conflits(Optional.empty())).hasSize(1);
   }
 
   /**
-   * Une transition dont la cible est deja terminee reste une transition : elle n'ouvre pas implicitement une activite.
+   * Une transition dont la cible est deja terminee reste une transition : conservee, elle n'ouvre pas implicitement
+   * une activite, elle met la sequence en conflit.
    */
   @Test
-  void shouldRefuserUneTransitionQuiViseUneActiviteDejaTerminee() {
+  void shouldConserverEnConflitUneTransitionQuiViseUneActiviteDejaTerminee() {
     EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     JournalDAtelier journal = new JournalDAtelier(List.of(travail, finDe(travail).a(LE_10_MAI_2026_A_9H)));
-    EvenementDAtelier nonConformite = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_12H);
 
-    assertThatThrownBy(() -> journal.enregistre(nonConformite)).isExactlyInstanceOf(TransitionDAtelierInterditeException.class);
+    JournalDAtelier conserve = journal.enregistre(passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_12H));
+
+    assertThat(conserve.actifs()).hasSize(3);
+    assertThat(conserve.activites(Optional.empty())).allSatisfy(activite -> assertThat(activite.aResoudre()).isTrue());
+    assertThat(conserve.conflits(Optional.empty())).hasSize(1);
   }
 
   /**
-   * A a 8 h, relance B a 9 h, puis une fin qui vise A : elle ne termine jamais B.
+   * A a 8 h, relance B a 9 h, puis une fin qui vise A : elle est conservee, et ne termine jamais B.
    */
   @Test
   void shouldNeJamaisTerminerLaRemplacanteDeLActiviteVisee() {
     EvenementDAtelier a = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    JournalDAtelier journal = new JournalDAtelier(List.of(a, debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H)));
-    EvenementDAtelier finDeA = finDe(a).a(LE_10_MAI_2026_A_12H);
+    EvenementDAtelier b = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H);
+    JournalDAtelier journal = new JournalDAtelier(List.of(a, b));
 
-    assertThatThrownBy(() -> journal.enregistre(finDeA)).isExactlyInstanceOf(TransitionDAtelierInterditeException.class);
+    JournalDAtelier conserve = journal.enregistre(finDe(a).a(LE_10_MAI_2026_A_12H));
+
+    assertThat(conserve.activites(Optional.empty()))
+      .extracting(Activite::ouvrant, Activite::fin, Activite::aResoudre)
+      .containsExactly(tuple(a, Optional.empty(), true), tuple(b, Optional.empty(), true));
   }
 
   /**
-   * Travail a 8 h, transition vers une non conformite a 12 h et fin du travail a 17 h se contredisent, dans un ordre
-   * de reception comme dans l'autre : la fin ne termine jamais la non conformite.
+   * La table du plan, recue dans tous les ordres : travail A a 08 h, transition A -> NC a 12 h, fin de A a 17 h. Un
+   * fait deja accepte devient contradictoire a l'arrivee d'un fait anterieur, et la sequence en conflit est la meme
+   * quel que soit l'ordre de reception.
    */
   @Test
-  void shouldRefuserUneFinQuiViseUneActiviteDejaRemplaceeQuelQueSoitLOrdreDeReception() {
+  void shouldRendreLaMemeSequenceEnConflitQuelQueSoitLOrdreDeReception() {
     EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     EvenementDAtelier nonConformite = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_12H);
     EvenementDAtelier finDuTravail = finDe(travail).a(LE_10_MAI_2026_A_17H);
-    JournalDAtelier finRecueEnPremier = new JournalDAtelier(List.of(travail, finDuTravail));
-    JournalDAtelier transitionRecueEnPremier = new JournalDAtelier(List.of(travail, nonConformite));
 
-    assertThatThrownBy(() -> finRecueEnPremier.enregistre(nonConformite)).isExactlyInstanceOf(TransitionDAtelierInterditeException.class);
-    assertThatThrownBy(() -> transitionRecueEnPremier.enregistre(finDuTravail)).isExactlyInstanceOf(
-      TransitionDAtelierInterditeException.class
+    assertThat(interpretationsSelonLOrdreDeReception(List.of(travail, nonConformite, finDuTravail))).containsOnly(
+      new Interpretation(
+        List.of(new Activite(travail, Optional.empty(), true), new Activite(nonConformite, Optional.empty(), true)),
+        List.of(
+          new SequenceEnConflit(
+            cleDeFraiseuse1DeDupont(),
+            List.of(travail.activite().orElseThrow(), nonConformite.activite().orElseThrow()),
+            List.of(travail.id(), nonConformite.id(), finDuTravail.id())
+          )
+        )
+      )
     );
+  }
+
+  /**
+   * Les autres exemples de conflit, recus dans tous les ordres : chacun rend une seule interpretation, qu'un fait
+   * anterieur arrive apres coup ou non.
+   */
+  @Test
+  void shouldInterpreterChaqueExempleDeConflitIndependammentDeLOrdreDeReception() {
+    EvenementDAtelier a = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier b = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H);
+    EvenementDAtelier echueB = debutSurFraiseuse1ParDupontA(Instant.parse("2026-05-10T22:00:00Z"));
+    EvenementDAtelier c = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H);
+    List<List<EvenementDAtelier>> exemples = List.of(
+      List.of(a, b, finDe(a).a(LE_10_MAI_2026_A_12H)),
+      List.of(a, b, finDe(a).a(LE_10_MAI_2026_A_12H), c),
+      List.of(a, finDe(a).a(LE_10_MAI_2026_A_12H), finDe(a).a(LE_10_MAI_2026_A_12H.plusSeconds(2))),
+      List.of(a, finDe(a).a(LE_10_MAI_2026_A_12H), passageEnNonConformiteDe(a).a(LE_10_MAI_2026_A_13H)),
+      List.of(a, passageEnTravailDe(a).a(LE_10_MAI_2026_A_12H), finDe(a).a(LE_10_MAI_2026_A_13H)),
+      List.of(a, echueB, passageEnNonConformiteDe(a).a(Instant.parse("2026-05-10T23:00:00Z"))),
+      List.of(a, echueB, finRegulariseeParLeroyDe(a).a(Instant.parse("2026-05-10T23:00:00Z")))
+    );
+
+    exemples.forEach(faits ->
+      assertThat(interpretationsSelonLOrdreDeReception(faits))
+        .describedAs("%s", faits)
+        .singleElement()
+        .satisfies(interpretation -> assertThat(interpretation.conflits()).isNotEmpty())
+    );
+  }
+
+  /**
+   * Un geste recu avant l'ouverture qu'il vise est refuse : l'activite est introuvable dans le journal.
+   */
+  @Test
+  void shouldRefuserUnGesteRecuAvantLOuvertureQuIlVise() {
+    EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier fin = finDe(travail).a(LE_10_MAI_2026_A_12H);
+    JournalDAtelier vide = JournalDAtelier.vide();
+
+    assertThatThrownBy(() -> vide.enregistre(fin)).isExactlyInstanceOf(ActiviteViseeIntrouvableException.class);
   }
 
   @Test
@@ -290,15 +360,20 @@ class JournalDAtelierTest {
 
   /**
    * Une activite dont l'ouvrant est annule reste une activite de ce journal : le geste qui la vise n'est pas
-   * introuvable, il contredit le journal.
+   * introuvable. Il est conserve, et la sequence est en conflit.
    */
   @Test
-  void shouldRefuserSansLaDireIntrouvableUneFinQuiViseUnOuvrantAnnule() {
+  void shouldConserverEnConflitUneFinQuiViseUnOuvrantAnnule() {
     EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     JournalDAtelier journal = new JournalDAtelier(List.of(debut)).annule(debut.id(), annulationParLeroy());
     EvenementDAtelier fin = finDe(debut).a(LE_10_MAI_2026_A_12H);
 
-    assertThatThrownBy(() -> journal.enregistre(fin)).isExactlyInstanceOf(TransitionDAtelierInterditeException.class);
+    JournalDAtelier conserve = journal.enregistre(fin);
+
+    assertThat(conserve.actifs()).containsExactly(fin);
+    assertThat(conserve.conflits(Optional.empty()))
+      .singleElement()
+      .satisfies(conflit -> assertThat(conflit.pointages()).containsExactly(fin.id()));
   }
 
   @Test
@@ -339,13 +414,21 @@ class JournalDAtelierTest {
       .hasMessageContaining("introuvable");
   }
 
+  /**
+   * Annuler une ouverture que vise une fin est admis : la fin reste, et la sequence est en conflit plutot que refusee.
+   */
   @Test
-  void shouldRefuserUneAnnulationQuiLaisseraitUneFinOrpheline() {
+  void shouldConserverEnConflitLAnnulationDUneOuvertureVisee() {
     EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    JournalDAtelier journal = new JournalDAtelier(List.of(debut, finDe(debut).a(LE_10_MAI_2026_A_12H)));
-    Annulation annulation = annulationParLeroy();
+    EvenementDAtelier fin = finDe(debut).a(LE_10_MAI_2026_A_12H);
+    JournalDAtelier journal = new JournalDAtelier(List.of(debut, fin));
 
-    assertThatThrownBy(() -> journal.annule(debut.id(), annulation)).isExactlyInstanceOf(TransitionDAtelierInterditeException.class);
+    JournalDAtelier annule = journal.annule(debut.id(), annulationParLeroy());
+
+    assertThat(annule.activites(Optional.empty())).isEmpty();
+    assertThat(annule.conflits(Optional.empty()))
+      .singleElement()
+      .satisfies(conflit -> assertThat(conflit.pointages()).containsExactly(fin.id()));
   }
 
   /**
@@ -519,15 +602,19 @@ class JournalDAtelierTest {
 
   /**
    * Un debut regularise au milieu d'une activite deja terminee la remplace a son heure : la fin pointee plus tard vise
-   * alors une activite deja remplacee, et se contredit avec lui.
+   * alors une activite deja remplacee. L'acte du gestionnaire est admis, et la sequence est en conflit.
    */
   @Test
-  void shouldRefuserUnDebutRegulariseAuMilieuDUneActiviteDejaTerminee() {
+  void shouldConserverEnConflitUnDebutRegulariseAuMilieuDUneActiviteDejaTerminee() {
     EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     JournalDAtelier journal = new JournalDAtelier(List.of(debut, finDe(debut).a(LE_10_MAI_2026_A_17H)));
     EvenementDAtelier debutRegularise = debutSurFraiseuse1RegulariseParLeroyA(LE_10_MAI_2026_A_12H);
 
-    assertThatThrownBy(() -> journal.enregistre(debutRegularise)).isExactlyInstanceOf(TransitionDAtelierInterditeException.class);
+    JournalDAtelier regularise = journal.enregistre(debutRegularise);
+
+    assertThat(regularise.activites(Optional.empty()))
+      .extracting(Activite::ouvrant, Activite::aResoudre)
+      .containsExactly(tuple(debut, true), tuple(debutRegularise, true));
   }
 
   @Test
@@ -585,6 +672,59 @@ class JournalDAtelierTest {
   void shouldNotReadEvenementInconnu() {
     assertThat(JournalDAtelier.vide().evenement(EvenementDAtelierId.newId())).isEmpty();
   }
+
+  /**
+   * L'interpretation du journal obtenu en enregistrant les faits dans chaque ordre de reception possible : une
+   * ouverture precede toujours les gestes qui la visent, un geste recu avant elle etant refuse.
+   */
+  private static Set<Interpretation> interpretationsSelonLOrdreDeReception(List<EvenementDAtelier> faits) {
+    return permutations(faits)
+      .stream()
+      .filter(JournalDAtelierTest::ouvreAvantDeViser)
+      .map(ordre -> {
+        JournalDAtelier journal = JournalDAtelier.vide();
+        for (EvenementDAtelier fait : ordre) {
+          journal = journal.enregistre(fait);
+        }
+        return new Interpretation(journal.activites(Optional.empty()), journal.conflits(Optional.empty()));
+      })
+      .collect(Collectors.toSet());
+  }
+
+  private static boolean ouvreAvantDeViser(List<EvenementDAtelier> ordre) {
+    return IntStream.range(0, ordre.size()).allMatch(rang ->
+      ordre
+        .get(rang)
+        .activiteVisee()
+        .map(visee ->
+          ordre
+            .subList(0, rang)
+            .stream()
+            .anyMatch(fait -> fait.activite().filter(visee::equals).isPresent())
+        )
+        .orElse(true)
+    );
+  }
+
+  private static List<List<EvenementDAtelier>> permutations(List<EvenementDAtelier> faits) {
+    if (faits.isEmpty()) {
+      return List.of(List.of());
+    }
+
+    List<List<EvenementDAtelier>> permutations = new ArrayList<>();
+    for (EvenementDAtelier premier : faits) {
+      List<EvenementDAtelier> reste = new ArrayList<>(faits);
+      reste.remove(premier);
+      permutations(reste).forEach(suite -> {
+        List<EvenementDAtelier> ordre = new ArrayList<>(List.of(premier));
+        ordre.addAll(suite);
+        permutations.add(ordre);
+      });
+    }
+    return permutations;
+  }
+
+  private record Interpretation(List<Activite> activites, List<SequenceEnConflit> conflits) {}
 
   private static Duration duree(List<Activite> activites) {
     return activites

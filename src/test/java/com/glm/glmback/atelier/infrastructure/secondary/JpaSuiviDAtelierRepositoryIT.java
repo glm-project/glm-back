@@ -398,6 +398,27 @@ class JpaSuiviDAtelierRepositoryIT {
     assertThat(liste(jour, EtatDAtelier.INTERROMPU, a22h)).containsExactly(sansRelance);
   }
 
+  /**
+   * Un suivi dont la seule activite sans fin est a resoudre n'est pas en cours : la projection porte la sequence en
+   * conflit, et le filtre juge l'etat sur les seules activites interpretables.
+   */
+  @Test
+  @WithTenant(IMPECCMOLD)
+  void shouldNePasCompterEnCoursUneActiviteAResoudre() {
+    Instant engagement = Instant.parse("2040-03-10T07:00:00Z");
+    EvenementDAtelier premiere = debutSurFraiseuse1A(engagement.plusSeconds(3600));
+    SuiviDAtelier enConflit = suiviEngageA(engagement)
+      .enregistre(premiere)
+      .enregistre(debutSurFraiseuse1A(engagement.plusSeconds(7200)))
+      .enregistre(finDe(premiere).a(engagement.plusSeconds(10800)));
+    inTransaction(() -> suivis.create(enConflit));
+    Periode jour = new Periode(engagement, engagement);
+    Instant lecture = engagement.plus(Duration.ofHours(5));
+
+    assertThat(liste(jour, EtatDAtelier.EN_COURS, lecture)).isEmpty();
+    assertThat(liste(jour, EtatDAtelier.INTERROMPU, lecture)).containsExactly(enConflit);
+  }
+
   @Test
   @WithTenant(IMPECCMOLD)
   void shouldListerSansAucunFiltre() {

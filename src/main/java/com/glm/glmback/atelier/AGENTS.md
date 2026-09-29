@@ -84,8 +84,8 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
 - **Un geste ne touche que sa cible** (`SequenceDActivites`). Une cible absente de ce suivi est refusée
   (`ActiviteViseeIntrouvableException`, 404), celle d'un autre opérateur ou d'un autre poste aussi
   (`ActiviteViseeIncoherenteException`, 409), avant toute autre décision, absorption comprise. Un geste qui contredit
-  le journal — cible déjà terminée, remplacée ou annulée, transition vers sa propre catégorie — est encore refusé par
-  `TransitionDAtelierInterditeException` : il ne termine jamais une autre activité que sa cible.
+  le journal — cible déjà terminée, remplacée ou annulée, transition vers sa propre catégorie — n'est jamais refusé :
+  il ne termine jamais une autre activité que sa cible, et sa séquence est en conflit (`SequenceEnConflit`).
 - **Une activité que rien n'a terminée se termine automatiquement à son échéance** : son début plus 13 heures
   écoulées (`Echeance`), neutres au changement d'heure. Ce délai est la règle de l'atelier, pas une donnée de
   paramétrage : il reste une constante du domaine. Rien n'est écrit ni planifié : `Activite` ne dépend que des faits

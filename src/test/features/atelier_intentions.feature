@@ -121,8 +121,8 @@ Feature: Intention et activite visee des pointages d'atelier
     And l'evenement 4 du suivi vise l'activite de l'evenement 3
 
   Scenario: Une transition dont la cible est terminee ne devient jamais une ouverture
-    # Tant que le serveur ne conserve pas de sequence en conflit, il refuse ce geste contradictoire : il n'ouvre en
-    # tout cas aucune activite a la place de sa cible.
+    # Le geste contradictoire est conserve, jamais refuse : la sequence est en conflit, et la non conformite qu'il ouvre
+    # est a resoudre, pas en cours a la place de sa cible.
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2103"
       | type      | ORDRE_DE_FABRICATION |
@@ -150,15 +150,14 @@ Feature: Intention et activite visee des pointages d'atelier
       | cible     | 00000000-0000-0000-0000-000000000221 |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
-    Then la reponse a le statut http 409
-    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:transition-d-atelier-interdite"
-    When je consulte "OF 2103"
-    Then le journal du suivi contient 2 evenements
+    Then la reponse a le statut http 201
+    And le journal du suivi contient 3 evenements
     And le suivi a 0 activites en cours
+    And le suivi a l'etat "INTERROMPU"
 
   Scenario: Une fin qui vise une activite remplacee ne termine jamais sa remplacante
-    # A a 8 h, relance B a 10 h, puis une fin qui vise encore A. Tant que le serveur ne conserve pas de sequence en
-    # conflit, il refuse ce geste contradictoire ; B reste en cours dans tous les cas.
+    # A a 8 h, relance B a 10 h, puis une fin qui vise encore A. Le geste contradictoire est conserve : la sequence est
+    # en conflit, et B, a resoudre avec A, n'est plus en cours sans jamais avoir ete terminee par la fin de A.
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2104"
       | type      | ORDRE_DE_FABRICATION |
@@ -185,12 +184,11 @@ Feature: Intention et activite visee des pointages d'atelier
       | cible     | 00000000-0000-0000-0000-000000000231 |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
-    Then la reponse a le statut http 409
-    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:transition-d-atelier-interdite"
+    Then la reponse a le statut http 201
     When je consulte "OF 2104"
-    Then le suivi a 1 activites en cours
-    And l'activite en cours est de categorie "TRAVAIL" depuis "2026-05-10T10:00:00Z"
-    And le journal du suivi contient 2 evenements
+    Then le suivi a 0 activites en cours
+    And le suivi a l'etat "INTERROMPU"
+    And le journal du suivi contient 3 evenements
 
   Scenario: Une fin qui vise une activite introuvable dans ce suivi est refusee
     Given il est "2026-05-10T08:00:00Z"

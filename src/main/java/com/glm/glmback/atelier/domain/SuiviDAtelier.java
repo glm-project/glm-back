@@ -62,12 +62,8 @@ public record SuiviDAtelier(
   }
 
   /**
-   * Annule un evenement et lui substitue sa version corrigee, en validant la seule sequence finale.
-   *
-   * <p>
-   * Enchainer une annulation puis une insertion ferait passer le journal par un etat intermediaire que l'interpretation
-   * refuserait a raison : annuler un debut y laisserait une fin orpheline. C'est ce qui justifie l'acte unique.
-   * </p>
+   * Annule un evenement et lui substitue sa version corrigee, en un seul acte : le remplacant d'un ouvrant garde
+   * l'activite qu'il ouvrait, et les gestes qui la visent y restent rattaches.
    */
   public SuiviDAtelier corrige(EvenementDAtelierId evenement, Annulation annulation, EvenementDAtelier remplacant) {
     return new SuiviDAtelier(id, element, engagement, journal.corrige(evenement, annulation, remplacant), cloture);
@@ -93,6 +89,10 @@ public record SuiviDAtelier(
     return journal.activites(cloture.map(Cloture::dateDeSurvenue));
   }
 
+  public List<SequenceEnConflit> conflits() {
+    return journal.conflits(cloture.map(Cloture::dateDeSurvenue));
+  }
+
   public List<IntervalleDActivite> intervalles(Instant evaluation) {
     return activites()
       .stream()
@@ -109,32 +109,17 @@ public record SuiviDAtelier(
   }
 
   /**
-   * Vrai si l'evenement arrete une activite deja arretee par une fin reelle, sans etre date avant le dernier fait de
-   * son poste, et sans qu'aucune activite n'y soit en cours a son heure : le double appui sur « arreter », qui ne
-   * change rien. Date avant, ce serait un geste rejoue dans le desordre. Une fin qui vise une activite echue, elle, est
-   * conservee : elle n'arrete rien, mais c'est un fait.
+   * Vrai si le suivi est cloture avant la survenue de l'evenement : la cloture a deja termine ce que l'evenement
+   * pretendrait terminer.
    */
-  public boolean arreteUneActiviteAbsente(EvenementDAtelier evenement) {
-    Instant heure = evenement.dateDeSurvenue();
-    List<Activite> activitesDuPoste = activites()
-      .stream()
-      .filter(activite -> activite.cle().equals(evenement.cle()))
-      .toList();
-
-    return (
-      evenement.intention() == IntentionDePointage.FIN
-      && activitesDuPoste
-        .stream()
-        .anyMatch(activite -> evenement.activiteVisee().filter(activite.id()::equals).isPresent() && activite.fin().isPresent())
-      && activitesDuPoste.stream().noneMatch(activite -> activite.estEnCoursA(heure))
-      && journal
-        .actifs()
-        .stream()
-        .filter(fait -> fait.cle().equals(evenement.cle()))
-        .noneMatch(fait -> heure.isBefore(fait.dateDeSurvenue()))
-    );
+  public boolean estClotureAvant(EvenementDAtelier evenement) {
+    return cloture.filter(fin -> evenement.dateDeSurvenue().isAfter(fin.dateDeSurvenue())).isPresent();
   }
 
+  /**
+   * L'etat a l'instant d'evaluation, juge sur les seules activites interpretables : une activite a resoudre n'est pas
+   * en cours, et la sequence en conflit se lit a part, sans etat qui lui soit propre.
+   */
   public EtatDAtelier etat(Instant evaluation) {
     if (estCloture()) {
       return EtatDAtelier.CLOTURE;

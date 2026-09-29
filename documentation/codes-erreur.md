@@ -85,7 +85,6 @@ tests sont le seul endroit qui les tient.
 | `evenement-deja-annule`              | 409    | evenement deja annule              | `EvenementDejaAnnuleException`            |
 | `evenement-de-presence-deja-annule`  | 409    | evenement de presence deja annule  | `EvenementDePresenceDejaAnnuleException`  |
 | `suivi-d-atelier-cloture`            | 409    | suivi d'atelier cloture            | `SuiviDAtelierClotureException`           |
-| `transition-d-atelier-interdite`     | 409    | transition d'atelier interdite     | `TransitionDAtelierInterditeException`    |
 | `transition-de-presence-interdite`   | 409    | transition de presence interdite   | `TransitionDePresenceInterditeException`  |
 | `evenement-anterieur-a-l-engagement` | 409    | evenement anterieur a l'engagement | `EvenementAvantEngagementException`       |
 | `saisie-concurrente`                 | 409    | saisie concurrente                 | `SaisieConcurrenteException`              |
@@ -101,9 +100,11 @@ suivi, opérateur, type, poste ou date fournie, et pour un pointage d'atelier au
 `activite-visee-introuvable` et `activite-visee-incoherente` refusent une transition ou une fin dont la cible n'est
 pas une activité de ce suivi, ou appartient à un autre opérateur ou à un autre poste. Ils valent pour le pointage, la
 régularisation et la correction, et sont définitifs : le même geste rejoué reçoit le même refus.
-`transition-d-atelier-interdite` refuse, sur ces trois écritures comme sur l'annulation, un geste qui contredit le
-journal : sa cible est déjà terminée ou remplacée à son heure, son ouvrant est annulé, ou la transition vise une
-activité de sa propre catégorie.
+
+Aucun code ne refuse un geste qui contredit le journal d'un élément : sa cible déjà terminée ou remplacée à son heure,
+son ouvrant annulé, une transition vers sa propre catégorie. Pointage, régularisation, correction et annulation
+l'enregistrent, et sa séquence est en conflit jusqu'à ce que le gestionnaire la résolve. L'ancien code
+`transition-d-atelier-interdite` n'est plus émis, et a disparu du catalogue.
 
 ### `operateur` — `urn:glm:erreur:operateur:`
 
@@ -157,10 +158,10 @@ et une journée abandonnée en fait ouvrir une nouvelle. Le code reste publié p
 créée deux fois. `chevauchement-de-journees` ne répond qu'aux actes du gestionnaire (régularisation, correction).
 
 Depuis le lot 8a, les routes de pointage n'émettent plus `aucune-journee-de-travail-en-cours` que pour un geste rejoué
-dans une journée déjà fermée, ni `transition-de-presence-interdite` ou `transition-d-atelier-interdite` que pour un
-geste rejoué dans le désordre ou qui contredit le journal. Ces deux refus restent définitifs, comme
+dans une journée déjà fermée, ni `transition-de-presence-interdite` que pour un geste de présence rejoué dans le
+désordre. Ces deux refus restent définitifs, comme
 `activite-visee-introuvable`, `activite-visee-incoherente`, `operateur-introuvable`,
 `poste-de-travail-introuvable`, `suivi-d-atelier-introuvable`, `identifiant-evenement-reutilise`,
 `operateur-non-habilite`, `evenement-anterieur-a-l-engagement` et `date-de-survenue-future` (lots 8b et 8c abandonnés). `suivi-d-atelier-cloture` n'y sort
 plus que pour un démarrage ou une non conformité — la seule erreur à afficher à l'opérateur. `saisie-concurrente`
-n'y remonte qu'après trois essais du serveur.
+n'y remonte qu'après trois essais du serveur. Un pointage d'atelier qui contredit le journal n'y est jamais refusé.

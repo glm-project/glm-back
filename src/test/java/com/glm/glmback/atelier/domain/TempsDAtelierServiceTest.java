@@ -316,6 +316,26 @@ class TempsDAtelierServiceTest {
    * L'OF 42 de Dupont sur la fraiseuse 1, avec la pause de midi telle que le pupitre la pointe : un debut a 8 h, sa fin
    * a 12 h, un debut a 13 h.
    */
+  /**
+   * Une activite a resoudre n'a aucune duree a presenter comme definitive : la presence ne lui donne pas de fin, et son
+   * intervalle est rendu tel quel, sans fin, signale a resoudre.
+   */
+  @Test
+  void shouldRendreSansFinUneActiviteAResoudreMemeRameneeALaPresence() {
+    journees.create(journeeDeDupontDe7HA17H());
+    EvenementDAtelier premiere = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    SuiviDAtelierId suivi = enAtelier(
+      suiviDAtelierEngage()
+        .enregistre(premiere)
+        .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H))
+        .enregistre(finDe(premiere).a(LE_10_MAI_2026_A_12H))
+    );
+
+    assertThat(temps.tempsEffectif(suivi, maintenant.get()))
+      .extracting(IntervalleDActivite::debut, IntervalleDActivite::fin, IntervalleDActivite::aResoudre)
+      .containsExactly(tuple(LE_10_MAI_2026_A_8H, Optional.empty(), true), tuple(LE_10_MAI_2026_A_9H, Optional.empty(), true));
+  }
+
   private static SuiviDAtelier avecPauseDeMidi() {
     return avecPauseDeMidiPuis(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H));
   }

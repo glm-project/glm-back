@@ -35,6 +35,7 @@ class IntervalleDActiviteTest {
         LE_10_MAI_2026_A_8H,
         Optional.empty(),
         false,
+        false,
         false
       )
     )
@@ -69,6 +70,7 @@ class IntervalleDActiviteTest {
         LE_10_MAI_2026_A_8H,
         Optional.empty(),
         false,
+        false,
         false
       )
     )
@@ -88,6 +90,7 @@ class IntervalleDActiviteTest {
         CategorieDActivite.TRAVAIL,
         LE_10_MAI_2026_A_8H,
         Optional.empty(),
+        false,
         false,
         false
       )
@@ -109,6 +112,7 @@ class IntervalleDActiviteTest {
         LE_10_MAI_2026_A_8H,
         Optional.empty(),
         false,
+        false,
         false
       )
     )
@@ -128,6 +132,7 @@ class IntervalleDActiviteTest {
         null,
         LE_10_MAI_2026_A_8H,
         Optional.empty(),
+        false,
         false,
         false
       )
@@ -235,7 +240,8 @@ class IntervalleDActiviteTest {
       .categorie(CategorieDActivite.TRAVAIL)
       .debut(LE_10_MAI_2026_A_8H)
       .fin(Optional.of(LE_10_MAI_2026_A_20H))
-      .finAutomatique(true);
+      .finAutomatique(true)
+      .aResoudre(false);
 
     IntervalleDActivite reduit = echu.reduitA(new FenetreDePresence(LE_10_MAI_2026_A_9H, Optional.of(LE_10_MAI_2026_A_17H))).orElseThrow();
 
@@ -257,6 +263,7 @@ class IntervalleDActiviteTest {
       .categorie(CategorieDActivite.TRAVAIL)
       .debut(debut)
       .fin(fin)
-      .finAutomatique(false);
+      .finAutomatique(false)
+      .aResoudre(false);
   }
 }

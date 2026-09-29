@@ -581,6 +581,58 @@ class SuivisDAtelierServiceTest {
   }
 
   /**
+   * Une regularisation qui contredit le journal est admise : la transition rattrapee a 12 h remplace le travail que vise
+   * la fin de 17 h, et la sequence est en conflit plutot que refusee.
+   */
+  @Test
+  void shouldAdmettreEnConflitUneRegularisationQuiContreditLeJournal() {
+    SuiviDAtelier engage = engage();
+    maintenant.set(LE_10_MAI_2026_A_8H);
+    PointageAEnregistrer debut = debutSurFraiseuse1(engage.id());
+    atelier.pointe(debut);
+    maintenant.set(LE_10_MAI_2026_A_17H);
+    atelier.pointe(gesteVisant(debut, TypeDEvenementDAtelier.FIN, IntentionDePointage.FIN));
+    maintenant.set(LE_11_MAI_2026_A_9H15);
+
+    SuiviDAtelier regularise = atelier.regularise(
+      RegularisationAEnregistrer.builder()
+        .suivi(engage.id())
+        .type(TypeDEvenementDAtelier.NON_CONFORMITE)
+        .intention(IntentionDePointage.TRANSITION)
+        .activiteVisee(Optional.of(ActiviteId.ouvertePar(debut.evenement())))
+        .operateur(OPERATEUR_ID_DUPONT)
+        .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
+        .auteur(AUTEUR_LEROY)
+        .dateDeSurvenue(LE_10_MAI_2026_A_12H)
+    );
+
+    assertThat(regularise.journal().actifs()).hasSize(3);
+    assertThat(regularise.conflits()).hasSize(1);
+  }
+
+  /**
+   * Une correction qui contredit le journal est admise : le debut corrige apres la fin qui le vise laisse une sequence
+   * en conflit.
+   */
+  @Test
+  void shouldAdmettreEnConflitUneCorrectionQuiContreditLeJournal() {
+    SuiviDAtelier engage = engage();
+    maintenant.set(LE_10_MAI_2026_A_8H);
+    PointageAEnregistrer debut = debutSurFraiseuse1(engage.id());
+    atelier.pointe(debut);
+    maintenant.set(LE_10_MAI_2026_A_12H);
+    atelier.pointe(gesteVisant(debut, TypeDEvenementDAtelier.FIN, IntentionDePointage.FIN));
+    maintenant.set(LE_11_MAI_2026_A_9H15);
+
+    SuiviDAtelier corrige = atelier.corrige(
+      new CorrectionAEnregistrer(debut.evenement(), MOTIF_ERREUR_DE_SAISIE, regularisationDeDebutA(engage.id(), LE_10_MAI_2026_A_13H))
+    );
+
+    assertThat(corrige.activites()).singleElement().extracting(Activite::aResoudre).isEqualTo(true);
+    assertThat(corrige.conflits()).hasSize(1);
+  }
+
+  /**
    * Le remplacant d'une correction est un acte du gestionnaire, meme date de l'instant de sa saisie ; le pointage qu'il
    * remplace garde son origine, annule au journal.
    */

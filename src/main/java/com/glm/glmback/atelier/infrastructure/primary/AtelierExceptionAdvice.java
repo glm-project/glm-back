@@ -21,7 +21,6 @@ import com.glm.glmback.atelier.domain.PosteDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierClotureException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
-import com.glm.glmback.atelier.domain.TransitionDAtelierInterditeException;
 import com.glm.glmback.atelier.domain.TransitionDePresenceInterditeException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -116,11 +115,6 @@ class AtelierExceptionAdvice {
   @ExceptionHandler(SuiviDAtelierClotureException.class)
   ProblemDetail handleSuiviDAtelierCloture(SuiviDAtelierClotureException e) {
     return ErreurDAtelier.SUIVI_D_ATELIER_CLOTURE.problem(e);
-  }
-
-  @ExceptionHandler(TransitionDAtelierInterditeException.class)
-  ProblemDetail handleTransitionDAtelierInterdite(TransitionDAtelierInterditeException e) {
-    return ErreurDAtelier.TRANSITION_D_ATELIER_INTERDITE.problem(e);
   }
 
   @ExceptionHandler(TransitionDePresenceInterditeException.class)

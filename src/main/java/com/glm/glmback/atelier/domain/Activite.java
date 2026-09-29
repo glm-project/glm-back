@@ -6,7 +6,7 @@ import java.util.Optional;
 
 /**
  * Une activite telle que l'interpretation des faits actifs d'une cle la donne : le pointage ouvrant qui la porte
- * aujourd'hui, et sa fin reelle quand un fait l'a terminee.
+ * aujourd'hui, sa fin reelle quand un fait l'a terminee, et si une sequence en conflit la laisse a resoudre.
  *
  * <p>
  * Son identite est celle de son pointage ouvrant d'origine ; l'ouvrant, lui, est le fait actif qui la porte, le
@@ -19,20 +19,37 @@ import java.util.Optional;
  * depend jamais de l'instant ou on lit. Seule la lecture a un instant d'evaluation, {@link #a(Instant)}, decide si une
  * activite sans fin reelle est encore en cours ou deja terminee automatiquement a son echeance.
  * </p>
+ *
+ * <p>
+ * Une activite a resoudre n'a pas de fin : des pointages contradictoires la concernent, et le systeme ne choisit
+ * aucune de leurs lectures. Elle n'est ni en cours ni terminee, et son echeance ne la termine pas : seule une
+ * correction ou une annulation du gestionnaire la rend de nouveau interpretable.
+ * </p>
  */
-public record Activite(EvenementDAtelier ouvrant, Optional<Instant> fin) {
+public record Activite(EvenementDAtelier ouvrant, Optional<Instant> fin, boolean aResoudre) {
   public Activite {
     Assert.notNull("ouvrant", ouvrant);
     Assert.notNull("fin", fin);
     fin.ifPresent(date -> Assert.field("fin", date).afterOrAt(ouvrant.dateDeSurvenue()));
+    if (aResoudre) {
+      Assert.field("fin d'une activite a resoudre", fin.stream().toList()).maxSize(0);
+    }
   }
 
   static Activite ouvertePar(EvenementDAtelier ouvrant) {
-    return new Activite(ouvrant, Optional.empty());
+    return new Activite(ouvrant, Optional.empty(), false);
   }
 
   Activite termineeA(Instant date) {
-    return new Activite(ouvrant, Optional.of(date));
+    return new Activite(ouvrant, Optional.of(date), false);
+  }
+
+  /**
+   * La meme activite, prise dans une sequence en conflit : elle perd sa fin, que les pointages contradictoires ne
+   * permettent plus d'affirmer.
+   */
+  Activite enConflit() {
+    return new Activite(ouvrant, Optional.empty(), true);
   }
 
   public ActiviteId id() {
@@ -56,11 +73,16 @@ public record Activite(EvenementDAtelier ouvrant, Optional<Instant> fin) {
   }
 
   /**
-   * L'activite telle qu'elle se lit a l'instant d'evaluation : terminee a sa fin reelle si un fait l'a terminee ;
-   * sinon terminee automatiquement a son echeance, avec une anomalie, des que l'echeance est atteinte ; sinon en cours.
-   * C'est le seul endroit ou l'instant de lecture intervient.
+   * L'activite telle qu'elle se lit a l'instant d'evaluation : a resoudre si une sequence en conflit la concerne ;
+   * sinon terminee a sa fin reelle si un fait l'a terminee ; sinon terminee automatiquement a son echeance, avec une
+   * anomalie, des que l'echeance est atteinte ; sinon en cours. C'est le seul endroit ou l'instant de lecture
+   * intervient.
    */
   public IntervalleDActivite a(Instant evaluation) {
+    if (aResoudre) {
+      return intervalle(Optional.empty(), false);
+    }
+
     if (fin.isEmpty() && echeance().estAtteinteA(evaluation)) {
       return intervalle(Optional.of(echeance().value()), true);
     }
@@ -69,10 +91,11 @@ public record Activite(EvenementDAtelier ouvrant, Optional<Instant> fin) {
   }
 
   /**
-   * Vrai si aucun fait n'a termine l'activite et que son echeance n'est pas encore atteinte a l'instant d'evaluation.
+   * Vrai si l'activite est interpretable, qu'aucun fait ne l'a terminee et que son echeance n'est pas encore atteinte a
+   * l'instant d'evaluation.
    */
   public boolean estEnCoursA(Instant evaluation) {
-    return fin.isEmpty() && !echeance().estAtteinteA(evaluation);
+    return !aResoudre && fin.isEmpty() && !echeance().estAtteinteA(evaluation);
   }
 
   private IntervalleDActivite intervalle(Optional<Instant> bornee, boolean finAutomatique) {
@@ -85,6 +108,7 @@ public record Activite(EvenementDAtelier ouvrant, Optional<Instant> fin) {
       .categorie(categorie())
       .debut(debut())
       .fin(bornee)
-      .finAutomatique(finAutomatique);
+      .finAutomatique(finAutomatique)
+      .aResoudre(aResoudre);
   }
 }

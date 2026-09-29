@@ -51,12 +51,13 @@ public final class TempsDAtelierService {
    *
    * <p>
    * Un debut qui ne tombe dans aucune journee connue est rendu intact : c'est la presence qui manque, et le domaine ne
-   * masque pas l'anomalie derriere un temps ampute.
+   * masque pas l'anomalie derriere un temps ampute. Une activite a resoudre l'est aussi : la presence ne lui donne pas
+   * la fin que ses pointages contradictoires ne permettent pas d'affirmer.
    * </p>
    */
   private List<IntervalleDActivite> effectif(IntervalleDActivite intervalle, Instant evaluation) {
     Optional<JourneeDeTravail> journee = journees.journeeContenant(intervalle.operateur(), intervalle.debut());
-    if (journee.isEmpty()) {
+    if (intervalle.aResoudre() || journee.isEmpty()) {
       return List.of(intervalle);
     }
 

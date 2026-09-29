@@ -31,7 +31,6 @@ import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierClotureException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
-import com.glm.glmback.atelier.domain.TransitionDAtelierInterditeException;
 import com.glm.glmback.atelier.domain.TransitionDePresenceInterditeException;
 import com.glm.glmback.shared.error.infrastructure.primary.ExceptionAdviceContract;
 import com.glm.glmback.shared.error.infrastructure.primary.PublishedProblem;
@@ -133,11 +132,6 @@ class AtelierExceptionAdviceTest extends ExceptionAdviceContract {
       new PublishedProblem(
         new SuiviDAtelierClotureException(SuiviDAtelierId.newId()),
         "urn:glm:erreur:atelier:suivi-d-atelier-cloture",
-        CONFLICT
-      ),
-      new PublishedProblem(
-        new TransitionDAtelierInterditeException(finDe(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)).a(LE_10_MAI_2026_A_12H)),
-        "urn:glm:erreur:atelier:transition-d-atelier-interdite",
         CONFLICT
       ),
       new PublishedProblem(

@@ -11,13 +11,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * La suite ordonnee des evenements d'un element engage, et les invariants de sequence qui la gouvernent.
+ * La suite ordonnee des evenements d'un element engage.
  *
  * <p>
- * Le journal se trie par date de survenue et se valide en entier a chaque construction : une insertion retroactive ou
- * une annulation rejoue tout le chemin, donc une correction incoherente est refusee au lieu de produire un etat
- * absurde. Les evenements annules restent presents, pour la trace, mais sont ecartes du repli. Les faits actifs de
- * chaque cle d'activite sont interpretes par {@link SequenceDActivites}.
+ * Le journal se trie par date de survenue et se reinterprete en entier a chaque lecture : une insertion retroactive,
+ * une annulation ou une correction rejoue tout le chemin. Il ne refuse jamais une sequence : des faits qui se
+ * contredisent sont conserves, et leur sequence est en conflit jusqu'a ce que le gestionnaire la resolve. Les
+ * evenements annules restent presents, pour la trace, mais sont ecartes du repli. Les faits de chaque cle d'activite
+ * sont interpretes par {@link SequenceDActivites}.
  * </p>
  *
  * <p>
@@ -43,7 +44,6 @@ public record JournalDAtelier(List<EvenementDAtelier> evenements) {
   public JournalDAtelier {
     Assert.field("evenements", evenements).notNull().noNullElement();
     evenements = evenements.stream().sorted(PAR_ORDRE_CHRONOLOGIQUE).toList();
-    valide(evenements);
   }
 
   public static JournalDAtelier vide() {
@@ -69,12 +69,12 @@ public record JournalDAtelier(List<EvenementDAtelier> evenements) {
   }
 
   /**
-   * Annule un evenement et lui substitue sa version corrigee, en validant la seule sequence finale.
+   * Annule un evenement et lui substitue sa version corrigee, en un seul acte.
    *
    * <p>
-   * Enchainer une annulation puis une insertion ferait passer le journal par un etat intermediaire que l'interpretation
-   * refuserait a raison : annuler un debut y laisserait une fin orpheline. C'est ce qui justifie l'acte unique. Le
-   * remplacant d'un ouvrant reprend l'activite qu'il ouvrait, pour que les gestes qui la visent y restent rattaches.
+   * Le remplacant d'un ouvrant reprend l'activite qu'il ouvrait, pour que les gestes qui la visent y restent
+   * rattaches : c'est ce qui distingue la correction d'une annulation suivie d'une regularisation, qui ouvrirait une
+   * autre activite et laisserait ces gestes en conflit.
    * </p>
    */
   public JournalDAtelier corrige(EvenementDAtelierId id, Annulation annulation, EvenementDAtelier remplacant) {
@@ -109,7 +109,30 @@ public record JournalDAtelier(List<EvenementDAtelier> evenements) {
    * cours.
    */
   public List<Activite> activites(Optional<Instant> cloture) {
-    return activites(evenements, cloture);
+    return parCle()
+      .flatMap(faits -> SequenceDActivites.activites(faits, cloture).stream())
+      .sorted(PAR_DEBUT)
+      .toList();
+  }
+
+  /**
+   * Les sequences en conflit que les faits actifs de chaque cle laissent a resoudre.
+   */
+  public List<SequenceEnConflit> conflits(Optional<Instant> cloture) {
+    return parCle()
+      .flatMap(faits -> SequenceDActivites.conflits(faits, cloture).stream())
+      .toList();
+  }
+
+  /**
+   * Les faits de chaque cle, annules compris : un geste qui vise une ouverture annulee se situe par elle.
+   */
+  private Stream<List<EvenementDAtelier>> parCle() {
+    return evenements
+      .stream()
+      .collect(Collectors.groupingBy(EvenementDAtelier::cle, LinkedHashMap::new, Collectors.toList()))
+      .values()
+      .stream();
   }
 
   private void exige(EvenementDAtelierId id) {
@@ -150,25 +173,10 @@ public record JournalDAtelier(List<EvenementDAtelier> evenements) {
       .or(() -> ouvrants.stream().findFirst());
   }
 
-  private static void valide(List<EvenementDAtelier> evenements) {
-    activites(evenements, Optional.empty());
-  }
-
   private static List<EvenementDAtelier> actifs(List<EvenementDAtelier> evenements) {
     return evenements
       .stream()
       .filter(evenement -> !evenement.estAnnule())
-      .toList();
-  }
-
-  private static List<Activite> activites(List<EvenementDAtelier> evenements, Optional<Instant> cloture) {
-    return actifs(evenements)
-      .stream()
-      .collect(Collectors.groupingBy(EvenementDAtelier::cle, LinkedHashMap::new, Collectors.toList()))
-      .values()
-      .stream()
-      .flatMap(faits -> SequenceDActivites.activites(faits, cloture).stream())
-      .sorted(PAR_DEBUT)
       .toList();
   }
 }

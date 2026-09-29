@@ -148,11 +148,14 @@ class SuiviDAtelierResource {
   )
   @ApiResponse(
     responseCode = "201",
-    description = "Le pointage est enregistre, y compris une fin pointee apres l'echeance de sa cible, conservee sans effet."
+    description = """
+    Le pointage est enregistre, y compris une fin pointee apres l'echeance de sa cible, conservee sans effet, et un
+    geste qui contredit le journal, conserve dans une sequence en conflit.
+    """
   )
   @ApiResponse(
     responseCode = "200",
-    description = "Le geste identique est rejoue, ou l'arret d'une activite deja arretee, ou d'un element cloture, est absorbe."
+    description = "Le geste identique est rejoue, ou une fin posterieure a la cloture de l'element est absorbee."
   )
   @ApiResponse(
     responseCode = "400",
@@ -163,8 +166,8 @@ class SuiviDAtelierResource {
     responseCode = "409",
     description = """
     Demarrer ou pointer une non conformite sur un element cloture (seul refus qu'afficher a l'operateur), operateur non
-    habilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, geste qui contredit le journal ou
-    identifiant reutilise. Arreter une activite deja arretee, ou un element cloture, est absorbe : 200.
+    habilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, ou identifiant reutilise. Un geste
+    qui contredit le journal n'est jamais refuse : il est enregistre, et sa sequence est en conflit.
     """
   )
   ResponseEntity<RestSuiviDAtelier> pointe(@PathVariable UUID id, @RequestBody @Valid RestPointage request) {
@@ -175,14 +178,17 @@ class SuiviDAtelierResource {
   @PostMapping("/{id}/regularisations")
   @ResponseStatus(HttpStatus.CREATED)
   @Operation(summary = "Rattraper une saisie oubliee", description = "Premier des trois actes de correction.")
-  @ApiResponse(responseCode = "201", description = "La regularisation est enregistree.")
+  @ApiResponse(
+    responseCode = "201",
+    description = "La regularisation est enregistree, y compris quand elle contredit le journal : sa sequence est alors en conflit."
+  )
   @ApiResponse(responseCode = "400", description = "Le corps est invalide, intention et cible comprises.")
   @ApiResponse(responseCode = "404", description = "Suivi, operateur, poste de travail ou activite visee introuvable.")
   @ApiResponse(
     responseCode = "409",
     description = """
-    Operateur non habilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, transition impossible,
-    ou evenement anterieur a l'engagement.
+    Operateur non habilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, ou evenement anterieur
+    a l'engagement.
     """
   )
   RestSuiviDAtelier regularise(@PathVariable UUID id, @RequestBody @Valid RestRegularisation request) {
@@ -207,8 +213,8 @@ class SuiviDAtelierResource {
   @ApiResponse(
     responseCode = "409",
     description = """
-    Operateur non habilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, evenement deja annule,
-    ou transition impossible.
+    Operateur non habilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, ou evenement deja
+    annule.
     """
   )
   RestSuiviDAtelier corrige(@PathVariable UUID id, @PathVariable UUID evenementId, @RequestBody @Valid RestCorrection request) {

@@ -10,9 +10,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 /**
- * Strategie « bornes de fin de journee », lot 8a : arreter un OF n'est jamais refuse a l'operateur. Une fin sur une
- * activite qu'il a deja arretee, ou sur un OF cloture entre-temps, ne change rien : elle est absorbee. Demarrer sur un
- * OF cloture reste la seule exception, refusee avec un message.
+ * Strategie « bornes de fin de journee », lot 8a : arreter un OF n'est jamais refuse a l'operateur. Une fin qui
+ * contredit le journal est conservee, et la sequence est en conflit ; une fin posterieure a la cloture de l'OF ne change
+ * rien, elle est absorbee. Demarrer sur un OF cloture reste la seule exception, refusee avec un message, avec la cible
+ * introuvable ou d'un autre poste.
  */
 @UnitTest
 class PointageDAtelierJamaisRefuseTest {
@@ -29,20 +30,24 @@ class PointageDAtelierJamaisRefuseTest {
     .clock(maintenant::get);
 
   /**
-   * Le double appui sur « arreter » : la seconde fin, qui vise la meme activite, est absorbee.
+   * Le double appui sur « arreter » : la seconde fin vise une activite deja terminee par la premiere. Elle n'est plus
+   * absorbee : conservee, elle met la sequence en conflit.
    */
   @Test
-  void shouldAbsorberUneSecondeFin() {
+  void shouldConserverEnConflitUneSecondeFin() {
     SuiviDAtelier engage = engage();
     PointageAEnregistrer debut = ouverture(engage.id(), TypeDEvenementDAtelier.DEBUT);
     pointeA(debut, LE_10_MAI_2026_A_8H);
-    SuiviDAtelier arrete = pointeA(finDe(debut), LE_10_MAI_2026_A_12H).suivi();
+    pointeA(finDe(debut), LE_10_MAI_2026_A_12H);
+    PointageAEnregistrer seconde = finDe(debut);
 
-    PointageDAtelierTraite seconde = pointeA(finDe(debut), LE_10_MAI_2026_A_12H.plusSeconds(2));
+    PointageDAtelierTraite traite = pointeA(seconde, LE_10_MAI_2026_A_12H.plusSeconds(2));
 
-    assertThat(seconde.absorbe()).isTrue();
-    assertThat(seconde.suivi()).isEqualTo(arrete);
-    assertThat(arrete.journal().evenements()).hasSize(2);
+    assertThat(traite.absorbe()).isFalse();
+    assertThat(traite.suivi().journal().actifs()).hasSize(3);
+    assertThat(traite.suivi().conflits())
+      .singleElement()
+      .satisfies(conflit -> assertThat(conflit.pointages()).contains(seconde.evenement()));
   }
 
   /**
@@ -85,20 +90,23 @@ class PointageDAtelierJamaisRefuseTest {
   }
 
   /**
-   * Une seconde fin n'est un double appui que si rien n'a repris sur le poste : quand une relance y est en cours, elle
-   * contredit le journal.
+   * Une seconde fin pointee apres une relance contredit le journal sans jamais terminer la relance : elle est
+   * conservee, et la relance, qui chevauche la contradiction, n'est plus en cours.
    */
   @Test
-  void shouldToujoursRefuserUneSecondeFinQuandUneRelanceEstEnCours() {
+  void shouldConserverEnConflitUneSecondeFinQuandUneRelanceEstEnCours() {
     SuiviDAtelier engage = engage();
     PointageAEnregistrer debut = ouverture(engage.id(), TypeDEvenementDAtelier.DEBUT);
     pointeA(debut, LE_10_MAI_2026_A_8H);
     pointeA(finDe(debut), LE_10_MAI_2026_A_9H);
     pointeA(ouverture(engage.id(), TypeDEvenementDAtelier.DEBUT), LE_10_MAI_2026_A_12H);
-    maintenant.set(LE_10_MAI_2026_A_13H);
-    PointageAEnregistrer seconde = finDe(debut);
 
-    assertThatThrownBy(() -> atelier.pointe(seconde)).isExactlyInstanceOf(TransitionDAtelierInterditeException.class);
+    PointageDAtelierTraite seconde = pointeA(finDe(debut), LE_10_MAI_2026_A_13H);
+
+    assertThat(seconde.absorbe()).isFalse();
+    assertThat(seconde.suivi().journal().actifs()).hasSize(4);
+    assertThat(seconde.suivi().activitesEnCours(LE_10_MAI_2026_A_13H)).isEmpty();
+    assertThat(seconde.suivi().conflits()).hasSize(1);
   }
 
   @Test
@@ -114,10 +122,10 @@ class PointageDAtelierJamaisRefuseTest {
   }
 
   /**
-   * La cloture a deja arrete l'activite : arreter apres coup ne change rien.
+   * La cloture a deja arrete l'activite : une fin pointee apres elle ne change rien.
    */
   @Test
-  void shouldAbsorberUneFinSurUnOfCloture() {
+  void shouldAbsorberUneFinPosterieureALaCloture() {
     SuiviDAtelier engage = engage();
     PointageAEnregistrer debut = ouverture(engage.id(), TypeDEvenementDAtelier.DEBUT);
     pointeA(debut, LE_10_MAI_2026_A_8H);
@@ -128,6 +136,40 @@ class PointageDAtelierJamaisRefuseTest {
 
     assertThat(fin.absorbe()).isTrue();
     assertThat(fin.suivi()).isEqualTo(cloture);
+  }
+
+  /**
+   * Une fin survenue avant la cloture, mais recue apres elle, est enregistree et terminee a son heure metier ; la
+   * cloture reste acquise.
+   */
+  @Test
+  void shouldEnregistrerUneFinAnterieureALaClotureRecueApresElle() {
+    SuiviDAtelier engage = engage();
+    PointageAEnregistrer debut = ouverture(engage.id(), TypeDEvenementDAtelier.DEBUT);
+    pointeA(debut, LE_10_MAI_2026_A_8H);
+    maintenant.set(LE_10_MAI_2026_A_13H);
+    atelier.cloture(new ClotureAEnregistrer(engage.id(), AUTEUR_LEROY, Optional.of(LE_10_MAI_2026_A_12H)));
+
+    PointageDAtelierTraite fin = atelier.pointe(finRejoueeA(debut, LE_10_MAI_2026_A_9H));
+
+    assertThat(fin.absorbe()).isFalse();
+    assertThat(fin.suivi().estCloture()).isTrue();
+    assertThat(fin.suivi().activites()).singleElement().extracting(Activite::fin).isEqualTo(Optional.of(LE_10_MAI_2026_A_9H));
+  }
+
+  /**
+   * Sur un OF cloture comme ailleurs, une fin qui vise une activite introuvable dans ce suivi est refusee avant d'etre
+   * absorbee.
+   */
+  @Test
+  void shouldRefuserSurUnOfClotureUneFinQuiViseUneActiviteIntrouvable() {
+    SuiviDAtelier engage = engage();
+    maintenant.set(LE_10_MAI_2026_A_8H);
+    atelier.cloture(new ClotureAEnregistrer(engage.id(), AUTEUR_LEROY, Optional.of(LE_10_MAI_2026_A_8H)));
+    maintenant.set(LE_10_MAI_2026_A_9H);
+    PointageAEnregistrer fin = finDe(ouverture(engage.id(), TypeDEvenementDAtelier.DEBUT));
+
+    assertThatThrownBy(() -> atelier.pointe(fin)).isExactlyInstanceOf(ActiviteViseeIntrouvableException.class);
   }
 
   @Test
@@ -153,33 +195,38 @@ class PointageDAtelierJamaisRefuseTest {
   }
 
   /**
-   * Une fin rejouee dans le desordre, datee avant le debut qu'elle vise, n'est pas redondante : elle reste refusee.
+   * Une fin rejouee dans le desordre, datee avant le debut qu'elle vise, contredit le journal : elle est conservee, et
+   * l'activite qu'elle vise est a resoudre.
    */
   @Test
-  void shouldToujoursRefuserUneFinRejoueeDansLeDesordre() {
+  void shouldConserverEnConflitUneFinRejoueeDansLeDesordre() {
     SuiviDAtelier engage = engage();
     PointageAEnregistrer debut = ouverture(engage.id(), TypeDEvenementDAtelier.DEBUT);
     pointeA(debut, LE_10_MAI_2026_A_12H);
     maintenant.set(LE_10_MAI_2026_A_13H);
-    PointageAEnregistrer finAnterieure = finRejoueeA(debut, LE_10_MAI_2026_A_9H);
 
-    assertThatThrownBy(() -> atelier.pointe(finAnterieure)).isExactlyInstanceOf(TransitionDAtelierInterditeException.class);
+    PointageDAtelierTraite fin = atelier.pointe(finRejoueeA(debut, LE_10_MAI_2026_A_9H));
+
+    assertThat(fin.absorbe()).isFalse();
+    assertThat(fin.suivi().activites()).singleElement().extracting(Activite::aResoudre).isEqualTo(true);
   }
 
   /**
-   * Une fin rejouee avant la fin deja pointee n'est pas un double appui : datee avant le dernier fait de son activite,
-   * elle reste refusee.
+   * Une fin rejouee avant la fin deja pointee de la meme activite : les deux fins se contredisent, et la plus tardive
+   * vise desormais une activite deja terminee. Les deux sont conservees, en conflit.
    */
   @Test
-  void shouldToujoursRefuserUneFinRejoueeAvantLaFinDejaPointee() {
+  void shouldConserverEnConflitUneFinRejoueeAvantLaFinDejaPointee() {
     SuiviDAtelier engage = engage();
     PointageAEnregistrer debut = ouverture(engage.id(), TypeDEvenementDAtelier.DEBUT);
     pointeA(debut, LE_10_MAI_2026_A_8H);
     pointeA(finDe(debut), LE_10_MAI_2026_A_12H);
     maintenant.set(LE_10_MAI_2026_A_13H);
-    PointageAEnregistrer finAnterieure = finRejoueeA(debut, LE_10_MAI_2026_A_9H);
 
-    assertThatThrownBy(() -> atelier.pointe(finAnterieure)).isExactlyInstanceOf(TransitionDAtelierInterditeException.class);
+    PointageDAtelierTraite fin = atelier.pointe(finRejoueeA(debut, LE_10_MAI_2026_A_9H));
+
+    assertThat(fin.suivi().journal().actifs()).hasSize(3);
+    assertThat(fin.suivi().conflits()).hasSize(1);
   }
 
   private SuiviDAtelier engage() {

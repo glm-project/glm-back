@@ -296,8 +296,8 @@ Feature: Suivi des elements engages en atelier
 
   Scenario: Un debut regularise au milieu d'une activite deja terminee contredit sa fin
     # Le debut rattrape a 10 h ouvre une activite, donc remplace a son heure celle de 8 h : la fin de 12 h, qui la vise,
-    # la dirait terminee apres son remplacement. Tant que le serveur ne conserve pas de sequence en conflit, il refuse
-    # le geste contradictoire plutot que de choisir une interpretation.
+    # la dirait terminee apres son remplacement. L'acte du gestionnaire est admis, et la sequence est en conflit plutot
+    # que d'etre lue selon une interpretation choisie par le serveur.
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2092"
       | type      | ORDRE_DE_FABRICATION |
@@ -324,15 +324,15 @@ Feature: Suivi des elements engages en atelier
       | operateur      | dupont               |
       | poste          | fraiseuse-1          |
       | dateDeSurvenue | 2026-05-10T10:00:00Z |
-    Then la reponse a le statut http 409
-    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:transition-d-atelier-interdite"
-    When je consulte "OF 2092"
-    Then le journal du suivi contient 2 evenements
+    Then la reponse a le statut http 201
+    And le journal du suivi contient 3 evenements
+    And le suivi a 0 activites en cours
     And le suivi a l'etat "INTERROMPU"
 
-  Scenario: Arreter deux fois la meme activite est absorbe
-    # Lot 8a : le double appui sur « arreter » ne change rien et n'est jamais refuse. Les deux fins visent la meme
-    # activite ; la seconde n'a plus rien a terminer.
+  Scenario: Arreter deux fois la meme activite met la sequence en conflit
+    # Le double appui sur « arreter » n'est jamais refuse, mais il n'est plus absorbe : les deux fins visent la meme
+    # activite, et la seconde la dit en cours apres que la premiere l'a terminee. Conservee, elle laisse l'activite a
+    # resoudre.
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2093"
       | type      | ORDRE_DE_FABRICATION |
@@ -360,8 +360,8 @@ Feature: Suivi des elements engages en atelier
       | cible     | 00000000-0000-0000-0000-000000000271 |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
-    Then la reponse a le statut http 200
-    And le journal du suivi contient 2 evenements
+    Then la reponse a le statut http 201
+    And le journal du suivi contient 3 evenements
     And le suivi a l'etat "INTERROMPU"
 
   Scenario: Cloturer un element, puis le rouvrir
@@ -370,6 +370,12 @@ Feature: Suivi des elements engages en atelier
       | type      | ORDRE_DE_FABRICATION |
       | reference | 2006                 |
     And j'ai engage l'element "OF 2006" en atelier
+    And j'ai pointe sur "OF 2006"
+      | id        | 00000000-0000-0000-0000-000000000291 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
     Given il est "2026-05-10T18:00:00Z"
     When je cloture "OF 2006" a l'instant present
     Then la reponse a le statut http 200
@@ -380,15 +386,22 @@ Feature: Suivi des elements engages en atelier
       | operateur | dupont |
     Then la reponse a le statut http 409
     And la reponse porte le code d'erreur "urn:glm:erreur:atelier:suivi-d-atelier-cloture"
-    # L'arreter, en revanche, ne change rien : la cloture l'a deja fait.
+    # L'arreter apres la cloture, en revanche, ne change rien : la cloture l'a deja fait.
+    Given il est "2026-05-10T18:30:00Z"
     When je pointe sur "OF 2006"
-      | type      | FIN    |
-      | operateur | dupont |
+      | id        | 00000000-0000-0000-0000-000000000292 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | cible     | 00000000-0000-0000-0000-000000000291 |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
     Then la reponse a le statut http 200
     And le suivi a l'etat "CLOTURE"
+    And le journal du suivi contient 1 evenements
+    # Rouvert, l'element retrouve l'activite que la cloture terminait : elle court jusqu'a son echeance.
     When je rouvre "OF 2006"
     Then la reponse a le statut http 200
-    And le suivi a l'etat "EN_ATTENTE"
+    And le suivi a l'etat "EN_COURS"
 
   Scenario: Une saisie oubliee est rattrapee a l'heure ou elle a eu lieu
     Given il est "2026-05-10T08:00:00Z"

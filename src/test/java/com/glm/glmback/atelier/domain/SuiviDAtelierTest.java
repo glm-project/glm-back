@@ -99,17 +99,71 @@ class SuiviDAtelierTest {
   }
 
   /**
-   * Une fin ne termine que l'activite qu'elle vise : celle qu'une relance a remplacee ne lui laisse rien a terminer,
-   * et la relance reste en cours.
+   * Une fin ne termine que l'activite qu'elle vise : celle qu'une relance a remplacee ne lui laisse rien a terminer.
+   * Conservee, elle laisse la premiere activite et sa relance a resoudre : plus rien n'est en cours, et le suivi, juge
+   * sur ses seules activites interpretables, est interrompu.
    */
   @Test
   void shouldNeTerminerQueLActiviteViseeParUneFin() {
     EvenementDAtelier premiere = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    SuiviDAtelier relance = suiviDAtelierEngage().enregistre(premiere).enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H));
+    EvenementDAtelier seconde = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H);
+    SuiviDAtelier relance = suiviDAtelierEngage().enregistre(premiere).enregistre(seconde);
     EvenementDAtelier finDeLaPremiere = finDe(premiere).a(LE_10_MAI_2026_A_12H);
 
-    assertThatThrownBy(() -> relance.enregistre(finDeLaPremiere)).isExactlyInstanceOf(TransitionDAtelierInterditeException.class);
-    assertThat(relance.activitesEnCours(LE_10_MAI_2026_A_17H)).extracting(ActiviteEnCours::depuis).containsExactly(LE_10_MAI_2026_A_9H);
+    SuiviDAtelier conserve = relance.enregistre(finDeLaPremiere);
+
+    assertThat(conserve.activitesEnCours(LE_10_MAI_2026_A_17H)).isEmpty();
+    assertThat(conserve.etat(LE_10_MAI_2026_A_17H)).isEqualTo(EtatDAtelier.INTERROMPU);
+    assertThat(conserve.conflits())
+      .singleElement()
+      .satisfies(conflit -> {
+        assertThat(conflit.operateur()).isEqualTo(OPERATEUR_ID_DUPONT);
+        assertThat(conflit.poste()).contains(POSTE_ID_FRAISEUSE_1);
+        assertThat(conflit.activites()).containsExactly(premiere.activite().orElseThrow(), seconde.activite().orElseThrow());
+        assertThat(conflit.pointages()).containsExactly(premiere.id(), seconde.id(), finDeLaPremiere.id());
+      });
+  }
+
+  /**
+   * L'etat se juge sur les seules activites interpretables : l'ouverture pointee apres une sequence en conflit est en
+   * cours, et le suivi avec elle.
+   */
+  @Test
+  void shouldEtreEnCoursParUneActiviteInterpretableMalgreUneSequenceEnConflit() {
+    EvenementDAtelier premiere = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier nouvelle = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H);
+    SuiviDAtelier suivi = suiviDAtelierEngage()
+      .enregistre(premiere)
+      .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H))
+      .enregistre(finDe(premiere).a(LE_10_MAI_2026_A_12H))
+      .enregistre(nouvelle);
+
+    assertThat(suivi.etat(LE_10_MAI_2026_A_17H)).isEqualTo(EtatDAtelier.EN_COURS);
+    assertThat(suivi.activitesEnCours(LE_10_MAI_2026_A_17H))
+      .extracting(ActiviteEnCours::ouverture)
+      .containsExactly(nouvelle.activite().orElseThrow());
+    assertThat(suivi.conflits()).hasSize(1);
+  }
+
+  /**
+   * Une activite a resoudre n'a ni fin ni fin automatique, meme lue apres son echeance : la regle des 13 h ne tranche
+   * pas un conflit.
+   */
+  @Test
+  void shouldLireSansFinNiFinAutomatiqueUneActiviteAResoudre() {
+    EvenementDAtelier premiere = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    SuiviDAtelier suivi = suiviDAtelierEngage()
+      .enregistre(premiere)
+      .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H))
+      .enregistre(finDe(premiere).a(LE_10_MAI_2026_A_12H));
+
+    assertThat(suivi.intervalles(LE_11_MAI_2026_A_9H15))
+      .hasSize(2)
+      .allSatisfy(intervalle -> {
+        assertThat(intervalle.aResoudre()).isTrue();
+        assertThat(intervalle.fin()).isEmpty();
+        assertThat(intervalle.finAutomatique()).isFalse();
+      });
   }
 
   @Test
@@ -171,13 +225,21 @@ class SuiviDAtelierTest {
       });
   }
 
+  /**
+   * La meme correction jouee en deux temps commence par un etat intermediaire en conflit, admis : annuler le debut
+   * laisse sa fin sans activite a terminer.
+   */
   @Test
-  void shouldRefuserLaMemeCorrectionJoueeEnDeuxTemps() {
+  void shouldAdmettreEnConflitLAnnulationDUnDebutQueViseUneFin() {
     EvenementDAtelier debutFautif = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(debutFautif).enregistre(finDe(debutFautif).a(LE_10_MAI_2026_A_12H));
-    Annulation annulation = annulationParLeroy();
 
-    assertThatThrownBy(() -> suivi.annule(debutFautif.id(), annulation)).isExactlyInstanceOf(TransitionDAtelierInterditeException.class);
+    SuiviDAtelier annule = suivi.annule(debutFautif.id(), annulationParLeroy());
+
+    assertThat(annule.conflits())
+      .singleElement()
+      .satisfies(conflit -> assertThat(conflit.activites()).isEmpty());
+    assertThat(annule.etat(LE_10_MAI_2026_A_17H)).isEqualTo(EtatDAtelier.INTERROMPU);
   }
 
   @Test

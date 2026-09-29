@@ -2649,7 +2649,7 @@
                 }
               }
             },
-            "description" : "Operateur non habilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, evenement deja annule,\nou transition impossible.\n"
+            "description" : "Operateur non habilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, ou evenement deja\nannule.\n"
           }
         },
         "summary" : "Corriger une saisie fausse",
@@ -2745,7 +2745,7 @@
                 }
               }
             },
-            "description" : "Le geste identique est rejoue, ou l'arret d'une activite deja arretee, ou d'un element cloture, est absorbe."
+            "description" : "Le geste identique est rejoue, ou une fin posterieure a la cloture de l'element est absorbee."
           },
           "201" : {
             "content" : {
@@ -2755,7 +2755,7 @@
                 }
               }
             },
-            "description" : "Le pointage est enregistre, y compris une fin pointee apres l'echeance de sa cible, conservee sans effet."
+            "description" : "Le pointage est enregistre, y compris une fin pointee apres l'echeance de sa cible, conservee sans effet, et un\ngeste qui contredit le journal, conserve dans une sequence en conflit.\n"
           },
           "400" : {
             "content" : {
@@ -2785,7 +2785,7 @@
                 }
               }
             },
-            "description" : "Demarrer ou pointer une non conformite sur un element cloture (seul refus qu'afficher a l'operateur), operateur non\nhabilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, geste qui contredit le journal ou\nidentifiant reutilise. Arreter une activite deja arretee, ou un element cloture, est absorbe : 200.\n"
+            "description" : "Demarrer ou pointer une non conformite sur un element cloture (seul refus qu'afficher a l'operateur), operateur non\nhabilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, ou identifiant reutilise. Un geste\nqui contredit le journal n'est jamais refuse : il est enregistre, et sa sequence est en conflit.\n"
           }
         },
         "summary" : "Pointer un debut, une non conformite ou une fin",
@@ -2824,7 +2824,7 @@
                 }
               }
             },
-            "description" : "La regularisation est enregistree."
+            "description" : "La regularisation est enregistree, y compris quand elle contredit le journal : sa sequence est alors en conflit."
           },
           "400" : {
             "content" : {
@@ -2854,7 +2854,7 @@
                 }
               }
             },
-            "description" : "Operateur non habilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, transition impossible,\nou evenement anterieur a l'engagement.\n"
+            "description" : "Operateur non habilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, ou evenement anterieur\na l'engagement.\n"
           }
         },
         "summary" : "Rattraper une saisie oubliee",

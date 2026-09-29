@@ -52,8 +52,8 @@ class PariteDesRepositoriesDAtelierIT {
   /**
    * L'etat se juge a l'instant d'evaluation des criteres : juste avant l'echeance de l'activite de mardi, puis a
    * l'echeance pile, ou elle cesse d'etre en cours sans aucune ecriture. Le jeu couvre chaque etat, y compris un suivi
-   * en attente dont le seul pointage est annule et une activite terminee au-dela de son echeance par une
-   * regularisation.
+   * en attente dont le seul pointage est annule, une activite terminee au-dela de son echeance par une regularisation,
+   * et une sequence en conflit dont les activites a resoudre ne sont pas en cours.
    */
   @Test
   @WithTenant("impeccmold")
@@ -65,6 +65,7 @@ class PariteDesRepositoriesDAtelierIT {
     EvenementDAtelier annule = debutA(lundi.plusSeconds(7200));
     EvenementDAtelier termine = debutA(lundi.plusSeconds(3600 * 3));
     EvenementDAtelier prolonge = debutA(lundi.plusSeconds(3600 * 4));
+    EvenementDAtelier remplacee = debutA(mardi.plusSeconds(3600 * 2));
     List<SuiviDAtelier> jeu = List.of(
       suiviEngageA(lundi),
       suiviEngageA(lundi.plusSeconds(3600))
@@ -73,6 +74,10 @@ class PariteDesRepositoriesDAtelierIT {
       suiviEngageA(lundi.plusSeconds(3600 * 2)).enregistre(termine).enregistre(finDe(termine).a(lundi.plusSeconds(3600 * 5))),
       suiviEngageA(lundi.plusSeconds(3600 * 3)).enregistre(prolonge).enregistre(finRegulariseeA(prolonge, mercredi)),
       suiviEngageA(mardi).enregistre(debutA(mardi.plusSeconds(3600))),
+      suiviEngageA(mardi.plusSeconds(3600))
+        .enregistre(remplacee)
+        .enregistre(debutA(mardi.plusSeconds(3600 * 3)))
+        .enregistre(finDe(remplacee).a(mardi.plusSeconds(3600 * 4))),
       suiviEngageA(mercredi).cloture(new Cloture(AUTEUR_LEROY, Horodatage.saisiA(mercredi.plusSeconds(36000))))
     );
 

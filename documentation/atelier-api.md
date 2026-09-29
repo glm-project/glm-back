@@ -181,10 +181,10 @@ régularisation et la correction.
 - **La cible est une activité de ce suivi, du même opérateur et du même poste.** Introuvable dans ce suivi, elle répond
   **404** `activite-visee-introuvable` ; ouverte par un autre opérateur ou sur un autre poste, **409**
   `activite-visee-incoherente`. Ces deux refus sont définitifs : rejouer le même geste ne changera rien.
-- **Un geste qui contredit le journal est aujourd'hui refusé** en **409** `transition-d-atelier-interdite` : sa cible
-  est déjà terminée ou remplacée à son heure, son ouvrant est annulé, ou la transition vise une activité de sa propre
-  catégorie. Une transition dont la cible n'est plus en cours ne devient jamais une ouverture. Une cible échue, elle,
-  ne contredit rien (voir l'échéance ci-dessus).
+- **Un geste qui contredit le journal n'est jamais refusé** : sa cible est déjà terminée ou remplacée à son heure, son
+  ouvrant est annulé, ou la transition vise une activité de sa propre catégorie. Il est enregistré (`201`), et la
+  séquence est **en conflit** jusqu'à ce que le gestionnaire la résolve. Une transition dont la cible n'est plus en
+  cours ne devient jamais une ouverture. Une cible échue, elle, ne contredit rien (voir l'échéance ci-dessus).
 
 ---
 
@@ -236,10 +236,12 @@ Trois pièges :
   implicite puis geste. **Un geste redondant** — une arrivée égarée sur cette route pour un opérateur déjà présent —
   **est absorbé** (`200`, rien d'ajouté). Restent refusés, définitivement, l'opérateur, le poste ou l'élément inconnu (404), le geste rejoué dans le désordre
   (409) et l'UUID réutilisé avec un autre contenu (409).
-- **Arrêter une activité déjà arrêtée, ou un élément clôturé, est absorbé** (`200`) : c'est le double appui. Arrêter
-  une activité échue, elle, est enregistré sans effet (`201`). Démarrer
-  ou pointer une non conformité sur un élément clôturé reste refusé (`409 suivi-d-atelier-cloture`) : c'est le seul
-  refus à afficher à l'opérateur, « OF clôturé, vous ne pouvez plus pointer dessus ».
+- **Arrêter un élément après sa clôture est absorbé** (`200`) : la clôture l'a déjà arrêté. Une fin survenue avant la
+  clôture, mais reçue après elle, est enregistrée à son heure (`201`). Arrêter une activité échue est enregistré sans
+  effet (`201`). Arrêter deux fois la même activité — le double appui — n'est plus absorbé : la seconde fin est
+  enregistrée (`201`), et la séquence est en conflit. Démarrer ou pointer une non conformité sur un élément clôturé
+  reste refusé (`409 suivi-d-atelier-cloture`) : c'est le seul refus à afficher à l'opérateur, « OF clôturé, vous ne
+  pouvez plus pointer dessus ».
 - **Deux saisies simultanées ne sont plus un refus** : le serveur rejoue lui-même l'écriture devancée.
 - **Un geste reçu pour une journée abandonnée ouvre une nouvelle journée** (`201`) : une arrivée implicite à l'heure
   du geste, sous un identifiant du serveur, puis le geste. Un départ tardif donne une journée de durée nulle. Le seuil se juge sur l'heure du geste (`dateDeSurvenue`), pas sur sa réception.
@@ -441,17 +443,18 @@ sort de plusieurs contextes. Le catalogue complet est dans [documentation/codes-
 Deux statuts du tableau ci-dessous n'en portent pas : le **400** de Bean Validation, qui se lit par son `errors`
 (`Map<champ, message>`), et le **403**, qui vient de la chaîne de filtres sans corps du tout.
 
-| Statut | Cas                                                                                                                                                                                                                                          |
-| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 400    | Corps invalide (Bean Validation), intention et cible comprises — détail par champ dans `errors` — ou date de survenue future.                                                                                                                |
-| 403    | Jeton sans entreprise connue, ou rôle insuffisant.                                                                                                                                                                                           |
-| 404    | Suivi, journée, événement, élément de fabrication ou activité visée introuvable ; ou aucune journée ouverte pour cet opérateur.                                                                                                              |
-| 409    | Élément déjà engagé, élément clôturé, événement déjà annulé, activité visée d'un autre opérateur ou poste, transition impossible, événement antérieur à l'engagement, UUID réutilisé, **chevauchement de journées**, **saisie concurrente**. |
+| Statut | Cas                                                                                                                                                                                                                                                      |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 400    | Corps invalide (Bean Validation), intention et cible comprises — détail par champ dans `errors` — ou date de survenue future.                                                                                                                            |
+| 403    | Jeton sans entreprise connue, ou rôle insuffisant.                                                                                                                                                                                                       |
+| 404    | Suivi, journée, événement, élément de fabrication ou activité visée introuvable ; ou aucune journée ouverte pour cet opérateur.                                                                                                                          |
+| 409    | Élément déjà engagé, élément clôturé, événement déjà annulé, activité visée d'un autre opérateur ou poste, transition de présence impossible, événement antérieur à l'engagement, UUID réutilisé, **chevauchement de journées**, **saisie concurrente**. |
 
-Les **409 de transition** viennent d'un geste rejoué dans le désordre ou d'une écriture qui contredit le journal :
-un `DEPART` daté avant l'arrivée de sa journée, une fin datée avant le début de l'activité qu'elle vise, un geste qui
-vise une activité déjà terminée, remplacée ou annulée. Ils portent un `message` explicite — l'afficher plutôt que le
-remplacer par un texte générique.
+Les **409 de transition de présence** viennent d'un geste de présence rejoué dans le désordre, un `DEPART` daté avant
+l'arrivée de sa journée par exemple. Ils portent un `message` explicite — l'afficher plutôt que le remplacer par un
+texte générique. Le journal d'un élément, lui, ne refuse aucun geste qui le contredit : une fin datée avant le début
+de l'activité qu'elle vise, ou un geste qui vise une activité déjà terminée, remplacée ou annulée, est enregistré, et
+sa séquence est en conflit.
 
 Le **chevauchement de journées** ne vient que d'un acte du gestionnaire : une régularisation ou une correction de
 présence qui ferait se toucher deux journées du même opérateur, jugées du premier au dernier fait connu. Régulariser
