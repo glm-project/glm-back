@@ -93,7 +93,7 @@ class ReservationDIdentiteServeurTest {
     given(journees.get(journee.id())).willReturn(Optional.of(journee));
     given(suivis.get(suivi.id())).willReturn(Optional.of(suivi));
     JourneesDeTravailApplicationService presence = serviceDePresence(journees, identites);
-    SuivisDAtelierApplicationService atelier = serviceDAtelier(suivis, journees, identites);
+    SuivisDAtelierApplicationService atelier = serviceDAtelier(suivis, identites);
 
     // WHEN
     List<JourneeDeTravail> presencesRejouees = rejouePresence(presence);
@@ -191,12 +191,10 @@ class ReservationDIdentiteServeurTest {
     given(operateurs.get(OPERATEUR_ID_DUPONT)).willReturn(Optional.of(OPERATEUR_CONNU_DUPONT));
     return new SuivisDAtelierApplicationService(
       repository,
-      Mockito.mock(JourneeDeTravailRepository.class),
       Mockito.mock(ElementsEngageables.class),
       operateurs,
       Mockito.mock(PostesConnus.class),
       Mockito.mock(Habilitations.class),
-      () -> AMPLITUDE_MAXIMALE_13H,
       () -> LE_11_MAI_2026_A_9H15,
       identites,
       new TransactionTemplate(Mockito.mock(PlatformTransactionManager.class))
@@ -226,19 +224,13 @@ class ReservationDIdentiteServeurTest {
     );
   }
 
-  private static SuivisDAtelierApplicationService serviceDAtelier(
-    SuiviDAtelierRepository suivis,
-    JourneeDeTravailRepository journees,
-    IdentitesDEvenements identites
-  ) {
+  private static SuivisDAtelierApplicationService serviceDAtelier(SuiviDAtelierRepository suivis, IdentitesDEvenements identites) {
     return new SuivisDAtelierApplicationService(
       suivis,
-      journees,
       Mockito.mock(ElementsEngageables.class),
       Mockito.mock(OperateursConnus.class),
       Mockito.mock(PostesConnus.class),
       Mockito.mock(Habilitations.class),
-      () -> AMPLITUDE_MAXIMALE_13H,
       () -> LE_10_MAI_2026_A_17H,
       identites,
       new TransactionTemplate(Mockito.mock(PlatformTransactionManager.class))

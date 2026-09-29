@@ -12,9 +12,9 @@ import java.util.UUID;
   description = """
   Du temps passe sur un element, deduit du journal et jamais stocke, tel qu'il se lit a l'instant de la lecture.
 
-  Le temps effectif est l'intersection des intervalles bruts avec les fenetres de presence de l'operateur : c'est
-  pourquoi un depart referme un intervalle que l'operateur n'a jamais arrete. Une activite que rien n'a terminee avant
-  son echeance, son debut plus 13 heures, y est terminee automatiquement a cette echeance, avec une anomalie.
+  C'est l'intervalle de l'activite elle-meme, sans aucune presence pour le borner : une fin pointee ou regularisee le
+  termine a son heure. Une activite que rien n'a terminee avant son echeance, son debut plus 13 heures, y est terminee
+  automatiquement a cette echeance, avec une anomalie.
   """
 )
 record RestIntervalleDActivite(
@@ -39,8 +39,7 @@ record RestIntervalleDActivite(
   @Schema(
     description = """
     Vrai si l'activite de l'intervalle est terminee automatiquement a son echeance, faute de fin reelle : c'est une
-    anomalie, qu'une fin pointee au plus tard a l'echeance, ou regularisee, retire au recalcul. Elle suit l'activite,
-    meme quand la presence ramene l'intervalle en deca de son echeance.
+    anomalie, qu'une fin pointee au plus tard a l'echeance, ou regularisee, retire au recalcul.
     """,
     requiredMode = Schema.RequiredMode.REQUIRED
   )
@@ -53,16 +52,7 @@ record RestIntervalleDActivite(
     """,
     requiredMode = Schema.RequiredMode.REQUIRED
   )
-  boolean aResoudre,
-  @Schema(
-    description = """
-    Vrai si l'intervalle repose sur une fin de journee presumee : l'operateur n'a pas pointe son depart, et sa
-    journee, abandonnee au-dela de l'amplitude maximale, a ete fermee a son dernier fait connu. A confirmer par une
-    regularisation du depart.
-    """,
-    requiredMode = Schema.RequiredMode.REQUIRED
-  )
-  boolean presume
+  boolean aResoudre
 ) {
   static RestIntervalleDActivite from(IntervalleDActivite intervalle, AnnuaireDAtelier annuaire) {
     return new RestIntervalleDActivite(
@@ -75,8 +65,7 @@ record RestIntervalleDActivite(
       intervalle.debut(),
       intervalle.fin().orElse(null),
       intervalle.finAutomatique(),
-      intervalle.aResoudre(),
-      intervalle.presume()
+      intervalle.aResoudre()
     );
   }
 }

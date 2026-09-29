@@ -97,17 +97,6 @@ public record JournalDePresence(List<EvenementDePresence> evenements) {
   }
 
   /**
-   * Le dernier fait actif survenu dans cette periode, bornes comprises.
-   */
-  public Optional<Instant> dernierFaitDans(Periode periode) {
-    return actifs(evenements)
-      .stream()
-      .map(EvenementDePresence::dateDeSurvenue)
-      .filter(periode::contains)
-      .reduce((precedent, suivant) -> suivant);
-  }
-
-  /**
    * L'amplitude de la journee, de l'arrivee au depart : le temps passe dans les murs.
    */
   public Optional<Periode> amplitude() {

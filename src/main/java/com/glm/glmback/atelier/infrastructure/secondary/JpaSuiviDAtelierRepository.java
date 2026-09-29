@@ -2,8 +2,6 @@ package com.glm.glmback.atelier.infrastructure.secondary;
 
 import com.glm.glmback.atelier.domain.ElementEngageId;
 import com.glm.glmback.atelier.domain.EtatDAtelier;
-import com.glm.glmback.atelier.domain.OperateurId;
-import com.glm.glmback.atelier.domain.Periode;
 import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierCriteria;
@@ -73,11 +71,6 @@ class JpaSuiviDAtelierRepository implements SuiviDAtelierRepository {
     return suivis
       .findFirstByElementIdAndClotureDateDeSurvenueIsNullOrderByEngagementDateDescIdAsc(element.uuid())
       .map(SuiviDAtelierEntity::toDomain);
-  }
-
-  @Override
-  public Optional<Instant> dernierPointageDe(OperateurId operateur, Periode periode) {
-    return suivis.dernierPointageDe(operateur.uuid(), periode.debut(), periode.fin());
   }
 
   @Override

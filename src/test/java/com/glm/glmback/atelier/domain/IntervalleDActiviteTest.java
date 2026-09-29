@@ -35,7 +35,6 @@ class IntervalleDActiviteTest {
         LE_10_MAI_2026_A_8H,
         Optional.empty(),
         false,
-        false,
         false
       )
     )
@@ -70,7 +69,6 @@ class IntervalleDActiviteTest {
         LE_10_MAI_2026_A_8H,
         Optional.empty(),
         false,
-        false,
         false
       )
     )
@@ -90,7 +88,6 @@ class IntervalleDActiviteTest {
         CategorieDActivite.TRAVAIL,
         LE_10_MAI_2026_A_8H,
         Optional.empty(),
-        false,
         false,
         false
       )
@@ -112,7 +109,6 @@ class IntervalleDActiviteTest {
         LE_10_MAI_2026_A_8H,
         Optional.empty(),
         false,
-        false,
         false
       )
     )
@@ -132,7 +128,6 @@ class IntervalleDActiviteTest {
         null,
         LE_10_MAI_2026_A_8H,
         Optional.empty(),
-        false,
         false,
         false
       )
@@ -167,86 +162,6 @@ class IntervalleDActiviteTest {
     assertThat(intervalleFerme().fin()).contains(LE_10_MAI_2026_A_12H);
     assertThat(intervalleFerme().categorie()).isEqualTo(CategorieDActivite.TRAVAIL);
     assertThat(intervalleFerme().nature()).contains(NATURE_FRAISAGE);
-  }
-
-  @Test
-  void shouldReduireLIntervalleALaFenetreDePresence() {
-    FenetreDePresence matinee = new FenetreDePresence(LE_10_MAI_2026_A_9H, Optional.of(LE_10_MAI_2026_A_12H));
-
-    IntervalleDActivite reduit = intervalleFerme().reduitA(matinee).orElseThrow();
-
-    assertThat(reduit.debut()).isEqualTo(LE_10_MAI_2026_A_9H);
-    assertThat(reduit.fin()).contains(LE_10_MAI_2026_A_12H);
-    assertThat(reduit.evenement()).isEqualTo(EVENEMENT);
-    assertThat(reduit.poste()).contains(POSTE_ID_FRAISEUSE_1);
-  }
-
-  @Test
-  void shouldNotReduireLIntervalleAUneFenetreDisjointe() {
-    FenetreDePresence apresMidi = new FenetreDePresence(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_17H));
-
-    assertThat(intervalleFerme().reduitA(apresMidi)).isEmpty();
-  }
-
-  @Test
-  void shouldNaitreNonPresume() {
-    assertThat(intervalleFerme().presume()).isFalse();
-  }
-
-  @Test
-  void shouldDevenirPresumeDansUneFenetrePresumee() {
-    FenetreDePresence presumee = new FenetreDePresence(LE_10_MAI_2026_A_9H, Optional.of(LE_10_MAI_2026_A_12H), true);
-
-    IntervalleDActivite reduit = intervalleFerme().reduitA(presumee).orElseThrow();
-
-    assertThat(reduit.presume()).isTrue();
-    assertThat(reduit.debut()).isEqualTo(LE_10_MAI_2026_A_9H);
-    assertThat(reduit.fin()).contains(LE_10_MAI_2026_A_12H);
-  }
-
-  @Test
-  void shouldResterPresumeDansUneFenetrePointee() {
-    IntervalleDActivite presume = intervalleFerme()
-      .reduitA(new FenetreDePresence(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H), true))
-      .orElseThrow();
-
-    IntervalleDActivite reduit = presume
-      .reduitA(new FenetreDePresence(LE_10_MAI_2026_A_9H, Optional.of(LE_10_MAI_2026_A_12H)))
-      .orElseThrow();
-
-    assertThat(reduit.presume()).isTrue();
-  }
-
-  @Test
-  void shouldResterPointeDansUneFenetrePointee() {
-    IntervalleDActivite reduit = intervalleFerme()
-      .reduitA(new FenetreDePresence(LE_10_MAI_2026_A_9H, Optional.of(LE_10_MAI_2026_A_12H)))
-      .orElseThrow();
-
-    assertThat(reduit.presume()).isFalse();
-  }
-
-  /**
-   * La fin automatique est une anomalie de l'activite : ramenee a une fenetre de presence, elle reste signalee.
-   */
-  @Test
-  void shouldGarderSaFinAutomatiqueDansUneFenetreDePresence() {
-    IntervalleDActivite echu = IntervalleDActivite.builder()
-      .evenement(EVENEMENT)
-      .activite(ActiviteId.ouvertePar(EVENEMENT))
-      .operateur(OPERATEUR_ID_DUPONT)
-      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
-      .nature(Optional.of(NATURE_FRAISAGE))
-      .categorie(CategorieDActivite.TRAVAIL)
-      .debut(LE_10_MAI_2026_A_8H)
-      .fin(Optional.of(LE_10_MAI_2026_A_20H))
-      .finAutomatique(true)
-      .aResoudre(false);
-
-    IntervalleDActivite reduit = echu.reduitA(new FenetreDePresence(LE_10_MAI_2026_A_9H, Optional.of(LE_10_MAI_2026_A_17H))).orElseThrow();
-
-    assertThat(reduit.fin()).contains(LE_10_MAI_2026_A_17H);
-    assertThat(reduit.finAutomatique()).isTrue();
   }
 
   private static IntervalleDActivite intervalleFerme() {

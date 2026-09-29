@@ -23,8 +23,7 @@ public record IntervalleDActivite(
   Instant debut,
   Optional<Instant> fin,
   boolean finAutomatique,
-  boolean aResoudre,
-  boolean presume
+  boolean aResoudre
 ) {
   public IntervalleDActivite {
     Assert.notNull("evenement", evenement);
@@ -59,33 +58,8 @@ public record IntervalleDActivite(
                           debut,
                           fin,
                           finAutomatique,
-                          aResoudre,
-                          false
+                          aResoudre
                         );
-  }
-
-  /**
-   * Le meme intervalle reduit a la fenetre de presence donnee, s'il en reste quelque chose. Pris dans une fenetre
-   * presumee, il devient presume : il repose sur une fin de journee que personne n'a pointee.
-   */
-  public Optional<IntervalleDActivite> reduitA(FenetreDePresence fenetre) {
-    return fenetre
-      .intersection(debut, fin)
-      .map(part ->
-        new IntervalleDActivite(
-          evenement,
-          activite,
-          operateur,
-          poste,
-          nature,
-          categorie,
-          part.debut(),
-          part.fin(),
-          finAutomatique,
-          aResoudre,
-          presume || part.presumee()
-        )
-      );
   }
 
   public boolean estOuvert() {

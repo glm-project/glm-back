@@ -464,56 +464,6 @@ class JpaSuiviDAtelierRepositoryIT {
     assertThat(pageChezKatilys.content()).isEmpty();
   }
 
-  /**
-   * La fin presumee d'une journee abandonnee cherche le dernier pointage de l'operateur, tous elements confondus :
-   * ni un evenement annule, ni celui d'un autre operateur n'y comptent. Les dates sont propres a ce test, le schema
-   * etant partage.
-   */
-  @Test
-  @WithTenant(IMPECCMOLD)
-  void shouldTrouverLeDernierPointageDUnOperateurSurUnePeriode() {
-    Instant lundi = Instant.parse("2042-03-03T07:00:00Z");
-    EvenementDAtelier debutDeLOf42 = debutSurFraiseuse1A(lundi.plusSeconds(3600));
-    SuiviDAtelier of42 = suiviEngageA(lundi).enregistre(debutDeLOf42).enregistre(finDe(debutDeLOf42).a(lundi.plusSeconds(10800)));
-    EvenementDAtelier annule = debutSurFraiseuse2A(lundi.plusSeconds(14400));
-    SuiviDAtelier of43 = suiviEngageA(lundi)
-      .enregistre(debutSurFraiseuse2A(lundi.plusSeconds(9000)))
-      .enregistre(annule)
-      .enregistre(debutDeMartinA(lundi.plusSeconds(18000)));
-    inTransaction(() -> suivis.create(of42));
-    inTransaction(() ->
-      suivis.create(of43.annule(annule.id(), new Annulation(AUTEUR_LEROY, lundi.plusSeconds(20000), MOTIF_ERREUR_DE_SAISIE)))
-    );
-
-    assertThat(dernierPointage(lundi, lundi.plusSeconds(46800))).contains(lundi.plusSeconds(10800));
-    assertThat(dernierPointage(lundi, lundi.plusSeconds(9000))).contains(lundi.plusSeconds(9000));
-    assertThat(dernierPointage(lundi.plusSeconds(10801), lundi.plusSeconds(46800))).isEmpty();
-    assertThat(dernierPointage(lundi.minusSeconds(3600), lundi)).isEmpty();
-  }
-
-  private Optional<Instant> dernierPointage(Instant debut, Instant fin) {
-    return inTransaction(() -> suivis.dernierPointageDe(OPERATEUR_ID_DUPONT, new Periode(debut, fin)));
-  }
-
-  private static EvenementDAtelier debutDeMartinA(Instant date) {
-    EvenementDAtelierId id = EvenementDAtelierId.newId();
-
-    return EvenementDAtelier.builder()
-      .id(id)
-      .type(TypeDEvenementDAtelier.DEBUT)
-      .intention(IntentionDePointage.OUVERTURE)
-      .activite(Optional.of(ActiviteId.ouvertePar(id)))
-      .activiteVisee(Optional.empty())
-      .operateur(OPERATEUR_ID_MARTIN)
-      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
-      .nature(Optional.of(NATURE_FRAISAGE))
-      .coutHoraire(Optional.empty())
-      .tauxHoraire(Optional.empty())
-      .auteur(AUTEUR_MARTIN)
-      .origine(OrigineDuPointage.POINTAGE)
-      .horodatage(Horodatage.saisiA(date));
-  }
-
   private List<SuiviDAtelier> liste(Periode periode, EtatDAtelier etat, Instant evaluation) {
     return inTransaction(() -> suivis.list(criteres(periode, Set.of(etat), evaluation), firstPageOfTen())).content();
   }

@@ -31,7 +31,7 @@ Le repository et le compteur sont persistés en PostgreSQL, dans le schéma de l
 
 Gère l'exécution en atelier de ce que `elementdefabrication` a déclaré. Le gestionnaire y met un élément en atelier, les opérateurs y pointent leur présence et leur travail, le gestionnaire clôture et corrige.
 
-Le contexte porte **deux agrégats** : la `JourneeDeTravail` d'un opérateur et le `SuiviDAtelier` d'un élément engagé. Ils partagent un même langage — opérateur, auteur, horodatage, annulation, régularisation — et le temps réellement passé sur un élément se lit au croisement des deux. Les séparer en deux contextes obligerait à dupliquer ces value objects, que le shared kernel ne peut pas accueillir puisqu'il est en anglais.
+Le contexte porte **deux agrégats** : la `JourneeDeTravail` d'un opérateur et le `SuiviDAtelier` d'un élément engagé. Ils partagent un même langage — opérateur, auteur, horodatage, annulation, régularisation. Le temps réellement passé sur un élément, lui, ne se lit que dans son journal : aucune présence ne le borne. Les séparer en deux contextes obligerait à dupliquer ces value objects, que le shared kernel ne peut pas accueillir puisqu'il est en anglais.
 
 **Le journal d'événements est la source de vérité.** L'état d'un agrégat et ses intervalles de temps ne sont jamais stockés : ils se déduisent du repli du journal, trié par date de survenue. C'est la correction qui l'impose — un temps juste exige que la saisie oubliée compte à l'heure où elle a eu lieu, pas à l'heure où on la rattrape, et un modèle à compteurs ne sait pas revenir en arrière. Chaque événement porte donc un `Horodatage` bitemporel : sa date de survenue, métier, et sa date d'enregistrement, technique.
 
@@ -59,24 +59,19 @@ Le client décrit son besoin comme « une pointeuse à laquelle on rajoute une o
 
 Depuis le lot 3, une amplitude excessive ne naît plus d'un geste de l'opérateur : un départ pointé au-delà du seuil ouvre une nouvelle journée, et c'est la journée du matin, sans départ, qui est signalée. Elle ne vient que d'un acte du gestionnaire — un départ régularisé ou corrigé tard.
 
-**Le départ est un fait de l'opérateur, écrit une seule fois ; la pause n'existe pas pour le serveur, le pupitre la traduit en fins d'activité.** Le départ n'est jamais recopié dans le journal des éléments : c'est ce qui donne au client son bouton d'arrêt de fin de journée, sans jamais N clics pour N tâches. La pause, elle, se lit dans le journal de chaque élément : le client la décrit comme l'arrêt et la reprise du travail — « pause / arrêt / reprise sont le même mécanisme » —, et le pupitre y pointe une fin par activité en cours, puis un début, ou une non conformité, à la reprise. Le serveur ne reçoit que des fins et des débuts.
+**Le départ est un fait de l'opérateur, écrit une seule fois ; la pause n'existe pas pour le serveur, le pupitre la traduit en fins d'activité.** Le départ n'est jamais recopié dans le journal des éléments, et il ne termine aucune activité : une activité oubliée se termine à son échéance, ou à la fin que le gestionnaire régularise. La pause, elle, se lit dans le journal de chaque élément : le client la décrit comme l'arrêt et la reprise du travail — « pause / arrêt / reprise sont le même mécanisme » —, et le pupitre y pointe une fin par activité en cours, puis un début, ou une non conformité, à la reprise. Le serveur ne reçoit que des fins et des débuts.
 
 La **présence sans affectation** — le temps de présence sans élément rattaché — n'est pas un élément fictif : c'est le résidu de la présence moins le temps affecté, calculé à la lecture. La présence est comptée dès l'identification, que l'opérateur ait ou non pointé sur un élément.
 
 **GLM n'est pas un concept du modèle.** C'est le nom que le client de référence donne à son travail non facturable — sur un projet interne, par exemple —, qu'il veut déclarer manuellement (« De toute façon il y aura ce bouton GLM »). Ce travail n'est pas encore modélisé, et la présence sans affectation n'en est pas : un opérateur présent sans activité pointée ne fait pas pour autant du travail non facturable. C'est le principe posé en tête de ce document : GLM sert de trame, pas de spécification.
 
-### Le temps effectif, croisement des deux journaux
+### Le temps effectif, celui des seules activités
 
-`SuiviDAtelier.intervalles()` produit des intervalles **bruts** : ils ignorent la présence. `TempsDAtelierService.tempsEffectif` les ramène aux fenêtres de présence de l'opérateur, en intersectant chaque intervalle avec les fenêtres de **la journée où il a commencé**. Une seule règle, deux effets :
+`TempsDAtelierService.tempsEffectif` rend les intervalles des activités d'un élément, tels que le journal les interprète (`SuiviDAtelier.intervalles`), à l'instant d'évaluation. **Aucune présence ne les borne** : un départ ne termine rien, et aucune fin de journée n'est présumée. Une activité se termine à sa fin réelle — un geste qui la termine, ou la clôture —, sinon automatiquement à son échéance, avec une anomalie (voir ci-dessous).
 
-- un départ **tronque** ce que l'opérateur a oublié d'arrêter — un `FIN` manquant ne produit plus un intervalle infini ;
-- une régularisation de départ **corrige d'un coup tous les éléments** de la journée, là où un départ recopié par élément aurait demandé autant de corrections que d'éléments, et n'aurait jamais rattrapé un début inséré après coup.
+La pause de midi scinde le travail par le journal de l'élément : une fin à midi, un début à la reprise. Corriger une heure de pause fausse demande donc une correction par activité, sur sa fin et sur son début.
 
-La pause de midi, elle, scinde le travail par le journal de l'élément : une fin à midi, un début à la reprise. Corriger une heure de pause fausse demande donc une correction par activité, sur sa fin et sur son début.
-
-Borner l'intervalle à sa journée est aussi ce qui empêche un travail jamais arrêté de courir jusqu'au lendemain : l'opérateur reclique sur l'élément à son retour, ce qui est exactement le geste que le client décrit. Un début qui ne tombe dans aucune journée connue est **rendu intact** : c'est la présence qui manque, et le domaine ne masque pas l'anomalie derrière un temps amputé.
-
-**Une journée abandonnée se ferme à sa fin présumée**, calculée à la lecture et jamais stockée : le dernier fait connu, qu'il soit son dernier événement de présence ou le dernier pointage d'OF de l'opérateur (tous éléments confondus) survenu entre l'arrivée et l'arrivée plus le seuil. La fenêtre ainsi fermée est **présumée**, et les intervalles qui s'y réduisent portent `presume` : le temps effectif distingue ce qui a été pointé de ce qui reste à confirmer. Dans l'exemple de référence, l'OF 42 de lundi vaut 7 h, toutes présumées — sans départ, la journée n'a qu'une fenêtre, présumée en entier —, et la nuit n'est plus comptée. Un travail commencé dans une journée abandonnée après sa fin présumée ne vaut rien : la fin présumée n'invente jamais d'heures. Une journée encore sous le seuil reste ouverte, c'est du travail en cours ; une régularisation du départ remplace le présumé par le pointé. **Une journée fermée plus de 24 h après son arrivée se lit comme abandonnée pour le temps effectif** ([D13](strategie/bornes-de-fin-de-journee.md), issue #59) : elle n'a pas pu être vécue d'une traite, et son départ ne dit rien de l'heure à laquelle l'opérateur est parti. Elle se ferme à sa fin présumée, le dernier fait connu **entre l'arrivée et l'arrivée plus le seuil** — ses faits au-delà, départ compris, ne comptent pas — et ce qui dépasse disparaît. Rien n'est réécrit, et elle reste signalée en amplitude excessive. Entre le seuil et 24 h, une journée fermée compte entière. 24 h est une borne physique, jamais un paramètre de l'entreprise. Pour la saisie, elle n'est pas abandonnée : un geste reçu ensuite ne la concerne pas.
+Un travail jamais arrêté ne court pas pour autant jusqu'au lendemain : il se termine à son échéance, et l'opérateur qui reclique sur l'élément à son retour ouvre une nouvelle activité, sans prolonger l'ancienne. Une fin oubliée se rattrape par une régularisation du gestionnaire, qui remplace la fin automatique.
 
 ### La fin automatique à l'échéance
 
@@ -322,9 +317,9 @@ journal d'un autre agrégat modifie ; seule une projection le peut.
 
 Une ligne par nature d'opération — fraisage, tournage, érosion —, plus une ligne sans nature pour ce qui a été
 pointé sans poste. **La nuit d'une journée abandonnée n'est jamais valorisée** : chaque venue sans départ au-delà du
-seuil reçoit la même fin présumée que dans l'atelier, calculée sur les pointages déjà lus pour le rapport. Une venue fermée
+seuil reçoit une fin présumée, calculée sur les pointages déjà lus pour le rapport. Une venue fermée
 plus de 24 h après son arrivée la reçoit aussi ([D13](strategie/bornes-de-fin-de-journee.md), issue #59). La forme du
-rapport ne change pas ; la part présumée se lit dans le temps effectif de l'atelier. Chaque ligne porte le temps de bon travail, le temps de reprise de non conformité **avec ses
+rapport ne change pas. Chaque ligne porte le temps de bon travail, le temps de reprise de non conformité **avec ses
 périodes datées**, et le coût séparé en machine et main d'œuvre.
 
 L'entrée se fait par l'**élément de fabrication**, non par son suivi d'atelier : un élément réengagé après clôture

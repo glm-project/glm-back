@@ -46,8 +46,8 @@ Ne rien ajouter ici qui relève de :
 Ils cohabitent dans un seul contexte parce qu'ils partagent un même langage — opérateur, auteur, horodatage,
 annulation — que le shared kernel ne peut pas accueillir puisqu'il est en anglais.
 
-`TempsDAtelierService` est le seul point qui croise les deux : le temps effectif d'un élément est l'intersection de ses
-intervalles bruts avec les fenêtres de présence de son opérateur.
+Le temps effectif d'un élément (`TempsDAtelierService`) ne croise pas les deux : ce sont les intervalles de ses
+activités, tels que le journal les interprète, et aucune présence ne les borne ni ne les termine.
 
 ## Invariants à ne pas casser
 
@@ -59,10 +59,11 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
   pointages, même rejouée hors ligne avec l'heure du geste. C'est `SuivisDAtelierService` qui la fixe, d'après l'acte ;
   ni l'écart des dates ni l'auteur ne la déduisent.
 - **Un événement annulé reste au journal**, porteur de son `Annulation`. Le repli l'écarte ; personne ne le supprime.
-- **Le départ est un fait de l'opérateur, écrit une seule fois ; la pause n'existe pas pour le serveur, le pupitre la
-  traduit en fins d'activité.** Ne jamais recopier le départ dans le journal des éléments : c'est ce qui permet à une
-  seule régularisation de départ de refermer tous les éléments de la journée. Ne jamais réintroduire de pause dans la
-  présence : elle se lit dans le journal des éléments, par les fins et les débuts que le pupitre y pointe.
+- **Le départ est un fait de l'opérateur, écrit une seule fois, qui ne termine aucune activité ; la pause n'existe pas
+  pour le serveur, le pupitre la traduit en fins d'activité.** Ne jamais recopier le départ dans le journal des
+  éléments : une activité oubliée se termine à son échéance, ou à la fin que le gestionnaire régularise. Ne jamais
+  réintroduire de pause dans la présence : elle se lit dans le journal des éléments, par les fins et les débuts que le
+  pupitre y pointe.
 - **Le poste de travail et la `NatureDOperation` sont toujours facultatifs.** L'application vise un maximum
   d'entreprises clientes ; celles qui n'ont ni parc machine ni métiers distincts laissent les deux vides et retrouvent
   un comportement cohérent, pas un cas dégradé.
@@ -132,11 +133,6 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
 - **Une journée sans départ au-delà du seuil est abandonnée**, et le geste suivant de l'opérateur en ouvre une
   nouvelle ; sous le seuil, une arrivée est absorbée. Seuls les actes du gestionnaire peuvent être refusés pour
   chevauchement de deux journées. Détail dans `contexte-metier.md`, section « La présence, de l'arrivée au départ ».
-- **Une journée fermée plus de 24 h après son arrivée se lit comme abandonnée** (D13, issue #59) : pour le temps effectif
-  seulement : `estPresumeePour` la ferme à sa fin présumée, le dernier fait **de la fenêtre de recherche**, départ exclu. `estAbandonneePour`, qui décide
-  de la saisie et des anomalies, ne change pas. Entre le seuil et 24 h,
-  une journée fermée compte entière. 24 h est une borne physique, jamais un paramètre : la constante vit dans
-  `JourneeDeTravail`, recopiée dans `atelier`, `feuilledetemps`, `syntheseheures` et `coutderevient`.
 - **Une anomalie de présence ne se stocke jamais.** `AnomalieDePresence.de` la déduit de la journée, du seuil et de
   l'instant ; `CriteresDAnomalie.matches` porte la règle que l'adapter traduit en SQL, et le test de parité
   confronte les deux, seuil pile et demi-seconde compris.
@@ -157,10 +153,6 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
 
 `SeuilDAmplitude` lit l'amplitude maximale dans la table `parametrage`, par une entité en lecture seule, sans
 importer le contexte voisin. Le seuil est lu à chaque geste : un changement vaut pour les gestes qui suivent.
-
-`SuiviDAtelierRepository.dernierPointageDe` rend le dernier pointage actif d'un opérateur sur une période, tous
-éléments confondus : c'est la matière de la fin présumée d'une journée abandonnée, que `TempsDAtelierService` ne
-demande que pour une telle journée.
 
 `OperateursConnus` expose `get(OperateurId)` en plus de `existe` et `parIds` : la présence (`JourneesDeTravailService`)
 n'a toujours besoin que de l'existence, mais le journal d'atelier (`SuivisDAtelierService`) résout désormais la fiche

@@ -63,7 +63,7 @@ class OpenApiConfigurationIT {
         requiredFields("RestSuiviDAtelierEnGrille", "id", "element", "nom", "type", "engagePar", "engageLe", "etat", "activitesEnCours")
       )
       .andExpect(requiredFields("RestActiviteEnCours", "categorie", "depuis", "ouverture", "echeance"))
-      .andExpect(requiredFields("RestIntervalleDActivite", "activite", "finAutomatique", "aResoudre", "presume"))
+      .andExpect(requiredFields("RestIntervalleDActivite", "activite", "finAutomatique", "aResoudre"))
       .andExpect(
         requiredFields(
           "RestEvenementDAtelier",

@@ -114,12 +114,13 @@ class SuiviDAtelierResource {
   @Operation(
     summary = "Lire le temps effectivement passe sur un element",
     description = """
-    Les intervalles bruts du journal, ramenes aux fenetres de presence des operateurs.
+    Les intervalles des activites de l'element, tels que le journal les interprete, sans aucune presence pour les
+    borner.
 
-    C'est ici qu'un depart referme ce que l'operateur a oublie d'arreter, sans avoir eu besoin d'etre recopie dans le
-    journal de l'element. Un intervalle sans fin est encore en cours a l'instant de la lecture, sauf s'il est a
-    resoudre (aResoudre) : une sequence en conflit ne permet d'en affirmer ni la fin ni la duree. Une activite que rien
-    n'a terminee avant son echeance y est terminee automatiquement, a cette echeance, et signalee par finAutomatique.
+    Un intervalle sans fin est encore en cours a l'instant de la lecture, sauf s'il est a resoudre (aResoudre) : une
+    sequence en conflit ne permet d'en affirmer ni la fin ni la duree. Une activite que rien n'a terminee avant son
+    echeance, son debut plus 13 heures, y est terminee automatiquement, a cette echeance, et signalee par
+    finAutomatique.
     """
   )
   @ApiResponse(responseCode = "404", description = "Suivi introuvable.")

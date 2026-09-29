@@ -113,10 +113,9 @@ l'intérêt de les conserver.
 ### Le départ est écrit une seule fois, la pause sur chaque élément
 
 Le départ est un fait de la **journée de travail de l'opérateur**, jamais recopié dans le journal des éléments sur
-lesquels il travaille. Un seul `POST /api/atelier/journees/pointages` suffit, quel que soit le nombre d'éléments ; le
-croisement est fait à la lecture, par `GET /api/atelier/suivis/{id}/temps-effectif`. C'est ce qui permet à une seule
-régularisation de départ de refermer d'un coup tous les éléments qu'un opérateur avait laissés ouverts en rentrant chez
-lui.
+lesquels il travaille, et il **ne termine aucune activité** : `GET /api/atelier/suivis/{id}/temps-effectif` ne lit que
+le journal de l'élément. Une activité que l'opérateur a laissée ouverte en rentrant chez lui se termine
+automatiquement à son échéance (voir ci-dessous), ou à la fin que le gestionnaire régularise.
 
 **La pause, à l'inverse, n'existe pas pour le serveur** ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)) :
 ni `PAUSE`, ni `REPRISE`, ni état « en pause ». Pour mettre un opérateur en pause, le pupitre **boucle sur ses
@@ -139,7 +138,7 @@ Ce que les réponses en montrent :
   Chaque activité porte son `ouverture` — l'identité que visera une fin ou une transition — et son `echeance`.
 - `GET …/temps-effectif` rend chaque intervalle avec son `activite` et `finAutomatique` : vrai quand l'activité est
   terminée automatiquement à son échéance, faute de fin réelle. C'est l'anomalie à signaler ; `fin` vaut alors
-  l'échéance, ou le départ si la présence ramène l'intervalle en deçà.
+  l'échéance.
 - Deux lectures espacées peuvent différer au voisinage d'une échéance : c'est l'instant de lecture qui tranche.
 
 La même échéance vaut pour les gestes, jugés sur leur heure métier, quel que soit le moment où ils arrivent :
@@ -459,19 +458,16 @@ stocké : une ligne disparaît dès que la régularisation la résout. Un type i
 GET /api/atelier/suivis/{id}/temps-effectif
 ```
 
-Rend les intervalles bruts **ramenés aux fenêtres de présence** des opérateurs. Un `DEBUT` à 8 h que l'opérateur
-n'arrête jamais produit un intervalle fermé à son départ, sans que la fin ait été pointée. La pause de midi, pointée par
-un `FIN` et un `DEBUT`, en produit deux. Un intervalle sans `fin` est encore en cours — c'est un affichage « depuis
-8 h 00 », pas une donnée manquante.
+Rend les intervalles des activités de l'élément, tels que le journal les interprète : **aucune présence ne les
+borne**, et un départ ne termine rien. La pause de midi, pointée par un `FIN` et un `DEBUT`, en produit deux. Un
+intervalle sans `fin` est encore en cours — c'est un affichage « depuis 8 h 00 », pas une donnée manquante — sauf s'il
+est à résoudre.
 
 Chaque intervalle porte son `activite`, l'identité de l'activité dont il vient. `finAutomatique: true` signale une
-activité terminée automatiquement à son échéance : sans départ connu, `fin` vaut l'échéance, 13 h après le début.
-`aResoudre: true` signale une activité d'une séquence en conflit : rendue telle quelle, sans `fin`, elle n'a aucune
-durée à compter tant que le gestionnaire n'a pas tranché.
-
-Un intervalle **`presume: true`** repose sur une fin de journée présumée : l'opérateur n'a pas pointé son départ, et sa
-journée, abandonnée au-delà de l'amplitude maximale, a été fermée à son dernier fait connu. L'afficher comme « à
-confirmer » ; il redevient pointé dès que le gestionnaire régularise le départ.
+activité terminée automatiquement à son échéance, faute de fin réelle : `fin` vaut l'échéance, 13 h après le début. Un
+`DEBUT` à 8 h que l'opérateur n'arrête jamais donne ainsi un intervalle terminé à 21 h, avec cette anomalie, que la fin
+régularisée par le gestionnaire remplace. `aResoudre: true` signale une activité d'une séquence en conflit : rendue
+telle quelle, sans `fin`, elle n'a aucune durée à compter tant que le gestionnaire n'a pas tranché.
 
 ### Présence
 

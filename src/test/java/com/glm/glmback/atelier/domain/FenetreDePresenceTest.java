@@ -43,63 +43,6 @@ class FenetreDePresenceTest {
     assertThat(matinee().estOuverte()).isFalse();
   }
 
-  @Test
-  void shouldGarderLesBornesLesPlusResserrees() {
-    FenetreDePresence part = matinee().intersection(LE_10_MAI_2026_A_7H, Optional.of(LE_10_MAI_2026_A_9H)).orElseThrow();
-
-    assertThat(part.debut()).isEqualTo(LE_10_MAI_2026_A_8H);
-    assertThat(part.fin()).contains(LE_10_MAI_2026_A_9H);
-  }
-
-  @Test
-  void shouldGarderLesBornesDeLAutreIntervalleQuandIlEstLePlusEtroit() {
-    FenetreDePresence part = matinee().intersection(LE_10_MAI_2026_A_9H, Optional.of(LE_10_MAI_2026_A_9H.plusSeconds(60))).orElseThrow();
-
-    assertThat(part.debut()).isEqualTo(LE_10_MAI_2026_A_9H);
-    assertThat(part.fin()).contains(LE_10_MAI_2026_A_9H.plusSeconds(60));
-  }
-
-  @Test
-  void shouldFermerUnIntervalleOuvertSurLaFinDeLaFenetre() {
-    FenetreDePresence part = matinee().intersection(LE_10_MAI_2026_A_9H, Optional.empty()).orElseThrow();
-
-    assertThat(part.fin()).contains(LE_10_MAI_2026_A_12H);
-  }
-
-  @Test
-  void shouldLaisserOuvertUnIntervalleOuvertDansUneFenetreOuverte() {
-    FenetreDePresence apresMidi = new FenetreDePresence(LE_10_MAI_2026_A_13H, Optional.empty());
-
-    FenetreDePresence part = apresMidi.intersection(LE_10_MAI_2026_A_17H, Optional.empty()).orElseThrow();
-
-    assertThat(part.debut()).isEqualTo(LE_10_MAI_2026_A_17H);
-    assertThat(part.fin()).isEmpty();
-  }
-
-  @Test
-  void shouldNotIntersecterUnIntervalleDisjoint() {
-    assertThat(matinee().intersection(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_17H))).isEmpty();
-  }
-
-  @Test
-  void shouldNotIntersecterUnIntervalleReduitAUnInstant() {
-    assertThat(matinee().intersection(LE_10_MAI_2026_A_12H, Optional.empty())).isEmpty();
-  }
-
-  @Test
-  void shouldNaitrePointeeParDefaut() {
-    assertThat(new FenetreDePresence(LE_10_MAI_2026_A_8H, Optional.empty()).presumee()).isFalse();
-  }
-
-  @Test
-  void shouldGarderLaPresomptionALIntersection() {
-    FenetreDePresence presumee = new FenetreDePresence(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_16H), true);
-
-    assertThat(presumee.intersection(LE_10_MAI_2026_A_8H, Optional.empty())).contains(
-      new FenetreDePresence(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_16H), true)
-    );
-  }
-
   private static FenetreDePresence matinee() {
     return new FenetreDePresence(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H));
   }

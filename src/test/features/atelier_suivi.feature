@@ -642,10 +642,9 @@ Feature: Suivi des elements engages en atelier
     Then la reponse a le statut http 404
 
   Scenario: Une journee d'atelier complete, deux machines menees de front
-    # Le scenario de reference du contexte : Dupont arrive a 7 h, demarre l'OF 42 sur la fraiseuse 1 a 8 h,
-    # l'OF 43 sur la fraiseuse 2 a 9 h, les arrete tous deux a midi pour sa pause et les redemarre a 13 h, termine
-    # l'OF 43 a 16 h, puis rentre chez lui a 17 h SANS RIEN POINTER — ni son depart, ni la fin de l'OF 42. Le
-    # lendemain, le gestionnaire regularise le depart oublie.
+    # Le scenario de reference du contexte : Dupont demarre l'OF 42 sur la fraiseuse 1 a 8 h, l'OF 43 sur la
+    # fraiseuse 2 a 9 h, les arrete tous deux a midi pour sa pause et les redemarre a 13 h, termine l'OF 43 a 16 h,
+    # puis rentre chez lui a 17 h SANS ARRETER l'OF 42. Le lendemain, le gestionnaire regularise la fin oubliee.
     Given il est "2026-05-10T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 42"
       | type      | ORDRE_DE_FABRICATION |
@@ -655,8 +654,6 @@ Feature: Suivi des elements engages en atelier
       | reference | 2043                 |
     And j'ai engage l'element "OF 42" en atelier
     And j'ai engage l'element "OF 43" en atelier
-    And je suis arrive
-      | operateur | dupont |
 
     Given il est "2026-05-10T08:00:00Z"
     And j'ai pointe sur "OF 42"
@@ -698,22 +695,17 @@ Feature: Suivi des elements engages en atelier
       | operateur | dupont      |
       | poste     | fraiseuse-2 |
 
-    # Le lendemain, le gestionnaire rattrape le depart jamais pointe.
+    # L'OF 42 n'a recu aucun pointage apres sa relance a 13 h : sa pause le scinde a midi, et rien ne le borne a
+    # 17 h. Il se termine automatiquement a son echeance, 13 heures apres son debut, avec une anomalie.
     Given il est "2026-05-11T09:15:00Z"
-    And j'ai regularise ma journee
-      | type           | DEPART               |
-      | dateDeSurvenue | 2026-05-10T17:00:00Z |
-
-    # L'OF 42 n'a recu aucun pointage apres sa relance a 13 h : sa pause le scinde a midi, et c'est la presence
-    # seule qui le referme au depart regularise.
     When je consulte le temps effectif de "OF 42"
     Then la reponse a le statut http 200
     And le temps effectif contient
-      | poste.libelle | debut                | fin                  |
-      | fraiseuse-1   | 2026-05-10T08:00:00Z | 2026-05-10T12:00:00Z |
-      | fraiseuse-1   | 2026-05-10T13:00:00Z | 2026-05-10T17:00:00Z |
+      | poste.libelle | debut                | fin                  | finAutomatique |
+      | fraiseuse-1   | 2026-05-10T08:00:00Z | 2026-05-10T12:00:00Z | false          |
+      | fraiseuse-1   | 2026-05-10T13:00:00Z | 2026-05-11T02:00:00Z | true           |
 
-    # L'OF 43 s'arrete a sa propre fin, sans attendre le depart.
+    # L'OF 43 s'arrete a sa propre fin.
     When je consulte le temps effectif de "OF 43"
     And le temps effectif contient
       | poste.libelle | debut                | fin                  |
@@ -733,20 +725,26 @@ Feature: Suivi des elements engages en atelier
       | DEBUT |
       | FIN   |
 
-    # Une seule regularisation de depart a suffi a refermer tout ce qui restait ouvert.
-    When je consulte le temps effectif de "OF 42"
-    Then le temps effectif ne contient aucun intervalle ouvert
+    # Le gestionnaire regularise la fin oubliee de l'OF 42 : la fin reelle remplace la fin automatique.
+    When je regularise sur "OF 42"
+      | type           | FIN                  |
+      | operateur      | dupont               |
+      | poste          | fraiseuse-1          |
+      | dateDeSurvenue | 2026-05-10T17:00:00Z |
+    And je consulte le temps effectif de "OF 42"
+    Then le temps effectif contient
+      | poste.libelle | debut                | fin                  | finAutomatique |
+      | fraiseuse-1   | 2026-05-10T08:00:00Z | 2026-05-10T12:00:00Z | false          |
+      | fraiseuse-1   | 2026-05-10T13:00:00Z | 2026-05-10T17:00:00Z | false          |
 
   Scenario: Un ordre reste en cours la veille est relance le lendemain
-    # E2 de la strategie « bornes de fin de journee » : Dupont oublie d'arreter l'OF 42 et de pointer son depart.
-    # Le gestionnaire regularise le depart ; le lendemain, Dupont redemarre l'OF 42 sans etre bloque.
+    # E2 de la strategie « bornes de fin de journee » : Dupont oublie d'arreter l'OF 44 ; le lendemain, il le
+    # redemarre sans etre bloque.
     Given il est "2026-05-10T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 44"
       | type      | ORDRE_DE_FABRICATION |
       | reference | 2044                 |
     And j'ai engage l'element "OF 44" en atelier
-    And je suis arrive
-      | operateur | dupont |
     Given il est "2026-05-10T08:00:00Z"
     And j'ai pointe sur "OF 44"
       | type      | DEBUT       |
@@ -762,14 +760,7 @@ Feature: Suivi des elements engages en atelier
       | type      | DEBUT       |
       | operateur | dupont      |
       | poste     | fraiseuse-1 |
-    Given il est "2026-05-11T06:00:00Z"
-    And j'ai regularise ma journee
-      | type           | DEPART               |
-      | dateDeSurvenue | 2026-05-10T17:00:00Z |
 
-    Given il est "2026-05-11T07:00:00Z"
-    And je suis arrive
-      | operateur | dupont |
     Given il est "2026-05-11T07:05:00Z"
     When je pointe sur "OF 44"
       | type      | DEBUT       |
@@ -784,90 +775,21 @@ Feature: Suivi des elements engages en atelier
       | operateur | dupont      |
       | poste     | fraiseuse-1 |
 
-    # Le temps de lundi reste borne par la journee de lundi : la nuit n'est jamais comptee.
+    # L'activite oubliee lundi s'est terminee automatiquement a son echeance, a 02:00 : la relance de mardi ne la
+    # prolonge pas, et rien n'est compte de 02:00 a 07:05.
     When je consulte le temps effectif de "OF 44"
     Then le temps effectif contient
-      | poste.libelle | debut                | fin                  |
-      | fraiseuse-1   | 2026-05-10T08:00:00Z | 2026-05-10T12:00:00Z |
-      | fraiseuse-1   | 2026-05-10T13:00:00Z | 2026-05-10T17:00:00Z |
-      | fraiseuse-1   | 2026-05-11T07:05:00Z | 2026-05-11T10:00:00Z |
+      | poste.libelle | debut                | fin                  | finAutomatique |
+      | fraiseuse-1   | 2026-05-10T08:00:00Z | 2026-05-10T12:00:00Z | false          |
+      | fraiseuse-1   | 2026-05-10T13:00:00Z | 2026-05-11T02:00:00Z | true           |
+      | fraiseuse-1   | 2026-05-11T07:05:00Z | 2026-05-11T10:00:00Z | false          |
 
-  Scenario: Le temps d'un ordre s'arrete a la fin presumee d'une journee abandonnee
-    # E2 de la strategie « bornes de fin de journee », lot 4 : Dupont part lundi sans rien pointer. Lu mardi, l'OF 47
-    # s'arrete au dernier fait connu de lundi, la fin de l'OF 48 a 16:00. La nuit n'est plus comptee, et ce qui repose
-    # sur la presomption est marque comme tel : sans depart, la journee n'a qu'une fenetre de presence, et tout le
-    # travail de lundi est presume, avant la pause de midi comme apres.
-    Given il est "2026-05-10T07:00:00Z"
-    And l'entreprise a cree l'element de fabrication "OF 47"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2047                 |
-    And l'entreprise a cree l'element de fabrication "OF 48"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2048                 |
-    And j'ai engage l'element "OF 47" en atelier
-    And j'ai engage l'element "OF 48" en atelier
-    And je suis arrive
-      | operateur | dupont |
-    Given il est "2026-05-10T08:00:00Z"
-    And j'ai pointe sur "OF 47"
-      | type      | DEBUT       |
-      | operateur | dupont      |
-      | poste     | fraiseuse-1 |
-    Given il est "2026-05-10T09:00:00Z"
-    And j'ai pointe sur "OF 48"
-      | type      | DEBUT       |
-      | operateur | dupont      |
-      | poste     | fraiseuse-2 |
-    Given il est "2026-05-10T12:00:00Z"
-    And j'ai pointe sur "OF 47"
-      | type      | FIN         |
-      | operateur | dupont      |
-      | poste     | fraiseuse-1 |
-    And j'ai pointe sur "OF 48"
-      | type      | FIN         |
-      | operateur | dupont      |
-      | poste     | fraiseuse-2 |
-    Given il est "2026-05-10T13:00:00Z"
-    And j'ai pointe sur "OF 47"
-      | type      | DEBUT       |
-      | operateur | dupont      |
-      | poste     | fraiseuse-1 |
-    And j'ai pointe sur "OF 48"
-      | type      | DEBUT       |
-      | operateur | dupont      |
-      | poste     | fraiseuse-2 |
-    Given il est "2026-05-10T16:00:00Z"
-    And j'ai pointe sur "OF 48"
-      | type      | FIN         |
-      | operateur | dupont      |
-      | poste     | fraiseuse-2 |
-
-    Given il est "2026-05-11T06:00:00Z"
-    When je consulte le temps effectif de "OF 47"
-    Then le temps effectif contient
-      | poste.libelle | debut                | fin                  | presume |
-      | fraiseuse-1   | 2026-05-10T08:00:00Z | 2026-05-10T12:00:00Z | true    |
-      | fraiseuse-1   | 2026-05-10T13:00:00Z | 2026-05-10T16:00:00Z | true    |
-
-    # Le gestionnaire regularise le depart : le pointe remplace le presume.
-    Given il est "2026-05-11T09:15:00Z"
-    And j'ai regularise ma journee
-      | type           | DEPART               |
-      | dateDeSurvenue | 2026-05-10T17:00:00Z |
-    When je consulte le temps effectif de "OF 47"
-    Then le temps effectif contient
-      | poste.libelle | debut                | fin                  | presume |
-      | fraiseuse-1   | 2026-05-10T08:00:00Z | 2026-05-10T12:00:00Z | false   |
-      | fraiseuse-1   | 2026-05-10T13:00:00Z | 2026-05-10T17:00:00Z | false   |
-
-  Scenario: Une journee encore sous le seuil laisse le travail en cours
+  Scenario: Un travail sans fin reste en cours avant son echeance
     Given il est "2026-05-10T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 49"
       | type      | ORDRE_DE_FABRICATION |
       | reference | 2049                 |
     And j'ai engage l'element "OF 49" en atelier
-    And je suis arrive
-      | operateur | dupont |
     Given il est "2026-05-10T08:00:00Z"
     And j'ai pointe sur "OF 49"
       | type      | DEBUT       |
@@ -876,6 +798,33 @@ Feature: Suivi des elements engages en atelier
     Given il est "2026-05-10T19:00:00Z"
     When je consulte le temps effectif de "OF 49"
     Then le temps effectif contient
-      | poste.libelle | debut                | presume |
-      | fraiseuse-1   | 2026-05-10T08:00:00Z | false   |
+      | poste.libelle | debut                | finAutomatique |
+      | fraiseuse-1   | 2026-05-10T08:00:00Z | false          |
     And le temps effectif ne contient aucun intervalle ferme
+
+  Scenario: Releve d'un intervalle 08:00-10:00, sans prise de poste
+    # Aucune presence n'est requise : l'activite compte de son debut a sa fin, et rien d'autre ne la borne.
+    Given il est "2026-05-12T07:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 50"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 2050                 |
+    And j'ai engage l'element "OF 50" en atelier
+    Given il est "2026-05-12T08:00:00Z"
+    And j'ai pointe sur "OF 50"
+      | id        | 00000000-0000-0000-0000-0000000005f2 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
+    Given il est "2026-05-12T10:00:00Z"
+    And j'ai pointe sur "OF 50"
+      | id        | 00000000-0000-0000-0000-0000000005f3 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | cible     | 00000000-0000-0000-0000-0000000005f2 |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
+    When je consulte le temps effectif de "OF 50"
+    Then le temps effectif contient
+      | activite                             | debut                | fin                  | finAutomatique |
+      | 00000000-0000-0000-0000-0000000005f2 | 2026-05-12T08:00:00Z | 2026-05-12T10:00:00Z | false          |
