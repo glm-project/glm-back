@@ -109,6 +109,37 @@ class SynthesesDesHeuresServiceTest {
   }
 
   @Test
+  void shouldGarderLElementEnCoursALInstantChoisiAvecUneSeuleLectureServeur() {
+    AtomicInteger lectures = new AtomicInteger();
+    SynthesesDesHeuresService service = SynthesesDesHeuresService.builder()
+      .operateurs(REFERENTIEL)
+      .fuseau(() -> ZONE_PARIS)
+      .activites((operateur, debut, fin) ->
+        List.of(new ActiviteDElement(ELEMENT_ENGAGE_CARTER, travailOuvertA(Instant.parse("2026-05-10T20:00:00Z"))))
+      )
+      .journal((operateur, debut, fin) -> List.of())
+      .elements(REFERENTIEL_DES_ELEMENTS)
+      .postes(REFERENTIEL_DES_POSTES)
+      .clock(() -> lectures.getAndIncrement() == 0 ? Instant.parse("2026-05-11T09:00:05Z") : LE_MARDI_12_MAI_2026_A_10H);
+
+    SyntheseDesHeures synthese = service.synthese(
+      OPERATEUR_ID_DUPONT,
+      SEMAINE_20_DE_2026,
+      Optional.of(Instant.parse("2026-05-10T23:00:00Z"))
+    );
+
+    assertThat(lectures).hasValue(1);
+    assertThat(synthese.evaluation()).isEqualTo(Instant.parse("2026-05-10T23:00:00Z"));
+    assertThat(synthese.dureeOperationnelleTotale()).isZero();
+    assertThat(synthese.elements())
+      .singleElement()
+      .satisfies(element -> {
+        assertThat(element.element().id()).isEqualTo(ELEMENT_ID_CARTER);
+        assertThat(element.duree()).isZero();
+      });
+  }
+
+  @Test
   void shouldCompterEntierUnIntervalleTermineSansArrivee() {
     SyntheseDesHeures synthese = synthese(List.of(new ActiviteDElement(ELEMENT_ENGAGE_CARTER, travailDuCarterDe8HA10H())), List.of());
     assertThat(jourDe(synthese, LUNDI_11_MAI_2026).dureeOperationnelle()).isEqualTo(Duration.ofHours(2));

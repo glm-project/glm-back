@@ -18,6 +18,8 @@ import java.util.stream.Stream;
 /** Assemble les durees hebdomadaires depuis les activites interpretees et le journal brut d'atelier. */
 public final class SynthesesDesHeuresService {
 
+  private static final Duration TOLERANCE_FUTURE = Duration.ofMinutes(2);
+
   private static final Comparator<PointageDElement> PAR_ORDRE_DU_JOURNAL = Comparator.comparing(PointageDElement::dateDeSurvenue)
     .thenComparingInt(pointage -> pointage.intention().rangAHeureEgale())
     .thenComparing(PointageDElement::id);
@@ -63,13 +65,17 @@ public final class SynthesesDesHeuresService {
   public SyntheseDesHeures synthese(OperateurId operateur, SemaineCalendaire semaine, Optional<Instant> evaluationDemandee) {
     OperateurConnu connu = operateurs.get(operateur).orElseThrow(() -> new OperateurInconnuException(operateur));
     DecoupageCalendaire decoupage = new DecoupageCalendaire(semaine, fuseau.zone());
-    Instant maintenant = evaluationDemandee.orElseGet(clock::now);
+    Instant maintenant = clock.now();
+    Instant evaluation = evaluationDemandee.orElse(maintenant);
+    if (evaluation.isAfter(maintenant.plus(TOLERANCE_FUTURE))) {
+      throw new EvaluationFutureException(evaluation);
+    }
     List<ActiviteDElement> travail = activites.recouvrant(operateur, decoupage.debut(), decoupage.finExclusive());
     List<IntervalleDUnJour> intervalles = travail
       .stream()
       .map(ActiviteDElement::activite)
-      .map(activite -> activite.a(maintenant))
-      .flatMap(intervalle -> decoupage.intervalles(intervalle, maintenant).stream())
+      .map(activite -> activite.a(evaluation))
+      .flatMap(intervalle -> decoupage.intervalles(intervalle, evaluation).stream())
       .toList();
     List<JournalDElement> journaux = journal.dans(operateur, decoupage.debut(), decoupage.finExclusive());
     List<PointageDElement> pointagesDElement = journaux
@@ -82,7 +88,7 @@ public final class SynthesesDesHeuresService {
     return SyntheseDesHeures.builder()
       .operateur(connu)
       .semaine(semaine)
-      .evaluation(maintenant)
+      .evaluation(evaluation)
       .jours(jours(decoupage, intervalles, pointagesDElement))
       .elements(
         elementsDeLaSemaine(

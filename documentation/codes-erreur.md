@@ -144,6 +144,13 @@ segment de contexte, et lui seul, qui les distingue.
 | `operateur-introuvable` | 404    | operateur introuvable      | `OperateurInconnuException` |
 | `evaluation-future`     | 400    | instant d'evaluation futur | `EvaluationFutureException` |
 
+### `synthese-des-heures` — `urn:glm:erreur:synthese-des-heures:`
+
+| Code                    | Statut | `title`                    | Exception                   |
+| ----------------------- | ------ | -------------------------- | --------------------------- |
+| `operateur-introuvable` | 404    | operateur introuvable      | `OperateurInconnuException` |
+| `evaluation-future`     | 400    | instant d'evaluation futur | `EvaluationFutureException` |
+
 ## Ajouter une erreur
 
 1. Une constante dans l'`enum` du contexte — le nom est le code, choisi une fois pour toutes.

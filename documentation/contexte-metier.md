@@ -431,8 +431,9 @@ sur le début ne les retrouve toutes. La synthèse reçoit `evaluation` facultat
 utilisé pour l'expiration et le découpage des activités en cours. Sans paramètre, l'heure du serveur est relevée
 une seule fois. Le client transmet le même instant aux deux lectures pour composer le relevé.
 Les faits connus restent interprétés, même postérieurs à cet instant ; le contrat ne garantit ni lecture
-historique ni transaction commune face aux écritures concurrentes. Un instant fourni vide ou mal formé répond
-400, sans rapport.
+historique ni transaction commune face aux écritures concurrentes. Un instant passé est accepté. La borne
+future est l'heure du serveur plus deux minutes, incluse ; elle est vérifiée avec un seul relevé d'horloge.
+Un dépassement ou un instant fourni vide ou mal formé répond 400, sans rapport.
 
 Une fin réelle conserve sa borne, même régularisée au-delà de l'échéance. Sans elle, l'activité ne produit aucune
 durée avant son échéance et compte dès celle-ci jusqu'à sa fin automatique. Les décisions de relance, transition,

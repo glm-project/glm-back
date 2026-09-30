@@ -57,12 +57,16 @@ class SyntheseDesHeuresResource {
     La semaine est explicite et l'annee est celle des semaines ISO ; aucun montant n'est calcule.
     L'instant evaluation facultatif decide de l'expiration et des jours atteints par les activites en cours.
     Sans parametre, l'heure du serveur est relevee une seule fois. La reponse rend l'instant effectivement utilise.
+    Un instant passe est accepte. La borne future est l'heure du serveur plus deux minutes, incluse.
     Passer le meme instant a la feuille et a la synthese assure la meme decision d'expiration ; les faits connus
     restent lus, meme posterieurs a cet instant. Ce contrat ne garantit ni lecture historique ni transaction commune.
     """
   )
   @ApiResponse(responseCode = "200", description = "La synthese des heures de la semaine demandee.")
-  @ApiResponse(responseCode = "400", description = "Annee ou numero de semaine hors bornes, ou instant evaluation vide ou mal forme.")
+  @ApiResponse(
+    responseCode = "400",
+    description = "Annee ou numero de semaine hors bornes, ou instant evaluation vide, mal forme ou au-dela de l'heure du serveur plus deux minutes."
+  )
   @ApiResponse(responseCode = "404", description = "Operateur inconnu du referentiel.")
   RestSyntheseDesHeures get(
     @Parameter(description = "Identifiant de l'operateur dans le referentiel.") @PathVariable UUID operateurId,
@@ -73,7 +77,7 @@ class SyntheseDesHeuresResource {
       DERNIERE_SEMAINE
     ) int semaine,
     @Parameter(
-      description = "Instant ISO-8601 utilise pour evaluer les activites. Par defaut, heure du serveur.",
+      description = "Instant ISO-8601 utilise pour evaluer les activites. Par defaut, heure du serveur. Au plus deux minutes apres celle-ci, borne incluse.",
       schema = @Schema(type = "string", format = "date-time")
     ) @RequestParam(required = false) String evaluation
   ) {

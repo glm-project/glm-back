@@ -37,6 +37,28 @@ Feature: Synthese des heures hebdomadaire d'un operateur
       | pas-un-instant |
       |                |
 
+  Scenario: La synthese refuse le depassement minimal des deux minutes futures
+    Given il est "2026-05-11T21:00:05Z"
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026 avec evaluation "2026-05-11T21:02:05.000000001Z"
+    Then la reponse a le statut http 400
+    And la reponse porte le code d'erreur "urn:glm:erreur:synthese-des-heures:evaluation-future"
+    And la synthese des heures refusee ne porte aucun rapport
+
+  Scenario Outline: La synthese accepte un instant passe et la limite future incluse
+    Given il est "2026-05-11T21:00:05Z"
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026 avec evaluation "<evaluation>"
+    Then la reponse a le statut http 200
+    And la synthese des heures est evaluee a "<echo>"
+    And chaque jour de la synthese ne porte aucun pointage et une duree de "PT0S"
+    And la duree operationnelle totale de la semaine est "PT0S"
+
+    Examples:
+      | evaluation                     | echo                           |
+      | 2020-01-01T00:00:00Z           | 2020-01-01T00:00:00Z           |
+      | 2026-05-11T21:02:05Z           | 2026-05-11T21:02:05Z           |
+      | 2026-05-11T21:02:04.999999999Z | 2026-05-11T21:02:04.999999999Z |
+      | 2026-05-11T23:02:05+02:00      | 2026-05-11T21:02:05Z           |
+
   Scenario: Une fin coupe le travail, un debut le relance, et la coupure ne compte pas
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And "martin" enregistre "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:05:00Z"

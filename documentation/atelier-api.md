@@ -482,22 +482,22 @@ activité terminée automatiquement à son échéance, faute de fin réelle : `f
 régularisée par le gestionnaire remplace. `aResoudre: true` signale une activité d'une séquence en conflit : rendue
 telle quelle, sans `fin`, elle n'a aucune durée à compter tant que le gestionnaire n'a pas tranché.
 
-### Évaluer la feuille de temps
+### Évaluer le relevé des heures
 
-`GET /api/feuilles-de-temps/{operateurId}?annee=2026&semaine=20&evaluation=2026-05-11T20:59:59Z`
-accepte un instant ISO-8601 facultatif. Sans lui, l'heure du serveur est relevée une seule fois ; la réponse porte
-`evaluation`, l'instant effectivement utilisé pour l'expiration et les jours atteints par les activités en cours.
+```
+GET /api/feuilles-de-temps/{operateurId}?annee=2026&semaine=20&evaluation=2026-05-11T20:59:59Z
+GET /api/syntheses-des-heures/{operateurId}?annee=2026&semaine=20&evaluation=2026-05-11T20:59:59Z
+```
+
+Les deux lectures acceptent un instant ISO-8601 facultatif et rendent l'instant effectivement utilisé dans
+`evaluation`. Chaque lecture relève l'heure du serveur une seule fois : elle fournit l'instant par défaut et
+vérifie la borne future. Cet instant d'évaluation gouverne l'expiration et les jours atteints par les activités
+en cours. Passer le même instant à la feuille et à la synthèse assure la même décision d'expiration.
+
 Un instant passé est accepté, ainsi qu'un instant jusqu'à l'heure du serveur plus deux minutes, borne incluse.
-Au-delà, la réponse est 400 `evaluation-future`, sans rapport. Un instant fourni vide ou mal formé répond aussi 400.
-Les faits connus restent interprétés même postérieurs à cet instant : il ne s'agit pas d'une lecture historique. La semaine, le fuseau et les rôles de lecture gardent leurs règles.
-
-### Évaluer la synthèse des heures
-
-`GET /api/syntheses-des-heures/{operateurId}?annee=2026&semaine=20&evaluation=2026-05-11T20:59:59Z`
-reçoit aussi un instant ISO-8601 facultatif et rend l'instant effectivement utilisé dans `evaluation`.
-Sans paramètre, l'heure du serveur est relevée une seule fois. Un instant fourni vide ou mal formé répond 400.
-Passer le même instant à la feuille et à la synthèse assure la même décision d'expiration ; les faits connus
-restent interprétés même postérieurs à cet instant, sans lecture historique ni transaction commune garantie.
+Au-delà, la réponse est 400 `evaluation-future` dans le contexte de la lecture, sans rapport. Un instant fourni
+vide ou mal formé répond aussi 400. Les faits connus restent interprétés même postérieurs à cet instant, sans
+lecture historique ni transaction commune garantie. La semaine, le fuseau et les rôles de lecture gardent leurs règles.
 
 ### Présence
 
