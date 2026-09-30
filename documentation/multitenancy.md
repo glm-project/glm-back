@@ -40,6 +40,25 @@ par defaut. `TenantSchemasInitializer` rejoue `master.xml` **une fois par schema
 `databasechangelog`. Un `EntityManagerFactoryDependsOnPostProcessor` declare dans `DatabaseConfiguration`
 garantit que cette initialisation precede l'`EntityManagerFactory`.
 
+Le modele d'activites s'installe exclusivement sur un schema neuf, selon
+[l'ADR 0003](adr/0003-bootstrap-only-empty-tenant-schemas.md). Le premier changeset technique,
+`initialisation_schema_neuf`, precede toute DDL metier dans `2026/08/001-element_de_fabrication.xml`.
+A sa premiere execution, il exige que le `databasechangelog` de cette entreprise ne contienne aucune
+ligne ; la precondition arrete sur echec **et** erreur. La connexion brute de l'initialiseur reste en
+`public` : la requete qualifie donc le schema avec `${database.defaultSchemaName}`, configure par
+Liquibase pour chaque tenant.
+
+La garde est ensuite enregistree normalement dans cet historique. Au redemarrage, Liquibase la saute
+comme tout changeset deja execute : ni ses donnees ni son historique ne sont remis a zero. Une
+entreprise ajoutee passe sa propre premiere garde, independamment des autres entreprises deja installees.
+Un prefixe ancien non vide, meme arrete avant septembre `001` avec des checksums valides, est refuse
+avant toute nouvelle DDL metier. Un schema portant des tables metier sans historique echoue a la
+creation normale de ces tables ; aucune adoption n'est prevue.
+
+Ce bootstrap ne migre ni ne reinitialise une installation ancienne. Toute intervention sur une base,
+un volume ou un conteneur preexistant requiert l'autorisation de son proprietaire sur la ressource et
+la commande exactes.
+
 ## Ou sont declarees les entreprises
 
 Le **mecanisme** est du code de production : la liaison `application.multitenancy`, la resolution du
@@ -82,7 +101,7 @@ L'identifiant et le schema doivent respecter `^[a-z][a-z0-9_]{0,62}$`.
 
 2. Donner l'attribut `tenant` aux utilisateurs de cette entreprise dans Keycloak (valeur = l'`id`
    declare ci-dessus).
-3. Redemarrer l'application : le schema est cree et migre au demarrage.
+3. Redemarrer l'application : le schema neuf passe sa garde et est installe au demarrage.
 
 ## Utilisateurs de developpement
 
@@ -135,6 +154,15 @@ grant sur le client depuis la console d'administration.
   `TransactionTemplate` **dans** le corps du test.
 - Cote Cucumber, le token factice a la forme `base64("<username>|<roles>|<tenant>")` ; le step a deux
   arguments retombe sur `impeccmold`.
+
+`FreshActivitySchemaIT` possede trois PostgreSQL Testcontainers neufs et non reutilises, distincts de
+la datasource des autres IT. Il demarre la vraie application, son initialiseur et ses mappings JPA
+avec `ddl-auto=none` : deux entreprises, redemarrage sans modification, puis une troisieme neuve. Les
+catalogues, contraintes, index, journaux, projections et lecteurs reels sont controles par tenant.
+Un autre conteneur installe un prefixe historique valide depuis une fixture de test controlee ; son
+refus laisse catalogue et historique inchanges, ainsi que les donnees d'un tenant voisin deja neuf.
+Le dernier cas prouve le refus d'adopter des tables metier sans historique. Ces tests ne touchent
+aucune base, aucun volume ni conteneur preexistant.
 
 ## Passage en production : decisions restant a prendre
 

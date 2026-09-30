@@ -14,8 +14,9 @@
       l'activite, celle de son pointage ouvrant d'origine ; ouverture_id, le pointage actif qui la porte.
 
       La colonne suivi_d_atelier.etat disparait : un etat juge sans instant deviendrait faux treize heures apres la
-      derniere ecriture. Le filtre de l'ecran d'atelier se juge desormais sur cette table, a l'instant de lecture. Une
-      base qui porte deja des suivis n'a pas ses activites projetees et se remet a zero plutot que de migrer.
+      derniere ecriture. Le filtre de l'ecran d'atelier se juge desormais sur cette table, a l'instant de lecture.
+      La garde de bootstrap refuse une base qui porte deja un historique avant toute DDL metier ; ce changeset
+      installe un schema neuf.
     </comment>
 
     <createTable tableName="activite_d_atelier">

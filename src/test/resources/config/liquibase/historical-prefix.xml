@@ -1,19 +1,12 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <databaseChangeLog
+  logicalFilePath="config/liquibase/changelog/2026/08/001-element_de_fabrication.xml"
   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
 >
-  <changeSet id="initialisation_schema_neuf" author="glm">
-    <preConditions onFail="HALT" onError="HALT">
-      <sqlCheck expectedResult="0">SELECT count(*) FROM "${database.defaultSchemaName}".databasechangelog</sqlCheck>
-    </preConditions>
-    <comment>
-      Garde de premiere installation par entreprise, avant toute DDL metier. L'historique du schema en migration
-      doit etre vide ; le succes est enregistre normalement et n'est pas reexecute au redemarrage. ADR 0003.
-    </comment>
-    <sql>SELECT 1</sql>
-  </changeSet>
+  <property name="uuidType" value="uuid" />
+  <property name="datetimeType" value="datetime" />
 
   <changeSet id="element_de_fabrication" author="glm">
     <comment>

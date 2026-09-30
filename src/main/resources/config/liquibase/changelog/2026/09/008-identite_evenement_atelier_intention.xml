@@ -8,7 +8,7 @@
     <comment>
       L'empreinte d'un geste d'atelier retient aussi son intention et l'activite qu'il vise : un meme identifiant
       rejoue avec une autre intention ou une autre cible n'est pas le meme geste. Les deux colonnes restent vides pour
-      la presence et pour une identite reservee hors pupitre, qui n'en ont pas. activite_visee_id n'est pas le suivi,
+      une identite reservee hors pupitre, qui n'en a pas. activite_visee_id n'est pas le suivi,
       que cible_id designe.
     </comment>
 

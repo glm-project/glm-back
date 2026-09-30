@@ -731,7 +731,7 @@
         "type" : "object"
       },
       "RestEvenementDAtelier" : {
-        "description" : "Un evenement du journal d'un element engage.\n\nComme pour la presence, l'horodatage est bitemporel. Le depart de l'operateur **ne figure jamais ici** : c'est un\nfait de sa journee de travail, croise a la lecture. Sa pause, elle, s'y lit : une fin, puis un debut a la reprise.\n",
+        "description" : "Un evenement du journal d'un element engage.\n\nL'horodatage est bitemporel : heure du fait et heure de son enregistrement. Une pause s'y lit par une fin\nciblee, puis une ouverture a la reprise.\n",
         "properties" : {
           "activite" : {
             "description" : "Identite de l'activite qu'ouvre une ouverture ou une transition, absente pour une fin. C'est l'identifiant du\npointage ouvrant d'origine : le remplacant d'une correction garde celle de l'ouvrant qu'il corrige. C'est elle\nqu'une transition ou une fin vise dans `cible`.\n",
@@ -2147,7 +2147,7 @@
     },
     "/api/atelier/suivis/{id}/pointages" : {
       "post" : {
-        "description" : "Le geste de l'operateur, date a l'instant present.\n\nSon intention dit ce qu'il fait d'une activite : OUVERTURE en cree une, TRANSITION remplace l'activite visee par une\nactivite de l'autre categorie, FIN termine l'activite visee. La transition et la fin designent leur cible par\nl'identifiant du pointage ouvrant de l'activite.\n\nNe jamais pointer ici un depart : c'est un fait de la journee de travail de l'operateur, ecrit une seule fois via\nPOST /api/atelier/journees/pointages. Une pause, elle, se pointe ici : une fin par activite en cours, puis une\nouverture, en debut ou en non conformite, a la reprise.\n",
+        "description" : "Le geste de l'operateur, date a l'instant present.\n\nSon intention dit ce qu'il fait d'une activite : OUVERTURE en cree une, TRANSITION remplace l'activite visee par une\nactivite de l'autre categorie, FIN termine l'activite visee. La transition et la fin designent leur cible par\nl'identifiant du pointage ouvrant de l'activite.\n\nUne pause se pointe par une fin ciblee pour chaque activite en cours, puis une ouverture, en debut ou en non\nconformite, a la reprise.\n",
         "operationId" : "pointe",
         "parameters" : [ {
           "in" : "path",

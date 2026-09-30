@@ -27,10 +27,6 @@
       insert into identite_evenement_atelier (id, rejouable)
       select id, false from evenement_d_atelier
       on conflict (id) do nothing;
-
-      insert into identite_evenement_atelier (id, rejouable)
-      select id, false from evenement_de_presence
-      on conflict (id) do nothing;
     </sql>
   </changeSet>
 </databaseChangeLog>

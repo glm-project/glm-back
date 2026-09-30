@@ -17,8 +17,8 @@ import java.util.UUID;
   description = """
   Un evenement du journal d'un element engage.
 
-  Comme pour la presence, l'horodatage est bitemporel. Le depart de l'operateur **ne figure jamais ici** : c'est un
-  fait de sa journee de travail, croise a la lecture. Sa pause, elle, s'y lit : une fin, puis un debut a la reprise.
+  L'horodatage est bitemporel : heure du fait et heure de son enregistrement. Une pause s'y lit par une fin
+  ciblee, puis une ouverture a la reprise.
   """
 )
 record RestEvenementDAtelier(

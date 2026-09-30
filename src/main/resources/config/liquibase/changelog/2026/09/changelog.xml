@@ -5,10 +5,6 @@
   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
 >
   <include file="001-identite_evenement_atelier.xml" relativeToChangelogFile="true" />
-  <include file="002-parametrage.xml" relativeToChangelogFile="true" />
-  <include file="003-journee_dernier_fait.xml" relativeToChangelogFile="true" />
-  <include file="004-journee_amplitude.xml" relativeToChangelogFile="true" />
-  <include file="005-suppression_evenements_de_pause.xml" relativeToChangelogFile="true" />
   <include file="006-evenement_d_atelier_origine.xml" relativeToChangelogFile="true" />
   <include file="007-evenement_d_atelier_intention.xml" relativeToChangelogFile="true" />
   <include file="008-identite_evenement_atelier_intention.xml" relativeToChangelogFile="true" />

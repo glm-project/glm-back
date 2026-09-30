@@ -144,9 +144,8 @@ class SuiviDAtelierResource {
     activite de l'autre categorie, FIN termine l'activite visee. La transition et la fin designent leur cible par
     l'identifiant du pointage ouvrant de l'activite.
 
-    Ne jamais pointer ici un depart : c'est un fait de la journee de travail de l'operateur, ecrit une seule fois via
-    POST /api/atelier/journees/pointages. Une pause, elle, se pointe ici : une fin par activite en cours, puis une
-    ouverture, en debut ou en non conformite, a la reprise.
+    Une pause se pointe par une fin ciblee pour chaque activite en cours, puis une ouverture, en debut ou en non
+    conformite, a la reprise.
     """
   )
   @ApiResponse(

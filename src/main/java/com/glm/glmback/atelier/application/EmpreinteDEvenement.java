@@ -9,8 +9,8 @@ import java.util.UUID;
  * Le contenu stable d'un geste du pupitre, independant de l'etat courant des agregats.
  *
  * <p>
- * Le suivi, l'intention et l'activite visee sont ceux d'un pointage d'element ; la presence n'en a pas. Un meme
- * identifiant rejoue avec une autre intention ou une autre cible n'est donc pas le meme geste.
+ * Le suivi, l'intention et l'activite visee designent le geste d'activite. Un meme identifiant rejoue avec une
+ * autre intention ou une autre cible n'est donc pas le meme geste.
  * </p>
  */
 public record EmpreinteDEvenement(

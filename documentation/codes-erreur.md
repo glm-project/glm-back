@@ -153,15 +153,8 @@ segment de contexte, et lui seul, qui les distingue.
 4. Une ligne dans le catalogue ci-dessus. Celle-là, aucun test ne la réclame : le catalogue est tenu à la main, et
    c'est la seule pièce du contrat qui puisse se démoder en silence.
 
-`journee-de-travail-deja-ouverte` ne sort plus d'une arrivée : depuis le lot 3 de
-[strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md), une arrivée redondante est absorbée
-et une journée abandonnée en fait ouvrir une nouvelle. Le code reste publié pour le seul cas d'une identité de journée
-créée deux fois. `chevauchement-de-journees` ne répond qu'aux actes du gestionnaire (régularisation, correction).
-
-Depuis le lot 8a, les routes de pointage n'émettent plus `aucune-journee-de-travail-en-cours` que pour un geste rejoué
-dans une journée déjà fermée, ni `transition-de-presence-interdite` que pour un geste de présence rejoué dans le
-désordre. Ces deux refus restent définitifs, comme
-`activite-visee-introuvable`, `activite-visee-incoherente`, `operateur-introuvable`,
+Les refus des anciennes routes de presence sont retires avec ces routes. Les refus definitifs des gestes
+d'activite restent `activite-visee-introuvable`, `activite-visee-incoherente`, `operateur-introuvable`,
 `poste-de-travail-introuvable`, `suivi-d-atelier-introuvable`, `identifiant-evenement-reutilise`,
 `operateur-non-habilite`, `evenement-anterieur-a-l-engagement` et `date-de-survenue-future` (lots 8b et 8c abandonnés). `suivi-d-atelier-cloture` n'y sort
 plus que pour un démarrage ou une non conformité — la seule erreur à afficher à l'opérateur. `saisie-concurrente`

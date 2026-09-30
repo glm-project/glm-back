@@ -10,8 +10,8 @@
       activite_id porte l'identite de l'activite qu'ouvre une ouverture ou une transition : l'id de ce pointage, ou
       celle de l'ouvrant corrige pour le remplacant d'une correction. activite_visee_id porte l'activite que vise une
       transition ou une fin ; ce n'est pas le suivi, que identite_evenement_atelier.cible_id designe. Aucune valeur par
-      defaut n'est posee, l'intention d'un fait deja enregistre ne se deduisant pas de son type : une base qui en porte
-      deja se remet a zero plutot que de migrer.
+      defaut n'est posee, l'intention d'un fait deja enregistre ne se deduisant pas de son type : la garde de bootstrap refuse un
+      historique anterieur avant toute DDL metier.
     </comment>
 
     <addColumn tableName="evenement_d_atelier">
