@@ -7,8 +7,8 @@ import java.util.List;
  * Le temps reellement passe sur un element : les intervalles de ses activites, tels que le journal les interprete.
  *
  * <p>
- * Aucune presence ne les borne. Une activite que rien n'a terminee se termine automatiquement a son echeance, son debut
- * plus 13 heures, avec une anomalie ; une fin pointee ou regularisee la termine a son heure. La pause de midi se lit
+ * Une activite que rien n'a terminee se termine automatiquement a son echeance, son debut plus 13 heures, avec une
+ * anomalie ; une fin pointee ou regularisee la termine a son heure. La pause de midi se lit
  * dans le journal de l'element, ou le pupitre l'a pointee par une fin et un debut.
  * </p>
  *

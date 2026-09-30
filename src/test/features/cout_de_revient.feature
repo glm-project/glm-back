@@ -79,8 +79,7 @@ Feature: Cout de revient d'un element de fabrication
       | Fraisage | PT2H    | PT0S          | 90.00   | 40.00       |
 
   Scenario: Un ordre relance le lendemain valorise les deux journees, sans la nuit
-    # E2 de la strategie « bornes de fin de journee » : sans relance, le debut de mardi serait refuse et la fin de
-    # mardi refermerait l'intervalle de lundi. Le rapport ne vaudrait pas trois heures.
+    # Les deux activites ont chacune leurs faits ouvrant et fermant : le rapport valorise deux heures lundi et une mardi.
     Given l'entreprise fabrique "OF 3011"
     And "OF 3011" est mis en atelier a "2026-05-11T07:00:00Z"
     And "dupont" pointe "DEBUT" sur "OF 3011" au poste "fraiseuse" a "2026-05-11T09:00:00Z"

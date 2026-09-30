@@ -12,8 +12,7 @@ import java.util.UUID;
   description = """
   Du temps passe sur un element, deduit du journal et jamais stocke, tel qu'il se lit a l'instant de la lecture.
 
-  C'est l'intervalle de l'activite elle-meme, sans aucune presence pour le borner : une fin pointee ou regularisee le
-  termine a son heure. Une activite que rien n'a terminee avant son echeance, son debut plus 13 heures, y est terminee
+  C'est l'intervalle de l'activite elle-meme : une fin pointee ou regularisee le termine a son heure. Une activite que rien n'a terminee avant son echeance, son debut plus 13 heures, y est terminee
   automatiquement a cette echeance, avec une anomalie.
   """
 )

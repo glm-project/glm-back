@@ -115,7 +115,7 @@ class JpaIdentitesDEvenementsIT {
 
   private SuiviDAtelier prepareActiviteOuverte() {
     var debut = debutSansPosteParDupontA(LE_10_MAI_2026_A_8H);
-    // La fiche et le fait ouvrant portent la meme identite, sans arrivee ni poste.
+    // La fiche et le fait ouvrant portent la meme identite d'operateur ; le poste est facultatif.
     var fiche = OperateursFixture.operateurDeRejeuSansPoste(new com.glm.glmback.operateur.domain.OperateurId(OPERATEUR_ID_DUPONT.uuid()));
     inTransaction(() -> operateurs.create(fiche));
     return inTransaction(() -> suivis.create(suiviDAtelierEngage().enregistre(debut)));

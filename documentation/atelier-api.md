@@ -118,7 +118,7 @@ l'intérêt de les conserver.
 La pause n'existe pas pour le serveur ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)).
 Le pupitre envoie une fin par activité actionnable, avec sa cible ; la reprise ouvre une nouvelle activité en
 `DEBUT`, ou en `NON_CONFORMITE` pour celle qui l'était, sur le même poste. La nouvelle ouverture ne vise pas
-l'activité d'avant la pause. Les journées, arrivées, départs et anomalies de présence ne sont plus servis.
+l'activité d'avant la pause. La mémoire de reprise est locale au pupitre.
 
 ### Une activité oubliée se termine automatiquement à son échéance
 
@@ -251,8 +251,8 @@ le journal ; ce changement allège la réponse HTTP et le cache du pupitre, pas 
 
 Le journal complet, **événements annulés compris**, se lit via `GET /api/atelier/suivis/{id}`, qui conserve
 `RestSuiviDAtelier`, comme les réponses des actes métier. Un consommateur qui lisait le journal dans la liste doit
-migrer vers le détail. Côté `glm-front`, synchroniser le contrat avec `npm run api:sync && npm run api:types` ;
-la réévaluation de la limite de pagination de la grille reste un suivi côté front.
+utiliser le détail. Côté `glm-front`, générer le contrat depuis la révision backend épinglée avec
+`npm run api:generate`, conformément à son guide API. La limite de pagination de la grille reste un suivi côté front.
 
 Chaque geste d’activité du pupitre porte un `id` UUID créé une fois par le front, et son
 intention. Il peut aussi porter `dateDeSurvenue`, l'heure réelle conservée quand le pupitre a été hors ligne.
@@ -272,13 +272,11 @@ POST /api/atelier/suivis/{id}/pointages    { "id": "<uuid C>", "type": "FIN", "i
   reste refusé (`409 suivi-d-atelier-cloture`) : c'est le seul refus à afficher à l'opérateur, « OF clôturé, vous ne
   pouvez plus pointer dessus ».
 - **Deux saisies simultanées ne sont plus un refus** : le serveur rejoue lui-même l'écriture devancée.
-- **Un geste reçu pour une journée abandonnée ouvre une nouvelle journée** (`201`) : une arrivée implicite à l'heure
-  du geste, sous un identifiant du serveur, puis le geste. Un départ tardif donne une journée de durée nulle. Le seuil se juge sur l'heure du geste (`dateDeSurvenue`), pas sur sa réception.
 - **Une reprise du travail après non conformité se pointe `DEBUT`, en transition** qui vise la non conformité. Il
   n'existe pas de type « reprise ». Ce qui change, c'est la `categorie` de l'activité ouverte, `TRAVAIL`.
 - **Une ouverture sur une activité déjà en cours la relance** au lieu d'être refusée : la période précédente s'arrête
-  à l'heure du geste, une nouvelle commence. L'opérateur qui revient sur un élément resté ouvert la veille n'est jamais
-  bloqué, et un double appui n'ajoute aucun temps.
+  à l'heure du geste si elle précède son échéance ; après, la fin automatique et le trou jusqu’à la nouvelle
+  ouverture sont conservés. Une transition ciblée de même catégorie met la séquence en conflit.
 - **À heure métier égale**, le journal range la fin, puis la transition, puis l'ouverture, et départage enfin par
   l'identifiant : jamais par l'heure de réception.
 - `poste` est **toujours facultatif**, comme la `nature`. Une entreprise sans parc machine les laisse vides et doit
@@ -436,8 +434,8 @@ introuvable ou d'un autre poste, habilitation, événement antérieur à l'engag
 GET /api/atelier/suivis/{id}/temps-effectif
 ```
 
-Rend les intervalles des activités de l'élément, tels que le journal les interprète : **aucune présence ne les
-borne**, et un départ ne termine rien. La pause de midi, pointée par un `FIN` et un `DEBUT`, en produit deux. Un
+Rend les intervalles des activités de l’élément, bornés par les faits d’activité, la clôture et leur échéance.
+La pause de midi, pointée par un `FIN` ciblé puis une ouverture `DEBUT`, en produit deux. Un
 intervalle sans `fin` est encore en cours — c'est un affichage « depuis 8 h 00 », pas une donnée manquante — sauf s'il
 est à résoudre.
 

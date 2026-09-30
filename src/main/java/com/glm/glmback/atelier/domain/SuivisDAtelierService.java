@@ -94,7 +94,7 @@ public final class SuivisDAtelierService {
   /**
    * Un pointage d'atelier n'est jamais refuse a l'operateur parce qu'il contredit le journal : il est conserve, et sa
    * sequence est en conflit. Demarrer ou pointer une non conformite sur un OF cloture, qui n'est plus pointable, reste
-   * refuse (lot 8a de la strategie « bornes de fin de journee »), comme un operateur ou un poste inconnu, et comme un
+   * refuse, comme un operateur ou un poste inconnu, et comme un
    * geste qui vise une activite introuvable dans ce suivi ou d'une autre cle que la sienne.
    *
    * <p>

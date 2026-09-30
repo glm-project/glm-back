@@ -24,8 +24,7 @@ class TempsDAtelierServiceTest {
   }
 
   /**
-   * Releve d'un intervalle 08:00-10:00 : l'activite compte entre sa fin et son debut, sans qu'aucune presence ne soit
-   * requise.
+   * Releve d'un intervalle 08:00-10:00 : l'activite compte entre son debut et sa fin.
    */
   @Test
   void shouldRendreLIntervalleDUneActiviteTermineeSansAucunePresence() {
@@ -80,8 +79,8 @@ class TempsDAtelierServiceTest {
   }
 
   /**
-   * Dupont part lundi sans rien pointer : lu mardi, le travail repris a 13 h n'est borne par aucun depart. Il se termine
-   * automatiquement a son echeance, 13 heures apres son debut, avec son anomalie.
+   * Le travail repris lundi a 13 h reste sans fin pointee : lu mardi, il est termine automatiquement a son echeance,
+   * 13 heures apres son debut, avec son anomalie.
    */
   @Test
   void shouldTerminerAutomatiquementASonEcheanceUnTravailJamaisArrete() {

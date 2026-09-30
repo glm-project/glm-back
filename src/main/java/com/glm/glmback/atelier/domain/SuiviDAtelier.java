@@ -21,8 +21,8 @@ import java.util.Optional;
  * </p>
  *
  * <p>
- * Ses intervalles sont le temps effectif de l'element, que rend {@link TempsDAtelierService} : aucune presence ne les
- * borne.
+ * Ses intervalles sont le temps effectif de l'element, que rend {@link TempsDAtelierService} : chaque activite est
+ * bornee par ses faits et son echeance.
  * </p>
  */
 public record SuiviDAtelier(

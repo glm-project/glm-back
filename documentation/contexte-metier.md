@@ -23,7 +23,7 @@ Le repository et le compteur sont persistés en PostgreSQL, dans le schéma de l
 ### Points ouverts
 
 1. **Relation produit ↔ ordre de fabrication.** Le client décrit un enchaînement (« ce moule neuf, une fois testé, s'il y a une opération à faire dessus, ça se transforme en OF ») mais ne demande jamais le lien, et l'imposer exclurait les modifications sur des produits antérieurs à l'application. Le jour où ce lien sera ajouté, il ne concernera que les ordres de fabrication : les deux types cesseront de ne différer que par leur valeur, ce qui rouvrira la question de scinder l'agrégat unique — aujourd'hui justifié précisément parce qu'ils ne diffèrent par aucun champ.
-2. **Suppression.** Le client ne parle jamais de supprimer, seulement de clôturer. Dès que les temps seront saisis, la suppression d'un élément qui en porte devra être interdite : elle détruirait des heures de paie.
+2. **Suppression.** Le client ne parle jamais de supprimer, seulement de clôturer. Dès que les temps seront saisis, la suppression d'un élément qui en porte devra être interdite : elle empêcherait de relire les faits et leurs coûts.
 3. **Numérotation et préfixes.** Les préfixes sont figés pour toutes les entreprises, ce qui contredit la cible multi-clients. L'année et le reset annuel du format `PRD-2026-000001` n'ont par ailleurs aucune source client, alors que des ordres de fabrication durant plusieurs mois traversent les millésimes.
 4. **Critère de lecture.** `ElementDeFabricationCriteria` ne filtre que par période de création et la liste est paginée. Aucun écran décrit par le client ne filtre ainsi ; le seul critère cité est « actifs seulement ». Côté atelier, ce point est traité — la période y est devenue facultative.
 
@@ -32,7 +32,7 @@ Le repository et le compteur sont persistés en PostgreSQL, dans le schéma de l
 Gère l'exécution en atelier de ce que `elementdefabrication` a déclaré. Le gestionnaire y met un élément en atelier, les opérateurs y pointent leurs activités, le gestionnaire clôture et corrige.
 
 Le contexte porte le `SuiviDAtelier` d'un élément engagé et son journal d'activité. Les temps se lisent dans
-ses activités interprétées. Il ne possède plus de journée de travail, d'arrivée, de départ ni d'amplitude.
+ses activités interprétées, avec leurs bornes, leur échéance et les séquences en conflit.
 
 **Le journal d'événements est la source de vérité.** L'agrégat se reconstruit par le repli du journal, trié par date de survenue ; les projections d'activités et de conflits sont réconciliées à chaque écriture pour les lectures. C'est la correction qui l'impose — un temps juste exige que la saisie oubliée compte à l'heure où elle a eu lieu, pas à l'heure où on la rattrape, et un modèle à compteurs ne sait pas revenir en arrière. Chaque événement porte donc un `Horodatage` bitemporel : sa date de survenue, métier, et sa date d'enregistrement, technique.
 
@@ -49,7 +49,7 @@ Ce travail fera l'objet d'une spécification séparée.
 
 ### Le temps effectif, celui des seules activités
 
-`TempsDAtelierService.tempsEffectif` rend les intervalles des activités d'un élément, tels que le journal les interprète (`SuiviDAtelier.intervalles`), à l'instant d'évaluation. **Aucune présence ne les borne** : un départ ne termine rien, et aucune fin de journée n'est présumée. Une activité se termine à sa fin réelle — un geste qui la termine, ou la clôture —, sinon automatiquement à son échéance, avec une anomalie (voir ci-dessous).
+`TempsDAtelierService.tempsEffectif` rend les intervalles des activités d'un élément, tels que le journal les interprète (`SuiviDAtelier.intervalles`), à l'instant d'évaluation. Une activité se termine à sa fin réelle — un geste qui la termine, ou la clôture —, sinon automatiquement à son échéance, avec une anomalie (voir ci-dessous).
 
 La route rend l'identité stable de chaque activité et ses bornes : une activité en cours ou à résoudre reste sans
 fin ni durée à comptabiliser ; `finAutomatique` signale l'anomalie d'une activité terminée à son échéance,
@@ -184,23 +184,20 @@ L'API est décrite par OpenAPI (`/swagger-ui.html`) et par [atelier-api.md](atel
 ### Points ouverts
 
 1. **Régulariser après une dé-habilitation est refusé.** L'habilitation étant vérifiée sur les trois écritures du journal, un gestionnaire ne peut plus rattraper une saisie oubliée sur un poste dont l'opérateur a été retiré depuis. Le cas est assumé pour ce lot — il ferme la porte au contournement —, mais il empêcherait le rattrapage des activités concernées : à rouvrir si le client le rencontre.
-2. **La présence et la paie sont hors produit.** Les arrivées, départs, journées et amplitudes sont retirés ; seuls les faits d’activité alimentent les relevés.
-3. **Le coût de revient monétaire est sorti du contexte** : `coutderevient` lit les activités projetées par
+2. **Le coût de revient monétaire est sorti du contexte** : `coutderevient` lit les activités projetées par
    atelier et les tarifs du fait ouvrant actif, par ses propres ports en lecture seule. `atelier` capture ces
    tarifs ; le coût les combine. Reste ouvert le **coût par période** (par opérateur, par poste, par mois), qui
    n'a pas de demande client formulée. Le partage suit le verbatim client : taux humain divisé par postes
    distincts occupés par les activités terminées, coût machine entier.
-4. **La pause, la reprise et l'arrêt global appartiennent au pupitre.** La pause termine les activités
+3. **La pause, la reprise et l'arrêt global appartiennent au pupitre.** La pause termine les activités
    actionnables et mémorise celles à reprendre ; la reprise ouvre de nouvelles activités. L'arrêt global termine
    les activités encore actionnables et efface durablement la mémoire de reprise. Le serveur reçoit les gestes
    d'activité correspondants ; les activités en conflit ou expirées sont exclues de ces commandes. Voir
    l'[ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md) pour la frontière serveur/pupitre.
-5. **La déclaration du travail non facturable.** Le client veut son bouton GLM, placé en bas de l'écran, pour déclarer à la main le travail qu'il ne facture pas. Rien ne le modélise encore : le mode de déclaration, le rattachement éventuel à un projet interne et la coexistence avec d'autres activités feront l'objet d'une spec à part.
-6. **Le cycle de vie de l'élément lui-même.** La clôture existe côté atelier, sur le suivi. Reste à trancher si l'élément de fabrication porte en propre un statut, ou si son activité se lit entièrement par la présence ou l'absence d'un suivi non clôturé.
-7. **Aucune garde d'unicité en base** sur « un seul suivi non clôturé par élément », contrairement à ce que `elementdefabrication` fait pour la `Reference`. La règle vit dans le service, mais une contrainte partielle transformerait en 500 un état que le domaine admet aujourd'hui : rouvrir la clôture d'un suivi dont l'élément a été réengagé depuis. À trancher côté domaine avant de poser la contrainte.
-8. **L'écriture du journal rapproche par identifiant**, ce qui coûte une lecture indexée de la collection à chaque pointage. Si un journal devenait assez long pour que cette lecture pèse, la sortie est un upsert natif gardé (`on conflict (id) do update ... where ... is distinct from ...`), qui épargne à PostgreSQL toute version de tuple sur les lignes inchangées — au prix d'une scission permanente entre lecture JPA et écriture JDBC.
-9. **Le retrait des surfaces de présence est effectif.** Le paramétrage d'amplitude est également retiré ;
-   la réconciliation globale du [guide historique](strategie/bornes-de-fin-de-journee.md) reste au lot documentaire.
+4. **La déclaration du travail non facturable.** Le client veut son bouton GLM, placé en bas de l'écran, pour déclarer à la main le travail qu'il ne facture pas. Rien ne le modélise encore : le mode de déclaration, le rattachement éventuel à un projet interne et la coexistence avec d'autres activités feront l'objet d'une spec à part.
+5. **Le cycle de vie de l'élément lui-même.** La clôture existe côté atelier, sur le suivi. Reste à trancher si l'élément de fabrication porte en propre un statut, ou si son activité se lit entièrement par la présence ou l'absence d'un suivi non clôturé.
+6. **Aucune garde d'unicité en base** sur « un seul suivi non clôturé par élément », contrairement à ce que `elementdefabrication` fait pour la `Reference`. La règle vit dans le service, mais une contrainte partielle transformerait en 500 un état que le domaine admet aujourd'hui : rouvrir la clôture d'un suivi dont l'élément a été réengagé depuis. À trancher côté domaine avant de poser la contrainte.
+7. **L'écriture du journal rapproche par identifiant**, ce qui coûte une lecture indexée de la collection à chaque pointage. Si un journal devenait assez long pour que cette lecture pèse, la sortie est un upsert natif gardé (`on conflict (id) do update ... where ... is distinct from ...`), qui épargne à PostgreSQL toute version de tuple sur les lignes inchangées — au prix d'une scission permanente entre lecture JPA et écriture JDBC.
 
 ## postedetravail
 
@@ -247,7 +244,7 @@ L'identité (nom, prénom) est **unique par entreprise**. Le **matricule** est l
 1. **Les gestionnaires ne sont pas déclarés.** Leur fiche n'aurait aucun usage tant que l'authentification n'est pas tranchée : l'`Auteur` d'une saisie vient du jeton, pas d'un référentiel. À rouvrir avec ce sujet.
 2. **Aucun plafond sur le nombre de postes par personne**, alors que le client énonce « maximum 4 machines par personne ». Une donnée de paramétrage ne s'écrit pas en constante du domaine, et GLM est une trame : une autre entreprise en habilitera six. Si le plafond doit être tenu, il viendra d'un port.
 3. **Montants.** Coût horaire du poste et taux horaire de l'opérateur existent sur les deux agrégats (facultatifs, strictement positifs), `atelier` les copie sur chaque événement du journal au moment de la saisie, et `coutderevient` les valorise. La boucle est fermée : un opérateur sans taux horaire ne coûte rien en main d'œuvre, et le rapport ne l'invente pas.
-4. **Utilisateur connecté.** Tranché sur le principe, dans [strategie/authentification-pointage.md](strategie/authentification-pointage.md) : le pupitre porte une **identité d'appareil** et aucune session humaine, l'opérateur est **identifié** au geste — par un code, qui désigne sans prouver, ou par une signature, qui prouve. L'`Auteur` du jeton cessant dès lors de désigner une personne, c'est la **qualité de l'identification** portée par l'événement qui vaudra pour la paie, et c'est elle qui rouvrira `estSaisiParUnTiers`. Restent ouverts le régime du code — ouvert à tous ou réservé à l'exception —, le matériel des pupitres, et la validation juridique de l'empreinte.
+4. **Utilisateur connecté.** La réflexion de principe dans [strategie/authentification-pointage.md](strategie/authentification-pointage.md) distingue l’**identité d’appareil** du pupitre et l’**identification** de l’opérateur au geste — par un code, qui désigne sans prouver, ou par une signature, qui prouve. L'`Auteur` du jeton cessant dès lors de désigner une personne, c'est la **qualité de l'identification** portée par l'événement qui permettra l’audit, et c’est elle qui rouvrira `estSaisiParUnTiers`. Restent ouverts le régime du code — ouvert à tous ou réservé à l'exception —, le matériel des pupitres, et la validation juridique de l'empreinte.
 
 ## feuilledetemps
 
@@ -259,7 +256,9 @@ jour_ — à partir des activités interprétées par `atelier`.
 
 `atelier` manipule des instants et s'interdit le calendrier : aucun `ZoneId` ni `LocalDate` n'entre dans ce
 contexte. La feuille ramène les activités aux jours de l'entreprise et aux semaines ISO. Une équipe de nuit
-compte sur deux jours, et une activité du dimanche peut recouvrir le lundi de la semaine suivante.
+compte sur deux jours, et une activité du dimanche peut recouvrir le lundi de la semaine suivante. Minuit
+répartit au calendrier sans créer de geste ni de fin métier : une activité terminée de 20 h à 8 h donne
+4 h puis 8 h. Les indications en cours et les plages possibles à résoudre gardent leurs règles ci-dessous.
 
 ### La lecture passe par la base, jamais par un import
 
@@ -308,7 +307,7 @@ ainsi le conflit commencé dimanche, même si une régularisation étend sa plag
 
 La feuille nomme l'élément, jamais le suivi : un élément réengagé après clôture reste le même élément. Ni libellé
 de poste ni fiche d'élément ici — la synthèse des heures les porte. Les activités sont triées par début de portion,
-élément puis identité stable. Le contrat de la feuille ne porte aucune présence ni temps présumé.
+élément puis identité stable.
 
 ### Points ouverts
 
@@ -411,7 +410,8 @@ possèdent leurs modèles et leurs adapters ; leurs scénarios Cucumber partagen
 
 Sept jours toujours, du lundi au dimanche de la semaine ISO explicite, vides compris. L'année est celle des
 semaines ISO, différente de l'année civile à ses bornes. Un poste de nuit se coupe aux minuits locaux,
-y compris entre deux semaines ; le changement d'heure conserve la durée réellement écoulée.
+y compris entre deux semaines ; le changement d’heure conserve la durée réellement écoulée. Dimanche
+22 h à lundi 3 h donne 2 h puis 3 h dans les deux semaines ISO ; minuit ne termine pas l’activité.
 
 Les activités sont sélectionnées par **recouvrement**, même commencées avant la semaine et sans pointage en son
 sein. Une régularisation peut établir une fin supérieure à 13 h, voire à une semaine : aucune borne basse fixe
@@ -568,10 +568,9 @@ laisse donc sa tuile intacte, privée de sa seule référence.
    ci-dessus. À rouvrir si le volume le justifie.
 2. **La quarantaine des gestes refusés reste à faire**, côté serveur : un rejeu refusé pour raison métier —
    habilitation retirée, suivi clôturé — ne vit aujourd'hui que dans le journal local du pupitre.
-   `strategie/authentification-pointage.md` en fait une exigence. Le lot 8 de
-   [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md) l'a écartée le 26/09/2026 (lots 8b
-   et 8c abandonnés) : habilitation retirée, date inhabituelle, référentiel inconnu, geste hors séquence et
-   identifiant réutilisé restent refusés, et ne vivent que dans le journal local du pupitre.
+   La [réflexion d’authentification](strategie/authentification-pointage.md) envisage cette quarantaine ;
+   elle n’est pas une fonctionnalité livrée. Les refus du [catalogue courant](codes-erreur.md) restent
+   durables dans le journal local. Une contradiction conservée en conflit est une acceptation, distincte d’un refus.
 3. **Le client Keycloak du pupitre n'existe pas dans le realm.** `glm-front` attend `pupitre_device`, avec le
    device grant activé et le client scope `glmproject` — sans lui, le jeton ne porte pas de claim `tenant` et toute
    la surface `/api/**` répond 403. C'est la dernière pièce d'infrastructure avant qu'un pupitre déployé puisse

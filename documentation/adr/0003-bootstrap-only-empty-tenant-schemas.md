@@ -2,11 +2,11 @@
 
 ## Status
 
-Accepted on 30 September 2026 for the retirement of workshop presence.
+Accepted on 30 September 2026 for fresh installations of the activity model.
 
 ## Context
 
-The activity model is installed on a fresh database. Removing obsolete presence changesets alone would let a
+The activity model is installed on a fresh database. A cleaned changeset history alone would let a
 schema carrying an earlier valid Liquibase prefix start as if it were new. Each tenant has its own history;
 `TenantSchemasInitializer` uses a raw connection whose search path is not the tenant schema.
 

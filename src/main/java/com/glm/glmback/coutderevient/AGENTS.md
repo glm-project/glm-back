@@ -9,7 +9,7 @@ Lire le coût d'un élément de fabrication, tous ses passages en atelier confon
 Le contexte possède son modèle de lecture et ses entités JPA `@Immutable`, sans table ni écriture.
 La capture, les corrections et l'interprétation des faits appartiennent à `atelier` : lire ses projections,
 sans importer son domaine ni rejouer son journal. Les références de l'élément restent relues au référentiel.
-Aucun calendrier, calcul de paie ni tarif courant dans ce contexte.
+Le calendrier appartient aux lecteurs hebdomadaires ; la valorisation utilise les tarifs figés sur les faits.
 
 ## Comptabilisation
 
@@ -64,5 +64,5 @@ correction rétablissent les valeurs lorsque l'interprétation d'atelier les ré
 `GET /api/couts-de-revient/{elementId}` est réservé au `GESTIONNAIRE` : il expose les tarifs humains.
 Conserver l'isolation des entreprises, les natures et la ligne sans nature en dernier.
 Le service public et les scénarios REST Cucumber vérifient le calcul ; les scénarios écrivent par l'API
-atelier puis lisent le coût, sans présence préalable. Respecter les noms logiques des colonnes d'atelier,
+atelier puis lisent le coût des activités. Respecter les noms logiques des colonnes d'atelier,
 les noms uniques des entités Hibernate et les noms de schémas OpenAPI propres au coût.

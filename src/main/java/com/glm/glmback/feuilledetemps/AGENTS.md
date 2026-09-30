@@ -57,3 +57,10 @@ les changements d'heure.
 
 Spring et Hibernate utilisent les noms simples des beans et entités : les noms propres à la feuille évitent les
 collisions avec les propriétaires. Les records métier peuvent partager le vocabulaire des autres contextes.
+
+## Lecture d’un poste de nuit
+
+Minuit répartit une activité au calendrier, sans produire de geste ni de fin métier. Une activité terminée
+de 20 h à 8 h donne des portions de 4 h puis de 8 h ; dimanche 22 h à lundi 3 h donne 2 h puis 3 h dans
+les deux semaines ISO. Les activités en cours gardent une indication sans durée ; celles à résoudre
+suivent leur plage possible bornée à l’évaluation.

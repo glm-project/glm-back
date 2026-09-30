@@ -745,8 +745,7 @@ Feature: Suivi des elements engages en atelier
       | fraiseuse-1   | 2026-05-10T13:00:00Z | 2026-05-10T17:00:00Z | false          |
 
   Scenario: Un ordre reste en cours la veille est relance le lendemain
-    # E2 de la strategie « bornes de fin de journee » : Dupont oublie d'arreter l'OF 44 ; le lendemain, il le
-    # redemarre sans etre bloque.
+    # Dupont oublie d'arreter l'OF 44 ; sa relance du lendemain ouvre une nouvelle activite apres l'echeance.
     Given il est "2026-05-10T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 44"
       | type      | ORDRE_DE_FABRICATION |
@@ -810,7 +809,7 @@ Feature: Suivi des elements engages en atelier
     And le temps effectif ne contient aucun intervalle ferme
 
   Scenario: Releve d'un intervalle 08:00-10:00, sans prise de poste
-    # Aucune presence n'est requise : l'activite compte de son debut a sa fin, et rien d'autre ne la borne.
+    # L'activite compte de son debut pointe a sa fin pointee.
     Given il est "2026-05-12T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 50"
       | type      | ORDRE_DE_FABRICATION |

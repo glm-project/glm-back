@@ -843,7 +843,7 @@
         "type" : "object"
       },
       "RestIntervalleDActivite" : {
-        "description" : "Du temps passe sur un element, deduit du journal et jamais stocke, tel qu'il se lit a l'instant de la lecture.\n\nC'est l'intervalle de l'activite elle-meme, sans aucune presence pour le borner : une fin pointee ou regularisee le\ntermine a son heure. Une activite que rien n'a terminee avant son echeance, son debut plus 13 heures, y est terminee\nautomatiquement a cette echeance, avec une anomalie.\n",
+        "description" : "Du temps passe sur un element, deduit du journal et jamais stocke, tel qu'il se lit a l'instant de la lecture.\n\nC'est l'intervalle de l'activite elle-meme : une fin pointee ou regularisee le termine a son heure. Une activite que rien n'a terminee avant son echeance, son debut plus 13 heures, y est terminee\nautomatiquement a cette echeance, avec une anomalie.\n",
         "properties" : {
           "aResoudre" : {
             "description" : "Vrai si l'activite de l'intervalle est a resoudre : des pointages contradictoires la concernent, dans une sequence\nen conflit. Elle n'est alors ni en cours ni terminee, n'a ni fin ni duree a compter, et son echeance ne la termine\npas. Une correction ou une annulation du gestionnaire la rend de nouveau interpretable, au recalcul.\n",
@@ -2295,7 +2295,7 @@
     },
     "/api/atelier/suivis/{id}/temps-effectif" : {
       "get" : {
-        "description" : "Les intervalles des activites de l'element, tels que le journal les interprete, sans aucune presence pour les\nborner.\n\nUn intervalle sans fin est encore en cours a l'instant de la lecture, sauf s'il est a resoudre (aResoudre) : une\nsequence en conflit ne permet d'en affirmer ni la fin ni la duree. Une activite que rien n'a terminee avant son\necheance, son debut plus 13 heures, y est terminee automatiquement, a cette echeance, et signalee par\nfinAutomatique.\n",
+        "description" : "Les intervalles des activites de l'element, tels que le journal les interprete a l'instant de la lecture.\n\nUn intervalle sans fin est encore en cours a l'instant de la lecture, sauf s'il est a resoudre (aResoudre) : une\nsequence en conflit ne permet d'en affirmer ni la fin ni la duree. Une activite que rien n'a terminee avant son\necheance, son debut plus 13 heures, y est terminee automatiquement, a cette echeance, et signalee par\nfinAutomatique.\n",
         "operationId" : "tempsEffectif",
         "parameters" : [ {
           "in" : "path",

@@ -1,55 +1,22 @@
-# Reunion client du 01/08/2026
+# Reunion client du 01/08/2026 — extraits selectionnes
 
-> Retranscription automatique remise en forme pour la lecture : encodage UTF-8, une phrase par ligne,
-> paragraphes et titres de section ajoutes pour la navigation.
-> **Le texte est verbatim** — aucun mot n'a ete ajoute, retire, corrige ni reordonne, et aucune parole
-> n'a ete attribuee a un locuteur (la transcription source ne distingue pas les intervenants).
-> L'original brut est conserve dans le fichier `.txt` du meme nom.
+> Extraits de la retranscription automatique historique, selectionnes dans l’ordre du 01/08/2026.
+> Les locuteurs ne sont pas attribues : la source ne les distingue pas. Les mots des extraits sont conserves,
+> avec les seuls blancs adaptes pour la lecture. Les titres et chaque mention « Coupure editoriale » sont ajoutes ;
+> les passages omis ne sont pas reproduits. Ces propos, parfois tronques, ne constituent pas une specification actuelle.
 
-## Le principe : une pointeuse a laquelle on ajoute l'OF
+## La pause et la reprise
 
-Et en fait, il est forcément en train de quand il pointe, il est forcément sur un Noël.
-Bah c'est pas obligé en fait ça vraiment c'est quelque chose qu'on peut choisir et comment ça fait du sens en
-fait dans les dashboards derrière et quel est votre besoin derrière ?
-Est-ce que c'est de mesurer le temps passé à travailler sur un OF ou est-ce que c'est de mesurer qu'est-ce que
-fait mon employé dans la journée ?
-Non le but c'est but c'est s'appuyer sur son temps de travail, enfin ses heures de présence pour ensuite
-savoir ensuite déterminer ou faire une synthèse de sur quel OF il travaille.
+<!-- extrait:client-01 -->
 
-Donc c'est de dire mon employé et par exemple les employés ils font tout le temps les mêmes horaires tous les
-jours.
-Ah pas tous ok donc il y a quand même une notion de mon employé a démarré sa journée, là j'ai commencé à le
-payer.
-Et ensuite à quel moment quand je le paye, il s'est mis à travailler sur tel ou tel OF Pas du tout.
-Ok.
-
-c'est très simple.
-En fait il faut penser faut penser à une pointeuse mais on rajoute des OF une option OF à cette pointeuse.
-Donc si arrive quand il arrive le matin, il s'identifie et clique sur un OF quand il démarre le boulot.
-Ok, donc comme ça là il clique, il l' On lui a dit t'as fini ton, tu vas passer suruie sur un autre.
-
-Voilà, il change, très bien et ça passe sur un autre Il passe, il arrive à midi, il va déjeuner donc il vient
-s'identifie, il met une pause.
-pause.
 ça fait une pause automatiquement sur l'OF.
 Le fait de faire une pause ou d'arrêter un OF et de le reprendre, c'est la même chose.
 
-ensuite il revient il s'identifie, il rappuie sur l'OF ou il fait redémarrage enfin ça Et soit il change d'OS,
-soit il continue donc donc si il y a pas de changement d'OF, il continue sur celui qui est en cours et la fin
-de la journée et ben qui fait arrêt donc ça en somme sa pointe 16 heures de présence et sa pointe également
-les temps passés sur les OF.
-Ça fait les deux en même temps quoi.
-Ok, et du coup ces heures de présence c'est à partir du moment où il a commencé le premier OF jusqu'au moment
-où il a terminé le dernier OF.
-heures de présence, c'est heures où il arrive à la société, il pointe et il part.
+> Coupure editoriale — passages non reproduits.
 
-Et quand il démarrant ou est-ce qu'il faut qu'il pointe en arrivant sur l'application et dire Ça sera
-automatiquement, c'est-à-dire s'identifie automatiquement, il faut pour que ça très bien.
-Après vous avez compris la notion de NC ça se très bien de GLM c'est très bien.
-Il faut avoir la possibilité parce que faut avoir la possibilité de travailler sur plusieurs OF.
-Ouais ça c'est bon on peut complètement.
+## Plusieurs OF et plusieurs machines
 
-## Travailler sur plusieurs OF et sur plusieurs machines
+<!-- extrait:client-02 -->
 
 Je clique sur deux OF ici et ça va m'en démarrer deux.
 Je vous explique pourquoi parce que employé par exemple en train de travailler sur deux en même temps Il peut
@@ -98,7 +65,11 @@ du tournage qui arrive sur un OF où il y a besoin que de faire du fraisage.
 On va quand même lui dire qu'il est en train de faire du tournage sur un OF où il y a que du fraisage à faire.
 Mais ça c'est des cas limites techniquement c'est même pas censé arriver juste on le pointe, on s'en fiche.
 
-## Le parametrage de la ressource : taux horaire, fonction, machines
+> Coupure editoriale — passages non reproduits.
+
+## Ressource, tarifs et machines
+
+<!-- extrait:client-03 -->
 
 ce qu'il faut, c'est que pour la synthèse il faut qu'on associe la ressource à horaire donc le nom d'une
 personne alors par exemple le nom d'une personne, on sait que il me coûte tant de l'heure Et que il est
@@ -163,7 +134,11 @@ Parce qu'à la fin ce qui nous intéresse, c'est le coût qui nous a coûté, en
 d'érosion etc.
 de notre en fait.
 
-## La synthese d'un OF
+> Coupure editoriale — passages non reproduits.
+
+## Synthese et incertitude du cout
+
+<!-- extrait:client-04 -->
 
 Sur la synthèse d'un OF, j'ai pas besoin de voir les noms des opérateurs.
 J'ai juste besoin de savoir par catégorie fraisage, tournage ainsi de suite combien de temps on a passé bah
@@ -183,20 +158,34 @@ une question à Nicolas, tu sais là le coût par exemple moyenne d'horaire d'un
 est d'accord c'est que la personne peut jouer travailler sur une machine ou quatre machines en même temps.
 J'exagère un peu les choses d'accord et il travaille la même heure.
 
-Donc ce que je lui avais dit la dernière fois, c'est que du monde qu'il n'est pas parti fin en ce déficit
-comptabiliser le coût.
+> Coupure editoriale — passages non reproduits.
+
+<!-- extrait:client-05 -->
+
 Ce qui nous intéresse, c'est pas le coup d'une personne.
 problème c'est que tu disais que si la personne travaille une heure deux machines, son coût est divisé par
 deux humaine humaine.
 Le problème c'est que Nicolas, je pense que si je me dis des bêtises, tu m'arrêtes.
 
+> Coupure editoriale — passages non reproduits.
+
+<!-- extrait:client-06 -->
+
 Si tu n'y a pas la fin, on peut pas calculer le cours donc le couraire tu l'auras, Carlos synthèse.
-fin de journée de journée ou plutôt quand on boucle l'OS.
+
+> Coupure editoriale — passages non reproduits.
+
+<!-- extrait:client-07 -->
+
 En fait l'O, c'est-à-dire on a terminé OF.
 le boucle et là ça sort la synthèse évidemment vous faites pour savoir que l'inée nous nous on le sait Donc
 nous on le sait, c'est-à-dire on n'a pas parlé d'un truc mais l'introduction des OF dans la machine.
 
-## Creation, administration et cloture des OF
+> Coupure editoriale — passages non reproduits.
+
+## Creation et cloture des OF
+
+<!-- extrait:client-08 -->
 
 Donc ça va être fait par mois ou par mon assistante par exemple.
 Donc on va juste numéroter un OF, on va créer l'OF, il va se mettre dans dans la page d'accueil ou dans la
@@ -237,28 +226,11 @@ Il y a ça, il y a aussi Jean-Yves, on a parlé aussi de la le petit onglet pour
 son historique d'heure de la par exemple.
 C'est ça je sais pas si j'ai un opérateur qui marche là.
 
-## L'historique hebdomadaire des heures
+> Coupure editoriale — passages non reproduits.
 
-Alors c'est pas la peine de partir sur le mois ou je sais pas quoi.
-Non mais là c'est par semaine là.
-là c'est par semaine.
-Après à voir ce qu'on mettra dans ce tableau, mais en gros sur la semaine lundi il est arrivé à 6h20, il a
-fait une pause.
+## Non-conformite
 
-Là par contre on pourra l'affiner Carlos à ce que vous avez besoin de qu'il consulte en fait la partie en
-backup, c'est-à-dire par exemple mon assistante qui fait qui donne les heures au comptable pour faire les
-payes, elle elle peut arriver là et devoir par semaine par par employé combien d'heures il fait.
-Donc ça c'est pas une vue pour l'empl C'est pas une vue pour l'employé ou c'est une vue pour l'employé ça ?
-Non non non c'est une vue pour mon assistante c'est bien de savoir ça.
-c'est l'historique pour l'employé.
-
-accéder à ça.
-Par contre, la comptable, elle, elle peut accéder à tous les employés Ok, j'ai une autre question.
-Du coup il y a cette notion de non-conforme.
-Moi quand je démarre un non conforme sur un OF, comment parce qu'au final que je l'ai démarré normalement ou
-que je l'ai démarré en non conforme, c'est le même prix à la fin.
-
-## Les non-conformites et le temps non rattache a un OF
+<!-- extrait:client-09 -->
 
 C'est pareil, sauf que moi je sais que on a passé du temps en si vous revenez sur la synthèse.
 Voilà, on a passé on a des non-conormités.
@@ -270,28 +242,23 @@ Et ben on la refait, mais on la comptabilise pas comme comme elle travaille norm
 Et donc ces heures-là pour qu'on passe à refaire la pièce, je veux la comptabiliser en NC qu'elle soit liée
 bien sûr à l'OF et moi je sais à la fin que sur cette OF là on a passé tant temps à faire du bon travail et
 tant de temps à faire la merde.
-OK, marche.
-La c'est quoi ?
 
-Ouais voilà.
-on va dire que admettons, il y a un temps ça peut arriver, mais occasionnellement mais je sais pas un jour une
-période creuse ou machin il n'y a pas d' il est là, mais il est pas rattaché à l' Ok, donc JLM c'est pas
-rattaché à OF déjà donc ça on pourra le virer.
-Voilà c'est-à-dire que il est là imaginez, il boite et puis il a rien à faire il faut qu'il comptabilise donc
-son temps de présence donc il faut le comptabiliser pour la Est-ce que-ce que du coup en fait qu'on comptab
-finalement c'est le temps où il est là il a pas besoin de ton GM c'est juste qu'il est là mais il a démarré
-c'est ça Mais comment tu sais faudrait C'est ça le mieux c'est le mettre le GLM tout en bas comme ça veut dire
-qu'on a toujours du boulot.
-Voilà C'est ça.
+> Coupure editoriale — passages non reproduits.
 
-Oui vous permettez Carlos Ouais c'est possible.
-Vu qu'on a décidé de toute façon qu'il n'y avait pas de je démarre mon activité de démarrage de journée.
+## Travail non rattache et evolution iterative
+
+<!-- extrait:client-10 -->
+
 De toute façon il y aura ce bouton GLM et voilà et puis quand le mec a pas de F bon bah il a pluseraessus quoi
 Après tout ça aussi l'idée c'est de travailler de manière itérative donc on va faire une première version et
 puis au fur et à mesure, on va l'améliorer pour coller un peu plus.
 Non mais c'est déjà bien franchement c'est bien bien sûr.
 
-## Ergonomie et materiel du poste de pointage
+> Coupure editoriale — passages non reproduits.
+
+## Ergonomie et materiel
+
+<!-- extrait:client-11 -->
 
 Vous comprenez mon idée de ce système.
 On voit l'idée en tout cas, je pense ouais.
@@ -364,7 +331,11 @@ Oui mais ils seront affichés, mais comment ils différencient un OF d'un autre 
 savoir c'est quel est que l'écran soit le plus simple possible comment il peut identifier avec le moins de
 textes possible un OF Et ça sera forum de bouton, on est d'accord avec un numéro de sur le bouton.
 
-## Identifier un OF a l'ecran : boutons, numeros, moules et OF
+> Coupure editoriale — passages non reproduits.
+
+## Numeros, moules et OF
+
+<!-- extrait:client-12 -->
 
 Ok, donc c'est un numéro.
 Voilà un numéro.
@@ -423,7 +394,11 @@ activité ça me fait suffit amplement.
 Très bien Carlos, vous connaissant sachant que vous avez des idées deux secondes, vous allez truc là, on peut
 pas faire ça avec Non mais pour l'instant ça va être comme ça bien.
 
-## Revue des ecrans : pilotage, accueil, temps reel
+> Coupure editoriale — passages non reproduits.
+
+## Indicateurs et revue des ecrans
+
+<!-- extrait:client-13 -->
 
 Parmi les quatre pages qui sont là, est-ce qu'il y en a une que vous auriez envie de supprimer qui sert à rien
 là Le pilotage, c'est pour voir l'ensemble des ordres de fabrication en cours et le pourcentage de compléion.
@@ -449,52 +424,11 @@ Par exemple, si c'est la vie des en cours avec le temps passé dessus.ité avec 
 peut-être ça suffit c'est parfait ça Après la deuxième page temps réel, vous avez compris, je pense que c'est
 pas employé qui fait quoi à ce moment-là c'est Ok, donc ça Statut, c'est quoi ?
 
-C'est ce que j' travaille sur Là, il faudrait que ça soit par exemple un code couleur, je sais pas par exemple
-en vert il travaille sur un OF en rouge il a quitté la boîte en orange il en rose d'accord ça je sais quel
-employé c'est là c'est qui est en S'il est en train de faire sur O, donc on s'en fiche.
-C'est juste l'O, le numéro d' qui travaille Et puis son statut, c'est-à-dire est-ce qu'il est présent ou quoi
-voilà quoi.
-Par exemple, un employé admettons, il est neuf heures, l'employé, je suis pas allé à l'atelier encore, et ben
-moi je peux afficher cette liste-là et voir tout de suite qui sont là qui sont absents par exemple Les gens
-sont absents ils ont pas donc son statut il est pas là quoi d'accord pasté donc il est pas là il a pointé il
-est en vert.
-Est-ce que comment ça se passe si je veux voir qui est parti déjeuner et il y en a forcément qui seront en
-orange par exemple couleur il est en pro Comment ça se passe si vous avez vos opérateurs qui ont oublié de
-pointer ?
+> Coupure editoriale — passages non reproduits.
 
-## Les oublis de pointage
+## Correction externe sur un OF
 
-Parce que dans les systèmes, c'est des choses qui peuvent arriver.
-Bien sûr.
-Alors là, bonne question.
-Bonne question.
-
-Il faut qu'on puisse, je sais pas comment qu'on puisse soit rajouter alors il faudrait qu'on puisse donc
-paramétrer une heure d'arrivée, mais ça c'est pas lui qui le fera ce sera l'administrateur qui le fera Soit
-par exemple il a oublié de pointer le matin.
-Il a oublié de pointer.
-Donc Mais il faut compter son temps de présence aussi.
-Il faut que vous puissiez en fait modifier rajouter des je sais pas comment faire ça c'est à vous de savoir
-comment on pourrait faire.
-
-D'accord.
-Parce que là comment il a oublié de pointer, on sait pas sur quoi il bosse Oui.
-Donc comment là le deviner, on peut pas je sais pas comment faire mais voilà je dis pas que c'est pas
-impossible, mais c'est vosalités qui sont compliquées ça Je sais pas si c'est un truc qu'il faut mettre en
-place en premier lieu je vais vous donner une idée il vient vers moi j'ai oublié de pointer, je lui dis va
-pointer D'accord Et nous, on pourrait juste rajouter en fin de journée le temps qu'il a qu'il a pas pointé
-juste que ça comptabilise.
-Ça va arriver ponctuellement ça c'est vrai.
-
-Est-ce que nous on peut avoir une colonne ou je sais pas quoi un processus où la comptable elle dit OK Pierre
-il a oublié de pointer une heure donc on lui rajoute on lui rajoute sur son temps de travail du jour, on lui
-rajoute tant de minutes Alors oui ce qu'on peut faire, il y a deux choses qu'on peut faire l'utilisateur donc
-ton ouvrier, il peut venir pointer avec une petite option pointage en retard ou lui demande de saisir l'heure
-de débit.
-C'est Nicolas, c'est nous qui allons réfléchir à des solutions simples justement on va proposer des solutions
-en fait.
-Ouais ouais il y a un petit peu de ça y a un petit challenge.
-Mais je pense je pense qu'il faut que ça soit à quelqu'un d'autre d'externe.
+<!-- extrait:client-14 -->
 
 Oui, complètement.
 faut pas que ça soit lui.
@@ -502,7 +436,11 @@ Ah bah c'est bien ça alors c'est une interface d'administration, on dit le mec 
 heure à telle heure et puis voilà.
 Ouais voilà c'est ça, c'est complètement.
 
-## L'identification des operateurs
+> Coupure editoriale — passages non reproduits.
+
+## Identification des operateurs
+
+<!-- extrait:client-15 -->
 
 Et puis donc l'identification alors vous voyez ça comment ?
 donné des informations importantes parce que c'est-à-dire que là actuellement vous lui demandez de taper un
@@ -614,7 +552,11 @@ Sans souci, oui.
 Vous allez mettre autant d'ordinateurs que vous voulez et qui pourront être allumés et machin en même temps
 quoi a pas de problème.
 
-## Postes multiples, reseau, hebergement et continuite de service
+> Coupure editoriale — passages non reproduits.
+
+## Reseau, hebergement et continuite
+
+<!-- extrait:client-16 -->
 
 OK c'est ce que peut-être j'envisagerais aussi.
 Parce que l'atelier fait 1000 m² donc si il y a des on va dire par secteur, si il y a des gens ils vont pas
@@ -659,14 +601,18 @@ Ouais.
 Il y a des sauvegardes.
 Il y a des pare-eux.
 
-risque n'existe pas, on pate bien il s'appelle l L'organis de l'argne en général, c'est pas moi ce que je veux
-pas, c'est simple moi ce que je veux pas c'est que quatre coupures en cas de machin en cas de truc que ça
-comptabilise pas c'est le gros bordel Parce que boiteuse pour les heures travailler les employés.
-Donc voilà, il faut pas y prendre non plus à la légère ce non pas du travail parce que Il faut peu importe le
+> Coupure editoriale — passages non reproduits.
+
+<!-- extrait:client-17 -->
+
 priorité avec Loïc c'est la continuité des services.
 D'accord services peu importe ce qui arrive, il faut que derrière ça Ah c'est clair.
 Je sais pas est-ce que est-ce que par exemple on pourrait imaginer que en face on envoie par exemple une
 sauvegarde tous les jours par exemple au cas où il y a une coupure qu'on perd pas tout.
+
+> Coupure editoriale — passages non reproduits.
+
+<!-- extrait:client-18 -->
 
 Ah non non quand tu me parles de père Carlos etistorique, c'est ça Oui par exemple non tu c'est impossible.
 Chaque fois que l'opérateur, il a au pire, on peut perdre les pointages du jour.
@@ -683,3 +629,5 @@ ordinateur.
 Voilà ça ça me plaît là déjà.
 Et quand on se reconnecte à Internet, il y a tout un mécanisme de synchronisation.
 L'appel va s'arrêter par contre je vous c' minute du temps de
+
+> Coupure editoriale — passages non reproduits.

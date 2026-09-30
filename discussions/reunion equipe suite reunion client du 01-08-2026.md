@@ -1,12 +1,13 @@
-# Reunion equipe — suite reunion client du 01/08/2026
+# Reunion equipe — suite reunion client du 01/08/2026 — extraits selectionnes
 
-> Retranscription automatique remise en forme pour la lecture : encodage UTF-8, une phrase par ligne,
-> paragraphes et titres de section ajoutes pour la navigation.
-> **Le texte est verbatim** — aucun mot n'a ete ajoute, retire, corrige ni reordonne, et aucune parole
-> n'a ete attribuee a un locuteur (la transcription source ne distingue pas les intervenants).
-> L'original brut est conserve dans le fichier `.txt` du meme nom.
+> Extraits de la retranscription automatique historique, selectionnes dans l’ordre du 01/08/2026.
+> Les locuteurs ne sont pas attribues : la source ne les distingue pas. Les mots des extraits sont conserves,
+> avec les seuls blancs adaptes pour la lecture. Les titres et chaque mention « Coupure editoriale » sont ajoutes ;
+> les passages omis ne sont pas reproduits. Ces propos, parfois tronques, ne constituent pas une specification actuelle.
 
-## L'objectif du projet et le principe de pointage
+## Objectif, simplicite et gestes sur les taches
+
+<!-- extrait:equipe-01 -->
 
 Là on parle du projet Infec.
 L'objectif c'est réaliser une application pour gérer le coût de revient par rapport à la fabrication d'un
@@ -20,18 +21,28 @@ empreinte digitale.
 Arriver sur un plate-forme dessus, le plate-forme va identifier toutes ce qu'on appelle des moules OF ou
 d'accord des RF ou des Fiche OF ou des moules OF, d'accord Deux aspects et il va voir chaque moule OF ou les
 fiches OF, c'est des missions c'est-à-dire que ça correspond à un façonnage d'un moule.
-D'accord Il faut que chaque opérateur quand il arrive le matin, il se connecte sur l'application et quand il
-commence le travail sur un moule, il clique sur le moule.
+
+> Coupure editoriale — passages non reproduits.
+
+<!-- extrait:equipe-02 -->
+
 D'accord et quand il clique sur le moule, mécaniquement on sait que cet opérateur qui a travaillé et que
 l'opérateur aujourd'hui il travaillé sur telle machine.
 D'accord et quand il arrête de travailler sur le moule, il clique sur le moule, le moule s'arrête.
 
-C'est-à-d qu'il y a un temps de départ, il y a un temps d'arrivée.
+> Coupure editoriale — passages non reproduits.
+
+<!-- extrait:equipe-03 -->
+
 Et ça on est d'accord qu'il le fait, il clique dessus, puis après il va sur la machine et il arrête le moule.
 Les deux ne sont pas connectés.
 Non ils sont pas connectés du tout.
 
-## Aucun lien entre les machines et l'applicatif
+> Coupure editoriale — passages non reproduits.
+
+## Machines et applicatif independants
+
+<!-- extrait:equipe-04 -->
 
 À partir du moment où la machine a en fonctionnement.
 Donc c'est vraiment de dire ma machine fonctionne, j'appuie sur start ça a commencé et je peux en avoir
@@ -46,7 +57,11 @@ Qu'il soit par exemple un moule ou une fiche mécaniquement quand il crée la fi
 les opérations qui doivent te mettre en plus qui doit être compris pour la fabrication de ceoule.
 C'est logique parce que c'est comme ça qu'ils ont fait un devis au départ.
 
-## Ce qu'est un OF, et ce qui reste hors de l'application
+> Coupure editoriale — passages non reproduits.
+
+## OF et travail hors planification
+
+<!-- extrait:equipe-05 -->
 
 Mais du coup il faut arriver à relier l'utilisation du moule à l'ordre de fabrication À No, c'est un ordre de
 fabrication.
@@ -82,7 +97,11 @@ Et moi, mon chef d'atelier, dit à chacun, voilà, aujourd'hui tu as tous ces O 
 Mais pas dans l'application.
 Non, c'est pas dans l'application.
 
-## Tous les operateurs voient tous les OF
+> Coupure editoriale — passages non reproduits.
+
+## Liste commune des OF
+
+<!-- extrait:equipe-06 -->
 
 Et que les gars, quand ils rentrent, l'application, chaque opérateur, il voit tous les OF de tout le monde.
 du coup lesF sont dans l'application.
@@ -99,7 +118,11 @@ dessus, il n'y a même pas une notion de machine.
 C'est moi qui est parti plus loin.
 C'est moi qui loin.
 
-## La notion de machine : ajoutee par l'equipe, refusee par le client
+> Coupure editoriale — passages non reproduits.
+
+## Discussion sur les machines et les OF
+
+<!-- extrait:equipe-07 -->
 
 Et c'est toi qui dis que telle machine est reliée à tel OF.
 Lui il le sait, mais nous mécaniquement.
@@ -116,7 +139,11 @@ et les mecs ils ont le programme et quand ils travaillent dessus, ils piquent, j
 
 Ok, donc je commence sur tel moule et je suis sur OF.
 Voilà.
-Donc au début tu cliques sur un EF, tu dis bon je commence en journée.
+
+> Coupure editoriale — passages non reproduits.
+
+<!-- extrait:equipe-08 -->
+
 Je sais qu'aujourd'hui je vais faire cet OF là.
 
 Et il travaille que sur un seul OF en même temps.
@@ -136,7 +163,11 @@ simultan, il va cliquer sur deux pour démarrer et sa journée normalement il do
 D'accord il a fini ses quatre OF.
 Mais alors là où en fait on n'a pas besoin de savoir en fait il clique sur un OF.
 
-## Moule et OF : la meme chose
+> Coupure editoriale — passages non reproduits.
+
+## Discussion sur moules et OF
+
+<!-- extrait:equipe-09 -->
 
 clique sur un moule.
 Même pas, c'est un moule.
@@ -155,7 +186,11 @@ Vu comme il m'a dit parce qu'en fait parce que dans un pour fabriquer ce là, tu
 machines.
 que tu veux savoir, c'est le temps que t'as mis pour construire ton.
 
-## Le cout d'un operateur travaillant sur plusieurs machines
+> Coupure editoriale — passages non reproduits.
+
+## Multi-machine et cout
+
+<!-- extrait:equipe-10 -->
 
 Et en fait, lui comment il déuit c'est comment il déduit et c'est pour ça que j'ai anticipé les choses, c'est
 que il sait que une personne, un opérateur peut travailler sur telle machine, telle machine.
@@ -172,7 +207,11 @@ Et là par exemple j'ai marqué tâche en cours.
 Écoute tâche en cours, c'est une liste d'ai.
 Voilà parce que quand il va cliquer ça c'est pour les utilisateurs.
 
-## L'ecran des taches en cours, la pause et l'arret global
+> Coupure editoriale — passages non reproduits.
+
+## Taches en cours, pause et arret global
+
+<!-- extrait:equipe-11 -->
 
 Il veut mettre la photo d'utilisateur, mais on s'en fout.
 Mais l'objectif c'est que quand l'utilisateur il log, il voit tous les tâches où il a démarré.
@@ -180,10 +219,11 @@ Et quand il s'arrête en pause, par exemple à midi, au lieu de tiquer sur tout.
 Il se mais ils s'arrêtent tous.
 
 Et quand il revient, il relance la machine.
-il refait arrivé au départ c'est un peu bizarre ça Là c'est pas bon parce que ce qu'il a fait là, c'est-à-dire
-que si tu fais un peu comme l'lectricité, une coupure générale, je peux comprendre, tu cliques sur un truc
-pour 10 fois d'accord 10 fois c'est beaucoup déjà trois fois c'était mais tu cra un bouton s'éner pour dire
-pause il se met en pause.
+
+> Coupure editoriale — passages non reproduits.
+
+<!-- extrait:equipe-12 -->
+
 Ça suffit mais sinon si tu fais que cliquer, il m'a dit c'est un truc simple, tu cliques surique, ça démarre,
 on clique ça s'arrête, mais si il y a un c'est compliqué à cliquer à trois et il clique sur pause ça s'arrête
 tout.
@@ -194,7 +234,4 @@ Non mais c'est très bien ça et limite il a un bouton tout arrêté quand il a 
 C'est ça.
 Ah d'accord.
 
-J'arrive, j'arrive.
-Je vais te regarder tranquillement.
-Ouais ouais ça marche Non j'ai pas Bonjour Nicolas, enchanté.
-ça va ça va ça va.
+> Coupure editoriale — passages non reproduits.

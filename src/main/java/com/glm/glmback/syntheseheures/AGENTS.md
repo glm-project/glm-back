@@ -80,3 +80,10 @@ par opérateur ; leur sélection sur les identités rendues appartient au domain
 `feuille_de_temps.feature` : mêmes heures et mêmes décisions pour relances, transitions, fins tardives,
 régularisations, corrections, annulations et clôtures. `DecoupageCalendaireTest` conserve les preuves de semaines ISO,
 minuit et changements d'heure. Les textes de steps Cucumber doivent rester uniques dans tout le dépôt.
+
+## Lecture d’un poste de nuit
+
+Minuit répartit une activité au calendrier, sans produire de geste ni de fin métier. Une activité terminée
+de 20 h à 8 h donne des portions de 4 h puis de 8 h ; dimanche 22 h à lundi 3 h donne 2 h puis 3 h dans
+les deux semaines ISO. Les activités en cours gardent une indication sans durée ; celles à résoudre
+suivent leur plage possible bornée à l’évaluation.

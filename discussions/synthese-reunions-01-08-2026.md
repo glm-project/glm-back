@@ -1,62 +1,26 @@
-# Synthèse des réunions du 01/08/2026
+# Synthèse des réunions du 01/08/2026 — contenus indépendants conservés
 
-Sources :
+Sources : [extraits client](<reunion client 01-08-2026.md>) et
+[extraits d’équipe](<reunion equipe suite reunion client du 01-08-2026.md>), issus de retranscriptions automatiques.
+Cette synthèse éditoriale sélectionne les sujets conservés ; elle ne constitue ni une citation intégrale ni une
+spécification actuelle. Les coupures sont explicites dans les deux documents d’extraits, sans attribution de locuteurs.
+Les formulations tronquées, objections et divergences d’août restent des incertitudes historiques. Les contrats
+actuels sont décrits chez leurs [propriétaires](../documentation/contexte-metier.md).
 
-- `reunion client 01-08-2026.txt` — réunion avec le client (Carlos) et l'équipe (Jean-Yves, Nicolas, Loïc).
-- `reunion equipe suite reunion client du 01-08-2026.txt` — échange interne d'équipe (Jean-Yves restitue le besoin client à Nicolas).
+Niveaux de fiabilité : ✅ propos explicite du client ; 🔁 restitution en réunion d’équipe, non reconfirmée devant
+le client en août ; 🔎 reconstruction éditoriale d’un passage tronqué ; ❓ sujet non tranché à cette date.
 
-> Les transcriptions sont des retranscriptions automatiques : certains passages sont tronqués ou approximatifs. Les points marqués « à confirmer » sont ceux où le verbatim ne permet pas de trancher avec certitude.
+## Objectif et simplicité
 
-> **Niveaux de fiabilité employés dans ce document.** ✅ = le client l'énonce explicitement dans la réunion du 01/08. 🔁 = rapporté de seconde main dans la réunion d'équipe (Jean-Yves restitue des propos du client), donc **non reconfirmé devant le client**. 🔎 = reconstruction de ma part à partir d'un passage tronqué par la transcription automatique. ❓ = point ouvert, non tranché en réunion.
+Suivre le travail des opérateurs et le coût de revient de la fabrication, avec une direction qui consulte les
+rapports. Le client demande une application simple et une progression itérative, plutôt qu’un processus de
+planification. L’équipe discute les débuts et arrêts de tâches, la liste commune et les commandes globales.
 
----
+## Pause et gestes globaux : portée des sources d’août
 
-## 1. Objectif du produit
-
-Une application de **suivi des temps** permettant de calculer le **coût de revient** de la fabrication d'un moule.
-
-Deux populations d'utilisateurs :
-
-- les **opérateurs** de l'atelier, qui pointent et déclarent sur quel travail ils sont ;
-- la **direction / l'administration**, qui supervise l'avancement, le coût de revient par OF, et récupère les heures pour la paie.
-
-Exigence structurante répétée par le client : **la simplicité**. Il ne veut pas d'ERP (« des trucs très lourds en gestion »), il veut « un truc simple, très très simple ». L'outil remplace la pointeuse actuelle, pas le processus de l'atelier.
-
-Méthode retenue : **itératif** — une V1 volontairement réduite, améliorée au fur et à mesure.
-
----
-
-## 2. Le principe central : une pointeuse à laquelle on ajoute l'OF
-
-Le client formule le besoin ainsi : « il faut penser à une pointeuse, mais on rajoute une option OF à cette pointeuse ».
-
-Un seul geste alimente donc **deux comptages simultanés** :
-
-1. les **heures de présence** de l'employé (base de la paie) ;
-2. le **temps passé par ordre de fabrication** (base du coût de revient).
-
-### Parcours opérateur
-
-| Moment           | Action                              | Effet                                                                             | Source |
-| ---------------- | ----------------------------------- | --------------------------------------------------------------------------------- | ------ |
-| Arrivée          | Il s'identifie                      | Pointage d'arrivée **automatique** — pas de bouton « démarrer ma journée » séparé | ✅     |
-| Début de travail | Il clique sur un OF                 | Démarre le temps sur cet OF                                                       | ✅     |
-| Changement       | Il clique sur un autre OF           | Bascule (ou cumule, voir multi-OF)                                                | ✅     |
-| Pause déjeuner   | **Un seul bouton « pause »**        | Met en pause **tous** les OF actifs                                               | 🔁     |
-| Retour           | Il reprend                          | Pause / arrêt / reprise sont le même mécanisme                                    | ✅     |
-| Fin de journée   | **Un seul bouton « tout arrêter »** | Clôture la présence et tous les OF en cours                                       | 🔁     |
-
-Point d'ergonomie tranché en réunion d'équipe : **jamais N clics pour N tâches**. Si trois OF tournent, il ne faut pas cliquer trois fois pour la pause — un bouton global, « comme une coupure générale d'électricité ».
-
-⚠️ **Attention à la source de cette règle.** Le bouton de pause global et le bouton « tout arrêter » n'apparaissent que dans la **réunion d'équipe**, où Jean-Yves rapporte les propos du client (« il m'a dit c'est un truc simple… ne mettez qu'un bouton, pas trois »). Dans la réunion client du 01/08, la pause est au contraire décrite **au singulier** : « il met une pause, ça fait une pause automatiquement sur l'OF ». Le comportement en présence de plusieurs OF actifs n'a donc **jamais été validé directement par le client** — alors qu'il structure l'écran principal. À reconfirmer en priorité.
-
-### Heures de présence
-
-Elles courent de **l'arrivée dans la société au départ**, et non du premier au dernier OF. Point vérifié explicitement pendant la réunion.
-
-### Temps non affecté à un OF (bouton « GLM »)
-
-Un opérateur peut être présent sans avoir de travail rattaché à un OF (période creuse). Il faut malgré tout comptabiliser sa présence : une **tâche par défaut « GLM »**, non rattachée à un OF, à placer **tout en bas** de l'écran (« comme ça veut dire qu'on a toujours du boulot »).
+Le client rapproche pause, arrêt et reprise d’un OF. L’équipe rapporte l’intérêt d’un bouton global pour plusieurs
+tâches et d’un arrêt global. La confirmation directement par le client pour plusieurs tâches manque dans ces
+sources historiques ; les décisions ultérieures appartiennent aux documents actuels.
 
 ### Non-conformité (NC)
 
@@ -84,7 +48,7 @@ Objectif : à la clôture, savoir « combien de temps on a passé à faire du bo
 - **Aucune planification** : pas de date de fin prévue, pas d'estimation d'heures. « On ne planifie rien avec le logiciel. »
 - **Clôture manuelle** en back-office. Un OF clôturé **disparaît des écrans opérateurs** — ils ne voient que les OF actifs.
 - 🔎 Durée réelle très variable : de quelques heures à plusieurs mois. (La transcription donne « 23 mois » et « 34 mois », que je lis comme « 2-3 » et « 3-4 » mois — c'est une reconstruction, pas du verbatim.)
-- ❓ Volume simultané attendu : le client annonce **10 à 15 moules neufs** _et_ **une vingtaine d'OF**, puis parle d'un espace écran pour « une vingtaine de boutons ou 15 boutons ». **Les deux chiffres ne se recoupent pas** : le total serait de 25 à 35 boutons. À clarifier — l'écran d'accueil opérateur en dépend directement.
+- ❓ Volume simultané attendu : le client annonce **10 à 15 moules neufs** _et_ **une vingtaine d'OF**, puis parle d'un espace écran pour « une vingtaine de boutons ou 15 boutons ». **Les deux chiffres ne se recoupent pas** : le total serait de 25 à 35 boutons. L’incertitude concernait l’écran d’accueil opérateur en août.
 - **Pas d'affectation d'OF par personne** : tout le monde voit la même liste. L'affectation du travail reste orale / papier, hors application (le chef d'atelier distribue les programmes). Le client sait par ailleurs à quelle commande client correspond chaque OF, mais cette information reste hors de l'application.
 
 ### La ressource (opérateur)
@@ -123,9 +87,9 @@ Ergonomie associée : au clic sur un OF, **si et seulement si** l'opérateur est
 - coût machine : **coût horaire de chaque machine** active, **non divisé** ;
 - coût humain : **taux horaire de l'opérateur divisé par le nombre de machines** qu'il utilise simultanément (« son horaire est divisé par le nombre de machines qu'il utilise » ; « s'il n'utilise qu'une, il n'est pas divisé »).
 
-Logique : ce qui intéresse le client n'est pas le coût d'une personne mais le **coût par nature de travail** (coût du fraisage, coût de l'érosion). Répartir le temps humain entre les machines actives évite de compter plusieurs fois la même heure de présence.
+Logique : ce qui intéresse le client n'est pas le coût d'une personne mais le **coût par nature de travail** (coût du fraisage, coût de l'érosion). Répartir le temps humain entre les machines actives évite de compter plusieurs fois la même heure de travail.
 
-❓ **Ce qui reste ouvert n'est pas la règle, mais l'objection soulevée ensuite par Nicolas** : diviser le taux humain fausse le coût réel de la personne (« ce qui nous intéresse, c'est pas le coût d'une personne… le problème c'est que si la personne travaille une heure sur deux machines, son coût est divisé par deux »). L'échange s'interrompt sans conclusion — c'est le passage le plus dégradé de la transcription. À reprendre, ainsi que le cas non abordé : **que se passe-t-il quand les machines actives simultanément relèvent d'OF différents ?**
+❓ **Ce qui reste ouvert n'est pas la règle, mais l'objection soulevée ensuite par Nicolas** : diviser le taux humain fausse le coût réel de la personne (« ce qui nous intéresse, c'est pas le coût d'une personne… le problème c'est que si la personne travaille une heure sur deux machines, son coût est divisé par deux »). L'échange s'interrompt sans conclusion — c'est le passage le plus dégradé de la transcription. L’incertitude historique porte aussi sur le cas non abordé : **que se passe-t-il quand les machines actives simultanément relèvent d'OF différents ?**
 
 ---
 
@@ -145,35 +109,11 @@ Revue des 4 pages de la maquette :
 
 Le client dit « moi, cette page, non » — mais il enchaîne immédiatement par « par contre, cette page-là, on peut sortir graphiquement le nombre d'heures actuellement sur OF », ce qui ressort ensuite qualifié d'« écran d'accueil ». **Suppression pure ou transformation en tableau de bord graphique : la transcription ne permet pas de trancher**, et le nombre final de pages (3 ou 4) n'est donc pas établi. Ce qui est certain : la page telle qu'elle est maquettée, avec son pourcentage de complétion, est rejetée.
 
-### 5.3 Temps réel — **conservée**
+## Corrections externes
 
-Vue « qui est là et qui fait quoi », avec **code couleur** :
-
-- ✅ vert : présent, en train de travailler sur un OF ;
-- ✅ rouge : a quitté la boîte ;
-- 🔎 orange : proposé par l'équipe pour « parti déjeuner » ; la réponse du client est tronquée dans la transcription. Le client évoque par ailleurs une quatrième couleur (rose) sans qu'on sache à quoi elle correspond.
-
-Usage principal : voir d'un coup d'œil, le matin, qui est présent sans traverser l'atelier. On affiche le **numéro d'OF** et le statut, pas le détail.
-
-### 5.4 Historique par employé — **conservée, mais back-office**
-
-- Vue **hebdomadaire** (lundi : arrivé à 6h20, pause, …).
-- Destinataire : **l'assistante / la comptable**, pour transmettre les heures au comptable de paie. Elle accède à **tous** les employés.
-- Point à confirmer : le client hésite sur l'accès de l'opérateur à son propre historique. À trancher.
-
----
-
-## 6. Oublis de pointage
-
-Cas reconnu comme inévitable et **non traité par la V1 côté opérateur**. Décisions :
-
-- ce n'est **pas** l'opérateur qui corrige son propre pointage (risque de fraude) ;
-- une **interface d'administration** permet de saisir a posteriori : « le mec a bossé sur tel OF de telle heure à telle heure » ;
-- côté processus, le client se dit prêt à gérer à la main : l'opérateur signale, on lui dit d'aller pointer, et on ajoute le complément en fin de journée.
-
-L'équipe s'engage à **proposer des solutions ergonomiques** (option « pointage en retard » avec saisie de l'heure de début, par exemple).
-
----
+Le fragment client conservé indique une administration capable d’établir qu’un opérateur a travaillé sur un OF
+de telle heure à telle heure. Il exclut une correction par la personne elle-même. Ce constat d’août reste distinct
+du contrat de régularisation, correction et annulation livré depuis.
 
 ## 7. Identification des opérateurs
 
@@ -214,7 +154,7 @@ Argument qui a emporté la décision : dès lors qu'un moyen de secours faible e
 Sujet le plus sensible pour le client.
 
 - L'application est **hébergée à distance, en France** — pas de serveur physique chez le client, contrairement à son réflexe initial.
-- Sa crainte : une coupure Internet ou une panne fait perdre les pointages, donc les heures des employés (« c'est le gros bordel… pour les heures travaillées des employés »).
+- Sa crainte : une coupure Internet ou une panne fait perdre les pointages, donc les heures des employés .
 - **Priorité affichée par le client, actée par l'équipe : la continuité de service.**
 - Réponses apportées :
   - sauvegardes et pare-feu côté hébergement ; au pire, perte limitée aux pointages du jour ;
@@ -225,7 +165,7 @@ Sujet le plus sensible pour le client.
 
 ## 10. Divergences entre les deux transcriptions
 
-À lever explicitement, car elles portent sur le périmètre :
+Divergences historiques entre ces deux sources :
 
 1. **La notion de machine.** La réunion d'équipe indique que le client n'en voulait pas — « il n'y a même pas une notion de machine, c'est moi qui suis parti plus loin », le client ayant refusé d'affecter des tâches par machine et par personne (« usine à gaz »). La réunion client du 01/08 réintroduit clairement machines, compétences et coûts machine. **Lecture retenue** : la machine existe bien dans le modèle, mais **rattachée à l'opérateur** (paramétrage de la ressource), **jamais à l'OF** — c'est cela que le client refusait.
 2. **Un OF à la fois ou plusieurs ?** L'échange d'équipe hésite. La réunion client tranche : **plusieurs OF simultanés**, et même plusieurs machines sur un même OF.
@@ -233,28 +173,15 @@ Sujet le plus sensible pour le client.
 
 ---
 
-## 11. Points ouverts
+## Incertitudes historiques encore visibles dans les extraits
 
-| #   | Sujet                                                           | Attendu                                                                                                                                 |
-| --- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Formule de coût quand un opérateur est sur plusieurs machines   | Valider la règle exacte avec le client (§4), notamment le cas machines/OF différents                                                    |
-| 2   | Rattrapage des oublis de pointage                               | L'équipe propose des solutions ergonomiques ; validation client                                                                         |
-| 3   | Accès de l'opérateur à son propre historique hebdomadaire       | Trancher (le client dit d'abord non, puis semble accepter)                                                                              |
-| 4   | Contenu exact du tableau historique hebdomadaire                | À affiner avec l'assistante                                                                                                             |
-| 5   | Colonnes complémentaires de la synthèse d'OF                    | Montant du devis et montant d'achats : champs de saisie libres, non reliés au reste — confirmer                                         |
-| 6   | Résolution / définition de l'écran de pointage actuel           | **Information non obtenue** : à la question posée, le client répond « je sais pas vous dire ». À redemander (marque évoquée, sans plus) |
-| 7   | Comportement de la pause et de l'arrêt avec plusieurs OF actifs | Reconfirmer le bouton global directement avec le client (§2) — jamais validé de première main                                           |
-| 8   | Nombre de boutons à afficher simultanément                      | Lever la contradiction 10-15 moules + 20 OF vs « une vingtaine de boutons » (§3)                                                        |
-| 9   | Sort de la page « Pilotage »                                    | Supprimée ou transformée en tableau de bord graphique ? (§5.2)                                                                          |
-| 10  | Ordre d'affichage moules / OF                                   | « Moules en haut » n'est qu'une proposition non validée (§3)                                                                            |
-| 11  | Périmètre exact de la V1                                        | Découpage itératif à formaliser sur la base de cette synthèse                                                                           |
+- L’objection sur le coût humain dans l’échange client reste tronquée ; elle ne tranche pas les règles actuelles.
+- Le volume de moules et d’OF annoncé ne se recoupe pas avec le nombre de boutons évoqué.
+- La page « pilotage » est rejetée dans sa forme initiale ; la suppression ou transformation exacte reste incertaine en août.
+- La place respective des moules et OF à l’écran est une proposition d’équipe dont la réponse est tronquée.
+- La biométrie est d’abord privilégiée dans la restitution d’équipe ; le client conclut au code pour commencer.
+- Les promesses de sauvegarde, d’hébergement et de synchronisation sont des propos historiques, sans preuve de déploiement.
 
----
-
-## 12. Ce qui est explicitement hors périmètre
-
-- Toute **planification** (dates de fin, charge prévisionnelle, estimation d'heures).
-- Le **contenu des OF** : gamme, opérations, devis détaillé.
-- L'**affectation** des OF aux opérateurs dans l'application.
-- Toute **liaison technique** entre l'application et les machines-outils.
-- La **biométrie** et la détection d'anomalies d'identification (reportées après la V1).
+Les extraits préservent les discussions sur le multi-OF, les machines, les tarifs, les NC, les références,
+l’ergonomie, le matériel, l’identification et la continuité de service. Le travail interne non facturable est
+évoqué par son bouton propre ; son modèle reste une question distincte chez son propriétaire actuel.

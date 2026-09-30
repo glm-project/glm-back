@@ -131,5 +131,4 @@ Ne pas dupliquer ce qui est déjà documenté — s'y référer :
 - `documentation/cucumber.md` — écriture des scénarios et du glue code Cucumber.
 - `documentation/atelier-api.md` — guide d'intégration de l'API atelier pour le développeur front.
 - `documentation/codes-erreur.md` — catalogue des codes d'erreur stables publiés dans le `type` des `ProblemDetail`.
-- `documentation/strategie/authentification-pointage.md` — stratégie retenue pour identifier l'opérateur au pupitre, sécuriser le poste et survivre à une coupure réseau.
-- `documentation/strategie/bornes-de-fin-de-journee.md` — raisonnement historique du chantier de présence, remplacé par le modèle d'activités ; consulter les propriétaires et le guide API ci-dessus pour les règles actuelles. Les schémas SVG historiques sont à côté.
+- `documentation/strategie/authentification-pointage.md` — réflexion sur l’identification des personnes, la sécurité des appareils et la continuité réseau ; ses propositions restent distinctes des contrats livrés.

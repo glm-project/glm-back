@@ -114,8 +114,7 @@ class SuiviDAtelierResource {
   @Operation(
     summary = "Lire le temps effectivement passe sur un element",
     description = """
-    Les intervalles des activites de l'element, tels que le journal les interprete, sans aucune presence pour les
-    borner.
+    Les intervalles des activites de l'element, tels que le journal les interprete a l'instant de la lecture.
 
     Un intervalle sans fin est encore en cours a l'instant de la lecture, sauf s'il est a resoudre (aResoudre) : une
     sequence en conflit ne permet d'en affirmer ni la fin ni la duree. Une activite que rien n'a terminee avant son

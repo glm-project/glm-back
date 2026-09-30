@@ -96,8 +96,7 @@ régularisation et la correction, et sont définitifs : le même geste rejoué r
 
 Aucun code ne refuse un geste qui contredit le journal d'un élément : sa cible déjà terminée ou remplacée à son heure,
 son ouvrant annulé, une transition vers sa propre catégorie. Pointage, régularisation, correction et annulation
-l'enregistrent, et sa séquence est en conflit jusqu'à ce que le gestionnaire la résolve. L'ancien code
-`transition-d-atelier-interdite` n'est plus émis, et a disparu du catalogue.
+l’enregistrent, et sa séquence est en conflit jusqu’à ce que le gestionnaire la résolve.
 
 ### `operateur` — `urn:glm:erreur:operateur:`
 
@@ -153,9 +152,8 @@ segment de contexte, et lui seul, qui les distingue.
 4. Une ligne dans le catalogue ci-dessus. Celle-là, aucun test ne la réclame : le catalogue est tenu à la main, et
    c'est la seule pièce du contrat qui puisse se démoder en silence.
 
-Les refus des anciennes routes de presence sont retires avec ces routes. Les refus definitifs des gestes
-d'activite restent `activite-visee-introuvable`, `activite-visee-incoherente`, `operateur-introuvable`,
+Les refus définitifs des gestes d’activité sont `activite-visee-introuvable`, `activite-visee-incoherente`, `operateur-introuvable`,
 `poste-de-travail-introuvable`, `suivi-d-atelier-introuvable`, `identifiant-evenement-reutilise`,
-`operateur-non-habilite`, `evenement-anterieur-a-l-engagement` et `date-de-survenue-future` (lots 8b et 8c abandonnés). `suivi-d-atelier-cloture` n'y sort
+`operateur-non-habilite`, `evenement-anterieur-a-l-engagement` et `date-de-survenue-future`. `suivi-d-atelier-cloture` n'y sort
 plus que pour un démarrage ou une non conformité — la seule erreur à afficher à l'opérateur. `saisie-concurrente`
 n'y remonte qu'après trois essais du serveur. Un pointage d'atelier qui contredit le journal n'y est jamais refusé.

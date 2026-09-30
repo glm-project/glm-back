@@ -28,6 +28,9 @@ npm install
 
 - [Contexte metier](documentation/contexte-metier.md)
 - [API atelier](documentation/atelier-api.md)
+- [Refus métier publiés](documentation/codes-erreur.md)
+- [Réflexion sur l’identification au pupitre](documentation/strategie/authentification-pointage.md)
+- [Synthèse historique des extraits de réunions](discussions/synthese-reunions-01-08-2026.md)
 - [Multi-tenant et installation des schemas neufs](documentation/multitenancy.md)
 - [Decisions d'architecture](documentation/adr/README.md)
 

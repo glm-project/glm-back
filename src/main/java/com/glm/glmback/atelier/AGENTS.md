@@ -30,7 +30,6 @@ Ne rien ajouter ici qui relève de :
 - **le référentiel des ressources** — opérateur → postes autorisés, taux ; poste → libellé, nature, coût horaire. Ces
   données sont **lues par port** (`OperateursConnus`, `PostesConnus`, `Habilitations`), jamais possédées ici. Le
   journal ne retient que `OperateurId` et `PosteDeTravailId` ;
-- **la présence et la paie** — aucun journal d'arrivée ou de départ, aucune amplitude ;
 - **le cycle de vie de l'élément de fabrication** lui-même, qui appartient à `elementdefabrication` ;
 - **le fuseau horaire et le jour calendaire** — les lecteurs découpent les activités ; aucun `ZoneId` ni `LocalDate`
   dans ce contexte.
@@ -111,9 +110,9 @@ interprétés de ses activités ; seuls les faits d'activité, la clôture et l'
   sans conflit ni qualification supplémentaire dans le journal ; une transition ouvre sa nouvelle activité à son
   heure, en laissant un trou. Une relance ou une clôture ne prolonge jamais une
   activité échue. Seule une régularisation — fin ou transition — termine une activité au-delà de son échéance.
-- **Une ouverture sur une activité déjà en cours la relance**, elle n'est jamais refusée (décision D9 de
-  [bornes-de-fin-de-journee.md](../../../../../../../documentation/strategie/bornes-de-fin-de-journee.md)). Les
-  lecteurs consomment les activités et conflits projetés par atelier avec leurs propres entités immuables ; chacun
+- **Une ouverture relance une activité interprétable sans bloquer le pupitre.** Avant son échéance, elle
+  termine l’ancienne à l’heure du geste ; après, elle conserve sa fin automatique et le trou jusqu’à la nouvelle
+  ouverture. Une transition de même catégorie conserve sa cible et met la séquence en conflit. Les lecteurs consomment les activités et conflits projetés par atelier avec leurs propres entités immuables ; chacun
   évalue l'échéance projetée à son instant de lecture et applique ses règles de calendrier ou de valorisation.
 - **À heure métier égale, le journal range la fin, puis la transition, puis l'ouverture**, et départage enfin par
   l'identifiant : jamais par la date d'enregistrement, qui ferait dépendre le journal de l'ordre de réception.

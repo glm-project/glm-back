@@ -10,10 +10,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 /**
- * Strategie « bornes de fin de journee », lot 8a : arreter un OF n'est jamais refuse a l'operateur. Une fin qui
- * contredit le journal est conservee, et la sequence est en conflit ; une fin posterieure a la cloture de l'OF ne change
- * rien, elle est absorbee. Demarrer sur un OF cloture reste la seule exception, refusee avec un message, avec la cible
- * introuvable ou d'un autre poste.
+ * Une fin qui contredit le journal est conservee, et la sequence est en conflit ; une fin posterieure a la cloture
+ * de l'OF est absorbee, la cloture ayant deja termine l'activite. Le demarrage sur un OF cloture et la cible
+ * introuvable ou d'un autre poste restent refuses.
  */
 @UnitTest
 class PointageDAtelierJamaisRefuseTest {
