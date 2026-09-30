@@ -562,11 +562,18 @@ Feature: Suivi des elements engages en atelier
     When je tente de supprimer l'operateur declare "dupont"
     Then la reponse a le statut http 409
 
-  Scenario: Un operateur qui n'a fait que pointer sa presence ne se supprime pas davantage
-    # La presence seule suffit : c'est elle qui porte les heures a payer.
-    Given il est "2026-05-10T07:00:00Z"
-    And je suis arrive
+  Scenario: Un operateur dont le seul fait historique a ete annule ne se supprime plus
+    Given il est "2026-05-10T08:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF annule lot7"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | annule lot7          |
+    And j'ai engage l'element "OF annule lot7" en atelier
+    And j'ai pointe sur "OF annule lot7"
+      | type      | DEBUT  |
       | operateur | dupont |
+    When j'annule l'evenement 0 de "OF annule lot7"
+      | motif | Saisie sur le mauvais element |
+    Then la reponse a le statut http 200
     When je tente de supprimer l'operateur declare "dupont"
     Then la reponse a le statut http 409
 

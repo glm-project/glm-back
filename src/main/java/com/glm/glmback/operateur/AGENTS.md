@@ -20,10 +20,10 @@ ne l'ait saisi deux fois.
 - **La nature de travail comme propriété d'une personne.** Elle appartient au poste. Déclarer un métier sur
   l'opérateur le stockerait deux fois, avec la possibilité qu'ils se contredisent.
 - **Le calcul du coût de revient**. L'opérateur porte son `TauxHoraire` (facultatif, strictement positif), mais ce
-  contexte ne fait rien d'autre que le stocker et le restituer : aucun calcul, aucune répartition. `atelier` ne le lit
-  pas encore — c'est le lot « coût de revient » qui posera ce port.
+  contexte ne fait rien d'autre que le stocker et le restituer : aucun calcul, aucune répartition. `atelier` le copie
+  sur ses faits, `coutderevient` les valorise.
 - **Le pointage**, qui appartient à `atelier` — lequel ne connaît de ce contexte que l'identifiant, lu par port, et
-  n'en copie rien.
+  copie le taux horaire sur ses faits.
 - **L'identification à la borne** et l'authentification. Le matricule est un attribut d'identité, pas un moyen de
   connexion.
 
@@ -54,9 +54,9 @@ résolus.
   `ElementEngageableEntity`).
 - **Une page se résout en une requête.** `PostesHabilitables` n'expose que `parIds` : un accès unitaire coûterait
   autant de requêtes que d'habilitations sur la page.
-- **Un opérateur qui a pointé ne se supprime pas**, qu'il ait pointé sur un élément ou seulement sa présence : le
-  journal d'atelier ne retient que son identifiant, et sa disparition laisserait des heures sans personne à payer. La
-  règle vit dans `OperateursService`, derrière le port `OperateursQuiOntPointe`.
+- **Un opérateur qui a un fait historique d'activité ne se supprime pas**, même si tous ses faits ont été annulés :
+  le journal conserve son identifiant pour lire l'histoire. La règle vit dans `OperateursService`, derrière le port
+  `OperateursQuiOntPointe`, qui lit les faits sans filtre d'annulation.
 - **Domaine immuable** : la révision passe par `Operateur.revise`, qui rend un nouvel agrégat de même identité.
 
 ## Ports sortants

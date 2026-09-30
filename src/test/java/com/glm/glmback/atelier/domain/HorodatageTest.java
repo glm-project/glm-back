@@ -38,7 +38,6 @@ class HorodatageTest {
 
     assertThat(horodatage.dateDeSurvenue()).isEqualTo(LE_10_MAI_2026_A_8H);
     assertThat(horodatage.dateDEnregistrement()).isEqualTo(LE_11_MAI_2026_A_9H15);
-    assertThat(horodatage.estDifferee()).isTrue();
   }
 
   @Test
@@ -47,6 +46,5 @@ class HorodatageTest {
 
     assertThat(horodatage.dateDeSurvenue()).isEqualTo(LE_10_MAI_2026_A_8H);
     assertThat(horodatage.dateDEnregistrement()).isEqualTo(LE_10_MAI_2026_A_8H);
-    assertThat(horodatage.estDifferee()).isFalse();
   }
 }

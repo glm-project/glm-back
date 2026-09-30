@@ -60,11 +60,6 @@ final class RessourcesDAtelierEnMemoire {
   private final class OperateursEnMemoire implements OperateursConnus {
 
     @Override
-    public boolean existe(OperateurId id) {
-      return operateurs.containsKey(id);
-    }
-
-    @Override
     public Optional<OperateurConnu> get(OperateurId id) {
       return Optional.ofNullable(operateurs.get(id));
     }

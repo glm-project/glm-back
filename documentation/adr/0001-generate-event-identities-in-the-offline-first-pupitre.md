@@ -2,11 +2,11 @@
 
 ## Status
 
-Accepted.
+Accepted. Scope reduced to activity gestures when presence was retired.
 
 ## Context
 
-The pupitre records arrival, presence and workshop gestures while it can be disconnected. A retry must retain the
+The pupitre records workshop activity gestures while it can be disconnected. A retry must retain the
 real gesture time and must not append a second journal event. Event identities must remain isolated by tenant and
 must survive any local cache eviction.
 
@@ -21,7 +21,7 @@ must survive any local cache eviction.
 
 Generate one UUID for each offline-first gesture in the pupitre. Persist it as the journal event identity and reserve
 it atomically in a PostgreSQL table in the current tenant schema. Store the replayable fingerprint in explicit
-columns, then associate it with the resulting day or workshop follow-up in the same transaction. Keep server-generated
+columns, then associate it with the resulting workshop follow-up in the same transaction. Keep server-generated
 UUIDs for non-pupitre corrections and reserve them as non-replayable identities.
 
 ## Consequences

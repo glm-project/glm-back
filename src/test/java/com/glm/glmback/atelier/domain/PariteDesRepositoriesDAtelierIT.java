@@ -22,7 +22,7 @@ import org.springframework.transaction.support.TransactionTemplate;
  * Confronte l'adapter de persistance au double en memoire sur les memes donnees.
  *
  * <p>
- * {@link SuiviDAtelierCriteria#matches} et {@link JourneeDeTravailCriteria#matches} vivent dans le domaine pour que le
+ * {@link SuiviDAtelierCriteria#matches} vit dans le domaine pour que le
  * double et l'adapter ne puissent pas diverger. L'adapter ne les appelle plus : l'etat et le debut n'etant pas
  * stockes mais projetes, il traduit les memes regles en SQL. La garantie que donnait le code partage est donc
  * retablie ici, par l'execution.
@@ -42,9 +42,6 @@ class PariteDesRepositoriesDAtelierIT {
 
   @Autowired
   private SuiviDAtelierRepository suivisPersistes;
-
-  @Autowired
-  private JourneeDeTravailRepository journeesPersistees;
 
   @Autowired
   private TransactionTemplate transactions;
@@ -119,48 +116,6 @@ class PariteDesRepositoriesDAtelierIT {
     ).hasSize(1);
   }
 
-  @Test
-  @WithTenant("impeccmold")
-  void shouldRendreLesMemesJourneesQueLeDoubleEnMemoire() {
-    OperateurId operateur = new OperateurId(UUID.randomUUID());
-    Instant lundi = Instant.parse("2042-02-05T07:00:00Z");
-    Instant mardi = Instant.parse("2042-02-06T07:00:00Z");
-    List<JourneeDeTravail> jeu = List.of(journeeOuverteA(operateur, lundi), journeeCompleteA(operateur, mardi));
-
-    JourneesDeTravailEnMemoire enMemoire = new JourneesDeTravailEnMemoire();
-    jeu.forEach(journee -> {
-      enMemoire.create(journee);
-      inTransaction(() -> journeesPersistees.create(journee));
-    });
-
-    for (Optional<Periode> periode : List.of(Optional.<Periode>empty(), Optional.of(new Periode(mardi, mardi)))) {
-      JourneeDeTravailCriteria criteres = new JourneeDeTravailCriteria(periode, Optional.of(operateur));
-      Page<JourneeDeTravail> attendue = enMemoire.list(criteres, PREMIERE_PAGE);
-      Page<JourneeDeTravail> obtenue = inTransaction(() -> journeesPersistees.list(criteres, PREMIERE_PAGE));
-
-      assertThat(obtenue.content()).describedAs("periode %s", periode).containsExactlyElementsOf(attendue.content());
-      assertThat(obtenue.totalElementsCount()).isEqualTo(attendue.totalElementsCount());
-    }
-  }
-
-  @Test
-  @WithTenant("impeccmold")
-  void shouldTrouverLaMemeJourneeContenantUnInstantQueLeDoubleEnMemoire() {
-    OperateurId operateur = new OperateurId(UUID.randomUUID());
-    Instant arrivee = Instant.parse("2042-03-05T07:00:00Z");
-    JourneeDeTravail complete = journeeCompleteA(operateur, arrivee);
-
-    JourneesDeTravailEnMemoire enMemoire = new JourneesDeTravailEnMemoire();
-    enMemoire.create(complete);
-    inTransaction(() -> journeesPersistees.create(complete));
-
-    for (Instant instant : List.of(arrivee.minusSeconds(1), arrivee, arrivee.plusSeconds(18000), arrivee.plusSeconds(36001))) {
-      assertThat(inTransaction(() -> journeesPersistees.journeeContenant(operateur, instant)))
-        .describedAs("instant %s", instant)
-        .isEqualTo(enMemoire.journeeContenant(operateur, instant));
-    }
-  }
-
   private static SuiviDAtelier suiviEngageA(Instant date) {
     return SuiviDAtelier.builder()
       .id(SuiviDAtelierId.newId())
@@ -202,80 +157,6 @@ class PariteDesRepositoriesDAtelierIT {
       .tauxHoraire(Optional.of(TAUX_HORAIRE_DUPONT))
       .auteur(AUTEUR_DUPONT)
       .origine(OrigineDuPointage.POINTAGE)
-      .horodatage(Horodatage.saisiA(date));
-  }
-
-  /**
-   * Les anomalies se jugent a l'instant de lecture, sur des colonnes projetees : l'adapter doit retenir exactement ce
-   * que {@link CriteresDAnomalie#matches} retient, bornes du seuil comprises.
-   */
-  @Test
-  @WithTenant("impeccmold")
-  void shouldRendreLesMemesAnomaliesQueLeDoubleEnMemoire() {
-    OperateurId operateur = new OperateurId(UUID.randomUUID());
-    Instant lundi = Instant.parse("2042-04-07T07:00:00Z");
-    Instant samedi = Instant.parse("2042-04-12T07:00:00Z");
-    Instant maintenant = samedi.plus(Duration.ofHours(13));
-    List<JourneeDeTravail> jeu = List.of(
-      journeeOuverteA(operateur, lundi),
-      journeeFermeeApres(operateur, Instant.parse("2042-04-08T07:00:00Z"), Duration.ofHours(10)),
-      journeeFermeeApres(operateur, Instant.parse("2042-04-09T07:00:00Z"), Duration.ofHours(16)),
-      journeeFermeeApres(operateur, Instant.parse("2042-04-10T07:00:00Z"), Duration.ofHours(13)),
-      journeeFermeeApres(operateur, Instant.parse("2042-04-11T07:00:00Z"), Duration.ofHours(13).plusSeconds(1)),
-      journeeFermeeApres(operateur, Instant.parse("2042-04-11T21:00:00Z"), Duration.ofHours(13).plusMillis(500)),
-      journeeOuverteA(operateur, samedi)
-    );
-
-    JourneesDeTravailEnMemoire enMemoire = new JourneesDeTravailEnMemoire();
-    jeu.forEach(journee -> {
-      enMemoire.create(journee);
-      inTransaction(() -> journeesPersistees.create(journee));
-    });
-
-    for (Optional<TypeDAnomalie> type : List.of(
-      Optional.<TypeDAnomalie>empty(),
-      Optional.of(TypeDAnomalie.JOURNEE_SANS_DEPART),
-      Optional.of(TypeDAnomalie.AMPLITUDE_EXCESSIVE)
-    )) {
-      CriteresDAnomalie criteres = new CriteresDAnomalie(
-        maintenant,
-        new AmplitudeMaximale(Duration.ofHours(13)),
-        Optional.of(operateur),
-        type
-      );
-      Page<JourneeDeTravail> attendue = enMemoire.enAnomalie(criteres, PREMIERE_PAGE);
-      Page<JourneeDeTravail> obtenue = inTransaction(() -> journeesPersistees.enAnomalie(criteres, PREMIERE_PAGE));
-
-      assertThat(obtenue.content()).describedAs("type %s", type).containsExactlyElementsOf(attendue.content());
-      assertThat(obtenue.totalElementsCount()).isEqualTo(attendue.totalElementsCount());
-    }
-    assertThat(
-      enMemoire
-        .enAnomalie(
-          new CriteresDAnomalie(maintenant, new AmplitudeMaximale(Duration.ofHours(13)), Optional.of(operateur), Optional.empty()),
-          PREMIERE_PAGE
-        )
-        .totalElementsCount()
-    ).isEqualTo(4);
-  }
-
-  private static JourneeDeTravail journeeFermeeApres(OperateurId operateur, Instant arrivee, Duration amplitude) {
-    return journeeOuverteA(operateur, arrivee).enregistre(presence(TypeDEvenementDePresence.DEPART, arrivee.plus(amplitude)));
-  }
-
-  private static JourneeDeTravail journeeOuverteA(OperateurId operateur, Instant arrivee) {
-    return JourneeDeTravail.ouverte(JourneeDeTravailId.newId(), operateur).enregistre(presence(TypeDEvenementDePresence.ARRIVEE, arrivee));
-  }
-
-  private static JourneeDeTravail journeeCompleteA(OperateurId operateur, Instant arrivee) {
-    return journeeOuverteA(operateur, arrivee).enregistre(presence(TypeDEvenementDePresence.DEPART, arrivee.plusSeconds(36000)));
-  }
-
-  private static EvenementDePresence presence(TypeDEvenementDePresence type, Instant date) {
-    return EvenementDePresence.builder()
-      .id(EvenementDePresenceId.newId())
-      .type(type)
-      .auteur(AUTEUR_DUPONT)
       .horodatage(Horodatage.saisiA(date));
   }
 

@@ -2,7 +2,10 @@
 
 ## Status
 
-Accepted on 28 September 2026. It replaces two rules of the `atelier` context: « the pause and the departure are
+Accepted on 28 September 2026 for the server/pupitre boundary: pause becomes targeted activity finishes,
+resumption becomes new openings. The text below records the model at that date. Its clauses about retained
+presence, abandoned days, presumed ends and presence-data migration are historical, superseded by the current
+[activity model](../contexte-metier.md) and [API contract](../atelier-api.md); they are no longer implementation rules. It replaces two rules of the `atelier` context: « the pause and the departure are
 operator facts, written once, never copied into the element journals », and « never loop over the running elements to
 propagate a pause ».
 

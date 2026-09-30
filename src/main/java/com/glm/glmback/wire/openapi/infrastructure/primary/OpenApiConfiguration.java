@@ -44,7 +44,7 @@ class OpenApiConfiguration {
 
     ## Roles
 
-    - `USER` — shop-floor operator: clocks presence and work, reads.
+    - `USER` — shop-floor operator: records activities and reads.
     - `GESTIONNAIRE` — back-office: everything a `USER` can do, plus committing elements to the shop floor, closing
       them, and correcting entries (`regularise`, `annule`, `corrige`).
     - `ADMIN` — technical administration (`/api/admin/**`, `/management/**`) only. **It grants no business access.**

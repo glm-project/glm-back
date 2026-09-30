@@ -29,41 +29,23 @@ Le repository et le compteur sont persistés en PostgreSQL, dans le schéma de l
 
 ## atelier
 
-Gère l'exécution en atelier de ce que `elementdefabrication` a déclaré. Le gestionnaire y met un élément en atelier, les opérateurs y pointent leur présence et leur travail, le gestionnaire clôture et corrige.
+Gère l'exécution en atelier de ce que `elementdefabrication` a déclaré. Le gestionnaire y met un élément en atelier, les opérateurs y pointent leurs activités, le gestionnaire clôture et corrige.
 
-Le contexte porte **deux agrégats** : la `JourneeDeTravail` d'un opérateur et le `SuiviDAtelier` d'un élément engagé. Ils partagent un même langage — opérateur, auteur, horodatage, annulation, régularisation. Le temps réellement passé sur un élément, lui, ne se lit que dans son journal : aucune présence ne le borne. Les séparer en deux contextes obligerait à dupliquer ces value objects, que le shared kernel ne peut pas accueillir puisqu'il est en anglais.
+Le contexte porte le `SuiviDAtelier` d'un élément engagé et son journal d'activité. Les temps se lisent dans
+ses activités interprétées. Il ne possède plus de journée de travail, d'arrivée, de départ ni d'amplitude.
 
 **Le journal d'événements est la source de vérité.** L'agrégat se reconstruit par le repli du journal, trié par date de survenue ; les projections d'activités et de conflits sont réconciliées à chaque écriture pour les lectures. C'est la correction qui l'impose — un temps juste exige que la saisie oubliée compte à l'heure où elle a eu lieu, pas à l'heure où on la rattrape, et un modèle à compteurs ne sait pas revenir en arrière. Chaque événement porte donc un `Horodatage` bitemporel : sa date de survenue, métier, et sa date d'enregistrement, technique.
 
-**Une régularisation est un acte du gestionnaire, conservé sur le fait, pas un écart de dates ni une identité d'auteur.** Chaque événement du journal d'un élément porte son origine : `POINTAGE` pour tout ce qui passe par la route des pointages, quels que soient le rôle de celui qui pointe et l'heure de geste fournie, `REGULARISATION` pour une régularisation ou le remplaçant d'une correction, même saisis à l'heure du fait. `estUneRegularisation()` lit cette origine. L'écart entre les deux dates ne suffit pas : un pupitre resté hors ligne rejoue ses pointages après coup sans que le gestionnaire soit intervenu. Cet écart reste la lecture d'une saisie différée, et la présence y reconnaît encore sa régularisation. Le booléen jumeau `estSaisiParUnTiers` a été retiré avec le passage à l'identifiant : l'`Auteur` vient du jeton et l'opérateur du référentiel, et rien ne relie encore les deux — le comparer n'aurait plus produit qu'une réponse toujours vraie. Il reviendra avec le lot « utilisateur connecté ».
+**Une régularisation est un acte du gestionnaire, conservé sur le fait, pas un écart de dates ni une identité d'auteur.** Chaque événement du journal d'un élément porte son origine : `POINTAGE` pour tout ce qui passe par la route des pointages, quels que soient le rôle de celui qui pointe et l'heure de geste fournie, `REGULARISATION` pour une régularisation ou le remplaçant d'une correction, même saisis à l'heure du fait. `estUneRegularisation()` lit cette origine. L'écart entre les deux dates ne suffit pas : un pupitre resté hors ligne rejoue ses pointages après coup sans que le gestionnaire soit intervenu. Cet écart reste la lecture d'une saisie différée. Le booléen jumeau `estSaisiParUnTiers` a été retiré avec le passage à l'identifiant : l'`Auteur` vient du jeton et l'opérateur du référentiel, et rien ne relie encore les deux — le comparer n'aurait plus produit qu'une réponse toujours vraie. Il reviendra avec le lot « utilisateur connecté ».
 
-### La présence, de l'arrivée au départ
+### La pause et le travail non facturable
 
-Le client décrit son besoin comme « une pointeuse à laquelle on rajoute une option OF », et il a corrigé explicitement l'équipe sur ce point : les heures de présence courent de l'arrivée dans la société au départ, **jamais du premier au dernier élément travaillé**. L'objectif du produit reste de savoir qui travaille sur quoi et combien un OF a coûté en temps de travail : **la présence ne sert pas à payer**.
+La pause est un geste du pupitre : il envoie une fin ciblée par activité actionnable, puis une nouvelle ouverture à
+la reprise, en travail ou en non conformité. Le serveur reçoit les faits d'activité correspondants.
 
-`JourneeDeTravail` porte donc son propre journal, d'`ARRIVEE` et de `DEPART`. Ses bornes sont l'arrivée et le départ, **pas le jour calendaire** : aucun fuseau horaire n'entre dans le domaine, et une équipe de nuit ou un retour en soirée ouvre simplement une seconde journée. Elle expose deux mesures, que l'absence de pause rend égales pour une journée d'une seule venue :
-
-- `amplitude()` — de l'arrivée au départ ;
-- `fenetres()` — les périodes de présence, une par venue.
-
-**La pause n'est pas un fait de présence** ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)) : un opérateur en pause reste présent, et le relevé de présence compte sa pause.
-
-**Une journée sans départ est abandonnée** quand son amplitude depuis l'arrivée dépasse le seuil paramétré par l'entreprise (contexte `parametrage`, 13 h par défaut) — strictement : un geste au seuil pile reste dans la journée. Aucune règle calendaire ne peut fermer une journée, puisqu'un poste de nuit court de 20 h à 8 h ; le seuil, lui, reste sous 24 h, ce qui garantit qu'un retour le lendemain à la même heure soit une nouvelle arrivée. L'abandon se juge sur l'heure du geste, jamais sur sa réception : un pupitre hors ligne qui rejoue un geste de la veille le voit rangé dans la bonne journée.
-
-- **Une arrivée sous le seuil est absorbée** : l'opérateur est déjà là, rien n'est ajouté, la journée en cours est rendue comme un rejeu. C'est ce qui permet à l'opérateur de nuit de se réidentifier à 3 h.
-- **Un geste reçu pour une journée abandonnée en ouvre une nouvelle** : une arrivée implicite à l'heure du geste, sous un identifiant du serveur réservé comme celui d'une régularisation, puis le geste lui-même. Une arrivée égarée sur la route des pointages s'y réduit à l'arrivée implicite ; un départ tardif donne une journée de durée nulle. La journée abandonnée reste telle quelle, sans départ, à régulariser.
-- **Deux journées d'un même opérateur ne se chevauchent jamais.** L'étendue d'une journée va de son premier à son dernier fait connu ; une régularisation ou une correction qui ferait toucher deux étendues est refusée au gestionnaire (`chevauchement-de-journees`). Les gestes de l'opérateur ne sont jamais refusés pour cette raison. La recherche passe par la projection `dernier_fait`, écrite comme `debut` et `fin`.
-- À instant égal, dans le journal de présence, **l'arrivée passe devant** : l'arrivée implicite partage l'heure du geste qu'elle précède.
-
-**La liste des anomalies** (`GET /api/atelier/anomalies`, gestionnaire seul) signale deux types de journées, jugées à l'instant de lecture avec le seuil courant et jamais stockées : `JOURNEE_SANS_DEPART`, abandonnée au-delà du seuil, et `AMPLITUDE_EXCESSIVE`, fermée au-delà du seuil. La plus récente d'abord, filtrable par opérateur et par type. Une ligne disparaît dès que la régularisation la résout ; changer le seuil fait apparaître ou disparaître des lignes sans migration. La requête s'appuie sur les projections `etat`, `debut` et `amplitude_microsecondes` — à la précision des horodatages de la base, pour qu'un dépassement d'une demi-seconde reste un dépassement.
-
-Depuis le lot 3, une amplitude excessive ne naît plus d'un geste de l'opérateur : un départ pointé au-delà du seuil ouvre une nouvelle journée, et c'est la journée du matin, sans départ, qui est signalée. Elle ne vient que d'un acte du gestionnaire — un départ régularisé ou corrigé tard.
-
-**Le départ est un fait de l'opérateur, écrit une seule fois ; la pause n'existe pas pour le serveur, le pupitre la traduit en fins d'activité.** Le départ n'est jamais recopié dans le journal des éléments, et il ne termine aucune activité : une activité oubliée se termine à son échéance, ou à la fin que le gestionnaire régularise. La pause, elle, se lit dans le journal de chaque élément : le client la décrit comme l'arrêt et la reprise du travail — « pause / arrêt / reprise sont le même mécanisme » —, et le pupitre y pointe une fin par activité en cours, puis un début, ou une non conformité, à la reprise. Le serveur ne reçoit que des fins et des débuts.
-
-La **présence sans affectation** — le temps de présence sans élément rattaché — n'est pas un élément fictif : c'est le résidu de la présence moins le temps affecté, calculé à la lecture. La présence est comptée dès l'identification, que l'opérateur ait ou non pointé sur un élément.
-
-**GLM n'est pas un concept du modèle.** C'est le nom que le client de référence donne à son travail non facturable — sur un projet interne, par exemple —, qu'il veut déclarer manuellement (« De toute façon il y aura ce bouton GLM »). Ce travail n'est pas encore modélisé, et la présence sans affectation n'en est pas : un opérateur présent sans activité pointée ne fait pas pour autant du travail non facturable. C'est le principe posé en tête de ce document : GLM sert de trame, pas de spécification.
+**GLM n'est pas un concept du modèle.** C'est le nom que le client de référence donne à son travail non facturable,
+sur un projet interne par exemple, qu'il veut déclarer manuellement (« De toute façon il y aura ce bouton GLM »).
+Ce travail fera l'objet d'une spécification séparée.
 
 ### Le temps effectif, celui des seules activités
 
@@ -136,7 +118,7 @@ Une pièce ratée se refait, sur le même élément et au même tarif, mais comp
 | Saisie en trop | `annule`     | marquage de l'événement fautif, qui reste au journal |
 | Saisie fausse  | `corrige`    | annulation **et** insertion, en un seul acte         |
 
-Ces trois actes existent sur les deux agrégats : une heure d'arrivée fausse se corrige comme un début de travail faux.
+Ces trois actes s'appliquent aux faits du suivi d'atelier.
 
 Un journal ne se réécrit pas : l'événement erroné reste, porteur d'une `Annulation` qui trace qui a corrigé, quand et pourquoi. Le repli écarte les annulés, puis déroule l'automate.
 
@@ -172,7 +154,10 @@ ajoutent l'évaluation temporelle, le calendrier ou la valorisation de leur cont
 
 L'écran des opérateurs veut tous les éléments actifs d'un coup, sans rien qui défile et sans notion de date : la période de `SuiviDAtelierCriteria` est donc **facultative**, et ne sert qu'aux écrans de back-office.
 
-Les quatre couches existent désormais, et les deux agrégats sont persistés en PostgreSQL, dans le schéma de l'entreprise courante. Chacun occupe deux tables : la ligne de l'agrégat et son journal ; le suivi y ajoute la projection de ses activités. Le journal restant la seule source de vérité, l'état n'est jamais stocké _comme état_ — mais des **projections** sont écrites à chaque écriture et jamais relues pour reconstruire l'agrégat : `etat`, `debut` et `fin` pour la journée, la table `activite_d_atelier` pour le suivi. Celle-ci ne porte que ce qui ne dépend pas de l'instant — début, échéance, fin réelle — et le filtre des états du tableau d'atelier la juge à l'instant de la lecture. Sans elles, filtrer l'écran d'atelier sur les états ou retrouver la journée contenant un instant obligerait à ramener toute l'entreprise en mémoire.
+Les quatre couches existent ; `suivi_d_atelier` et `evenement_d_atelier` persistent le suivi et ses faits dans le
+schéma de l'entreprise courante. Le domaine rapproche les projections `activite_d_atelier` à chaque écriture.
+Elles portent les bornes indépendantes de la lecture et servent les filtres sans reconstruire toute l'entreprise.
+Le suivi se reconstruit depuis ses faits, et non depuis les projections.
 
 L'atelier projette aussi ses séquences en conflit, pour que les lecteurs les retrouvent après un redémarrage :
 `sequence_en_conflit` porte le suivi et le couple opérateur/poste, `pointage_en_conflit` les identités ordonnées de
@@ -198,8 +183,8 @@ L'API est décrite par OpenAPI (`/swagger-ui.html`) et par [atelier-api.md](atel
 
 ### Points ouverts
 
-1. **Régulariser après une dé-habilitation est refusé.** L'habilitation étant vérifiée sur les trois écritures du journal, un gestionnaire ne peut plus rattraper une saisie oubliée sur un poste dont l'opérateur a été retiré depuis. Le cas est assumé pour ce lot — il ferme la porte au contournement —, mais il laisserait un trou dans la paie s'il se produisait : à rouvrir si le client le rencontre.
-2. **Quelle mesure alimente la paie ? Fermé le 28/09/2026** : aucune, la présence ne sert pas à payer ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)). `amplitude()` et `fenetres()` restent exposées tant que la présence existe ; sa suppression est un chantier suivant.
+1. **Régulariser après une dé-habilitation est refusé.** L'habilitation étant vérifiée sur les trois écritures du journal, un gestionnaire ne peut plus rattraper une saisie oubliée sur un poste dont l'opérateur a été retiré depuis. Le cas est assumé pour ce lot — il ferme la porte au contournement —, mais il empêcherait le rattrapage des activités concernées : à rouvrir si le client le rencontre.
+2. **La présence et la paie sont hors produit.** Les arrivées, départs, journées et amplitudes sont retirés ; seuls les faits d’activité alimentent les relevés.
 3. **Le coût de revient monétaire est sorti du contexte** : `coutderevient` lit les activités projetées par
    atelier et les tarifs du fait ouvrant actif, par ses propres ports en lecture seule. `atelier` capture ces
    tarifs ; le coût les combine. Reste ouvert le **coût par période** (par opérateur, par poste, par mois), qui
@@ -210,14 +195,12 @@ L'API est décrite par OpenAPI (`/swagger-ui.html`) et par [atelier-api.md](atel
    les activités encore actionnables et efface durablement la mémoire de reprise. Le serveur reçoit les gestes
    d'activité correspondants ; les activités en conflit ou expirées sont exclues de ces commandes. Voir
    l'[ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md) pour la frontière serveur/pupitre.
-5. **La déclaration du travail non facturable.** Le client veut son bouton GLM, placé en bas de l'écran, pour déclarer à la main le travail qu'il ne facture pas. Rien ne le modélise encore : le mode de déclaration, le rattachement éventuel à un projet interne et la coexistence avec d'autres activités feront l'objet d'une spec à part. La présence sans affectation n'y répond pas : ce n'est pas un travail déclaré.
+5. **La déclaration du travail non facturable.** Le client veut son bouton GLM, placé en bas de l'écran, pour déclarer à la main le travail qu'il ne facture pas. Rien ne le modélise encore : le mode de déclaration, le rattachement éventuel à un projet interne et la coexistence avec d'autres activités feront l'objet d'une spec à part.
 6. **Le cycle de vie de l'élément lui-même.** La clôture existe côté atelier, sur le suivi. Reste à trancher si l'élément de fabrication porte en propre un statut, ou si son activité se lit entièrement par la présence ou l'absence d'un suivi non clôturé.
-7. **Aucune garde d'unicité en base** sur « un seul suivi non clôturé par élément », contrairement à ce que `elementdefabrication` fait pour la `Reference`. La règle vit dans le service, mais une contrainte partielle transformerait en 500 un état que le domaine admet aujourd'hui : rouvrir la clôture d'un suivi dont l'élément a été réengagé depuis. À trancher côté domaine avant de poser la contrainte. « Une seule journée ouverte par opérateur » n'est plus une règle : une journée abandonnée reste sans départ pendant que la suivante est ouverte.
+7. **Aucune garde d'unicité en base** sur « un seul suivi non clôturé par élément », contrairement à ce que `elementdefabrication` fait pour la `Reference`. La règle vit dans le service, mais une contrainte partielle transformerait en 500 un état que le domaine admet aujourd'hui : rouvrir la clôture d'un suivi dont l'élément a été réengagé depuis. À trancher côté domaine avant de poser la contrainte.
 8. **L'écriture du journal rapproche par identifiant**, ce qui coûte une lecture indexée de la collection à chaque pointage. Si un journal devenait assez long pour que cette lecture pèse, la sortie est un upsert natif gardé (`on conflict (id) do update ... where ... is distinct from ...`), qui épargne à PostgreSQL toute version de tuple sur les lignes inchangées — au prix d'une scission permanente entre lecture JPA et écriture JDBC.
-9. **Les écritures et lectures de présence restent disponibles**, avec leur paramétrage et leurs migrations.
-   Elles sont indépendantes du temps effectif, des relevés, du coût et du référentiel pupitre, désormais fondés
-   sur les seules activités. Leur retrait global et la réconciliation du
-   [guide historique](strategie/bornes-de-fin-de-journee.md) restent un chantier distinct.
+9. **Le retrait des surfaces de présence est effectif.** Le paramétrage d'amplitude est retiré dans l'étape suivante ;
+   la réconciliation globale du [guide historique](strategie/bornes-de-fin-de-journee.md) reste au lot documentaire.
 
 ## postedetravail
 
@@ -247,7 +230,7 @@ Il s'ensuit que **la nature appartient au poste**. Déclarer un métier sur la p
 
 La phrase du client « la machine est liée à l'opérateur, et l'opérateur a la fonction » dit **où se saisit** le paramétrage — sur la ligne de l'opérateur, on liste ses postes —, pas d'où la nature se déduit au moment du pointage.
 
-**Un opérateur qui a pointé ne se supprime pas**, sur un élément comme en présence : le journal d'atelier et les journées de travail ne retiennent que son identifiant, et sa disparition laisserait des heures sans personne à payer. Le port `OperateursQuiOntPointe` lit les deux tables de l'atelier par des entités en lecture seule.
+**Un opérateur dont un fait historique d'activité existe ne se supprime pas**, même si ce fait est annulé. Le journal conserve son identifiant pour lire l'histoire ; `OperateursQuiOntPointe` lit les faits par une entité propre en lecture seule, sans filtre d'annulation.
 
 ### Identité et matricule
 

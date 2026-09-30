@@ -45,22 +45,4 @@ class AnnuaireDAtelierServiceTest {
     assertThat(annuaire.operateur(OPERATEUR_ID_DUPONT)).contains(OPERATEUR_CONNU_DUPONT);
     assertThat(annuaire.poste(POSTE_ID_FRAISEUSE_1)).contains(POSTE_CONNU_FRAISEUSE_1);
   }
-
-  /**
-   * La presence ne connait aucun poste : seul l'operateur de la journee est a resoudre.
-   */
-  @Test
-  void shouldResoudreLeSeulOperateurDUneJournee() {
-    AnnuaireDAtelier annuaire = annuaires.pour(journeeDeDupontOuverteA7H());
-
-    assertThat(annuaire.operateur(OPERATEUR_ID_DUPONT)).contains(OPERATEUR_CONNU_DUPONT);
-    assertThat(annuaire.postes()).isEmpty();
-  }
-
-  @Test
-  void shouldResoudreLesOperateursDUneListeDeJournees() {
-    AnnuaireDAtelier annuaire = annuaires.pourJournees(List.of(journeeDeDupontOuverteA7H(), journeeDeDupontDe7HA17H()));
-
-    assertThat(annuaire.operateurs()).containsOnlyKeys(OPERATEUR_ID_DUPONT);
-  }
 }

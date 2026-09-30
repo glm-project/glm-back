@@ -67,16 +67,13 @@ Feature: Echeance et fin automatique des activites
       | activite                             | debut                | fin                  | finAutomatique |
       | 00000000-0000-0000-0000-000000000511 | 2026-06-02T08:00:00Z | 2026-06-02T21:00:00Z | true           |
 
-  Scenario: Un depart ne tronque pas une activite que rien n'a terminee
-    # Le temps effectif est celui de l'activite seule : la presence ne le borne pas. Le depart pointe a 17:00 ne
-    # termine pas le travail commence a 08:00, qui se termine automatiquement a son echeance, 21:00.
+  Scenario: Une activite que rien n'a terminee expire sans autre geste
+    # Le travail commence a 08:00 se termine automatiquement a son echeance, 21:00.
     Given il est "2026-06-24T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 5016"
       | type      | ORDRE_DE_FABRICATION |
       | reference | 5016                 |
     And j'ai engage l'element "OF 5016" en atelier
-    And je suis arrive
-      | operateur | dupont |
     And il est "2026-06-24T08:00:00Z"
     And j'ai pointe sur "OF 5016"
       | id        | 00000000-0000-0000-0000-0000000005f1 |
@@ -84,10 +81,6 @@ Feature: Echeance et fin automatique des activites
       | intention | OUVERTURE                            |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
-    Given il est "2026-06-24T17:00:00Z"
-    And j'ai pointe ma presence
-      | operateur | dupont |
-      | type      | DEPART |
     Given il est "2026-06-25T09:00:00Z"
     When je consulte le temps effectif de "OF 5016"
     Then le temps effectif contient

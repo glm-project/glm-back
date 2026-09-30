@@ -13,8 +13,7 @@ contrôleurs qui n'existent qu'en test en sont exclus.
 Le détail métier et sa justification par le verbatim client sont dans
 [contexte-metier.md](contexte-metier.md) ; les règles de code, dans [glm-back/AGENTS.md](../AGENTS.md).
 
-Ce guide décrit le contrat back. L'adaptation de ses consommateurs front et la validation d'un déploiement
-coordonné restent à réaliser. Les routes de présence décrites ici restent servies jusqu'à leur retrait distinct.
+Ce guide décrit le contrat back ; sa livraison et celle des consommateurs restent coordonnées.
 
 ---
 
@@ -33,7 +32,7 @@ contrôleur. Un 403 inexpliqué en développement, c'est presque toujours ça.
 
 | Rôle           | Ce qu'il ouvre                                                                                        |
 | -------------- | ----------------------------------------------------------------------------------------------------- |
-| `USER`         | L'opérateur : pointer sa présence et son travail, lire.                                               |
+| `USER`         | L'opérateur : pointer ses activités, lire.                                                            |
 | `GESTIONNAIRE` | Tout ce que fait un `USER`, plus engager, clôturer et corriger (`regularise` / `annule` / `corrige`). |
 | `ADMIN`        | Administration technique (`/api/admin/**`, `/management/**`) uniquement. **Aucun accès métier.**      |
 
@@ -72,8 +71,7 @@ Cet écart ne fait pas une régularisation : un pointage rejoué par un pupitre 
 coup. Le booléen `estUneRegularisation` dit l'**acte** qui a porté le fait au journal : vrai pour une régularisation
 (`POST …/regularisations`) et pour le remplaçant d'une correction (`PUT …/evenements/{evtId}`), même saisis à l'heure
 du fait ; faux pour tout ce qui passe par `POST …/pointages`, quels que soient le rôle de l'utilisateur et la
-`dateDeSurvenue` fournie. Jamais l'identité de l'auteur. Pour la présence, `estUneRegularisation` reste l'écart entre
-les deux dates.
+`dateDeSurvenue` fournie. Jamais l'identité de l'auteur.
 
 Le booléen `estSaisiParUnTiers` **n'existe plus** : l'auteur est un identifiant de connexion et l'opérateur une fiche du
 référentiel, et rien ne relie encore les deux. Il reviendra le jour où l'authentification sera tranchée.
@@ -115,19 +113,12 @@ l'écarte du calcul. Le `journal` rendu par l'API **contient donc les événemen
 Pour un écran d'atelier, filtrer sur `annulation == null`. Pour un écran d'audit, tout montrer — c'est là tout
 l'intérêt de les conserver.
 
-### Le départ est écrit une seule fois, la pause sur chaque élément
+### La pause se traduit en faits d'activité
 
-Le départ est un fait de la **journée de travail de l'opérateur**, jamais recopié dans le journal des éléments sur
-lesquels il travaille, et il **ne termine aucune activité** : `GET /api/atelier/suivis/{id}/temps-effectif` ne lit que
-le journal de l'élément. Une activité que l'opérateur a laissée ouverte en rentrant chez lui se termine
-automatiquement à son échéance (voir ci-dessous), ou à la fin que le gestionnaire régularise.
-
-**La pause, à l'inverse, n'existe pas pour le serveur** ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)) :
-ni `PAUSE`, ni `REPRISE`, ni état « en pause ». Pour mettre un opérateur en pause, le pupitre **boucle sur ses
-activités en cours** et envoie une fin par activité, qui la vise ; pour la reprendre, une **ouverture** par activité
-suspendue, en `DEBUT` — ou en `NON_CONFORMITE` pour celle qui était en non conformité —, sur le même poste. La reprise
-ouvre une activité nouvelle : elle ne vise pas celle d'avant la pause. La présence n'en est pas touchée : un opérateur
-en pause reste présent.
+La pause n'existe pas pour le serveur ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)).
+Le pupitre envoie une fin par activité actionnable, avec sa cible ; la reprise ouvre une nouvelle activité en
+`DEBUT`, ou en `NON_CONFORMITE` pour celle qui l'était, sur le même poste. La nouvelle ouverture ne vise pas
+l'activité d'avant la pause. Les journées, arrivées, départs et anomalies de présence ne sont plus servis.
 
 ### Une activité oubliée se termine automatiquement à son échéance
 
@@ -263,28 +254,17 @@ Le journal complet, **événements annulés compris**, se lit via `GET /api/atel
 migrer vers le détail. Côté `glm-front`, synchroniser le contrat avec `npm run api:sync && npm run api:types` ;
 la réévaluation de la limite de pagination de la grille reste un suivi côté front.
 
-Prise de poste, puis travail : chaque geste du pupitre porte un `id` UUID créé une fois par le front, et son
+Chaque geste d’activité du pupitre porte un `id` UUID créé une fois par le front, et son
 intention. Il peut aussi porter `dateDeSurvenue`, l'heure réelle conservée quand le pupitre a été hors ligne.
 
 ```
-POST /api/atelier/journees                 { "id": "<uuid geste>", "operateur": "<uuid operateur>" }
 POST /api/atelier/suivis/{id}/pointages    { "id": "<uuid A>", "type": "DEBUT", "intention": "OUVERTURE", "operateur": "<uuid>", "poste": "<uuid poste>" }
 POST /api/atelier/suivis/{id}/pointages    { "id": "<uuid B>", "type": "NON_CONFORMITE", "intention": "TRANSITION", "cible": "<uuid A>", "operateur": "<uuid>", "poste": "<uuid poste>" }
 POST /api/atelier/suivis/{id}/pointages    { "id": "<uuid C>", "type": "FIN", "intention": "FIN", "cible": "<uuid B>", "operateur": "<uuid>", "poste": "<uuid poste>" }
-POST /api/atelier/journees/pointages       { "id": "<uuid geste>", "operateur": "<uuid>", "type": "DEPART" }
 ```
 
-Trois pièges :
+À retenir :
 
-- `POST /api/atelier/journees/pointages` **n'a pas d'identifiant de journée** : le serveur retrouve seul la journée
-  ouverte de l'opérateur. Sans journée ouverte, il répond 404.
-- **Une arrivée n'est jamais refusée parce qu'une journée est déjà ouverte.** Sous le seuil d'amplitude de
-  l'entreprise, elle est absorbée : `200` et la journée en cours, rien d'ajouté — un poste de nuit peut se
-  réidentifier à 3 h. Au-delà, la journée en cours est **abandonnée** et l'arrivée en ouvre une nouvelle (`201`).
-- **Un geste de présence sans journée ouverte en ouvre une** (`201`), comme sur une journée abandonnée : arrivée
-  implicite puis geste. **Un geste redondant** — une arrivée égarée sur cette route pour un opérateur déjà présent —
-  **est absorbé** (`200`, rien d'ajouté). Restent refusés, définitivement, l'opérateur, le poste ou l'élément inconnu (404), le geste rejoué dans le désordre
-  (409) et l'UUID réutilisé avec un autre contenu (409).
 - **Arrêter un élément après sa clôture est absorbé** (`200`) : la clôture l'a déjà arrêté. Une fin survenue avant la
   clôture, mais reçue après elle, est enregistrée à son heure (`201`). Arrêter une activité échue est enregistré sans
   effet (`201`). Arrêter deux fois la même activité — le double appui — n'est plus absorbé : la seconde fin est
@@ -419,8 +399,6 @@ POST   /api/atelier/suivis/{id}/evenements/{evtId}/annulation  annuler une saisi
 PUT    /api/atelier/suivis/{id}/evenements/{evtId}             corriger une saisie fausse
 ```
 
-Les mêmes trois actes existent sur `/api/atelier/journees/{id}/...` pour la présence.
-
 La régularisation et la correction portent `intention` et `cible` comme un pointage. Une fin oubliée se régularise
 donc sur l'activité qu'elle termine.
 
@@ -462,16 +440,6 @@ PUT /api/parametrage/amplitude-maximale       GESTIONNAIRE         { "valeur": "
 L'**amplitude maximale** est la durée, depuis l'arrivée, au-delà de laquelle une journée sans départ sera abandonnée.
 Elle vaut 13 h par défaut, se saisit à la minute et reste strictement sous 24 h : toute autre valeur répond 400.
 `derniereModification` est absente tant que personne ne l'a changée.
-
-### Anomalies de présence (rôle `GESTIONNAIRE`)
-
-```
-GET /api/atelier/anomalies?operateur={uuid}&type={JOURNEE_SANS_DEPART|AMPLITUDE_EXCESSIVE}&page=0&size=20
-```
-
-Les journées que le gestionnaire doit regarder, la plus récente d'abord : `type`, `journee` (l'identifiant à
-régulariser ou corriger), `operateur`, `arrivee`, et pour une amplitude excessive `depart` et `amplitude`. Rien n'est
-stocké : une ligne disparaît dès que la régularisation la résout. Un type inconnu répond 400, un opérateur 403.
 
 ### Lire le temps passé
 
@@ -549,25 +517,6 @@ métier, puis `FIN < TRANSITION < OUVERTURE`, puis l'identité ; il ne suit jama
 Une FIN ordinaire après l'échéance seule conserve les 13 h complètes et l'anomalie automatique dans la feuille,
 sans conflit ni nouvelle qualification « sans effet » dans le journal.
 
-### Présence
-
-`GET /api/atelier/journees/{id}` expose **à la fois** :
-
-- `amplitude` — de l'arrivée au départ ;
-- `fenetres` — les intervalles de présence, un par venue : pour une journée pointée d'une traite, la même période que
-  l'amplitude.
-
-La pause n'y figure pas : un opérateur en pause reste présent. La présence ne sert pas à payer — l'objectif est de
-savoir qui travaille sur quoi et combien un OF a coûté en temps.
-
-`amplitude` est **absente tant que la journée est ouverte** (pas de départ), et une `fenetre` sans `fin` est en cours.
-
-Enfin : une journée de travail est **une venue**, pas un jour calendaire. Le contexte ne connaît ni fuseau horaire ni
-date — un poste de nuit à cheval sur deux jours est une seule journée de travail. Ne jamais grouper par date côté
-client en supposant l'inverse.
-
----
-
 ## 4. Erreurs
 
 Toutes les erreurs métier sont des `ProblemDetail` (RFC 7807) portant un `type`, un `title`, un `status` et une
@@ -580,26 +529,19 @@ sort de plusieurs contextes. Le catalogue complet est dans [documentation/codes-
 Deux statuts du tableau ci-dessous n'en portent pas : le **400** de Bean Validation, qui se lit par son `errors`
 (`Map<champ, message>`), et le **403**, qui vient de la chaîne de filtres sans corps du tout.
 
-| Statut | Cas                                                                                                                                                                                                                                                      |
-| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 400    | Corps invalide (Bean Validation), intention et cible comprises — détail par champ dans `errors` — ou date de survenue future.                                                                                                                            |
-| 403    | Jeton sans entreprise connue, ou rôle insuffisant.                                                                                                                                                                                                       |
-| 404    | Suivi, journée, événement, élément de fabrication ou activité visée introuvable ; ou aucune journée ouverte pour cet opérateur.                                                                                                                          |
-| 409    | Élément déjà engagé, élément clôturé, événement déjà annulé, activité visée d'un autre opérateur ou poste, transition de présence impossible, événement antérieur à l'engagement, UUID réutilisé, **chevauchement de journées**, **saisie concurrente**. |
+| Statut | Cas                                                                                                                                                                                    |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 400    | Corps invalide (Bean Validation), intention et cible comprises — détail par champ dans `errors` — ou date de survenue future.                                                          |
+| 403    | Jeton sans entreprise connue, ou rôle insuffisant.                                                                                                                                     |
+| 404    | Suivi, événement, élément de fabrication ou activité visée introuvable.                                                                                                                |
+| 409    | Élément déjà engagé, élément clôturé, événement déjà annulé, activité visée d'un autre opérateur ou poste, événement antérieur à l'engagement, UUID réutilisé, **saisie concurrente**. |
 
-Les **409 de transition de présence** viennent d'un geste de présence rejoué dans le désordre, un `DEPART` daté avant
-l'arrivée de sa journée par exemple. Ils portent un `message` explicite — l'afficher plutôt que le remplacer par un
-texte générique. Le journal d'un élément, lui, ne refuse aucun geste qui le contredit : une fin datée avant le début
-de l'activité qu'elle vise, ou un geste qui vise une activité déjà terminée, remplacée ou annulée, est enregistré, et
-sa séquence est en conflit.
-
-Le **chevauchement de journées** ne vient que d'un acte du gestionnaire : une régularisation ou une correction de
-présence qui ferait se toucher deux journées du même opérateur, jugées du premier au dernier fait connu. Régulariser
-le départ oublié de lundi à 17:00 passe ; le saisir à mardi 08:00 alors que mardi est ouvert depuis 07:00 est refusé.
+Le journal d'un élément ne refuse aucun geste qui le contredit : une fin datée avant le début de sa cible,
+ou un geste qui vise une activité terminée, remplacée ou annulée, reste enregistré ; sa séquence est en conflit.
 
 Sur les routes de pointage, la **saisie concurrente** est rejouée par le serveur et ne remonte plus qu'après trois
 échecs. Sur les actes du gestionnaire, elle reste le seul 409 qui ne dit rien de la saisie elle-même : elle était valide, mais quelqu'un a
-pointé sur le même élément ou la même journée entre la lecture et l'écriture. C'est le seul cas où **rejouer** l'appel
+pointé sur le même élément entre la lecture et l'écriture. C'est le seul cas où **rejouer** l'appel
 tel quel est la bonne réaction — relire l'agrégat, et reproposer la saisie.
 
 Une `dateDeSurvenue` strictement postérieure à l'instant courant répond 400 avec le code stable
@@ -620,7 +562,7 @@ Une `dateDeSurvenue` strictement postérieure à l'instant courant répond 400 a
 - **Régulariser sur un poste dont l'opérateur a été dé-habilité depuis est refusé** (409), l'habilitation étant
   vérifiée sur les trois actes de correction. Retirer une habilitation ferme donc aussi la porte au rattrapage des
   saisies passées sur ce poste.
-- **Ni un opérateur ni un poste ayant servi à pointer ne se supprime** : `DELETE /api/operateurs/{id}` et
+- **Ni un opérateur ni un poste ayant un fait historique d’activité, même annulé, ne se supprime** : `DELETE /api/operateurs/{id}` et
   `DELETE /api/postes-de-travail/{id}` répondent 409. Un écran d'administration doit le prévoir plutôt que le
   découvrir.
 

@@ -34,7 +34,6 @@ import tools.jackson.databind.json.JsonMapper;
 public class AtelierSteps {
 
   private static final String SUIVIS_URI = "/api/atelier/suivis";
-  private static final String JOURNEES_URI = "/api/atelier/journees";
   private static final String ELEMENTS_URI = "/api/elements-de-fabrication";
   private static final String POSTES_URI = "/api/postes-de-travail";
   private static final String OPERATEURS_URI = "/api/operateurs";
@@ -63,10 +62,8 @@ public class AtelierSteps {
   private final Map<String, String> postes = new HashMap<>();
   private final Map<String, String> operateurs = new HashMap<>();
 
-  private String derniereJournee;
   private String dernierGesteUri;
   private String dernierGesteCorps;
-  private final Map<String, String> journees = new HashMap<>();
 
   @Given("il est {string}")
   public void ilEst(String instant) {
@@ -495,189 +492,9 @@ public class AtelierSteps {
     rest.post(dernierGesteUri, dernierGesteCorps);
   }
 
-  @When("j'arrive sans identifiant de geste")
-  public void jArriveSansIdentifiant(Map<String, String> donnees) {
-    rest.post(JOURNEES_URI, JSON.writeValueAsString(resolu(donnees)));
-  }
-
-  @When("je pointe ma presence sans identifiant de geste")
-  public void jePointeMaPresenceSansIdentifiant(Map<String, String> donnees) {
-    rest.post(JOURNEES_URI + "/pointages", JSON.writeValueAsString(resolu(donnees)));
-  }
-
   @When("je pointe sur {string} sans identifiant de geste")
   public void jePointeSansIdentifiant(String alias, Map<String, String> donnees) {
     ecritures.pointe(suivis.get(alias), resolu(donnees));
-  }
-
-  @Given("je retiens la journee sous le nom {string}")
-  public void jeRetiensLaJournee(String alias) {
-    journees.put(alias, idDeLaDerniereReponse());
-  }
-
-  @Then("la reponse ne designe pas la journee {string}")
-  public void laReponseNeDesignePasLaJournee(String alias) {
-    assertThat(elementDeLaDerniereReponse("$.id")).isNotEqualTo(journees.get(alias));
-  }
-
-  @When("je consulte la journee {string}")
-  public void jeConsulteLaJournee(String alias) {
-    rest.get(JOURNEES_URI + "/" + journees.get(alias));
-  }
-
-  @When("je regularise la journee {string}")
-  public void jeRegulariseLaJournee(String alias, Map<String, String> donnees) {
-    rest.post(JOURNEES_URI + "/" + journees.get(alias) + "/regularisations", JSON.writeValueAsString(donnees));
-  }
-
-  @When("je corrige l'evenement {int} de la journee {string}")
-  public void jeCorrigeLEvenementDeLaJournee(int rang, String alias, Map<String, String> donnees) {
-    rest.get(JOURNEES_URI + "/" + journees.get(alias));
-    String evenement = elementDeLaDerniereReponse("$.journal[" + rang + "].id");
-    rest.put(JOURNEES_URI + "/" + journees.get(alias) + "/evenements/" + evenement, JSON.writeValueAsString(donnees));
-  }
-
-  @Then("l'evenement {int} de la journee n'a pas l'identifiant {string}")
-  public void lEvenementDeLaJourneeNAPasLIdentifiant(int rang, String id) {
-    assertThat(elementDeLaDerniereReponse("$.journal[" + rang + "].id")).isNotEqualTo(id);
-  }
-
-  @Then("la reponse designe la journee {string}")
-  public void laReponseDesigneLaJournee(String alias) {
-    assertThatLastResponse().hasElement("$.id").withValue(journees.get(alias));
-  }
-
-  private void envoieGeste(String uri, Map<String, String> corps) {
-    dernierGesteUri = uri;
-    dernierGesteCorps = JSON.writeValueAsString(corps);
-    rest.post(uri, dernierGesteCorps);
-  }
-
-  @When("j'arrive")
-  public void jArrive(Map<String, String> donnees) {
-    envoieGeste(JOURNEES_URI, resoluAvecIdentifiant(donnees));
-  }
-
-  @Given("je suis arrive")
-  public void jeSuisArrive(Map<String, String> donnees) {
-    jArrive(donnees);
-    derniereJournee = idDeLaDerniereReponse();
-  }
-
-  @When("je pointe ma presence")
-  public void jePointeMaPresence(Map<String, String> donnees) {
-    envoieGeste(JOURNEES_URI + "/pointages", resoluAvecIdentifiant(donnees));
-  }
-
-  @Given("j'ai pointe ma presence")
-  public void jaiPointeMaPresence(Map<String, String> donnees) {
-    jePointeMaPresence(donnees);
-  }
-
-  @When("je regularise ma journee")
-  public void jeRegulariseMaJournee(Map<String, String> donnees) {
-    rest.post(JOURNEES_URI + "/" + derniereJournee + "/regularisations", JSON.writeValueAsString(donnees));
-  }
-
-  @Given("j'ai regularise ma journee")
-  public void jaiRegulariseMaJournee(Map<String, String> donnees) {
-    jeRegulariseMaJournee(donnees);
-  }
-
-  @When("j'annule l'evenement {int} de ma journee")
-  public void jAnnuleLEvenementDeMaJournee(int rang, Map<String, String> donnees) {
-    rest.post(
-      JOURNEES_URI + "/" + derniereJournee + "/evenements/" + evenementDePresence(rang) + "/annulation",
-      JSON.writeValueAsString(donnees)
-    );
-  }
-
-  @When("j'annule l'evenement inconnu {string} de ma journee")
-  public void jAnnuleLEvenementInconnuDeMaJournee(String evenement, Map<String, String> donnees) {
-    rest.post(JOURNEES_URI + "/" + derniereJournee + "/evenements/" + evenement + "/annulation", JSON.writeValueAsString(donnees));
-  }
-
-  @When("je corrige l'evenement {int} de ma journee")
-  public void jeCorrigeLEvenementDeMaJournee(int rang, Map<String, String> donnees) {
-    rest.put(JOURNEES_URI + "/" + derniereJournee + "/evenements/" + evenementDePresence(rang), JSON.writeValueAsString(donnees));
-  }
-
-  @When("je consulte ma journee")
-  public void jeConsulteMaJournee() {
-    rest.get(JOURNEES_URI + "/" + derniereJournee);
-  }
-
-  @When("je consulte la journee inconnue {string}")
-  public void jeConsulteLaJourneeInconnue(String id) {
-    rest.get(JOURNEES_URI + "/" + id);
-  }
-
-  @When("je liste les journees de {string}")
-  public void jeListeLesJourneesDe(String operateur) {
-    rest.get(JOURNEES_URI + "?operateur=" + idDeLOperateur(operateur));
-  }
-
-  @When("je liste les journees de {string} entre {string} et {string}")
-  public void jeListeLesJourneesDeEntre(String operateur, String debut, String fin) {
-    rest.get(JOURNEES_URI + "?operateur=" + idDeLOperateur(operateur) + "&debut=" + debut + "&fin=" + fin);
-  }
-
-  @When("je liste les journees de {string} depuis {string} sans borne de fin")
-  public void jeListeLesJourneesDeDepuis(String operateur, String debut) {
-    rest.get(JOURNEES_URI + "?operateur=" + idDeLOperateur(operateur) + "&debut=" + debut);
-  }
-
-  @When("je liste les journees")
-  public void jeListeLesJournees() {
-    rest.get(JOURNEES_URI);
-  }
-
-  @Then("la journee a l'etat {string}")
-  public void laJourneeALEtat(String etat) {
-    assertThatLastResponse().hasElement("$.etat").withValue(etat);
-  }
-
-  @Then("la journee a l'amplitude de {string} a {string}")
-  public void laJourneeALAmplitude(String debut, String fin) {
-    assertThatLastResponse().hasElement("$.amplitude.debut").withValue(debut).and().hasElement("$.amplitude.fin").withValue(fin);
-  }
-
-  @Then("la journee n'a pas d'amplitude")
-  public void laJourneeNAPasDAmplitude() {
-    assertThat(CucumberRestTestContext.getElement("$.amplitude")).isNull();
-  }
-
-  @Then("les fenetres de presence sont")
-  public void lesFenetresDePresenceSont(List<Map<String, String>> attendues) {
-    assertThatLastResponse().hasElement("$.fenetres").containingExactly(attendues);
-  }
-
-  @Then("le journal de la journee contient {int} evenements")
-  public void leJournalDeLaJourneeContient(int count) {
-    assertThatLastResponse().hasElement("$.journal").withElementsCount(count);
-  }
-
-  @Then("l'evenement {int} de la journee est annule avec le motif {string}")
-  public void lEvenementDeLaJourneeEstAnnule(int rang, String motif) {
-    assertThatLastResponse().hasElement("$.journal[" + rang + "].annulation.motif").withValue(motif);
-  }
-
-  @Then("l'evenement {int} de la journee a survenu a {string} et a ete saisi a {string} par {string}")
-  public void lEvenementDeLaJourneeEstBitemporel(int rang, String survenue, String enregistrement, String auteur) {
-    assertThatLastResponse()
-      .hasElement("$.journal[" + rang + "].dateDeSurvenue")
-      .withValue(survenue)
-      .and()
-      .hasElement("$.journal[" + rang + "].dateDEnregistrement")
-      .withValue(enregistrement)
-      .and()
-      .hasElement("$.journal[" + rang + "].auteur")
-      .withValue(auteur);
-  }
-
-  @Then("l'evenement {int} de la journee a l'identifiant {string}")
-  public void lEvenementDeLaJourneeALIdentifiant(int rang, String id) {
-    assertThatLastResponse().hasElement("$.journal[" + rang + "].id").withValue(id);
   }
 
   @Then("l'evenement {int} du suivi a l'identifiant {string}")
@@ -698,36 +515,6 @@ public class AtelierSteps {
       .withValue(auteur);
   }
 
-  @When("je consulte les anomalies")
-  public void jeConsulteLesAnomalies() {
-    rest.get("/api/atelier/anomalies");
-  }
-
-  @When("je consulte les anomalies de {string}")
-  public void jeConsulteLesAnomaliesDe(String operateur) {
-    rest.get("/api/atelier/anomalies?operateur=" + idDeLOperateur(operateur));
-  }
-
-  @When("je consulte les anomalies de {string} de type {string}")
-  public void jeConsulteLesAnomaliesDeDeType(String operateur, String type) {
-    rest.get("/api/atelier/anomalies?operateur=" + idDeLOperateur(operateur) + "&type=" + type);
-  }
-
-  @Then("les anomalies sont")
-  public void lesAnomaliesSont(List<Map<String, String>> attendues) {
-    assertThatLastResponse().hasElement("$.content").containingExactly(attendues);
-  }
-
-  @Then("il n'y a aucune anomalie")
-  public void ilNYAAucuneAnomalie() {
-    assertThatLastResponse().hasElement("$.content").withElementsCount(0);
-  }
-
-  @Then("la liste des journees contient {int} journees")
-  public void laListeDesJourneesContient(int count) {
-    assertThatLastResponse().hasElement("$.content").withElementsCount(count);
-  }
-
   @SuppressWarnings("unchecked")
   private static List<String> identifiantsDeLaListe() {
     return (List<String>) CucumberRestTestContext.getElement("$.content[*].id");
@@ -740,12 +527,6 @@ public class AtelierSteps {
 
   private String evenementDAtelier(String alias, int rang) {
     rest.get(SUIVIS_URI + "/" + suivis.get(alias));
-
-    return elementDeLaDerniereReponse("$.journal[" + rang + "].id");
-  }
-
-  private String evenementDePresence(int rang) {
-    rest.get(JOURNEES_URI + "/" + derniereJournee);
 
     return elementDeLaDerniereReponse("$.journal[" + rang + "].id");
   }

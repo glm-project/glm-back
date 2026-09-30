@@ -1,11 +1,8 @@
 package com.glm.glmback.atelier.infrastructure.primary;
 
 import com.glm.glmback.atelier.domain.AnnulationAEnregistrer;
-import com.glm.glmback.atelier.domain.AnnulationDePresenceAEnregistrer;
 import com.glm.glmback.atelier.domain.Auteur;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
-import com.glm.glmback.atelier.domain.EvenementDePresenceId;
-import com.glm.glmback.atelier.domain.JourneeDeTravailId;
 import com.glm.glmback.atelier.domain.MotifDAnnulation;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -30,14 +27,6 @@ record RestAnnulationDEvenement(
     return AnnulationAEnregistrer.builder()
       .suivi(suivi)
       .evenement(new EvenementDAtelierId(evenement))
-      .auteur(auteur)
-      .motif(new MotifDAnnulation(motif));
-  }
-
-  AnnulationDePresenceAEnregistrer toDomain(JourneeDeTravailId journee, UUID evenement, Auteur auteur) {
-    return AnnulationDePresenceAEnregistrer.builder()
-      .journee(journee)
-      .evenement(new EvenementDePresenceId(evenement))
       .auteur(auteur)
       .motif(new MotifDAnnulation(motif));
   }

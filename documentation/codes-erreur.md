@@ -8,10 +8,10 @@ urn:glm:erreur:<contexte>:<code>
 
 ```json
 {
-  "type": "urn:glm:erreur:atelier:transition-de-presence-interdite",
-  "title": "transition de presence interdite",
+  "type": "urn:glm:erreur:atelier:identifiant-evenement-reutilise",
+  "title": "identifiant d'evenement reutilise",
   "status": 409,
-  "message": "Un evenement de presence DEPART ne peut pas suivre l'etat ABSENT"
+  "message": "Identifiant deja reserve pour un autre geste"
 }
 ```
 
@@ -69,23 +69,16 @@ tests sont le seul endroit qui les tient.
 | Code                                 | Statut | `title`                            | Exception                                 |
 | ------------------------------------ | ------ | ---------------------------------- | ----------------------------------------- |
 | `suivi-d-atelier-introuvable`        | 404    | suivi d'atelier introuvable        | `SuiviDAtelierIntrouvableException`       |
-| `journee-de-travail-introuvable`     | 404    | journee de travail introuvable     | `JourneeDeTravailIntrouvableException`    |
 | `evenement-d-atelier-introuvable`    | 404    | evenement d'atelier introuvable    | `EvenementDAtelierIntrouvableException`   |
-| `evenement-de-presence-introuvable`  | 404    | evenement de presence introuvable  | `EvenementDePresenceIntrouvableException` |
 | `element-de-fabrication-introuvable` | 404    | element de fabrication introuvable | `ElementEngageableIntrouvableException`   |
 | `operateur-introuvable`              | 404    | operateur introuvable              | `OperateurDAtelierIntrouvableException`   |
 | `poste-de-travail-introuvable`       | 404    | poste de travail introuvable       | `PosteDAtelierIntrouvableException`       |
 | `activite-visee-introuvable`         | 404    | activite visee introuvable         | `ActiviteViseeIntrouvableException`       |
-| `aucune-journee-de-travail-en-cours` | 404    | aucune journee de travail en cours | `AucuneJourneeDeTravailEnCoursException`  |
 | `operateur-non-habilite`             | 409    | operateur non habilite             | `OperateurNonHabiliteException`           |
 | `activite-visee-incoherente`         | 409    | activite visee incoherente         | `ActiviteViseeIncoherenteException`       |
 | `element-deja-engage`                | 409    | element deja engage                | `ElementDejaEngageException`              |
-| `journee-de-travail-deja-ouverte`    | 409    | journee de travail deja ouverte    | `JourneeDeTravailDejaOuverteException`    |
-| `chevauchement-de-journees`          | 409    | chevauchement de journees          | `ChevauchementDeJourneesException`        |
 | `evenement-deja-annule`              | 409    | evenement deja annule              | `EvenementDejaAnnuleException`            |
-| `evenement-de-presence-deja-annule`  | 409    | evenement de presence deja annule  | `EvenementDePresenceDejaAnnuleException`  |
 | `suivi-d-atelier-cloture`            | 409    | suivi d'atelier cloture            | `SuiviDAtelierClotureException`           |
-| `transition-de-presence-interdite`   | 409    | transition de presence interdite   | `TransitionDePresenceInterditeException`  |
 | `evenement-anterieur-a-l-engagement` | 409    | evenement anterieur a l'engagement | `EvenementAvantEngagementException`       |
 | `saisie-concurrente`                 | 409    | saisie concurrente                 | `SaisieConcurrenteException`              |
 | `identifiant-evenement-reutilise`    | 409    | identifiant d'evenement reutilise  | `IdentifiantDEvenementReutiliseException` |
