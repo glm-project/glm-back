@@ -17,7 +17,7 @@ import java.util.List;
 )
 record RestReferentielDuPupitre(
   @Schema(
-    description = "Instant ou le serveur a produit cet instantane. C'est la version : elle dit de quand date ce que l'ecran affiche.",
+    description = "Instant ou le serveur a produit la reponse et evalue l'expiration. Il ne garantit pas un instantane commun face aux ecritures concurrentes.",
     requiredMode = Schema.RequiredMode.REQUIRED
   )
   Instant genereLe,

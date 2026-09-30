@@ -12,9 +12,9 @@ explicite, sept jours du lundi au dimanche, vides compris. Ce contexte est purem
 `IntervalleDActivite` : affectation (`Activite`), bornes de portion (`Plage`) et identité, état et bornes de
 l'activité entière (`ActiviteLue`). `ActiviteInterpretee` est la projection reçue du port et évaluée à la lecture.
 
-Atelier possède le pointage, sa correction et l'interprétation. La feuille ne rejoue aucun journal, ne calcule
-aucune durée ni valorisation et ne porte aucune présence ni temps présumé. Le référentiel possède l'opérateur ;
-la feuille expose les identifiants de poste et d'élément sans lire leurs libellés.
+Atelier possède le pointage, sa correction et l'interprétation. La feuille évalue les activités projetées et les
+découpe au calendrier ; les durées appartiennent à la synthèse et la valorisation au coût. Le référentiel possède
+l'opérateur ; la feuille expose les identifiants de poste et d'élément sans lire leurs libellés.
 
 ## Invariants
 
@@ -23,14 +23,16 @@ la feuille expose les identifiants de poste et d'élément sans lire leurs libel
 - La sélection porte sur le recouvrement de la semaine par le début et la fin réelle, la fin au plus tard ou l'échéance. Aucune borne
   basse fixe du début : une régularisation peut établir plus de 13 h, voire plus d'une semaine.
 - `FeuillesDeTempsService` reçoit l'instant facultatif `evaluation`. Sans lui, l'heure du serveur est relevée
-  une seule fois ; l'instant utilisé gouverne l'expiration et le découpage des activités en cours, et la réponse
+  une seule fois ; l'instant utilisé gouverne l'expiration, le découpage des activités en cours et les plages
+  possibles à résoudre, et la réponse
   le rend. Passer le même instant à la feuille et à la synthèse assure la même décision d'expiration.
-  Les faits connus restent interprétés, même postérieurs à cet instant : aucune lecture historique ni
-  transaction commune entre les appels n'est garantie.
+  Les faits connus restent interprétés, même postérieurs à cet instant. Une écriture entre les deux appels peut
+  changer les faits lus : l'instant commun règle l'expiration, sans garantir un instantané commun.
 - Un instant passé est accepté ; la limite future est l'heure du serveur plus deux minutes, incluse.
   Le serveur est échantillonné une seule fois, y compris avec un instant explicite. Au-delà, la lecture répond
   400 `evaluation-future`. Un instant fourni vide ou mal formé répond aussi 400, sans rapport.
-- Les états sont `TERMINEE`, `TERMINEE_AUTOMATIQUEMENT`, `EN_COURS`, `A_RESOUDRE`. Une fin réelle est conservée,
+- L'échéance est celle projetée par atelier ; le lecteur la compare à `evaluation`. Les états sont `TERMINEE`,
+  `TERMINEE_AUTOMATIQUEMENT`, `EN_COURS`, `A_RESOUDRE`. Une fin réelle est conservée,
   même au-delà de l'échéance. Sans elle, l'échéance atteinte termine automatiquement l'activité à cette borne.
   Une activité à résoudre reste sans fin ; l'échéance ne résout pas le conflit.
 - Chaque portion conserve l'identité stable, l'état et les bornes de l'activité entière. La fin n'existe que pour

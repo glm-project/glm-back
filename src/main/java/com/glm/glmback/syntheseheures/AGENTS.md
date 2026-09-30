@@ -25,12 +25,15 @@ les portions dont la synthèse additionne les durées. Le journal brut est lu s�
   l'élément engagé. La sélection porte sur le recouvrement de la semaine par le début et la fin réelle, la fin au plus tard d'une activité à résoudre, ou l'échéance,
   sans borne basse fixe du début : une régularisation peut dépasser 13 h, voire une semaine.
 - `SynthesesDesHeuresService` reçoit l'instant facultatif `evaluation`. L'heure du serveur est relevée une seule
-  fois pour l'instant par défaut et la borne future ; l'instant utilisé gouverne l'expiration et le découpage des activités en cours, et la réponse
+  fois pour l'instant par défaut et la borne future ; l'instant utilisé gouverne l'expiration, le découpage des
+  activités en cours et les plages possibles à résoudre, et la réponse
   le rend. Passer le même instant à la feuille et à la synthèse assure la même décision d'expiration.
-  Les faits connus restent interprétés, même postérieurs à cet instant : aucune lecture historique ni
-  transaction commune entre les appels n'est garantie. Un instant passé est accepté ; la borne future est
+  Les faits connus restent interprétés, même postérieurs à cet instant. Une écriture entre les deux appels peut
+  changer les faits lus : l'instant commun règle l'expiration, sans garantir un instantané commun.
+  Un instant passé est accepté ; la borne future est
   l'heure du serveur plus deux minutes, incluse. Un dépassement ou un instant fourni vide ou mal formé répond 400, sans rapport.
-- Une activité avec fin réelle est `TERMINEE`, même au-delà de l'échéance. Sans fin, elle est `EN_COURS` avant
+- L'échéance est celle projetée par atelier ; le lecteur la compare à `evaluation`. Une activité avec fin réelle
+  est `TERMINEE`, même au-delà de l'échéance. Sans fin, elle est `EN_COURS` avant
   l'échéance puis `TERMINEE_AUTOMATIQUEMENT` à celle-ci, borne incluse. Une activité `A_RESOUDRE` reste sans fin ;
   l'échéance ne lui donne aucune interprétation chiffrée. Sa plage possible va jusqu'à la première borne atteinte
   entre `finAuPlusTard`, issue des faits d'atelier, et `evaluation`, fin exclusive. Chaque jour recouvert compte

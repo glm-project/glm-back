@@ -1754,7 +1754,7 @@
         "description" : "Tout ce que le pupitre met en cache pour continuer a fonctionner sans reseau, en un seul appel.\n\nOperateurs, habilitations et elements pointables sont relus dans une transaction unique, sans pagination.\nLes activites interpretees par atelier sont lues dans sa projection et leur expiration est jugee a genereLe.\nLes requetes successives ne garantissent pas un instantane face aux ecritures concurrentes.\n",
         "properties" : {
           "genereLe" : {
-            "description" : "Instant ou le serveur a produit cet instantane. C'est la version : elle dit de quand date ce que l'ecran affiche.",
+            "description" : "Instant ou le serveur a produit la reponse et evalue l'expiration. Il ne garantit pas un instantane commun face aux ecritures concurrentes.",
             "format" : "date-time",
             "type" : "string"
           },
@@ -3852,7 +3852,7 @@
     },
     "/api/pupitre/referentiel" : {
       "get" : {
-        "description" : "Rend en une seule reponse les operateurs designables avec leurs habilitations, et les\nelements sur lesquels on peut encore pointer avec leurs activites en cours et leurs conflits. C'est la lecture que le pupitre\nrejoue a chaque synchronisation pour rafraichir son cache local.\n\nVolontairement non paginee : la pagination est exactement ce qui empeche de prouver une version instantanee du\nreferentiel, puisque rien ne garantit que deux pages viennent du meme etat de la base. Tout est ici lu dans une\ntransaction unique, sous READ COMMITTED : les requetes successives ne garantissent pas un instantane strict.\n\nLes operateurs restent designables sans activite, sans etat ni echeance de presence. Les activites a resoudre\nsont exclues des activites en cours et leurs identites sont rendues dans les conflits. Une ouverture coherente\npeut etre en cours a cote d'un conflit. L'expiration des activites se juge a genereLe.\n\n`genereLe` est la version de cet instantane. Elle change a chaque appel, y compris quand rien n'a bouge : elle\ndit quand le serveur a produit la reponse, pas quand le referentiel a change pour la derniere fois.\n\nCe que la reponse ne porte pas, et n'a pas a porter : aucun montant — ni taux horaire d'operateur, ni cout\nhoraire de poste —, aucun journal d'evenements, aucun element cloture, et aucun instant de presence.\n",
+        "description" : "Rend en une seule reponse les operateurs designables avec leurs habilitations, et les\nelements sur lesquels on peut encore pointer avec leurs activites en cours et leurs conflits. C'est la lecture que le pupitre\nrejoue a chaque synchronisation pour rafraichir son cache local.\n\nLa reponse entiere evite l'assemblage de pages. La lecture se fait dans une transaction unique sous\nREAD COMMITTED : une ecriture concurrente peut changer les faits entre les requetes successives.\nL'instant commun genereLe assure la meme decision d'expiration, sans garantir un instantane commun.\n\nLes operateurs restent designables sans activite, avec leur identite, leur matricule et leurs habilitations. Les activites a resoudre\nsont exclues des activites en cours et leurs identites sont rendues dans les conflits. Une ouverture coherente\npeut etre en cours a cote d'un conflit. L'expiration des activites se juge a genereLe, echeance incluse.\n\n`genereLe` date l'evaluation. Elle change a chaque appel, y compris quand rien n'a bouge : elle\ndit quand le serveur a produit la reponse, pas quand le referentiel a change pour la derniere fois.\n\nCe que la reponse ne porte pas, et n'a pas a porter : aucun montant — ni taux horaire d'operateur, ni cout\nhoraire de poste —, aucun journal d'evenements, aucun element cloture.\n",
         "operationId" : "referentiel",
         "responses" : {
           "200" : {
@@ -3863,7 +3863,7 @@
                 }
               }
             },
-            "description" : "L'instantane du referentiel, date de l'instant de sa lecture."
+            "description" : "Le referentiel entier, avec son instant d'evaluation."
           }
         },
         "summary" : "Lire tout le referentiel du pupitre en un appel",

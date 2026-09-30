@@ -9,7 +9,8 @@ Responsabilité, frontières et invariants de ce contexte. Les règles de code c
 **Alimenter le cache local du poste d'atelier, pour qu'il continue à collecter sans réseau.** Un seul acte : rendre,
 en un appel et dans une transaction unique, tout ce que le pupitre doit garder sur disque — les opérateurs
 désignables avec leurs habilitations, les éléments encore pointables avec leurs
-activités en cours et leurs conflits — et la **date** de cet instantané.
+activités en cours et leurs conflits — et l'**instant d'évaluation** `genereLe`. Les requêtes successives sous
+`READ COMMITTED` peuvent lire des écritures intervenues pendant cet appel.
 
 C'est une **projection transverse**, comme `feuilledetemps`, `coutderevient` et `syntheseheures` : un contexte
 purement lecteur, qui ne possède aucune table, n'écrit rien, et recalcule tout à chaque appel.
@@ -19,7 +20,6 @@ purement lecteur, qui ne possède aucune table, n'écrit rien, et recalcule tout
 - **Le pointage lui-même et sa correction** : le pupitre écrit par l'API d'`atelier`, jamais par ici. Ce contexte ne
   propose aucune écriture, et n'en proposera pas — le chemin d'écriture idempotent existe déjà chez `atelier`
   (identifiants de geste créés au pupitre, rejeu à 200, registre `identite_evenement_atelier`).
-- **La présence** : aucun état ni échéance de présence, aucune lecture des journées ni du paramétrage.
 - **Le référentiel lui-même** : créer, modifier ou supprimer un opérateur, un poste ou un élément appartient à
   `operateur`, `postedetravail` et `elementdefabrication`.
 - **La valorisation** — ni taux horaire d'opérateur, ni coût horaire de poste. Ces montants ne sont même pas mappés
@@ -44,10 +44,8 @@ une nouvelle ouverture cohérente peut rester en cours sur le même suivi.
 
 ## Invariants à ne pas casser
 
-- **La réponse n'est jamais paginée.** La pagination est exactement ce qui empêche de prouver une version
-  instantanée du référentiel : rien ne garantirait que deux pages viennent du même état de la base, et c'est le
-  défaut que cette route existe pour supprimer. Le volume est borné par la taille de l'atelier. Ne pas « rétablir la
-  cohérence » avec les autres lectures du projet en ajoutant une pagination ici.
+- **La réponse rend le référentiel entier.** Un seul appel évite l'assemblage de pages issues de lectures
+  différentes. Le volume est borné par la taille de l'atelier ; la limite de concurrence ci-dessous reste applicable.
 - **La réponse n'est pas un instantané, et c'est assumé.** `ReferentielsDuPupitreApplicationService` a demandé
   `Isolation.REPEATABLE_READ` de sa livraison à la correction de #36. Sous `READ COMMITTED`, chaque requête prend son
   propre instantané : la lecture des opérateurs peut ignorer un opérateur qu'une activité de la lecture suivante
@@ -68,8 +66,8 @@ une nouvelle ouverture cohérente peut rester en cours sur le même suivi.
   `genereLe`. Une correction conserve l'identité de l'activité et peut déplacer son début et son échéance.
   L'identité rendue dans `ouverture` vient d'`activite_d_atelier.id`, jamais de l'ouvrant actif corrigé.
   `cloture_date_de_survenue` continue d'écarter les suivis clôturés.
-- **Un opérateur sans activité n'est jamais omis.** La liste rend les opérateurs désignables et leurs postes
-  habilités, indépendamment des pointages ; elle ne porte ni `etat` ni `presentJusqua`.
+- **Un opérateur sans activité n'est jamais omis.** La liste rend l'identité, le matricule éventuel et les postes
+  habilités des opérateurs désignables, indépendamment des pointages.
 - **Les lectures se font par ensembles.** Opérateurs et habilitations, activités, conflits et références se lisent
   sans requête par opérateur, suivi ou séquence.
 - **Un élément clôturé est absent**, et `EtatDuSuivi` ne porte donc pas de valeur `CLOTURE` : elle n'aurait aucun
@@ -84,11 +82,9 @@ une nouvelle ouverture cohérente peut rester en cours sur le même suivi.
 ## Les adapters ne peuvent porter aucun nom déjà pris
 
 Spring nomme un bean d'après le nom **simple** de sa classe, et Hibernate enregistre une entité JPA sous son nom
-simple par défaut : deux classes homonymes dans des packages différents refusent de démarrer ensemble. `atelier` a
-pris `OperateurConnuEntity`, `PosteConnuEntity`, `ElementEngageableEntity`, `SuiviDAtelierEntity`,
-`JourneeDeTravailEntity` et `EvenementDAtelierEntity` ; `feuilledetemps` ses `*LectureEntity`, `coutderevient` ses
-`*ValoriseEntity`, `syntheseheures` ses `*SyntheseEntity`. Ce contexte prend `*DuPupitreEntity`, et ses adapters
-`OperateursDuReferentielDuPupitre` / `SuivisOuvertsDuReferentielDuPupitre`.
+simple par défaut : deux classes homonymes dans des packages différents refusent de démarrer ensemble.
+Nommer les entités et adapters d'après leur contexte lecteur, et reprendre les noms logiques des colonnes de
+leur propriétaire ; le package seul ne suffit pas à les distinguer.
 
 Même règle côté Cucumber : le glue est scanné depuis la racine `com.glm.glmback`, et un même texte de step défini
 dans deux classes fait échouer **toute** la suite. `PupitreSteps` porte donc son propre phrasé (« au pupitre, … »,

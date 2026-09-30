@@ -14,9 +14,10 @@ Aucun calendrier, calcul de paie ni tarif courant dans ce contexte.
 ## Comptabilisation
 
 L'horloge est relevée une seule fois par rapport, même vide. Cet instant est rendu dans `evaluation`.
-Les faits connus restent lus ; seule l'expiration dépend de cet instant. Une activité avec une fin réelle
+Les faits connus restent lus, même postérieurs à cet instant. La transaction de lecture ne garantit pas un
+instantané commun face aux écritures concurrentes. Une activité avec une fin réelle
 conserve cette borne. Sans fin, elle est en cours avant son échéance projetée et terminée automatiquement
-dès celle-ci, avec sa période dans `finsAutomatiques` pour signaler l'anomalie active.
+dès celle-ci, borne incluse, avec sa période dans `finsAutomatiques` pour signaler l'anomalie active.
 
 Une activité en cours est entièrement exclue du temps, des coûts et du diviseur. Le rapport rend son nombre
 via `activitesEnCours`. Ne jamais fabriquer une fin à l'instant de lecture pour la valoriser.
@@ -53,7 +54,7 @@ Chaque durée et montant rend `complete` et porte `valeur` seulement s'il est co
 requise manque, le total ne porte aucun chiffre, ni zéro ni somme partielle. Appliquer cela séparément
 au travail, à la non conformité, à la machine et à la main d'œuvre, puis aux totaux de ligne et de rapport.
 
-Rendre dans `conflits` les séquences propres et toutes celles responsables de valeurs incompletes, même sur
+Rendre dans `conflits` les séquences propres et toutes celles responsables de valeurs incomplètes, même sur
 un autre élément. Conserver leurs identités originales d'activités et leurs pointages actifs. Une séquence
 sans activité à résoudre reste visible pour son élément et laisse ses montants complets. Annulation et
 correction rétablissent les valeurs lorsque l'interprétation d'atelier les résout.

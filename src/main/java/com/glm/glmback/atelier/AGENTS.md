@@ -17,7 +17,8 @@ Le **pointage et sa correction**, et rien d'autre. Trois actes :
    ([ADR 0002](../../../../../../../documentation/adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)).
 3. **Corriger** ces saisies : `regularise` (saisie oubliée), `annule` (saisie en trop), `corrige` (saisie fausse).
 
-Il en déduit, à la lecture seulement, les intervalles de temps passé — jamais stockés.
+Il interprète les faits du journal et projette les activités et les séquences en conflit à chaque écriture.
+Les lectures évaluent l'expiration à un instant explicite ; le journal reste la source de vérité.
 
 ## Ce dont il ne s'occupe pas
 
@@ -51,8 +52,9 @@ activités, tels que le journal les interprète, et aucune présence ne les born
 
 ## Invariants à ne pas casser
 
-- **Le journal est la source de vérité.** Aucun état, aucun compteur, aucun intervalle n'est stocké : tout se déduit du
-  repli. C'est la correction qui l'impose — une saisie rattrapée doit compter à l'heure où elle a eu lieu.
+- **Le journal est la source de vérité.** L'agrégat se reconstruit par son repli ; les projections décrites ci-dessous
+  sont réconciliées à chaque écriture. C'est la correction qui l'impose — une saisie rattrapée doit compter à l'heure
+  où elle a eu lieu.
 - **Horodatage bitemporel** sur chaque événement : date de survenue (métier) et date d'enregistrement (technique).
 - **Une régularisation d'atelier se lit sur l'origine persistée de l'événement** (`OrigineDuPointage`) :
   `REGULARISATION` pour la régularisation et le remplaçant d'une correction, `POINTAGE` pour toute la route des
@@ -118,16 +120,14 @@ activités, tels que le journal les interprète, et aucune présence ne les born
   enfouie dans le domaine.
 - **L'interprétation applique l'échéance sans instant de lecture**, sur les seules heures métier
   (`SequenceDActivites`). Un geste pointé au plus tard à l'échéance de sa cible la termine à son heure, un geste pile à
-  l'échéance l'emportant sur la fin automatique. Pointée après, une fin est conservée sans effet, et une transition
-  ouvre sa nouvelle activité à son heure, en laissant un trou. Une relance ou une clôture ne prolonge jamais une
+  l'échéance l'emportant sur la fin automatique. Pointée après, une fin conserve la borne automatique et son anomalie,
+  sans conflit ni qualification supplémentaire dans le journal ; une transition ouvre sa nouvelle activité à son
+  heure, en laissant un trou. Une relance ou une clôture ne prolonge jamais une
   activité échue. Seule une régularisation — fin ou transition — termine une activité au-delà de son échéance.
 - **Une ouverture sur une activité déjà en cours la relance**, elle n'est jamais refusée (décision D9 de
   [bornes-de-fin-de-journee.md](../../../../../../../documentation/strategie/bornes-de-fin-de-journee.md)). Les
-  replis recopiés de `coutderevient`, `feuilledetemps` et `syntheseheures` relisent encore le journal par
-  type seul, sans échéance ni séquence en conflit, et départagent les gestes simultanés sur leur date d'enregistrement :
-  ils ne rendent les mêmes intervalles que l'atelier que si aucune clé ne porte deux gestes à la même heure ni de
-  contradiction. Sur une séquence en conflit, une fin qui vise une activité remplacée y termine encore sa remplaçante,
-  tant qu'ils ne lisent pas la projection `activite_d_atelier`.
+  lecteurs consomment les activités et conflits projetés par atelier avec leurs propres entités immuables ; chacun
+  évalue l'échéance projetée à son instant de lecture et applique ses règles de calendrier ou de valorisation.
 - **À heure métier égale, le journal range la fin, puis la transition, puis l'ouverture**, et départage enfin par
   l'identifiant : jamais par la date d'enregistrement, qui ferait dépendre le journal de l'ordre de réception.
 - **Une journée sans départ au-delà du seuil est abandonnée**, et le geste suivant de l'opérateur en ouvre une
@@ -163,7 +163,7 @@ Tout besoin d'une donnée de paramétrage passe par un nouveau port, jamais par 
 ## État d'avancement
 
 Les quatre couches existent. L'API REST est décrite par OpenAPI (`/swagger-ui.html`) et par
-[documentation/atelier-api.md](../../../../../../documentation/atelier-api.md), le guide d'intégration du développeur
+[documentation/atelier-api.md](../../../../../../../documentation/atelier-api.md), le guide d'intégration du développeur
 front — le tenir à jour avec le contrat.
 
 `infrastructure/secondary/` persiste en PostgreSQL, dans le schéma de l'entreprise courante :
@@ -183,17 +183,17 @@ front — le tenir à jour avec le contrat.
 ### Les colonnes de projection ne contredisent pas « le journal est la source de vérité »
 
 La table `activite_d_atelier` et les colonnes `journee_de_travail.etat`, `.debut` et `.fin` sont **dérivées du
-journal, écrites depuis le domaine à chaque enregistrement, et jamais relues** : `toDomain()` rejoue toujours le journal
-et les ignore. Ce sont des index, pas un état stocké — sans eux, filtrer l'écran d'atelier sur `etats` ou retrouver la
-journée contenant un instant obligerait à ramener toute l'entreprise en mémoire à chaque lecture de temps effectif.
-Elles ne dépendent que du journal, jamais de l'instant courant, donc restent justes entre deux écritures.
+journal et écrites depuis le domaine à chaque enregistrement**. `toDomain()` rejoue toujours le journal et les
+ignore pour reconstruire l'agrégat. Les requêtes les lisent pour filtrer les états ou retrouver une journée ; les
+contextes lecteurs lisent les activités projetées par leurs propres entités. Ces projections ne dépendent que des
+faits, donc restent justes entre deux écritures ; l'expiration est évaluée séparément à la lecture.
 
 `activite_d_atelier` porte, par activité de `SuiviDAtelier.activites()`, son identité, son ouvrant actif, sa clé, sa
 nature, sa catégorie, son début, son échéance, sa fin réelle et sa fin au plus tard si elle est à résoudre, rapprochés par identité à
 chaque écriture. Jamais de fin automatique ni d'anomalie, qui dépendent de l'instant : le filtre `etats` juge l'état à
 l'instant d'évaluation de `SuiviDAtelierCriteria`, une activité interprétable sans fin réelle étant en cours tant que
-son échéance n'est pas atteinte. C'est
-aussi la projection que les autres contextes liront, plutôt que de réinterpréter le journal.
+son échéance n'est pas atteinte. `feuilledetemps`, `syntheseheures`, `coutderevient` et `pupitre` lisent cette
+interprétation, avec leurs modèles et ports propres, sans import du domaine d'atelier.
 
 La `fin_au_plus_tard` borne la plage possible d'une activité à résoudre : le maximum de son échéance et des fins
 ou transitions régularisées qui la visent, limité par la clôture. La clôture ne prolonge jamais cette borne.
@@ -214,10 +214,10 @@ la garantie que donnait le code partagé — le modifier en même temps que l'un
 
 ### Concurrence
 
-Deux saisies parties du même état valideraient chacune sa transition contre un journal qui ignore l'autre, et le
-journal obtenu — deux débuts consécutifs sur la même activité — deviendrait illisible à chaque relecture. `update`
+Deux saisies parties du même état construisent chacune un journal qui ignore le geste de l'autre. `update`
 charge donc l'agrégat sous verrou pessimiste, puis refuse par `SaisieConcurrenteException` (409) toute saisie dont le
-journal ignore un événement déjà stocké. Un `@Version` n'aurait rien protégé : la collection d'événements est le côté
+journal ignore un événement déjà stocké ; l'application réessaie les pointages avec le journal complet. Ce contrôle protège la
+conservation des faits, dont l'interprétation peut ensuite révéler un conflit. Un `@Version` n'aurait rien protégé : la collection d'événements est le côté
 inverse de l'association, donc l'insertion d'un événement ne salit pas la ligne parente et n'incrémente aucune version.
 
 L'`Auteur` d'une saisie vient toujours du jeton (`AuteurConnecte`), jamais du corps de la requête ; l'opérateur, lui,

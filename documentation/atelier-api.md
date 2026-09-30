@@ -13,6 +13,9 @@ contrôleurs qui n'existent qu'en test en sont exclus.
 Le détail métier et sa justification par le verbatim client sont dans
 [contexte-metier.md](contexte-metier.md) ; les règles de code, dans [glm-back/AGENTS.md](../AGENTS.md).
 
+Ce guide décrit le contrat back. L'adaptation de ses consommateurs front et la validation d'un déploiement
+coordonné restent à réaliser. Les routes de présence décrites ici restent servies jusqu'à leur retrait distinct.
+
 ---
 
 ## 1. Authentification et entreprise
@@ -47,8 +50,10 @@ qui saisit n'est pas forcément celui dont on compte le temps.
 
 ### Le journal est la seule vérité
 
-Aucun état, aucun compteur, aucun intervalle n'est stocké. `etat`, `activitesEnCours`, `conflits`, `amplitude`,
-`fenetres` et le temps effectif sont **recalculés du journal à chaque lecture**, à l'instant de cette lecture.
+Le détail d'atelier reconstruit son agrégat depuis les faits du journal. Atelier réconcilie aussi ses projections
+d'activités et de conflits à chaque écriture ; la feuille, la synthèse, le coût et le référentiel pupitre lisent
+cette interprétation et évaluent l'expiration à leur instant explicite. Une correction recalcule donc les bornes,
+les conflits et leurs conséquences dans les rapports.
 
 Conséquence directe pour le front : après toute écriture, la réponse contient déjà l'agrégat entièrement recalculé.
 **Ne jamais reconstruire l'état côté client** en appliquant l'événement localement — re-rendre depuis la réponse.
@@ -128,7 +133,7 @@ en pause reste présent.
 
 Une activité que rien n'a terminée se termine automatiquement à son **échéance** : son début plus 13 heures écoulées,
 sans fuseau — le passage à l'heure d'été ne l'allonge ni ne la raccourcit. Rien n'est écrit au journal : la fin
-automatique se lit à l'instant où le serveur répond. Un travail commencé à 8 h et jamais arrêté est en cours à 20 h 59 ;
+automatique se juge à l'instant d'évaluation de la lecture. Un travail commencé à 8 h et jamais arrêté est en cours à 20 h 59 ;
 à 21 h, et à toute lecture ultérieure, il est terminé à 21 h, avec une anomalie.
 
 Ce que les réponses en montrent :
@@ -146,8 +151,8 @@ La même échéance vaut pour les gestes, jugés sur leur heure métier, quel qu
 - un geste pointé **au plus tard à l'échéance** de l'activité qu'il vise la termine à son heure, même reçu le
   lendemain : la fin pointée à 17 h et publiée après une coupure réseau remplace la fin automatique et retire
   l'anomalie. Un geste pile à l'échéance l'emporte ;
-- une **fin pointée après l'échéance** est enregistrée (`201`) mais sans effet : l'activité garde ses 13 h et son
-  anomalie. Ce n'est pas un refus : le pupitre ne la rejoue pas ;
+- une **fin pointée après l'échéance** est enregistrée (`201`) : l'activité garde ses 13 h et son anomalie,
+  sans conflit ni qualification supplémentaire dans le journal. Ce succès est acquitté comme tout pointage conservé ;
 - une **transition pointée après l'échéance** de sa cible ouvre la nouvelle activité à son heure ; la cible garde sa
   borne automatique, et rien n'est compté entre les deux. Une relance après l'échéance laisse le même trou ;
 - une **clôture** postérieure à l'échéance ne prolonge rien ;
@@ -327,6 +332,7 @@ GET /api/pupitre/referentiel
 Un pupitre hors ligne ne reconstitue plus son cache en paginant `GET /api/operateurs` puis
 `GET /api/atelier/suivis`. Cette route rend **tout d'un coup** : les opérateurs désignables avec leur matricule et
 leurs postes habilités, et les éléments encore pointables avec leurs activités en cours.
+Les séquences en conflit sont également rendues sur chaque suivi.
 
 ```json
 {
@@ -373,12 +379,12 @@ leurs postes habilités, et les éléments encore pointables avec leurs activit�
   opérateur absent de la liste jointe — afficher l'identifiant brut plutôt que planter, l'appel suivant recollera.
   Une version antérieure de ce document annonçait une lecture répétable : elle n'a jamais fonctionné et a été
   retirée, la route répondait `500` à chaque appel.
-- **`genereLe` est la version, et c'est une date.** Elle dit quand le serveur a produit la réponse — de quoi
+- **`genereLe` date l'évaluation.** Elle dit quand le serveur a produit la réponse et sert à juger l'expiration — de quoi
   afficher « référentiel du 14/09 à 09:31 » et mesurer un retard. Elle **change à chaque appel**, y compris quand
   rien n'a bougé : ce n'est pas la date du dernier changement, et s'en servir pour décider d'un rafraîchissement
   n'aurait aucun sens. Il n'y a ni `ETag` ni `304`.
-- **Les opérateurs sont désignables indépendamment de leurs activités.** Ils portent leurs habilitations,
-  sans `etat` ni `presentJusqua` : ce référentiel ne lit plus la présence.
+- **Les opérateurs sont désignables indépendamment de leurs activités.** Ils portent leur identité, leur matricule
+  éventuel et leurs habilitations.
 
 - **Les activités sont interprétées par atelier**, puis leur expiration est évaluée à `genereLe`. Une activité
   à résoudre, terminée par un fait ou échue est absente d'`activites`. `ouverture` est l'identité stable à viser
@@ -483,6 +489,7 @@ activité terminée automatiquement à son échéance, faute de fin réelle : `f
 `DEBUT` à 8 h que l'opérateur n'arrête jamais donne ainsi un intervalle terminé à 21 h, avec cette anomalie, que la fin
 régularisée par le gestionnaire remplace. `aResoudre: true` signale une activité d'une séquence en conflit : rendue
 telle quelle, sans `fin`, elle n'a aucune durée à compter tant que le gestionnaire n'a pas tranché.
+Cette route relève l'instant sur l'horloge du serveur ; elle ne prend pas de paramètre `evaluation`.
 
 ### Évaluer le relevé des heures
 
@@ -494,12 +501,20 @@ GET /api/syntheses-des-heures/{operateurId}?annee=2026&semaine=20&evaluation=202
 Les deux lectures acceptent un instant ISO-8601 facultatif et rendent l'instant effectivement utilisé dans
 `evaluation`. Chaque lecture relève l'heure du serveur une seule fois : elle fournit l'instant par défaut et
 vérifie la borne future. Cet instant d'évaluation gouverne l'expiration et les jours atteints par les activités
-en cours et par les plages possibles à résoudre. Passer le même instant à la feuille et à la synthèse assure la même décision d'expiration.
+en cours et par les plages possibles à résoudre. Passer le même instant à la feuille et à la synthèse assure la même
+décision d'expiration. Une écriture entre les appels peut changer les faits lus ; l'instant commun ne garantit
+pas un instantané commun.
 
 Un instant passé est accepté, ainsi qu'un instant jusqu'à l'heure du serveur plus deux minutes, borne incluse.
 Au-delà, la réponse est 400 `evaluation-future` dans le contexte de la lecture, sans rapport. Un instant fourni
-vide ou mal formé répond aussi 400. Les faits connus restent interprétés même postérieurs à cet instant, sans
-lecture historique ni transaction commune garantie. La semaine, le fuseau et les rôles de lecture gardent leurs règles.
+vide ou mal formé répond aussi 400. Les faits connus restent interprétés même postérieurs à cet instant : ce n'est
+pas une lecture historique. La semaine, le fuseau et les rôles de lecture gardent leurs règles.
+
+La feuille rend sept jours, vides compris, avec les portions d'activités qui recouvrent la semaine, même commencées
+avant celle-ci. Chaque portion garde dans `activite` l'identité stable, l'état et les bornes entières : `TERMINEE`
+ou `TERMINEE_AUTOMATIQUEMENT` porte une fin ; `EN_COURS` rend une indication sans fin sur chaque jour atteint,
+sans durée comptabilisée. La synthèse compte seulement les portions terminées, réelles ou automatiques.
+Les portions sont coupées aux minuits du fuseau de l'entreprise ; ces coupes préservent les bornes entières.
 
 ### Lire les jours possibles d'un conflit
 
@@ -614,7 +629,8 @@ Une `dateDeSurvenue` strictement postérieure à l'instant courant répond 400 a
 `GET /api/couts-de-revient/{elementId}` exige `GESTIONNAIRE`. Le rapport rend `evaluation`, relevée une fois
 sur l'horloge du serveur, et `activitesEnCours`, nombre d'activités exclues du temps, de tous les coûts et du
 partage humain. Les activités terminées automatiquement comptent dès leur échéance et leur période figure
-sur la ligne dans `finsAutomatiques`, signalant l'anomalie active. Une lecture ultérieure conserve cette borne.
+sur la ligne dans `finsAutomatiques`, signalant l'anomalie active. L'échéance est inclusive ; une lecture ultérieure
+conserve cette borne.
 
 La machine coûte l'intervalle terminé entier ; la main d'œuvre se partage par postes distincts occupés par
 les seules activités terminées du même opérateur, tous éléments confondus. Une fin nouvellement reçue peut
@@ -634,4 +650,4 @@ poste déjà certainement occupé ne le change pas ; un taux absent produit zér
 un autre élément, avec `element`, `operateur`, `poste` facultatif, les identités originales `activites`
 et les faits actifs `pointages`. Une séquence sans activité à résoudre reste visible pour son élément
 sans rendre les montants incomplets. Résoudre les faits par annulation ou correction recalcule les valeurs.
-Cette route ne prend pas de paramètre d'évaluation.
+Cette route ne prend pas de paramètre d'évaluation et ne garantit pas un instantané face aux écritures concurrentes.
