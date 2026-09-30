@@ -199,7 +199,7 @@ L'API est décrite par OpenAPI (`/swagger-ui.html`) et par [atelier-api.md](atel
 6. **Le cycle de vie de l'élément lui-même.** La clôture existe côté atelier, sur le suivi. Reste à trancher si l'élément de fabrication porte en propre un statut, ou si son activité se lit entièrement par la présence ou l'absence d'un suivi non clôturé.
 7. **Aucune garde d'unicité en base** sur « un seul suivi non clôturé par élément », contrairement à ce que `elementdefabrication` fait pour la `Reference`. La règle vit dans le service, mais une contrainte partielle transformerait en 500 un état que le domaine admet aujourd'hui : rouvrir la clôture d'un suivi dont l'élément a été réengagé depuis. À trancher côté domaine avant de poser la contrainte.
 8. **L'écriture du journal rapproche par identifiant**, ce qui coûte une lecture indexée de la collection à chaque pointage. Si un journal devenait assez long pour que cette lecture pèse, la sortie est un upsert natif gardé (`on conflict (id) do update ... where ... is distinct from ...`), qui épargne à PostgreSQL toute version de tuple sur les lignes inchangées — au prix d'une scission permanente entre lecture JPA et écriture JDBC.
-9. **Le retrait des surfaces de présence est effectif.** Le paramétrage d'amplitude est retiré dans l'étape suivante ;
+9. **Le retrait des surfaces de présence est effectif.** Le paramétrage d'amplitude est également retiré ;
    la réconciliation globale du [guide historique](strategie/bornes-de-fin-de-journee.md) reste au lot documentaire.
 
 ## postedetravail
@@ -576,17 +576,3 @@ laisse donc sa tuile intacte, privée de sa seule référence.
    device grant activé et le client scope `glmproject` — sans lui, le jeton ne porte pas de claim `tenant` et toute
    la surface `/api/**` répond 403. C'est la dernière pièce d'infrastructure avant qu'un pupitre déployé puisse
    s'enrôler.
-
-## parametrage
-
-Porte le **paramétrage d'une entreprise** : pour l'instant, la seule **amplitude maximale** d'une journée de travail (décision D1 de [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md)). Au-delà de cette durée depuis l'arrivée, une journée sans départ sera abandonnée (lot 3). Le gestionnaire la fixe ; l'opérateur la lit.
-
-**La valeur par défaut n'est pas une constante du code.** Elle est semée en base, 13 h, par le changelog qui crée la table, dans chaque schéma d'entreprise. C'est la règle du dépôt pour toute donnée de paramétrage : le domaine la reçoit par un port. Une entreprise neuve reçoit donc sa ligne en même temps que son schéma, et aucune lecture ne tombe jamais sur une valeur absente.
-
-**L'amplitude se compte à la minute et reste strictement sous 24 h.** C'est ce qui garantit qu'un retour le lendemain à la même heure soit toujours une nouvelle arrivée, même pour un poste de nuit. La règle vit dans `AmplitudeMaximale` ; la validation de la requête la répète pour répondre 400 plutôt que 500, et deux contraintes du schéma servent de filet.
-
-**Seule la dernière modification est tracée** — auteur, lu dans le jeton, et instant. Changer le seuil peut déplacer la fin présumée d'une journée non régularisée (exemple E8) : savoir qui l'a changé, et quand, suffit à l'expliquer. Un historique complet n'est pas demandé.
-
-### Points ouverts
-
-1. **Les autres paramètres de l'entreprise** — fuseau horaire des relevés, préfixes des éléments de fabrication — vivent encore en configuration ou en constante. Ils ont vocation à rejoindre ce contexte.

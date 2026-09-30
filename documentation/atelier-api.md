@@ -430,17 +430,6 @@ parce qu'elle crée ou laisse une contradiction ; les refus qui ne tiennent pas 
 introuvable ou d'un autre poste, habilitation, événement antérieur à l'engagement ou postérieur à la clôture,
 événement déjà annulé.
 
-### Paramétrage de l'entreprise
-
-```
-GET /api/parametrage                          USER, GESTIONNAIRE   { "amplitudeMaximale": "PT13H", "derniereModification": { "auteur", "date" } }
-PUT /api/parametrage/amplitude-maximale       GESTIONNAIRE         { "valeur": "PT12H30M" }
-```
-
-L'**amplitude maximale** est la durée, depuis l'arrivée, au-delà de laquelle une journée sans départ sera abandonnée.
-Elle vaut 13 h par défaut, se saisit à la minute et reste strictement sous 24 h : toute autre valeur répond 400.
-`derniereModification` est absente tant que personne ne l'a changée.
-
 ### Lire le temps passé
 
 ```

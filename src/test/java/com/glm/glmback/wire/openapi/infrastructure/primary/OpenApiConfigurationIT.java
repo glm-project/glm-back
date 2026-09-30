@@ -40,6 +40,10 @@ class OpenApiConfigurationIT {
       .andExpect(jsonPath("$.components.schemas.RestJourneeDeTravail").doesNotExist())
       .andExpect(jsonPath("$.components.schemas.RestEvenementDePresence").doesNotExist())
       .andExpect(jsonPath("$.components.schemas.RestAnomalieDePresence").doesNotExist())
+      .andExpect(jsonPath("$.paths['/api/parametrage']").doesNotExist())
+      .andExpect(jsonPath("$.paths['/api/parametrage/amplitude-maximale']").doesNotExist())
+      .andExpect(jsonPath("$.components.schemas.RestParametrage").doesNotExist())
+      .andExpect(jsonPath("$.components.schemas.RestAmplitudeMaximale").doesNotExist())
       .andExpect(jsonPath("$.paths['/api/atelier/suivis/{id}/temps-effectif'].get.summary").exists())
       .andExpect(jsonPath("$.paths['/api/atelier/suivis/{id}/cloture'].delete.summary").exists());
   }
@@ -113,6 +117,13 @@ class OpenApiConfigurationIT {
     rest.perform(get("/api/atelier/journees")).andExpect(status().isNotFound());
     rest.perform(post("/api/atelier/journees/pointages").contentType("application/json").content("{}")).andExpect(status().isNotFound());
     rest.perform(get("/api/atelier/anomalies")).andExpect(status().isNotFound());
+  }
+
+  @Test
+  @WithTenant("impeccmold")
+  void shouldNePlusRouterLeParametrageDAmplitude() throws Exception {
+    rest.perform(get("/api/parametrage")).andExpect(status().isNotFound());
+    rest.perform(put("/api/parametrage/amplitude-maximale").contentType("application/json").content("{}")).andExpect(status().isNotFound());
   }
 
   private static org.springframework.test.web.servlet.ResultMatcher requiredFields(String schema, String... fields) {
