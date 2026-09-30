@@ -14,22 +14,26 @@ public final class CoutsDeRevientService {
   private final ElementsValorisables elements;
   private final TravailDeLElement travaux;
   private final OccupationDesOperateurs occupations;
+  private final ConflitsDuCout conflits;
   private final Clock clock;
 
   private CoutsDeRevientService(
     ElementsValorisables elements,
     TravailDeLElement travaux,
     OccupationDesOperateurs occupations,
+    ConflitsDuCout conflits,
     Clock clock
   ) {
     this.elements = elements;
     this.travaux = travaux;
     this.occupations = occupations;
+    this.conflits = conflits;
     this.clock = clock;
   }
 
   public static ElementsBuilder builder() {
-    return elements -> travaux -> occupations -> clock -> new CoutsDeRevientService(elements, travaux, occupations, clock);
+    return elements ->
+      travaux -> occupations -> conflits -> clock -> new CoutsDeRevientService(elements, travaux, occupations, conflits, clock);
   }
 
   public CoutDeRevient rapport(ElementId id) {
@@ -42,20 +46,45 @@ public final class CoutsDeRevientService {
       Math.toIntExact(
         activites
           .stream()
-          .filter(activite -> activite.termineeA(evaluation).isEmpty())
+          .filter(activite -> !activite.aResoudre() && activite.termineeA(evaluation).isEmpty())
           .count()
       )
     );
+    List<ActiviteInterpretee> aResoudre = activites.stream().filter(ActiviteInterpretee::aResoudre).toList();
+    List<SequenceEnConflit> propres = conflits.deLElement(id);
     if (tranches.isEmpty()) {
-      return new CoutDeRevient(element, List.of(), lecture);
+      return CoutDeRevient.builder()
+        .element(element)
+        .tranches(tranches)
+        .aResoudre(aResoudre)
+        .charges(ChargesDesOperateurs.de(List.of()))
+        .lecture(lecture)
+        .conflits(propres);
     }
     Set<OperateurId> operateurs = tranches.stream().map(TrancheDActivite::operateur).collect(Collectors.toSet());
-    List<TrancheDActivite> menees = terminees(occupations.activites(operateurs, couverture(tranches)), evaluation);
+    List<ActiviteInterpretee> occupation = occupations.activites(operateurs, couverture(tranches));
+    List<TrancheDActivite> menees = terminees(occupation, evaluation);
+    List<ZoneIncertaine> zones = Stream.concat(activites.stream(), occupation.stream())
+      .flatMap(activite -> activite.zoneA(evaluation).stream())
+      .toList();
+    ChargesDesOperateurs charges = ChargesDesOperateurs.de(Stream.concat(tranches.stream(), menees.stream()).toList(), zones);
+    Set<ActiviteId> responsables = charges.responsables(tranches);
+    List<SequenceEnConflit> dependances = Stream.concat(
+      propres.stream(),
+      conflits
+        .desOperateurs(operateurs)
+        .stream()
+        .filter(sequence -> sequence.concerne(responsables))
+    )
+      .distinct()
+      .toList();
     return CoutDeRevient.builder()
       .element(element)
       .tranches(tranches)
-      .charges(ChargesDesOperateurs.de(Stream.concat(tranches.stream(), menees.stream()).toList()))
-      .lecture(lecture);
+      .aResoudre(aResoudre)
+      .charges(charges)
+      .lecture(lecture)
+      .conflits(dependances);
   }
 
   private static List<TrancheDActivite> terminees(List<ActiviteInterpretee> activites, Instant evaluation) {
@@ -88,7 +117,11 @@ public final class CoutsDeRevientService {
   }
 
   public interface OccupationsBuilder {
-    ClockBuilder occupations(OccupationDesOperateurs occupations);
+    ConflitsBuilder occupations(OccupationDesOperateurs occupations);
+  }
+
+  public interface ConflitsBuilder {
+    ClockBuilder conflits(ConflitsDuCout conflits);
   }
 
   public interface ClockBuilder {

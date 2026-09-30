@@ -619,3 +619,19 @@ sur la ligne dans `finsAutomatiques`, signalant l'anomalie active. Une lecture u
 La machine coûte l'intervalle terminé entier ; la main d'œuvre se partage par postes distincts occupés par
 les seules activités terminées du même opérateur, tous éléments confondus. Une fin nouvellement reçue peut
 modifier ce partage sur un autre élément. Les tarifs viennent du fait ouvrant actif figé par atelier.
+
+Les champs de durée et de montant des lignes et du rapport sont des objets : `{ "complete": true,
+"valeur": ... }` pour une valeur connue, y compris zéro ; `{ "complete": false }` pour une valeur à
+résoudre, sans chiffre ni somme partielle. Travail, non conformité, machine et main d'œuvre sont indépendants.
+Une activité à résoudre rend ses valeurs propres concernées inconnues. Le temps et la machine d'une
+activité terminée restent chiffrés, même si son partage humain dépend d'un conflit.
+
+Pour la main d'œuvre, l'incertitude occupe toute la plage possible factuelle `[debut, finAuPlusTard)`,
+bornée à `evaluation`. Elle ne propage que si elle change réellement le nombre de postes distincts : un
+poste déjà certainement occupé ne le change pas ; un taux absent produit zéro indépendamment du diviseur.
+
+`conflits` rend les séquences de l'élément et toutes celles responsables des valeurs inconnues, même sur
+un autre élément, avec `element`, `operateur`, `poste` facultatif, les identités originales `activites`
+et les faits actifs `pointages`. Une séquence sans activité à résoudre reste visible pour son élément
+sans rendre les montants incomplets. Résoudre les faits par annulation ou correction recalcule les valeurs.
+Cette route ne prend pas de paramètre d'évaluation.

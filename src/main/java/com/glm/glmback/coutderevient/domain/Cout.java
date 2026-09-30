@@ -11,7 +11,7 @@ import com.glm.glmback.shared.error.domain.Assert;
  * Confondre les deux rendrait la regle invisible sur l'ecran qui l'affiche.
  * </p>
  */
-public record Cout(Montant machine, Montant mainDOeuvre) {
+public record Cout(MontantTotal machine, MontantTotal mainDOeuvre) {
   public static final Cout AUCUN = new Cout(Montant.ZERO, Montant.ZERO);
 
   public Cout {
@@ -19,7 +19,16 @@ public record Cout(Montant machine, Montant mainDOeuvre) {
     Assert.notNull("cout de main d'oeuvre", mainDOeuvre);
   }
 
-  public Montant total() {
+  public Cout(Montant machine, Montant mainDOeuvre) {
+    this(total("cout machine", machine), total("cout de main d'oeuvre", mainDOeuvre));
+  }
+
+  private static MontantTotal total(String champ, Montant valeur) {
+    Assert.notNull(champ, valeur);
+    return MontantTotal.de(valeur);
+  }
+
+  public MontantTotal total() {
     return machine.plus(mainDOeuvre);
   }
 

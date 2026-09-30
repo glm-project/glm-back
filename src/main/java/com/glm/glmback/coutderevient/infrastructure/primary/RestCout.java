@@ -1,9 +1,7 @@
 package com.glm.glmback.coutderevient.infrastructure.primary;
 
 import com.glm.glmback.coutderevient.domain.Cout;
-import com.glm.glmback.coutderevient.domain.Montant;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.math.BigDecimal;
 
 @Schema(
   description = """
@@ -15,15 +13,15 @@ import java.math.BigDecimal;
   """
 )
 record RestCout(
-  @Schema(description = "Cout des postes de travail, jamais divise.", example = "90.00") BigDecimal machine,
-  @Schema(description = "Cout des operateurs, divise par le parallelisme.", example = "40.00") BigDecimal mainDOeuvre,
-  @Schema(description = "Somme des deux.", example = "130.00") BigDecimal total
+  @Schema(description = "Cout des postes de travail, jamais divise.") RestMontantDuCout machine,
+  @Schema(description = "Cout des operateurs, divise par le parallelisme.") RestMontantDuCout mainDOeuvre,
+  @Schema(description = "Somme des deux.") RestMontantDuCout total
 ) {
   static RestCout from(Cout cout) {
-    return new RestCout(cout.machine().value(), cout.mainDOeuvre().value(), valeur(cout.total()));
-  }
-
-  private static BigDecimal valeur(Montant montant) {
-    return montant.value();
+    return new RestCout(
+      RestMontantDuCout.from(cout.machine()),
+      RestMontantDuCout.from(cout.mainDOeuvre()),
+      RestMontantDuCout.from(cout.total())
+    );
   }
 }

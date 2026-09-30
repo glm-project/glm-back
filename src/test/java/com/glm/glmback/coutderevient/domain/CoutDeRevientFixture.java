@@ -2,6 +2,7 @@ package com.glm.glmback.coutderevient.domain;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -9,7 +10,7 @@ import java.util.UUID;
  *
  * <p>
  * Aucun fuseau horaire ici, contrairement a la fixture de la feuille de temps : ce contexte ne connait que des
- * instants, comme l'atelier dont il relit les journaux.
+ * instants, comme l'atelier dont il relit les activites interpretees.
  * </p>
  */
 public final class CoutDeRevientFixture {
@@ -52,5 +53,52 @@ public final class CoutDeRevientFixture {
   public static final CoutHoraire COUT_HORAIRE_DE_60_EUROS = new CoutHoraire(new BigDecimal("60.00"));
   public static final TauxHoraire TAUX_HORAIRE_DE_20_EUROS = new TauxHoraire(new BigDecimal("20.00"));
 
+  public static final Activite ACTIVITE_FRAISAGE = Activite.builder()
+    .operateur(OPERATEUR_ID_DUPONT)
+    .poste(Optional.of(POSTE_ID_FRAISEUSE))
+    .nature(Optional.of(NATURE_FRAISAGE))
+    .coutHoraire(Optional.of(COUT_HORAIRE_DE_45_EUROS))
+    .tauxHoraire(Optional.of(TAUX_HORAIRE_DE_20_EUROS))
+    .categorie(CategorieDActivite.TRAVAIL);
+  public static final Activite ACTIVITE_TOURNAGE = Activite.builder()
+    .operateur(OPERATEUR_ID_DUPONT)
+    .poste(Optional.of(POSTE_ID_TOUR))
+    .nature(Optional.of(NATURE_TOURNAGE))
+    .coutHoraire(Optional.of(COUT_HORAIRE_DE_60_EUROS))
+    .tauxHoraire(Optional.of(TAUX_HORAIRE_DE_20_EUROS))
+    .categorie(CategorieDActivite.TRAVAIL);
+  public static final Activite ACTIVITE_NC_FRAISAGE = Activite.builder()
+    .operateur(OPERATEUR_ID_DUPONT)
+    .poste(Optional.of(POSTE_ID_FRAISEUSE))
+    .nature(Optional.of(NATURE_FRAISAGE))
+    .coutHoraire(Optional.of(COUT_HORAIRE_DE_45_EUROS))
+    .tauxHoraire(Optional.of(TAUX_HORAIRE_DE_20_EUROS))
+    .categorie(CategorieDActivite.NON_CONFORMITE);
+  public static final Activite ACTIVITE_TOURNAGE_SANS_TAUX = Activite.builder()
+    .operateur(OPERATEUR_ID_DUPONT)
+    .poste(Optional.of(POSTE_ID_TOUR))
+    .nature(Optional.of(NATURE_TOURNAGE))
+    .coutHoraire(Optional.of(COUT_HORAIRE_DE_60_EUROS))
+    .tauxHoraire(Optional.empty())
+    .categorie(CategorieDActivite.TRAVAIL);
+
   private CoutDeRevientFixture() {}
+
+  public static ActiviteInterpretee activiteInterpreteeDeFraisage(Plage plage) {
+    return ActiviteInterpretee.builder()
+      .id(new ActiviteId(UUID.randomUUID()))
+      .activite(ACTIVITE_FRAISAGE)
+      .plage(plage)
+      .echeance(plage.debut().plusSeconds(46800))
+      .finAuPlusTard(Optional.empty());
+  }
+
+  public static ActiviteInterpretee activiteInterpreteeDeTournage(Plage plage) {
+    return ActiviteInterpretee.builder()
+      .id(new ActiviteId(UUID.randomUUID()))
+      .activite(ACTIVITE_TOURNAGE)
+      .plage(plage)
+      .echeance(plage.debut().plusSeconds(46800))
+      .finAuPlusTard(Optional.empty());
+  }
 }

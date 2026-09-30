@@ -1,5 +1,6 @@
 package com.glm.glmback.coutderevient.infrastructure.secondary;
 
+import com.glm.glmback.coutderevient.domain.ElementId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -19,5 +20,9 @@ class SuiviValoriseEntity {
 
   protected SuiviValoriseEntity() {
     /* Requis par JPA. */
+  }
+
+  ElementId element() {
+    return new ElementId(elementId);
   }
 }

@@ -2,21 +2,18 @@ package com.glm.glmback.coutderevient.domain;
 
 import com.glm.glmback.shared.error.domain.Assert;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * Le rapport d'un element de fabrication : une ligne par nature d'operation, et le total.
  *
  * <p>
- * Aucune identite, aucune persistance : l'objet nait et meurt dans l'appel, recalcule depuis les journaux de
- * l'atelier. Une saisie regularisee apres coup compte donc a l'heure ou le travail a eu lieu.
+ * Aucune identite, aucune persistance : l'objet nait et meurt dans l'appel, recalcule depuis les activites interpretees
+ * par atelier. Une saisie regularisee apres coup compte donc a l'heure ou le travail a eu lieu.
  * </p>
  */
-public record CoutDeRevient(ElementValorise element, List<LigneDeCout> lignes, EvaluationDuCout lecture) {
+public record CoutDeRevient(ElementValorise element, List<LigneDeCout> lignes, EvaluationDuCout lecture, List<SequenceEnConflit> conflits) {
   /**
    * Les natures dans l'ordre alphabetique, et la ligne sans nature en dernier : elle est le residu de ce qui a ete
    * pointe sans poste, et n'a pas de place dans l'ordre des metiers.
@@ -30,10 +27,13 @@ public record CoutDeRevient(ElementValorise element, List<LigneDeCout> lignes, E
     Assert.notNull("element", element);
     Assert.field("lignes", lignes).notNull().noNullElement();
     Assert.notNull("lecture", lecture);
+    Assert.field("conflits", conflits).notNull().noNullElement();
   }
 
   public static ElementBuilder builder() {
-    return element -> tranches -> charges -> lecture -> new CoutDeRevient(element, lignes(tranches, charges), lecture);
+    return element ->
+      tranches ->
+        aResoudre -> charges -> lecture -> conflits -> new CoutDeRevient(element, lignes(tranches, charges, aResoudre), lecture, conflits);
   }
 
   public interface ElementBuilder {
@@ -41,7 +41,11 @@ public record CoutDeRevient(ElementValorise element, List<LigneDeCout> lignes, E
   }
 
   public interface TranchesBuilder {
-    ChargesBuilder tranches(List<TrancheDActivite> tranches);
+    AResoudreBuilder tranches(List<TrancheDActivite> tranches);
+  }
+
+  public interface AResoudreBuilder {
+    ChargesBuilder aResoudre(List<ActiviteInterpretee> aResoudre);
   }
 
   public interface ChargesBuilder {
@@ -49,7 +53,11 @@ public record CoutDeRevient(ElementValorise element, List<LigneDeCout> lignes, E
   }
 
   public interface LectureBuilder {
-    CoutDeRevient lecture(EvaluationDuCout lecture);
+    ConflitsBuilder lecture(EvaluationDuCout lecture);
+  }
+
+  public interface ConflitsBuilder {
+    CoutDeRevient conflits(List<SequenceEnConflit> conflits);
   }
 
   public TempsPasse temps() {
@@ -60,16 +68,36 @@ public record CoutDeRevient(ElementValorise element, List<LigneDeCout> lignes, E
     return lignes.stream().map(LigneDeCout::cout).reduce(Cout.AUCUN, Cout::plus);
   }
 
-  private static List<LigneDeCout> lignes(List<TrancheDActivite> tranches, ChargesDesOperateurs charges) {
-    Map<Optional<NatureDOperation>, List<TrancheDActivite>> parNature = tranches
+  private static List<LigneDeCout> lignes(
+    List<TrancheDActivite> tranches,
+    ChargesDesOperateurs charges,
+    List<ActiviteInterpretee> aResoudre
+  ) {
+    List<Optional<NatureDOperation>> natures = java.util.stream.Stream.concat(
+      tranches.stream().map(tranche -> tranche.activite().nature()),
+      aResoudre.stream().map(activite -> activite.activite().nature())
+    )
+      .distinct()
+      .sorted(PAR_NATURE)
+      .toList();
+    return natures
       .stream()
-      .collect(Collectors.groupingBy(tranche -> tranche.activite().nature(), LinkedHashMap::new, Collectors.toList()));
-
-    return parNature
-      .entrySet()
-      .stream()
-      .sorted(Map.Entry.comparingByKey(PAR_NATURE))
-      .map(entree -> LigneDeCout.de(entree.getKey(), entree.getValue(), charges))
+      .map(nature ->
+        LigneDeCout.de(
+          new TravailDeLaLigne(
+            nature,
+            tranches
+              .stream()
+              .filter(tranche -> tranche.activite().nature().equals(nature))
+              .toList(),
+            aResoudre
+              .stream()
+              .filter(activite -> activite.activite().nature().equals(nature))
+              .toList()
+          ),
+          charges
+        )
+      )
       .toList();
   }
 }

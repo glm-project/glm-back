@@ -24,14 +24,14 @@ class CoutDeRevientTest {
 
   @Test
   void shouldNotBuildWithoutElement() {
-    assertThatThrownBy(() -> new CoutDeRevient(null, List.of(), new EvaluationDuCout(LE_11_MAI_A_17H, 0)))
+    assertThatThrownBy(() -> new CoutDeRevient(null, List.of(), new EvaluationDuCout(LE_11_MAI_A_17H, 0), List.of()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("element");
   }
 
   @Test
   void shouldNotBuildWithoutLignes() {
-    assertThatThrownBy(() -> new CoutDeRevient(ELEMENT_VALORISE_OF, null, new EvaluationDuCout(LE_11_MAI_A_17H, 0)))
+    assertThatThrownBy(() -> new CoutDeRevient(ELEMENT_VALORISE_OF, null, new EvaluationDuCout(LE_11_MAI_A_17H, 0), List.of()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("lignes");
   }
@@ -41,8 +41,10 @@ class CoutDeRevientTest {
     CoutDeRevient rapport = CoutDeRevient.builder()
       .element(ELEMENT_VALORISE_OF)
       .tranches(List.of())
+      .aResoudre(List.of())
       .charges(ChargesDesOperateurs.de(List.of()))
-      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0));
+      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
+      .conflits(List.of());
 
     assertThat(rapport.lignes()).isEmpty();
     assertThat(rapport.temps()).isEqualTo(TempsPasse.AUCUN);
@@ -59,19 +61,21 @@ class CoutDeRevientTest {
     CoutDeRevient rapport = CoutDeRevient.builder()
       .element(ELEMENT_VALORISE_OF)
       .tranches(tranches)
+      .aResoudre(List.of())
       .charges(ChargesDesOperateurs.de(tranches))
-      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0));
+      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
+      .conflits(List.of());
 
     assertThat(rapport.lignes())
       .singleElement()
       .satisfies(ligne -> {
         assertThat(ligne.nature()).contains(NATURE_FRAISAGE);
         assertThat(ligne.temps()).isEqualTo(new TempsPasse(Duration.ofHours(2), Duration.ZERO));
-        assertThat(ligne.periode()).isEqualTo(new Periode(LE_11_MAI_A_9H, LE_11_MAI_A_11H));
-        assertThat(ligne.cout().machine()).isEqualTo(new Montant(new BigDecimal("90.00")));
-        assertThat(ligne.cout().mainDOeuvre()).isEqualTo(new Montant(new BigDecimal("40.00")));
+        assertThat(ligne.periode()).isEqualTo(new Plage(LE_11_MAI_A_9H, Optional.of(LE_11_MAI_A_11H)));
+        assertThat(ligne.cout().machine().valeur().orElseThrow()).isEqualTo(new Montant(new BigDecimal("90.00")));
+        assertThat(ligne.cout().mainDOeuvre().valeur().orElseThrow()).isEqualTo(new Montant(new BigDecimal("40.00")));
       });
-    assertThat(rapport.cout().total()).isEqualTo(new Montant(new BigDecimal("130.00")));
+    assertThat(rapport.cout().total().valeur().orElseThrow()).isEqualTo(new Montant(new BigDecimal("130.00")));
   }
 
   /**
@@ -88,15 +92,17 @@ class CoutDeRevientTest {
     CoutDeRevient rapport = CoutDeRevient.builder()
       .element(ELEMENT_VALORISE_OF)
       .tranches(tranches)
+      .aResoudre(List.of())
       .charges(ChargesDesOperateurs.de(tranches))
-      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0));
+      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
+      .conflits(List.of());
 
     assertThat(rapport.lignes())
       .singleElement()
       .satisfies(ligne -> {
         assertThat(ligne.temps()).isEqualTo(new TempsPasse(Duration.ofHours(1), Duration.ofHours(1)));
         assertThat(ligne.nonConformites()).containsExactly(new Periode(LE_11_MAI_A_10H, LE_11_MAI_A_11H));
-        assertThat(ligne.periode()).isEqualTo(new Periode(LE_11_MAI_A_9H, LE_11_MAI_A_11H));
+        assertThat(ligne.periode()).isEqualTo(new Plage(LE_11_MAI_A_9H, Optional.of(LE_11_MAI_A_11H)));
       });
   }
 
@@ -110,8 +116,10 @@ class CoutDeRevientTest {
     CoutDeRevient rapport = CoutDeRevient.builder()
       .element(ELEMENT_VALORISE_OF)
       .tranches(tranches)
+      .aResoudre(List.of())
       .charges(ChargesDesOperateurs.de(tranches))
-      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0));
+      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
+      .conflits(List.of());
 
     assertThat(rapport.lignes())
       .extracting(LigneDeCout::nature)
@@ -132,13 +140,15 @@ class CoutDeRevientTest {
     CoutDeRevient rapport = CoutDeRevient.builder()
       .element(ELEMENT_VALORISE_OF)
       .tranches(tranches)
+      .aResoudre(List.of())
       .charges(ChargesDesOperateurs.de(tranches))
-      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0));
+      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
+      .conflits(List.of());
 
     assertThat(rapport.lignes().getFirst().cout()).isEqualTo(
       new Cout(new Montant(new BigDecimal("90.00")), new Montant(new BigDecimal("20.00")))
     );
-    assertThat(rapport.cout().mainDOeuvre()).isEqualTo(new Montant(new BigDecimal("40.00")));
+    assertThat(rapport.cout().mainDOeuvre().valeur().orElseThrow()).isEqualTo(new Montant(new BigDecimal("40.00")));
   }
 
   /**
@@ -155,11 +165,13 @@ class CoutDeRevientTest {
     CoutDeRevient rapport = CoutDeRevient.builder()
       .element(ELEMENT_VALORISE_OF)
       .tranches(tranches)
+      .aResoudre(List.of())
       .charges(ChargesDesOperateurs.de(tranches))
-      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0));
+      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
+      .conflits(List.of());
 
     assertThat(rapport.lignes()).extracting(LigneDeCout::nature).containsExactly(Optional.of(NATURE_FRAISAGE), Optional.empty());
-    assertThat(rapport.lignes().getLast().cout().machine()).isEqualTo(Montant.ZERO);
+    assertThat(rapport.lignes().getLast().cout().machine().valeur().orElseThrow()).isEqualTo(Montant.ZERO);
   }
 
   @Test
@@ -172,8 +184,10 @@ class CoutDeRevientTest {
     CoutDeRevient rapport = CoutDeRevient.builder()
       .element(ELEMENT_VALORISE_OF)
       .tranches(tranches)
+      .aResoudre(List.of())
       .charges(ChargesDesOperateurs.de(tranches))
-      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0));
+      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
+      .conflits(List.of());
 
     assertThat(rapport.temps()).isEqualTo(new TempsPasse(Duration.ofHours(2), Duration.ofHours(1)));
   }

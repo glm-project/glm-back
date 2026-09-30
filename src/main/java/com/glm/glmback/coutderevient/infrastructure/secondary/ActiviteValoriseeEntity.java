@@ -40,22 +40,41 @@ class ActiviteValoriseeEntity {
   private Instant echeance;
   private Instant fin;
 
+  @Column(name = "fin_au_plus_tard")
+  private Instant finAuPlusTard;
+
+  @Column(name = "sequence_id")
+  private UUID sequenceId;
+
+  private Integer ordreDansSequence;
+
   protected ActiviteValoriseeEntity() {
     /* Requis par JPA. */
   }
 
+  UUID sequenceId() {
+    return sequenceId;
+  }
+
+  ActiviteId identite() {
+    return new ActiviteId(id);
+  }
+
   ActiviteInterpretee toDomain() {
-    return new ActiviteInterpretee(
-      new Activite(
-        new OperateurId(operateurId),
-        Optional.ofNullable(posteId).map(PosteDeTravailId::new),
-        Optional.ofNullable(nature).map(NatureDOperation::new),
-        ouverture.coutHoraire(),
-        ouverture.tauxHoraire(),
-        categorie
-      ),
-      new Plage(debut, Optional.ofNullable(fin)),
-      echeance
-    );
+    return ActiviteInterpretee.builder()
+      .id(new ActiviteId(id))
+      .activite(
+        new Activite(
+          new OperateurId(operateurId),
+          Optional.ofNullable(posteId).map(PosteDeTravailId::new),
+          Optional.ofNullable(nature).map(NatureDOperation::new),
+          ouverture.coutHoraire(),
+          ouverture.tauxHoraire(),
+          categorie
+        )
+      )
+      .plage(new Plage(debut, Optional.ofNullable(fin)))
+      .echeance(echeance)
+      .finAuPlusTard(Optional.ofNullable(finAuPlusTard));
   }
 }

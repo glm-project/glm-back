@@ -353,6 +353,23 @@ exclue. Si B se termine à 11 h, le rapport recalculé porte 30 € humain sur c
 La ligne arrondit une seule fois au centime après sommation des tranches ; le rapport somme les lignes
 **déjà arrondies**, pour que le total soit exactement la somme affichée.
 
+### Valeurs à résoudre
+
+Les durées et montants portent une complétude distincte : travail, non conformité, machine et main d'œuvre.
+Une catégorie certaine garde sa valeur si l'autre est incertaine. Chaque total complet porte son chiffre,
+zéro compris ; chaque total incomplet est dépourvu de chiffre, même quand une partie est certaine.
+
+Une activité à résoudre rend ses valeurs propres concernées inconnues. Pour les autres activités terminées,
+le partage humain dépend de toute la plage possible factuelle `[debut, finAuPlusTard)`, bornée à l'évaluation,
+sans chercher une portion commune aux chronologies. La machine et le temps certains restent connus.
+Si le poste incertain est déjà occupé avec certitude, il ne change pas le nombre de postes distincts :
+aucune incertitude humaine n'en découle. Le zéro d'un taux absent reste indépendant du diviseur.
+
+`conflits` expose les séquences de l'élément et toutes les séquences responsables d'une valeur incomplète,
+y compris celles d'autres éléments. Les activités gardent leur identité originale, les pointages leurs
+identités actives. Un conflit sans activité à résoudre reste visible mais ne rend pas les montants inconnus.
+Les annulations et corrections d'atelier recalculent ces dépendances et rétablissent la complétude.
+
 ### Lecture et accès
 
 Le coût lit les projections d'activités d'atelier par ses entités JPA `@Immutable`, sans import entre

@@ -38,6 +38,26 @@ ou de l'opérateur, ni un ancien ouvrant annulé.
 - Additionner les tranches à l'échelle de travail, arrondir au centime une seule fois par ligne, puis sommer
   les lignes déjà arrondies dans le rapport.
 
+## Incertitude et dépendances
+
+Une activité `A_RESOUDRE` rend ses propres durées et coûts concernés incomplets. Distinguer travail et
+non conformité : une catégorie certaine reste chiffrée même si l'autre est à résoudre. La machine d'une
+activité terminée reste indépendante d'un diviseur incertain.
+
+Pour le partage humain, utiliser toute la plage factuelle possible `[debut, finAuPlusTard)`, bornée à
+`evaluation`, sans noyau commun aux chronologies. Ne propager que la dépendance réelle du nombre de postes :
+une occupation certaine du même poste peut neutraliser cette incertitude. Un taux absent donne zéro,
+indépendant du diviseur. Aucun tarif ne doit être inventé.
+
+Chaque durée et montant rend `complete` et porte `valeur` seulement s'il est complet. Dès qu'une valeur
+requise manque, le total ne porte aucun chiffre, ni zéro ni somme partielle. Appliquer cela séparément
+au travail, à la non conformité, à la machine et à la main d'œuvre, puis aux totaux de ligne et de rapport.
+
+Rendre dans `conflits` les séquences propres et toutes celles responsables de valeurs incompletes, même sur
+un autre élément. Conserver leurs identités originales d'activités et leurs pointages actifs. Une séquence
+sans activité à résoudre reste visible pour son élément et laisse ses montants complets. Annulation et
+correction rétablissent les valeurs lorsque l'interprétation d'atelier les résout.
+
 ## Contrat et vérification
 
 `GET /api/couts-de-revient/{elementId}` est réservé au `GESTIONNAIRE` : il expose les tarifs humains.

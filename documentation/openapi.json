@@ -440,6 +440,44 @@
         "required" : [ "activites", "element", "pointages" ],
         "type" : "object"
       },
+      "RestConflitDuCout" : {
+        "description" : "Sequence en conflit de l'element ou responsable d'un partage humain incomplet sur un autre element.",
+        "properties" : {
+          "activites" : {
+            "description" : "Identites originales des activites de la sequence, dans leur ordre.",
+            "items" : {
+              "format" : "uuid",
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "element" : {
+            "description" : "Element de fabrication portant la sequence.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "operateur" : {
+            "description" : "Operateur de la sequence.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "pointages" : {
+            "description" : "Identites des faits actifs contradictoires, dans leur ordre.",
+            "items" : {
+              "format" : "uuid",
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "poste" : {
+            "description" : "Poste de la sequence, absent sans poste.",
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "required" : [ "activites", "element", "operateur", "pointages" ],
+        "type" : "object"
+      },
       "RestConflitDuPupitre" : {
         "description" : "Sequence interpretee en conflit par atelier. Aucune de ses activites n est actionnable ; une nouvelle ouverture reste possible.",
         "properties" : {
@@ -545,30 +583,34 @@
         "description" : "Un cout, separe en ce que coute la machine et en ce que coute la personne.\n\nLes deux ne s'agregent pas de la meme facon : le cout horaire de chaque poste actif court en entier, alors que le\ntaux horaire de l'operateur est divise par le nombre de postes qu'il occupait simultanement, tous elements\nconfondus. Les afficher separement est ce qui rend la regle lisible.\n",
         "properties" : {
           "machine" : {
-            "description" : "Cout des postes de travail, jamais divise.",
-            "example" : 90.0,
-            "type" : "number"
+            "$ref" : "#/components/schemas/RestMontantDuCout",
+            "description" : "Cout des postes de travail, jamais divise."
           },
           "mainDOeuvre" : {
-            "description" : "Cout des operateurs, divise par le parallelisme.",
-            "example" : 40.0,
-            "type" : "number"
+            "$ref" : "#/components/schemas/RestMontantDuCout",
+            "description" : "Cout des operateurs, divise par le parallelisme."
           },
           "total" : {
-            "description" : "Somme des deux.",
-            "example" : 130.0,
-            "type" : "number"
+            "$ref" : "#/components/schemas/RestMontantDuCout",
+            "description" : "Somme des deux."
           }
         },
         "type" : "object"
       },
       "RestCoutDeRevient" : {
-        "description" : "Le cout de revient d'un element de fabrication, une ligne par nature d'operation.\n\nRien n'est stocke : le rapport est recalcule a chaque lecture depuis les journaux de l'atelier, pour qu'une saisie\nregularisee apres coup compte a l'heure ou le travail a eu lieu.\n\nLe total est la somme des lignes deja arrondies : il vaut donc exactement ce que l'ecran affiche.\n",
+        "description" : "Le cout de revient d'un element de fabrication, une ligne par nature d'operation.\n\nRien n'est stocke : le rapport est recalcule a chaque lecture depuis les activites interpretees par atelier, pour qu'une saisie\nregularisee apres coup compte a l'heure ou le travail a eu lieu.\n\nChaque total complet est chiffre ; un total incomplet ne porte aucune somme partielle.\nLes montants sont arrondis une fois par ligne, puis sommes au rapport.\n",
         "properties" : {
           "activitesEnCours" : {
             "description" : "Nombre d'activites en cours exclues du temps, des couts et du diviseur.",
             "format" : "int32",
             "type" : "integer"
+          },
+          "conflits" : {
+            "description" : "Conflits de l'element et sequences responsables de valeurs incompletes, meme sur un autre element.",
+            "items" : {
+              "$ref" : "#/components/schemas/RestConflitDuCout"
+            },
+            "type" : "array"
           },
           "cout" : {
             "$ref" : "#/components/schemas/RestCout",
@@ -697,6 +739,22 @@
           },
           "valeur" : {
             "description" : "Duree certaine, absente si le total est incomplet.",
+            "example" : "PT2H",
+            "type" : "string"
+          }
+        },
+        "required" : [ "complete" ],
+        "type" : "object"
+      },
+      "RestDureeDuCout" : {
+        "description" : "Total complet chiffre, ou incomplet sans aucun chiffre partiel.",
+        "properties" : {
+          "complete" : {
+            "description" : "Vrai si ce total est entierement determine.",
+            "type" : "boolean"
+          },
+          "valeur" : {
+            "description" : "Valeur certaine ISO-8601, absente si incomplet.",
             "example" : "PT2H",
             "type" : "string"
           }
@@ -1135,7 +1193,7 @@
             "type" : "string"
           },
           "nonConformites" : {
-            "description" : "Les periodes de reprise, datees, dans l'ordre.",
+            "description" : "Les periodes de reprise terminees et certaines, datees, dans l'ordre.",
             "items" : {
               "$ref" : "#/components/schemas/RestPeriodeDuCout"
             },
@@ -1143,7 +1201,7 @@
           },
           "periode" : {
             "$ref" : "#/components/schemas/RestPeriodeDuCout",
-            "description" : "Du premier debut a la derniere fin de cette nature."
+            "description" : "Premier debut comptabilise, derniere fin certaine de cette nature si elle existe."
           },
           "temps" : {
             "$ref" : "#/components/schemas/RestTempsPasse",
@@ -1252,6 +1310,22 @@
           }
         },
         "required" : [ "libelle", "nature" ],
+        "type" : "object"
+      },
+      "RestMontantDuCout" : {
+        "description" : "Total complet chiffre, ou incomplet sans aucun chiffre partiel.",
+        "properties" : {
+          "complete" : {
+            "description" : "Vrai si ce total est entierement determine.",
+            "type" : "boolean"
+          },
+          "valeur" : {
+            "description" : "Valeur certaine, absente si incomplet.",
+            "example" : 90.0,
+            "type" : "number"
+          }
+        },
+        "required" : [ "complete" ],
         "type" : "object"
       },
       "RestOperateur" : {
@@ -1434,7 +1508,7 @@
         "type" : "object"
       },
       "RestPeriodeDuCout" : {
-        "description" : "Periode terminee effectivement ou automatiquement.",
+        "description" : "Bornes des activites comptabilisees ; fin absente si aucune fin certaine.",
         "properties" : {
           "debut" : {
             "description" : "Debut de la periode.",
@@ -1442,7 +1516,7 @@
             "type" : "string"
           },
           "fin" : {
-            "description" : "Fin de la periode terminee.",
+            "description" : "Derniere fin certaine, absente si aucune activite de cette nature n'est terminee.",
             "format" : "date-time",
             "type" : "string"
           }
@@ -2017,22 +2091,19 @@
         "type" : "object"
       },
       "RestTempsPasse" : {
-        "description" : "Le temps passe, separe en bon travail et en reprise de non conformite.\n\nUne piece ratee se refait sur le meme element et au meme tarif, mais comptee a part : c'est ce que le client veut\nsavoir a la cloture.\n",
+        "description" : "Le temps passe, separe en bon travail et en reprise de non conformite.\n\nLa reprise d'une piece ratee se compte a part sur le meme element. Ses tarifs sont ceux de son propre fait\nouvrant actif, captures par atelier.\n",
         "properties" : {
           "nonConformite" : {
-            "description" : "Duree ISO-8601 passee en non conformite.",
-            "example" : "PT30M",
-            "type" : "string"
+            "$ref" : "#/components/schemas/RestDureeDuCout",
+            "description" : "Duree ISO-8601 passee en non conformite."
           },
           "total" : {
-            "description" : "Somme des deux.",
-            "example" : "PT2H30M",
-            "type" : "string"
+            "$ref" : "#/components/schemas/RestDureeDuCout",
+            "description" : "Somme des deux."
           },
           "travail" : {
-            "description" : "Duree ISO-8601 du bon travail.",
-            "example" : "PT2H",
-            "type" : "string"
+            "$ref" : "#/components/schemas/RestDureeDuCout",
+            "description" : "Duree ISO-8601 du bon travail."
           }
         },
         "type" : "object"
@@ -3052,7 +3123,7 @@
     },
     "/api/couts-de-revient/{elementId}" : {
       "get" : {
-        "description" : "Rend une ligne par nature d'operation — fraisage, tournage, erosion —, chacune portant le temps de bon travail,\nle temps passe en non conformite avec ses periodes datees, et le cout separe en machine et main d'oeuvre.\n\nL'entree se fait par l'element, non par son suivi d'atelier : un element reengage apres cloture additionne ses\npassages.\n\nDeux regles a connaitre avant d'afficher les montants. Le cout horaire de chaque poste actif court **en entier**,\nmeme quand l'operateur en mene plusieurs de front ; son taux horaire, lui, est **divise** par le nombre de postes\nqu'il occupait a cet instant, tous elements confondus. Un operateur sur trois elements avec une seule machine\nn'est donc pas divise. Le decoupage se fait aux bornes de chaque pointage, si bien que seul le chevauchement reel\nest divise.\n\nUne activite encore en cours est entierement exclue du temps, des couts et du diviseur. A son echeance\nprojetee, elle compte jusqu'a sa fin automatique avec une anomalie et sa periode datee. L'horloge est relevee\nune seule fois par rapport ; cet instant est rendu dans evaluation.\n",
+        "description" : "Rend une ligne par nature d'operation — fraisage, tournage, erosion —, chacune portant le temps de bon travail,\nle temps passe en non conformite avec ses periodes datees, et le cout separe en machine et main d'oeuvre.\n\nL'entree se fait par l'element, non par son suivi d'atelier : un element reengage apres cloture additionne ses\npassages.\n\nDeux regles a connaitre avant d'afficher les montants. Le cout horaire de chaque poste actif court **en entier**,\nmeme quand l'operateur en mene plusieurs de front ; son taux horaire, lui, est **divise** par le nombre de postes\nqu'il occupait a cet instant, tous elements confondus. Un operateur sur trois elements avec une seule machine\nn'est donc pas divise. Le decoupage se fait aux bornes de chaque pointage, si bien que seul le chevauchement reel\nest divise.\n\nUne activite encore en cours est entierement exclue du temps, des couts et du diviseur. A son echeance\nprojetee, elle compte jusqu'a sa fin automatique avec une anomalie et sa periode datee. L'horloge est relevee\nune seule fois par rapport ; cet instant est rendu dans evaluation.\n\nChaque duree et montant porte complete ; valeur est absente si incomplet, sans zero ni somme partielle.\nTravail, non conformite, machine et main d'oeuvre sont independants. Pour le partage humain, toute la plage\nfactuelle possible d'une activite a resoudre est bornee a evaluation. Une occupation certaine du meme poste\npeut neutraliser son effet sur le nombre de postes distincts ; la machine d'une activite terminee reste connue.\nconflits rend les sequences de l'element et toutes celles responsables d'une valeur inconnue, meme sur un autre\nelement, avec les identites originales d'activites et les faits actifs.\n",
         "operationId" : "get_6",
         "parameters" : [ {
           "description" : "Identifiant de l'element de fabrication.",

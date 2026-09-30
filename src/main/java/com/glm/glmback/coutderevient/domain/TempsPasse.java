@@ -11,7 +11,7 @@ import java.time.Duration;
  * savoir a la cloture, combien de temps a fait du bon travail et combien a refait.
  * </p>
  */
-public record TempsPasse(Duration travail, Duration nonConformite) {
+public record TempsPasse(DureeTotale travail, DureeTotale nonConformite) {
   public static final TempsPasse AUCUN = new TempsPasse(Duration.ZERO, Duration.ZERO);
 
   public TempsPasse {
@@ -19,7 +19,16 @@ public record TempsPasse(Duration travail, Duration nonConformite) {
     Assert.notNull("temps en non conformite", nonConformite);
   }
 
-  public Duration total() {
+  public TempsPasse(Duration travail, Duration nonConformite) {
+    this(total("temps de travail", travail), total("temps en non conformite", nonConformite));
+  }
+
+  private static DureeTotale total(String champ, Duration valeur) {
+    Assert.notNull(champ, valeur);
+    return DureeTotale.de(valeur);
+  }
+
+  public DureeTotale total() {
     return travail.plus(nonConformite);
   }
 
