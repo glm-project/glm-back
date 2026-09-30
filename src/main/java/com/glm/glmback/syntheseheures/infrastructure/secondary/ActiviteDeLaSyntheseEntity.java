@@ -51,11 +51,24 @@ class ActiviteDeLaSyntheseEntity {
   private Instant echeance;
   private Instant fin;
 
-  @Column(name = "a_resoudre")
-  private boolean aResoudre;
+  @Column(name = "fin_au_plus_tard")
+  private Instant finAuPlusTard;
+
+  @Column(name = "sequence_id")
+  private UUID sequenceId;
+
+  private Integer ordreDansSequence;
 
   protected ActiviteDeLaSyntheseEntity() {
     // Constructeur requis par JPA.
+  }
+
+  UUID sequenceId() {
+    return sequenceId;
+  }
+
+  ActiviteId identite() {
+    return new ActiviteId(id);
   }
 
   ActiviteDElement toDomain() {
@@ -73,7 +86,7 @@ class ActiviteDeLaSyntheseEntity {
         )
         .plage(new Plage(debut, Optional.ofNullable(fin)))
         .echeance(echeance)
-        .aResoudre(aResoudre)
+        .finAuPlusTard(Optional.ofNullable(finAuPlusTard))
     );
   }
 }

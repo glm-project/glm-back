@@ -17,6 +17,7 @@ class PointageDElementTest {
       new PointageDElement(
         POINTAGE_ID_1,
         IntentionDePointage.OUVERTURE,
+        Optional.empty(),
         null,
         ELEMENT_ID_CARTER,
         Optional.empty(),
@@ -34,6 +35,7 @@ class PointageDElementTest {
       new PointageDElement(
         POINTAGE_ID_1,
         IntentionDePointage.OUVERTURE,
+        Optional.empty(),
         TypeDEvenementDAtelier.DEBUT,
         null,
         Optional.empty(),
@@ -51,6 +53,7 @@ class PointageDElementTest {
       new PointageDElement(
         POINTAGE_ID_1,
         IntentionDePointage.OUVERTURE,
+        Optional.empty(),
         TypeDEvenementDAtelier.DEBUT,
         ELEMENT_ID_CARTER,
         null,
@@ -68,6 +71,7 @@ class PointageDElementTest {
       new PointageDElement(
         POINTAGE_ID_1,
         IntentionDePointage.OUVERTURE,
+        Optional.empty(),
         TypeDEvenementDAtelier.DEBUT,
         ELEMENT_ID_CARTER,
         Optional.empty(),
@@ -84,6 +88,7 @@ class PointageDElementTest {
     PointageDElement pointage = PointageDElement.builder()
       .id(POINTAGE_ID_1)
       .intention(IntentionDePointage.OUVERTURE)
+      .cible(Optional.empty())
       .type(TypeDEvenementDAtelier.NON_CONFORMITE)
       .element(ELEMENT_ID_CARTER)
       .poste(Optional.of(POSTE_ID_DMU_50))
@@ -103,6 +108,7 @@ class PointageDElementTest {
       new PointageDElement(
         POINTAGE_ID_1,
         IntentionDePointage.OUVERTURE,
+        Optional.empty(),
         TypeDEvenementDAtelier.DEBUT,
         ELEMENT_ID_CARTER,
         Optional.empty(),

@@ -509,6 +509,31 @@ et conservée entière sur chaque portion. `fin` et `activite.fin` restent absen
 L'identité de l'activité reste celle de l'ouverture originale, même après correction du pointage ouvrant.
 Une régularisation peut porter cette plage au-delà de 13 h ou d'une semaine ; une clôture la limite sans la prolonger.
 
+### Totaux et conflits dans la synthèse
+
+La synthèse rend `conflits[]`, dont chaque entrée porte `element`, `poste` facultatif, `activites[]` (identités
+stables) et `pointages[]` (identités des gestes dans l'ordre métier). Une séquence est rendue si une activité ou
+un pointage de cette séquence figure dans la semaine. Elle reste visible sans activité ni poste ; aucune borne
+basse arbitraire sur le début ne supprime un conflit commencé avant la semaine.
+
+Les quatre totaux — `jours[].dureeOperationnelle`, `dureeOperationnelleTotale`, `elements[].duree` et
+`elements[].dureeNonConformite` — sont des objets :
+
+```json
+{ "complete": true, "valeur": "PT2H" }
+```
+
+Un total dépendant d'une activité à résoudre porte seulement `{ "complete": false }` : `valeur` est absente,
+jamais une somme partielle ni zéro. La NC reste comprise dans le total ; sa part séparée ne dépend que des NC.
+Un conflit de travail laisse donc une NC certaine chiffrée. Les jours et éléments indépendants restent complets.
+Une activité en cours ne contribue pas à la durée et n'incomplète aucun total. Un conflit sans activité à résoudre
+laisse les totaux complets. Les corrections et annulations recalculent les valeurs et retirent le conflit résolu.
+
+Le journal brut `jours[].pointages[]` porte aussi `id`, `intention` et `cible` facultative. Son ordre est l'heure
+métier, puis `FIN < TRANSITION < OUVERTURE`, puis l'identité ; il ne suit jamais l'ordre de réception.
+Une FIN ordinaire après l'échéance seule conserve les 13 h complètes et l'anomalie automatique dans la feuille,
+sans conflit ni nouvelle qualification « sans effet » dans le journal.
+
 ### Présence
 
 `GET /api/atelier/journees/{id}` expose **à la fois** :

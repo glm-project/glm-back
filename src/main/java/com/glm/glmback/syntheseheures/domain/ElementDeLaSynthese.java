@@ -1,7 +1,6 @@
 package com.glm.glmback.syntheseheures.domain;
 
 import com.glm.glmback.shared.error.domain.Assert;
-import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,8 +17,8 @@ public record ElementDeLaSynthese(
   ElementEngage element,
   Optional<ReferenceDElement> reference,
   Optional<DescriptionDElement> description,
-  Duration duree,
-  Duration dureeNonConformite,
+  DureeTotale duree,
+  DureeTotale dureeNonConformite,
   List<PosteDeLElement> postes
 ) {
   public ElementDeLaSynthese {
@@ -52,8 +51,8 @@ public record ElementDeLaSynthese(
     private ElementEngage element;
     private Optional<ReferenceDElement> reference;
     private Optional<DescriptionDElement> description;
-    private Duration duree;
-    private Duration dureeNonConformite;
+    private DureeTotale duree;
+    private DureeTotale dureeNonConformite;
     private List<PosteDeLElement> postes;
 
     @Override
@@ -78,14 +77,14 @@ public record ElementDeLaSynthese(
     }
 
     @Override
-    public ElementDeLaSyntheseDureeNonConformiteBuilder duree(Duration duree) {
+    public ElementDeLaSyntheseDureeNonConformiteBuilder duree(DureeTotale duree) {
       this.duree = duree;
 
       return this;
     }
 
     @Override
-    public ElementDeLaSynthesePostesBuilder dureeNonConformite(Duration dureeNonConformite) {
+    public ElementDeLaSynthesePostesBuilder dureeNonConformite(DureeTotale dureeNonConformite) {
       this.dureeNonConformite = dureeNonConformite;
 
       return this;
@@ -112,11 +111,11 @@ public record ElementDeLaSynthese(
   }
 
   interface ElementDeLaSyntheseDureeBuilder {
-    ElementDeLaSyntheseDureeNonConformiteBuilder duree(Duration duree);
+    ElementDeLaSyntheseDureeNonConformiteBuilder duree(DureeTotale duree);
   }
 
   interface ElementDeLaSyntheseDureeNonConformiteBuilder {
-    ElementDeLaSynthesePostesBuilder dureeNonConformite(Duration dureeNonConformite);
+    ElementDeLaSynthesePostesBuilder dureeNonConformite(DureeTotale dureeNonConformite);
   }
 
   interface ElementDeLaSynthesePostesBuilder {

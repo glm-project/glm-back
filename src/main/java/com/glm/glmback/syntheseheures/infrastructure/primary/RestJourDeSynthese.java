@@ -2,7 +2,6 @@ package com.glm.glmback.syntheseheures.infrastructure.primary;
 
 import com.glm.glmback.syntheseheures.domain.JourDeSynthese;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -12,13 +11,16 @@ record RestJourDeSynthese(
   @Schema(description = "Tous les pointages actifs de l'operateur dates de ce jour, meme sans activite interpretable.")
   List<RestPointage> pointages,
   @Schema(
-    description = "Somme des portions d'activites terminees, y compris automatiquement. Les durees se cumulent par element ; une activite en cours ne compte rien.",
-    example = "PT13H",
+    description = "Total de travail et NC du jour, y compris automatiquement. Incomplet sans valeur si une activite a resoudre y contribue ; une activite en cours ne compte rien.",
     requiredMode = Schema.RequiredMode.REQUIRED
   )
-  Duration dureeOperationnelle
+  RestDureeDeSynthese dureeOperationnelle
 ) {
   static RestJourDeSynthese from(JourDeSynthese jour) {
-    return new RestJourDeSynthese(jour.jour(), jour.pointages().stream().map(RestPointage::from).toList(), jour.dureeOperationnelle());
+    return new RestJourDeSynthese(
+      jour.jour(),
+      jour.pointages().stream().map(RestPointage::from).toList(),
+      RestDureeDeSynthese.from(jour.dureeOperationnelle())
+    );
   }
 }

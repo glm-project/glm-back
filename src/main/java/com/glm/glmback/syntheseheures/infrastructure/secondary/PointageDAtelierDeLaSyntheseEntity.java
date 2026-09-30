@@ -1,5 +1,6 @@
 package com.glm.glmback.syntheseheures.infrastructure.secondary;
 
+import com.glm.glmback.syntheseheures.domain.ActiviteId;
 import com.glm.glmback.syntheseheures.domain.ElementId;
 import com.glm.glmback.syntheseheures.domain.IntentionDePointage;
 import com.glm.glmback.syntheseheures.domain.NatureDOperation;
@@ -54,6 +55,9 @@ class PointageDAtelierDeLaSyntheseEntity {
 
   private String nature;
 
+  @Column(name = "activite_visee_id")
+  private UUID activiteViseeId;
+
   private Instant dateDeSurvenue;
 
   private Instant annulationDate;
@@ -70,6 +74,7 @@ class PointageDAtelierDeLaSyntheseEntity {
     return PointageDElement.builder()
       .id(new PointageId(id))
       .intention(intention)
+      .cible(Optional.ofNullable(activiteViseeId).map(ActiviteId::new))
       .type(type)
       .element(element)
       .poste(Optional.ofNullable(posteId).map(PosteDeTravailId::new))

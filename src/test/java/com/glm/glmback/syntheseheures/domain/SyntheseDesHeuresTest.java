@@ -19,26 +19,28 @@ class SyntheseDesHeuresTest {
   private static final JourDeSynthese LUNDI_8H = JourDeSynthese.builder()
     .jour(LocalDate.of(2026, 5, 11))
     .pointages(List.of())
-    .dureeOperationnelle(Duration.ofHours(10));
+    .dureeOperationnelle(DureeTotale.de(Duration.ofHours(10)));
   private static final JourDeSynthese MARDI_0H = JourDeSynthese.builder()
     .jour(LocalDate.of(2026, 5, 12))
     .pointages(List.of())
-    .dureeOperationnelle(Duration.ZERO);
+    .dureeOperationnelle(DureeTotale.de(Duration.ZERO));
   private static final JourDeSynthese MERCREDI_1H = JourDeSynthese.builder()
     .jour(LocalDate.of(2026, 5, 13))
     .pointages(List.of())
-    .dureeOperationnelle(Duration.ofHours(1));
+    .dureeOperationnelle(DureeTotale.de(Duration.ofHours(1)));
 
   @Test
   void shouldNotBuildWithoutOperateur() {
-    assertThatThrownBy(() -> new SyntheseDesHeures(null, SEMAINE_20_DE_2026, LE_MARDI_12_MAI_2026_A_10H, List.of(), List.of()))
+    assertThatThrownBy(() -> new SyntheseDesHeures(null, SEMAINE_20_DE_2026, LE_MARDI_12_MAI_2026_A_10H, List.of(), List.of(), List.of()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("operateur");
   }
 
   @Test
   void shouldNotBuildWithoutSemaine() {
-    assertThatThrownBy(() -> new SyntheseDesHeures(OPERATEUR_CONNU_DUPONT, null, LE_MARDI_12_MAI_2026_A_10H, List.of(), List.of()))
+    assertThatThrownBy(() ->
+      new SyntheseDesHeures(OPERATEUR_CONNU_DUPONT, null, LE_MARDI_12_MAI_2026_A_10H, List.of(), List.of(), List.of())
+    )
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("semaine");
   }
@@ -52,6 +54,7 @@ class SyntheseDesHeuresTest {
         .evaluation(null)
         .jours(List.of())
         .elements(List.of())
+        .conflits(List.of())
     )
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("evaluation");
@@ -59,7 +62,9 @@ class SyntheseDesHeuresTest {
 
   @Test
   void shouldNotBuildWithoutJours() {
-    assertThatThrownBy(() -> new SyntheseDesHeures(OPERATEUR_CONNU_DUPONT, SEMAINE_20_DE_2026, LE_MARDI_12_MAI_2026_A_10H, null, List.of()))
+    assertThatThrownBy(() ->
+      new SyntheseDesHeures(OPERATEUR_CONNU_DUPONT, SEMAINE_20_DE_2026, LE_MARDI_12_MAI_2026_A_10H, null, List.of(), List.of())
+    )
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("jours");
   }
@@ -69,7 +74,7 @@ class SyntheseDesHeuresTest {
     List<JourDeSynthese> jours = Arrays.asList(LUNDI_8H, null);
 
     assertThatThrownBy(() ->
-      new SyntheseDesHeures(OPERATEUR_CONNU_DUPONT, SEMAINE_20_DE_2026, LE_MARDI_12_MAI_2026_A_10H, jours, List.of())
+      new SyntheseDesHeures(OPERATEUR_CONNU_DUPONT, SEMAINE_20_DE_2026, LE_MARDI_12_MAI_2026_A_10H, jours, List.of(), List.of())
     )
       .isExactlyInstanceOf(NullElementInCollectionException.class)
       .hasMessageContaining("jours");
@@ -82,6 +87,7 @@ class SyntheseDesHeuresTest {
       SEMAINE_20_DE_2026,
       LE_MARDI_12_MAI_2026_A_10H,
       List.of(LUNDI_8H),
+      List.of(),
       List.of()
     );
 
@@ -92,7 +98,9 @@ class SyntheseDesHeuresTest {
 
   @Test
   void shouldNotBuildWithoutElements() {
-    assertThatThrownBy(() -> new SyntheseDesHeures(OPERATEUR_CONNU_DUPONT, SEMAINE_20_DE_2026, LE_MARDI_12_MAI_2026_A_10H, List.of(), null))
+    assertThatThrownBy(() ->
+      new SyntheseDesHeures(OPERATEUR_CONNU_DUPONT, SEMAINE_20_DE_2026, LE_MARDI_12_MAI_2026_A_10H, List.of(), null, List.of())
+    )
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("elements");
   }
@@ -100,12 +108,19 @@ class SyntheseDesHeuresTest {
   @Test
   void shouldNotBuildWithNullElement() {
     List<ElementDeLaSynthese> elements = Arrays.asList(
-      new ElementDeLaSynthese(ELEMENT_ENGAGE_CARTER, Optional.empty(), Optional.empty(), Duration.ZERO, Duration.ZERO, List.of()),
+      new ElementDeLaSynthese(
+        ELEMENT_ENGAGE_CARTER,
+        Optional.empty(),
+        Optional.empty(),
+        DureeTotale.de(Duration.ZERO),
+        DureeTotale.de(Duration.ZERO),
+        List.of()
+      ),
       null
     );
 
     assertThatThrownBy(() ->
-      new SyntheseDesHeures(OPERATEUR_CONNU_DUPONT, SEMAINE_20_DE_2026, LE_MARDI_12_MAI_2026_A_10H, List.of(), elements)
+      new SyntheseDesHeures(OPERATEUR_CONNU_DUPONT, SEMAINE_20_DE_2026, LE_MARDI_12_MAI_2026_A_10H, List.of(), elements, List.of())
     )
       .isExactlyInstanceOf(NullElementInCollectionException.class)
       .hasMessageContaining("elements");
@@ -118,8 +133,9 @@ class SyntheseDesHeuresTest {
       .semaine(SEMAINE_20_DE_2026)
       .evaluation(LE_MARDI_12_MAI_2026_A_10H)
       .jours(List.of(LUNDI_8H, MARDI_0H, MERCREDI_1H))
-      .elements(List.of());
+      .elements(List.of())
+      .conflits(List.of());
 
-    assertThat(synthese.dureeOperationnelleTotale()).isEqualTo(Duration.ofHours(11));
+    assertThat(synthese.dureeOperationnelleTotale()).isEqualTo(DureeTotale.de(Duration.ofHours(11)));
   }
 }

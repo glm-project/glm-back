@@ -28,6 +28,7 @@ public final class SynthesesDesHeuresService {
   private final FuseauHoraireDeLEntreprise fuseau;
   private final ActivitesDeLOperateur activites;
   private final JournalDeLOperateur journal;
+  private final ConflitsDeLOperateur conflits;
   private final ElementsDeFabrication elements;
   private final PostesDeTravail postes;
   private final Clock clock;
@@ -37,6 +38,7 @@ public final class SynthesesDesHeuresService {
     FuseauHoraireDeLEntreprise fuseau,
     ActivitesDeLOperateur activites,
     JournalDeLOperateur journal,
+    ConflitsDeLOperateur conflits,
     ElementsDeFabrication elements,
     PostesDeTravail postes,
     Clock clock
@@ -45,6 +47,7 @@ public final class SynthesesDesHeuresService {
     this.fuseau = fuseau;
     this.activites = activites;
     this.journal = journal;
+    this.conflits = conflits;
     this.elements = elements;
     this.postes = postes;
     this.clock = clock;
@@ -55,7 +58,9 @@ public final class SynthesesDesHeuresService {
       fuseau ->
         activites ->
           journal ->
-            elements -> postes -> clock -> new SynthesesDesHeuresService(operateurs, fuseau, activites, journal, elements, postes, clock);
+            conflits ->
+              elements ->
+                postes -> clock -> new SynthesesDesHeuresService(operateurs, fuseau, activites, journal, conflits, elements, postes, clock);
   }
 
   public SyntheseDesHeures synthese(OperateurId operateur, SemaineCalendaire semaine) {
@@ -85,6 +90,12 @@ public final class SynthesesDesHeuresService {
       .sorted(PAR_ORDRE_DU_JOURNAL)
       .toList();
 
+    Set<ActiviteId> activitesRendues = intervalles
+      .stream()
+      .map(intervalle -> intervalle.intervalle().lecture().id())
+      .collect(Collectors.toSet());
+    Set<PointageId> pointagesRendus = pointagesDElement.stream().map(PointageDElement::id).collect(Collectors.toSet());
+
     return SyntheseDesHeures.builder()
       .operateur(connu)
       .semaine(semaine)
@@ -96,6 +107,13 @@ public final class SynthesesDesHeuresService {
           intervalles,
           pointagesDElement
         )
+      )
+      .conflits(
+        conflits
+          .de(operateur)
+          .stream()
+          .filter(sequence -> sequence.concerne(activitesRendues, pointagesRendus))
+          .toList()
       );
   }
 
@@ -108,23 +126,15 @@ public final class SynthesesDesHeuresService {
       .stream()
       .<PointageDElement>map(Function.identity())
       .collect(Collectors.groupingBy(this::jourDe));
-    Map<LocalDate, Duration> operationnelleParJour = intervalles
-      .stream()
-      .filter(intervalle -> !intervalle.intervalle().plage().estOuverte())
-      .collect(
-        Collectors.groupingBy(
-          IntervalleDUnJour::jour,
-          Collectors.reducing(Duration.ZERO, intervalle -> duree(intervalle.intervalle().plage()), Duration::plus)
-        )
-      );
     return decoupage
       .jours()
       .stream()
       .map(jour ->
-        JourDeSynthese.builder()
-          .jour(jour)
-          .pointages(pointagesParJour.getOrDefault(jour, List.of()))
-          .dureeOperationnelle(operationnelleParJour.getOrDefault(jour, Duration.ZERO))
+        JourDeSynthese.builder().jour(jour).pointages(pointagesParJour.getOrDefault(jour, List.of())).dureeOperationnelle(somme(intervalles
+              .stream()
+              .filter(intervalle -> intervalle.jour().equals(jour))
+              .map(IntervalleDUnJour::intervalle)
+              .toList(), intervalle -> true))
       )
       .toList();
   }
@@ -257,14 +267,19 @@ public final class SynthesesDesHeuresService {
 
   private record UsageDePoste(Instant date, Optional<PosteDeTravailId> poste, Optional<NatureDOperation> nature) {}
 
-  private static Duration somme(List<IntervalleDActivite> travail, Predicate<IntervalleDActivite> retenu) {
-    return travail
-      .stream()
-      .filter(retenu)
-      .map(IntervalleDActivite::plage)
-      .filter(plage -> !plage.estOuverte())
-      .map(SynthesesDesHeuresService::duree)
-      .reduce(Duration.ZERO, Duration::plus);
+  private static DureeTotale somme(List<IntervalleDActivite> travail, Predicate<IntervalleDActivite> retenu) {
+    List<IntervalleDActivite> retenus = travail.stream().filter(retenu).toList();
+    if (retenus.stream().anyMatch(intervalle -> intervalle.lecture().etat() == EtatDActivite.A_RESOUDRE)) {
+      return DureeTotale.incomplete();
+    }
+    return DureeTotale.de(
+      retenus
+        .stream()
+        .map(IntervalleDActivite::plage)
+        .filter(plage -> !plage.estOuverte())
+        .map(SynthesesDesHeuresService::duree)
+        .reduce(Duration.ZERO, Duration::plus)
+    );
   }
 
   private static Duration duree(Plage plage) {
@@ -288,7 +303,11 @@ public final class SynthesesDesHeuresService {
   }
 
   public interface SynthesesDesHeuresServiceJournalBuilder {
-    SynthesesDesHeuresServiceElementsBuilder journal(JournalDeLOperateur journal);
+    SynthesesDesHeuresServiceConflitsBuilder journal(JournalDeLOperateur journal);
+  }
+
+  public interface SynthesesDesHeuresServiceConflitsBuilder {
+    SynthesesDesHeuresServiceElementsBuilder conflits(ConflitsDeLOperateur conflits);
   }
 
   public interface SynthesesDesHeuresServiceElementsBuilder {

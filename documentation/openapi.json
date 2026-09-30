@@ -408,6 +408,38 @@
         },
         "type" : "object"
       },
+      "RestConflitDeSynthese" : {
+        "description" : "Sequence en conflit de l'operateur, rendue lorsqu'une activite ou un pointage concerne la semaine.",
+        "properties" : {
+          "activites" : {
+            "description" : "Identites stables des activites, dans l'ordre de la sequence ; peut etre vide.",
+            "items" : {
+              "format" : "uuid",
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "element" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "pointages" : {
+            "description" : "Identites des pointages en ordre metier, meme sans activite interpretable.",
+            "items" : {
+              "format" : "uuid",
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "poste" : {
+            "description" : "Poste lorsqu'il est connu, absent sinon.",
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "required" : [ "activites", "element", "pointages" ],
+        "type" : "object"
+      },
       "RestConflitDuPupitre" : {
         "description" : "Sequence interpretee en conflit par atelier. Aucune de ses activites n est actionnable ; une nouvelle ouverture reste possible.",
         "properties" : {
@@ -645,6 +677,22 @@
         "required" : [ "libelle", "nature" ],
         "type" : "object"
       },
+      "RestDureeDeSynthese" : {
+        "description" : "Total complet chiffre, ou incomplet sans valeur, jamais une somme partielle ni zero par defaut.",
+        "properties" : {
+          "complete" : {
+            "description" : "Vrai si aucune activite a resoudre ne contribue a ce total.",
+            "type" : "boolean"
+          },
+          "valeur" : {
+            "description" : "Duree certaine, absente si le total est incomplet.",
+            "example" : "PT2H",
+            "type" : "string"
+          }
+        },
+        "required" : [ "complete" ],
+        "type" : "object"
+      },
       "RestElement" : {
         "description" : "L'element de fabrication dont le cout de revient est lu, relu au referentiel a chaque appel.",
         "properties" : {
@@ -705,14 +753,12 @@
             "type" : "string"
           },
           "duree" : {
-            "description" : "Duree comptabilisee sur l'element dans la semaine, non conformite comprise.",
-            "example" : "PT15H30M",
-            "type" : "string"
+            "$ref" : "#/components/schemas/RestDureeDeSynthese",
+            "description" : "Total sur l'element dans la semaine, NC comprise. Incomplet sans valeur si une activite a resoudre y contribue."
           },
           "dureeNonConformite" : {
-            "description" : "Part comptabilisee de la duree passee en non conformite.",
-            "example" : "PT50M",
-            "type" : "string"
+            "$ref" : "#/components/schemas/RestDureeDeSynthese",
+            "description" : "Part de NC. Incomplete sans valeur si une NC a resoudre y contribue ; une contradiction de travail ne masque pas une NC certaine."
           },
           "id" : {
             "description" : "Identifiant de l'element de fabrication.",
@@ -1000,9 +1046,8 @@
         "description" : "Un des sept jours du calendrier de l'entreprise, son journal brut et son temps operationnel.",
         "properties" : {
           "dureeOperationnelle" : {
-            "description" : "Somme des portions d'activites terminees, y compris automatiquement. Les durees se cumulent par element ; une activite en cours ne compte rien.",
-            "example" : "PT13H",
-            "type" : "string"
+            "$ref" : "#/components/schemas/RestDureeDeSynthese",
+            "description" : "Total de travail et NC du jour, y compris automatiquement. Incomplet sans valeur si une activite a resoudre y contribue ; une activite en cours ne compte rien."
           },
           "jour" : {
             "description" : "Date dans le fuseau de l'entreprise.",
@@ -1442,6 +1487,11 @@
       "RestPointageDeSyntheseDesHeures" : {
         "description" : "Un pointage du journal brut du jour, tel qu'il figure dans le releve : un geste sur un element.\n",
         "properties" : {
+          "cible" : {
+            "description" : "Identite stable de l'activite visee par une fin ou une transition.",
+            "format" : "uuid",
+            "type" : "string"
+          },
           "dateDeSurvenue" : {
             "description" : "Heure metier a laquelle le pointage a eu lieu.",
             "format" : "date-time",
@@ -1450,6 +1500,16 @@
           "element" : {
             "description" : "L'element pointe.",
             "format" : "uuid",
+            "type" : "string"
+          },
+          "id" : {
+            "description" : "Identite du pointage actif.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "intention" : {
+            "description" : "Intention explicite du geste.",
+            "enum" : [ "OUVERTURE", "TRANSITION", "FIN" ],
             "type" : "string"
           },
           "poste" : {
@@ -1463,7 +1523,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "dateDeSurvenue", "element", "type" ],
+        "required" : [ "dateDeSurvenue", "element", "id", "intention", "type" ],
         "type" : "object"
       },
       "RestPosteDAtelier" : {
@@ -1878,10 +1938,16 @@
             "format" : "int32",
             "type" : "integer"
           },
+          "conflits" : {
+            "description" : "Conflits concernant une activite ou un pointage rendu dans cette semaine.",
+            "items" : {
+              "$ref" : "#/components/schemas/RestConflitDeSynthese"
+            },
+            "type" : "array"
+          },
           "dureeOperationnelleTotale" : {
-            "description" : "Somme des durees des sept jours et des elements. Une activite encore en cours ne compte rien.",
-            "example" : "PT13H",
-            "type" : "string"
+            "$ref" : "#/components/schemas/RestDureeDeSynthese",
+            "description" : "Total de travail et NC des sept jours. Incomplet sans valeur si une activite a resoudre y contribue ; une activite en cours ne compte rien."
           },
           "elements" : {
             "description" : "Elements portant une activite ou un pointage dans la semaine, par premiere apparition puis nom. Un element reengage reste un seul element.",
@@ -1913,7 +1979,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "dureeOperationnelleTotale", "elements", "evaluation" ],
+        "required" : [ "conflits", "dureeOperationnelleTotale", "elements", "evaluation" ],
         "type" : "object"
       },
       "RestTempsPasse" : {

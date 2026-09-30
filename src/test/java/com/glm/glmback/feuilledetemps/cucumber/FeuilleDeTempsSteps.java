@@ -150,9 +150,29 @@ public class FeuilleDeTempsSteps {
         ecritures.pointe(suivis.get(element), corps);
       }
       assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage explicite doit etre accepte").isTrue();
+      if ("REGULARISATION".equals(pointage.get("acte"))) {
+        dernierPointage = identiteDuPointageActif(survenue, pointage.get("type"), pointage.get("intention"));
+      }
       pointages.put(pointage.get("alias"), dernierPointage);
       corpsDesPointages.put(pointage.get("alias"), corps);
     }
+  }
+
+  @SuppressWarnings("unchecked")
+  private static String identiteDuPointageActif(String survenue, String type, String intention) {
+    List<Map<String, Object>> journal = (List<Map<String, Object>>) CucumberRestTestContext.getElement("$.journal");
+    return journal
+      .stream()
+      .filter(
+        pointage ->
+          survenue.equals(pointage.get("dateDeSurvenue"))
+          && type.equals(pointage.get("type"))
+          && intention.equals(pointage.get("intention"))
+      )
+      .filter(pointage -> pointage.get("annulation") == null)
+      .map(pointage -> (String) pointage.get("id"))
+      .findFirst()
+      .orElseThrow();
   }
 
   @Given("la feuille de temps corrige le pointage {string} sur {string} a {string} vers {string}")
@@ -164,6 +184,22 @@ public class FeuilleDeTempsSteps {
     corps.put("dateDeSurvenue", survenue);
     ecritures.corrige(suivis.get(element), pointages.get(alias), corps);
     assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("la correction doit etre acceptee").isTrue();
+    pointages.put(alias + "-corrige", identiteDuPointageActif(survenue, (String) corps.get("type"), (String) corps.get("intention")));
+  }
+
+  @Given("la feuille de temps corrige la cible du pointage {string} sur {string} vers {string} a {string}")
+  public void corrigeLaCible(String alias, String element, String cible, String reception) {
+    horloge.ilEst(Instant.parse(reception));
+    Map<String, Object> corps = new HashMap<>(corpsDesPointages.get(alias));
+    corps.remove("id");
+    corps.put("motif", "activite visee erronee");
+    corps.put("cible", pointages.get(cible));
+    ecritures.corrige(suivis.get(element), pointages.get(alias), corps);
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("la correction de cible doit etre acceptee").isTrue();
+    pointages.put(
+      alias + "-corrige",
+      identiteDuPointageActif((String) corps.get("dateDeSurvenue"), (String) corps.get("type"), (String) corps.get("intention"))
+    );
   }
 
   @Then("le suivi de la feuille de temps de {string} ne porte aucun conflit")

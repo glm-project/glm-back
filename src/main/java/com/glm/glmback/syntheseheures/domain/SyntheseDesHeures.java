@@ -1,7 +1,6 @@
 package com.glm.glmback.syntheseheures.domain;
 
 import com.glm.glmback.shared.error.domain.Assert;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
@@ -18,7 +17,8 @@ public record SyntheseDesHeures(
   SemaineCalendaire semaine,
   Instant evaluation,
   List<JourDeSynthese> jours,
-  List<ElementDeLaSynthese> elements
+  List<ElementDeLaSynthese> elements,
+  List<SequenceEnConflit> conflits
 ) {
   public SyntheseDesHeures {
     Assert.notNull("operateur", operateur);
@@ -26,15 +26,17 @@ public record SyntheseDesHeures(
     Assert.notNull("evaluation", evaluation);
     Assert.field("jours", jours).notNull().noNullElement();
     Assert.field("elements", elements).notNull().noNullElement();
+    Assert.field("conflits", conflits).notNull().noNullElement();
   }
 
   static SyntheseDesHeuresOperateurBuilder builder() {
     return operateur ->
-      semaine -> evaluation -> jours -> elements -> new SyntheseDesHeures(operateur, semaine, evaluation, jours, elements);
+      semaine ->
+        evaluation -> jours -> elements -> conflits -> new SyntheseDesHeures(operateur, semaine, evaluation, jours, elements, conflits);
   }
 
-  public Duration dureeOperationnelleTotale() {
-    return jours.stream().map(JourDeSynthese::dureeOperationnelle).reduce(Duration.ZERO, Duration::plus);
+  public DureeTotale dureeOperationnelleTotale() {
+    return DureeTotale.somme(jours.stream().map(JourDeSynthese::dureeOperationnelle).toList());
   }
 
   interface SyntheseDesHeuresOperateurBuilder {
@@ -54,6 +56,10 @@ public record SyntheseDesHeures(
   }
 
   interface SyntheseDesHeuresElementsBuilder {
-    SyntheseDesHeures elements(List<ElementDeLaSynthese> elements);
+    SyntheseDesHeuresConflitsBuilder elements(List<ElementDeLaSynthese> elements);
+  }
+
+  interface SyntheseDesHeuresConflitsBuilder {
+    SyntheseDesHeures conflits(List<SequenceEnConflit> conflits);
   }
 }

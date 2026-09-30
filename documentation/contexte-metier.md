@@ -445,13 +445,24 @@ Un dépassement ou un instant fourni vide ou mal formé répond 400, sans rappor
 Une fin réelle conserve sa borne, même régularisée au-delà de l'échéance. Sans elle, l'activité ne produit aucune
 durée avant son échéance et compte dès celle-ci jusqu'à sa fin automatique. Les décisions de relance, transition,
 fin tardive, régularisation, correction, annulation et clôture sont celles d'atelier, projetées en base.
-Une activité à résoudre reste sans fin et n'est jamais réinterprétée par la synthèse ; les conflits et la
-complétude des totaux seront restitués dans la tranche suivante du relevé.
+Une activité à résoudre reste sans fin et n'est jamais réinterprétée par la synthèse. Sa plage possible,
+issue des faits d'atelier, atteint chaque jour jusqu'à la première borne entre `finAuPlusTard` et `evaluation`,
+fin exclusive, même sans pointage local. Une clôture peut la limiter mais jamais la prolonger.
+
+La synthèse rend les séquences en conflit dont une activité ou un pointage est rendu dans la semaine,
+avec les identités des activités et des pointages concernés, même sans activité ni poste. Elle relit la projection
+d'atelier, sans interprétation concurrente. Une séquence sans activité à résoudre laisse les totaux complets.
+Une correction ou annulation retire le conflit dès que les faits redeviennent cohérents.
 
 Les durées se **cumulent par élément** : deux éléments simultanés de 08 h à 09 h portent chacun une heure,
 le jour et la semaine deux heures. La NC est comprise une seule fois dans la durée totale et exposée aussi à part.
-Les sommes des jours et des éléments sont égales à la durée opérationnelle de la semaine. Une activité en cours
-conserve son élément sur chaque jour atteint, même sans pointage dans la semaine, sans durée comptabilisée.
+Chaque total porte `complete` et, seulement s'il est complet, sa `valeur`. Un total journalier, d'élément ou
+hebdomadaire dépendant d'une activité à résoudre reste incomplet **sans aucun chiffre**, même si une activité
+certaine de 2 h existe à côté. La complétude de la part de NC dépend seulement des NC : un conflit de travail
+laisse une NC certaine chiffrée. Les jours et éléments indépendants restent chiffrés. Quand ils sont complets,
+les sommes des jours et des éléments sont égales à la durée opérationnelle de la semaine. Une activité en cours
+conserve son élément sur chaque jour atteint, même sans pointage dans la semaine, sans durée comptabilisée
+et sans rendre un total incomplet.
 
 Les éléments rendus portent une activité ou un pointage dans la semaine, par première apparition puis nom.
 Un réengagement reste le même élément. Le nom et le type viennent du suivi ; référence et description sont
@@ -459,16 +470,17 @@ relues au référentiel, et peuvent être absentes. Les couples poste/nature sui
 activité et pointage confondus ; l'absence de poste ou de nature est nominale.
 
 Le **journal brut** est lu indépendamment des activités : tous les pointages actifs de l'opérateur datés de la
-semaine sont rendus, même sans activité interprétable. Leur ordre est l'heure métier, puis l'intention
+semaine sont rendus, même sans activité interprétable, avec leur identité, intention et cible éventuelle. Leur ordre est l'heure métier, puis l'intention
 (fin, transition, ouverture), puis l'identité du pointage. L'heure d'enregistrement ne départage jamais.
 Chaque élément et chaque poste nommés au journal trouvent leur fiche ou leur libellé dans la synthèse.
 
 ### La lecture passe par la base, jamais par un import
 
 La synthèse déclare ses propres entités JPA `@Immutable` sur `activite_d_atelier`, `suivi_d_atelier`,
-`evenement_d_atelier` et les référentiels. Elle n'importe aucun contexte métier voisin, ne rejoue aucun journal
+`evenement_d_atelier`, `sequence_en_conflit`, `pointage_en_conflit` et les référentiels. Elle n'importe aucun contexte métier voisin, ne rejoue aucun journal
 et ne possède aucune table. Les activités sont lues en une requête, le journal en deux requêtes groupées ;
-les fiches et les postes sont aussi résolus par lots. Cucumber écrit réellement dans atelier puis lit le relevé,
+les conflits et leurs activités en deux requêtes groupées par opérateur, puis filtrés sur les identités rendues.
+Les fiches et les postes sont aussi résolus par lots. Cucumber écrit réellement dans atelier puis lit le relevé,
 ce qui confronte la projection à son propriétaire.
 
 ### Points ouverts

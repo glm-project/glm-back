@@ -262,6 +262,12 @@ Feature: Synthese des heures hebdomadaire d'un operateur
     Then le suivi de la synthese des heures de "carter" ne porte aucun conflit
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT13H"
+    And la synthese porte les conflits
+      | element | poste | activites | pointages |
+    And la synthese restitue les identites et cibles du journal du "2026-05-11"
+      | alias | intention | cible |
+      | A     | OUVERTURE |       |
+      | F     | FIN       | A     |
 
   Scenario: Une transition pointee apres echeance ouvre une NC sans prolonger le travail
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
@@ -471,3 +477,175 @@ Feature: Synthese des heures hebdomadaire d'un operateur
       | type  | dateDeSurvenue       | element | poste |
       | DEBUT | 2026-05-11T06:00:00Z | carter  |       |
       | FIN   | 2026-05-11T08:00:00Z | carter  |       |
+
+  Scenario Outline: Le conflit rend les totaux dependants incomplets sans somme partielle quel que soit la reception
+    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la synthese des heures recoit sur l'element "carter" les pointages
+      | alias       | type            | intention            | cible | operateur | poste  | survenue             | reception            |
+      | A           | DEBUT           | OUVERTURE            |       | martin    | DMU 50 | 2026-05-11T06:00:00Z | 2026-05-11T06:00:00Z |
+      | <second>    | <typeSecond>    | <intentionSecond>    | A     | martin    | DMU 50 | <survenueSecond>     | 2026-05-11T15:00:00Z |
+      | <troisieme> | <typeTroisieme> | <intentionTroisieme> | A     | martin    | DMU 50 | <survenueTroisieme>  | 2026-05-11T15:01:00Z |
+      | C           | DEBUT           | OUVERTURE            |       | martin    | Tour   | 2026-05-11T16:00:00Z | 2026-05-11T16:00:00Z |
+      | D           | FIN             | FIN                  | C     | martin    | Tour   | 2026-05-11T18:00:00Z | 2026-05-11T18:00:00Z |
+    And pour la synthese, l'element "bride" est engage en atelier a "2026-05-13T04:00:00Z"
+    And la synthese des heures recoit sur l'element "bride" les pointages
+      | alias | type  | intention | cible | operateur | poste | survenue             |
+      | E     | DEBUT | OUVERTURE |       | martin    | Tour  | 2026-05-13T06:00:00Z |
+      | G     | FIN   | FIN       | E     | martin    | Tour  | 2026-05-13T08:00:00Z |
+    And il est "2026-05-13T10:00:00Z"
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
+    Then le jour "2026-05-11" de la synthese est incomplet sans chiffre
+    And le jour "2026-05-12" de la synthese est incomplet sans chiffre
+    And la synthese laisse incomplet sans chiffre le total "$.dureeOperationnelleTotale"
+    And l'element "carter" de la synthese est incomplet sans chiffre pour "duree"
+    And l'element "carter" de la synthese est incomplet sans chiffre pour "dureeNonConformite"
+    And le jour "2026-05-13" a une duree operationnelle de "PT2H"
+    And l'element "bride" de la synthese porte les totaux
+      | mesure             | complete | valeur |
+      | duree              | true     | PT2H   |
+      | dureeNonConformite | true     | PT0S   |
+    And la synthese restitue les identites et cibles du journal du "2026-05-11"
+      | alias | intention  | cible |
+      | A     | OUVERTURE  |       |
+      | N     | TRANSITION | A     |
+      | F     | FIN        | A     |
+      | C     | OUVERTURE  |       |
+      | D     | FIN        | C     |
+    And la synthese porte les conflits
+      | element | poste  | activites | pointages |
+      | carter  | DMU 50 | A,N       | A,N,F     |
+
+    Examples:
+      | second | typeSecond     | intentionSecond | survenueSecond       | troisieme | typeTroisieme  | intentionTroisieme | survenueTroisieme    |
+      | N      | NON_CONFORMITE | TRANSITION      | 2026-05-11T10:00:00Z | F         | FIN            | FIN                | 2026-05-11T15:00:00Z |
+      | F      | FIN            | FIN             | 2026-05-11T15:00:00Z | N         | NON_CONFORMITE | TRANSITION         | 2026-05-11T10:00:00Z |
+
+  Scenario: Un conflit de travail laisse la part de NC certaine
+    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la synthese des heures recoit sur l'element "carter" les pointages
+      | alias | type           | intention | cible | operateur | poste  | survenue             |
+      | A     | DEBUT          | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | F     | FIN            | FIN       | A     | martin    | DMU 50 | 2026-05-11T08:00:00Z |
+      | G     | FIN            | FIN       | A     | martin    | DMU 50 | 2026-05-11T09:00:00Z |
+      | N     | NON_CONFORMITE | OUVERTURE |       | martin    | Tour   | 2026-05-11T10:00:00Z |
+      | H     | FIN            | FIN       | N     | martin    | Tour   | 2026-05-11T12:00:00Z |
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
+    Then l'element "carter" de la synthese porte les totaux
+      | mesure             | complete | valeur |
+      | duree              | false    |        |
+      | dureeNonConformite | true     | PT2H   |
+    And la synthese laisse incomplet sans chiffre le total "$.dureeOperationnelleTotale"
+    And la synthese porte les conflits
+      | element | poste  | activites | pointages |
+      | carter  | DMU 50 | A         | A,F,G     |
+
+  Scenario: Un conflit sans activite ni poste reste visible et les totaux restent complets
+    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la synthese des heures recoit sur l'element "carter" les pointages
+      | alias | type  | intention | cible | operateur | survenue             |
+      | A     | DEBUT | OUVERTURE |       | martin    | 2026-05-11T06:00:00Z |
+      | F     | FIN   | FIN       | A     | martin    | 2026-05-11T08:00:00Z |
+    And pour la synthese, le pointage "A" sur "carter" est annule a "2026-05-11T10:00:00Z"
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
+    Then la synthese porte les conflits
+      | element | poste | activites | pointages |
+      | carter  |       |           | F         |
+    And la duree operationnelle totale de la semaine est "PT0S"
+    And le jour "2026-05-11" a une duree operationnelle de "PT0S"
+    And la synthese restitue les identites et cibles du journal du "2026-05-11"
+      | alias | intention | cible |
+      | F     | FIN       | A     |
+    When je consulte la synthese des heures de "martin" pour la semaine 21 de 2026
+    Then la synthese porte les conflits
+      | element | poste | activites | pointages |
+    And la duree operationnelle totale de la semaine est "PT0S"
+
+  Scenario: Une plage possible de synthese depasse la semaine et se borne a evaluation
+    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-10T18:00:00Z"
+    And la synthese des heures recoit sur l'element "carter" les pointages
+      | alias | type           | intention  | cible | operateur | survenue             | reception            | acte           |
+      | A     | DEBUT          | OUVERTURE  |       | martin    | 2026-05-10T20:00:00Z | 2026-05-10T20:00:00Z | POINTAGE       |
+      | N     | NON_CONFORMITE | TRANSITION | A     | martin    | 2026-05-10T21:00:00Z | 2026-05-10T21:00:00Z | POINTAGE       |
+      | F     | FIN            | FIN        | A     | martin    | 2026-05-19T10:00:00Z | 2026-05-20T12:00:00Z | REGULARISATION |
+    And pour la synthese, l'element "carter" est cloture a "2026-05-20T13:00:00Z"
+    When je consulte la synthese des heures de "martin" pour la semaine 21 de 2026 avec evaluation "2026-05-18T23:00:00Z"
+    Then le jour "2026-05-18" de la synthese est incomplet sans chiffre
+    And le jour "2026-05-19" de la synthese est incomplet sans chiffre
+    And le jour "2026-05-20" a une duree operationnelle de "PT0S"
+    And la synthese porte les conflits
+      | element | poste | activites | pointages |
+      | carter  |       | A,N       | A,N,F     |
+    When je consulte la synthese des heures de "martin" pour la semaine 21 de 2026 avec evaluation "2026-05-20T13:00:00Z"
+    Then le jour "2026-05-19" de la synthese est incomplet sans chiffre
+    And le jour "2026-05-20" a une duree operationnelle de "PT0S"
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026 avec evaluation "2026-05-11T20:00:00Z"
+    Then le jour "2026-05-11" de la synthese est incomplet sans chiffre
+    And le jour "2026-05-12" a une duree operationnelle de "PT0S"
+    And la synthese porte les conflits
+      | element | poste | activites | pointages |
+      | carter  |       | A,N       | A,N,F     |
+
+  Scenario: Annuler la transition erronee resout le conflit et recalcule les totaux
+    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la synthese des heures recoit sur l'element "carter" les pointages
+      | alias | type           | intention  | cible | operateur | poste  | survenue             |
+      | A     | DEBUT          | OUVERTURE  |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | N     | NON_CONFORMITE | TRANSITION | A     | martin    | DMU 50 | 2026-05-11T10:00:00Z |
+      | F     | FIN            | FIN        | A     | martin    | DMU 50 | 2026-05-11T15:00:00Z |
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
+    Then la synthese laisse incomplet sans chiffre le total "$.dureeOperationnelleTotale"
+    Given pour la synthese, le pointage "N" sur "carter" est annule a "2026-05-11T18:00:00Z"
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
+    Then la synthese porte les conflits
+      | element | poste | activites | pointages |
+    And la duree operationnelle totale de la semaine est "PT9H"
+    And l'element "carter" de la synthese porte les totaux
+      | mesure             | complete | valeur |
+      | duree              | true     | PT9H   |
+      | dureeNonConformite | true     | PT0S   |
+    And la synthese restitue les identites et cibles du journal du "2026-05-11"
+      | alias | intention | cible |
+      | A     | OUVERTURE |       |
+      | F     | FIN       | A     |
+
+  Scenario: Corriger le debut et la cible resout le conflit avec l'identite originale
+    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la synthese des heures recoit sur l'element "carter" les pointages
+      | alias | type           | intention  | cible | operateur | poste  | survenue             |
+      | A     | DEBUT          | OUVERTURE  |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | N     | NON_CONFORMITE | TRANSITION | A     | martin    | DMU 50 | 2026-05-11T10:00:00Z |
+      | F     | FIN            | FIN        | A     | martin    | DMU 50 | 2026-05-11T15:00:00Z |
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
+    Then la synthese laisse incomplet sans chiffre le total "$.dureeOperationnelleTotale"
+    Given la synthese des heures corrige le pointage "A" sur "carter" a "2026-05-11T17:00:00Z" vers "2026-05-11T07:00:00Z"
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
+    Then la synthese porte les conflits
+      | element | poste  | activites | pointages     |
+      | carter  | DMU 50 | A,N       | A-corrige,N,F |
+    Given la synthese des heures corrige la cible du pointage "F" sur "carter" vers "N" a "2026-05-11T18:00:00Z"
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
+    Then la synthese porte les conflits
+      | element | poste | activites | pointages |
+    And la duree operationnelle totale de la semaine est "PT8H"
+    And l'element "carter" de la synthese porte les totaux
+      | mesure             | complete | valeur |
+      | duree              | true     | PT8H   |
+      | dureeNonConformite | true     | PT5H   |
+    And la synthese restitue les identites et cibles du journal du "2026-05-11"
+      | alias     | intention  | cible |
+      | A-corrige | OUVERTURE  |       |
+      | N         | TRANSITION | A     |
+      | F-corrige | FIN        | N     |
+
+  Scenario: Avant le debut possible le journal garde le conflit mais les durees restent completes
+    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la synthese des heures recoit sur l'element "carter" les pointages
+      | alias | type           | intention  | cible | operateur | poste  | survenue             |
+      | A     | DEBUT          | OUVERTURE  |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | N     | NON_CONFORMITE | TRANSITION | A     | martin    | DMU 50 | 2026-05-11T10:00:00Z |
+      | F     | FIN            | FIN        | A     | martin    | DMU 50 | 2026-05-11T15:00:00Z |
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026 avec evaluation "2026-05-11T05:00:00Z"
+    Then la duree operationnelle totale de la semaine est "PT0S"
+    And la synthese porte les conflits
+      | element | poste  | activites | pointages |
+      | carter  | DMU 50 | A,N       | A,N,F     |

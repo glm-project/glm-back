@@ -1,12 +1,11 @@
 package com.glm.glmback.syntheseheures.domain;
 
 import com.glm.glmback.shared.error.domain.Assert;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
 
 /** Un jour du calendrier, son journal brut et son temps operationnel. */
-public record JourDeSynthese(LocalDate jour, List<PointageDElement> pointages, Duration dureeOperationnelle) {
+public record JourDeSynthese(LocalDate jour, List<PointageDElement> pointages, DureeTotale dureeOperationnelle) {
   public JourDeSynthese {
     Assert.notNull("jour", jour);
     Assert.field("pointages", pointages).notNull().noNullElement();
@@ -26,6 +25,6 @@ public record JourDeSynthese(LocalDate jour, List<PointageDElement> pointages, D
   }
 
   interface DureeBuilder {
-    JourDeSynthese dureeOperationnelle(Duration dureeOperationnelle);
+    JourDeSynthese dureeOperationnelle(DureeTotale dureeOperationnelle);
   }
 }

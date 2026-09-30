@@ -17,7 +17,7 @@ class ActiviteInterpreteeTest {
       .activite(activiteDeTravailDuCarterSurLaDmu50())
       .plage(new Plage(LE_LUNDI_11_MAI_2026_A_8H, Optional.empty()))
       .echeance(LE_LUNDI_11_MAI_2026_A_20H)
-      .aResoudre(true);
+      .finAuPlusTard(Optional.of(LE_LUNDI_11_MAI_2026_A_20H));
     IntervalleDActivite lue = activite.a(LE_MARDI_12_MAI_2026_A_10H);
     assertThat(lue.lecture().etat()).isEqualTo(EtatDActivite.A_RESOUDRE);
     assertThat(lue.plage().fin()).isEmpty();

@@ -506,19 +506,24 @@ Feature: Feuille de temps hebdomadaire d'un operateur
       | debut                | fin                  | idActivite | etat     | debutActivite        | finActivite          |
       | 2026-05-10T22:00:00Z | 2026-05-11T01:00:00Z | A          | TERMINEE | 2026-05-10T20:00:00Z | 2026-05-11T01:00:00Z |
 
-  Scenario: Une fin visee sur le travail deja transforme conserve les activites a resoudre
+  Scenario Outline: Une fin visee sur le travail deja transforme conserve les activites a resoudre
     Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la feuille de temps recoit sur l'element "carter" les pointages
-      | alias | type           | intention  | cible | operateur | survenue             |
-      | A     | DEBUT          | OUVERTURE  |       | martin    | 2026-05-11T06:00:00Z |
-      | N     | NON_CONFORMITE | TRANSITION | A     | martin    | 2026-05-11T10:00:00Z |
-      | F     | FIN            | FIN        | A     | martin    | 2026-05-11T15:00:00Z |
+      | alias       | type            | intention            | cible | operateur | survenue             | reception            |
+      | A           | DEBUT           | OUVERTURE            |       | martin    | 2026-05-11T06:00:00Z | 2026-05-11T06:00:00Z |
+      | <second>    | <typeSecond>    | <intentionSecond>    | A     | martin    | <survenueSecond>     | 2026-05-11T15:00:00Z |
+      | <troisieme> | <typeTroisieme> | <intentionTroisieme> | A     | martin    | <survenueTroisieme>  | 2026-05-11T15:01:00Z |
     And il est "2026-05-11T20:00:00Z"
     When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
     Then les activites du "2026-05-11" sont
       | idActivite | categorie      | etat       | debut                | fin | debutActivite        | finActivite |
       | A          | TRAVAIL        | A_RESOUDRE | 2026-05-11T06:00:00Z |     | 2026-05-11T06:00:00Z |             |
       | N          | NON_CONFORMITE | A_RESOUDRE | 2026-05-11T10:00:00Z |     | 2026-05-11T10:00:00Z |             |
+
+    Examples:
+      | second | typeSecond     | intentionSecond | survenueSecond       | troisieme | typeTroisieme  | intentionTroisieme | survenueTroisieme    |
+      | N      | NON_CONFORMITE | TRANSITION      | 2026-05-11T10:00:00Z | F         | FIN            | FIN                | 2026-05-11T15:00:00Z |
+      | F      | FIN            | FIN             | 2026-05-11T15:00:00Z | N         | NON_CONFORMITE | TRANSITION         | 2026-05-11T10:00:00Z |
 
   Scenario: Une feuille de temps et ses activites restent dans leur entreprise
     Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
@@ -550,6 +555,8 @@ Feature: Feuille de temps hebdomadaire d'un operateur
       | A          | TRAVAIL        | A_RESOUDRE | 2026-05-10T22:00:00Z |     | 2026-05-10T20:00:00Z |             | 2026-05-11T09:00:00Z |
       | N          | NON_CONFORMITE | A_RESOUDRE | 2026-05-10T22:00:00Z |     | 2026-05-10T21:00:00Z |             | 2026-05-11T10:00:00Z |
     And le "2026-05-12" ne porte aucune activite
+    When je lis la synthese du releve avec l'instant rendu par la feuille
+    Then la synthese du releve conserve les jours a resoudre de la feuille
 
   Scenario: La plage possible regularisee depasse une semaine et se borne a l'evaluation
     Given l'element "carter" est engage en atelier a "2026-05-10T18:00:00Z"
@@ -567,9 +574,33 @@ Feature: Feuille de temps hebdomadaire d'un operateur
       | idActivite | etat       | debut                | fin | debutActivite        | finAuPlusTard        |
       | A          | A_RESOUDRE | 2026-05-18T22:00:00Z |     | 2026-05-10T20:00:00Z | 2026-05-19T10:00:00Z |
     And le "2026-05-20" ne porte aucune activite
+    When je lis la synthese du releve avec l'instant rendu par la feuille
+    Then la synthese du releve conserve les jours a resoudre de la feuille
     When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026 avec evaluation "2026-05-11T20:00:00Z"
     Then les activites a resoudre du "2026-05-11" sont
       | idActivite | etat       | debut                | fin | finAuPlusTard        |
       | A          | A_RESOUDRE | 2026-05-10T22:00:00Z |     | 2026-05-19T10:00:00Z |
       | N          | A_RESOUDRE | 2026-05-10T22:00:00Z |     | 2026-05-11T10:00:00Z |
     And le "2026-05-12" ne porte aucune activite
+    When je lis la synthese du releve avec l'instant rendu par la feuille
+    Then la synthese du releve conserve les jours a resoudre de la feuille
+
+  Scenario: Corriger une ouverture en conflit garde l'activite puis la cible corrigee resout la feuille
+    Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type           | intention  | cible | operateur | poste  | survenue             |
+      | A     | DEBUT          | OUVERTURE  |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | N     | NON_CONFORMITE | TRANSITION | A     | martin    | DMU 50 | 2026-05-11T10:00:00Z |
+      | F     | FIN            | FIN        | A     | martin    | DMU 50 | 2026-05-11T15:00:00Z |
+    And la feuille de temps corrige le pointage "A" sur "carter" a "2026-05-11T17:00:00Z" vers "2026-05-11T07:00:00Z"
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
+    Then les activites a resoudre du "2026-05-11" sont
+      | idActivite | etat       | debut                | fin | finActivite | finAuPlusTard        |
+      | A          | A_RESOUDRE | 2026-05-11T07:00:00Z |     |             | 2026-05-11T20:00:00Z |
+      | N          | A_RESOUDRE | 2026-05-11T10:00:00Z |     |             | 2026-05-11T23:00:00Z |
+    Given la feuille de temps corrige la cible du pointage "F" sur "carter" vers "N" a "2026-05-11T18:00:00Z"
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
+    Then les activites du "2026-05-11" sont
+      | idActivite | categorie      | etat     | debut                | fin                  | finAuPlusTard |
+      | A          | TRAVAIL        | TERMINEE | 2026-05-11T07:00:00Z | 2026-05-11T10:00:00Z |               |
+      | N          | NON_CONFORMITE | TERMINEE | 2026-05-11T10:00:00Z | 2026-05-11T15:00:00Z |               |

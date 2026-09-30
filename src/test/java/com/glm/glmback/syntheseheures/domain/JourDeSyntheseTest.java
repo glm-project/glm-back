@@ -16,12 +16,14 @@ class JourDeSyntheseTest {
 
   @Test
   void shouldNotBuildWithoutJour() {
-    assertThatThrownBy(() -> new JourDeSynthese(null, List.of(), Duration.ZERO)).isExactlyInstanceOf(MissingMandatoryValueException.class);
+    assertThatThrownBy(() -> new JourDeSynthese(null, List.of(), DureeTotale.de(Duration.ZERO))).isExactlyInstanceOf(
+      MissingMandatoryValueException.class
+    );
   }
 
   @Test
   void shouldNotBuildWithoutPointages() {
-    assertThatThrownBy(() -> new JourDeSynthese(LUNDI_11_MAI_2026, null, Duration.ZERO)).isExactlyInstanceOf(
+    assertThatThrownBy(() -> new JourDeSynthese(LUNDI_11_MAI_2026, null, DureeTotale.de(Duration.ZERO))).isExactlyInstanceOf(
       MissingMandatoryValueException.class
     );
   }
@@ -29,7 +31,7 @@ class JourDeSyntheseTest {
   @Test
   void shouldNotBuildWithNullPointage() {
     assertThatThrownBy(() ->
-      new JourDeSynthese(LUNDI_11_MAI_2026, Arrays.asList((PointageDElement) null), Duration.ZERO)
+      new JourDeSynthese(LUNDI_11_MAI_2026, Arrays.asList((PointageDElement) null), DureeTotale.de(Duration.ZERO))
     ).isExactlyInstanceOf(NullElementInCollectionException.class);
   }
 

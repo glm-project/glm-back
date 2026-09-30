@@ -5,7 +5,6 @@ import com.glm.glmback.syntheseheures.domain.ElementDeLaSynthese;
 import com.glm.glmback.syntheseheures.domain.ReferenceDElement;
 import com.glm.glmback.syntheseheures.domain.TypeDElement;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,17 +25,15 @@ record RestElementDeLaSynthese(
   @Schema(description = "Reference de l'element, relue au referentiel.", example = "1015") String reference,
   @Schema(description = "Description de l'element, relue au referentiel.", example = "Carter de pompe") String description,
   @Schema(
-    description = "Duree comptabilisee sur l'element dans la semaine, non conformite comprise.",
-    example = "PT15H30M",
+    description = "Total sur l'element dans la semaine, NC comprise. Incomplet sans valeur si une activite a resoudre y contribue.",
     requiredMode = Schema.RequiredMode.REQUIRED
   )
-  Duration duree,
+  RestDureeDeSynthese duree,
   @Schema(
-    description = "Part comptabilisee de la duree passee en non conformite.",
-    example = "PT50M",
+    description = "Part de NC. Incomplete sans valeur si une NC a resoudre y contribue ; une contradiction de travail ne masque pas une NC certaine.",
     requiredMode = Schema.RequiredMode.REQUIRED
   )
-  Duration dureeNonConformite,
+  RestDureeDeSynthese dureeNonConformite,
   @Schema(
     description = """
     Un couple par poste et nature distincts, dans l'ordre de premiere apparition, tire du travail comme des pointages :
@@ -53,8 +50,8 @@ record RestElementDeLaSynthese(
       element.element().nom().value(),
       element.reference().map(ReferenceDElement::value).orElse(null),
       element.description().map(DescriptionDElement::value).orElse(null),
-      element.duree(),
-      element.dureeNonConformite(),
+      RestDureeDeSynthese.from(element.duree()),
+      RestDureeDeSynthese.from(element.dureeNonConformite()),
       element.postes().stream().map(RestPosteDeLElementDeLaSynthese::from).toList()
     );
   }
