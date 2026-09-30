@@ -27,6 +27,16 @@ Feature: Synthese des heures hebdomadaire d'un operateur
     And chaque jour de la synthese ne porte aucun pointage et une duree de "PT0S"
     And la duree operationnelle totale de la semaine est "PT0S"
 
+  Scenario Outline: La synthese refuse un instant mal forme ou vide explicitement fourni
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026 avec evaluation "<evaluation>"
+    Then la reponse a le statut http 400
+    And la synthese des heures refusee ne porte aucun rapport
+
+    Examples:
+      | evaluation     |
+      | pas-un-instant |
+      |                |
+
   Scenario: Une fin coupe le travail, un debut le relance, et la coupure ne compte pas
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And "martin" enregistre "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:05:00Z"
@@ -144,6 +154,7 @@ Feature: Synthese des heures hebdomadaire d'un operateur
     And il est "2026-05-11T19:00:00Z"
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT13H"
+    And la synthese des heures est evaluee a "2026-05-11T19:00:00Z"
 
   Scenario: A vingt heures cinquante-neuf une activite sans poste est encore en cours
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"

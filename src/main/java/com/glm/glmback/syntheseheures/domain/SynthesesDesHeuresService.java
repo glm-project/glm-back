@@ -57,9 +57,13 @@ public final class SynthesesDesHeuresService {
   }
 
   public SyntheseDesHeures synthese(OperateurId operateur, SemaineCalendaire semaine) {
+    return synthese(operateur, semaine, Optional.empty());
+  }
+
+  public SyntheseDesHeures synthese(OperateurId operateur, SemaineCalendaire semaine, Optional<Instant> evaluationDemandee) {
     OperateurConnu connu = operateurs.get(operateur).orElseThrow(() -> new OperateurInconnuException(operateur));
     DecoupageCalendaire decoupage = new DecoupageCalendaire(semaine, fuseau.zone());
-    Instant maintenant = clock.now();
+    Instant maintenant = evaluationDemandee.orElseGet(clock::now);
     List<ActiviteDElement> travail = activites.recouvrant(operateur, decoupage.debut(), decoupage.finExclusive());
     List<IntervalleDUnJour> intervalles = travail
       .stream()
@@ -78,6 +82,7 @@ public final class SynthesesDesHeuresService {
     return SyntheseDesHeures.builder()
       .operateur(connu)
       .semaine(semaine)
+      .evaluation(maintenant)
       .jours(jours(decoupage, intervalles, pointagesDElement))
       .elements(
         elementsDeLaSemaine(

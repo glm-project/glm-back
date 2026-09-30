@@ -89,6 +89,26 @@ class SynthesesDesHeuresServiceTest {
   }
 
   @Test
+  void shouldCompterAvecLInstantServeurRenduSansReechantillonnerAEcheance() {
+    AtomicInteger lectures = new AtomicInteger();
+    SynthesesDesHeuresService service = SynthesesDesHeuresService.builder()
+      .operateurs(REFERENTIEL)
+      .fuseau(() -> ZONE_PARIS)
+      .activites((operateur, debut, fin) -> List.of(new ActiviteDElement(ELEMENT_ENGAGE_CARTER, travailOuvertA(LE_LUNDI_11_MAI_2026_A_8H))))
+      .journal((operateur, debut, fin) -> List.of())
+      .elements(REFERENTIEL_DES_ELEMENTS)
+      .postes(REFERENTIEL_DES_POSTES)
+      .clock(() -> lectures.getAndIncrement() == 0 ? Instant.parse("2026-05-11T18:59:59Z") : Instant.parse("2026-05-11T19:00:00Z"));
+
+    SyntheseDesHeures synthese = service.synthese(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
+
+    assertThat(lectures).hasValue(1);
+    assertThat(synthese.evaluation()).isEqualTo(Instant.parse("2026-05-11T18:59:59Z"));
+    assertThat(synthese.dureeOperationnelleTotale()).isZero();
+    assertThat(synthese.elements()).singleElement().extracting(ElementDeLaSynthese::duree).isEqualTo(Duration.ZERO);
+  }
+
+  @Test
   void shouldCompterEntierUnIntervalleTermineSansArrivee() {
     SyntheseDesHeures synthese = synthese(List.of(new ActiviteDElement(ELEMENT_ENGAGE_CARTER, travailDuCarterDe8HA10H())), List.of());
     assertThat(jourDe(synthese, LUNDI_11_MAI_2026).dureeOperationnelle()).isEqualTo(Duration.ofHours(2));

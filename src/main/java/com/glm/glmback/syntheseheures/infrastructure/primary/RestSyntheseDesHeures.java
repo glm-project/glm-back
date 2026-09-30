@@ -3,12 +3,18 @@ package com.glm.glmback.syntheseheures.infrastructure.primary;
 import com.glm.glmback.syntheseheures.domain.SyntheseDesHeures;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 
 @Schema(
   description = "Temps operationnel d'un operateur sur une semaine ISO, recalcule depuis les activites interpretees par atelier. Aucun montant n'est calcule."
 )
 record RestSyntheseDesHeures(
+  @Schema(
+    description = "Instant effectivement utilise pour l'expiration et le decoupage des activites en cours.",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  Instant evaluation,
   @Schema(description = "Operateur resolu au referentiel.") RestOperateur operateur,
   @Schema(description = "Annee des semaines ISO.", example = "2026") int annee,
   @Schema(description = "Numero de la semaine ISO.", example = "20") int semaine,
@@ -27,6 +33,7 @@ record RestSyntheseDesHeures(
 ) {
   static RestSyntheseDesHeures from(SyntheseDesHeures synthese) {
     return new RestSyntheseDesHeures(
+      synthese.evaluation(),
       RestOperateur.from(synthese.operateur()),
       synthese.semaine().annee(),
       synthese.semaine().numero(),

@@ -2,6 +2,7 @@ package com.glm.glmback.syntheseheures.domain;
 
 import com.glm.glmback.shared.error.domain.Assert;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -15,18 +16,21 @@ import java.util.List;
 public record SyntheseDesHeures(
   OperateurConnu operateur,
   SemaineCalendaire semaine,
+  Instant evaluation,
   List<JourDeSynthese> jours,
   List<ElementDeLaSynthese> elements
 ) {
   public SyntheseDesHeures {
     Assert.notNull("operateur", operateur);
     Assert.notNull("semaine", semaine);
+    Assert.notNull("evaluation", evaluation);
     Assert.field("jours", jours).notNull().noNullElement();
     Assert.field("elements", elements).notNull().noNullElement();
   }
 
   static SyntheseDesHeuresOperateurBuilder builder() {
-    return operateur -> semaine -> jours -> elements -> new SyntheseDesHeures(operateur, semaine, jours, elements);
+    return operateur ->
+      semaine -> evaluation -> jours -> elements -> new SyntheseDesHeures(operateur, semaine, evaluation, jours, elements);
   }
 
   public Duration dureeOperationnelleTotale() {
@@ -38,7 +42,11 @@ public record SyntheseDesHeures(
   }
 
   interface SyntheseDesHeuresSemaineBuilder {
-    SyntheseDesHeuresJoursBuilder semaine(SemaineCalendaire semaine);
+    SyntheseDesHeuresEvaluationBuilder semaine(SemaineCalendaire semaine);
+  }
+
+  interface SyntheseDesHeuresEvaluationBuilder {
+    SyntheseDesHeuresJoursBuilder evaluation(Instant evaluation);
   }
 
   interface SyntheseDesHeuresJoursBuilder {

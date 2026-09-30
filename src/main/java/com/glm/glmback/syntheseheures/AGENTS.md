@@ -23,8 +23,11 @@ les portions dont la synthèse additionne les durées. Le journal brut est lu s�
 - `ActivitesDeLOperateur` lit `activite_d_atelier` par une entité propre `@Immutable`, jointe au suivi pour
   l'élément engagé. La sélection porte sur le recouvrement de la semaine par le début et la fin réelle ou l'échéance,
   sans borne basse fixe du début : une régularisation peut dépasser 13 h, voire une semaine.
-- `SynthesesDesHeuresService` lit `Clock.now()` une seule fois et évalue toutes les activités à cet instant.
-  La transaction en lecture seule ne garantit pas un instantané face aux écritures concurrentes.
+- `SynthesesDesHeuresService` reçoit l'instant facultatif `evaluation`. Sans lui, l'heure du serveur est relevée
+  une seule fois ; l'instant utilisé gouverne l'expiration et le découpage des activités en cours, et la réponse
+  le rend. Passer le même instant à la feuille et à la synthèse assure la même décision d'expiration.
+  Les faits connus restent interprétés, même postérieurs à cet instant : aucune lecture historique ni
+  transaction commune entre les appels n'est garantie. Un instant fourni vide ou mal formé répond 400, sans rapport.
 - Une activité avec fin réelle est `TERMINEE`, même au-delà de l'échéance. Sans fin, elle est `EN_COURS` avant
   l'échéance puis `TERMINEE_AUTOMATIQUEMENT` à celle-ci, borne incluse. Une activité `A_RESOUDRE` reste sans fin ;
   l'échéance ne lui donne aucune interprétation chiffrée. La restitution des conflits et de la complétude appartient

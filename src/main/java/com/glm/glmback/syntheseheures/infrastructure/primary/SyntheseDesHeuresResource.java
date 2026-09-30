@@ -5,17 +5,23 @@ import com.glm.glmback.syntheseheures.domain.OperateurId;
 import com.glm.glmback.syntheseheures.domain.SemaineCalendaire;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
+import java.util.Optional;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @Validated
@@ -49,10 +55,14 @@ class SyntheseDesHeuresResource {
     Tous les pointages actifs de la semaine sont conserves, meme sans activite interpretable. Leur tri porte sur
     l'heure metier, puis l'intention (fin, transition, ouverture), puis l'identite, jamais l'heure d'enregistrement.
     La semaine est explicite et l'annee est celle des semaines ISO ; aucun montant n'est calcule.
+    L'instant evaluation facultatif decide de l'expiration et des jours atteints par les activites en cours.
+    Sans parametre, l'heure du serveur est relevee une seule fois. La reponse rend l'instant effectivement utilise.
+    Passer le meme instant a la feuille et a la synthese assure la meme decision d'expiration ; les faits connus
+    restent lus, meme posterieurs a cet instant. Ce contrat ne garantit ni lecture historique ni transaction commune.
     """
   )
   @ApiResponse(responseCode = "200", description = "La synthese des heures de la semaine demandee.")
-  @ApiResponse(responseCode = "400", description = "Annee ou numero de semaine hors bornes.")
+  @ApiResponse(responseCode = "400", description = "Annee ou numero de semaine hors bornes, ou instant evaluation vide ou mal forme.")
   @ApiResponse(responseCode = "404", description = "Operateur inconnu du referentiel.")
   RestSyntheseDesHeures get(
     @Parameter(description = "Identifiant de l'operateur dans le referentiel.") @PathVariable UUID operateurId,
@@ -61,8 +71,22 @@ class SyntheseDesHeuresResource {
     ) int annee,
     @Parameter(description = "Numero de la semaine ISO.", example = "20") @RequestParam @Min(PREMIERE_SEMAINE) @Max(
       DERNIERE_SEMAINE
-    ) int semaine
+    ) int semaine,
+    @Parameter(
+      description = "Instant ISO-8601 utilise pour evaluer les activites. Par defaut, heure du serveur.",
+      schema = @Schema(type = "string", format = "date-time")
+    ) @RequestParam(required = false) String evaluation
   ) {
-    return RestSyntheseDesHeures.from(applicationService.synthese(new OperateurId(operateurId), new SemaineCalendaire(annee, semaine)));
+    return RestSyntheseDesHeures.from(
+      applicationService.synthese(new OperateurId(operateurId), new SemaineCalendaire(annee, semaine), instantDEvaluation(evaluation))
+    );
+  }
+
+  private static Optional<Instant> instantDEvaluation(String evaluation) {
+    try {
+      return Optional.ofNullable(evaluation).map(Instant::parse);
+    } catch (DateTimeParseException e) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "L'instant evaluation doit respecter le format ISO-8601.", e);
+    }
   }
 }

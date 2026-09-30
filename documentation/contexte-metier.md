@@ -427,8 +427,12 @@ y compris entre deux semaines ; le changement d'heure conserve la durée réelle
 
 Les activités sont sélectionnées par **recouvrement**, même commencées avant la semaine et sans pointage en son
 sein. Une régularisation peut établir une fin supérieure à 13 h, voire à une semaine : aucune borne basse fixe
-sur le début ne les retrouve toutes. L'instant de lecture est relevé une seule fois pour toutes les activités.
-La transaction en lecture seule ne garantit pas un instantané face aux écritures concurrentes.
+sur le début ne les retrouve toutes. La synthèse reçoit `evaluation` facultatif et rend l'instant effectivement
+utilisé pour l'expiration et le découpage des activités en cours. Sans paramètre, l'heure du serveur est relevée
+une seule fois. Le client transmet le même instant aux deux lectures pour composer le relevé.
+Les faits connus restent interprétés, même postérieurs à cet instant ; le contrat ne garantit ni lecture
+historique ni transaction commune face aux écritures concurrentes. Un instant fourni vide ou mal formé répond
+400, sans rapport.
 
 Une fin réelle conserve sa borne, même régularisée au-delà de l'échéance. Sans elle, l'activité ne produit aucune
 durée avant son échéance et compte dès celle-ci jusqu'à sa fin automatique. Les décisions de relance, transition,

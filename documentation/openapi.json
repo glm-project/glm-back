@@ -1885,6 +1885,11 @@
             },
             "type" : "array"
           },
+          "evaluation" : {
+            "description" : "Instant effectivement utilise pour l'expiration et le decoupage des activites en cours.",
+            "format" : "date-time",
+            "type" : "string"
+          },
           "jours" : {
             "description" : "Les sept jours du lundi au dimanche, vides compris.",
             "items" : {
@@ -1903,7 +1908,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "dureeOperationnelleTotale", "elements" ],
+        "required" : [ "dureeOperationnelleTotale", "elements", "evaluation" ],
         "type" : "object"
       },
       "RestTempsPasse" : {
@@ -3691,7 +3696,7 @@
     },
     "/api/syntheses-des-heures/{operateurId}" : {
       "get" : {
-        "description" : "Rend les sept jours de la semaine ISO demandee, vides compris, le journal brut de l'operateur et les durees\nde ses activites terminees, y compris automatiquement. Une activite en cours ne produit aucune duree.\nLes activites interpretees par atelier sont selectionnees par recouvrement de la semaine, puis coupees aux\nminuits locaux. Une heure sur deux elements compte sur chacun. Les elements portant une activite ou un pointage\ndans la semaine sont rendus par premiere apparition puis nom, avec leur fiche et leurs postes relus au referentiel.\nTous les pointages actifs de la semaine sont conserves, meme sans activite interpretable. Leur tri porte sur\nl'heure metier, puis l'intention (fin, transition, ouverture), puis l'identite, jamais l'heure d'enregistrement.\nLa semaine est explicite et l'annee est celle des semaines ISO ; aucun montant n'est calcule.\n",
+        "description" : "Rend les sept jours de la semaine ISO demandee, vides compris, le journal brut de l'operateur et les durees\nde ses activites terminees, y compris automatiquement. Une activite en cours ne produit aucune duree.\nLes activites interpretees par atelier sont selectionnees par recouvrement de la semaine, puis coupees aux\nminuits locaux. Une heure sur deux elements compte sur chacun. Les elements portant une activite ou un pointage\ndans la semaine sont rendus par premiere apparition puis nom, avec leur fiche et leurs postes relus au referentiel.\nTous les pointages actifs de la semaine sont conserves, meme sans activite interpretable. Leur tri porte sur\nl'heure metier, puis l'intention (fin, transition, ouverture), puis l'identite, jamais l'heure d'enregistrement.\nLa semaine est explicite et l'annee est celle des semaines ISO ; aucun montant n'est calcule.\nL'instant evaluation facultatif decide de l'expiration et des jours atteints par les activites en cours.\nSans parametre, l'heure du serveur est relevee une seule fois. La reponse rend l'instant effectivement utilise.\nPasser le meme instant a la feuille et a la synthese assure la meme decision d'expiration ; les faits connus\nrestent lus, meme posterieurs a cet instant. Ce contrat ne garantit ni lecture historique ni transaction commune.\n",
         "operationId" : "get_3",
         "parameters" : [ {
           "description" : "Identifiant de l'operateur dans le referentiel.",
@@ -3726,6 +3731,15 @@
             "minimum" : 1,
             "type" : "integer"
           }
+        }, {
+          "description" : "Instant ISO-8601 utilise pour evaluer les activites. Par defaut, heure du serveur.",
+          "in" : "query",
+          "name" : "evaluation",
+          "required" : false,
+          "schema" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
         } ],
         "responses" : {
           "200" : {
@@ -3746,7 +3760,7 @@
                 }
               }
             },
-            "description" : "Annee ou numero de semaine hors bornes."
+            "description" : "Annee ou numero de semaine hors bornes, ou instant evaluation vide ou mal forme."
           },
           "404" : {
             "content" : {

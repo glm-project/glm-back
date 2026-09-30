@@ -491,6 +491,14 @@ Un instant passé est accepté, ainsi qu'un instant jusqu'à l'heure du serveur 
 Au-delà, la réponse est 400 `evaluation-future`, sans rapport. Un instant fourni vide ou mal formé répond aussi 400.
 Les faits connus restent interprétés même postérieurs à cet instant : il ne s'agit pas d'une lecture historique. La semaine, le fuseau et les rôles de lecture gardent leurs règles.
 
+### Évaluer la synthèse des heures
+
+`GET /api/syntheses-des-heures/{operateurId}?annee=2026&semaine=20&evaluation=2026-05-11T20:59:59Z`
+reçoit aussi un instant ISO-8601 facultatif et rend l'instant effectivement utilisé dans `evaluation`.
+Sans paramètre, l'heure du serveur est relevée une seule fois. Un instant fourni vide ou mal formé répond 400.
+Passer le même instant à la feuille et à la synthèse assure la même décision d'expiration ; les faits connus
+restent interprétés même postérieurs à cet instant, sans lecture historique ni transaction commune garantie.
+
 ### Présence
 
 `GET /api/atelier/journees/{id}` expose **à la fois** :

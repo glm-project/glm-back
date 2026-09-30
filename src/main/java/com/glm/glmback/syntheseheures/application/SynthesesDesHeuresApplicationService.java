@@ -11,6 +11,8 @@ import com.glm.glmback.syntheseheures.domain.PostesDeTravail;
 import com.glm.glmback.syntheseheures.domain.SemaineCalendaire;
 import com.glm.glmback.syntheseheures.domain.SyntheseDesHeures;
 import com.glm.glmback.syntheseheures.domain.SynthesesDesHeuresService;
+import java.time.Instant;
+import java.util.Optional;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,7 +51,7 @@ public class SynthesesDesHeuresApplicationService {
    */
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
   @Transactional(readOnly = true)
-  public SyntheseDesHeures synthese(OperateurId operateur, SemaineCalendaire semaine) {
-    return synthesesDesHeures.synthese(operateur, semaine);
+  public SyntheseDesHeures synthese(OperateurId operateur, SemaineCalendaire semaine, Optional<Instant> evaluation) {
+    return synthesesDesHeures.synthese(operateur, semaine, evaluation);
   }
 }

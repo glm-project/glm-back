@@ -203,6 +203,30 @@ public class SyntheseDesHeuresSteps {
     consulte(operateurs.get(alias), semaine, annee);
   }
 
+  @When("je consulte la synthese des heures de {string} pour la semaine {int} de {int} avec evaluation {string}")
+  public void consulteAvecEvaluation(String alias, int semaine, int annee, String evaluation) {
+    rest.get(
+      SYNTHESES_URI + "/" + operateurs.get(alias) + "?annee=" + annee + "&semaine=" + semaine + "&evaluation={evaluation}",
+      Map.of("evaluation", evaluation)
+    );
+  }
+
+  @Then("la synthese des heures est evaluee a {string}")
+  public void estEvalueeA(String evaluation) {
+    assertThat(CucumberRestTestContext.getElement("$.evaluation")).isEqualTo(evaluation);
+  }
+
+  @Then("la synthese des heures refusee ne porte aucun rapport")
+  @SuppressWarnings("unchecked")
+  public void nePorteAucunRapport() {
+    assertThat((Map<String, Object>) CucumberRestTestContext.getElement("$")).doesNotContainKeys(
+      "evaluation",
+      "jours",
+      "elements",
+      "operateur"
+    );
+  }
+
   @When("je consulte la synthese des heures de l'operateur {string} pour la semaine {int} de {int}")
   public void jeConsulteLaSyntheseDesHeuresDeLOperateur(String operateur, int semaine, int annee) {
     consulte(operateur, semaine, annee);

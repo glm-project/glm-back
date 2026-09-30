@@ -29,7 +29,7 @@ Feature: Feuille de temps hebdomadaire d'un operateur
     And la feuille de temps ne porte aucune activite
     And la feuille de temps ne porte aucun champ de presence
 
-  Scenario: La feuille utilise l'instant choisi avant echeance malgre une reception apres echeance
+  Scenario: La feuille et la synthese utilisent l'instant choisi avant echeance malgre une reception apres echeance
     Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la feuille de temps recoit sur l'element "carter" les pointages
       | alias | type  | intention | operateur | poste  | survenue             |
@@ -41,6 +41,9 @@ Feature: Feuille de temps hebdomadaire d'un operateur
       | idActivite | etat     | debutActivite        | finActivite | fin |
       | A          | EN_COURS | 2026-05-11T08:00:00Z |             |     |
     And la feuille de temps est evaluee a "2026-05-11T20:59:59Z"
+    When je lis la synthese du releve avec l'instant rendu par la feuille
+    Then la reponse a le statut http 200
+    And la synthese du releve compte "PT0S" a l'instant "2026-05-11T20:59:59Z"
 
   Scenario: La feuille refuse le depassement minimal des deux minutes futures
     Given il est "2026-05-11T21:00:05Z"
@@ -85,6 +88,9 @@ Feature: Feuille de temps hebdomadaire d'un operateur
     And les activites du "2026-05-11" sont
       | idActivite | etat                     | debutActivite        | finActivite          | fin                  |
       | A          | TERMINEE_AUTOMATIQUEMENT | 2026-05-11T08:00:00Z | 2026-05-11T21:00:00Z | 2026-05-11T21:00:00Z |
+    When je lis la synthese du releve avec l'instant rendu par la feuille
+    Then la reponse a le statut http 200
+    And la synthese du releve compte "PT13H" a l'instant "2026-05-11T21:00:00Z"
     When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
     Then la feuille de temps est evaluee a "2026-05-11T21:00:05Z"
     And les activites du "2026-05-11" sont
@@ -104,6 +110,9 @@ Feature: Feuille de temps hebdomadaire d'un operateur
     And les activites du "2026-05-11" sont
       | idActivite | etat     | debutActivite        | finActivite          |
       | A          | TERMINEE | 2026-05-11T08:00:00Z | 2026-05-11T21:00:00Z |
+    When je lis la synthese du releve avec l'instant rendu par la feuille
+    Then la reponse a le statut http 200
+    And la synthese du releve compte "PT13H" a l'instant "2026-05-11T20:59:59Z"
 
   Scenario: Un intervalle termine sans arrivee garde toutes ses bornes
     Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
