@@ -565,6 +565,11 @@
       "RestCoutDeRevient" : {
         "description" : "Le cout de revient d'un element de fabrication, une ligne par nature d'operation.\n\nRien n'est stocke : le rapport est recalcule a chaque lecture depuis les journaux de l'atelier, pour qu'une saisie\nregularisee apres coup compte a l'heure ou le travail a eu lieu.\n\nLe total est la somme des lignes deja arrondies : il vaut donc exactement ce que l'ecran affiche.\n",
         "properties" : {
+          "activitesEnCours" : {
+            "description" : "Nombre d'activites en cours exclues du temps, des couts et du diviseur.",
+            "format" : "int32",
+            "type" : "integer"
+          },
           "cout" : {
             "$ref" : "#/components/schemas/RestCout",
             "description" : "Cout total de l'element."
@@ -572,6 +577,11 @@
           "element" : {
             "$ref" : "#/components/schemas/RestElement",
             "description" : "L'element de fabrication, tous ses passages en atelier confondus."
+          },
+          "evaluation" : {
+            "description" : "Instant d'evaluation commun du rapport.",
+            "format" : "date-time",
+            "type" : "string"
           },
           "lignes" : {
             "description" : "Une ligne par nature, la ligne sans nature en dernier.",
@@ -585,6 +595,7 @@
             "description" : "Temps total passe sur l'element."
           }
         },
+        "required" : [ "activitesEnCours", "evaluation" ],
         "type" : "object"
       },
       "RestCreationElementDeFabrication" : {
@@ -1111,6 +1122,13 @@
             "$ref" : "#/components/schemas/RestCout",
             "description" : "Cout de la ligne, arrondi au centime."
           },
+          "finsAutomatiques" : {
+            "description" : "Periodes terminees automatiquement, signalant une anomalie active.",
+            "items" : {
+              "$ref" : "#/components/schemas/RestPeriodeDuCout"
+            },
+            "type" : "array"
+          },
           "nature" : {
             "description" : "Nature de l'operation, absente pour un pointage sans poste.",
             "example" : "Fraisage",
@@ -1119,12 +1137,12 @@
           "nonConformites" : {
             "description" : "Les periodes de reprise, datees, dans l'ordre.",
             "items" : {
-              "$ref" : "#/components/schemas/RestPeriode"
+              "$ref" : "#/components/schemas/RestPeriodeDuCout"
             },
             "type" : "array"
           },
           "periode" : {
-            "$ref" : "#/components/schemas/RestPeriode",
+            "$ref" : "#/components/schemas/RestPeriodeDuCout",
             "description" : "Du premier debut a la derniere fin de cette nature."
           },
           "temps" : {
@@ -1409,6 +1427,22 @@
           },
           "fin" : {
             "description" : "Fin incluse.",
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "RestPeriodeDuCout" : {
+        "description" : "Periode terminee effectivement ou automatiquement.",
+        "properties" : {
+          "debut" : {
+            "description" : "Debut de la periode.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "fin" : {
+            "description" : "Fin de la periode terminee.",
             "format" : "date-time",
             "type" : "string"
           }
@@ -3018,7 +3052,7 @@
     },
     "/api/couts-de-revient/{elementId}" : {
       "get" : {
-        "description" : "Rend une ligne par nature d'operation — fraisage, tournage, erosion —, chacune portant le temps de bon travail,\nle temps passe en non conformite avec ses periodes datees, et le cout separe en machine et main d'oeuvre.\n\nL'entree se fait par l'element, non par son suivi d'atelier : un element reengage apres cloture additionne ses\npassages.\n\nDeux regles a connaitre avant d'afficher les montants. Le cout horaire de chaque poste actif court **en entier**,\nmeme quand l'operateur en mene plusieurs de front ; son taux horaire, lui, est **divise** par le nombre de postes\nqu'il occupait a cet instant, tous elements confondus. Un operateur sur trois elements avec une seule machine\nn'est donc pas divise. Le decoupage se fait aux bornes de chaque pointage, si bien que seul le chevauchement reel\nest divise.\n\nUn travail encore en cours est arrete a l'instant de la lecture : deux appels espaces ne rendent donc pas la meme\nchose sur un element en cours, ce qui est le seul moyen de chiffrer ce qui n'est pas termine.\n",
+        "description" : "Rend une ligne par nature d'operation — fraisage, tournage, erosion —, chacune portant le temps de bon travail,\nle temps passe en non conformite avec ses periodes datees, et le cout separe en machine et main d'oeuvre.\n\nL'entree se fait par l'element, non par son suivi d'atelier : un element reengage apres cloture additionne ses\npassages.\n\nDeux regles a connaitre avant d'afficher les montants. Le cout horaire de chaque poste actif court **en entier**,\nmeme quand l'operateur en mene plusieurs de front ; son taux horaire, lui, est **divise** par le nombre de postes\nqu'il occupait a cet instant, tous elements confondus. Un operateur sur trois elements avec une seule machine\nn'est donc pas divise. Le decoupage se fait aux bornes de chaque pointage, si bien que seul le chevauchement reel\nest divise.\n\nUne activite encore en cours est entierement exclue du temps, des couts et du diviseur. A son echeance\nprojetee, elle compte jusqu'a sa fin automatique avec une anomalie et sa periode datee. L'horloge est relevee\nune seule fois par rapport ; cet instant est rendu dans evaluation.\n",
         "operationId" : "get_6",
         "parameters" : [ {
           "description" : "Identifiant de l'element de fabrication.",

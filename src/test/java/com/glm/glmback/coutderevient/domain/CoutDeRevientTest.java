@@ -24,21 +24,25 @@ class CoutDeRevientTest {
 
   @Test
   void shouldNotBuildWithoutElement() {
-    assertThatThrownBy(() -> new CoutDeRevient(null, List.of()))
+    assertThatThrownBy(() -> new CoutDeRevient(null, List.of(), new EvaluationDuCout(LE_11_MAI_A_17H, 0)))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("element");
   }
 
   @Test
   void shouldNotBuildWithoutLignes() {
-    assertThatThrownBy(() -> new CoutDeRevient(ELEMENT_VALORISE_OF, null))
+    assertThatThrownBy(() -> new CoutDeRevient(ELEMENT_VALORISE_OF, null, new EvaluationDuCout(LE_11_MAI_A_17H, 0)))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("lignes");
   }
 
   @Test
   void shouldHaveNoLigneWithoutTranche() {
-    CoutDeRevient rapport = CoutDeRevient.de(ELEMENT_VALORISE_OF, List.of(), ChargesDesOperateurs.de(List.of()));
+    CoutDeRevient rapport = CoutDeRevient.builder()
+      .element(ELEMENT_VALORISE_OF)
+      .tranches(List.of())
+      .charges(ChargesDesOperateurs.de(List.of()))
+      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0));
 
     assertThat(rapport.lignes()).isEmpty();
     assertThat(rapport.temps()).isEqualTo(TempsPasse.AUCUN);
@@ -52,7 +56,11 @@ class CoutDeRevientTest {
   void shouldValoriseASingleTranche() {
     List<TrancheDActivite> tranches = List.of(fraisage(CategorieDActivite.TRAVAIL, LE_11_MAI_A_9H, LE_11_MAI_A_11H));
 
-    CoutDeRevient rapport = CoutDeRevient.de(ELEMENT_VALORISE_OF, tranches, ChargesDesOperateurs.de(tranches));
+    CoutDeRevient rapport = CoutDeRevient.builder()
+      .element(ELEMENT_VALORISE_OF)
+      .tranches(tranches)
+      .charges(ChargesDesOperateurs.de(tranches))
+      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0));
 
     assertThat(rapport.lignes())
       .singleElement()
@@ -77,7 +85,11 @@ class CoutDeRevientTest {
       fraisage(CategorieDActivite.NON_CONFORMITE, LE_11_MAI_A_10H, LE_11_MAI_A_11H)
     );
 
-    CoutDeRevient rapport = CoutDeRevient.de(ELEMENT_VALORISE_OF, tranches, ChargesDesOperateurs.de(tranches));
+    CoutDeRevient rapport = CoutDeRevient.builder()
+      .element(ELEMENT_VALORISE_OF)
+      .tranches(tranches)
+      .charges(ChargesDesOperateurs.de(tranches))
+      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0));
 
     assertThat(rapport.lignes())
       .singleElement()
@@ -95,7 +107,11 @@ class CoutDeRevientTest {
       fraisage(CategorieDActivite.TRAVAIL, LE_11_MAI_A_9H, LE_11_MAI_A_11H)
     );
 
-    CoutDeRevient rapport = CoutDeRevient.de(ELEMENT_VALORISE_OF, tranches, ChargesDesOperateurs.de(tranches));
+    CoutDeRevient rapport = CoutDeRevient.builder()
+      .element(ELEMENT_VALORISE_OF)
+      .tranches(tranches)
+      .charges(ChargesDesOperateurs.de(tranches))
+      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0));
 
     assertThat(rapport.lignes())
       .extracting(LigneDeCout::nature)
@@ -113,7 +129,11 @@ class CoutDeRevientTest {
       tournage(CategorieDActivite.TRAVAIL, LE_11_MAI_A_9H, LE_11_MAI_A_11H)
     );
 
-    CoutDeRevient rapport = CoutDeRevient.de(ELEMENT_VALORISE_OF, tranches, ChargesDesOperateurs.de(tranches));
+    CoutDeRevient rapport = CoutDeRevient.builder()
+      .element(ELEMENT_VALORISE_OF)
+      .tranches(tranches)
+      .charges(ChargesDesOperateurs.de(tranches))
+      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0));
 
     assertThat(rapport.lignes().getFirst().cout()).isEqualTo(
       new Cout(new Montant(new BigDecimal("90.00")), new Montant(new BigDecimal("20.00")))
@@ -132,7 +152,11 @@ class CoutDeRevientTest {
       fraisage(CategorieDActivite.TRAVAIL, LE_11_MAI_A_9H, LE_11_MAI_A_11H)
     );
 
-    CoutDeRevient rapport = CoutDeRevient.de(ELEMENT_VALORISE_OF, tranches, ChargesDesOperateurs.de(tranches));
+    CoutDeRevient rapport = CoutDeRevient.builder()
+      .element(ELEMENT_VALORISE_OF)
+      .tranches(tranches)
+      .charges(ChargesDesOperateurs.de(tranches))
+      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0));
 
     assertThat(rapport.lignes()).extracting(LigneDeCout::nature).containsExactly(Optional.of(NATURE_FRAISAGE), Optional.empty());
     assertThat(rapport.lignes().getLast().cout().machine()).isEqualTo(Montant.ZERO);
@@ -145,7 +169,11 @@ class CoutDeRevientTest {
       tournage(CategorieDActivite.NON_CONFORMITE, LE_11_MAI_A_11H, LE_11_MAI_A_12H)
     );
 
-    CoutDeRevient rapport = CoutDeRevient.de(ELEMENT_VALORISE_OF, tranches, ChargesDesOperateurs.de(tranches));
+    CoutDeRevient rapport = CoutDeRevient.builder()
+      .element(ELEMENT_VALORISE_OF)
+      .tranches(tranches)
+      .charges(ChargesDesOperateurs.de(tranches))
+      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0));
 
     assertThat(rapport.temps()).isEqualTo(new TempsPasse(Duration.ofHours(2), Duration.ofHours(1)));
   }

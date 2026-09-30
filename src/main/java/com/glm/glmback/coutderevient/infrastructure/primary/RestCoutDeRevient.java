@@ -2,6 +2,7 @@ package com.glm.glmback.coutderevient.infrastructure.primary;
 
 import com.glm.glmback.coutderevient.domain.CoutDeRevient;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.Instant;
 import java.util.List;
 
 @Schema(
@@ -15,6 +16,12 @@ import java.util.List;
   """
 )
 record RestCoutDeRevient(
+  @Schema(description = "Instant d'evaluation commun du rapport.", requiredMode = Schema.RequiredMode.REQUIRED) Instant evaluation,
+  @Schema(
+    description = "Nombre d'activites en cours exclues du temps, des couts et du diviseur.",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  int activitesEnCours,
   @Schema(description = "L'element de fabrication, tous ses passages en atelier confondus.") RestElement element,
   @Schema(description = "Une ligne par nature, la ligne sans nature en dernier.") List<RestLigneDeCout> lignes,
   @Schema(description = "Temps total passe sur l'element.") RestTempsPasse temps,
@@ -22,6 +29,8 @@ record RestCoutDeRevient(
 ) {
   static RestCoutDeRevient from(CoutDeRevient rapport) {
     return new RestCoutDeRevient(
+      rapport.lecture().evaluation(),
+      rapport.lecture().activitesEnCours(),
       RestElement.from(rapport.element()),
       rapport.lignes().stream().map(RestLigneDeCout::from).toList(),
       RestTempsPasse.from(rapport.temps()),

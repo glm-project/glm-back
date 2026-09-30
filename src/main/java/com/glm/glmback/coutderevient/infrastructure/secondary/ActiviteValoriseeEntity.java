@@ -1,0 +1,61 @@
+package com.glm.glmback.coutderevient.infrastructure.secondary;
+
+import com.glm.glmback.coutderevient.domain.*;
+import jakarta.persistence.*;
+import java.time.Instant;
+import java.util.Optional;
+import java.util.UUID;
+import org.hibernate.annotations.Immutable;
+
+/** Lecture privee des activites interpretees par atelier et de leurs tarifs captures. */
+@Entity
+@Immutable
+@Table(name = "activite_d_atelier")
+class ActiviteValoriseeEntity {
+
+  @Id
+  private UUID id;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "suivi_id")
+  private SuiviValoriseEntity suivi;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "ouverture_id")
+  private EvenementDAtelierValoriseEntity ouverture;
+
+  @Column(name = "operateur_id")
+  private UUID operateurId;
+
+  @Column(name = "poste_id")
+  private UUID posteId;
+
+  private String nature;
+
+  @Enumerated(EnumType.STRING)
+  @Column(length = 20)
+  private CategorieDActivite categorie;
+
+  private Instant debut;
+  private Instant echeance;
+  private Instant fin;
+
+  protected ActiviteValoriseeEntity() {
+    /* Requis par JPA. */
+  }
+
+  ActiviteInterpretee toDomain() {
+    return new ActiviteInterpretee(
+      new Activite(
+        new OperateurId(operateurId),
+        Optional.ofNullable(posteId).map(PosteDeTravailId::new),
+        Optional.ofNullable(nature).map(NatureDOperation::new),
+        ouverture.coutHoraire(),
+        ouverture.tauxHoraire(),
+        categorie
+      ),
+      new Plage(debut, Optional.ofNullable(fin)),
+      echeance
+    );
+  }
+}

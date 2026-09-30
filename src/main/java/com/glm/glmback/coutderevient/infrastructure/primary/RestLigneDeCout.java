@@ -19,6 +19,7 @@ record RestLigneDeCout(
   @Schema(description = "Du premier debut a la derniere fin de cette nature.") RestPeriode periode,
   @Schema(description = "Temps passe, bon travail et non conformite separes.") RestTempsPasse temps,
   @Schema(description = "Les periodes de reprise, datees, dans l'ordre.") List<RestPeriode> nonConformites,
+  @Schema(description = "Periodes terminees automatiquement, signalant une anomalie active.") List<RestPeriode> finsAutomatiques,
   @Schema(description = "Cout de la ligne, arrondi au centime.") RestCout cout
 ) {
   static RestLigneDeCout from(LigneDeCout ligne) {
@@ -27,6 +28,7 @@ record RestLigneDeCout(
       RestPeriode.from(ligne.periode()),
       RestTempsPasse.from(ligne.temps()),
       ligne.nonConformites().stream().map(RestPeriode::from).toList(),
+      ligne.finsAutomatiques().stream().map(RestPeriode::from).toList(),
       RestCout.from(ligne.cout())
     );
   }

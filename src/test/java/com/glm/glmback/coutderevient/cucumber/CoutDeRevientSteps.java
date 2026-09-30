@@ -38,7 +38,6 @@ import tools.jackson.databind.json.JsonMapper;
 public class CoutDeRevientSteps {
 
   private static final String SUIVIS_URI = "/api/atelier/suivis";
-  private static final String JOURNEES_URI = "/api/atelier/journees";
   private static final String ELEMENTS_URI = "/api/elements-de-fabrication";
   private static final String POSTES_URI = "/api/postes-de-travail";
   private static final String OPERATEURS_URI = "/api/operateurs";
@@ -59,7 +58,8 @@ public class CoutDeRevientSteps {
   private final Map<String, String> operateurs = new HashMap<>();
   private final Map<String, String> elements = new HashMap<>();
   private final Map<String, String> suivis = new HashMap<>();
-  private final Map<String, String> journees = new HashMap<>();
+  private final Map<String, String> pointages = new HashMap<>();
+  private final Map<String, Map<String, Object>> corpsDesPointages = new HashMap<>();
 
   @Given("le rapport connait le poste {string} de nature {string} a {string} de l'heure")
   public void leRapportConnaitLePoste(String alias, String nature, String coutHoraire) {
@@ -102,36 +102,6 @@ public class CoutDeRevientSteps {
     suivis.put(alias, id());
   }
 
-  @Given("{string} prend son poste a {string}")
-  public void prendSonPosteA(String operateur, String instant) {
-    horloge.ilEst(Instant.parse(instant));
-    rest.post(JOURNEES_URI, JSON.writeValueAsString(Map.of("id", UUID.randomUUID(), "operateur", operateurs.get(operateur))));
-    journees.put(operateur, id());
-  }
-
-  /**
-   * Un depart saisi par le gestionnaire sur la derniere journee ouverte par l'operateur : la seule voie de l'API qui
-   * ferme encore une journee au-dela de 24 h.
-   */
-  @Given("le depart de {string} est rattrape sur sa journee a {string}")
-  public void leDepartEstRattrapeSurSaJourneeA(String operateur, String instant) {
-    horloge.ilEst(Instant.parse(instant));
-    rest.post(
-      JOURNEES_URI + "/" + journees.get(operateur) + "/regularisations",
-      JSON.writeValueAsString(Map.of("type", "DEPART", "dateDeSurvenue", instant))
-    );
-    assertThat(CucumberRestTestContext.getStatus().value()).as("la regularisation du depart doit etre acceptee").isEqualTo(201);
-  }
-
-  @Given("{string} pointe sa presence {string} a {string}")
-  public void pointeSaPresenceA(String operateur, String type, String instant) {
-    horloge.ilEst(Instant.parse(instant));
-    rest.post(
-      JOURNEES_URI + "/pointages",
-      JSON.writeValueAsString(Map.of("id", UUID.randomUUID(), "operateur", operateurs.get(operateur), "type", type))
-    );
-  }
-
   @Given("{string} pointe {string} sur {string} au poste {string} a {string}")
   public void pointeSurAuPoste(String operateur, String type, String element, String poste, String instant) {
     horloge.ilEst(Instant.parse(instant));
@@ -159,6 +129,47 @@ public class CoutDeRevientSteps {
   public void estClotureA(String element, String instant) {
     horloge.ilEst(Instant.parse(instant));
     rest.put(SUIVIS_URI + "/" + suivis.get(element) + "/cloture", JSON.writeValueAsString(Map.of("dateDeSurvenue", instant)));
+  }
+
+  @Given("pour le cout, {string} recoit les pointages")
+  public void recoitLesPointages(String element, List<Map<String, String>> recus) {
+    for (Map<String, String> pointage : recus) {
+      String survenue = pointage.get("survenue");
+      horloge.ilEst(Instant.parse(java.util.Optional.ofNullable(pointage.get("reception")).orElse(survenue)));
+      String identite = UUID.randomUUID().toString();
+      Map<String, Object> corps = new HashMap<>();
+      corps.put("id", identite);
+      corps.put("type", pointage.get("type"));
+      corps.put("intention", pointage.get("intention"));
+      corps.put("operateur", operateurs.get(pointage.get("operateur")));
+      corps.put("dateDeSurvenue", survenue);
+      if (pointage.containsKey("poste")) {
+        corps.put("poste", postes.get(pointage.get("poste")));
+      }
+      if (!java.util.Optional.ofNullable(pointage.get("cible")).orElse("").isEmpty()) {
+        corps.put("cible", pointages.get(pointage.get("cible")));
+      }
+      ecritures.pointe(suivis.get(element), corps);
+      assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage explicite du cout doit etre accepte").isTrue();
+      pointages.put(pointage.get("alias"), identite);
+      corpsDesPointages.put(pointage.get("alias"), corps);
+    }
+  }
+
+  @Then("le cout porte la fin automatique de {string} a {string}")
+  public void finAutomatique(String debut, String fin) {
+    assertThatLastResponse()
+      .hasElement("$.lignes[0].finsAutomatiques[0].debut")
+      .withValue(debut)
+      .and()
+      .hasElement("$.lignes[0].finsAutomatiques[0].fin")
+      .withValue(fin);
+  }
+
+  @Then("le cout est evalue a {string} avec {int} activites en cours exclues")
+  public void evaluation(String instant, int enCours) {
+    assertThat(CucumberRestTestContext.getElement("$.evaluation")).isEqualTo(instant);
+    assertThat(CucumberRestTestContext.getElement("$.activitesEnCours")).isEqualTo(enCours);
   }
 
   @When("je consulte le cout de revient de {string} a {string}")

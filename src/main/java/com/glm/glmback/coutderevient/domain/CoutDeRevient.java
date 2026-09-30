@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
  * l'atelier. Une saisie regularisee apres coup compte donc a l'heure ou le travail a eu lieu.
  * </p>
  */
-public record CoutDeRevient(ElementValorise element, List<LigneDeCout> lignes) {
+public record CoutDeRevient(ElementValorise element, List<LigneDeCout> lignes, EvaluationDuCout lecture) {
   /**
    * Les natures dans l'ordre alphabetique, et la ligne sans nature en dernier : elle est le residu de ce qui a ete
    * pointe sans poste, et n'a pas de place dans l'ordre des metiers.
@@ -29,10 +29,27 @@ public record CoutDeRevient(ElementValorise element, List<LigneDeCout> lignes) {
   public CoutDeRevient {
     Assert.notNull("element", element);
     Assert.field("lignes", lignes).notNull().noNullElement();
+    Assert.notNull("lecture", lecture);
   }
 
-  public static CoutDeRevient de(ElementValorise element, List<TrancheDActivite> tranches, ChargesDesOperateurs charges) {
-    return new CoutDeRevient(element, lignes(tranches, charges));
+  public static ElementBuilder builder() {
+    return element -> tranches -> charges -> lecture -> new CoutDeRevient(element, lignes(tranches, charges), lecture);
+  }
+
+  public interface ElementBuilder {
+    TranchesBuilder element(ElementValorise element);
+  }
+
+  public interface TranchesBuilder {
+    ChargesBuilder tranches(List<TrancheDActivite> tranches);
+  }
+
+  public interface ChargesBuilder {
+    LectureBuilder charges(ChargesDesOperateurs charges);
+  }
+
+  public interface LectureBuilder {
+    CoutDeRevient lecture(EvaluationDuCout lecture);
   }
 
   public TempsPasse temps() {

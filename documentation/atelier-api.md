@@ -608,3 +608,14 @@ Une `dateDeSurvenue` strictement postérieure à l'instant courant répond 400 a
 - **Ni un opérateur ni un poste ayant servi à pointer ne se supprime** : `DELETE /api/operateurs/{id}` et
   `DELETE /api/postes-de-travail/{id}` répondent 409. Un écran d'administration doit le prévoir plutôt que le
   découvrir.
+
+## Coût de revient d'un élément
+
+`GET /api/couts-de-revient/{elementId}` exige `GESTIONNAIRE`. Le rapport rend `evaluation`, relevée une fois
+sur l'horloge du serveur, et `activitesEnCours`, nombre d'activités exclues du temps, de tous les coûts et du
+partage humain. Les activités terminées automatiquement comptent dès leur échéance et leur période figure
+sur la ligne dans `finsAutomatiques`, signalant l'anomalie active. Une lecture ultérieure conserve cette borne.
+
+La machine coûte l'intervalle terminé entier ; la main d'œuvre se partage par postes distincts occupés par
+les seules activités terminées du même opérateur, tous éléments confondus. Une fin nouvellement reçue peut
+modifier ce partage sur un autre élément. Les tarifs viennent du fait ouvrant actif figé par atelier.

@@ -17,7 +17,14 @@ import java.util.Optional;
  * montre.
  * </p>
  */
-public record LigneDeCout(Optional<NatureDOperation> nature, Periode periode, TempsPasse temps, List<Periode> nonConformites, Cout cout) {
+public record LigneDeCout(
+  Optional<NatureDOperation> nature,
+  Periode periode,
+  TempsPasse temps,
+  List<Periode> nonConformites,
+  List<Periode> finsAutomatiques,
+  Cout cout
+) {
   private static final Comparator<Periode> PAR_DEBUT = Comparator.comparing(Periode::debut).thenComparing(Periode::fin);
 
   public LigneDeCout {
@@ -25,11 +32,15 @@ public record LigneDeCout(Optional<NatureDOperation> nature, Periode periode, Te
     Assert.notNull("periode", periode);
     Assert.notNull("temps", temps);
     Assert.field("non conformites", nonConformites).notNull().noNullElement();
+    Assert.field("fins automatiques", finsAutomatiques).notNull().noNullElement();
     Assert.notNull("cout", cout);
   }
 
   static LigneDeCoutNatureBuilder builder() {
-    return nature -> periode -> temps -> nonConformites -> cout -> new LigneDeCout(nature, periode, temps, nonConformites, cout);
+    return nature ->
+      periode ->
+        temps ->
+          nonConformites -> finsAutomatiques -> cout -> new LigneDeCout(nature, periode, temps, nonConformites, finsAutomatiques, cout);
   }
 
   /**
@@ -47,6 +58,9 @@ public record LigneDeCout(Optional<NatureDOperation> nature, Periode periode, Te
       .periode(periode(tranches))
       .temps(temps(tranches))
       .nonConformites(nonConformites(tranches))
+      .finsAutomatiques(
+        tranches.stream().filter(TrancheDActivite::finAutomatique).map(TrancheDActivite::periode).sorted(PAR_DEBUT).toList()
+      )
       .cout(cout(parts));
   }
 
@@ -114,7 +128,11 @@ public record LigneDeCout(Optional<NatureDOperation> nature, Periode periode, Te
   }
 
   interface LigneDeCoutNonConformitesBuilder {
-    LigneDeCoutCoutBuilder nonConformites(List<Periode> nonConformites);
+    LigneDeCoutFinsAutomatiquesBuilder nonConformites(List<Periode> nonConformites);
+  }
+
+  interface LigneDeCoutFinsAutomatiquesBuilder {
+    LigneDeCoutCoutBuilder finsAutomatiques(List<Periode> finsAutomatiques);
   }
 
   interface LigneDeCoutCoutBuilder {

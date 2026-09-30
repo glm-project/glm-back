@@ -5,8 +5,6 @@ import com.glm.glmback.coutderevient.domain.CoutsDeRevientService;
 import com.glm.glmback.coutderevient.domain.ElementId;
 import com.glm.glmback.coutderevient.domain.ElementsValorisables;
 import com.glm.glmback.coutderevient.domain.OccupationDesOperateurs;
-import com.glm.glmback.coutderevient.domain.PresenceDesOperateurs;
-import com.glm.glmback.coutderevient.domain.SeuilDuCout;
 import com.glm.glmback.coutderevient.domain.TravailDeLElement;
 import com.glm.glmback.shared.time.domain.Clock;
 import org.springframework.security.access.annotation.Secured;
@@ -17,9 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
  * Orchestration de la lecture des couts de revient.
  *
  * <p>
- * Rien a ecrire : le contexte ne fait que relire les journaux de l'atelier. La transaction est en lecture seule, et
- * elle couvre les quatre requetes du meme coup — element, suivis, occupation, presence — pour que le rapport ne
- * melange pas deux etats de la base.
+ * Rien a ecrire : le contexte lit les projections de l'atelier dans une transaction en lecture seule.
  * </p>
  */
 @Service
@@ -31,17 +27,9 @@ public class CoutsDeRevientApplicationService {
     ElementsValorisables elements,
     TravailDeLElement travaux,
     OccupationDesOperateurs occupations,
-    PresenceDesOperateurs presences,
-    SeuilDuCout seuil,
     Clock clock
   ) {
-    this.coutsDeRevient = CoutsDeRevientService.builder()
-      .elements(elements)
-      .travaux(travaux)
-      .occupations(occupations)
-      .presences(presences)
-      .seuil(seuil)
-      .clock(clock);
+    this.coutsDeRevient = CoutsDeRevientService.builder().elements(elements).travaux(travaux).occupations(occupations).clock(clock);
   }
 
   /**

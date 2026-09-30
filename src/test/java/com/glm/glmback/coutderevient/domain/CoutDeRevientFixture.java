@@ -1,9 +1,7 @@
 package com.glm.glmback.coutderevient.domain;
 
 import java.math.BigDecimal;
-import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -32,7 +30,6 @@ public final class CoutDeRevientFixture {
   public static final Instant LE_12_MAI_A_10H = Instant.parse("2026-05-12T10:00:00Z");
   public static final Instant LE_12_MAI_A_18H = Instant.parse("2026-05-12T18:00:00Z");
   public static final Instant LE_13_MAI_A_8H = Instant.parse("2026-05-13T08:00:00Z");
-  public static final AmplitudeMaximale AMPLITUDE_MAXIMALE_13H = new AmplitudeMaximale(Duration.ofHours(13));
 
   public static final ElementId ELEMENT_ID_OF = new ElementId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
   public static final NomDElement NOM_D_ELEMENT_OF_2026_000001 = new NomDElement("OF-2026-000001");
@@ -56,28 +53,4 @@ public final class CoutDeRevientFixture {
   public static final TauxHoraire TAUX_HORAIRE_DE_20_EUROS = new TauxHoraire(new BigDecimal("20.00"));
 
   private CoutDeRevientFixture() {}
-
-  public static EvenementDePresence arriveeA(Instant date) {
-    return new EvenementDePresence(TypeDEvenementDePresence.ARRIVEE, date);
-  }
-
-  public static EvenementDePresence departA(Instant date) {
-    return new EvenementDePresence(TypeDEvenementDePresence.DEPART, date);
-  }
-
-  public static JourneeDeTravail journeeDe8HA17H() {
-    return new JourneeDeTravail(List.of(arriveeA(LE_11_MAI_A_8H), departA(LE_11_MAI_A_17H)));
-  }
-
-  public static JourneeDeTravail journeeOuverteDepuis8H() {
-    return new JourneeDeTravail(List.of(arriveeA(LE_11_MAI_A_8H)));
-  }
-
-  /**
-   * Issue #59 : lundi, Dupont arrive a 8 h, puis ne pointe plus rien avant un depart mercredi a 8 h, rattache a la
-   * meme journee par une version anterieure au lot 3.
-   */
-  public static JourneeDeTravail journeeDuLundi8HAuMercredi8H() {
-    return new JourneeDeTravail(List.of(arriveeA(LE_11_MAI_A_8H), departA(LE_13_MAI_A_8H)));
-  }
 }

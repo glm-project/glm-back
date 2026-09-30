@@ -39,8 +39,9 @@ class CoutDeRevientResource {
     n'est donc pas divise. Le decoupage se fait aux bornes de chaque pointage, si bien que seul le chevauchement reel
     est divise.
 
-    Un travail encore en cours est arrete a l'instant de la lecture : deux appels espaces ne rendent donc pas la meme
-    chose sur un element en cours, ce qui est le seul moyen de chiffrer ce qui n'est pas termine.
+    Une activite encore en cours est entierement exclue du temps, des couts et du diviseur. A son echeance
+    projetee, elle compte jusqu'a sa fin automatique avec une anomalie et sa periode datee. L'horloge est relevee
+    une seule fois par rapport ; cet instant est rendu dans evaluation.
     """
   )
   @ApiResponse(responseCode = "200", description = "Le rapport de l'element. Vide s'il n'a jamais ete engage en atelier.")

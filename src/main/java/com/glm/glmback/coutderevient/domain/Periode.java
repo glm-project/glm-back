@@ -10,7 +10,7 @@ import java.util.Optional;
  *
  * <p>
  * C'est ce qui la separe de {@link Plage} : tant qu'un travail n'est pas arrete, il n'a pas de duree, et rien ne se
- * valorise. La fermeture a l'horloge est le passage de l'une a l'autre.
+ * valorise. Une activite encore en cours est exclue du calcul.
  * </p>
  */
 public record Periode(Instant debut, Instant fin) {
