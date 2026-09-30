@@ -161,14 +161,24 @@ Feature: Rejeu durable des gestes du pupitre
     Then la reponse a le statut http 200
     And le journal de la journee contient 1 evenements
 
-  Scenario: Un pointage de presence accepte reste soumis aux droits lors du rejeu
-    Given je suis arrive
-      | operateur | dupont |
-    And il est "2026-05-10T12:00:00Z"
+  Scenario: Une fin ciblee acceptee reste soumise aux droits lors du rejeu
+    Given l'entreprise a cree l'element de fabrication "OF droits FIN"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | droits FIN           |
+    And j'ai engage l'element "OF droits FIN" en atelier
+    And il est "2026-05-10T08:00:00Z"
     And I am logged in as "user" with role "USER"
-    When je pointe ma presence
-      | operateur | dupont |
-      | type      | DEPART |
+    And j'ai pointe sur "OF droits FIN"
+      | id        | 00000000-0000-0000-0000-000000000321 |
+      | operateur | dupont                               |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+    Given il est "2026-05-10T12:00:00Z"
+    When je pointe sur "OF droits FIN"
+      | operateur | dupont                               |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | cible     | 00000000-0000-0000-0000-000000000321 |
     Then la reponse a le statut http 201
     Given I am logged in as "user" with role "ADMIN"
     When je rejoue le dernier geste du pupitre
@@ -176,7 +186,8 @@ Feature: Rejeu durable des gestes du pupitre
     Given I am logged in as "user" with role "USER"
     When je rejoue le dernier geste du pupitre
     Then la reponse a le statut http 200
-    And le journal de la journee contient 2 evenements
+    And le journal du suivi contient 2 evenements
+    And l'evenement 1 du suivi vise l'activite de l'evenement 0
 
   Scenario: Un pointage d'atelier accepte reste soumis aux droits lors du rejeu
     Given l'entreprise a cree l'element de fabrication "OF droits"
@@ -230,23 +241,43 @@ Feature: Rejeu durable des gestes du pupitre
     Then le suivi a l'etat "EN_ATTENTE"
     And le journal du suivi contient 0 evenements
 
-  Scenario: Une collision de contenu laisse le geste accepte intact
-    When j'arrive
-      | id             | 00000000-0000-0000-0000-000000000103 |
+  Scenario: Une collision de date laisse la fin ciblee acceptee intacte
+    Given l'entreprise a cree l'element de fabrication "OF collision FIN"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | collision FIN        |
+    And j'ai engage l'element "OF collision FIN" en atelier
+    And il est "2026-05-10T08:00:00Z"
+    And j'ai pointe sur "OF collision FIN"
+      | id        | 00000000-0000-0000-0000-000000000331 |
+      | operateur | dupont                               |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+    Given il est "2026-05-10T13:00:00Z"
+    When je pointe sur "OF collision FIN"
+      | id             | 00000000-0000-0000-0000-000000000332 |
       | operateur      | dupont                               |
-      | dateDeSurvenue | 2026-05-10T07:00:00Z                 |
+      | type           | FIN                                  |
+      | intention      | FIN                                  |
+      | cible          | 00000000-0000-0000-0000-000000000331 |
+      | dateDeSurvenue | 2026-05-10T12:00:00Z                 |
     Then la reponse a le statut http 201
-    Given il est "2026-05-10T08:00:00Z"
-    When j'arrive
-      | id             | 00000000-0000-0000-0000-000000000103 |
+    When je pointe sur "OF collision FIN"
+      | id             | 00000000-0000-0000-0000-000000000332 |
       | operateur      | dupont                               |
-      | dateDeSurvenue | 2026-05-10T08:00:00Z                 |
+      | type           | FIN                                  |
+      | intention      | FIN                                  |
+      | cible          | 00000000-0000-0000-0000-000000000331 |
+      | dateDeSurvenue | 2026-05-10T12:30:00Z                 |
     Then la reponse a le statut http 409
     And la reponse porte le code d'erreur "urn:glm:erreur:atelier:identifiant-evenement-reutilise"
-    When j'arrive
-      | id             | 00000000-0000-0000-0000-000000000103 |
+    When je pointe sur "OF collision FIN"
+      | id             | 00000000-0000-0000-0000-000000000332 |
       | operateur      | dupont                               |
-      | dateDeSurvenue | 2026-05-10T07:00:00Z                 |
+      | type           | FIN                                  |
+      | intention      | FIN                                  |
+      | cible          | 00000000-0000-0000-0000-000000000331 |
+      | dateDeSurvenue | 2026-05-10T12:00:00Z                 |
     Then la reponse a le statut http 200
-    And le journal de la journee contient 1 evenements
-    And l'evenement 0 de la journee a survenu a "2026-05-10T07:00:00Z" et a ete saisi a "2026-05-10T07:00:00Z" par "gestionnaire"
+    And le journal du suivi contient 2 evenements
+    And l'evenement 1 du suivi vise l'activite de l'evenement 0
+    And l'evenement 1 du suivi a survenu a "2026-05-10T12:00:00Z" et a ete saisi a "2026-05-10T13:00:00Z" par "gestionnaire"

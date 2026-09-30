@@ -3,8 +3,8 @@ package com.glm.glmback.atelier.application;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
-import com.glm.glmback.atelier.domain.JourneeDeTravailId;
 import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
+import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -12,7 +12,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * Strategie « bornes de fin de journee », lot 8a : deux saisies simultanees sur la meme journee ou le meme OF ne
+ * Deux saisies simultanees sur le meme suivi d'atelier ne
  * sont jamais un refus pour l'operateur. Le serveur rejoue lui-meme l'ecriture, dans une nouvelle transaction.
  */
 @UnitTest
@@ -26,7 +26,7 @@ class SaisieConcurrenteRejoueeTest {
 
     String resultat = SaisieConcurrenteRejouee.executer(transactions, () -> {
       if (essais.incrementAndGet() == 1) {
-        throw new SaisieConcurrenteException(JourneeDeTravailId.newId());
+        throw new SaisieConcurrenteException(SuiviDAtelierId.newId());
       }
       return "enregistre";
     });
@@ -42,7 +42,7 @@ class SaisieConcurrenteRejoueeTest {
     assertThatThrownBy(() ->
       SaisieConcurrenteRejouee.executer(transactions, () -> {
         essais.incrementAndGet();
-        throw new SaisieConcurrenteException(JourneeDeTravailId.newId());
+        throw new SaisieConcurrenteException(SuiviDAtelierId.newId());
       })
     ).isExactlyInstanceOf(SaisieConcurrenteException.class);
     assertThat(essais).hasValue(3);

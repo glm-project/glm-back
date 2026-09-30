@@ -8,19 +8,22 @@ import com.glm.glmback.IntegrationTest;
 import com.glm.glmback.atelier.application.AgregatDEvenement;
 import com.glm.glmback.atelier.application.EmpreinteDEvenement;
 import com.glm.glmback.atelier.application.IdentitesDEvenements;
-import com.glm.glmback.atelier.application.JourneesDeTravailApplicationService;
 import com.glm.glmback.atelier.application.NatureDeGesteDuPupitre;
 import com.glm.glmback.atelier.application.ReservationDEvenement;
 import com.glm.glmback.atelier.application.ResultatDEcriture;
+import com.glm.glmback.atelier.application.SuivisDAtelierApplicationService;
 import com.glm.glmback.atelier.application.TypeDAgregatDEvenement;
-import com.glm.glmback.atelier.domain.EvenementDePresenceId;
+import com.glm.glmback.atelier.domain.ActiviteId;
+import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.IdentifiantDEvenementReutiliseException;
-import com.glm.glmback.atelier.domain.JourneeDeTravail;
-import com.glm.glmback.atelier.domain.JourneeDeTravailId;
-import com.glm.glmback.atelier.domain.JourneeDeTravailRepository;
-import com.glm.glmback.atelier.domain.OperateurId;
-import com.glm.glmback.atelier.domain.PointageDePresenceAEnregistrer;
-import com.glm.glmback.atelier.domain.TypeDEvenementDePresence;
+import com.glm.glmback.atelier.domain.IntentionDePointage;
+import com.glm.glmback.atelier.domain.LectureDuSuivi;
+import com.glm.glmback.atelier.domain.PointageAEnregistrer;
+import com.glm.glmback.atelier.domain.SuiviDAtelier;
+import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
+import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
+import com.glm.glmback.operateur.domain.OperateurRepository;
+import com.glm.glmback.operateur.domain.OperateursFixture;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurityContexts;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.time.domain.Clock;
@@ -61,20 +64,23 @@ class JpaIdentitesDEvenementsIT {
   private TransactionTemplate transactions;
 
   @Autowired
-  private JourneesDeTravailApplicationService presence;
+  private SuivisDAtelierApplicationService atelier;
 
   @Autowired
-  private JourneeDeTravailRepository journees;
+  private SuiviDAtelierRepository suivis;
+
+  @Autowired
+  private OperateurRepository operateurs;
 
   @Test
   @WithTenant("impeccmold")
   void shouldReserveThenReplayTheSameFingerprint() {
     // GIVEN
     UUID evenement = UUID.randomUUID();
-    UUID journee = UUID.randomUUID();
-    EmpreinteDEvenement empreinte = arrivee(Optional.of(Instant.parse("2042-01-01T08:00:00.123456789Z")));
+    UUID suivi = UUID.randomUUID();
+    EmpreinteDEvenement empreinte = finDatee(Optional.of(Instant.parse("2042-01-01T08:00:00.123456789Z")));
 
-    AgregatDEvenement agregat = journeeIdentifieePar(journee);
+    AgregatDEvenement agregat = suiviIdentifiePar(suivi);
     // WHEN
     ReservationDEvenement premiere = reserveEtAssocie(evenement, empreinte, agregat);
     ReservationDEvenement rejeu = inTransaction(() -> identites.reserve(evenement, empreinte));
@@ -86,58 +92,63 @@ class JpaIdentitesDEvenementsIT {
 
   @Test
   @WithTenant("impeccmold")
-  void shouldPersistOnlyOneDepartureWhenItsRetryOverlapsTheFirstTransaction() throws Exception {
+  void shouldPersistOnlyOneTargetedFinishWhenItsRetryOverlapsTheFirstTransaction() throws Exception {
     // GIVEN
     given(clock.now()).willReturn(LE_11_MAI_2026_A_9H15);
-    JourneeDeTravail journee = prepareJourneeOuverte();
-    PointageDePresenceAEnregistrer depart = departA17H(journee);
+    SuiviDAtelier suivi = prepareActiviteOuverte();
+    PointageAEnregistrer fin = finA17H(suivi);
 
     try (RejeuConcurrent envois = new RejeuConcurrent()) {
       // WHEN
-      var premiere = envois.enregistreSansValider(depart);
-      var seconde = envois.rejouePendantLaPremiereTransaction(depart);
+      var premiere = envois.enregistreSansValider(fin);
+      var seconde = envois.rejouePendantLaPremiereTransaction(fin);
       envois.validePremiereTransaction();
 
       var initial = premiere.get(5, TimeUnit.SECONDS);
       var rejeu = seconde.get(5, TimeUnit.SECONDS);
 
       // THEN
-      assertThat(rejeu.agregat().id()).isEqualTo(journee.id());
-      assertUnSeulDepartPersiste(initial, rejeu, depart);
+      assertThat(rejeu.agregat().suivi().id()).isEqualTo(suivi.id());
+      assertUneSeuleFinPersiste(initial, rejeu, fin);
     }
   }
 
-  private JourneeDeTravail prepareJourneeOuverte() {
-    JourneeDeTravail journee = JourneeDeTravail.ouverte(JourneeDeTravailId.newId(), new OperateurId(UUID.randomUUID())).enregistre(
-      arriveeDeDupontA(LE_10_MAI_2026_A_7H)
-    );
-    return inTransaction(() -> journees.create(journee));
+  private SuiviDAtelier prepareActiviteOuverte() {
+    var debut = debutSansPosteParDupontA(LE_10_MAI_2026_A_8H);
+    // La fiche et le fait ouvrant portent la meme identite, sans arrivee ni poste.
+    var fiche = OperateursFixture.operateurDeRejeuSansPoste(new com.glm.glmback.operateur.domain.OperateurId(OPERATEUR_ID_DUPONT.uuid()));
+    inTransaction(() -> operateurs.create(fiche));
+    return inTransaction(() -> suivis.create(suiviDAtelierEngage().enregistre(debut)));
   }
 
-  private static PointageDePresenceAEnregistrer departA17H(JourneeDeTravail journee) {
-    return new PointageDePresenceAEnregistrer(
-      journee.operateur(),
-      AUTEUR_DUPONT,
-      TypeDEvenementDePresence.DEPART,
-      Optional.of(LE_10_MAI_2026_A_17H),
-      EvenementDePresenceId.newId()
-    );
+  private static PointageAEnregistrer finA17H(SuiviDAtelier suivi) {
+    return PointageAEnregistrer.pupitreBuilder()
+      .suivi(suivi.id())
+      .type(TypeDEvenementDAtelier.FIN)
+      .intention(IntentionDePointage.FIN)
+      .activiteVisee(Optional.of(new ActiviteId(suivi.journal().evenements().getFirst().id().uuid())))
+      .operateur(OPERATEUR_ID_DUPONT)
+      .poste(Optional.empty())
+      .auteur(AUTEUR_DUPONT)
+      .dateDeSurvenue(Optional.of(LE_10_MAI_2026_A_17H))
+      .evenement(EvenementDAtelierId.newId());
   }
 
-  private void assertUnSeulDepartPersiste(
-    ResultatDEcriture<JourneeDeTravail> initial,
-    ResultatDEcriture<JourneeDeTravail> rejeu,
-    PointageDePresenceAEnregistrer depart
+  private void assertUneSeuleFinPersiste(
+    ResultatDEcriture<LectureDuSuivi> initial,
+    ResultatDEcriture<LectureDuSuivi> rejeu,
+    PointageAEnregistrer fin
   ) {
     assertThat(initial.rejeu()).isFalse();
     assertThat(rejeu.rejeu()).isTrue();
-    JourneeDeTravail relue = presence.get(initial.agregat().id());
-    assertThat(relue.journal().evenements()).hasSize(2);
-    var evenement = relue.journal().evenements().getLast();
-    assertThat(evenement.id()).isEqualTo(depart.evenement());
+    SuiviDAtelier relu = atelier.get(initial.agregat().suivi().id()).suivi();
+    assertThat(relu.journal().evenements()).hasSize(2);
+    var evenement = relu.journal().evenements().getLast();
+    assertThat(evenement.id()).isEqualTo(fin.evenement());
+    assertThat(evenement.activiteVisee()).isEqualTo(fin.activiteVisee());
     assertThat(evenement.dateDeSurvenue()).isEqualTo(LE_10_MAI_2026_A_17H);
-    assertThat(evenement.dateDEnregistrement()).isEqualTo(initial.agregat().journal().evenements().getLast().dateDEnregistrement());
-    assertThat(rejeu.agregat()).isEqualTo(relue);
+    assertThat(evenement.dateDEnregistrement()).isEqualTo(initial.agregat().suivi().journal().evenements().getLast().dateDEnregistrement());
+    assertThat(rejeu.agregat().suivi()).isEqualTo(relu);
   }
 
   private final class RejeuConcurrent implements AutoCloseable {
@@ -149,15 +160,13 @@ class JpaIdentitesDEvenementsIT {
     private final RequestAttributes requete = RequestContextHolder.getRequestAttributes();
     private final ExecutorService executor = Executors.newFixedThreadPool(2);
 
-    Future<ResultatDEcriture<JourneeDeTravail>> enregistreSansValider(PointageDePresenceAEnregistrer depart) {
-      return executor.submit(() ->
-        avecAuthentification(authentication, requete, () -> inTransaction(() -> pointeEtAttendValidation(depart)))
-      );
+    Future<ResultatDEcriture<LectureDuSuivi>> enregistreSansValider(PointageAEnregistrer fin) {
+      return executor.submit(() -> avecAuthentification(authentication, requete, () -> inTransaction(() -> pointeEtAttendValidation(fin))));
     }
 
-    Future<ResultatDEcriture<JourneeDeTravail>> rejouePendantLaPremiereTransaction(PointageDePresenceAEnregistrer depart) {
+    Future<ResultatDEcriture<LectureDuSuivi>> rejouePendantLaPremiereTransaction(PointageAEnregistrer fin) {
       attend(ecriture);
-      var rejeu = executor.submit(() -> avecAuthentification(authentication, requete, () -> tenteRejeu(depart)));
+      var rejeu = executor.submit(() -> avecAuthentification(authentication, requete, () -> tenteRejeu(fin)));
       attend(tentative);
       assertAttendLaValidation(rejeu);
       return rejeu;
@@ -167,19 +176,19 @@ class JpaIdentitesDEvenementsIT {
       validation.countDown();
     }
 
-    private ResultatDEcriture<JourneeDeTravail> pointeEtAttendValidation(PointageDePresenceAEnregistrer depart) {
-      var resultat = presence.pointeDuPupitre(depart);
+    private ResultatDEcriture<LectureDuSuivi> pointeEtAttendValidation(PointageAEnregistrer fin) {
+      var resultat = atelier.pointeDuPupitre(fin);
       ecriture.countDown();
       attend(validation);
       return resultat;
     }
 
-    private ResultatDEcriture<JourneeDeTravail> tenteRejeu(PointageDePresenceAEnregistrer depart) {
+    private ResultatDEcriture<LectureDuSuivi> tenteRejeu(PointageAEnregistrer fin) {
       tentative.countDown();
-      return presence.pointeDuPupitre(depart);
+      return atelier.pointeDuPupitre(fin);
     }
 
-    private void assertAttendLaValidation(Future<ResultatDEcriture<JourneeDeTravail>> rejeu) {
+    private void assertAttendLaValidation(Future<ResultatDEcriture<LectureDuSuivi>> rejeu) {
       assertThatThrownBy(() -> rejeu.get(200, TimeUnit.MILLISECONDS)).isInstanceOf(TimeoutException.class);
     }
 
@@ -223,7 +232,7 @@ class JpaIdentitesDEvenementsIT {
     });
 
     // WHEN
-    Throwable refus = catchThrowable(() -> inTransaction(() -> identites.reserve(evenement, arrivee(Optional.empty()))));
+    Throwable refus = catchThrowable(() -> inTransaction(() -> identites.reserve(evenement, finDatee(Optional.empty()))));
 
     // THEN
     assertThat(refus).isExactlyInstanceOf(IdentifiantDEvenementReutiliseException.class);
@@ -234,13 +243,41 @@ class JpaIdentitesDEvenementsIT {
   void shouldDistinguishAnAbsentDateFromAPresentDate() {
     // GIVEN
     UUID evenement = UUID.randomUUID();
-    reserveEtAssocie(evenement, arrivee(Optional.empty()), journeeIdentifieePar(UUID.randomUUID()));
+    reserveEtAssocie(evenement, finDatee(Optional.empty()), suiviIdentifiePar(UUID.randomUUID()));
 
     // WHEN
-    Throwable refus = catchThrowable(() -> inTransaction(() -> identites.reserve(evenement, arrivee(Optional.of(Instant.EPOCH)))));
+    Throwable refus = catchThrowable(() -> inTransaction(() -> identites.reserve(evenement, finDatee(Optional.of(Instant.EPOCH)))));
 
     // THEN
     assertThat(refus).isExactlyInstanceOf(IdentifiantDEvenementReutiliseException.class);
+  }
+
+  @Test
+  @WithTenant("impeccmold")
+  void shouldRetainEveryNanosecondOfTheSuppliedDate() {
+    UUID evenement = UUID.randomUUID();
+    Instant date = Instant.parse("2042-01-01T08:00:00.123456789Z");
+    reserveEtAssocie(evenement, finDatee(Optional.of(date)), suiviIdentifiePar(UUID.randomUUID()));
+
+    assertThatThrownBy(() ->
+      inTransaction(() -> identites.reserve(evenement, finDatee(Optional.of(date.plusNanos(1)))))
+    ).isExactlyInstanceOf(IdentifiantDEvenementReutiliseException.class);
+    assertThat(inTransaction(() -> identites.reserve(evenement, finDatee(Optional.of(date)))).estUnRejeu()).isTrue();
+  }
+
+  @Test
+  @WithTenant("impeccmold")
+  void shouldRollBackAReservationWhenTheWriteFails() {
+    UUID evenement = UUID.randomUUID();
+    EmpreinteDEvenement empreinte = finDatee(Optional.empty());
+
+    assertThatThrownBy(() ->
+      inTransaction(() -> {
+        identites.reserve(evenement, empreinte);
+        throw new IllegalStateException("ecriture refusee");
+      })
+    ).isExactlyInstanceOf(IllegalStateException.class);
+    assertThat(reserveEtAssocie(evenement, empreinte, suiviIdentifiePar(UUID.randomUUID())).estUnRejeu()).isFalse();
   }
 
   /**
@@ -315,9 +352,9 @@ class JpaIdentitesDEvenementsIT {
   void shouldKeepTheSameIdentityIndependentBetweenTenants() {
     // GIVEN
     UUID evenement = UUID.randomUUID();
-    AgregatDEvenement premier = journeeIdentifieePar(UUID.randomUUID());
-    AgregatDEvenement second = journeeIdentifieePar(UUID.randomUUID());
-    EmpreinteDEvenement empreinte = arrivee(Optional.empty());
+    AgregatDEvenement premier = suiviIdentifiePar(UUID.randomUUID());
+    AgregatDEvenement second = suiviIdentifiePar(UUID.randomUUID());
+    EmpreinteDEvenement empreinte = finDatee(Optional.empty());
     reserveEtAssocie(evenement, empreinte, premier);
 
     // WHEN
@@ -343,22 +380,18 @@ class JpaIdentitesDEvenementsIT {
     });
   }
 
-  private static AgregatDEvenement journeeIdentifieePar(UUID id) {
-    return new AgregatDEvenement(TypeDAgregatDEvenement.JOURNEE_DE_TRAVAIL, id);
-  }
-
   private static AgregatDEvenement suiviIdentifiePar(UUID id) {
     return new AgregatDEvenement(TypeDAgregatDEvenement.SUIVI_D_ATELIER, id);
   }
 
-  private static EmpreinteDEvenement arrivee(Optional<Instant> date) {
+  private static EmpreinteDEvenement finDatee(Optional<Instant> date) {
     return EmpreinteDEvenement.builder()
-      .nature(NatureDeGesteDuPupitre.ARRIVEE)
-      .suivi(Optional.empty())
+      .nature(NatureDeGesteDuPupitre.POINTAGE_D_ATELIER)
+      .suivi(Optional.of(SUIVI))
       .operateur(OPERATEUR)
-      .type("ARRIVEE")
-      .intention(Optional.empty())
-      .activiteVisee(Optional.empty())
+      .type("FIN")
+      .intention(Optional.of("FIN"))
+      .activiteVisee(Optional.of(CIBLE))
       .poste(Optional.empty())
       .dateDeSurvenue(date);
   }
