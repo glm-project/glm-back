@@ -4,4 +4,3 @@ package-lock.json
 documentation/openapi.json
 gradle
 .gradle
-documentation/strategie/bornes-de-fin-de-journee/*.svg
