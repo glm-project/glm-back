@@ -16,4 +16,5 @@
   <include file="010-activite_d_atelier_a_resoudre.xml" relativeToChangelogFile="true" />
   <include file="011-activite_d_atelier_operateur.xml" relativeToChangelogFile="true" />
   <include file="012-sequence_en_conflit.xml" relativeToChangelogFile="true" />
+  <include file="013-activite_d_atelier_fin_au_plus_tard.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>

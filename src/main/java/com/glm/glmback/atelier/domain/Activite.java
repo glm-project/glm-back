@@ -26,30 +26,36 @@ import java.util.Optional;
  * correction ou une annulation du gestionnaire la rend de nouveau interpretable.
  * </p>
  */
-public record Activite(EvenementDAtelier ouvrant, Optional<Instant> fin, boolean aResoudre) {
+public record Activite(EvenementDAtelier ouvrant, Optional<Instant> fin, Optional<Instant> finAuPlusTard) {
   public Activite {
     Assert.notNull("ouvrant", ouvrant);
     Assert.notNull("fin", fin);
     fin.ifPresent(date -> Assert.field("fin", date).afterOrAt(ouvrant.dateDeSurvenue()));
-    if (aResoudre) {
+    Assert.notNull("fin au plus tard", finAuPlusTard);
+    finAuPlusTard.ifPresent(date -> Assert.field("fin au plus tard", date).afterOrAt(ouvrant.dateDeSurvenue()));
+    if (finAuPlusTard.isPresent()) {
       Assert.field("fin d'une activite a resoudre", fin.stream().toList()).maxSize(0);
     }
   }
 
   static Activite ouvertePar(EvenementDAtelier ouvrant) {
-    return new Activite(ouvrant, Optional.empty(), false);
+    return new Activite(ouvrant, Optional.empty(), Optional.empty());
   }
 
   Activite termineeA(Instant date) {
-    return new Activite(ouvrant, Optional.of(date), false);
+    return new Activite(ouvrant, Optional.of(date), Optional.empty());
   }
 
   /**
    * La meme activite, prise dans une sequence en conflit : elle perd sa fin, que les pointages contradictoires ne
    * permettent plus d'affirmer.
    */
-  Activite enConflit() {
-    return new Activite(ouvrant, Optional.empty(), true);
+  Activite enConflit(Instant limite) {
+    return new Activite(ouvrant, Optional.empty(), Optional.of(limite));
+  }
+
+  public boolean aResoudre() {
+    return finAuPlusTard.isPresent();
   }
 
   public ActiviteId id() {
@@ -79,7 +85,7 @@ public record Activite(EvenementDAtelier ouvrant, Optional<Instant> fin, boolean
    * intervient.
    */
   public IntervalleDActivite a(Instant evaluation) {
-    if (aResoudre) {
+    if (aResoudre()) {
       return intervalle(Optional.empty(), false);
     }
 
@@ -95,7 +101,7 @@ public record Activite(EvenementDAtelier ouvrant, Optional<Instant> fin, boolean
    * l'instant d'evaluation.
    */
   public boolean estEnCoursA(Instant evaluation) {
-    return !aResoudre && fin.isEmpty() && !echeance().estAtteinteA(evaluation);
+    return !aResoudre() && fin.isEmpty() && !echeance().estAtteinteA(evaluation);
   }
 
   private IntervalleDActivite intervalle(Optional<Instant> bornee, boolean finAutomatique) {
@@ -109,6 +115,6 @@ public record Activite(EvenementDAtelier ouvrant, Optional<Instant> fin, boolean
       .debut(debut())
       .fin(bornee)
       .finAutomatique(finAutomatique)
-      .aResoudre(aResoudre);
+      .aResoudre(aResoudre());
   }
 }

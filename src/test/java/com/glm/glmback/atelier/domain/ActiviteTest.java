@@ -17,7 +17,7 @@ class ActiviteTest {
 
   @Test
   void shouldNotBuildWithoutOuvrant() {
-    assertThatThrownBy(() -> new Activite(null, Optional.empty(), false))
+    assertThatThrownBy(() -> new Activite(null, Optional.empty(), Optional.empty()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("ouvrant");
   }
@@ -26,9 +26,25 @@ class ActiviteTest {
   void shouldNotBuildWithoutFin() {
     EvenementDAtelier ouvrant = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
 
-    assertThatThrownBy(() -> new Activite(ouvrant, null, false))
+    assertThatThrownBy(() -> new Activite(ouvrant, null, Optional.empty()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("fin");
+  }
+
+  @Test
+  void shouldNotBuildWithoutFinAuPlusTard() {
+    assertThatThrownBy(() -> new Activite(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H), Optional.empty(), null))
+      .isExactlyInstanceOf(MissingMandatoryValueException.class)
+      .hasMessageContaining("fin au plus tard");
+  }
+
+  @Test
+  void shouldNotBornerUnConflitAvantSonDebut() {
+    assertThatThrownBy(() ->
+      new Activite(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H), Optional.empty(), Optional.of(LE_10_MAI_2026_A_7H))
+    )
+      .isExactlyInstanceOf(NotAfterTimeException.class)
+      .hasMessageContaining("fin au plus tard");
   }
 
   @Test
@@ -36,7 +52,7 @@ class ActiviteTest {
     EvenementDAtelier ouvrant = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     Optional<Instant> avantLeDebut = Optional.of(LE_10_MAI_2026_A_7H);
 
-    assertThatThrownBy(() -> new Activite(ouvrant, avantLeDebut, false))
+    assertThatThrownBy(() -> new Activite(ouvrant, avantLeDebut, Optional.empty()))
       .isExactlyInstanceOf(NotAfterTimeException.class)
       .hasMessageContaining("fin");
   }
@@ -46,7 +62,7 @@ class ActiviteTest {
     EvenementDAtelier ouvrant = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     Optional<Instant> fin = Optional.of(LE_10_MAI_2026_A_12H);
 
-    assertThatThrownBy(() -> new Activite(ouvrant, fin, true))
+    assertThatThrownBy(() -> new Activite(ouvrant, fin, Optional.of(LE_10_MAI_2026_A_17H)))
       .isExactlyInstanceOf(TooManyElementsException.class)
       .hasMessageContaining("fin d'une activite a resoudre");
   }
@@ -59,7 +75,7 @@ class ActiviteTest {
   void shouldPerdreSaFinDansUneSequenceEnConflit() {
     Activite terminee = Activite.ouvertePar(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)).termineeA(LE_10_MAI_2026_A_12H);
 
-    Activite enConflit = terminee.enConflit();
+    Activite enConflit = terminee.enConflit(LE_10_MAI_2026_A_17H);
 
     assertThat(enConflit.aResoudre()).isTrue();
     assertThat(enConflit.fin()).isEmpty();
@@ -72,7 +88,7 @@ class ActiviteTest {
    */
   @Test
   void shouldSeLireAResoudreAvantCommeApresSonEcheance() {
-    Activite aResoudre = Activite.ouvertePar(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)).enConflit();
+    Activite aResoudre = Activite.ouvertePar(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)).enConflit(LE_10_MAI_2026_A_17H);
 
     assertThat(List.of(LE_10_MAI_2026_A_9H, LE_11_MAI_2026_A_9H15)).allSatisfy(lecture -> {
       assertThat(aResoudre.estEnCoursA(lecture)).isFalse();

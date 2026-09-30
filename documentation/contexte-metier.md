@@ -174,6 +174,11 @@ n'avoir aucune activité, notamment après l'annulation d'un ouvrant encore vis�
 par atelier, depuis `SuiviDAtelier.conflits()` ; elles sont rapprochées à chaque écriture et disparaissent après
 résolution. Elles ne servent jamais à reconstituer le suivi, qui rejoue son journal.
 
+Chaque activité à résoudre porte aussi sa `fin_au_plus_tard`, indépendante de la lecture : son échéance ou la
+plus tardive fin ou transition régularisée qui la vise, limitée par la clôture. Elle borne ses jours possibles
+sans lui donner de fin réelle. La correction, l'annulation et la clôture réécrivent la projection ; la résolution
+retire cette borne avec le conflit, sans historique d'anomalie artificiel.
+
 Le modèle est relationnel plutôt qu'un journal sérialisé en `jsonb`, parce que les projections à venir — coût de revient, paie, synthèses — filtrent et groupent sur des attributs d'**événement** à travers tous les agrégats : un index les sert directement, là où un document devrait être désérialisé en entier pour être presque tout jeté. Les index `(operateur, date_de_survenue)` et `(poste, date_de_survenue)` sont posés dès maintenant à cette fin, et un contexte lecteur n'aura qu'à poser dessus une entité en lecture seule, comme `atelier` le fait déjà sur `element_de_fabrication`.
 
 `ElementsEngageables` lit la table `element_de_fabrication` par une entité en lecture seule propre à l'atelier, sans jamais importer le contexte voisin. `OperateursConnus`, `PostesConnus` et `Habilitations` font de même sur `operateur`, `poste_de_travail` et `operateur_poste`.

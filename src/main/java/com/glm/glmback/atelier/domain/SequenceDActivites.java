@@ -58,6 +58,7 @@ final class SequenceDActivites {
   private final Set<ActiviteId> expirees = new HashSet<>();
   private final List<Contradiction> contradictions = new ArrayList<>();
   private Optional<ActiviteId> courante = Optional.empty();
+  private Optional<Instant> cloture = Optional.empty();
 
   private SequenceDActivites(List<EvenementDAtelier> faits) {
     actifs = faits
@@ -187,6 +188,7 @@ final class SequenceDActivites {
    * La cloture termine a son heure l'activite encore vivante ; elle ne prolonge jamais une activite deja echue.
    */
   private void clot(Optional<Instant> cloture) {
+    this.cloture = cloture;
     cloture.ifPresent(date -> {
       expireAvant(date);
       courante.ifPresent(activite -> termine(activite, date));
@@ -239,8 +241,13 @@ final class SequenceDActivites {
     return activites
       .values()
       .stream()
-      .map(activite -> aResoudre.contains(activite.id()) ? activite.enConflit() : activite)
+      .map(activite -> aResoudre.contains(activite.id()) ? activite.enConflit(finAuPlusTard(activite)) : activite)
       .toList();
+  }
+
+  private Instant finAuPlusTard(Activite activite) {
+    Instant limite = limite(activite);
+    return cloture.filter(limite::isAfter).orElse(limite);
   }
 
   private List<SequenceEnConflit> sequencesEnConflit() {

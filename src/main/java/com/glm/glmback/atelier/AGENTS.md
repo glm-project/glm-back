@@ -189,11 +189,16 @@ journée contenant un instant obligerait à ramener toute l'entreprise en mémoi
 Elles ne dépendent que du journal, jamais de l'instant courant, donc restent justes entre deux écritures.
 
 `activite_d_atelier` porte, par activité de `SuiviDAtelier.activites()`, son identité, son ouvrant actif, sa clé, sa
-nature, sa catégorie, son début, son échéance, sa fin réelle et si elle est à résoudre, rapprochés par identité à
+nature, sa catégorie, son début, son échéance, sa fin réelle et sa fin au plus tard si elle est à résoudre, rapprochés par identité à
 chaque écriture. Jamais de fin automatique ni d'anomalie, qui dépendent de l'instant : le filtre `etats` juge l'état à
 l'instant d'évaluation de `SuiviDAtelierCriteria`, une activité interprétable sans fin réelle étant en cours tant que
 son échéance n'est pas atteinte. C'est
 aussi la projection que les autres contextes liront, plutôt que de réinterpréter le journal.
+
+La `fin_au_plus_tard` borne la plage possible d'une activité à résoudre : le maximum de son échéance et des fins
+ou transitions régularisées qui la visent, limité par la clôture. La clôture ne prolonge jamais cette borne.
+Elle vient des faits, sans horloge de lecture, et est réécrite à correction, annulation et clôture ; elle disparaît
+quand la résolution rend l'activité interprétable. Ce n'est ni une fin réelle ni une durée.
 
 Les séquences en conflit sont projetées dans `sequence_en_conflit` et leurs pointages dans
 `pointage_en_conflit`. L'identité technique d'une séquence est celle de son premier pointage dans l'ordre du

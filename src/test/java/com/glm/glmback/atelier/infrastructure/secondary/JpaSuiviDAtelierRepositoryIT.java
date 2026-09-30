@@ -488,6 +488,49 @@ class JpaSuiviDAtelierRepositoryIT {
 
   @Test
   @WithTenant(IMPECCMOLD)
+  void shouldProjeterEtReecrireLaFinAuPlusTardDuConflit() {
+    Instant engagement = Instant.parse("2041-03-14T07:00:00Z");
+    EvenementDAtelier premiere = debutSurFraiseuse1A(engagement.plusSeconds(3600));
+    EvenementDAtelier relance = debutSurFraiseuse1A(engagement.plusSeconds(7200));
+    SuiviDAtelier enConflit = suiviEngageA(engagement)
+      .enregistre(premiere)
+      .enregistre(relance)
+      .enregistre(finDe(premiere).a(engagement.plusSeconds(10800)));
+    inTransaction(() -> suivis.create(enConflit));
+
+    assertThat(finsAuPlusTard(enConflit.id())).containsExactly(engagement.plusSeconds(50400), engagement.plusSeconds(54000));
+
+    SuiviDAtelier corrige = enConflit.corrige(
+      premiere.id(),
+      annulation(engagement.plusSeconds(14400)),
+      debutSurFraiseuse1A(engagement.plusSeconds(1800))
+    );
+    inTransaction(() -> suivis.update(corrige));
+    assertThat(finsAuPlusTard(corrige.id())).containsExactly(engagement.plusSeconds(48600), engagement.plusSeconds(54000));
+
+    SuiviDAtelier clos = corrige.cloture(clotureParLeroyA(engagement.plusSeconds(18000)));
+    inTransaction(() -> suivis.update(clos));
+    assertThat(finsAuPlusTard(clos.id())).containsExactly(engagement.plusSeconds(18000), engagement.plusSeconds(18000));
+
+    SuiviDAtelier resolu = clos.annule(relance.id(), annulation(engagement.plusSeconds(21600)));
+    inTransaction(() -> suivis.update(resolu));
+    assertThat(finsAuPlusTard(resolu.id())).isEmpty();
+  }
+
+  private List<Instant> finsAuPlusTard(SuiviDAtelierId suivi) {
+    return inTransaction(() ->
+      entities
+        .createNativeQuery(
+          "select fin_au_plus_tard from activite_d_atelier where suivi_id = :suivi and fin_au_plus_tard is not null order by debut",
+          Instant.class
+        )
+        .setParameter("suivi", suivi.uuid())
+        .getResultList()
+    );
+  }
+
+  @Test
+  @WithTenant(IMPECCMOLD)
   void shouldReecrireLaProjectionDuConflitPuisLaRetirerApresResolution() {
     Instant engagement = Instant.parse("2041-03-11T07:00:00Z");
     EvenementDAtelier premiere = debutSurFraiseuse1A(engagement.plusSeconds(3600));

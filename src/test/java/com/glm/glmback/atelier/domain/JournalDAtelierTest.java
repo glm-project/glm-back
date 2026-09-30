@@ -284,7 +284,10 @@ class JournalDAtelierTest {
 
     assertThat(interpretationsSelonLOrdreDeReception(List.of(travail, nonConformite, finDuTravail))).containsOnly(
       new Interpretation(
-        List.of(new Activite(travail, Optional.empty(), true), new Activite(nonConformite, Optional.empty(), true)),
+        List.of(
+          new Activite(travail, Optional.empty(), Optional.of(Instant.parse("2026-05-10T21:00:00Z"))),
+          new Activite(nonConformite, Optional.empty(), Optional.of(Instant.parse("2026-05-11T01:00:00Z")))
+        ),
         List.of(
           new SequenceEnConflit(
             cleDeFraiseuse1DeDupont(),
@@ -294,6 +297,41 @@ class JournalDAtelierTest {
         )
       )
     );
+  }
+
+  @Test
+  void shouldBornerLaPlagePossibleDuConflitParLesEcheances() {
+    EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier nonConformite = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_12H);
+    JournalDAtelier journal = new JournalDAtelier(List.of(travail, nonConformite, finDe(travail).a(LE_10_MAI_2026_A_17H)));
+
+    assertThat(journal.activites(Optional.empty()))
+      .extracting(Activite::finAuPlusTard)
+      .containsExactly(Optional.of(Instant.parse("2026-05-10T21:00:00Z")), Optional.of(Instant.parse("2026-05-11T01:00:00Z")));
+  }
+
+  @Test
+  void shouldEtendreLaPlagePossibleJusquaLaRegularisationRecevable() {
+    EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier nonConformite = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_12H);
+    Instant finRegularisee = Instant.parse("2026-05-10T23:00:00Z");
+    JournalDAtelier journal = new JournalDAtelier(List.of(travail, nonConformite, finRegulariseeParLeroyDe(travail).a(finRegularisee)));
+
+    assertThat(journal.activites(Optional.empty()).getFirst().finAuPlusTard()).contains(finRegularisee);
+  }
+
+  @Test
+  void shouldLimiterLaPlagePossibleParLaClotureSansLaProlonger() {
+    EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier nonConformite = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_12H);
+    JournalDAtelier journal = new JournalDAtelier(List.of(travail, nonConformite, finDe(travail).a(LE_10_MAI_2026_A_17H)));
+
+    assertThat(journal.activites(Optional.of(LE_10_MAI_2026_A_17H)))
+      .extracting(Activite::finAuPlusTard)
+      .containsExactly(Optional.of(LE_10_MAI_2026_A_17H), Optional.of(LE_10_MAI_2026_A_17H));
+    assertThat(journal.activites(Optional.of(LE_11_MAI_2026_A_9H15)))
+      .extracting(Activite::finAuPlusTard)
+      .containsExactly(Optional.of(Instant.parse("2026-05-10T21:00:00Z")), Optional.of(Instant.parse("2026-05-11T01:00:00Z")));
   }
 
   /**

@@ -217,7 +217,9 @@ Ce que les réponses en montrent :
 
 Les séquences et leurs deux listes sont projetées par atelier à chaque écriture, sans dépendre de l'instant de
 lecture. Une séquence sans activité à résoudre reste conservée dans cette projection ; la résolution la retire.
-Le journal demeure la source de vérité.
+Le journal demeure la source de vérité. La plage possible d'une activité à résoudre est bornée par sa fin au plus
+tard : échéance ou régularisation recevable plus tardive, limitée par la clôture qui ne la prolonge jamais.
+Cette borne vient des faits et la projection est réécrite à chaque correction, annulation, résolution ou clôture.
 
 **Pour le pupitre, un pointage conservé en conflit est un succès.** Il est acquitté `201` — `200` au rejeu, sans second
 fait — et son identifiant figure dans `conflits[].pointages` : c'est ce qui le distingue d'un refus (`4xx`), et il ne

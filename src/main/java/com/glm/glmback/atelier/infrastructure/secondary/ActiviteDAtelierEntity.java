@@ -58,6 +58,9 @@ class ActiviteDAtelierEntity {
 
   private Instant fin;
 
+  @Column(name = "fin_au_plus_tard")
+  private Instant finAuPlusTard;
+
   @Column(name = "a_resoudre")
   private boolean aResoudre;
 
@@ -103,6 +106,7 @@ class ActiviteDAtelierEntity {
     debut = activite.debut();
     echeance = activite.echeance().value();
     fin = activite.fin().orElse(null);
+    finAuPlusTard = activite.finAuPlusTard().orElse(null);
     aResoudre = activite.aResoudre();
   }
 }
