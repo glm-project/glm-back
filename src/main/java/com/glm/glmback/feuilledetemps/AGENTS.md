@@ -20,7 +20,7 @@ la feuille expose les identifiants de poste et d'élément sans lire leurs libel
 
 - `ActivitesDeLOperateur` lit `activite_d_atelier` par une entité propre `@Immutable`, jointe au suivi pour son élément.
   Aucun import des contextes `atelier`, `operateur` ou `postedetravail`, tous annotés `@BusinessContext`.
-- La sélection porte sur le recouvrement de la semaine par le début et la fin réelle ou l'échéance. Aucune borne
+- La sélection porte sur le recouvrement de la semaine par le début et la fin réelle, la fin au plus tard ou l'échéance. Aucune borne
   basse fixe du début : une régularisation peut établir plus de 13 h, voire plus d'une semaine.
 - `FeuillesDeTempsService` reçoit l'instant facultatif `evaluation`. Sans lui, l'heure du serveur est relevée
   une seule fois ; l'instant utilisé gouverne l'expiration et le découpage des activités en cours, et la réponse
@@ -37,8 +37,10 @@ la feuille expose les identifiants de poste et d'élément sans lire leurs libel
   les deux états terminés. Le découpage aux minuits locaux et aux limites de semaine ne déplace jamais ces bornes.
 - Une activité en cours rend une indication sans fin sur chaque jour atteint à l'instant de lecture, dans la semaine.
   Son début entier permet de lire « en cours depuis dimanche » sur lundi, sans durée à compter.
-- Une activité à résoudre indique actuellement son jour de début ; son étendue sera complétée dans la tranche
-  consacrée à la borne de conflit.
+- Une activité à résoudre figure sur tous les jours de sa plage possible, depuis son début jusqu'à sa
+  `finAuPlusTard` projetée par atelier, limitée par `evaluation`. La fin de cette plage est exclusive.
+  Chaque portion reste sans fin réelle ni durée, garde l'identité originale et rend la borne possible entière.
+  Un jour sans pointage local peut la porter ; la sélection retrouve aussi un début antérieur à la semaine.
 - Une activité porte l'élément, jamais le suivi : un élément réengagé après clôture reste le même élément.
 - Les portions sont triées par début, élément puis identité stable de l'activité.
 - `DecoupageCalendaire` est le seul détenteur du calendrier. Le fuseau passe par `FuseauHoraireDeLEntreprise` ;

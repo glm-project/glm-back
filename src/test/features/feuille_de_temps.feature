@@ -535,3 +535,41 @@ Feature: Feuille de temps hebdomadaire d'un operateur
     And les activites du "2026-05-11" sont
       | idActivite | element | etat     | debut                | fin                  |
       | A          | carter  | TERMINEE | 2026-05-11T06:00:00Z | 2026-05-11T08:00:00Z |
+
+  Scenario: Un conflit du dimanche figure aussi lundi sans pointage local
+    Given l'element "carter" est engage en atelier a "2026-05-10T18:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type           | intention  | cible | operateur | survenue             |
+      | A     | DEBUT          | OUVERTURE  |       | martin    | 2026-05-10T20:00:00Z |
+      | N     | NON_CONFORMITE | TRANSITION | A     | martin    | 2026-05-10T21:00:00Z |
+      | F     | FIN            | FIN        | A     | martin    | 2026-05-10T21:30:00Z |
+    And il est "2026-05-11T11:00:00Z"
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
+    Then les activites a resoudre du "2026-05-11" sont
+      | idActivite | categorie      | etat       | debut                | fin | debutActivite        | finActivite | finAuPlusTard        |
+      | A          | TRAVAIL        | A_RESOUDRE | 2026-05-10T22:00:00Z |     | 2026-05-10T20:00:00Z |             | 2026-05-11T09:00:00Z |
+      | N          | NON_CONFORMITE | A_RESOUDRE | 2026-05-10T22:00:00Z |     | 2026-05-10T21:00:00Z |             | 2026-05-11T10:00:00Z |
+    And le "2026-05-12" ne porte aucune activite
+
+  Scenario: La plage possible regularisee depasse une semaine et se borne a l'evaluation
+    Given l'element "carter" est engage en atelier a "2026-05-10T18:00:00Z"
+    And la feuille de temps recoit sur l'element "carter" les pointages
+      | alias | type           | intention  | cible | operateur | survenue             | reception            | acte           |
+      | A     | DEBUT          | OUVERTURE  |       | martin    | 2026-05-10T20:00:00Z | 2026-05-10T20:00:00Z | POINTAGE       |
+      | N     | NON_CONFORMITE | TRANSITION | A     | martin    | 2026-05-10T21:00:00Z | 2026-05-10T21:00:00Z | POINTAGE       |
+      | F     | FIN            | FIN        | A     | martin    | 2026-05-19T10:00:00Z | 2026-05-20T12:00:00Z | REGULARISATION |
+    And l'element "carter" est cloture a "2026-05-20T13:00:00Z"
+    When je consulte la feuille de temps de "martin" pour la semaine 21 de 2026 avec evaluation "2026-05-18T23:00:00Z"
+    Then les activites a resoudre du "2026-05-18" sont
+      | idActivite | etat       | debut                | fin | debutActivite        | finAuPlusTard        |
+      | A          | A_RESOUDRE | 2026-05-17T22:00:00Z |     | 2026-05-10T20:00:00Z | 2026-05-19T10:00:00Z |
+    And les activites a resoudre du "2026-05-19" sont
+      | idActivite | etat       | debut                | fin | debutActivite        | finAuPlusTard        |
+      | A          | A_RESOUDRE | 2026-05-18T22:00:00Z |     | 2026-05-10T20:00:00Z | 2026-05-19T10:00:00Z |
+    And le "2026-05-20" ne porte aucune activite
+    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026 avec evaluation "2026-05-11T20:00:00Z"
+    Then les activites a resoudre du "2026-05-11" sont
+      | idActivite | etat       | debut                | fin | finAuPlusTard        |
+      | A          | A_RESOUDRE | 2026-05-10T22:00:00Z |     | 2026-05-19T10:00:00Z |
+      | N          | A_RESOUDRE | 2026-05-10T22:00:00Z |     | 2026-05-11T10:00:00Z |
+    And le "2026-05-12" ne porte aucune activite

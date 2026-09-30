@@ -494,12 +494,20 @@ GET /api/syntheses-des-heures/{operateurId}?annee=2026&semaine=20&evaluation=202
 Les deux lectures acceptent un instant ISO-8601 facultatif et rendent l'instant effectivement utilisé dans
 `evaluation`. Chaque lecture relève l'heure du serveur une seule fois : elle fournit l'instant par défaut et
 vérifie la borne future. Cet instant d'évaluation gouverne l'expiration et les jours atteints par les activités
-en cours. Passer le même instant à la feuille et à la synthèse assure la même décision d'expiration.
+en cours et par les plages possibles à résoudre. Passer le même instant à la feuille et à la synthèse assure la même décision d'expiration.
 
 Un instant passé est accepté, ainsi qu'un instant jusqu'à l'heure du serveur plus deux minutes, borne incluse.
 Au-delà, la réponse est 400 `evaluation-future` dans le contexte de la lecture, sans rapport. Un instant fourni
 vide ou mal formé répond aussi 400. Les faits connus restent interprétés même postérieurs à cet instant, sans
 lecture historique ni transaction commune garantie. La semaine, le fuseau et les rôles de lecture gardent leurs règles.
+
+### Lire les jours possibles d'un conflit
+
+La feuille rend une activité `A_RESOUDRE` sur chaque jour de sa plage possible, jusqu'à `evaluation` ou sa
+`activite.finAuPlusTard`, la première borne atteinte. Cette fin possible est exclusive, issue des faits d'atelier
+et conservée entière sur chaque portion. `fin` et `activite.fin` restent absents ; aucune durée n'est fabriquée.
+L'identité de l'activité reste celle de l'ouverture originale, même après correction du pointage ouvrant.
+Une régularisation peut porter cette plage au-delà de 13 h ou d'une semaine ; une clôture la limite sans la prolonger.
 
 ### Présence
 

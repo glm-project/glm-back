@@ -5,22 +5,23 @@ import java.time.Instant;
 import java.util.Optional;
 
 /** Les faits projetes par atelier ; seule l'expiration depend de l'instant de lecture. */
-public record ActiviteInterpretee(ActiviteId id, Activite activite, Plage plage, Instant echeance, boolean aResoudre) {
+public record ActiviteInterpretee(ActiviteId id, Activite activite, Plage plage, Instant echeance, Optional<Instant> finAuPlusTard) {
   public ActiviteInterpretee {
     Assert.notNull("id de l'activite", id);
     Assert.notNull("activite", activite);
     Assert.notNull("plage", plage);
     Assert.notNull("echeance", echeance);
+    Assert.notNull("fin au plus tard", finAuPlusTard);
   }
 
   public static IdentiteBuilder builder() {
-    return id -> activite -> plage -> echeance -> aResoudre -> new ActiviteInterpretee(id, activite, plage, echeance, aResoudre);
+    return id -> activite -> plage -> echeance -> finAuPlusTard -> new ActiviteInterpretee(id, activite, plage, echeance, finAuPlusTard);
   }
 
   public IntervalleDActivite a(Instant evaluation) {
     EtatDActivite etat;
     Plage lue = plage;
-    if (aResoudre) {
+    if (finAuPlusTard.isPresent()) {
       etat = EtatDActivite.A_RESOUDRE;
       lue = new Plage(plage.debut(), Optional.empty());
     } else if (plage.fin().isPresent()) {
@@ -31,7 +32,7 @@ public record ActiviteInterpretee(ActiviteId id, Activite activite, Plage plage,
     } else {
       etat = EtatDActivite.EN_COURS;
     }
-    return new IntervalleDActivite(activite, lue, new ActiviteLue(id, etat, lue));
+    return new IntervalleDActivite(activite, lue, ActiviteLue.builder().id(id).etat(etat).plage(lue).finAuPlusTard(finAuPlusTard));
   }
 
   public interface IdentiteBuilder {
@@ -47,10 +48,10 @@ public record ActiviteInterpretee(ActiviteId id, Activite activite, Plage plage,
   }
 
   public interface EcheanceBuilder {
-    AResoudreBuilder echeance(Instant echeance);
+    FinAuPlusTardBuilder echeance(Instant echeance);
   }
 
-  public interface AResoudreBuilder {
-    ActiviteInterpretee aResoudre(boolean aResoudre);
+  public interface FinAuPlusTardBuilder {
+    ActiviteInterpretee finAuPlusTard(Optional<Instant> finAuPlusTard);
   }
 }

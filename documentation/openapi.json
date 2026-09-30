@@ -278,6 +278,11 @@
             "format" : "date-time",
             "type" : "string"
           },
+          "finAuPlusTard" : {
+            "description" : "Borne possible issue des faits, seulement pour une activite a resoudre ; ce n'est pas une fin reelle.",
+            "format" : "date-time",
+            "type" : "string"
+          },
           "id" : {
             "description" : "Identite stable de l'activite, conservee apres correction.",
             "format" : "uuid",

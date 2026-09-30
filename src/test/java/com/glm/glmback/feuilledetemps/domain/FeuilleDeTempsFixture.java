@@ -104,7 +104,7 @@ public final class FeuilleDeTempsFixture {
       .activite(activiteDeTravailDuCarterSurLaDmu50())
       .plage(new Plage(LE_LUNDI_11_MAI_2026_A_8H, Optional.empty()))
       .echeance(Instant.parse("2026-05-11T19:00:00Z"))
-      .aResoudre(false);
+      .finAuPlusTard(Optional.empty());
   }
 
   public static ActiviteInterpretee travailDuCarterDe8HA10H() {
@@ -113,11 +113,15 @@ public final class FeuilleDeTempsFixture {
       .activite(activiteDeTravailDuCarterSurLaDmu50())
       .plage(new Plage(LE_LUNDI_11_MAI_2026_A_8H, Optional.of(LE_LUNDI_11_MAI_2026_A_10H)))
       .echeance(Instant.parse("2026-05-11T19:00:00Z"))
-      .aResoudre(false);
+      .finAuPlusTard(Optional.empty());
   }
 
   public static ActiviteLue travailDuCarterLuSur(Plage plage) {
-    return new ActiviteLue(ACTIVITE_ID_DU_CARTER, plage.estOuverte() ? EtatDActivite.EN_COURS : EtatDActivite.TERMINEE, plage);
+    return ActiviteLue.builder()
+      .id(ACTIVITE_ID_DU_CARTER)
+      .etat(plage.estOuverte() ? EtatDActivite.EN_COURS : EtatDActivite.TERMINEE)
+      .plage(plage)
+      .finAuPlusTard(Optional.empty());
   }
 
   private static Instant aParis(int jourDeMai, int heure) {

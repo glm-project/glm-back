@@ -294,8 +294,10 @@ limites de la semaine ; les bornes de l'activité restent intactes.
 Une activité en cours rend une indication sans fin sur chacun des jours atteints à l'instant de lecture, dans la
 semaine : commencée dimanche à 22 h et lue lundi à 1 h, elle apparaît lundi avec son début entier, sans fin à minuit.
 Une fin lundi à 3 h remplace ensuite cette indication par les portions terminées, 2 h dimanche et 3 h lundi.
-Une activité à résoudre indique actuellement son jour de début ; son étendue calendaire sera complétée avec la
-borne de conflit dans la tranche suivante du chantier.
+Une activité à résoudre figure sur chaque jour de sa plage possible : de son début jusqu'à la fin au plus tard
+projetée par atelier, borne exclusive, limitée par l'instant d'évaluation. Chaque portion reste sans fin réelle
+ni durée ; elle conserve son identité originale et la borne possible entière. Un lundi sans pointage local porte
+ainsi le conflit commencé dimanche, même si une régularisation étend sa plage au-delà d'une semaine.
 
 La feuille nomme l'élément, jamais le suivi : un élément réengagé après clôture reste le même élément. Ni libellé
 de poste ni fiche d'élément ici — la synthèse des heures les porte. Les activités sont triées par début de portion,
