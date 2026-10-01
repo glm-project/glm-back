@@ -78,6 +78,32 @@ class SupervisionDAtelierResourceIT {
 
   @Test
   @WithTenant("supervision_fixture")
+  void shouldReadAWorkActivityOnAnOrderWithItsStableIdentityAndDeadline() throws Exception {
+    var ouverture = debutSansPosteParDupontA(LE_10_MAI_2026_A_8H);
+    var suivi = suiviDAtelierEngage().enregistre(ouverture);
+    when(clock.now()).thenReturn(LE_10_MAI_2026_A_9H);
+    transactions.executeWithoutResult(status -> suivis.create(suivi));
+
+    rest
+      .perform(get("/api/atelier/supervision"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.activites.length()").value(1))
+      .andExpect(jsonPath("$.activites[0].id").value(ouverture.activite().orElseThrow().uuid().toString()))
+      .andExpect(jsonPath("$.activites[0].operateurId").value(OPERATEUR_ID_DUPONT.uuid().toString()))
+      .andExpect(jsonPath("$.activites[0].categorie").value("TRAVAIL"))
+      .andExpect(jsonPath("$.activites[0].element.id").value(ELEMENT_OF_2026_000042.uuid().toString()))
+      .andExpect(jsonPath("$.activites[0].element.type").value("ORDRE_DE_FABRICATION"))
+      .andExpect(jsonPath("$.activites[0].element.nom").value(NOM_OF_2026_000042.value()))
+      .andExpect(jsonPath("$.activites[0].element.reference").doesNotExist())
+      .andExpect(jsonPath("$.activites[0].poste").doesNotExist())
+      .andExpect(jsonPath("$.activites[0].debut").value("2026-05-10T08:00:00Z"))
+      .andExpect(jsonPath("$.activites[0].echeance").value("2026-05-10T21:00:00Z"))
+      .andExpect(jsonPath("$.activites[0].etat").value("EN_COURS"))
+      .andExpect(jsonPath("$.activites[0].finRetenue").doesNotExist());
+  }
+
+  @Test
+  @WithTenant("supervision_fixture")
   void shouldDeriveDistinctTradesFromEachOperatorsAuthorizedPosts() throws Exception {
     when(clock.now()).thenReturn(Instant.parse("2026-09-13T10:00:00Z"));
     transactions.executeWithoutResult(status -> {

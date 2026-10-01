@@ -140,6 +140,46 @@
         "required" : [ "activite", "categorie", "debut", "element" ],
         "type" : "object"
       },
+      "RestActiviteDeSupervision" : {
+        "properties" : {
+          "categorie" : {
+            "enum" : [ "TRAVAIL", "NON_CONFORMITE" ],
+            "type" : "string"
+          },
+          "debut" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "echeance" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "element" : {
+            "$ref" : "#/components/schemas/RestElementDeSupervision"
+          },
+          "etat" : {
+            "enum" : [ "EN_COURS" ],
+            "type" : "string"
+          },
+          "finRetenue" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "operateurId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "poste" : {
+            "$ref" : "#/components/schemas/RestPosteDAtelier"
+          }
+        },
+        "required" : [ "categorie", "debut", "echeance", "element", "etat", "id", "operateurId" ],
+        "type" : "object"
+      },
       "RestActiviteDuPupitre" : {
         "description" : "Une activite ouverte sur cet element : qui travaille, sur quel poste, dans quel etat, depuis quand.\n\nUne transition ouvre une activite distincte de l autre categorie. Les activites a resoudre et celles dont\nl echeance est atteinte ne sont pas actionnables et ne figurent pas ici.\n",
         "properties" : {
@@ -715,6 +755,26 @@
           }
         },
         "required" : [ "duree", "dureeNonConformite", "id", "nom", "postes", "type" ],
+        "type" : "object"
+      },
+      "RestElementDeSupervision" : {
+        "properties" : {
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "nom" : {
+            "type" : "string"
+          },
+          "reference" : {
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "nom", "type" ],
         "type" : "object"
       },
       "RestEngagement" : {
@@ -1733,7 +1793,7 @@
         "properties" : {
           "activites" : {
             "items" : {
-              "$ref" : "#/components/schemas/RestActiviteEnCours"
+              "$ref" : "#/components/schemas/RestActiviteDeSupervision"
             },
             "type" : "array"
           },

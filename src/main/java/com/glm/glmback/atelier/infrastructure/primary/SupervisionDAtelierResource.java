@@ -26,7 +26,7 @@ class SupervisionDAtelierResource {
     return new RestSupervisionDAtelier(
       lecture.evaluation(),
       lecture.operateurs().stream().map(RestOperateurDeSupervision::from).toList(),
-      List.of(),
+      lecture.activites().stream().map(RestActiviteDeSupervision::from).toList(),
       List.of()
     );
   }
