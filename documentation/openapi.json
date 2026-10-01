@@ -1165,6 +1165,28 @@
         "required" : [ "id", "nom", "prenom" ],
         "type" : "object"
       },
+      "RestOperateurDeSupervision" : {
+        "properties" : {
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "metiers" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "nom" : {
+            "type" : "string"
+          },
+          "prenom" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "metiers", "nom", "prenom" ],
+        "type" : "object"
+      },
       "RestOperateurDeSyntheseDesHeures" : {
         "description" : "L'operateur dont la synthese des heures est lue, resolu au referentiel a la lecture.\n\nNom et prenom sont relus a chaque appel : une fiche corrigee s'affiche corrigee sur tout l'historique.\n",
         "properties" : {
@@ -1721,7 +1743,7 @@
           },
           "operateurs" : {
             "items" : {
-              "$ref" : "#/components/schemas/RestOperateurDAtelier"
+              "$ref" : "#/components/schemas/RestOperateurDeSupervision"
             },
             "type" : "array"
           },

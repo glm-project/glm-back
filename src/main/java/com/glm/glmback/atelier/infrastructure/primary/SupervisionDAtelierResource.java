@@ -22,6 +22,12 @@ class SupervisionDAtelierResource {
   @GetMapping
   @Operation(summary = "Lire la supervision complete de l'entreprise connectee")
   RestSupervisionDAtelier read() {
-    return new RestSupervisionDAtelier(supervision.evaluation(), List.of(), List.of(), List.of());
+    var lecture = supervision.read();
+    return new RestSupervisionDAtelier(
+      lecture.evaluation(),
+      lecture.operateurs().stream().map(RestOperateurDeSupervision::from).toList(),
+      List.of(),
+      List.of()
+    );
   }
 }
