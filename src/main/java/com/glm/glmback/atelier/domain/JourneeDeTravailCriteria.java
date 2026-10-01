@@ -11,14 +11,19 @@ import java.util.Optional;
  * consulte la sienne, et l'ecran temps reel ne filtre sur rien.
  * </p>
  */
-public record JourneeDeTravailCriteria(Optional<Periode> periode, Optional<OperateurId> operateur) {
+public record JourneeDeTravailCriteria(Optional<Periode> periode, Optional<OperateurId> operateur, Optional<EtatDePresence> etat) {
   public JourneeDeTravailCriteria {
     Assert.notNull("periode", periode);
     Assert.notNull("operateur", operateur);
+    Assert.notNull("etat", etat);
+  }
+
+  public JourneeDeTravailCriteria(Optional<Periode> periode, Optional<OperateurId> operateur) {
+    this(periode, operateur, Optional.empty());
   }
 
   public boolean matches(JourneeDeTravail journee) {
-    return correspondALOperateur(journee) && correspondALaPeriode(journee);
+    return correspondALOperateur(journee) && correspondALaPeriode(journee) && etat.map(journee.etat()::equals).orElse(true);
   }
 
   private boolean correspondALOperateur(JourneeDeTravail journee) {

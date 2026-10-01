@@ -64,4 +64,27 @@ class JourneeDeTravailCriteriaTest {
 
     assertThat(new JourneeDeTravailCriteria(Optional.of(journeeDu10Mai2026()), Optional.empty()).matches(vide)).isFalse();
   }
+
+  @Test
+  void shouldSelectOpenVenuesWithoutCalendarLimit() {
+    JourneeDeTravailCriteria ouverts = new JourneeDeTravailCriteria(
+      Optional.empty(),
+      Optional.empty(),
+      Optional.of(EtatDePresence.PRESENT)
+    );
+    assertThat(ouverts.matches(journeeDeDupontOuverteA7H())).isTrue();
+    assertThat(ouverts.matches(JourneeDeTravail.ouverte(JourneeDeTravailId.newId(), OPERATEUR_ID_DUPONT))).isFalse();
+    assertThat(
+      new JourneeDeTravailCriteria(Optional.empty(), Optional.empty(), Optional.of(EtatDePresence.ABSENT)).matches(
+        journeeDeDupontOuverteA7H()
+      )
+    ).isFalse();
+  }
+
+  @Test
+  void shouldRejectMissingPresenceSelection() {
+    assertThatThrownBy(() -> new JourneeDeTravailCriteria(Optional.empty(), Optional.empty(), null))
+      .isExactlyInstanceOf(MissingMandatoryValueException.class)
+      .hasMessageContaining("etat");
+  }
 }

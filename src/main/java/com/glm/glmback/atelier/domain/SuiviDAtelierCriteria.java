@@ -23,16 +23,23 @@ import java.util.Set;
  * element dont l'activite a atteint son echeance n'est plus en cours.
  * </p>
  */
-public record SuiviDAtelierCriteria(Optional<Periode> periode, Set<EtatDAtelier> etats, Instant evaluation) {
+public record SuiviDAtelierCriteria(Optional<Periode> periode, SelectionDeSuivis selection, Instant evaluation) {
   public SuiviDAtelierCriteria {
     Assert.notNull("periode", periode);
-    Assert.field("etats", etats).notNull().noNullElement();
+    Assert.notNull("selection", selection);
     Assert.notNull("evaluation", evaluation);
-    etats = Set.copyOf(etats);
+  }
+
+  public SuiviDAtelierCriteria(Optional<Periode> periode, Set<EtatDAtelier> etats, Instant evaluation) {
+    this(periode, new SelectionDeSuivis(etats, false), evaluation);
+  }
+
+  public Set<EtatDAtelier> etats() {
+    return selection.etats();
   }
 
   public boolean matches(SuiviDAtelier suivi) {
-    return correspondALaPeriode(suivi) && (etats.isEmpty() || etats.contains(suivi.etat(evaluation)));
+    return correspondALaPeriode(suivi) && selection.matches(suivi, evaluation);
   }
 
   private boolean correspondALaPeriode(SuiviDAtelier suivi) {

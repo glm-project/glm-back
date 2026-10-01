@@ -29,7 +29,7 @@ class SuiviDAtelierCriteriaTest {
 
   @Test
   void shouldNotBuildWithoutEtats() {
-    assertThatThrownBy(() -> new SuiviDAtelierCriteria(Optional.of(journeeDu10Mai2026()), null, LE_10_MAI_2026_A_17H))
+    assertThatThrownBy(() -> new SuiviDAtelierCriteria(Optional.of(journeeDu10Mai2026()), (Set<EtatDAtelier>) null, LE_10_MAI_2026_A_17H))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("etats");
   }
@@ -87,5 +87,33 @@ class SuiviDAtelierCriteriaTest {
     ).isTrue();
     assertThat(new SuiviDAtelierCriteria(Optional.empty(), Set.of(EtatDAtelier.EN_COURS), echeance).matches(suivi)).isFalse();
     assertThat(new SuiviDAtelierCriteria(Optional.empty(), Set.of(EtatDAtelier.INTERROMPU), echeance).matches(suivi)).isTrue();
+  }
+
+  @Test
+  void shouldIncludeConflictsWithoutActivitiesOutsideSelectedStates() {
+    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    SuiviDAtelier suivi = suiviDAtelierEngage()
+      .enregistre(debut)
+      .enregistre(finDe(debut).a(LE_10_MAI_2026_A_9H))
+      .annule(debut.id(), new Annulation(AUTEUR_LEROY, LE_10_MAI_2026_A_17H, MOTIF_ERREUR_DE_SAISIE));
+    assertThat(suivi.activites()).isEmpty();
+    SelectionDeSuivis selection = new SelectionDeSuivis(Set.of(EtatDAtelier.EN_COURS), true);
+    assertThat(new SuiviDAtelierCriteria(Optional.empty(), selection, LE_10_MAI_2026_A_17H).matches(suivi)).isTrue();
+    assertThat(new SuiviDAtelierCriteria(Optional.empty(), Set.of(EtatDAtelier.EN_COURS), LE_10_MAI_2026_A_17H).matches(suivi)).isFalse();
+    assertThat(new SuiviDAtelierCriteria(Optional.empty(), selection, LE_10_MAI_2026_A_17H).matches(suiviDAtelierEngage())).isFalse();
+    assertThat(
+      new SuiviDAtelierCriteria(
+        Optional.of(new Periode(LE_11_MAI_2026_A_9H15, LE_11_MAI_2026_A_9H15)),
+        selection,
+        LE_10_MAI_2026_A_17H
+      ).matches(suivi)
+    ).isFalse();
+  }
+
+  @Test
+  void shouldRejectMissingSelection() {
+    assertThatThrownBy(() -> new SuiviDAtelierCriteria(Optional.empty(), (SelectionDeSuivis) null, LE_10_MAI_2026_A_17H))
+      .isExactlyInstanceOf(MissingMandatoryValueException.class)
+      .hasMessageContaining("selection");
   }
 }
