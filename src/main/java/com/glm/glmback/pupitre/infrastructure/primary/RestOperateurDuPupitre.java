@@ -1,10 +1,8 @@
 package com.glm.glmback.pupitre.infrastructure.primary;
 
-import com.glm.glmback.pupitre.domain.EtatDePresence;
 import com.glm.glmback.pupitre.domain.Matricule;
 import com.glm.glmback.pupitre.domain.OperateurDuPupitre;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,26 +26,6 @@ record RestOperateurDuPupitre(
   @Schema(description = "Prenom.", example = "Jean", requiredMode = Schema.RequiredMode.REQUIRED) String prenom,
   @Schema(description = "Code tape au pupitre pour se designer, absent si l'entreprise n'en attribue pas.", example = "049")
   String matricule,
-  @Schema(
-    description = """
-    Etat de presence courant, celui de la journee en cours de l'operateur.
-
-    ABSENT vaut pour un operateur sans journee en cours, et ne le retire pas de la liste : elle rend les operateurs
-    designables, pas les operateurs presents. C'est cet etat qui dit a l'ecran d'atelier s'il faut proposer
-    l'arrivee ou le depart, y compris hors ligne. La pause n'en est pas un : un operateur en pause reste present,
-    et c'est le pupitre qui la traduit en fins d'activite.
-    """,
-    requiredMode = Schema.RequiredMode.REQUIRED
-  )
-  EtatDePresence etat,
-  @Schema(
-    description = """
-    Instant jusqu'auquel l'operateur reste present sans nouveau geste : son arrivee plus l'amplitude maximale de
-    l'entreprise. Au-dela, sa journee est abandonnee et il redevient ABSENT : le pupitre hors ligne bascule seul a cet
-    instant, et ne propose plus que l'arrivee. Absent quand l'operateur est ABSENT.
-    """
-  )
-  Instant presentJusqua,
   @Schema(description = "Postes habilites, tries par libelle.", requiredMode = Schema.RequiredMode.REQUIRED) List<RestPosteDuPupitre> postes
 ) {
   static RestOperateurDuPupitre from(OperateurDuPupitre operateur) {
@@ -56,8 +34,6 @@ record RestOperateurDuPupitre(
       operateur.nom().value(),
       operateur.prenom().value(),
       operateur.matricule().map(Matricule::value).orElse(null),
-      operateur.etat(),
-      operateur.presentJusqua().orElse(null),
       operateur.postes().stream().map(RestPosteDuPupitre::from).toList()
     );
   }

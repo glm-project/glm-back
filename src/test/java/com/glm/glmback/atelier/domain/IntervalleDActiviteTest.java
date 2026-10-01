@@ -23,6 +23,26 @@ class IntervalleDActiviteTest {
   }
 
   @Test
+  void shouldNotBuildWithoutActivite() {
+    assertThatThrownBy(() ->
+      new IntervalleDActivite(
+        EVENEMENT,
+        null,
+        OPERATEUR_ID_DUPONT,
+        Optional.of(POSTE_ID_FRAISEUSE_1),
+        Optional.of(NATURE_FRAISAGE),
+        CategorieDActivite.TRAVAIL,
+        LE_10_MAI_2026_A_8H,
+        Optional.empty(),
+        false,
+        false
+      )
+    )
+      .isExactlyInstanceOf(MissingMandatoryValueException.class)
+      .hasMessageContaining("activite");
+  }
+
+  @Test
   void shouldNotBuildWithoutDebut() {
     assertThatThrownBy(() -> intervalle(EVENEMENT, null, Optional.empty()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
@@ -41,12 +61,14 @@ class IntervalleDActiviteTest {
     assertThatThrownBy(() ->
       new IntervalleDActivite(
         EVENEMENT,
+        ActiviteId.ouvertePar(EVENEMENT),
         OPERATEUR_ID_DUPONT,
         null,
         Optional.of(NATURE_FRAISAGE),
         CategorieDActivite.TRAVAIL,
         LE_10_MAI_2026_A_8H,
         Optional.empty(),
+        false,
         false
       )
     )
@@ -59,12 +81,14 @@ class IntervalleDActiviteTest {
     assertThatThrownBy(() ->
       new IntervalleDActivite(
         EVENEMENT,
+        ActiviteId.ouvertePar(EVENEMENT),
         OPERATEUR_ID_DUPONT,
         Optional.of(POSTE_ID_FRAISEUSE_1),
         null,
         CategorieDActivite.TRAVAIL,
         LE_10_MAI_2026_A_8H,
         Optional.empty(),
+        false,
         false
       )
     )
@@ -77,12 +101,14 @@ class IntervalleDActiviteTest {
     assertThatThrownBy(() ->
       new IntervalleDActivite(
         EVENEMENT,
+        ActiviteId.ouvertePar(EVENEMENT),
         null,
         Optional.of(POSTE_ID_FRAISEUSE_1),
         Optional.of(NATURE_FRAISAGE),
         CategorieDActivite.TRAVAIL,
         LE_10_MAI_2026_A_8H,
         Optional.empty(),
+        false,
         false
       )
     )
@@ -95,12 +121,14 @@ class IntervalleDActiviteTest {
     assertThatThrownBy(() ->
       new IntervalleDActivite(
         EVENEMENT,
+        ActiviteId.ouvertePar(EVENEMENT),
         OPERATEUR_ID_DUPONT,
         Optional.of(POSTE_ID_FRAISEUSE_1),
         Optional.of(NATURE_FRAISAGE),
         null,
         LE_10_MAI_2026_A_8H,
         Optional.empty(),
+        false,
         false
       )
     )
@@ -136,63 +164,6 @@ class IntervalleDActiviteTest {
     assertThat(intervalleFerme().nature()).contains(NATURE_FRAISAGE);
   }
 
-  @Test
-  void shouldReduireLIntervalleALaFenetreDePresence() {
-    FenetreDePresence matinee = new FenetreDePresence(LE_10_MAI_2026_A_9H, Optional.of(LE_10_MAI_2026_A_12H));
-
-    IntervalleDActivite reduit = intervalleFerme().reduitA(matinee).orElseThrow();
-
-    assertThat(reduit.debut()).isEqualTo(LE_10_MAI_2026_A_9H);
-    assertThat(reduit.fin()).contains(LE_10_MAI_2026_A_12H);
-    assertThat(reduit.evenement()).isEqualTo(EVENEMENT);
-    assertThat(reduit.poste()).contains(POSTE_ID_FRAISEUSE_1);
-  }
-
-  @Test
-  void shouldNotReduireLIntervalleAUneFenetreDisjointe() {
-    FenetreDePresence apresMidi = new FenetreDePresence(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_17H));
-
-    assertThat(intervalleFerme().reduitA(apresMidi)).isEmpty();
-  }
-
-  @Test
-  void shouldNaitreNonPresume() {
-    assertThat(intervalleFerme().presume()).isFalse();
-  }
-
-  @Test
-  void shouldDevenirPresumeDansUneFenetrePresumee() {
-    FenetreDePresence presumee = new FenetreDePresence(LE_10_MAI_2026_A_9H, Optional.of(LE_10_MAI_2026_A_12H), true);
-
-    IntervalleDActivite reduit = intervalleFerme().reduitA(presumee).orElseThrow();
-
-    assertThat(reduit.presume()).isTrue();
-    assertThat(reduit.debut()).isEqualTo(LE_10_MAI_2026_A_9H);
-    assertThat(reduit.fin()).contains(LE_10_MAI_2026_A_12H);
-  }
-
-  @Test
-  void shouldResterPresumeDansUneFenetrePointee() {
-    IntervalleDActivite presume = intervalleFerme()
-      .reduitA(new FenetreDePresence(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H), true))
-      .orElseThrow();
-
-    IntervalleDActivite reduit = presume
-      .reduitA(new FenetreDePresence(LE_10_MAI_2026_A_9H, Optional.of(LE_10_MAI_2026_A_12H)))
-      .orElseThrow();
-
-    assertThat(reduit.presume()).isTrue();
-  }
-
-  @Test
-  void shouldResterPointeDansUneFenetrePointee() {
-    IntervalleDActivite reduit = intervalleFerme()
-      .reduitA(new FenetreDePresence(LE_10_MAI_2026_A_9H, Optional.of(LE_10_MAI_2026_A_12H)))
-      .orElseThrow();
-
-    assertThat(reduit.presume()).isFalse();
-  }
-
   private static IntervalleDActivite intervalleFerme() {
     return intervalle(EVENEMENT, LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H));
   }
@@ -200,11 +171,14 @@ class IntervalleDActiviteTest {
   private static IntervalleDActivite intervalle(EvenementDAtelierId evenement, Instant debut, Optional<Instant> fin) {
     return IntervalleDActivite.builder()
       .evenement(evenement)
+      .activite(ActiviteId.ouvertePar(EVENEMENT))
       .operateur(OPERATEUR_ID_DUPONT)
       .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
       .nature(Optional.of(NATURE_FRAISAGE))
       .categorie(CategorieDActivite.TRAVAIL)
       .debut(debut)
-      .fin(fin);
+      .fin(fin)
+      .finAutomatique(false)
+      .aResoudre(false);
   }
 }

@@ -12,29 +12,30 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Une journee d'atelier jouee de bout en bout, a travers les deux services et sans autre double que les repositories
- * en memoire.
+ * Une journee d'atelier jouee de bout en bout, a travers les services et sans autre double que les repositories en
+ * memoire.
  *
  * <p>
  * La ou les tests voisins verifient chacun une mecanique isolee, celui-ci enonce le fonctionnement demande par le
- * client : un operateur pointe sa presence d'un cote, ses ordres de fabrication de l'autre, mene deux machines de
- * front, et sa pause de midi arrete puis relance tout ce qui est en cours. Il tient lieu de scenario metier tant que
- * le contexte n'a ni adapter primaire ni feature Gherkin.
+ * client : un operateur pointe ses ordres de fabrication, mene deux machines de front, et sa pause de midi arrete puis
+ * relance tout ce qui est en cours. Il tient lieu de scenario metier tant que le contexte n'a ni adapter primaire ni
+ * feature Gherkin.
  * </p>
  *
  * <p>
- * Le recit : Dupont arrive a 7 h, demarre l'OF 42 sur la fraiseuse 1 a 8 h, l'OF 43 sur la fraiseuse 2 a 9 h, les
- * arrete tous deux a midi pour sa pause et les redemarre a 13 h — une fin et un debut par ordre, que le pupitre pointe
- * pour lui —, termine l'OF 43 a 16 h, puis rentre chez lui a 17 h <em>sans rien pointer</em> — ni son depart, ni la
- * fin de l'OF 42. Le lendemain, Leroy regularise le depart oublie.
+ * Le recit : Dupont demarre l'OF 42 sur la fraiseuse 1 a 8 h, l'OF 43 sur la fraiseuse 2 a 9 h, les arrete tous deux a
+ * midi pour sa pause et les redemarre a 13 h — une fin et un debut par ordre, que le pupitre pointe pour lui —, termine
+ * l'OF 43 a 16 h, puis rentre chez lui a 17 h <em>sans arreter l'OF 42</em>. Le lendemain, Leroy regularise la fin
+ * oubliee.
  * </p>
  */
 @UnitTest
 class VieDeLAtelierTest {
 
+  private static final Instant LE_11_MAI_2026_A_2H = Instant.parse("2026-05-11T02:00:00Z");
+
   private final AtomicReference<Instant> maintenant = new AtomicReference<>(LE_10_MAI_2026_A_7H);
   private final SuivisDAtelierEnMemoire suivis = new SuivisDAtelierEnMemoire();
-  private final JourneesDeTravailEnMemoire journees = new JourneesDeTravailEnMemoire();
   private final RessourcesDAtelierEnMemoire ressources = RessourcesDAtelierEnMemoire.deLAtelier();
   private final SuivisDAtelierService atelier = SuivisDAtelierService.builder()
     .repository(suivis)
@@ -43,93 +44,95 @@ class VieDeLAtelierTest {
     .postes(ressources.postes())
     .habilitations(ressources.habilitations())
     .clock(maintenant::get);
-  private final JourneesDeTravailService presence = JourneesDeTravailService.builder()
-    .repository(journees)
-    .operateurs(ressources.operateurs())
-    .seuil(() -> AMPLITUDE_MAXIMALE_13H)
-    .clock(maintenant::get);
-  private final TempsDAtelierService temps = TempsDAtelierService.builder()
-    .suivis(suivis)
-    .journees(journees)
-    .seuil(() -> AMPLITUDE_MAXIMALE_13H)
-    .clock(maintenant::get);
+  private final TempsDAtelierService temps = new TempsDAtelierService(suivis);
 
   private SuiviDAtelierId premierOrdre;
   private SuiviDAtelierId secondOrdre;
-  private JourneeDeTravailId journeeDeDupont;
+  private PointageAEnregistrer premierApresMidi;
 
   @BeforeEach
   void laJourneeDuDixMai() {
     ilEst(LE_10_MAI_2026_A_7H);
     premierOrdre = engage(ELEMENT_OF_2026_000042);
     secondOrdre = engage(ELEMENT_OF_2026_000043);
-    journeeDeDupont = presence.arrive(new ArriveeAEnregistrer(OPERATEUR_ID_DUPONT, AUTEUR_DUPONT)).journee().id();
 
     ilEst(LE_10_MAI_2026_A_8H);
-    atelier.pointe(pointage(premierOrdre, TypeDEvenementDAtelier.DEBUT, POSTE_ID_FRAISEUSE_1));
+    PointageAEnregistrer premierMatin = debut(premierOrdre, POSTE_ID_FRAISEUSE_1);
+    atelier.pointe(premierMatin);
 
     ilEst(LE_10_MAI_2026_A_9H);
-    atelier.pointe(pointage(secondOrdre, TypeDEvenementDAtelier.DEBUT, POSTE_ID_FRAISEUSE_2));
+    PointageAEnregistrer secondMatin = debut(secondOrdre, POSTE_ID_FRAISEUSE_2);
+    atelier.pointe(secondMatin);
 
     ilEst(LE_10_MAI_2026_A_12H);
-    atelier.pointe(pointage(premierOrdre, TypeDEvenementDAtelier.FIN, POSTE_ID_FRAISEUSE_1));
-    atelier.pointe(pointage(secondOrdre, TypeDEvenementDAtelier.FIN, POSTE_ID_FRAISEUSE_2));
+    atelier.pointe(fin(premierMatin));
+    atelier.pointe(fin(secondMatin));
 
     ilEst(LE_10_MAI_2026_A_13H);
-    atelier.pointe(pointage(premierOrdre, TypeDEvenementDAtelier.DEBUT, POSTE_ID_FRAISEUSE_1));
-    atelier.pointe(pointage(secondOrdre, TypeDEvenementDAtelier.DEBUT, POSTE_ID_FRAISEUSE_2));
+    premierApresMidi = debut(premierOrdre, POSTE_ID_FRAISEUSE_1);
+    atelier.pointe(premierApresMidi);
+    PointageAEnregistrer secondApresMidi = debut(secondOrdre, POSTE_ID_FRAISEUSE_2);
+    atelier.pointe(secondApresMidi);
 
     ilEst(LE_10_MAI_2026_A_16H);
-    atelier.pointe(pointage(secondOrdre, TypeDEvenementDAtelier.FIN, POSTE_ID_FRAISEUSE_2));
+    atelier.pointe(fin(secondApresMidi));
 
     ilEst(LE_11_MAI_2026_A_9H15);
-    presence.regularise(
-      RegularisationDePresenceAEnregistrer.builder()
-        .journee(journeeDeDupont)
-        .type(TypeDEvenementDePresence.DEPART)
-        .auteur(AUTEUR_LEROY)
-        .dateDeSurvenue(LE_10_MAI_2026_A_17H)
-    );
-  }
-
-  /**
-   * « Les heures de presence, c'est les heures ou il arrive a la societe, il pointe et il part » : l'amplitude court
-   * de l'arrivee au depart, et la pause de midi, pointee sur les ordres, ne l'interrompt pas.
-   */
-  @Test
-  void shouldSuivreLaPresenceDeLArriveeAuDepart() {
-    JourneeDeTravail journee = presence.get(journeeDeDupont);
-
-    assertThat(journee.amplitude()).contains(new Periode(LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_17H));
-    assertThat(journee.fenetres()).containsExactly(new FenetreDePresence(LE_10_MAI_2026_A_7H, Optional.of(LE_10_MAI_2026_A_17H)));
   }
 
   /**
    * Le test qui porte le modele : la pause de midi scinde l'OF 42 par sa fin et son debut, puis, apres sa relance a
-   * 13 h, l'OF 42 n'a plus recu le moindre pointage. C'est la presence seule qui le referme au depart regularise.
+   * 13 h, l'OF 42 n'a plus recu le moindre pointage. Rien ne le borne a 17 h : il se termine automatiquement a son
+   * echeance, 13 heures apres son debut, avec une anomalie.
    */
   @Test
-  void shouldScinderLePremierOrdreASaPauseEtLeRefermerAuDepartRegularise() {
-    assertThat(temps.tempsEffectif(premierOrdre))
-      .extracting(IntervalleDActivite::poste, IntervalleDActivite::debut, IntervalleDActivite::fin)
+  void shouldScinderLePremierOrdreASaPauseEtLeTerminerAutomatiquementASonEcheance() {
+    assertThat(temps.tempsEffectif(premierOrdre, maintenant.get()))
+      .extracting(IntervalleDActivite::poste, IntervalleDActivite::debut, IntervalleDActivite::fin, IntervalleDActivite::finAutomatique)
       .containsExactly(
-        tuple(Optional.of(POSTE_ID_FRAISEUSE_1), LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H)),
-        tuple(Optional.of(POSTE_ID_FRAISEUSE_1), LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_17H))
+        tuple(Optional.of(POSTE_ID_FRAISEUSE_1), LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H), false),
+        tuple(Optional.of(POSTE_ID_FRAISEUSE_1), LE_10_MAI_2026_A_13H, Optional.of(LE_11_MAI_2026_A_2H), true)
       );
   }
 
   /**
-   * Deux machines menees de front sur deux ordres distincts : le second s'arrete a sa propre fin, sans attendre le
-   * depart, et son poste le distingue du premier.
+   * Deux machines menees de front sur deux ordres distincts : le second s'arrete a sa propre fin, et son poste le
+   * distingue du premier.
    */
   @Test
-  void shouldArreterLeSecondOrdreASaPropreFinPlutotQuAuDepart() {
-    assertThat(temps.tempsEffectif(secondOrdre))
+  void shouldArreterLeSecondOrdreASaPropreFin() {
+    assertThat(temps.tempsEffectif(secondOrdre, maintenant.get()))
       .extracting(IntervalleDActivite::poste, IntervalleDActivite::debut, IntervalleDActivite::fin)
       .containsExactly(
         tuple(Optional.of(POSTE_ID_FRAISEUSE_2), LE_10_MAI_2026_A_9H, Optional.of(LE_10_MAI_2026_A_12H)),
         tuple(Optional.of(POSTE_ID_FRAISEUSE_2), LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_16H))
       );
+  }
+
+  /**
+   * « Il a oublie de pointer… il faut pas que ce soit lui » : le lendemain, le gestionnaire regularise la fin oubliee a
+   * 17 h. La fin reelle remplace la fin automatique, et l'anomalie disparait au recalcul.
+   */
+  @Test
+  void shouldRemplacerLaFinAutomatiqueParLaFinRegulariseeLeLendemain() {
+    atelier.regularise(
+      RegularisationAEnregistrer.builder()
+        .suivi(premierOrdre)
+        .type(TypeDEvenementDAtelier.FIN)
+        .intention(IntentionDePointage.FIN)
+        .activiteVisee(Optional.of(ActiviteId.ouvertePar(premierApresMidi.evenement())))
+        .operateur(OPERATEUR_ID_DUPONT)
+        .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
+        .auteur(AUTEUR_LEROY)
+        .dateDeSurvenue(LE_10_MAI_2026_A_17H)
+    );
+
+    assertThat(temps.tempsEffectif(premierOrdre, maintenant.get()))
+      .last()
+      .satisfies(intervalle -> {
+        assertThat(intervalle.fin()).contains(LE_10_MAI_2026_A_17H);
+        assertThat(intervalle.finAutomatique()).isFalse();
+      });
   }
 
   /**
@@ -163,30 +166,6 @@ class VieDeLAtelierTest {
       .containsExactly(TypeDEvenementDAtelier.DEBUT, TypeDEvenementDAtelier.FIN, TypeDEvenementDAtelier.DEBUT, TypeDEvenementDAtelier.FIN);
   }
 
-  /**
-   * « Il a oublie de pointer le matin… mais il faut compter son temps de presence aussi » — « il faut pas que ce soit
-   * lui » : la regularisation garde la date de l'acte et celle de la saisie, sous le nom du gestionnaire.
-   */
-  @Test
-  void shouldTracerLeDepartRegulariseLeLendemainParUnTiers() {
-    EvenementDePresence depart = presence.get(journeeDeDupont).journal().evenements().getLast();
-
-    assertThat(depart.type()).isEqualTo(TypeDEvenementDePresence.DEPART);
-    assertThat(depart.auteur()).isEqualTo(AUTEUR_LEROY);
-    assertThat(depart.dateDeSurvenue()).isEqualTo(LE_10_MAI_2026_A_17H);
-    assertThat(depart.dateDEnregistrement()).isEqualTo(LE_11_MAI_2026_A_9H15);
-  }
-
-  /**
-   * Une seule regularisation de depart suffit a refermer tous les ordres restes ouverts : le correctif est porte par
-   * la presence, jamais recopie ordre par ordre.
-   */
-  @Test
-  void shouldRefermerTousLesOrdresRestesOuvertsSurLaSeuleRegularisationDeDepart() {
-    assertThat(temps.tempsEffectif(premierOrdre)).noneMatch(IntervalleDActivite::estOuvert);
-    assertThat(temps.tempsEffectif(secondOrdre)).noneMatch(IntervalleDActivite::estOuvert);
-  }
-
   private void ilEst(Instant instant) {
     maintenant.set(instant);
   }
@@ -195,13 +174,29 @@ class VieDeLAtelierTest {
     return atelier.engage(new EngagementAEnregistrer(element, AUTEUR_LEROY)).id();
   }
 
-  private static PointageAEnregistrer pointage(SuiviDAtelierId suivi, TypeDEvenementDAtelier type, PosteDeTravailId poste) {
+  private static PointageAEnregistrer debut(SuiviDAtelierId suivi, PosteDeTravailId poste) {
     return PointageAEnregistrer.builder()
       .suivi(suivi)
-      .type(type)
+      .type(TypeDEvenementDAtelier.DEBUT)
+      .intention(IntentionDePointage.OUVERTURE)
+      .activiteVisee(Optional.empty())
       .operateur(OPERATEUR_ID_DUPONT)
       .poste(Optional.of(poste))
       .auteur(AUTEUR_DUPONT);
+  }
+
+  /**
+   * La fin de l'activite qu'a ouverte ce debut, sur le meme ordre et le meme poste, telle que le pupitre la pointe.
+   */
+  private static PointageAEnregistrer fin(PointageAEnregistrer debut) {
+    return PointageAEnregistrer.builder()
+      .suivi(debut.suivi())
+      .type(TypeDEvenementDAtelier.FIN)
+      .intention(IntentionDePointage.FIN)
+      .activiteVisee(Optional.of(ActiviteId.ouvertePar(debut.evenement())))
+      .operateur(debut.operateur())
+      .poste(debut.poste())
+      .auteur(debut.auteur());
   }
 
   private static final class ElementsEngageablesFiges implements ElementsEngageables {

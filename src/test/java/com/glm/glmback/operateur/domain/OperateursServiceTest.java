@@ -195,8 +195,8 @@ class OperateursServiceTest {
   }
 
   /**
-   * Le journal d'atelier et les journees de travail ne retiennent que l'identifiant : supprimer l'operateur laisserait
-   * des heures sans personne a payer.
+   * Le journal d'atelier retient l'identifiant de l'operateur : la fiche conserve l'identification de la personne
+   * rattachee aux faits enregistres.
    */
   @Test
   void shouldNotDeleteOperateurWhoAlreadyPointed() {

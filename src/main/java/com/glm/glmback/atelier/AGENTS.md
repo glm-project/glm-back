@@ -10,12 +10,14 @@ Le **pointage et sa correction**, et rien d'autre. Trois actes :
 
 1. **Engager** un élément de fabrication en atelier — geste métier explicite du back-office, distinct de la création de
    l'élément — puis le **clôturer** ou rouvrir la clôture.
-2. **Enregistrer les pointages** : la présence de l'opérateur (arrivée, départ) d'un côté, son travail sur un élément
-   engagé (début, non conformité, fin) de l'autre. La pause n'est pas un pointage du serveur : le pupitre la traduit
-   en fins, puis en débuts ([ADR 0002](../../../../../../../documentation/adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)).
+2. **Enregistrer les pointages d'activité** sur un élément engagé (début, non conformité, fin). Chaque pointage d'élément dit son intention — ouverture,
+   transition ou fin — et la transition comme la fin visent l'activité qu'elles remplacent ou terminent. La pause
+   n'est pas un pointage du serveur : le pupitre la traduit en fins, puis en ouvertures
+   ([ADR 0002](../../../../../../../documentation/adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)).
 3. **Corriger** ces saisies : `regularise` (saisie oubliée), `annule` (saisie en trop), `corrige` (saisie fausse).
 
-Il en déduit, à la lecture seulement, les intervalles de temps passé — jamais stockés.
+Il interprète les faits du journal et projette les activités et les séquences en conflit à chaque écriture.
+Les lectures évaluent l'expiration à un instant explicite ; le journal reste la source de vérité.
 
 ## Ce dont il ne s'occupe pas
 
@@ -28,36 +30,28 @@ Ne rien ajouter ici qui relève de :
 - **le référentiel des ressources** — opérateur → postes autorisés, taux ; poste → libellé, nature, coût horaire. Ces
   données sont **lues par port** (`OperateursConnus`, `PostesConnus`, `Habilitations`), jamais possédées ici. Le
   journal ne retient que `OperateurId` et `PosteDeTravailId` ;
-- **la paie** — la présence ne sert pas à payer ; le contexte expose `amplitude()` et `fenetres()` sans en faire une
-  mesure de paie ;
 - **le cycle de vie de l'élément de fabrication** lui-même, qui appartient à `elementdefabrication` ;
-- **le fuseau horaire et le jour calendaire** — une `JourneeDeTravail` est bornée par une arrivée et un départ, pas par
-  une date. Aucun `ZoneId`, aucun `LocalDate` dans ce contexte.
+- **le fuseau horaire et le jour calendaire** — les lecteurs découpent les activités ; aucun `ZoneId` ni `LocalDate`
+  dans ce contexte.
 
-## Agrégats
+## Agrégat
 
-| Agrégat            | Identité                | Journal             |
-| ------------------ | ----------------------- | ------------------- |
-| `JourneeDeTravail` | un opérateur, une venue | `JournalDePresence` |
-| `SuiviDAtelier`    | un élément engagé       | `JournalDAtelier`   |
-
-Ils cohabitent dans un seul contexte parce qu'ils partagent un même langage — opérateur, auteur, horodatage,
-annulation — que le shared kernel ne peut pas accueillir puisqu'il est en anglais.
-
-`TempsDAtelierService` est le seul point qui croise les deux : le temps effectif d'un élément est l'intersection de ses
-intervalles bruts avec les fenêtres de présence de son opérateur.
+`SuiviDAtelier` porte un élément engagé et son `JournalDAtelier`. `TempsDAtelierService` lit les intervalles
+interprétés de ses activités ; seuls les faits d'activité, la clôture et l'échéance en fixent les bornes.
 
 ## Invariants à ne pas casser
 
-- **Le journal est la source de vérité.** Aucun état, aucun compteur, aucun intervalle n'est stocké : tout se déduit du
-  repli. C'est la correction qui l'impose — une saisie rattrapée doit compter à l'heure où elle a eu lieu.
-- **Horodatage bitemporel** sur chaque événement : date de survenue (métier) et date d'enregistrement (technique). Une
-  régularisation se reconnaît à l'écart entre les deux, jamais à l'identité de l'auteur.
+- **Le journal est la source de vérité.** L'agrégat se reconstruit par son repli ; les projections décrites ci-dessous
+  sont réconciliées à chaque écriture. C'est la correction qui l'impose — une saisie rattrapée doit compter à l'heure
+  où elle a eu lieu.
+- **Horodatage bitemporel** sur chaque événement : date de survenue (métier) et date d'enregistrement (technique).
+- **Une régularisation d'atelier se lit sur l'origine persistée de l'événement** (`OrigineDuPointage`) :
+  `REGULARISATION` pour la régularisation et le remplaçant d'une correction, `POINTAGE` pour toute la route des
+  pointages, même rejouée hors ligne avec l'heure du geste. C'est `SuivisDAtelierService` qui la fixe, d'après l'acte ;
+  ni l'écart des dates ni l'auteur ne la déduisent.
 - **Un événement annulé reste au journal**, porteur de son `Annulation`. Le repli l'écarte ; personne ne le supprime.
-- **Le départ est un fait de l'opérateur, écrit une seule fois ; la pause n'existe pas pour le serveur, le pupitre la
-  traduit en fins d'activité.** Ne jamais recopier le départ dans le journal des éléments : c'est ce qui permet à une
-  seule régularisation de départ de refermer tous les éléments de la journée. Ne jamais réintroduire de pause dans la
-  présence : elle se lit dans le journal des éléments, par les fins et les débuts que le pupitre y pointe.
+- **La pause n'existe pas pour le serveur.** Le pupitre la traduit en fins ciblées d'activité puis en nouvelles
+  ouvertures ; une activité oubliée se termine à son échéance ou à la fin régularisée par le gestionnaire.
 - **Le poste de travail et la `NatureDOperation` sont toujours facultatifs.** L'application vise un maximum
   d'entreprises clientes ; celles qui n'ont ni parc machine ni métiers distincts laissent les deux vides et retrouvent
   un comportement cohérent, pas un cas dégradé.
@@ -68,21 +62,60 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
   patron que la nature : jamais relus depuis le référentiel après coup. Ils restent, comme la nature, entièrement
   facultatifs, et ne servent qu'à figer une valeur qui pourrait changer chez le voisin — le calcul lui-même n'entre
   pas dans ce contexte.
-- **Un début sur une activité déjà en cours la relance**, il n'est jamais refusé (décision D9 de
-  [bornes-de-fin-de-journee.md](../../../../../../../documentation/strategie/bornes-de-fin-de-journee.md)). La même
-  règle vit dans les automates recopiés de `pupitre`, `coutderevient`, `feuilledetemps` et `syntheseheures` : les
-  cinq changent ensemble.
-- **Une journée sans départ au-delà du seuil est abandonnée**, et le geste suivant de l'opérateur en ouvre une
-  nouvelle ; sous le seuil, une arrivée est absorbée. Seuls les actes du gestionnaire peuvent être refusés pour
-  chevauchement de deux journées. Détail dans `contexte-metier.md`, section « La présence, de l'arrivée au départ ».
-- **Une journée fermée plus de 24 h après son arrivée se lit comme abandonnée** (D13, issue #59) : pour le temps effectif
-  seulement : `estPresumeePour` la ferme à sa fin présumée, le dernier fait **de la fenêtre de recherche**, départ exclu. `estAbandonneePour`, qui décide
-  de la saisie et des anomalies, ne change pas. Entre le seuil et 24 h,
-  une journée fermée compte entière. 24 h est une borne physique, jamais un paramètre : la constante vit dans
-  `JourneeDeTravail`, recopiée dans `atelier`, `feuilledetemps`, `syntheseheures` et `coutderevient`.
-- **Une anomalie de présence ne se stocke jamais.** `AnomalieDePresence.de` la déduit de la journée, du seuil et de
-  l'instant ; `CriteresDAnomalie.matches` porte la règle que l'adapter traduit en SQL, et le test de parité
-  confronte les deux, seuil pile et demi-seconde compris.
+- **L'intention d'un pointage est explicite, jamais déduite de son type** (`IntentionDePointage`). Une ouverture crée
+  une activité ; une transition remplace l'activité qu'elle vise par une activité distincte de l'autre catégorie ; une
+  fin termine l'activité qu'elle vise. Seule une fin se pointe `FIN`, et seules la transition et la fin portent une
+  activité visée : `EvenementDAtelier` refuse toute autre combinaison. Aucune intention par défaut.
+- **Une activité s'identifie par son pointage ouvrant d'origine** (`ActiviteId`), que portent l'ouverture et la
+  transition. Le remplaçant d'une correction d'un ouvrant reprend l'`ActiviteId` du fait corrigé
+  (`EvenementDAtelier.enRemplacementDe`) : un geste vise une `ActiviteId`, jamais l'identifiant technique de l'ouvrant
+  actif, et se résout sur l'ouvrant actif qui la porte.
+- **Un geste ne touche que sa cible** (`SequenceDActivites`). Une cible absente de ce suivi est refusée
+  (`ActiviteViseeIntrouvableException`, 404), celle d'un autre opérateur ou d'un autre poste aussi
+  (`ActiviteViseeIncoherenteException`, 409), avant toute autre décision, absorption comprise. Un geste qui contredit
+  le journal — cible déjà terminée, remplacée ou annulée, transition vers sa propre catégorie — n'est jamais refusé :
+  il ne termine jamais une autre activité que sa cible, et sa séquence est en conflit (`SequenceEnConflit`).
+  Corriger l'ouvrant vers un autre couple opérateur/poste conserve son `ActiviteId` : si un geste actif vise encore
+  cette activité depuis l'ancienne clé, la correction est refusée (409). Annuler ou corriger d'abord ce geste permet
+  ensuite de déplacer l'ouvrant sans laisser une cible incohérente et une durée chiffrable sur la nouvelle clé.
+- **Aucune contradiction n'est refusée, par aucune écriture** : pointage, régularisation, correction et annulation
+  enregistrent le fait, et l'interprétation rend une séquence en conflit au lieu de lever. Une exception levée par
+  l'interprétation bloquerait aussi la relecture du suivi. Sont contradictoires : un geste qui vise une activité
+  remplacée strictement avant lui, déjà terminée par une fin réelle — double appui compris —, pas encore ouverte à son
+  heure ou dont l'ouverture est annulée ; une transition vers sa propre catégorie, vers une cible échue pendant qu'une
+  autre activité est en cours, ou vers une cible que seul le gestionnaire a prolongée au-delà de son échéance. Une
+  cible seulement échue ne contredit rien.
+- **Une séquence en conflit est dérivée, jamais stockée comme état.** Elle ne dépend que de l'ensemble des faits
+  actifs, jamais de leur ordre de réception, et disparaît au recalcul quand une correction ou une annulation rend les
+  faits cohérents. Une contradiction couvre la zone qui va du début de sa cible à l'heure du geste : la cible,
+  l'activité qu'ouvre le geste et toute activité de la clé qui chevauche la zone sont **à résoudre** ; les autres
+  activités, de la clé comme des autres clés, gardent leur interprétation. Les contradictions qui partagent une
+  activité, ou une même cible annulée, forment une seule séquence ; ses pointages sont ses gestes contradictoires et
+  tout fait actif qui ouvre ou vise l'une de ses activités.
+- **Une activité à résoudre n'est ni en cours ni terminée** (`Activite.aResoudre`) : sans fin, ni réelle ni
+  automatique, que ni l'échéance ni la clôture ne lui donnent, et hors du temps effectif chiffré. L'état du suivi se
+  juge sur ses seules activités interprétables ; le conflit se lit à part, sans valeur d'état propre.
+- **Une fin sur un suivi clôturé se juge sur son heure métier** : survenue avant la clôture, elle est enregistrée et
+  appliquée, la clôture restant acquise ; survenue après, elle est absorbée, une fois sa cible contrôlée.
+- **Une activité que rien n'a terminée se termine automatiquement à son échéance** : son début plus 13 heures
+  écoulées (`Echeance`), neutres au changement d'heure. Ce délai est la règle de l'atelier, pas une donnée de
+  paramétrage : il reste une constante du domaine. Rien n'est écrit ni planifié : `Activite` ne dépend que des faits
+  actifs, et seule sa lecture à un instant d'évaluation (`Activite.a`) la dit en cours, terminée à sa fin réelle, ou
+  terminée automatiquement à l'échéance avec une anomalie, que seule une fin réelle retire. L'instant vient de
+  l'horloge du service applicatif (`LectureDuSuivi`, `TempsDAtelierService.tempsEffectif`), jamais d'une horloge
+  enfouie dans le domaine.
+- **L'interprétation applique l'échéance sans instant de lecture**, sur les seules heures métier
+  (`SequenceDActivites`). Un geste pointé au plus tard à l'échéance de sa cible la termine à son heure, un geste pile à
+  l'échéance l'emportant sur la fin automatique. Pointée après, une fin conserve la borne automatique et son anomalie,
+  sans conflit ni qualification supplémentaire dans le journal ; une transition ouvre sa nouvelle activité à son
+  heure, en laissant un trou. Une relance ou une clôture ne prolonge jamais une
+  activité échue. Seule une régularisation — fin ou transition — termine une activité au-delà de son échéance.
+- **Une ouverture relance une activité interprétable sans bloquer le pupitre.** Avant son échéance, elle
+  termine l’ancienne à l’heure du geste ; après, elle conserve sa fin automatique et le trou jusqu’à la nouvelle
+  ouverture. Une transition de même catégorie conserve sa cible et met la séquence en conflit. Les lecteurs consomment les activités et conflits projetés par atelier avec leurs propres entités immuables ; chacun
+  évalue l'échéance projetée à son instant de lecture et applique ses règles de calendrier ou de valorisation.
+- **À heure métier égale, le journal range la fin, puis la transition, puis l'ouverture**, et départage enfin par
+  l'identifiant : jamais par la date d'enregistrement, qui ferait dépendre le journal de l'ordre de réception.
 - **L'habilitation, elle, bloque** : pointer sur un poste où l'opérateur n'est pas déclaré est refusé (409). C'est la
   seule règle dure du contexte. Elle ne joue que lorsqu'un poste est fourni, et elle joue sur les **trois** écritures
   du journal — pointage, régularisation, correction — sans quoi le back-office contournerait le pupitre.
@@ -95,59 +128,69 @@ intervalles bruts avec les fenêtres de présence de son opérateur.
 
 ## Ports sortants
 
-`SuiviDAtelierRepository`, `JourneeDeTravailRepository`, `ElementsEngageables`, `OperateursConnus`, `PostesConnus`,
-`Habilitations`, `IdentitesDEvenements`, `SeuilDAmplitude`, `Clock`.
+`SuiviDAtelierRepository`, `ElementsEngageables`, `OperateursConnus`, `PostesConnus`, `Habilitations`,
+`IdentitesDEvenements`, `Clock`.
 
-`SeuilDAmplitude` lit l'amplitude maximale dans la table `parametrage`, par une entité en lecture seule, sans
-importer le contexte voisin. Le seuil est lu à chaque geste : un changement vaut pour les gestes qui suivent.
-
-`SuiviDAtelierRepository.dernierPointageDe` rend le dernier pointage actif d'un opérateur sur une période, tous
-éléments confondus : c'est la matière de la fin présumée d'une journée abandonnée, que `TempsDAtelierService` ne
-demande que pour une telle journée.
-
-`OperateursConnus` expose `get(OperateurId)` en plus de `existe` et `parIds` : la présence (`JourneesDeTravailService`)
-n'a toujours besoin que de l'existence, mais le journal d'atelier (`SuivisDAtelierService`) résout désormais la fiche
-entière pour y recopier le taux horaire, sur le patron déjà en place pour `PostesConnus.get`.
-
-Tout besoin d'une donnée de paramétrage passe par un nouveau port, jamais par une constante du domaine.
+`OperateursConnus.get` résout la fiche pour copier le taux horaire au fait ; `parIds` résout les libellés d'une page.
+Le registre `IdentitesDEvenements` réserve durablement les UUID par entreprise, pupitre et hors pupitre compris.
+L'association au suivi et la cible d'activité sont distinctes ; date absente et date fournie le restent.
 
 ## État d'avancement
 
 Les quatre couches existent. L'API REST est décrite par OpenAPI (`/swagger-ui.html`) et par
-[documentation/atelier-api.md](../../../../../../documentation/atelier-api.md), le guide d'intégration du développeur
+[documentation/atelier-api.md](../../../../../../../documentation/atelier-api.md), le guide d'intégration du développeur
 front — le tenir à jour avec le contrat.
 
 `infrastructure/secondary/` persiste en PostgreSQL, dans le schéma de l'entreprise courante :
 
-- `JpaSuiviDAtelierRepository` et `JpaJourneeDeTravailRepository` écrivent chacun leur agrégat sur deux tables — la
+- `JpaSuiviDAtelierRepository` écrit son agrégat sur deux tables — la
   ligne de l'agrégat et son journal —, l'agrégat étant reconstruit en entier par le domaine mais **rapproché par
-  identifiant** côté persistance : un pointage coûte l'insertion d'une ligne, jamais la réécriture du journal ;
+  identifiant** côté persistance : un pointage coûte l'insertion d'une ligne, jamais la réécriture du journal. Le
+  suivi y ajoute la projection de ses activités, `activite_d_atelier`, rapprochée de la même façon ;
 - `ElementsDeFabricationEngageables` lit la table `element_de_fabrication` par une entité en lecture seule propre à
   l'atelier : aucun import de `elementdefabrication`, l'invariant tient ;
 - `OperateursDuReferentiel`, `PostesDeTravailDuReferentiel` et `HabilitationsDuReferentiel` lisent de la même façon
-  `operateur`, `poste_de_travail` et `operateur_poste`. La présence n'a besoin que de l'existence ; le journal
-  d'atelier resout la fiche entière pour recopier coût et taux horaires ; la lecture d'une page, elle, résout un
+  `operateur`, `poste_de_travail` et `operateur_poste`. Le journal
+  d'atelier résout la fiche entière pour recopier coût et taux horaires ; la lecture d'une page, elle, résout un
   journal entier par `parIds`, jamais une requête par événement, et `AnnuaireDAtelier` matérialise ce résultat le
   temps d'une lecture.
 
 ### Les colonnes de projection ne contredisent pas « le journal est la source de vérité »
 
-`suivi_d_atelier.etat`, `journee_de_travail.etat`, `.debut` et `.fin` sont **dérivées du journal, écrites depuis le
-domaine à chaque enregistrement, et jamais relues** : `toDomain()` rejoue toujours le journal et ignore ces colonnes.
-Ce sont des index, pas un état stocké — sans eux, filtrer l'écran d'atelier sur `etats` ou retrouver la journée
-contenant un instant obligerait à ramener toute l'entreprise en mémoire à chaque lecture de temps effectif. Elles ne
-dépendent que du journal, jamais de l'instant courant, donc restent justes entre deux écritures.
+Les projections d'activité et de conflit sont **dérivées du journal et écrites depuis le domaine à chaque
+enregistrement**. `toDomain()` rejoue toujours le journal et les ignore pour reconstruire le suivi. Les requêtes et
+les contextes lecteurs les lisent avec leurs propres entités ; l'expiration est évaluée séparément à la lecture.
 
-Leur contrepartie : `SuiviDAtelierCriteria.matches` et `JourneeDeTravailCriteria.matches` ne sont plus appelées par la
+`activite_d_atelier` porte, par activité de `SuiviDAtelier.activites()`, son identité, son ouvrant actif, sa clé, sa
+nature, sa catégorie, son début, son échéance, sa fin réelle et sa fin au plus tard si elle est à résoudre, rapprochés par identité à
+chaque écriture. Jamais de fin automatique ni d'anomalie, qui dépendent de l'instant : le filtre `etats` juge l'état à
+l'instant d'évaluation de `SuiviDAtelierCriteria`, une activité interprétable sans fin réelle étant en cours tant que
+son échéance n'est pas atteinte. `feuilledetemps`, `syntheseheures`, `coutderevient` et `pupitre` lisent cette
+interprétation, avec leurs modèles et ports propres, sans import du domaine d'atelier.
+
+La `fin_au_plus_tard` borne la plage possible d'une activité à résoudre : le maximum de son échéance et des fins
+ou transitions régularisées qui la visent, limité par la clôture. La clôture ne prolonge jamais cette borne.
+Elle vient des faits, sans horloge de lecture, et est réécrite à correction, annulation et clôture ; elle disparaît
+quand la résolution rend l'activité interprétable. Ce n'est ni une fin réelle ni une durée.
+
+Les séquences en conflit sont projetées dans `sequence_en_conflit` et leurs pointages dans
+`pointage_en_conflit`. L'identité technique d'une séquence est celle de son premier pointage dans l'ordre du
+journal ; elle n'est pas une identité métier exposée. Les positions conservent l'ordre des pointages et des
+activités, ces dernières rattachées par `activite_d_atelier.sequence_id`. Une séquence sans activité à résoudre
+reste projetée. Le rapprochement à chaque écriture retire les séquences résolues ; `toDomain()` les ignore.
+`JpaSuiviDAtelierRepositoryIT` confronte leurs clés et leurs deux listes au domaine, puis vérifie réécriture et
+résolution. Les contextes lecteurs peuvent les lire par leurs propres entités immuables.
+
+Leur contrepartie : `SuiviDAtelierCriteria.matches` n’est plus appelée par la
 production, qui traduit les mêmes règles en SQL. C'est `PariteDesRepositoriesDAtelierIT` qui rétablit par l'exécution
 la garantie que donnait le code partagé — le modifier en même temps que l'une des deux expressions de la règle.
 
 ### Concurrence
 
-Deux saisies parties du même état valideraient chacune sa transition contre un journal qui ignore l'autre, et le
-journal obtenu — deux débuts consécutifs sur la même activité — deviendrait illisible à chaque relecture. `update`
+Deux saisies parties du même état construisent chacune un journal qui ignore le geste de l'autre. `update`
 charge donc l'agrégat sous verrou pessimiste, puis refuse par `SaisieConcurrenteException` (409) toute saisie dont le
-journal ignore un événement déjà stocké. Un `@Version` n'aurait rien protégé : la collection d'événements est le côté
+journal ignore un événement déjà stocké ; l'application réessaie les pointages avec le journal complet. Ce contrôle protège la
+conservation des faits, dont l'interprétation peut ensuite révéler un conflit. Un `@Version` n'aurait rien protégé : la collection d'événements est le côté
 inverse de l'association, donc l'insertion d'un événement ne salit pas la ligne parente et n'incrémente aucune version.
 
 L'`Auteur` d'une saisie vient toujours du jeton (`AuteurConnecte`), jamais du corps de la requête ; l'opérateur, lui,
@@ -159,12 +202,16 @@ Deux scénarios métier de référence, à lire avant toute modification du mod�
 
 - `src/test/java/com/glm/glmback/atelier/domain/VieDeLAtelierTest.java` — une journée complète en appels directs, avec
   le verbatim client en javadoc de chaque assertion ;
-- `src/test/features/atelier_suivi.feature` — la même journée rejouée en HTTP, avec `atelier_presence.feature` pour la
-  présence seule.
+- `src/test/features/atelier_suivi.feature` — la même journée rejouée en HTTP, avec `atelier_intentions.feature` pour l'intention et l'activité visée des pointages,
+  `atelier_echeance.feature` pour l'échéance et la fin automatique des activités, et `atelier_conflits.feature` pour
+  les séquences en conflit et leur résolution.
+
+Les scénarios écrits avant l'intention la font déduire du journal par `EcrituresDuJournalDAtelier`, comme le ferait le
+pupitre ; tout nouveau scénario donne son intention et sa cible.
 
 Les scénarios pilotent l'horloge (`CucumberClock`, step `Given il est "..."`). Deux pièges s'y rappellent seuls :
 **faire avancer l'horloge entre deux événements** — à horodatage identique, l'ordre du journal se départage sur
-l'identifiant, donc au hasard — et **ne jamais corriger vers une date postérieure à l'instant courant**, que
-`Horodatage` refuse.
+l'intention puis sur l'identifiant, donc au hasard entre deux gestes de même intention — et **ne jamais corriger vers
+une date postérieure à l'instant courant**, que `Horodatage` refuse.
 
 Les points encore ouverts sont listés en fin de section `atelier` dans `documentation/contexte-metier.md`.

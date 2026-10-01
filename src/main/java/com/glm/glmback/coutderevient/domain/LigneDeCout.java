@@ -17,7 +17,14 @@ import java.util.Optional;
  * montre.
  * </p>
  */
-public record LigneDeCout(Optional<NatureDOperation> nature, Periode periode, TempsPasse temps, List<Periode> nonConformites, Cout cout) {
+public record LigneDeCout(
+  Optional<NatureDOperation> nature,
+  Plage periode,
+  TempsPasse temps,
+  List<Periode> nonConformites,
+  List<Periode> finsAutomatiques,
+  Cout cout
+) {
   private static final Comparator<Periode> PAR_DEBUT = Comparator.comparing(Periode::debut).thenComparing(Periode::fin);
 
   public LigneDeCout {
@@ -25,48 +32,125 @@ public record LigneDeCout(Optional<NatureDOperation> nature, Periode periode, Te
     Assert.notNull("periode", periode);
     Assert.notNull("temps", temps);
     Assert.field("non conformites", nonConformites).notNull().noNullElement();
+    Assert.field("fins automatiques", finsAutomatiques).notNull().noNullElement();
     Assert.notNull("cout", cout);
   }
 
+  private LigneDeCout(Builder builder) {
+    this(builder.nature, builder.periode, builder.temps, builder.nonConformites, builder.finsAutomatiques, builder.cout);
+  }
+
   static LigneDeCoutNatureBuilder builder() {
-    return nature -> periode -> temps -> nonConformites -> cout -> new LigneDeCout(nature, periode, temps, nonConformites, cout);
+    return new Builder();
+  }
+
+  private static final class Builder
+    implements
+      LigneDeCoutNatureBuilder,
+      LigneDeCoutPeriodeBuilder,
+      LigneDeCoutTempsBuilder,
+      LigneDeCoutNonConformitesBuilder,
+      LigneDeCoutFinsAutomatiquesBuilder,
+      LigneDeCoutCoutBuilder
+  {
+
+    private Optional<NatureDOperation> nature;
+    private Plage periode;
+    private TempsPasse temps;
+    private List<Periode> nonConformites;
+    private List<Periode> finsAutomatiques;
+    private Cout cout;
+
+    @Override
+    public LigneDeCoutPeriodeBuilder nature(Optional<NatureDOperation> nature) {
+      this.nature = nature;
+      return this;
+    }
+
+    @Override
+    public LigneDeCoutTempsBuilder periode(Plage periode) {
+      this.periode = periode;
+      return this;
+    }
+
+    @Override
+    public LigneDeCoutNonConformitesBuilder temps(TempsPasse temps) {
+      this.temps = temps;
+      return this;
+    }
+
+    @Override
+    public LigneDeCoutFinsAutomatiquesBuilder nonConformites(List<Periode> nonConformites) {
+      this.nonConformites = nonConformites;
+      return this;
+    }
+
+    @Override
+    public LigneDeCoutCoutBuilder finsAutomatiques(List<Periode> finsAutomatiques) {
+      this.finsAutomatiques = finsAutomatiques;
+      return this;
+    }
+
+    @Override
+    public LigneDeCout cout(Cout cout) {
+      this.cout = cout;
+      return new LigneDeCout(this);
+    }
   }
 
   /**
    * La ligne deduite des tranches d'une meme nature, chacune decoupee sur les sous-periodes ou le diviseur de son
    * operateur est constant.
    */
-  static LigneDeCout de(Optional<NatureDOperation> nature, List<TrancheDActivite> tranches, ChargesDesOperateurs charges) {
+  static LigneDeCout de(TravailDeLaLigne travail, ChargesDesOperateurs charges) {
+    List<TrancheDActivite> tranches = travail.terminees();
     List<TrancheValorisable> parts = tranches
       .stream()
       .flatMap(tranche -> charges.decoupe(tranche).stream())
       .toList();
-
     return builder()
-      .nature(nature)
-      .periode(periode(tranches))
-      .temps(temps(tranches))
+      .nature(travail.nature())
+      .periode(periode(travail))
+      .temps(temps(travail))
       .nonConformites(nonConformites(tranches))
-      .cout(cout(parts));
+      .finsAutomatiques(
+        tranches.stream().filter(TrancheDActivite::finAutomatique).map(TrancheDActivite::periode).sorted(PAR_DEBUT).toList()
+      )
+      .cout(travail.aResoudre().isEmpty() ? cout(parts) : new Cout(MontantTotal.incomplet(), MontantTotal.incomplet()));
   }
 
-  private static Periode periode(List<TrancheDActivite> tranches) {
-    Instant debut = tranches
-      .stream()
-      .map(tranche -> tranche.periode().debut())
+  private static Plage periode(TravailDeLaLigne travail) {
+    Instant debut = java.util.stream.Stream.concat(
+      travail
+        .terminees()
+        .stream()
+        .map(tranche -> tranche.periode().debut()),
+      travail
+        .aResoudre()
+        .stream()
+        .map(activite -> activite.plage().debut())
+    )
       .min(Comparator.naturalOrder())
       .orElseThrow();
-    Instant fin = tranches
+    Optional<Instant> fin = travail
+      .terminees()
       .stream()
       .map(tranche -> tranche.periode().fin())
-      .max(Comparator.naturalOrder())
-      .orElseThrow();
-
-    return new Periode(debut, fin);
+      .max(Comparator.naturalOrder());
+    return new Plage(debut, fin);
   }
 
-  private static TempsPasse temps(List<TrancheDActivite> tranches) {
-    return new TempsPasse(duree(tranches, CategorieDActivite.TRAVAIL), duree(tranches, CategorieDActivite.NON_CONFORMITE));
+  private static TempsPasse temps(TravailDeLaLigne travail) {
+    return new TempsPasse(duree(travail, CategorieDActivite.TRAVAIL), duree(travail, CategorieDActivite.NON_CONFORMITE));
+  }
+
+  private static DureeTotale duree(TravailDeLaLigne travail, CategorieDActivite categorie) {
+    return travail
+        .aResoudre()
+        .stream()
+        .anyMatch(activite -> activite.activite().categorie() == categorie)
+      ? DureeTotale.incomplet()
+      : DureeTotale.de(duree(travail.terminees(), categorie));
   }
 
   private static Duration duree(List<TrancheDActivite> tranches, CategorieDActivite categorie) {
@@ -92,8 +176,17 @@ public record LigneDeCout(Optional<NatureDOperation> nature, Periode periode, Te
 
   private static Cout cout(List<TrancheValorisable> parts) {
     return new Cout(
-      new Montant(somme(parts, TrancheValorisable::coutMachine)),
-      new Montant(somme(parts, TrancheValorisable::coutDeMainDOeuvre))
+      MontantTotal.de(new Montant(somme(parts, TrancheValorisable::coutMachine))),
+      parts.stream().allMatch(part -> part.coutDeMainDOeuvre().isPresent())
+        ? MontantTotal.de(
+            new Montant(
+              parts
+                .stream()
+                .map(part -> part.coutDeMainDOeuvre().orElseThrow())
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+            )
+          )
+        : MontantTotal.incomplet()
     );
   }
 
@@ -106,7 +199,7 @@ public record LigneDeCout(Optional<NatureDOperation> nature, Periode periode, Te
   }
 
   interface LigneDeCoutPeriodeBuilder {
-    LigneDeCoutTempsBuilder periode(Periode periode);
+    LigneDeCoutTempsBuilder periode(Plage periode);
   }
 
   interface LigneDeCoutTempsBuilder {
@@ -114,7 +207,11 @@ public record LigneDeCout(Optional<NatureDOperation> nature, Periode periode, Te
   }
 
   interface LigneDeCoutNonConformitesBuilder {
-    LigneDeCoutCoutBuilder nonConformites(List<Periode> nonConformites);
+    LigneDeCoutFinsAutomatiquesBuilder nonConformites(List<Periode> nonConformites);
+  }
+
+  interface LigneDeCoutFinsAutomatiquesBuilder {
+    LigneDeCoutCoutBuilder finsAutomatiques(List<Periode> finsAutomatiques);
   }
 
   interface LigneDeCoutCoutBuilder {

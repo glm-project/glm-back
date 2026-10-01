@@ -5,25 +5,29 @@ import java.time.Instant;
 import java.util.Optional;
 
 /**
- * Du temps affecte a un operateur, un poste de travail et une categorie, produit par le repli du journal.
+ * Du temps affecte a un operateur, un poste de travail et une categorie : une activite lue a un instant d'evaluation.
  *
  * <p>
- * Un intervalle sans fin est encore en cours : le repli se fait sans horloge, seule une sommation aurait besoin de
- * savoir quand on est.
+ * Un intervalle sans fin est encore en cours a cet instant, sauf s'il est a resoudre : une sequence en conflit ne
+ * permet alors d'affirmer ni sa fin ni sa duree. Une fin automatique est l'echeance d'une activite que rien n'a
+ * terminee avant qu'elle ne tombe : elle porte une anomalie, que seule une fin reelle retire.
  * </p>
  */
 public record IntervalleDActivite(
   EvenementDAtelierId evenement,
+  ActiviteId activite,
   OperateurId operateur,
   Optional<PosteDeTravailId> poste,
   Optional<NatureDOperation> nature,
   CategorieDActivite categorie,
   Instant debut,
   Optional<Instant> fin,
-  boolean presume
+  boolean finAutomatique,
+  boolean aResoudre
 ) {
   public IntervalleDActivite {
     Assert.notNull("evenement", evenement);
+    Assert.notNull("activite", activite);
     Assert.notNull("operateur", operateur);
     Assert.notNull("poste de travail", poste);
     Assert.notNull("nature de l'operation", nature);
@@ -35,21 +39,27 @@ public record IntervalleDActivite(
 
   static IntervalleDActiviteEvenementBuilder builder() {
     return evenement ->
-      operateur ->
-        poste ->
-          nature -> categorie -> debut -> fin -> new IntervalleDActivite(evenement, operateur, poste, nature, categorie, debut, fin, false);
-  }
-
-  /**
-   * Le meme intervalle reduit a la fenetre de presence donnee, s'il en reste quelque chose. Pris dans une fenetre
-   * presumee, il devient presume : il repose sur une fin de journee que personne n'a pointee.
-   */
-  public Optional<IntervalleDActivite> reduitA(FenetreDePresence fenetre) {
-    return fenetre
-      .intersection(debut, fin)
-      .map(part ->
-        new IntervalleDActivite(evenement, operateur, poste, nature, categorie, part.debut(), part.fin(), presume || part.presumee())
-      );
+      activite ->
+        operateur ->
+          poste ->
+            nature ->
+              categorie ->
+                debut ->
+                  fin ->
+                    finAutomatique ->
+                      aResoudre ->
+                        new IntervalleDActivite(
+                          evenement,
+                          activite,
+                          operateur,
+                          poste,
+                          nature,
+                          categorie,
+                          debut,
+                          fin,
+                          finAutomatique,
+                          aResoudre
+                        );
   }
 
   public boolean estOuvert() {
@@ -61,7 +71,11 @@ public record IntervalleDActivite(
   }
 
   interface IntervalleDActiviteEvenementBuilder {
-    IntervalleDActiviteOperateurBuilder evenement(EvenementDAtelierId evenement);
+    IntervalleDActiviteActiviteBuilder evenement(EvenementDAtelierId evenement);
+  }
+
+  interface IntervalleDActiviteActiviteBuilder {
+    IntervalleDActiviteOperateurBuilder activite(ActiviteId activite);
   }
 
   interface IntervalleDActiviteOperateurBuilder {
@@ -85,6 +99,14 @@ public record IntervalleDActivite(
   }
 
   interface IntervalleDActiviteFinBuilder {
-    IntervalleDActivite fin(Optional<Instant> fin);
+    IntervalleDActiviteFinAutomatiqueBuilder fin(Optional<Instant> fin);
+  }
+
+  interface IntervalleDActiviteFinAutomatiqueBuilder {
+    IntervalleDActiviteAResoudreBuilder finAutomatique(boolean finAutomatique);
+  }
+
+  interface IntervalleDActiviteAResoudreBuilder {
+    IntervalleDActivite aResoudre(boolean aResoudre);
   }
 }

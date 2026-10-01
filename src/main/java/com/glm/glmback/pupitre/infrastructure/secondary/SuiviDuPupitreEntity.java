@@ -1,6 +1,5 @@
 package com.glm.glmback.pupitre.infrastructure.secondary;
 
-import com.glm.glmback.pupitre.domain.JournalDuPupitre;
 import com.glm.glmback.pupitre.domain.NomDElement;
 import com.glm.glmback.pupitre.domain.SuiviDuPupitre;
 import com.glm.glmback.pupitre.domain.SuiviDuPupitreId;
@@ -19,9 +18,9 @@ import org.hibernate.annotations.Immutable;
  * Vue en lecture seule de la table des suivis d'atelier.
  *
  * <p>
- * La colonne de projection {@code etat} n'est pas mappee : la cloture est un fait, pas une projection, et
+ * La cloture est un fait :
  * {@code clotureDateDeSurvenue} suffit a ecarter des la requete les elements qui n'acceptent plus de pointage. L'etat
- * rendu au pupitre, lui, se deduit du journal comme chez l'atelier.
+ * rendu au pupitre se juge sur les activites interpretables projetees par l atelier.
  * </p>
  *
  * <p>
@@ -60,12 +59,7 @@ class SuiviDuPupitreEntity {
     return elementId;
   }
 
-  SuiviDuPupitre toDomain(JournalDuPupitre journal, String reference) {
-    return SuiviDuPupitre.builder()
-      .id(new SuiviDuPupitreId(id))
-      .nom(new NomDElement(elementNom))
-      .reference(reference)
-      .type(elementType)
-      .journal(journal);
+  SuiviDuPupitre.SuiviDuPupitreActivitesBuilder toDomain(String reference) {
+    return SuiviDuPupitre.builder().id(new SuiviDuPupitreId(id)).nom(new NomDElement(elementNom)).reference(reference).type(elementType);
   }
 }

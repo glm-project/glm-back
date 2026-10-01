@@ -4,6 +4,7 @@ import static com.glm.glmback.cucumber.rest.CucumberRestAssertions.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.cucumber.CucumberClock;
+import com.glm.glmback.cucumber.EcrituresDuJournalDAtelier;
 import com.glm.glmback.cucumber.rest.CucumberRestClient;
 import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
 import io.cucumber.java.en.Given;
@@ -37,7 +38,6 @@ import tools.jackson.databind.json.JsonMapper;
 public class CoutDeRevientSteps {
 
   private static final String SUIVIS_URI = "/api/atelier/suivis";
-  private static final String JOURNEES_URI = "/api/atelier/journees";
   private static final String ELEMENTS_URI = "/api/elements-de-fabrication";
   private static final String POSTES_URI = "/api/postes-de-travail";
   private static final String OPERATEURS_URI = "/api/operateurs";
@@ -51,11 +51,15 @@ public class CoutDeRevientSteps {
   @Autowired
   private CucumberClock horloge;
 
+  @Autowired
+  private EcrituresDuJournalDAtelier ecritures;
+
   private final Map<String, String> postes = new HashMap<>();
   private final Map<String, String> operateurs = new HashMap<>();
   private final Map<String, String> elements = new HashMap<>();
   private final Map<String, String> suivis = new HashMap<>();
-  private final Map<String, String> journees = new HashMap<>();
+  private final Map<String, String> pointages = new HashMap<>();
+  private final Map<String, Map<String, Object>> corpsDesPointages = new HashMap<>();
 
   @Given("le rapport connait le poste {string} de nature {string} a {string} de l'heure")
   public void leRapportConnaitLePoste(String alias, String nature, String coutHoraire) {
@@ -98,36 +102,6 @@ public class CoutDeRevientSteps {
     suivis.put(alias, id());
   }
 
-  @Given("{string} prend son poste a {string}")
-  public void prendSonPosteA(String operateur, String instant) {
-    horloge.ilEst(Instant.parse(instant));
-    rest.post(JOURNEES_URI, JSON.writeValueAsString(Map.of("id", UUID.randomUUID(), "operateur", operateurs.get(operateur))));
-    journees.put(operateur, id());
-  }
-
-  /**
-   * Un depart saisi par le gestionnaire sur la derniere journee ouverte par l'operateur : la seule voie de l'API qui
-   * ferme encore une journee au-dela de 24 h.
-   */
-  @Given("le depart de {string} est rattrape sur sa journee a {string}")
-  public void leDepartEstRattrapeSurSaJourneeA(String operateur, String instant) {
-    horloge.ilEst(Instant.parse(instant));
-    rest.post(
-      JOURNEES_URI + "/" + journees.get(operateur) + "/regularisations",
-      JSON.writeValueAsString(Map.of("type", "DEPART", "dateDeSurvenue", instant))
-    );
-    assertThat(CucumberRestTestContext.getStatus().value()).as("la regularisation du depart doit etre acceptee").isEqualTo(201);
-  }
-
-  @Given("{string} pointe sa presence {string} a {string}")
-  public void pointeSaPresenceA(String operateur, String type, String instant) {
-    horloge.ilEst(Instant.parse(instant));
-    rest.post(
-      JOURNEES_URI + "/pointages",
-      JSON.writeValueAsString(Map.of("id", UUID.randomUUID(), "operateur", operateurs.get(operateur), "type", type))
-    );
-  }
-
   @Given("{string} pointe {string} sur {string} au poste {string} a {string}")
   public void pointeSurAuPoste(String operateur, String type, String element, String poste, String instant) {
     horloge.ilEst(Instant.parse(instant));
@@ -141,20 +115,200 @@ public class CoutDeRevientSteps {
       "poste",
       postes.get(poste)
     );
-    rest.post(SUIVIS_URI + "/" + suivis.get(element) + "/pointages", JSON.writeValueAsString(corps));
+    ecritures.pointe(suivis.get(element), corps);
   }
 
   @Given("{string} pointe {string} sur {string} sans poste a {string}")
   public void pointeSurSansPoste(String operateur, String type, String element, String instant) {
     horloge.ilEst(Instant.parse(instant));
     Map<String, Object> corps = Map.of("id", UUID.randomUUID(), "type", type, "operateur", operateurs.get(operateur));
-    rest.post(SUIVIS_URI + "/" + suivis.get(element) + "/pointages", JSON.writeValueAsString(corps));
+    ecritures.pointe(suivis.get(element), corps);
   }
 
   @Given("{string} est cloture a {string}")
   public void estClotureA(String element, String instant) {
     horloge.ilEst(Instant.parse(instant));
     rest.put(SUIVIS_URI + "/" + suivis.get(element) + "/cloture", JSON.writeValueAsString(Map.of("dateDeSurvenue", instant)));
+  }
+
+  @Given("pour le cout, {string} recoit les pointages")
+  public void recoitLesPointages(String element, List<Map<String, String>> recus) {
+    for (Map<String, String> pointage : recus) {
+      String survenue = pointage.get("survenue");
+      horloge.ilEst(Instant.parse(java.util.Optional.ofNullable(pointage.get("reception")).orElse(survenue)));
+      String identite = UUID.randomUUID().toString();
+      Map<String, Object> corps = new HashMap<>();
+      corps.put("id", identite);
+      corps.put("type", pointage.get("type"));
+      corps.put("intention", pointage.get("intention"));
+      corps.put("operateur", operateurs.get(pointage.get("operateur")));
+      corps.put("dateDeSurvenue", survenue);
+      if (pointage.containsKey("poste")) {
+        corps.put("poste", postes.get(pointage.get("poste")));
+      }
+      if (!java.util.Optional.ofNullable(pointage.get("cible")).orElse("").isEmpty()) {
+        corps.put("cible", pointages.get(pointage.get("cible")));
+      }
+      if ("REGULARISATION".equals(pointage.get("acte"))) {
+        corps.remove("id");
+        ecritures.regularise(suivis.get(element), corps);
+      } else {
+        ecritures.pointe(suivis.get(element), corps);
+      }
+      assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage explicite du cout doit etre accepte").isTrue();
+      if ("REGULARISATION".equals(pointage.get("acte"))) {
+        identite = identiteDuPointageActif(survenue, pointage.get("type"), pointage.get("intention"));
+      }
+      pointages.put(pointage.get("alias"), identite);
+      corpsDesPointages.put(pointage.get("alias"), corps);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private static String identiteDuPointageActif(String survenue, String type, String intention) {
+    List<Map<String, Object>> journal = (List<Map<String, Object>>) CucumberRestTestContext.getElement("$.journal");
+    return journal
+      .stream()
+      .filter(
+        pointage ->
+          survenue.equals(pointage.get("dateDeSurvenue"))
+          && type.equals(pointage.get("type"))
+          && intention.equals(pointage.get("intention"))
+      )
+      .filter(pointage -> pointage.get("annulation") == null)
+      .map(pointage -> (String) pointage.get("id"))
+      .findFirst()
+      .orElseThrow();
+  }
+
+  @Given("pour le cout, le pointage {string} sur {string} est annule a {string}")
+  public void annule(String alias, String element, String reception) {
+    horloge.ilEst(Instant.parse(reception));
+    rest.post(
+      SUIVIS_URI + "/" + suivis.get(element) + "/evenements/" + pointages.get(alias) + "/annulation",
+      JSON.writeValueAsString(Map.of("motif", "saisie en trop"))
+    );
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("annulation acceptee").isTrue();
+  }
+
+  @Given("pour le cout, le pointage {string} sur {string} est corrige a {string} vers {string}")
+  public void corrige(String alias, String element, String reception, String survenue) {
+    Map<String, Object> corps = new HashMap<>(corpsDesPointages.get(alias));
+    corps.put("dateDeSurvenue", survenue);
+    corrige(alias, element, reception, corps);
+  }
+
+  @Given("pour le cout, la cible du pointage {string} sur {string} est corrigee vers {string} a {string}")
+  public void corrigeCible(String alias, String element, String cible, String reception) {
+    Map<String, Object> corps = new HashMap<>(corpsDesPointages.get(alias));
+    corps.put("cible", pointages.get(cible));
+    corrige(alias, element, reception, corps);
+  }
+
+  private void corrige(String alias, String element, String reception, Map<String, Object> corps) {
+    horloge.ilEst(Instant.parse(reception));
+    corps.remove("id");
+    corps.put("motif", "saisie erronee");
+    ecritures.corrige(suivis.get(element), pointages.get(alias), corps);
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("correction acceptee").isTrue();
+    pointages.put(
+      alias + "-corrige",
+      identiteDuPointageActif((String) corps.get("dateDeSurvenue"), (String) corps.get("type"), (String) corps.get("intention"))
+    );
+  }
+
+  @Given("pour le cout, le poste {string} est revise a {string} de l'heure et l'operateur {string} a {string} a {string}")
+  @SuppressWarnings("unchecked")
+  public void reviseTarifs(String poste, String cout, String operateur, String taux, String reception) {
+    horloge.ilEst(Instant.parse(reception));
+    rest.get(POSTES_URI + "/" + postes.get(poste));
+    Map<String, Object> fichePoste = new HashMap<>((Map<String, Object>) CucumberRestTestContext.getElement("$"));
+    fichePoste.put("coutHoraire", cout);
+    rest.put(POSTES_URI + "/" + postes.get(poste), JSON.writeValueAsString(fichePoste));
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).isTrue();
+    rest.get(OPERATEURS_URI + "/" + operateurs.get(operateur));
+    Map<String, Object> ficheOperateur = new HashMap<>((Map<String, Object>) CucumberRestTestContext.getElement("$"));
+    ficheOperateur.put("postes", List.of(postes.get("fraiseuse"), postes.get("tour")));
+    ficheOperateur.put("tauxHoraire", taux);
+    rest.put(OPERATEURS_URI + "/" + operateurs.get(operateur), JSON.writeValueAsString(ficheOperateur));
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).isTrue();
+  }
+
+  @Then("le cout ne porte aucun conflit")
+  public void sansConflit() {
+    assertThat((List<?>) CucumberRestTestContext.getElement("$.conflits")).isEmpty();
+  }
+
+  @Then("le cout porte {int} fins automatiques")
+  @SuppressWarnings("unchecked")
+  public void nombreFinsAutomatiques(int nombre) {
+    List<Map<String, Object>> lignes = (List<Map<String, Object>>) CucumberRestTestContext.getElement("$.lignes");
+    assertThat(
+      lignes
+        .stream()
+        .mapToInt(ligne -> ((List<?>) ligne.get("finsAutomatiques")).size())
+        .sum()
+    ).isEqualTo(nombre);
+  }
+
+  @Then("le cout ne porte aucune fin automatique")
+  @SuppressWarnings("unchecked")
+  public void sansFinAutomatique() {
+    List<Map<String, Object>> lignes = (List<Map<String, Object>>) CucumberRestTestContext.getElement("$.lignes");
+    assertThat(lignes).allSatisfy(ligne -> assertThat((List<?>) ligne.get("finsAutomatiques")).isEmpty());
+  }
+
+  @Then("le cout porte les conflits")
+  @SuppressWarnings("unchecked")
+  public void conflits(List<Map<String, String>> attendus) {
+    List<Map<String, Object>> lus = (List<Map<String, Object>>) CucumberRestTestContext.getElement("$.conflits");
+    List<Map<String, Object>> esperes = attendus
+      .stream()
+      .map(ligne -> {
+        Map<String, Object> attendu = new java.util.LinkedHashMap<>();
+        attendu.put("element", elements.get(ligne.get("element")));
+        attendu.put("operateur", operateurs.get(ligne.get("operateur")));
+        if (ligne.get("poste") != null) {
+          attendu.put("poste", postes.get(ligne.get("poste")));
+        }
+        attendu.put("activites", identites(ligne.get("activites")));
+        attendu.put("pointages", identites(ligne.get("pointages")));
+        return attendu;
+      })
+      .toList();
+    assertThat(lus).containsExactlyInAnyOrderElementsOf(esperes);
+  }
+
+  private List<String> identites(String aliases) {
+    return aliases == null || aliases.isEmpty() ? List.of() : java.util.Arrays.stream(aliases.split(",")).map(pointages::get).toList();
+  }
+
+  @Then("le total du cout {string} est incomplet sans chiffre")
+  public void incomplet(String chemin) {
+    assertThat(CucumberRestTestContext.getElement(chemin)).isEqualTo(Map.of("complete", false));
+  }
+
+  @Then("le total du cout {string} est complet avec {string}")
+  public void complet(String chemin, String valeur) {
+    assertThat(CucumberRestTestContext.getElement(chemin + ".complete")).isEqualTo(true);
+    Object lue = CucumberRestTestContext.getElement(chemin + ".valeur");
+    assertThat(lue instanceof Number ? montant(lue) : String.valueOf(lue)).isEqualTo(valeur);
+  }
+
+  @Then("le cout porte la fin automatique de {string} a {string}")
+  public void finAutomatique(String debut, String fin) {
+    assertThatLastResponse()
+      .hasElement("$.lignes[0].finsAutomatiques[0].debut")
+      .withValue(debut)
+      .and()
+      .hasElement("$.lignes[0].finsAutomatiques[0].fin")
+      .withValue(fin);
+  }
+
+  @Then("le cout est evalue a {string} avec {int} activites en cours exclues")
+  public void evaluation(String instant, int enCours) {
+    assertThat(CucumberRestTestContext.getElement("$.evaluation")).isEqualTo(instant);
+    assertThat(CucumberRestTestContext.getElement("$.activitesEnCours")).isEqualTo(enCours);
   }
 
   @When("je consulte le cout de revient de {string} a {string}")
@@ -205,8 +359,8 @@ public class CoutDeRevientSteps {
     lues.forEach(ligne -> {
       Map<String, String> resume = new java.util.LinkedHashMap<>();
       resume.put("nature", String.valueOf(ligne.get("nature")));
-      resume.put("travail", String.valueOf(((Map<String, Object>) ligne.get("temps")).get("travail")));
-      resume.put("nonConformite", String.valueOf(((Map<String, Object>) ligne.get("temps")).get("nonConformite")));
+      resume.put("travail", String.valueOf(valeur(((Map<String, Object>) ligne.get("temps")).get("travail"))));
+      resume.put("nonConformite", String.valueOf(valeur(((Map<String, Object>) ligne.get("temps")).get("nonConformite"))));
       resume.put("machine", montant(((Map<String, Object>) ligne.get("cout")).get("machine")));
       resume.put("mainDOeuvre", montant(((Map<String, Object>) ligne.get("cout")).get("mainDOeuvre")));
       lignes.add(resume);
@@ -220,7 +374,11 @@ public class CoutDeRevientSteps {
    * perd en chemin. Le domaine, lui, arrondit bien au centime — c'est cette valeur-la que les scenarios enoncent.
    */
   private static String montant(Object valeur) {
-    return new java.math.BigDecimal(String.valueOf(valeur)).setScale(2, java.math.RoundingMode.HALF_UP).toPlainString();
+    return new java.math.BigDecimal(String.valueOf(valeur(valeur))).setScale(2, java.math.RoundingMode.HALF_UP).toPlainString();
+  }
+
+  private static Object valeur(Object total) {
+    return total instanceof Map<?, ?> map ? map.get("valeur") : total;
   }
 
   private static String id() {

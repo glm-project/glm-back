@@ -16,9 +16,10 @@ import java.util.List;
 )
 record RestLigneDeCout(
   @Schema(description = "Nature de l'operation, absente pour un pointage sans poste.", example = "Fraisage") String nature,
-  @Schema(description = "Du premier debut a la derniere fin de cette nature.") RestPeriode periode,
+  @Schema(description = "Premier debut comptabilise, derniere fin certaine de cette nature si elle existe.") RestPeriode periode,
   @Schema(description = "Temps passe, bon travail et non conformite separes.") RestTempsPasse temps,
-  @Schema(description = "Les periodes de reprise, datees, dans l'ordre.") List<RestPeriode> nonConformites,
+  @Schema(description = "Les periodes de reprise terminees et certaines, datees, dans l'ordre.") List<RestPeriode> nonConformites,
+  @Schema(description = "Periodes terminees automatiquement, signalant une anomalie active.") List<RestPeriode> finsAutomatiques,
   @Schema(description = "Cout de la ligne, arrondi au centime.") RestCout cout
 ) {
   static RestLigneDeCout from(LigneDeCout ligne) {
@@ -27,6 +28,7 @@ record RestLigneDeCout(
       RestPeriode.from(ligne.periode()),
       RestTempsPasse.from(ligne.temps()),
       ligne.nonConformites().stream().map(RestPeriode::from).toList(),
+      ligne.finsAutomatiques().stream().map(RestPeriode::from).toList(),
       RestCout.from(ligne.cout())
     );
   }

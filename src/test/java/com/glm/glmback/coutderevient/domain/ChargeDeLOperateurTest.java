@@ -116,7 +116,9 @@ class ChargeDeLOperateurTest {
 
     List<TrancheValorisable> parts = charge.decoupe(surFraiseuse(LE_11_MAI_A_9H, LE_11_MAI_A_11H));
 
-    assertThat(parts).extracting(TrancheValorisable::diviseur).containsExactly(new Diviseur(1), new Diviseur(2));
+    assertThat(parts)
+      .extracting(part -> part.diviseur().orElseThrow())
+      .containsExactly(new Diviseur(1), new Diviseur(2));
     assertThat(parts)
       .extracting(part -> part.tranche().periode())
       .containsExactly(new Periode(LE_11_MAI_A_9H, LE_11_MAI_A_10H), new Periode(LE_11_MAI_A_10H, LE_11_MAI_A_11H));

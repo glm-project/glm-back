@@ -12,8 +12,14 @@ import java.util.Set;
  *
  * <p>
  * Un pointage se date sur l'horloge, une regularisation sur la valeur fournie ; la date d'enregistrement vaut
- * l'instant present dans les deux cas. L'agregat, lui, ne voit qu'un evenement deja horodate, ce qui lui epargne de
- * distinguer les deux actes.
+ * l'instant present dans les deux cas. C'est aussi ici que l'evenement recoit son origine : un pointage, meme rejoue
+ * hors ligne avec l'heure de son geste, ou une regularisation, qu'elle soit saisie seule ou comme remplacant d'une
+ * correction. L'agregat, lui, ne voit qu'un evenement deja horodate et qualifie.
+ * </p>
+ *
+ * <p>
+ * C'est encore ici qu'un pointage ouvrant recoit l'identite de l'activite qu'il ouvre : la sienne. Le remplacant
+ * d'une correction reprend celle de l'ouvrant qu'il corrige, au journal.
  * </p>
  *
  * <p>
@@ -86,21 +92,19 @@ public final class SuivisDAtelierService {
   }
 
   /**
-   * Un pointage d'atelier n'est jamais refuse a l'operateur, a une exception pres (lot 8a de la strategie « bornes de
-   * fin de journee ») : demarrer ou pointer une non conformite sur un OF cloture, qui n'est plus pointable.
+   * Un pointage d'atelier n'est jamais refuse a l'operateur parce qu'il contredit le journal : il est conserve, et sa
+   * sequence est en conflit. Demarrer ou pointer une non conformite sur un OF cloture, qui n'est plus pointable, reste
+   * refuse, comme un operateur ou un poste inconnu, et comme un
+   * geste qui vise une activite introuvable dans ce suivi ou d'une autre cle que la sienne.
    *
    * <p>
-   * Arreter une activite qui n'est pas en cours, ou un OF que la cloture a deja arrete, ne change rien : le geste est
-   * absorbe. Une fin rejouee dans le desordre, datee avant le dernier fait de son activite, reste refusee, comme un
-   * operateur ou un poste inconnu.
+   * Une fin survenue avant la cloture de l'OF, mais recue apres elle, est enregistree a son heure. Survenue apres, elle
+   * ne change rien : la cloture a deja termine ce qu'elle terminerait, et le geste est absorbe.
    * </p>
    */
   public PointageDAtelierTraite pointe(PointageAEnregistrer commande) {
     SuiviDAtelier suivi = get(commande.suivi());
-    if (suivi.estCloture()) {
-      if (commande.type() == TypeDEvenementDAtelier.FIN) {
-        return new PointageDAtelierTraite(suivi, true);
-      }
+    if (suivi.estCloture() && commande.type() != TypeDEvenementDAtelier.FIN) {
       throw new SuiviDAtelierClotureException(suivi.id());
     }
 
@@ -110,13 +114,17 @@ public final class SuivisDAtelierService {
     EvenementDAtelier evenement = evenement(
       commande.evenement(),
       commande.type(),
+      commande.intention(),
+      commande.activiteVisee(),
       commande.operateur(),
       commande.poste(),
       commande.auteur(),
+      OrigineDuPointage.POINTAGE,
       horodatage
     );
 
-    if (suivi.arreteUneActiviteAbsente(evenement)) {
+    suivi.exigeLActiviteViseePar(evenement);
+    if (suivi.estClotureAvant(evenement)) {
       return new PointageDAtelierTraite(suivi, true);
     }
 
@@ -166,17 +174,23 @@ public final class SuivisDAtelierService {
     return repository.get(id).orElseThrow(() -> new SuiviDAtelierIntrouvableException(id));
   }
 
-  public Page<SuiviDAtelier> list(Optional<Periode> periode, Set<EtatDAtelier> etats, Pageable pageable) {
-    return repository.list(new SuiviDAtelierCriteria(periode, etats), pageable);
+  /**
+   * Les suivis dont l'etat, a l'instant d'evaluation fourni, est l'un de ceux demandes.
+   */
+  public Page<SuiviDAtelier> list(Optional<Periode> periode, Set<EtatDAtelier> etats, Instant evaluation, Pageable pageable) {
+    return repository.list(new SuiviDAtelierCriteria(periode, etats, evaluation), pageable);
   }
 
   private EvenementDAtelier regularisation(RegularisationAEnregistrer commande, EvenementDAtelierId evenement) {
     return evenement(
       evenement,
       commande.type(),
+      commande.intention(),
+      commande.activiteVisee(),
       commande.operateur(),
       commande.poste(),
       commande.auteur(),
+      OrigineDuPointage.REGULARISATION,
       new Horodatage(commande.dateDeSurvenue(), clock.now())
     );
   }
@@ -194,9 +208,12 @@ public final class SuivisDAtelierService {
   private EvenementDAtelier evenement(
     EvenementDAtelierId evenement,
     TypeDEvenementDAtelier type,
+    IntentionDePointage intention,
+    Optional<ActiviteId> activiteVisee,
     OperateurId operateur,
     Optional<PosteDeTravailId> poste,
     Auteur auteur,
+    OrigineDuPointage origine,
     Horodatage horodatage
   ) {
     OperateurConnu operateurConnu = operateurConnu(operateur);
@@ -205,12 +222,16 @@ public final class SuivisDAtelierService {
     return EvenementDAtelier.builder()
       .id(evenement)
       .type(type)
+      .intention(intention)
+      .activite(intention.ouvreUneActivite() ? Optional.of(ActiviteId.ouvertePar(evenement)) : Optional.empty())
+      .activiteVisee(activiteVisee)
       .operateur(operateur)
       .poste(poste)
       .nature(posteConnu.map(PosteConnu::nature))
       .coutHoraire(posteConnu.flatMap(PosteConnu::coutHoraire))
       .tauxHoraire(operateurConnu.tauxHoraire())
       .auteur(auteur)
+      .origine(origine)
       .horodatage(horodatage);
   }
 

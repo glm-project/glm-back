@@ -5,26 +5,46 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
-/** Le contenu stable d'un geste du pupitre, independant de l'etat courant des agregats. */
+/**
+ * Le contenu stable d'un geste du pupitre, independant de l'etat courant des agregats.
+ *
+ * <p>
+ * Le suivi, l'intention et l'activite visee designent le geste d'activite. Un meme identifiant rejoue avec une
+ * autre intention ou une autre cible n'est donc pas le meme geste.
+ * </p>
+ */
 public record EmpreinteDEvenement(
   NatureDeGesteDuPupitre nature,
-  Optional<UUID> cible,
+  Optional<UUID> suivi,
   UUID operateur,
   String type,
+  Optional<String> intention,
+  Optional<UUID> activiteVisee,
   Optional<UUID> poste,
   Optional<Instant> dateDeSurvenue
 ) {
   public EmpreinteDEvenement {
     Assert.notNull("nature", nature);
-    Assert.notNull("cible", cible);
+    Assert.notNull("suivi", suivi);
     Assert.notNull("operateur", operateur);
     Assert.notBlank("type", type);
+    Assert.notNull("intention", intention);
+    Assert.notNull("activiteVisee", activiteVisee);
     Assert.notNull("poste", poste);
     Assert.notNull("dateDeSurvenue", dateDeSurvenue);
   }
 
   private EmpreinteDEvenement(Builder builder) {
-    this(builder.nature, builder.cible, builder.operateur, builder.type, builder.poste, builder.dateDeSurvenue);
+    this(
+      builder.nature,
+      builder.suivi,
+      builder.operateur,
+      builder.type,
+      builder.intention,
+      builder.activiteVisee,
+      builder.poste,
+      builder.dateDeSurvenue
+    );
   }
 
   public static EmpreinteDEvenementNatureBuilder builder() {
@@ -32,11 +52,11 @@ public record EmpreinteDEvenement(
   }
 
   public interface EmpreinteDEvenementNatureBuilder {
-    EmpreinteDEvenementCibleBuilder nature(NatureDeGesteDuPupitre nature);
+    EmpreinteDEvenementSuiviBuilder nature(NatureDeGesteDuPupitre nature);
   }
 
-  public interface EmpreinteDEvenementCibleBuilder {
-    EmpreinteDEvenementOperateurBuilder cible(Optional<UUID> cible);
+  public interface EmpreinteDEvenementSuiviBuilder {
+    EmpreinteDEvenementOperateurBuilder suivi(Optional<UUID> suivi);
   }
 
   public interface EmpreinteDEvenementOperateurBuilder {
@@ -44,7 +64,15 @@ public record EmpreinteDEvenement(
   }
 
   public interface EmpreinteDEvenementTypeBuilder {
-    EmpreinteDEvenementPosteBuilder type(String type);
+    EmpreinteDEvenementIntentionBuilder type(String type);
+  }
+
+  public interface EmpreinteDEvenementIntentionBuilder {
+    EmpreinteDEvenementActiviteViseeBuilder intention(Optional<String> intention);
+  }
+
+  public interface EmpreinteDEvenementActiviteViseeBuilder {
+    EmpreinteDEvenementPosteBuilder activiteVisee(Optional<UUID> activiteVisee);
   }
 
   public interface EmpreinteDEvenementPosteBuilder {
@@ -58,29 +86,33 @@ public record EmpreinteDEvenement(
   private static final class Builder
     implements
       EmpreinteDEvenementNatureBuilder,
-      EmpreinteDEvenementCibleBuilder,
+      EmpreinteDEvenementSuiviBuilder,
       EmpreinteDEvenementOperateurBuilder,
       EmpreinteDEvenementTypeBuilder,
+      EmpreinteDEvenementIntentionBuilder,
+      EmpreinteDEvenementActiviteViseeBuilder,
       EmpreinteDEvenementPosteBuilder,
       EmpreinteDEvenementDateDeSurvenueBuilder
   {
 
     private NatureDeGesteDuPupitre nature;
-    private Optional<UUID> cible;
+    private Optional<UUID> suivi;
     private UUID operateur;
     private String type;
+    private Optional<String> intention;
+    private Optional<UUID> activiteVisee;
     private Optional<UUID> poste;
     private Optional<Instant> dateDeSurvenue;
 
     @Override
-    public EmpreinteDEvenementCibleBuilder nature(NatureDeGesteDuPupitre nature) {
+    public EmpreinteDEvenementSuiviBuilder nature(NatureDeGesteDuPupitre nature) {
       this.nature = nature;
       return this;
     }
 
     @Override
-    public EmpreinteDEvenementOperateurBuilder cible(Optional<UUID> cible) {
-      this.cible = cible;
+    public EmpreinteDEvenementOperateurBuilder suivi(Optional<UUID> suivi) {
+      this.suivi = suivi;
       return this;
     }
 
@@ -91,8 +123,20 @@ public record EmpreinteDEvenement(
     }
 
     @Override
-    public EmpreinteDEvenementPosteBuilder type(String type) {
+    public EmpreinteDEvenementIntentionBuilder type(String type) {
       this.type = type;
+      return this;
+    }
+
+    @Override
+    public EmpreinteDEvenementActiviteViseeBuilder intention(Optional<String> intention) {
+      this.intention = intention;
+      return this;
+    }
+
+    @Override
+    public EmpreinteDEvenementPosteBuilder activiteVisee(Optional<UUID> activiteVisee) {
+      this.activiteVisee = activiteVisee;
       return this;
     }
 

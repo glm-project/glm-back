@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
 import com.glm.glmback.atelier.domain.Cloture;
 import com.glm.glmback.atelier.domain.EtatDAtelier;
+import com.glm.glmback.atelier.domain.LectureDuSuivi;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.TypeDElementEngage;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -14,9 +15,9 @@ import java.util.UUID;
 @Schema(
   name = "RestSuiviDAtelierEnGrille",
   description = """
-  Une ligne du tableau d'atelier, sans le journal des evenements.
+  Une ligne du tableau d'atelier, sans le journal des evenements ni ses sequences en conflit.
   L'etat et les activites en cours restent deduits du journal a chaque lecture.
-  Le journal complet, annules compris, se consulte via GET /api/atelier/suivis/{id}.
+  Le journal complet, annules compris, et ses sequences en conflit se consultent via GET /api/atelier/suivis/{id}.
   """
 )
 final class RestSyntheseDeSuiviDAtelier {
@@ -53,7 +54,10 @@ final class RestSyntheseDeSuiviDAtelier {
   private final Instant engageLe;
 
   @JsonProperty
-  @Schema(description = "EN_ATTENTE, EN_COURS, INTERROMPU ou CLOTURE. Deduit du journal.", requiredMode = Schema.RequiredMode.REQUIRED)
+  @Schema(
+    description = "EN_ATTENTE, EN_COURS, INTERROMPU ou CLOTURE. Deduit du journal a l'instant de la lecture.",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
   private final EtatDAtelier etat;
 
   @JsonProperty
@@ -65,30 +69,37 @@ final class RestSyntheseDeSuiviDAtelier {
   private final Instant clotureLe;
 
   @JsonProperty
-  @Schema(description = "Les activites ouvertes a cet instant.", requiredMode = Schema.RequiredMode.REQUIRED)
+  @Schema(
+    description = """
+    Les activites en cours a l'instant de la lecture ; une activite dont l'echeance est atteinte n'y figure plus, ni une
+    activite a resoudre.
+    """,
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
   private final List<RestActiviteEnCours> activitesEnCours;
 
-  private RestSyntheseDeSuiviDAtelier(SuiviDAtelier suivi, AnnuaireDAtelier annuaire) {
+  private RestSyntheseDeSuiviDAtelier(LectureDuSuivi lecture, AnnuaireDAtelier annuaire) {
+    SuiviDAtelier suivi = lecture.suivi();
     id = suivi.id().uuid();
     element = suivi.element().id().uuid();
     nom = suivi.element().nom().value();
     type = suivi.element().type();
     engagePar = suivi.engagement().auteur().value();
     engageLe = suivi.engagement().date();
-    etat = suivi.etat();
+    etat = lecture.etat();
     cloturePar = suivi
       .cloture()
       .map(cloture -> cloture.auteur().value())
       .orElse(null);
     clotureLe = suivi.cloture().map(Cloture::dateDeSurvenue).orElse(null);
-    activitesEnCours = suivi
+    activitesEnCours = lecture
       .activitesEnCours()
       .stream()
       .map(activite -> RestActiviteEnCours.from(activite, annuaire))
       .toList();
   }
 
-  static RestSyntheseDeSuiviDAtelier from(SuiviDAtelier suivi, AnnuaireDAtelier annuaire) {
-    return new RestSyntheseDeSuiviDAtelier(suivi, annuaire);
+  static RestSyntheseDeSuiviDAtelier from(LectureDuSuivi lecture, AnnuaireDAtelier annuaire) {
+    return new RestSyntheseDeSuiviDAtelier(lecture, annuaire);
   }
 }

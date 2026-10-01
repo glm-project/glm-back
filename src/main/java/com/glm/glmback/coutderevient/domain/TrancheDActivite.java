@@ -8,15 +8,19 @@ import java.util.Optional;
  * Une activite et la periode fermee pendant laquelle elle a couru : la matiere du calcul.
  *
  * <p>
- * C'est ce que devient un {@link IntervalleDActivite} une fois le temps arrete. Tout ce qui suit — decoupage sur les
+ * C'est ce que devient un activite terminee une fois le temps arrete. Tout ce qui suit — decoupage sur les
  * sous-periodes de parallelisme, valorisation, agregation par nature — ne travaille plus que sur des tranches, donc
  * sur des durees connues.
  * </p>
  */
-public record TrancheDActivite(Activite activite, Periode periode) {
+public record TrancheDActivite(Activite activite, Periode periode, boolean finAutomatique) {
   public TrancheDActivite {
     Assert.notNull("activite", activite);
     Assert.notNull("periode", periode);
+  }
+
+  public TrancheDActivite(Activite activite, Periode periode) {
+    this(activite, periode, false);
   }
 
   public Duration duree() {
@@ -32,6 +36,6 @@ public record TrancheDActivite(Activite activite, Periode periode) {
    * les sous-periodes ou le diviseur est constant.
    */
   public Optional<TrancheDActivite> reduiteA(Periode autre) {
-    return periode.intersection(autre).map(part -> new TrancheDActivite(activite, part));
+    return periode.intersection(autre).map(part -> new TrancheDActivite(activite, part, finAutomatique));
   }
 }

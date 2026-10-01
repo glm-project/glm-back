@@ -4,6 +4,8 @@ import com.glm.glmback.shared.error.domain.Assert;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Une tranche d'activite et le diviseur qui s'y applique : tout ce qu'il faut pour la chiffrer.
@@ -18,13 +20,14 @@ import java.time.Duration;
  * ligne entiere sommee, pour que son total soit exactement la somme de ce qu'il affiche.
  * </p>
  */
-public record TrancheValorisable(TrancheDActivite tranche, Diviseur diviseur) {
+public record TrancheValorisable(TrancheDActivite tranche, Optional<Diviseur> diviseur, Set<ActiviteInterpretee> responsables) {
   private static final BigDecimal MILLISECONDES_PAR_HEURE = new BigDecimal(3_600_000);
   private static final int ECHELLE_DE_TRAVAIL = 6;
 
   public TrancheValorisable {
     Assert.notNull("tranche", tranche);
     Assert.notNull("diviseur", diviseur);
+    Assert.field("responsables", responsables).notNull().noNullElement();
   }
 
   public Activite activite() {
@@ -50,11 +53,14 @@ public record TrancheValorisable(TrancheDActivite tranche, Diviseur diviseur) {
    * Ce que la personne a coute pendant cette tranche, divise par le nombre de postes qu'elle occupait alors : elle ne
    * peut pas etre payee deux fois la meme heure. Rien quand l'operateur n'est pas valorise.
    */
-  public BigDecimal coutDeMainDOeuvre() {
-    return activite()
-      .tauxHoraire()
-      .map(taux -> taux.value().multiply(heures()).divide(new BigDecimal(diviseur.value()), ECHELLE_DE_TRAVAIL, RoundingMode.HALF_UP))
-      .orElse(BigDecimal.ZERO);
+  public Optional<BigDecimal> coutDeMainDOeuvre() {
+    Optional<TauxHoraire> taux = activite().tauxHoraire();
+    if (taux.isEmpty()) {
+      return Optional.of(BigDecimal.ZERO);
+    }
+    return diviseur.map(partage ->
+      taux.orElseThrow().value().multiply(heures()).divide(new BigDecimal(partage.value()), ECHELLE_DE_TRAVAIL, RoundingMode.HALF_UP)
+    );
   }
 
   private BigDecimal heures() {

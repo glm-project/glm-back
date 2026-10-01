@@ -1,6 +1,7 @@
 package com.glm.glmback.atelier.domain;
 
 import com.glm.glmback.shared.error.domain.Assert;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,8 +15,14 @@ import java.util.Optional;
  * </p>
  *
  * <p>
- * Les intervalles produits ici sont bruts : ils ignorent le depart de l'operateur, qui vit dans sa journee de
- * travail. Le temps effectif se lit a l'intersection des deux, par {@link TempsDAtelierService}.
+ * Ses activites ne dependent que du journal. Tout ce qui depend de l'heure a laquelle on lit — l'etat, les activites
+ * en cours, les intervalles — se lit a un instant d'evaluation explicite, que l'appelant fournit : une activite que
+ * rien n'a terminee y est terminee automatiquement des que son echeance est atteinte.
+ * </p>
+ *
+ * <p>
+ * Ses intervalles sont le temps effectif de l'element, que rend {@link TempsDAtelierService} : chaque activite est
+ * bornee par ses faits et son echeance.
  * </p>
  */
 public record SuiviDAtelier(
@@ -55,12 +62,8 @@ public record SuiviDAtelier(
   }
 
   /**
-   * Annule un evenement et lui substitue sa version corrigee, en validant la seule sequence finale.
-   *
-   * <p>
-   * Enchainer une annulation puis une insertion ferait passer le journal par un etat intermediaire que l'automate
-   * refuserait a raison : annuler un debut y laisserait une fin orpheline. C'est ce qui justifie l'acte unique.
-   * </p>
+   * Annule un evenement et lui substitue sa version corrigee, en un seul acte : le remplacant d'un ouvrant garde
+   * l'activite qu'il ouvrait, et les gestes qui la visent y restent rattaches.
    */
   public SuiviDAtelier corrige(EvenementDAtelierId evenement, Annulation annulation, EvenementDAtelier remplacant) {
     return new SuiviDAtelier(id, element, engagement, journal.corrige(evenement, annulation, remplacant), cloture);
@@ -74,38 +77,55 @@ public record SuiviDAtelier(
     return new SuiviDAtelier(id, element, engagement, journal, Optional.empty());
   }
 
-  public List<IntervalleDActivite> activites() {
-    return journal.intervalles(cloture.map(Cloture::dateDeSurvenue));
+  /**
+   * Refuse un geste qui vise une activite qu'aucun pointage de ce suivi n'a ouverte, ou celle d'un autre operateur ou
+   * d'un autre poste. Le refus precede toute autre decision sur le geste, absorption comprise.
+   */
+  public void exigeLActiviteViseePar(EvenementDAtelier geste) {
+    journal.exigeLActiviteViseePar(geste);
   }
 
-  public List<ActiviteEnCours> activitesEnCours() {
-    return activites().stream().filter(IntervalleDActivite::estOuvert).map(ActiviteEnCours::of).toList();
+  public List<Activite> activites() {
+    return journal.activites(cloture.map(Cloture::dateDeSurvenue));
+  }
+
+  public List<SequenceEnConflit> conflits() {
+    return journal.conflits(cloture.map(Cloture::dateDeSurvenue));
+  }
+
+  public List<IntervalleDActivite> intervalles(Instant evaluation) {
+    return activites()
+      .stream()
+      .map(activite -> activite.a(evaluation))
+      .toList();
+  }
+
+  public List<ActiviteEnCours> activitesEnCours(Instant evaluation) {
+    return activites()
+      .stream()
+      .filter(activite -> activite.estEnCoursA(evaluation))
+      .map(ActiviteEnCours::new)
+      .toList();
   }
 
   /**
-   * Vrai si l'evenement arrete une activite qui n'est pas en cours, sans etre date avant son dernier fait : le double
-   * appui sur « arreter », qui ne change rien. Date avant, ce serait un geste rejoue dans le desordre.
+   * Vrai si le suivi est cloture avant la survenue de l'evenement : la cloture a deja termine ce que l'evenement
+   * pretendrait terminer.
    */
-  public boolean arreteUneActiviteAbsente(EvenementDAtelier evenement) {
-    return (
-      evenement.type() == TypeDEvenementDAtelier.FIN
-      && activitesEnCours()
-        .stream()
-        .noneMatch(activite -> activite.activite().equals(evenement.cle()))
-      && journal
-        .actifs()
-        .stream()
-        .filter(fait -> fait.cle().equals(evenement.cle()))
-        .noneMatch(fait -> evenement.dateDeSurvenue().isBefore(fait.dateDeSurvenue()))
-    );
+  public boolean estClotureAvant(EvenementDAtelier evenement) {
+    return cloture.filter(fin -> evenement.dateDeSurvenue().isAfter(fin.dateDeSurvenue())).isPresent();
   }
 
-  public EtatDAtelier etat() {
+  /**
+   * L'etat a l'instant d'evaluation, juge sur les seules activites interpretables : une activite a resoudre n'est pas
+   * en cours, et la sequence en conflit se lit a part, sans etat qui lui soit propre.
+   */
+  public EtatDAtelier etat(Instant evaluation) {
     if (estCloture()) {
       return EtatDAtelier.CLOTURE;
     }
 
-    if (!activitesEnCours().isEmpty()) {
+    if (!activitesEnCours(evaluation).isEmpty()) {
       return EtatDAtelier.EN_COURS;
     }
 

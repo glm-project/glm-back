@@ -39,8 +39,16 @@ class CoutDeRevientResource {
     n'est donc pas divise. Le decoupage se fait aux bornes de chaque pointage, si bien que seul le chevauchement reel
     est divise.
 
-    Un travail encore en cours est arrete a l'instant de la lecture : deux appels espaces ne rendent donc pas la meme
-    chose sur un element en cours, ce qui est le seul moyen de chiffrer ce qui n'est pas termine.
+    Une activite encore en cours est entierement exclue du temps, des couts et du diviseur. A son echeance
+    projetee, elle compte jusqu'a sa fin automatique avec une anomalie et sa periode datee. L'horloge est relevee
+    une seule fois par rapport ; cet instant est rendu dans evaluation.
+
+    Chaque duree et montant porte complete ; valeur est absente si incomplet, sans zero ni somme partielle.
+    Travail, non conformite, machine et main d'oeuvre sont independants. Pour le partage humain, toute la plage
+    factuelle possible d'une activite a resoudre est bornee a evaluation. Une occupation certaine du meme poste
+    peut neutraliser son effet sur le nombre de postes distincts ; la machine d'une activite terminee reste connue.
+    conflits rend les sequences de l'element et toutes celles responsables d'une valeur inconnue, meme sur un autre
+    element, avec les identites originales d'activites et les faits actifs.
     """
   )
   @ApiResponse(responseCode = "200", description = "Le rapport de l'element. Vide s'il n'a jamais ete engage en atelier.")

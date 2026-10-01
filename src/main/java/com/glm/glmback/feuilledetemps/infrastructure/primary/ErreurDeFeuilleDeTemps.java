@@ -4,7 +4,8 @@ import com.glm.glmback.shared.error.infrastructure.primary.ProblemCode;
 import org.springframework.http.HttpStatus;
 
 enum ErreurDeFeuilleDeTemps implements ProblemCode {
-  OPERATEUR_INTROUVABLE(HttpStatus.NOT_FOUND, "operateur introuvable");
+  OPERATEUR_INTROUVABLE(HttpStatus.NOT_FOUND, "operateur introuvable"),
+  EVALUATION_FUTURE(HttpStatus.BAD_REQUEST, "instant d'evaluation futur");
 
   private final HttpStatus status;
   private final String title;

@@ -8,7 +8,7 @@ import com.glm.glmback.shared.authentication.application.AuthenticatedUser;
  *
  * <p>
  * C'est ce qui rend la tracabilite infalsifiable, et ce qui donne son sens a l'invariant du contexte : une
- * regularisation se reconnait a l'ecart de ses deux dates, jamais a l'identite de son auteur.
+ * regularisation ne se reconnait jamais a l'identite de son auteur.
  * </p>
  */
 final class AuteurConnecte {

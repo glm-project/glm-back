@@ -55,6 +55,11 @@ public class CucumberConfiguration {
       return new CucumberRestClient(rest);
     }
 
+    @Bean
+    EcrituresDuJournalDAtelier ecrituresDuJournalDAtelier(CucumberRestClient rest, CucumberClock horloge) {
+      return new EcrituresDuJournalDAtelier(rest, horloge);
+    }
+
     /**
      * Surcharge l'horloge du systeme. Le nom de la methode differe volontairement de {@code clock()}, sans quoi le
      * bean reel gagnerait.

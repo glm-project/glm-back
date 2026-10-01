@@ -18,60 +18,46 @@ class JourDeLaSemaineTest {
 
   @Test
   void shouldNotBuildWithoutJour() {
-    assertThatThrownBy(() -> new JourDeLaSemaine(null, List.of(), List.of()))
+    assertThatThrownBy(() -> new JourDeLaSemaine(null, List.of()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("jour");
   }
 
   @Test
-  void shouldNotBuildWithoutPresence() {
-    assertThatThrownBy(() -> new JourDeLaSemaine(LUNDI_11_MAI_2026, null, List.of()))
-      .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("presence");
-  }
-
-  @Test
-  void shouldNotBuildWithNullPlage() {
-    List<Plage> presence = Arrays.asList(DE_8H_A_12H, null);
-
-    assertThatThrownBy(() -> new JourDeLaSemaine(LUNDI_11_MAI_2026, presence, List.of()))
-      .isExactlyInstanceOf(NullElementInCollectionException.class)
-      .hasMessageContaining("presence");
-  }
-
-  @Test
-  void shouldPorterSaDateEtSesFenetres() {
-    JourDeLaSemaine lundi = new JourDeLaSemaine(LUNDI_11_MAI_2026, List.of(DE_8H_A_12H), List.of());
+  void shouldPorterLaDateDUnJourVide() {
+    JourDeLaSemaine lundi = new JourDeLaSemaine(LUNDI_11_MAI_2026, List.of());
 
     assertThat(lundi.jour()).isEqualTo(LUNDI_11_MAI_2026);
-    assertThat(lundi.presence()).containsExactly(DE_8H_A_12H);
-  }
-
-  @Test
-  void shouldAccepterUnJourSansPresence() {
-    assertThat(new JourDeLaSemaine(LUNDI_11_MAI_2026, List.of(), List.of()).presence()).isEmpty();
+    assertThat(lundi.activites()).isEmpty();
   }
 
   @Test
   void shouldNotBuildWithoutActivites() {
-    assertThatThrownBy(() -> new JourDeLaSemaine(LUNDI_11_MAI_2026, List.of(), null))
+    assertThatThrownBy(() -> new JourDeLaSemaine(LUNDI_11_MAI_2026, null))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("activites");
   }
 
   @Test
   void shouldNotBuildWithNullActivite() {
-    List<IntervalleDActivite> activites = Arrays.asList(new IntervalleDActivite(activiteDeTravailDuCarterSurLaDmu50(), DE_8H_A_12H), null);
+    List<IntervalleDActivite> activites = Arrays.asList(
+      new IntervalleDActivite(activiteDeTravailDuCarterSurLaDmu50(), DE_8H_A_12H, travailDuCarterLuSur(DE_8H_A_12H)),
+      null
+    );
 
-    assertThatThrownBy(() -> new JourDeLaSemaine(LUNDI_11_MAI_2026, List.of(), activites))
+    assertThatThrownBy(() -> new JourDeLaSemaine(LUNDI_11_MAI_2026, activites))
       .isExactlyInstanceOf(NullElementInCollectionException.class)
       .hasMessageContaining("activites");
   }
 
   @Test
   void shouldPorterSesActivites() {
-    IntervalleDActivite travail = new IntervalleDActivite(activiteDeTravailDuCarterSurLaDmu50(), DE_8H_A_12H);
+    IntervalleDActivite travail = new IntervalleDActivite(
+      activiteDeTravailDuCarterSurLaDmu50(),
+      DE_8H_A_12H,
+      travailDuCarterLuSur(DE_8H_A_12H)
+    );
 
-    assertThat(new JourDeLaSemaine(LUNDI_11_MAI_2026, List.of(DE_8H_A_12H), List.of(travail)).activites()).containsExactly(travail);
+    assertThat(new JourDeLaSemaine(LUNDI_11_MAI_2026, List.of(travail)).activites()).containsExactly(travail);
   }
 }

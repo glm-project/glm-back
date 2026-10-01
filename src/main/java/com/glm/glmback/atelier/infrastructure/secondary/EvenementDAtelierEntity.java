@@ -1,14 +1,17 @@
 package com.glm.glmback.atelier.infrastructure.secondary;
 
+import com.glm.glmback.atelier.domain.ActiviteId;
 import com.glm.glmback.atelier.domain.Annulation;
 import com.glm.glmback.atelier.domain.Auteur;
 import com.glm.glmback.atelier.domain.CoutHoraire;
 import com.glm.glmback.atelier.domain.EvenementDAtelier;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.Horodatage;
+import com.glm.glmback.atelier.domain.IntentionDePointage;
 import com.glm.glmback.atelier.domain.MotifDAnnulation;
 import com.glm.glmback.atelier.domain.NatureDOperation;
 import com.glm.glmback.atelier.domain.OperateurId;
+import com.glm.glmback.atelier.domain.OrigineDuPointage;
 import com.glm.glmback.atelier.domain.PosteDeTravailId;
 import com.glm.glmback.atelier.domain.TauxHoraire;
 import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
@@ -41,6 +44,16 @@ class EvenementDAtelierEntity {
   @Column(length = 20)
   private TypeDEvenementDAtelier type;
 
+  @Enumerated(EnumType.STRING)
+  @Column(length = 20)
+  private IntentionDePointage intention;
+
+  @Column(name = "activite_id")
+  private UUID activiteId;
+
+  @Column(name = "activite_visee_id")
+  private UUID activiteViseeId;
+
   @Column(name = "operateur_id")
   private UUID operateurId;
 
@@ -56,6 +69,10 @@ class EvenementDAtelierEntity {
   private BigDecimal tauxHoraire;
 
   private String auteur;
+
+  @Enumerated(EnumType.STRING)
+  @Column(length = 20)
+  private OrigineDuPointage origine;
 
   private Instant dateDeSurvenue;
 
@@ -76,12 +93,16 @@ class EvenementDAtelierEntity {
     this.suivi = suivi;
     id = evenement.id().uuid();
     type = evenement.type();
+    intention = evenement.intention();
+    activiteId = evenement.activite().map(ActiviteId::uuid).orElse(null);
+    activiteViseeId = evenement.activiteVisee().map(ActiviteId::uuid).orElse(null);
     operateurId = evenement.operateur().uuid();
     posteId = evenement.poste().map(PosteDeTravailId::uuid).orElse(null);
     nature = evenement.nature().map(NatureDOperation::value).orElse(null);
     coutHoraire = evenement.coutHoraire().map(CoutHoraire::value).orElse(null);
     tauxHoraire = evenement.tauxHoraire().map(TauxHoraire::value).orElse(null);
     auteur = evenement.auteur().value();
+    origine = evenement.origine();
     dateDeSurvenue = evenement.dateDeSurvenue();
     dateDEnregistrement = evenement.dateDEnregistrement();
     reporteLAnnulation(evenement);
@@ -115,12 +136,16 @@ class EvenementDAtelierEntity {
     EvenementDAtelier evenement = EvenementDAtelier.builder()
       .id(new EvenementDAtelierId(id))
       .type(type)
+      .intention(intention)
+      .activite(Optional.ofNullable(activiteId).map(ActiviteId::new))
+      .activiteVisee(Optional.ofNullable(activiteViseeId).map(ActiviteId::new))
       .operateur(new OperateurId(operateurId))
       .poste(Optional.ofNullable(posteId).map(PosteDeTravailId::new))
       .nature(Optional.ofNullable(nature).map(NatureDOperation::new))
       .coutHoraire(Optional.ofNullable(coutHoraire).map(CoutHoraire::new))
       .tauxHoraire(Optional.ofNullable(tauxHoraire).map(TauxHoraire::new))
       .auteur(new Auteur(auteur))
+      .origine(origine)
       .horodatage(new Horodatage(dateDeSurvenue, dateDEnregistrement));
 
     return annulation().map(evenement::annule).orElse(evenement);

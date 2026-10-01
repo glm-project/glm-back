@@ -1,5 +1,6 @@
 package com.glm.glmback.feuilledetemps.infrastructure.primary;
 
+import com.glm.glmback.feuilledetemps.domain.EvaluationFutureException;
 import com.glm.glmback.feuilledetemps.domain.OperateurInconnuException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -10,6 +11,11 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 @ControllerAdvice
 @Order(Ordered.LOWEST_PRECEDENCE - 20_000)
 class FeuilleDeTempsExceptionAdvice {
+
+  @ExceptionHandler(EvaluationFutureException.class)
+  ProblemDetail handleEvaluationFuture(EvaluationFutureException e) {
+    return ErreurDeFeuilleDeTemps.EVALUATION_FUTURE.problem(e);
+  }
 
   @ExceptionHandler(OperateurInconnuException.class)
   ProblemDetail handleOperateurInconnu(OperateurInconnuException e) {

@@ -1,127 +1,66 @@
 # Bounded context `feuilledetemps`
 
-Responsabilité, frontières et invariants de ce contexte. Les règles de code communes sont dans
-[glm-back/AGENTS.md](../../../../../../../AGENTS.md), le détail métier et sa justification dans
-[documentation/contexte-metier.md](../../../../../../../documentation/contexte-metier.md) — ne pas les dupliquer ici.
+Les règles communes sont dans [glm-back/AGENTS.md](../../../../../../../AGENTS.md), les raisons métier dans
+[documentation/contexte-metier.md](../../../../../../../documentation/contexte-metier.md).
 
-## Ce dont ce contexte s'occupe
+## Responsabilité et vocabulaire
 
-**Ramener le temps de l'atelier au calendrier de l'entreprise**, et rien d'autre. Un seul acte : lire l'historique
-d'un opérateur sur une semaine ISO donnée, jour par jour — sa présence, et son travail élément par élément.
+Ramener les activités interprétées par atelier au calendrier de l'entreprise : un opérateur, une semaine ISO
+explicite, sept jours du lundi au dimanche, vides compris. Ce contexte est purement lecteur et ne possède aucune table.
 
-C'est la première **projection transverse** du projet : un contexte purement lecteur, qui ne possède aucune table,
-n'écrit rien, et recalcule tout à chaque appel.
+`FeuilleDeTemps` porte l'opérateur résolu, la semaine et ses `JourDeLaSemaine`. Chaque jour porte des
+`IntervalleDActivite` : affectation (`Activite`), bornes de portion (`Plage`) et identité, état et bornes de
+l'activité entière (`ActiviteLue`). `ActiviteInterpretee` est la projection reçue du port et évaluée à la lecture.
 
-## Ce dont il ne s'occupe pas
+Atelier possède le pointage, sa correction et l'interprétation. La feuille évalue les activités projetées et les
+découpe au calendrier ; les durées appartiennent à la synthèse et la valorisation au coût. Le référentiel possède
+l'opérateur ; la feuille expose les identifiants de poste et d'élément sans lire leurs libellés.
 
-- **Le pointage et sa correction** — arrivée, départ, régularisation, annulation appartiennent à `atelier`.
-  Ce contexte ne propose aucune écriture.
-- **La valorisation** — ni taux horaire, ni coût horaire, ni temps réparti. Il affiche du temps, il ne le
-  multiplie par rien. Le coût de revient sera un autre contexte lecteur, sur la même couture.
-- **Le référentiel** — identité de l'opérateur lue par port, jamais possédée. Ni le libellé du poste ni la fiche de
-  l'élément ne sont lus : la feuille ne rend que leurs identifiants, et la synthèse des heures porte leurs libellés.
-- **Les durées** — la feuille expose des périodes ; `syntheseheures` expose les durées, qu'il calcule de son côté.
-- **La paie** — il expose la présence découpée par jour, il ne choisit pas ce qui compte.
+## Invariants
 
-## Agrégat de lecture
+- `ActivitesDeLOperateur` lit `activite_d_atelier` par une entité propre `@Immutable`, jointe au suivi pour son élément.
+  Aucun import des contextes `atelier`, `operateur` ou `postedetravail`, tous annotés `@BusinessContext`.
+- La sélection porte sur le recouvrement de la semaine par le début et la fin réelle, la fin au plus tard ou l'échéance. Aucune borne
+  basse fixe du début : une régularisation peut établir plus de 13 h, voire plus d'une semaine.
+- `FeuillesDeTempsService` reçoit l'instant facultatif `evaluation`. Sans lui, l'heure du serveur est relevée
+  une seule fois ; l'instant utilisé gouverne l'expiration, le découpage des activités en cours et les plages
+  possibles à résoudre, et la réponse
+  le rend. Passer le même instant à la feuille et à la synthèse assure la même décision d'expiration.
+  Les faits connus restent interprétés, même postérieurs à cet instant. Une écriture entre les deux appels peut
+  changer les faits lus : l'instant commun règle l'expiration, sans garantir un instantané commun.
+- Un instant passé est accepté ; la limite future est l'heure du serveur plus deux minutes, incluse.
+  Le serveur est échantillonné une seule fois, y compris avec un instant explicite. Au-delà, la lecture répond
+  400 `evaluation-future`. Un instant fourni vide ou mal formé répond aussi 400, sans rapport.
+- L'échéance est celle projetée par atelier ; le lecteur la compare à `evaluation`. Les états sont `TERMINEE`,
+  `TERMINEE_AUTOMATIQUEMENT`, `EN_COURS`, `A_RESOUDRE`. Une fin réelle est conservée,
+  même au-delà de l'échéance. Sans elle, l'échéance atteinte termine automatiquement l'activité à cette borne.
+  Une activité à résoudre reste sans fin ; l'échéance ne résout pas le conflit.
+- Chaque portion conserve l'identité stable, l'état et les bornes de l'activité entière. La fin n'existe que pour
+  les deux états terminés. Le découpage aux minuits locaux et aux limites de semaine ne déplace jamais ces bornes.
+- Une activité en cours rend une indication sans fin sur chaque jour atteint à l'instant de lecture, dans la semaine.
+  Son début entier permet de lire « en cours depuis dimanche » sur lundi, sans durée à compter.
+- Une activité à résoudre figure sur tous les jours de sa plage possible, depuis son début jusqu'à sa
+  `finAuPlusTard` projetée par atelier, limitée par `evaluation`. La fin de cette plage est exclusive.
+  Chaque portion reste sans fin réelle ni durée, garde l'identité originale et rend la borne possible entière.
+  Un jour sans pointage local peut la porter ; la sélection retrouve aussi un début antérieur à la semaine.
+- Une activité porte l'élément, jamais le suivi : un élément réengagé après clôture reste le même élément.
+- Les portions sont triées par début, élément puis identité stable de l'activité.
+- `DecoupageCalendaire` est le seul détenteur du calendrier. Le fuseau passe par `FuseauHoraireDeLEntreprise` ;
+  son adapter rend actuellement `Europe/Paris`.
 
-`FeuilleDeTemps` : un opérateur résolu, une `SemaineCalendaire`, sept `JourDeLaSemaine`. Aucune identité, aucune
-persistance — l'objet naît et meurt dans l'appel. Chaque jour porte sa `presence` (des `Plage`) et ses `activites`
-(des `IntervalleDActivite` : une `Activite` — élément, poste, nature, catégorie — et sa `Plage`).
+## Couture et noms techniques
 
-`FeuillesDeTempsService` est la fabrique : elle demande les journées qui **recouvrent** la semaine, les lit à
-l'instant présent (fin présumée comprise), les replie en fenêtres de présence, puis passe chaque fenêtre au
-`DecoupageCalendaire`, seul détenteur du fuseau horaire. Le travail suit le même chemin : les `SuiviDuTravail` de
-l'opérateur sont repliés par leur `JournalDAtelier`, réduits par `ReductionALaPresence`, puis coupés par le même
-découpage.
+`src/test/features/feuille_de_temps.feature` écrit réellement par l'API d'atelier puis lit la feuille : relances,
+transitions ciblées, fins tardives, régularisations, corrections, annulations et clôtures doivent rendre les faits
+projetés par leur propriétaire. `DecoupageCalendaireTest` prouve les semaines ISO et les minuits locaux, y compris
+les changements d'heure.
 
-## Invariants à ne pas casser
+Spring et Hibernate utilisent les noms simples des beans et entités : les noms propres à la feuille évitent les
+collisions avec les propriétaires. Les records métier peuvent partager le vocabulaire des autres contextes.
 
-- **Le journal reste la source de vérité.** Les colonnes `journee_de_travail.debut` et `.fin` ne servent qu'à borner
-  la requête SQL ; la présence se rejoue toujours depuis `evenement_de_presence`.
-- **Les sept jours sont toujours rendus**, vides compris. Un trou dans la liste obligerait le lecteur à deviner s'il
-  manque une journée ou si l'opérateur n'était pas là.
-- **Une plage ouverte ne dépasse pas son propre jour.** Sans départ pointé, rien ne dit que l'opérateur était encore
-  là le lendemain ; l'étaler jusqu'à la fin de la semaine affirmerait une présence que personne n'a saisie. C'est la
-  transposition de la règle qu'`atelier` applique déjà à un travail jamais arrêté.
-- **Une journée abandonnée est fermée à sa fin présumée.** Au-delà du seuil (`SeuilDAmplitude`, table
-  `parametrage`), sa dernière plage se ferme au dernier fait connu, pointage d'OF compris (`PointagesDAtelier`, table
-  `evenement_d_atelier`, interrogé pour une journée abandonnée seulement), et porte `presumee`.
-- **Une journée fermée plus de 24 h après son arrivée se lit comme abandonnée** (D13, issue #59) : `estPresumeePour`
-  la ferme à sa fin présumée, le dernier fait **de la fenêtre de recherche**, départ exclu. Entre le seuil et 24 h,
-  une journée fermée compte entière. 24 h est une borne physique, jamais un paramètre : la constante vit dans
-  `JourneeDeTravail`, recopiée dans `atelier`, `feuilledetemps`, `syntheseheures` et `coutderevient`.
-- **Le repli du travail rejoue l'automate d'atelier par poste**, l'opérateur étant fixé : un début sur une activité
-  en cours la relance, une non-conformité ouvre une reprise, une fin sans activité est ignorée. Un intervalle court
-  jusqu'au pointage suivant sur le même poste, sinon jusqu'à la clôture du suivi, sinon il reste ouvert. Les
-  événements annulés sont écartés dès le SQL.
-- **Le port rend tout le journal des suivis touchés**, restreint à l'opérateur : une non-conformité de la semaine peut
-  suivre un début de la semaine d'avant. La période ne sert qu'à choisir les suivis ; elle part de la plus précoce des
-  arrivées des journées lues, ou du lundi s'il est antérieur.
-- **Un intervalle est réduit aux fenêtres de la journée où il a commencé**, lue comme la présence. La journée qui
-  contient un instant est, comme dans `atelier`, la plus récente dont l'arrivée précède l'instant et que son départ
-  pointé ne finit pas avant lui. Un départ referme ce qui n'a pas été arrêté ; une fenêtre présumée rend l'intervalle
-  présumé ; une intersection réduite à un instant ne rend rien.
-- **Un début hors de toute journée est écarté**, là où `TempsDAtelierService` le rend intact : sans présence, aucun jour
-  ne peut l'accueillir sans arbitraire, et l'anomalie reste visible sur `GET /api/atelier/suivis/{id}/temps-effectif`.
-  L'API d'`atelier` ouvre une arrivée implicite à chaque geste : le cas n'est atteignable qu'en unitaire.
-- **Une activité ouverte ne rend que son jour de début**, comme une plage de présence ouverte.
-- **La réduction, l'écart hors journée et le découpage changent avec `syntheseheures`**, qui les applique aux mêmes
-  intervalles pour en tirer les durées : l'écran « Temps opérationnel » du front dessine les unes et additionne les
-  autres. Les tableaux parallèles de `feuille_de_temps.feature` et `synthese_des_heures.feature` sont le filet.
-- **Une activité porte l'élément, jamais le suivi** : un élément réengagé après clôture reste le même élément.
-- **La semaine est toujours explicite.** Aucune « semaine courante » implicite. L'horloge ne sert qu'à juger
-  l'abandon d'une journée : deux appels espacés peuvent donc différer.
-- **Aucun import de `atelier`, `operateur` ni `postedetravail`**, tous annotés `@BusinessContext`. Ce contexte
-  déclare ses propres entités JPA `@Immutable` sur leurs tables.
+## Lecture d’un poste de nuit
 
-## La duplication du repli est assumée
-
-`EtatDePresence`, `TypeDEvenementDePresence` et le repli en fenêtres de `JourneeDeTravail` sont une **seconde
-implémentation** de ce qu'`atelier` fait déjà. `EtatDActivite`, `TypeDEvenementDAtelier` et `JournalDAtelier` en sont
-une autre, celle du journal d'un élément : cinq automates d'atelier vivent désormais dans le projet (`atelier`,
-`pupitre`, `coutderevient`, `feuilledetemps`, `syntheseheures`) et changent ensemble. C'est le prix de la
-frontière : le partage passerait soit par un import interdit, soit par le shared kernel, qui est en anglais et ne peut
-pas accueillir du vocabulaire d'atelier.
-
-Deux filets tiennent les deux implémentations alignées :
-
-- les tests unitaires de chaque côté, écrits sur les mêmes transitions ;
-- `src/test/features/feuille_de_temps.feature`, qui **pointe par l'API d'atelier** et **relit par celle-ci**, donc
-  échoue dès que les deux contextes cessent de lire les mêmes colonnes ou de rejouer le même automate.
-
-Modifier l'automate d'un côté sans l'autre est un bug : le scénario Cucumber est là pour le dire.
-
-## Les adapters ne peuvent pas porter le nom de ceux d'atelier
-
-Spring nomme un bean d'après le nom **simple** de sa classe : deux `@Repository` nommés `OperateursDuReferentiel`
-dans deux paquets différents refusent de démarrer (`ConflictingBeanDefinitionException`). Les adapters de ce
-contexte prennent donc le préfixe `Referentiel...` là où l'atelier utilise `...DuReferentiel` — `ReferentielDesOperateurs`
-ici. La contrainte ne vaut que pour les classes annotées : les records du domaine
-(`Nom`, `OperateurId`, `JourneeDeTravail`…) portent volontairement le même nom que leurs jumeaux d'atelier, puisque
-c'est le même mot du langage métier.
-
-Hibernate enregistre de même chaque entité sous son nom simple : ce contexte a pris `TravailDeLaFeuilleDeTemps`,
-`SuiviDeLaFeuilleDeTempsEntity` et `PointageDAtelierDeLaFeuilleDeTempsEntity`, dont les colonnes reprennent une à une
-le nommage des entités propriétaires d'`atelier`.
-
-## Ports sortants
-
-`PresenceDeLOperateur`, `OperateursConnus`, `FuseauHoraireDeLEntreprise`, `SeuilDAmplitude`, `PointagesDAtelier`,
-`TravailDeLOperateur`, `Clock`.
-
-`TravailDeLOperateur` est servi par trois requêtes, jamais une par suivi : les identifiants des suivis où l'opérateur a
-pointé sur la période (index `ix_evenement_d_atelier_operateur`), ces suivis, puis leurs journaux triés par date et
-identifiant.
-
-`FuseauHoraireDeLEntreprise` est une **donnée de paramétrage**, donc un port : `FuseauHoraireFixe` rend
-`Europe/Paris` pour l'instant, sur le patron assumé d'`InMemoryPrefixesDElementsDeFabrication`. Le jour où une
-entreprise cliente vit ailleurs, seul l'adapter change.
-
-## État d'avancement
-
-Lot 1 livré : la **présence**, semaine par semaine et jour par jour, jusqu'à `GET
-/api/feuilles-de-temps/{operateurId}?annee={}&semaine={}`.
-
-Lot 2 livré : le **travail par élément** — chaque jour rend ses `activites`, avec l'élément, le poste, la nature, la
-catégorie et `presumee`, selon les invariants ci-dessus.
+Minuit répartit une activité au calendrier, sans produire de geste ni de fin métier. Une activité terminée
+de 20 h à 8 h donne des portions de 4 h puis de 8 h ; dimanche 22 h à lundi 3 h donne 2 h puis 3 h dans
+les deux semaines ISO. Les activités en cours gardent une indication sans durée ; celles à résoudre
+suivent leur plage possible bornée à l’évaluation.

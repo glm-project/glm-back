@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <changeSet id="activite_d_atelier_fin_au_plus_tard" author="glm">
+    <comment>
+      Borne de la plage possible d'une activite a resoudre, issue des seuls faits : echeance ou regularisation
+      recevable plus tardive, limitee par la cloture. Elle n'est ni une fin reelle ni une fin automatique.
+      Comme le socle des projections du chantier, ce schema s'installe sur une base neuve.
+    </comment>
+    <addColumn tableName="activite_d_atelier">
+      <column name="fin_au_plus_tard" type="${datetimeType}" />
+    </addColumn>
+  </changeSet>
+</databaseChangeLog>

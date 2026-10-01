@@ -23,26 +23,26 @@ class ReferentielDuPupitreResource {
   @Operation(
     summary = "Lire tout le referentiel du pupitre en un appel",
     description = """
-    Rend en une seule reponse les operateurs designables avec leurs habilitations et leur etat de presence, et les
-    elements sur lesquels on peut encore pointer avec leurs activites en cours. C'est la lecture que le pupitre
+    Rend en une seule reponse les operateurs designables avec leurs habilitations, et les
+    elements sur lesquels on peut encore pointer avec leurs activites en cours et leurs conflits. C'est la lecture que le pupitre
     rejoue a chaque synchronisation pour rafraichir son cache local.
 
-    Volontairement non paginee : la pagination est exactement ce qui empeche de prouver une version instantanee du
-    referentiel, puisque rien ne garantit que deux pages viennent du meme etat de la base. Tout est ici lu dans une
-    transaction unique.
+    La reponse entiere evite l'assemblage de pages. La lecture se fait dans une transaction unique sous
+    READ COMMITTED : une ecriture concurrente peut changer les faits entre les requetes successives.
+    L'instant commun genereLe assure la meme decision d'expiration, sans garantir un instantane commun.
 
-    `etat` dit quelles commandes de presence l'ecran peut offrir, y compris hors ligne : c'est l'etat de la journee
-    en cours de l'operateur, sans borne de date. Un operateur sans journee en cours vaut ABSENT et reste rendu, la
-    liste etant celle des operateurs designables et non des operateurs presents.
+    Les operateurs restent designables sans activite, avec leur identite, leur matricule et leurs habilitations. Les activites a resoudre
+    sont exclues des activites en cours et leurs identites sont rendues dans les conflits. Une ouverture coherente
+    peut etre en cours a cote d'un conflit. L'expiration des activites se juge a genereLe, echeance incluse.
 
-    `genereLe` est la version de cet instantane. Elle change a chaque appel, y compris quand rien n'a bouge : elle
+    `genereLe` date l'evaluation. Elle change a chaque appel, y compris quand rien n'a bouge : elle
     dit quand le serveur a produit la reponse, pas quand le referentiel a change pour la derniere fois.
 
     Ce que la reponse ne porte pas, et n'a pas a porter : aucun montant — ni taux horaire d'operateur, ni cout
-    horaire de poste —, aucun journal d'evenements, aucun element cloture, et aucun instant de presence.
+    horaire de poste —, aucun journal d'evenements, aucun element cloture.
     """
   )
-  @ApiResponse(responseCode = "200", description = "L'instantane du referentiel, date de l'instant de sa lecture.")
+  @ApiResponse(responseCode = "200", description = "Le referentiel entier, avec son instant d'evaluation.")
   RestReferentielDuPupitre referentiel() {
     return RestReferentielDuPupitre.from(applicationService.referentiel());
   }

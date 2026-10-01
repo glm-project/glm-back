@@ -5,17 +5,23 @@ import com.glm.glmback.syntheseheures.domain.OperateurId;
 import com.glm.glmback.syntheseheures.domain.SemaineCalendaire;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
+import java.util.Optional;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @Validated
@@ -41,32 +47,26 @@ class SyntheseDesHeuresResource {
   @Operation(
     summary = "Lire la synthese des heures hebdomadaire d'un operateur",
     description = """
-    Rend les sept jours de la semaine ISO demandee. Chaque jour porte le journal brut des pointages (arrivee, depart,
-    et debut, non conformite ou fin sur un element), la duree de presence, calculee sur les fenetres de presence, et
-    le temps operationnel. La pause n'est pas un pointage de presence : la duree de presence la compte.
-
-    Le temps operationnel est rejoue depuis les pointages d'element de l'operateur, poste par poste : un debut sur une
-    activite en cours la relance, une non conformite ouvre une reprise, une fin sans activite est ignoree. Une periode
-    court jusqu'au pointage suivant sur le meme poste, sinon jusqu'a la cloture du suivi, sinon elle reste ouverte et
-    ne compte rien. Elle est reduite aux fenetres de presence de la journee ou elle a commence — un depart la referme,
-    une fenetre presumee la rend presumee, un travail commence hors de toute journee ne compte pas — puis coupee a
-    minuit. Les durees se cumulent par element : une heure passee sur deux elements compte deux fois. Les evenements
-    annules n'apparaissent jamais.
-
-    La semaine rend aussi ses elements, avec leurs durees et les postes sur lesquels ils ont ete travailles.
-
-    La semaine est toujours explicite : aucune semaine courante implicite. L'annee est celle des semaines ISO, qui
-    differe de l'annee civile a ses bornes — la semaine 1 de 2026 commence le 29 decembre 2025.
-
-    Une journee sans depart au-dela de l'amplitude maximale de l'entreprise est abandonnee : elle compte jusqu'a son
-    dernier fait connu, dans dureePresumee et jamais dans duree. C'est l'instant de lecture qui en decide, donc deux
-    appels espaces peuvent differer.
-
-    Ce releve n'est ni une feuille de paie ni un rapport de paie : il releve la presence, qui ne sert pas a payer.
+    Rend les sept jours de la semaine ISO demandee, vides compris, le journal brut de l'operateur et les durees
+    de ses activites terminees, y compris automatiquement. Une activite en cours ne produit aucune duree.
+    Les activites interpretees par atelier sont selectionnees par recouvrement de la semaine, puis coupees aux
+    minuits locaux. Une heure sur deux elements compte sur chacun. Les elements portant une activite ou un pointage
+    dans la semaine sont rendus par premiere apparition puis nom, avec leur fiche et leurs postes relus au referentiel.
+    Tous les pointages actifs de la semaine sont conserves, meme sans activite interpretable. Leur tri porte sur
+    l'heure metier, puis l'intention (fin, transition, ouverture), puis l'identite, jamais l'heure d'enregistrement.
+    La semaine est explicite et l'annee est celle des semaines ISO ; aucun montant n'est calcule.
+    L'instant evaluation facultatif decide de l'expiration et des jours atteints par les activites en cours.
+    Sans parametre, l'heure du serveur est relevee une seule fois. La reponse rend l'instant effectivement utilise.
+    Un instant passe est accepte. La borne future est l'heure du serveur plus deux minutes, incluse.
+    Passer le meme instant a la feuille et a la synthese assure la meme decision d'expiration ; les faits connus
+    restent lus, meme posterieurs a cet instant. Ce contrat ne garantit ni lecture historique ni transaction commune.
     """
   )
   @ApiResponse(responseCode = "200", description = "La synthese des heures de la semaine demandee.")
-  @ApiResponse(responseCode = "400", description = "Annee ou numero de semaine hors bornes.")
+  @ApiResponse(
+    responseCode = "400",
+    description = "Annee ou numero de semaine hors bornes, ou instant evaluation vide, mal forme ou au-dela de l'heure du serveur plus deux minutes."
+  )
   @ApiResponse(responseCode = "404", description = "Operateur inconnu du referentiel.")
   RestSyntheseDesHeures get(
     @Parameter(description = "Identifiant de l'operateur dans le referentiel.") @PathVariable UUID operateurId,
@@ -75,8 +75,22 @@ class SyntheseDesHeuresResource {
     ) int annee,
     @Parameter(description = "Numero de la semaine ISO.", example = "20") @RequestParam @Min(PREMIERE_SEMAINE) @Max(
       DERNIERE_SEMAINE
-    ) int semaine
+    ) int semaine,
+    @Parameter(
+      description = "Instant ISO-8601 utilise pour evaluer les activites. Par defaut, heure du serveur. Au plus deux minutes apres celle-ci, borne incluse.",
+      schema = @Schema(type = "string", format = "date-time")
+    ) @RequestParam(required = false) String evaluation
   ) {
-    return RestSyntheseDesHeures.from(applicationService.synthese(new OperateurId(operateurId), new SemaineCalendaire(annee, semaine)));
+    return RestSyntheseDesHeures.from(
+      applicationService.synthese(new OperateurId(operateurId), new SemaineCalendaire(annee, semaine), instantDEvaluation(evaluation))
+    );
+  }
+
+  private static Optional<Instant> instantDEvaluation(String evaluation) {
+    try {
+      return Optional.ofNullable(evaluation).map(Instant::parse);
+    } catch (DateTimeParseException e) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "L'instant evaluation doit respecter le format ISO-8601.", e);
+    }
   }
 }

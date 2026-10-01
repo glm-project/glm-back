@@ -9,13 +9,19 @@ import java.util.Optional;
  * poste s'il a ete pointe, la nature figee a la saisie, et l'heure.
  */
 public record PointageDElement(
+  PointageId id,
+  IntentionDePointage intention,
+  Optional<ActiviteId> cible,
   TypeDEvenementDAtelier type,
   ElementId element,
   Optional<PosteDeTravailId> poste,
   Optional<NatureDOperation> nature,
   Instant dateDeSurvenue
-) implements PointageDuJour {
+) {
   public PointageDElement {
+    Assert.notNull("id du pointage", id);
+    Assert.notNull("intention", intention);
+    Assert.notNull("cible", cible);
     Assert.notNull("type", type);
     Assert.notNull("element", element);
     Assert.notNull("poste de travail", poste);
@@ -23,27 +29,44 @@ public record PointageDElement(
     Assert.notNull("date de survenue", dateDeSurvenue);
   }
 
-  static PointageDElementTypeBuilder builder() {
-    return type -> element -> poste -> nature -> dateDeSurvenue -> new PointageDElement(type, element, poste, nature, dateDeSurvenue);
+  public static PointageDElementIdentiteBuilder builder() {
+    return id ->
+      intention ->
+        cible ->
+          type ->
+            element ->
+              poste -> nature -> dateDeSurvenue -> new PointageDElement(id, intention, cible, type, element, poste, nature, dateDeSurvenue);
   }
 
-  interface PointageDElementTypeBuilder {
+  public interface PointageDElementIdentiteBuilder {
+    PointageDElementIntentionBuilder id(PointageId id);
+  }
+
+  public interface PointageDElementIntentionBuilder {
+    PointageDElementCibleBuilder intention(IntentionDePointage intention);
+  }
+
+  public interface PointageDElementCibleBuilder {
+    PointageDElementTypeBuilder cible(Optional<ActiviteId> cible);
+  }
+
+  public interface PointageDElementTypeBuilder {
     PointageDElementElementBuilder type(TypeDEvenementDAtelier type);
   }
 
-  interface PointageDElementElementBuilder {
+  public interface PointageDElementElementBuilder {
     PointageDElementPosteBuilder element(ElementId element);
   }
 
-  interface PointageDElementPosteBuilder {
+  public interface PointageDElementPosteBuilder {
     PointageDElementNatureBuilder poste(Optional<PosteDeTravailId> poste);
   }
 
-  interface PointageDElementNatureBuilder {
+  public interface PointageDElementNatureBuilder {
     PointageDElementDateDeSurvenueBuilder nature(Optional<NatureDOperation> nature);
   }
 
-  interface PointageDElementDateDeSurvenueBuilder {
+  public interface PointageDElementDateDeSurvenueBuilder {
     PointageDElement dateDeSurvenue(Instant dateDeSurvenue);
   }
 }

@@ -13,7 +13,8 @@ class IntervalleDUnJourTest {
 
   private static final IntervalleDActivite TRAVAIL_DE_8H_A_12H = new IntervalleDActivite(
     activiteDeTravailDuCarterSurLaDmu50(),
-    new Plage(LE_LUNDI_11_MAI_2026_A_8H, Optional.of(LE_LUNDI_11_MAI_2026_A_12H))
+    new Plage(LE_LUNDI_11_MAI_2026_A_8H, Optional.of(LE_LUNDI_11_MAI_2026_A_12H)),
+    travailDuCarterLuSur(new Plage(LE_LUNDI_11_MAI_2026_A_8H, Optional.of(LE_LUNDI_11_MAI_2026_A_12H)))
   );
 
   @Test

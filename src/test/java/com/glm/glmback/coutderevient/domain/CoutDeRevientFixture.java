@@ -1,9 +1,8 @@
 package com.glm.glmback.coutderevient.domain;
 
 import java.math.BigDecimal;
-import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -11,7 +10,7 @@ import java.util.UUID;
  *
  * <p>
  * Aucun fuseau horaire ici, contrairement a la fixture de la feuille de temps : ce contexte ne connait que des
- * instants, comme l'atelier dont il relit les journaux.
+ * instants, comme l'atelier dont il relit les activites interpretees.
  * </p>
  */
 public final class CoutDeRevientFixture {
@@ -32,7 +31,6 @@ public final class CoutDeRevientFixture {
   public static final Instant LE_12_MAI_A_10H = Instant.parse("2026-05-12T10:00:00Z");
   public static final Instant LE_12_MAI_A_18H = Instant.parse("2026-05-12T18:00:00Z");
   public static final Instant LE_13_MAI_A_8H = Instant.parse("2026-05-13T08:00:00Z");
-  public static final AmplitudeMaximale AMPLITUDE_MAXIMALE_13H = new AmplitudeMaximale(Duration.ofHours(13));
 
   public static final ElementId ELEMENT_ID_OF = new ElementId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
   public static final NomDElement NOM_D_ELEMENT_OF_2026_000001 = new NomDElement("OF-2026-000001");
@@ -55,29 +53,52 @@ public final class CoutDeRevientFixture {
   public static final CoutHoraire COUT_HORAIRE_DE_60_EUROS = new CoutHoraire(new BigDecimal("60.00"));
   public static final TauxHoraire TAUX_HORAIRE_DE_20_EUROS = new TauxHoraire(new BigDecimal("20.00"));
 
+  public static final Activite ACTIVITE_FRAISAGE = Activite.builder()
+    .operateur(OPERATEUR_ID_DUPONT)
+    .poste(Optional.of(POSTE_ID_FRAISEUSE))
+    .nature(Optional.of(NATURE_FRAISAGE))
+    .coutHoraire(Optional.of(COUT_HORAIRE_DE_45_EUROS))
+    .tauxHoraire(Optional.of(TAUX_HORAIRE_DE_20_EUROS))
+    .categorie(CategorieDActivite.TRAVAIL);
+  public static final Activite ACTIVITE_TOURNAGE = Activite.builder()
+    .operateur(OPERATEUR_ID_DUPONT)
+    .poste(Optional.of(POSTE_ID_TOUR))
+    .nature(Optional.of(NATURE_TOURNAGE))
+    .coutHoraire(Optional.of(COUT_HORAIRE_DE_60_EUROS))
+    .tauxHoraire(Optional.of(TAUX_HORAIRE_DE_20_EUROS))
+    .categorie(CategorieDActivite.TRAVAIL);
+  public static final Activite ACTIVITE_NC_FRAISAGE = Activite.builder()
+    .operateur(OPERATEUR_ID_DUPONT)
+    .poste(Optional.of(POSTE_ID_FRAISEUSE))
+    .nature(Optional.of(NATURE_FRAISAGE))
+    .coutHoraire(Optional.of(COUT_HORAIRE_DE_45_EUROS))
+    .tauxHoraire(Optional.of(TAUX_HORAIRE_DE_20_EUROS))
+    .categorie(CategorieDActivite.NON_CONFORMITE);
+  public static final Activite ACTIVITE_TOURNAGE_SANS_TAUX = Activite.builder()
+    .operateur(OPERATEUR_ID_DUPONT)
+    .poste(Optional.of(POSTE_ID_TOUR))
+    .nature(Optional.of(NATURE_TOURNAGE))
+    .coutHoraire(Optional.of(COUT_HORAIRE_DE_60_EUROS))
+    .tauxHoraire(Optional.empty())
+    .categorie(CategorieDActivite.TRAVAIL);
+
   private CoutDeRevientFixture() {}
 
-  public static EvenementDePresence arriveeA(Instant date) {
-    return new EvenementDePresence(TypeDEvenementDePresence.ARRIVEE, date);
+  public static ActiviteInterpretee activiteInterpreteeDeFraisage(Plage plage) {
+    return ActiviteInterpretee.builder()
+      .id(new ActiviteId(UUID.randomUUID()))
+      .activite(ACTIVITE_FRAISAGE)
+      .plage(plage)
+      .echeance(plage.debut().plusSeconds(46800))
+      .finAuPlusTard(Optional.empty());
   }
 
-  public static EvenementDePresence departA(Instant date) {
-    return new EvenementDePresence(TypeDEvenementDePresence.DEPART, date);
-  }
-
-  public static JourneeDeTravail journeeDe8HA17H() {
-    return new JourneeDeTravail(List.of(arriveeA(LE_11_MAI_A_8H), departA(LE_11_MAI_A_17H)));
-  }
-
-  public static JourneeDeTravail journeeOuverteDepuis8H() {
-    return new JourneeDeTravail(List.of(arriveeA(LE_11_MAI_A_8H)));
-  }
-
-  /**
-   * Issue #59 : lundi, Dupont arrive a 8 h, puis ne pointe plus rien avant un depart mercredi a 8 h, rattache a la
-   * meme journee par une version anterieure au lot 3.
-   */
-  public static JourneeDeTravail journeeDuLundi8HAuMercredi8H() {
-    return new JourneeDeTravail(List.of(arriveeA(LE_11_MAI_A_8H), departA(LE_13_MAI_A_8H)));
+  public static ActiviteInterpretee activiteInterpreteeDeTournage(Plage plage) {
+    return ActiviteInterpretee.builder()
+      .id(new ActiviteId(UUID.randomUUID()))
+      .activite(ACTIVITE_TOURNAGE)
+      .plage(plage)
+      .echeance(plage.debut().plusSeconds(46800))
+      .finAuPlusTard(Optional.empty());
   }
 }

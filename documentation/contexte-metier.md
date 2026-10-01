@@ -23,60 +23,69 @@ Le repository et le compteur sont persistés en PostgreSQL, dans le schéma de l
 ### Points ouverts
 
 1. **Relation produit ↔ ordre de fabrication.** Le client décrit un enchaînement (« ce moule neuf, une fois testé, s'il y a une opération à faire dessus, ça se transforme en OF ») mais ne demande jamais le lien, et l'imposer exclurait les modifications sur des produits antérieurs à l'application. Le jour où ce lien sera ajouté, il ne concernera que les ordres de fabrication : les deux types cesseront de ne différer que par leur valeur, ce qui rouvrira la question de scinder l'agrégat unique — aujourd'hui justifié précisément parce qu'ils ne diffèrent par aucun champ.
-2. **Suppression.** Le client ne parle jamais de supprimer, seulement de clôturer. Dès que les temps seront saisis, la suppression d'un élément qui en porte devra être interdite : elle détruirait des heures de paie.
+2. **Suppression.** Le client ne parle jamais de supprimer, seulement de clôturer. Dès que les temps seront saisis, la suppression d'un élément qui en porte devra être interdite : elle empêcherait de relire les faits et leurs coûts.
 3. **Numérotation et préfixes.** Les préfixes sont figés pour toutes les entreprises, ce qui contredit la cible multi-clients. L'année et le reset annuel du format `PRD-2026-000001` n'ont par ailleurs aucune source client, alors que des ordres de fabrication durant plusieurs mois traversent les millésimes.
 4. **Critère de lecture.** `ElementDeFabricationCriteria` ne filtre que par période de création et la liste est paginée. Aucun écran décrit par le client ne filtre ainsi ; le seul critère cité est « actifs seulement ». Côté atelier, ce point est traité — la période y est devenue facultative.
 
 ## atelier
 
-Gère l'exécution en atelier de ce que `elementdefabrication` a déclaré. Le gestionnaire y met un élément en atelier, les opérateurs y pointent leur présence et leur travail, le gestionnaire clôture et corrige.
+Gère l'exécution en atelier de ce que `elementdefabrication` a déclaré. Le gestionnaire y met un élément en atelier, les opérateurs y pointent leurs activités, le gestionnaire clôture et corrige.
 
-Le contexte porte **deux agrégats** : la `JourneeDeTravail` d'un opérateur et le `SuiviDAtelier` d'un élément engagé. Ils partagent un même langage — opérateur, auteur, horodatage, annulation, régularisation — et le temps réellement passé sur un élément se lit au croisement des deux. Les séparer en deux contextes obligerait à dupliquer ces value objects, que le shared kernel ne peut pas accueillir puisqu'il est en anglais.
+Le contexte porte le `SuiviDAtelier` d'un élément engagé et son journal d'activité. Les temps se lisent dans
+ses activités interprétées, avec leurs bornes, leur échéance et les séquences en conflit.
 
-**Le journal d'événements est la source de vérité.** L'état d'un agrégat et ses intervalles de temps ne sont jamais stockés : ils se déduisent du repli du journal, trié par date de survenue. C'est la correction qui l'impose — un temps juste exige que la saisie oubliée compte à l'heure où elle a eu lieu, pas à l'heure où on la rattrape, et un modèle à compteurs ne sait pas revenir en arrière. Chaque événement porte donc un `Horodatage` bitemporel : sa date de survenue, métier, et sa date d'enregistrement, technique.
+**Le journal d'événements est la source de vérité.** L'agrégat se reconstruit par le repli du journal, trié par date de survenue ; les projections d'activités et de conflits sont réconciliées à chaque écriture pour les lectures. C'est la correction qui l'impose — un temps juste exige que la saisie oubliée compte à l'heure où elle a eu lieu, pas à l'heure où on la rattrape, et un modèle à compteurs ne sait pas revenir en arrière. Chaque événement porte donc un `Horodatage` bitemporel : sa date de survenue, métier, et sa date d'enregistrement, technique.
 
-**Une régularisation se reconnaît à l'écart entre ces deux dates, pas à l'identité de l'auteur.** `estUneRegularisation()` dit que la saisie est différée — et c'est le seul fait exposé : l'option de pointage en retard, qui laisse l'opérateur saisir lui-même son heure de début, est bien une régularisation sans aucun tiers. Le booléen jumeau `estSaisiParUnTiers` a été retiré avec le passage à l'identifiant : l'`Auteur` vient du jeton et l'opérateur du référentiel, et rien ne relie encore les deux — le comparer n'aurait plus produit qu'une réponse toujours vraie. Il reviendra avec le lot « utilisateur connecté ».
+**Une régularisation est un acte du gestionnaire, conservé sur le fait, pas un écart de dates ni une identité d'auteur.** Chaque événement du journal d'un élément porte son origine : `POINTAGE` pour tout ce qui passe par la route des pointages, quels que soient le rôle de celui qui pointe et l'heure de geste fournie, `REGULARISATION` pour une régularisation ou le remplaçant d'une correction, même saisis à l'heure du fait. `estUneRegularisation()` lit cette origine. L'écart entre les deux dates ne suffit pas : un pupitre resté hors ligne rejoue ses pointages après coup sans que le gestionnaire soit intervenu. Cet écart reste la lecture d'une saisie différée. Le booléen jumeau `estSaisiParUnTiers` a été retiré avec le passage à l'identifiant : l'`Auteur` vient du jeton et l'opérateur du référentiel, et rien ne relie encore les deux — le comparer n'aurait plus produit qu'une réponse toujours vraie. Il reviendra avec le lot « utilisateur connecté ».
 
-### La présence, de l'arrivée au départ
+### La pause et le travail non facturable
 
-Le client décrit son besoin comme « une pointeuse à laquelle on rajoute une option OF », et il a corrigé explicitement l'équipe sur ce point : les heures de présence courent de l'arrivée dans la société au départ, **jamais du premier au dernier élément travaillé**. L'objectif du produit reste de savoir qui travaille sur quoi et combien un OF a coûté en temps de travail : **la présence ne sert pas à payer**.
+La pause est un geste du pupitre : il envoie une fin ciblée par activité actionnable, puis une nouvelle ouverture à
+la reprise, en travail ou en non conformité. Le serveur reçoit les faits d'activité correspondants.
 
-`JourneeDeTravail` porte donc son propre journal, d'`ARRIVEE` et de `DEPART`. Ses bornes sont l'arrivée et le départ, **pas le jour calendaire** : aucun fuseau horaire n'entre dans le domaine, et une équipe de nuit ou un retour en soirée ouvre simplement une seconde journée. Elle expose deux mesures, que l'absence de pause rend égales pour une journée d'une seule venue :
+**GLM n'est pas un concept du modèle.** C'est le nom que le client de référence donne à son travail non facturable,
+sur un projet interne par exemple, qu'il veut déclarer manuellement (« De toute façon il y aura ce bouton GLM »).
+Ce travail fera l'objet d'une spécification séparée.
 
-- `amplitude()` — de l'arrivée au départ ;
-- `fenetres()` — les périodes de présence, une par venue.
+### Le temps effectif, celui des seules activités
 
-**La pause n'est pas un fait de présence** ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)) : un opérateur en pause reste présent, et le relevé de présence compte sa pause.
+`TempsDAtelierService.tempsEffectif` rend les intervalles des activités d'un élément, tels que le journal les interprète (`SuiviDAtelier.intervalles`), à l'instant d'évaluation. Une activité se termine à sa fin réelle — un geste qui la termine, ou la clôture —, sinon automatiquement à son échéance, avec une anomalie (voir ci-dessous).
 
-**Une journée sans départ est abandonnée** quand son amplitude depuis l'arrivée dépasse le seuil paramétré par l'entreprise (contexte `parametrage`, 13 h par défaut) — strictement : un geste au seuil pile reste dans la journée. Aucune règle calendaire ne peut fermer une journée, puisqu'un poste de nuit court de 20 h à 8 h ; le seuil, lui, reste sous 24 h, ce qui garantit qu'un retour le lendemain à la même heure soit une nouvelle arrivée. L'abandon se juge sur l'heure du geste, jamais sur sa réception : un pupitre hors ligne qui rejoue un geste de la veille le voit rangé dans la bonne journée.
+La route rend l'identité stable de chaque activité et ses bornes : une activité en cours ou à résoudre reste sans
+fin ni durée à comptabiliser ; `finAutomatique` signale l'anomalie d'une activité terminée à son échéance,
+`aResoudre` la dépendance à un conflit. L'horloge du service applicatif fournit l'instant de cette lecture.
 
-- **Une arrivée sous le seuil est absorbée** : l'opérateur est déjà là, rien n'est ajouté, la journée en cours est rendue comme un rejeu. C'est ce qui permet à l'opérateur de nuit de se réidentifier à 3 h.
-- **Un geste reçu pour une journée abandonnée en ouvre une nouvelle** : une arrivée implicite à l'heure du geste, sous un identifiant du serveur réservé comme celui d'une régularisation, puis le geste lui-même. Une arrivée égarée sur la route des pointages s'y réduit à l'arrivée implicite ; un départ tardif donne une journée de durée nulle. La journée abandonnée reste telle quelle, sans départ, à régulariser.
-- **Deux journées d'un même opérateur ne se chevauchent jamais.** L'étendue d'une journée va de son premier à son dernier fait connu ; une régularisation ou une correction qui ferait toucher deux étendues est refusée au gestionnaire (`chevauchement-de-journees`). Les gestes de l'opérateur ne sont jamais refusés pour cette raison. La recherche passe par la projection `dernier_fait`, écrite comme `debut` et `fin`.
-- À instant égal, dans le journal de présence, **l'arrivée passe devant** : l'arrivée implicite partage l'heure du geste qu'elle précède.
+La pause de midi scinde le travail par le journal de l'élément : une fin à midi, un début à la reprise. Corriger une heure de pause fausse demande donc une correction par activité, sur sa fin et sur son début.
 
-**La liste des anomalies** (`GET /api/atelier/anomalies`, gestionnaire seul) signale deux types de journées, jugées à l'instant de lecture avec le seuil courant et jamais stockées : `JOURNEE_SANS_DEPART`, abandonnée au-delà du seuil, et `AMPLITUDE_EXCESSIVE`, fermée au-delà du seuil. La plus récente d'abord, filtrable par opérateur et par type. Une ligne disparaît dès que la régularisation la résout ; changer le seuil fait apparaître ou disparaître des lignes sans migration. La requête s'appuie sur les projections `etat`, `debut` et `amplitude_microsecondes` — à la précision des horodatages de la base, pour qu'un dépassement d'une demi-seconde reste un dépassement.
+Un travail jamais arrêté ne court pas pour autant jusqu'au lendemain : il se termine à son échéance, et l'opérateur qui reclique sur l'élément à son retour ouvre une nouvelle activité, sans prolonger l'ancienne. Une fin oubliée se rattrape par une régularisation du gestionnaire, qui remplace la fin automatique.
 
-Depuis le lot 3, une amplitude excessive ne naît plus d'un geste de l'opérateur : un départ pointé au-delà du seuil ouvre une nouvelle journée, et c'est la journée du matin, sans départ, qui est signalée. Elle ne vient que d'un acte du gestionnaire — un départ régularisé ou corrigé tard.
+### La fin automatique à l'échéance
 
-**Le départ est un fait de l'opérateur, écrit une seule fois ; la pause n'existe pas pour le serveur, le pupitre la traduit en fins d'activité.** Le départ n'est jamais recopié dans le journal des éléments : c'est ce qui donne au client son bouton d'arrêt de fin de journée, sans jamais N clics pour N tâches. La pause, elle, se lit dans le journal de chaque élément : le client la décrit comme l'arrêt et la reprise du travail — « pause / arrêt / reprise sont le même mécanisme » —, et le pupitre y pointe une fin par activité en cours, puis un début, ou une non conformité, à la reprise. Le serveur ne reçoit que des fins et des débuts.
+Une activité encore en cours ne compte rien. Oubliée, elle ne court pas pour autant indéfiniment : **son échéance est son début plus 13 heures écoulées** (`Echeance`), jamais 13 heures d'horloge murale — le passage à l'heure d'été ou d'hiver ne l'allonge ni ne la raccourcit. Une activité que rien n'a terminée avant son échéance est **terminée automatiquement** à cet instant, et porte une **anomalie**. Travail à 8 h sans aucune fin : lu à 20 h 59, il est en cours ; lu à 21 h, ou le lendemain, il est terminé à 21 h. Le délai est la règle de l'atelier, pas un paramètre de l'entreprise.
 
-La **présence sans affectation** — le temps de présence sans élément rattaché — n'est pas un élément fictif : c'est le résidu de la présence moins le temps affecté, calculé à la lecture. La présence est comptée dès l'identification, que l'opérateur ait ou non pointé sur un élément.
+**Rien n'est écrit.** Ni événement de clôture automatique ni traitement planifié : l'interprétation du journal donne des activités qui ne dépendent que des faits, avec leur fin réelle quand un geste ou la clôture les a terminées. Seule leur lecture, à un **instant d'évaluation** explicite, décide si une activité sans fin réelle est encore en cours ou déjà terminée automatiquement. Cet instant vient de l'horloge du service applicatif. La première lecture après une indisponibilité retrouve donc la même borne, sans rattrapage.
 
-**GLM n'est pas un concept du modèle.** C'est le nom que le client de référence donne à son travail non facturable — sur un projet interne, par exemple —, qu'il veut déclarer manuellement (« De toute façon il y aura ce bouton GLM »). Ce travail n'est pas encore modélisé, et la présence sans affectation n'en est pas : un opérateur présent sans activité pointée ne fait pas pour autant du travail non facturable. C'est le principe posé en tête de ce document : GLM sert de trame, pas de spécification.
+**La même échéance gouverne l'interprétation**, sans instant de lecture, sur les seules heures métier :
 
-### Le temps effectif, croisement des deux journaux
+- un geste pointé **au plus tard à l'échéance** de l'activité qu'il vise la termine à son heure, même reçu après elle : une fin pointée à 17 h et reçue le lendemain donne 9 h, et retire l'anomalie. Un geste pile à l'échéance l'emporte sur la fin automatique ;
+- une fin pointée **après l'échéance** est conservée : l'activité garde sa borne de 21 h et son anomalie, sans conflit ni qualification supplémentaire du pointage dans le journal ;
+- une transition pointée après l'échéance de sa cible laisse à celle-ci sa borne automatique et ouvre la nouvelle activité à son heure : travail à 8 h, non conformité visant ce travail à 23 h, rien n'est compté entre 21 h et 23 h ;
+- une relance après l'échéance laisse le même trou, et une clôture postérieure à l'échéance ne prolonge rien ;
+- **seul le gestionnaire** établit une fin réelle au-delà de l'échéance, par une fin ou une transition régularisée : la fin automatique est une borne par défaut, pas un plafond.
 
-`SuiviDAtelier.activites()` produit des intervalles **bruts** : ils ignorent la présence. `TempsDAtelierService.tempsEffectif` les ramène aux fenêtres de présence de l'opérateur, en intersectant chaque intervalle avec les fenêtres de **la journée où il a commencé**. Une seule règle, deux effets :
+Chaque transition ouvre une activité distincte, avec sa propre échéance : travail à 8 h puis non conformité à 12 h donnent 4 h de travail terminées à 12 h et une non conformité en cours jusqu'à 1 h le lendemain. Corriger un début recalcule tout : à 22 h, un début corrigé de 8 h à 12 h repousse l'échéance à 1 h, et l'activité redevient en cours, sans anomalie.
 
-- un départ **tronque** ce que l'opérateur a oublié d'arrêter — un `FIN` manquant ne produit plus un intervalle infini ;
-- une régularisation de départ **corrige d'un coup tous les éléments** de la journée, là où un départ recopié par élément aurait demandé autant de corrections que d'éléments, et n'aurait jamais rattrapé un début inséré après coup.
+### Les séquences en conflit
 
-La pause de midi, elle, scinde le travail par le journal de l'élément : une fin à midi, un début à la reprise. Corriger une heure de pause fausse demande donc une correction par activité, sur sa fin et sur son début.
+Un atelier pointe hors ligne, depuis plusieurs pupitres, et le gestionnaire rattrape après coup : deux faits peuvent se contredire, et le second arriver avant le premier. Travail A à 8 h, passage de A en non conformité à 12 h, fin de A à 17 h : la fin dit A en cours jusqu'à 17 h, la transition dit qu'elle a cessé à 12 h. **Le serveur ne choisit pas.** Il ne refuse aucun des deux, ne rattache pas la fin à la non conformité et n'ignore pas la transition, quel que soit leur ordre d'arrivée : les faits sont conservés, et leur séquence est **en conflit** jusqu'à ce que le gestionnaire corrige ou annule ce qui est faux. Un refus aurait fait dépendre le journal de l'ordre de réception, et fait perdre un geste réel ; une interprétation silencieuse aurait chiffré un temps que personne n'a validé.
 
-Borner l'intervalle à sa journée est aussi ce qui empêche un travail jamais arrêté de courir jusqu'au lendemain : l'opérateur reclique sur l'élément à son retour, ce qui est exactement le geste que le client décrit. Un début qui ne tombe dans aucune journée connue est **rendu intact** : c'est la présence qui manque, et le domaine ne masque pas l'anomalie derrière un temps amputé.
+Se contredisent : un geste qui vise une activité remplacée avant son heure, déjà terminée par une fin — le double appui sur « arrêter » compris —, pas encore ouverte à son heure ou dont l'ouverture est annulée ; une transition vers sa propre catégorie, qui serait une relance déguisée ; une transition qui vise une activité échue alors qu'une autre est en cours sur le poste, et qu'elle ne peut ouvrir sans la terminer. Ne se contredisent pas : un geste qui vise une activité seulement échue, que la règle des 13 h suffit à lire, ou pointé pile à son échéance.
 
-**Une journée abandonnée se ferme à sa fin présumée**, calculée à la lecture et jamais stockée : le dernier fait connu, qu'il soit son dernier événement de présence ou le dernier pointage d'OF de l'opérateur (tous éléments confondus) survenu entre l'arrivée et l'arrivée plus le seuil. La fenêtre ainsi fermée est **présumée**, et les intervalles qui s'y réduisent portent `presume` : le temps effectif distingue ce qui a été pointé de ce qui reste à confirmer. Dans l'exemple de référence, l'OF 42 de lundi vaut 7 h, toutes présumées — sans départ, la journée n'a qu'une fenêtre, présumée en entier —, et la nuit n'est plus comptée. Un travail commencé dans une journée abandonnée après sa fin présumée ne vaut rien : la fin présumée n'invente jamais d'heures. Une journée encore sous le seuil reste ouverte, c'est du travail en cours ; une régularisation du départ remplace le présumé par le pointé. **Une journée fermée plus de 24 h après son arrivée se lit comme abandonnée pour le temps effectif** ([D13](strategie/bornes-de-fin-de-journee.md), issue #59) : elle n'a pas pu être vécue d'une traite, et son départ ne dit rien de l'heure à laquelle l'opérateur est parti. Elle se ferme à sa fin présumée, le dernier fait connu **entre l'arrivée et l'arrivée plus le seuil** — ses faits au-delà, départ compris, ne comptent pas — et ce qui dépasse disparaît. Rien n'est réécrit, et elle reste signalée en amplitude excessive. Entre le seuil et 24 h, une journée fermée compte entière. 24 h est une borne physique, jamais un paramètre de l'entreprise. Pour la saisie, elle n'est pas abandonnée : un geste reçu ensuite ne la concerne pas.
+La contradiction couvre ce qui sépare le début de la cible de l'heure du geste. La cible, l'activité qu'ouvre le geste et toute activité du même poste qui chevauche cette zone sont **à résoudre** : ni en cours, ni terminées, sans durée ni coût chiffrés, et la fin automatique ne les tranche pas. Les autres gardent leur lecture, en particulier la nouvelle ouverture pointée après le conflit, seule action qu'un pupitre propose encore sur ce poste. L'état de l'élément se juge sur ses seules activités interprétables ; le conflit se lit à part, dans la réponse du suivi, et ne se stocke jamais : il disparaît au recalcul dès que les faits redeviennent cohérents. L'historique ne garde que les pointages et les corrections.
+
+La correction d'un ouvrant conserve l'identité de son activité. Elle ne peut donc pas la déplacer vers un autre couple opérateur/poste tant qu'un geste actif la vise depuis l'ancien : ce serait une cible incohérente, pas une contradiction de séquence. Le gestionnaire corrige ou annule d'abord ce geste, puis déplace l'ouvrant.
+
+Une fin survenue avant la clôture de l'élément, mais reçue après elle, est enregistrée à son heure : la clôture ne prime pas sur un geste qui l'a précédée. Survenue après, elle n'arrête plus rien.
 
 ### L'activité, un opérateur sur un poste de travail
 
@@ -99,7 +108,7 @@ La contrepartie de ce choix : **ni un opérateur ni un poste ayant servi à poin
 
 ### Non conformité
 
-Une pièce ratée se refait, sur le même élément et au même tarif, mais comptée à part. `EtatDActivite` distingue `EN_COURS` et `EN_NON_CONFORMITE`, et la catégorie d'un intervalle se lit **sur l'état atteint**, jamais sur le type d'événement : reprendre du bon travail après une non conformité se pointe comme un début. Un début sur une activité déjà en cours la **relance** (de même qu'une non conformité sur une non conformité en cours) : la période précédente s'arrête à l'heure du geste, une nouvelle commence, et l'opérateur qui revient sur un élément resté ouvert n'est jamais bloqué. À la clôture, on sait « combien de temps on a passé à faire du bon travail et combien à refaire ».
+Une pièce ratée se refait, sur le même élément et au même tarif, mais comptée à part. Chaque pointage dit son **intention** (`IntentionDePointage`) : une **ouverture** crée une activité, en travail ou en non conformité ; une **transition** remplace l'activité qu'elle vise par une activité distincte de l'autre catégorie ; une **fin** termine l'activité qu'elle vise, et elle seule. Passer en non conformité, puis reprendre du bon travail, se pointe donc par deux transitions, un `NON_CONFORMITE` puis un `DEBUT` qui visent chacun l'activité qu'ils remplacent. L'activité visée se désigne par l'identité de son pointage ouvrant (`ActiviteId`), que garde le remplaçant d'une correction. Une ouverture sur une activité déjà en cours la **relance** : la période précédente s'arrête à l'heure du geste, une nouvelle commence, et l'opérateur qui revient sur un élément resté ouvert n'est jamais bloqué. Un geste qui contredit le journal — il vise une activité déjà terminée, déjà remplacée ou annulée, ou change une activité vers sa propre catégorie — n'est jamais refusé ni rattaché à une autre activité que sa cible : il est conservé, et sa séquence est en conflit. À la clôture, on sait « combien de temps on a passé à faire du bon travail et combien à refaire ».
 
 ### Les trois actes de correction
 
@@ -109,28 +118,33 @@ Une pièce ratée se refait, sur le même élément et au même tarif, mais comp
 | Saisie en trop | `annule`     | marquage de l'événement fautif, qui reste au journal |
 | Saisie fausse  | `corrige`    | annulation **et** insertion, en un seul acte         |
 
-Ces trois actes existent sur les deux agrégats : une heure d'arrivée fausse se corrige comme un début de travail faux.
+Ces trois actes s'appliquent aux faits du suivi d'atelier.
 
 Un journal ne se réécrit pas : l'événement erroné reste, porteur d'une `Annulation` qui trace qui a corrigé, quand et pourquoi. Le repli écarte les annulés, puis déroule l'automate.
 
-`corrige` n'est pas la composition des deux autres, et c'est le point non évident : annuler un début puis insérer sa version corrigée ferait passer le journal par une séquence à fin orpheline, que l'automate refuserait à raison. La correction construit la séquence finale et ne la valide qu'une fois. L'automate protège donc la cohérence même sous correction.
+`corrige` n'est pas la composition des deux autres, et c'est le point non évident : le remplaçant d'un début corrigé garde l'activité qu'il ouvrait, et les gestes qui la visaient y restent rattachés. Annuler ce début puis régulariser sa version corrigée ouvrirait une autre activité, et laisserait en conflit la fin qui visait la première.
+
+Ce sont aussi les actes qui **résolvent une séquence en conflit** : annuler la transition erronée, ou corriger la fin qui visait l'activité remplacée pour qu'elle termine sa remplaçante. Aucun n'est refusé parce qu'il crée ou laisse une contradiction ; une résolution en plusieurs actes traverse donc des états intermédiaires en conflit, et le recalcul retire le conflit dès que les faits redeviennent cohérents.
 
 **La clôture ne fige rien pour le gestionnaire.** Elle ferme le pointage aux opérateurs ; régularisation, annulation et correction restent admises, et la clôture elle-même se déplace ou s'annule. Le seul invariant qui subsiste est de cohérence, pas de permission : aucun événement daté après la clôture.
 
 ### Le temps réparti
 
-Deux mesures coexisteront, qui ne s'additionnent pas de la même façon :
+Deux mesures se distinguent par leur cumul :
 
 - **temps effectif** — la durée réelle passée sur un élément, telle que la produit `TempsDAtelierService`. Deux postes pendant 1 h font 2 h effectives.
-- **temps réparti** — la même heure d'opérateur divisée par le **nombre de postes de travail** qu'il occupait simultanément, tous éléments confondus. Il ne servira qu'au coût de revient.
+- **temps réparti** — la même heure d'opérateur divisée par le **nombre de postes de travail** occupés simultanément par ses activités terminées, tous éléments confondus. Il sert au coût de revient.
 
-Une troisième lecture en dérive sans rien ajouter au journal : le **temps opérationnel** de `syntheseheures`, qui
-s'additionne comme l'effectif mais écarte un début hors de toute journée et se coupe à minuit (voir la section
-`syntheseheures`).
+Le **temps opérationnel** de `syntheseheures` cumule les portions d'activités terminées, réelles ou automatiques,
+coupées aux minuits locaux. Les activités en cours restent visibles sans durée comptabilisée ; les valeurs
+dépendant d'une activité à résoudre restent incomplètes sans chiffre. Voir la section `syntheseheures`.
 
 Le diviseur est bien le nombre de postes, et non le nombre d'activités ou d'éléments : le client énonce la règle deux fois de suite — coût horaire de chaque machine active non divisé, taux horaire de l'opérateur divisé par le nombre de machines qu'il utilise. Un opérateur sur trois éléments avec une seule machine n'est donc pas divisé.
 
-**Le journal n'enregistre que l'effectif.** Le réparti traverse les agrégats — un nouveau pointage sur un second élément change la part déjà attribuée sur le premier —, il ne peut donc être qu'une fonction de projection, calculée à la lecture. `TempsDAtelierService` produit pour cela des intervalles complets, et pas seulement l'état courant dont l'écran a besoin aujourd'hui : c'est la couture sur laquelle les tableaux de bord se brancheront.
+**Le journal enregistre les faits d'activité.** Le réparti traverse les agrégats — la fin d'une activité sur un
+second élément peut changer la part déjà attribuée au premier —, il est donc calculé à la lecture par le coût.
+Atelier projette l'interprétation des faits ; les lecteurs y accèdent par leurs ports et entités propres et
+ajoutent l'évaluation temporelle, le calendrier ou la valorisation de leur contexte.
 
 ### Frontière avec elementdefabrication
 
@@ -140,9 +154,28 @@ Le diviseur est bien le nombre de postes, et non le nombre d'activités ou d'él
 
 L'écran des opérateurs veut tous les éléments actifs d'un coup, sans rien qui défile et sans notion de date : la période de `SuiviDAtelierCriteria` est donc **facultative**, et ne sert qu'aux écrans de back-office.
 
-Les quatre couches existent désormais, et les deux agrégats sont persistés en PostgreSQL, dans le schéma de l'entreprise courante. Chacun occupe deux tables : la ligne de l'agrégat et son journal. Le journal restant la seule source de vérité, l'état n'est jamais stocké _comme état_ — mais `etat`, `debut` et `fin` sont écrits en **colonnes de projection**, dérivées du journal à chaque écriture et jamais relues pour reconstruire l'agrégat. Sans elles, filtrer l'écran d'atelier sur les états ou retrouver la journée contenant un instant obligerait à ramener toute l'entreprise en mémoire.
+Les quatre couches existent ; `suivi_d_atelier` et `evenement_d_atelier` persistent le suivi et ses faits dans le
+schéma de l'entreprise courante. Le domaine rapproche les projections `activite_d_atelier` à chaque écriture.
+Elles portent les bornes indépendantes de la lecture et servent les filtres sans reconstruire toute l'entreprise.
+Le suivi se reconstruit depuis ses faits, et non depuis les projections.
 
-Le modèle est relationnel plutôt qu'un journal sérialisé en `jsonb`, parce que les projections à venir — coût de revient, paie, synthèses — filtrent et groupent sur des attributs d'**événement** à travers tous les agrégats : un index les sert directement, là où un document devrait être désérialisé en entier pour être presque tout jeté. Les index `(operateur, date_de_survenue)` et `(poste, date_de_survenue)` sont posés dès maintenant à cette fin, et un contexte lecteur n'aura qu'à poser dessus une entité en lecture seule, comme `atelier` le fait déjà sur `element_de_fabrication`.
+L'atelier projette aussi ses séquences en conflit, pour que les lecteurs les retrouvent après un redémarrage :
+`sequence_en_conflit` porte le suivi et le couple opérateur/poste, `pointage_en_conflit` les identités ordonnées de
+ses faits actifs, et `activite_d_atelier` le rattachement ordonné de ses activités à résoudre. Une séquence peut
+n'avoir aucune activité, notamment après l'annulation d'un ouvrant encore visé. Ces tables sont écrites uniquement
+par atelier, depuis `SuiviDAtelier.conflits()` ; elles sont rapprochées à chaque écriture et disparaissent après
+résolution. Elles ne servent jamais à reconstituer le suivi, qui rejoue son journal.
+
+Chaque activité à résoudre porte aussi sa `fin_au_plus_tard`, indépendante de la lecture : son échéance ou la
+plus tardive fin ou transition régularisée qui la vise, limitée par la clôture. Elle borne ses jours possibles
+sans lui donner de fin réelle. La correction, l'annulation et la clôture réécrivent la projection ; la résolution
+retire cette borne avec le conflit, sans historique d'anomalie artificiel.
+
+Le modèle relationnel permet aux lecteurs de sélectionner les activités par **recouvrement**, et de lire
+séparément le journal brut pour le relevé. Chaque lecteur possède ses entités JPA en lecture seule sur les
+tables du propriétaire, comme `atelier` le fait sur `element_de_fabrication`. Les bornes projetées servent
+les rapports sans rejouer les gestes ; les faits du journal restent consultables avec leur identité, intention
+et cible.
 
 `ElementsEngageables` lit la table `element_de_fabrication` par une entité en lecture seule propre à l'atelier, sans jamais importer le contexte voisin. `OperateursConnus`, `PostesConnus` et `Habilitations` font de même sur `operateur`, `poste_de_travail` et `operateur_poste`.
 
@@ -150,15 +183,21 @@ L'API est décrite par OpenAPI (`/swagger-ui.html`) et par [atelier-api.md](atel
 
 ### Points ouverts
 
-1. **Régulariser après une dé-habilitation est refusé.** L'habilitation étant vérifiée sur les trois écritures du journal, un gestionnaire ne peut plus rattraper une saisie oubliée sur un poste dont l'opérateur a été retiré depuis. Le cas est assumé pour ce lot — il ferme la porte au contournement —, mais il laisserait un trou dans la paie s'il se produisait : à rouvrir si le client le rencontre.
-2. **Quelle mesure alimente la paie ? Fermé le 28/09/2026** : aucune, la présence ne sert pas à payer ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)). `amplitude()` et `fenetres()` restent exposées tant que la présence existe ; sa suppression est un chantier suivant.
-3. **Le coût de revient monétaire est sorti du contexte**, comme prévu : il vit dans `coutderevient`, qui lit le journal d'`atelier` par port en lecture seule. `atelier` continue de ne rien calculer — il copie le coût horaire du poste et le taux horaire de l'opérateur sur l'événement, et s'arrête là. Reste ouvert le **coût par période** (par opérateur, par poste, par mois), qui n'a pas de demande client formulée, et l'objection de Nicolas sur la division du taux humain : le modèle retient le verbatim client — taux divisé par le nombre de postes, coût machine jamais divisé —, elle n'a jamais été reprise en réunion.
-4. **Le bouton de pause global n'a jamais été validé de première main** — point **déplacé au pupitre**. Il ne vient que de la réunion d'équipe ; dans la réunion client, la pause est décrite au singulier, sur un seul élément. Le serveur ne connaissant plus la pause ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)), c'est le pupitre qui porte le bouton global et la question : voir l'ADR du front et l'`AGENTS.md` du contexte `atelier` du pupitre.
-5. **La déclaration du travail non facturable.** Le client veut son bouton GLM, placé en bas de l'écran, pour déclarer à la main le travail qu'il ne facture pas. Rien ne le modélise encore : le mode de déclaration, le rattachement éventuel à un projet interne et la coexistence avec d'autres activités feront l'objet d'une spec à part. La présence sans affectation n'y répond pas : ce n'est pas un travail déclaré.
-6. **Le cycle de vie de l'élément lui-même.** La clôture existe côté atelier, sur le suivi. Reste à trancher si l'élément de fabrication porte en propre un statut, ou si son activité se lit entièrement par la présence ou l'absence d'un suivi non clôturé.
-7. **Aucune garde d'unicité en base** sur « un seul suivi non clôturé par élément », contrairement à ce que `elementdefabrication` fait pour la `Reference`. La règle vit dans le service, mais une contrainte partielle transformerait en 500 un état que le domaine admet aujourd'hui : rouvrir la clôture d'un suivi dont l'élément a été réengagé depuis. À trancher côté domaine avant de poser la contrainte. « Une seule journée ouverte par opérateur » n'est plus une règle : une journée abandonnée reste sans départ pendant que la suivante est ouverte.
-8. **L'écriture du journal rapproche par identifiant**, ce qui coûte une lecture indexée de la collection à chaque pointage. Si un journal devenait assez long pour que cette lecture pèse, la sortie est un upsert natif gardé (`on conflict (id) do update ... where ... is distinct from ...`), qui épargne à PostgreSQL toute version de tuple sur les lignes inchangées — au prix d'une scission permanente entre lecture JPA et écriture JDBC.
-9. **Départ oublié, poste de nuit, pointages jamais refusés.** Une journée sans départ n'a aujourd'hui pas de borne haute : elle absorbe la nuit, bloque l'arrivée du lendemain et fausse le coût de revient. Les décisions — amplitude maximale paramétrable, journée abandonnée, fin présumée, relance d'un OF, aucun pointage d'opérateur refusé sauf sur un OF clôturé — et leur découpage en huit lots sont dans [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md). Elles touchent aussi `feuilledetemps`, `syntheseheures`, `coutderevient` et `pupitre`. Lots livrés : 1, la relance d'une activité en cours ; 2, le paramétrage de l'amplitude maximale (contexte `parametrage`) ; 3, la journée abandonnée, l'arrivée absorbée et le refus du chevauchement ; 4, la fin présumée dans le temps effectif et le coût de revient ; 5, les heures pointées et présumées des relevés ; 6, la liste des anomalies ; 8a, les pointages absorbés (geste redondant, arrêt sans effet, OF clôturé), l'arrivée implicite d'un geste sans journée et le rejeu d'une saisie concurrente. Les lots 8b (pointages signalés) et 8c (mise en attente) sont abandonnés : habilitation retirée, date antérieure à l'engagement ou future, référentiel inconnu, geste hors séquence et identifiant réutilisé restent des refus.
+1. **Régulariser après une dé-habilitation est refusé.** L'habilitation étant vérifiée sur les trois écritures du journal, un gestionnaire ne peut plus rattraper une saisie oubliée sur un poste dont l'opérateur a été retiré depuis. Le cas est assumé pour ce lot — il ferme la porte au contournement —, mais il empêcherait le rattrapage des activités concernées : à rouvrir si le client le rencontre.
+2. **Le coût de revient monétaire est sorti du contexte** : `coutderevient` lit les activités projetées par
+   atelier et les tarifs du fait ouvrant actif, par ses propres ports en lecture seule. `atelier` capture ces
+   tarifs ; le coût les combine. Reste ouvert le **coût par période** (par opérateur, par poste, par mois), qui
+   n'a pas de demande client formulée. Le partage suit le verbatim client : taux humain divisé par postes
+   distincts occupés par les activités terminées, coût machine entier.
+3. **La pause, la reprise et l'arrêt global appartiennent au pupitre.** La pause termine les activités
+   actionnables et mémorise celles à reprendre ; la reprise ouvre de nouvelles activités. L'arrêt global termine
+   les activités encore actionnables et efface durablement la mémoire de reprise. Le serveur reçoit les gestes
+   d'activité correspondants ; les activités en conflit ou expirées sont exclues de ces commandes. Voir
+   l'[ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md) pour la frontière serveur/pupitre.
+4. **La déclaration du travail non facturable.** Le client veut son bouton GLM, placé en bas de l'écran, pour déclarer à la main le travail qu'il ne facture pas. Rien ne le modélise encore : le mode de déclaration, le rattachement éventuel à un projet interne et la coexistence avec d'autres activités feront l'objet d'une spec à part.
+5. **Le cycle de vie de l'élément lui-même.** La clôture existe côté atelier, sur le suivi. Reste à trancher si l'élément de fabrication porte en propre un statut, ou si son activité se lit entièrement par la présence ou l'absence d'un suivi non clôturé.
+6. **Aucune garde d'unicité en base** sur « un seul suivi non clôturé par élément », contrairement à ce que `elementdefabrication` fait pour la `Reference`. La règle vit dans le service, mais une contrainte partielle transformerait en 500 un état que le domaine admet aujourd'hui : rouvrir la clôture d'un suivi dont l'élément a été réengagé depuis. À trancher côté domaine avant de poser la contrainte.
+7. **L'écriture du journal rapproche par identifiant**, ce qui coûte une lecture indexée de la collection à chaque pointage. Si un journal devenait assez long pour que cette lecture pèse, la sortie est un upsert natif gardé (`on conflict (id) do update ... where ... is distinct from ...`), qui épargne à PostgreSQL toute version de tuple sur les lignes inchangées — au prix d'une scission permanente entre lecture JPA et écriture JDBC.
 
 ## postedetravail
 
@@ -188,7 +227,7 @@ Il s'ensuit que **la nature appartient au poste**. Déclarer un métier sur la p
 
 La phrase du client « la machine est liée à l'opérateur, et l'opérateur a la fonction » dit **où se saisit** le paramétrage — sur la ligne de l'opérateur, on liste ses postes —, pas d'où la nature se déduit au moment du pointage.
 
-**Un opérateur qui a pointé ne se supprime pas**, sur un élément comme en présence : le journal d'atelier et les journées de travail ne retiennent que son identifiant, et sa disparition laisserait des heures sans personne à payer. Le port `OperateursQuiOntPointe` lit les deux tables de l'atelier par des entités en lecture seule.
+**Un opérateur dont un fait historique d'activité existe ne se supprime pas**, même si ce fait est annulé. Le journal conserve son identifiant pour lire l'histoire ; `OperateursQuiOntPointe` lit les faits par une entité propre en lecture seule, sans filtre d'annulation.
 
 ### Identité et matricule
 
@@ -205,63 +244,70 @@ L'identité (nom, prénom) est **unique par entreprise**. Le **matricule** est l
 1. **Les gestionnaires ne sont pas déclarés.** Leur fiche n'aurait aucun usage tant que l'authentification n'est pas tranchée : l'`Auteur` d'une saisie vient du jeton, pas d'un référentiel. À rouvrir avec ce sujet.
 2. **Aucun plafond sur le nombre de postes par personne**, alors que le client énonce « maximum 4 machines par personne ». Une donnée de paramétrage ne s'écrit pas en constante du domaine, et GLM est une trame : une autre entreprise en habilitera six. Si le plafond doit être tenu, il viendra d'un port.
 3. **Montants.** Coût horaire du poste et taux horaire de l'opérateur existent sur les deux agrégats (facultatifs, strictement positifs), `atelier` les copie sur chaque événement du journal au moment de la saisie, et `coutderevient` les valorise. La boucle est fermée : un opérateur sans taux horaire ne coûte rien en main d'œuvre, et le rapport ne l'invente pas.
-4. **Utilisateur connecté.** Tranché sur le principe, dans [strategie/authentification-pointage.md](strategie/authentification-pointage.md) : le pupitre porte une **identité d'appareil** et aucune session humaine, l'opérateur est **identifié** au geste — par un code, qui désigne sans prouver, ou par une signature, qui prouve. L'`Auteur` du jeton cessant dès lors de désigner une personne, c'est la **qualité de l'identification** portée par l'événement qui vaudra pour la paie, et c'est elle qui rouvrira `estSaisiParUnTiers`. Restent ouverts le régime du code — ouvert à tous ou réservé à l'exception —, le matériel des pupitres, et la validation juridique de l'empreinte.
+4. **Utilisateur connecté.** La réflexion de principe dans [strategie/authentification-pointage.md](strategie/authentification-pointage.md) distingue l’**identité d’appareil** du pupitre et l’**identification** de l’opérateur au geste — par un code, qui désigne sans prouver, ou par une signature, qui prouve. L'`Auteur` du jeton cessant dès lors de désigner une personne, c'est la **qualité de l'identification** portée par l'événement qui permettra l’audit, et c’est elle qui rouvrira `estSaisiParUnTiers`. Restent ouverts le régime du code — ouvert à tous ou réservé à l'exception —, le matériel des pupitres, et la validation juridique de l'empreinte.
 
 ## feuilledetemps
 
 Première **projection transverse** du projet : un contexte purement lecteur, qui ne possède aucune table et
 recalcule tout à chaque appel. Il répond à une seule question — _qu'a fait cette personne cette semaine, jour par
-jour_ — et c'est ce qui le sépare d'`atelier`.
+jour_ — à partir des activités interprétées par `atelier`.
 
 ### Pourquoi il n'est pas dans atelier
 
-`atelier` s'interdit explicitement le calendrier : une `JourneeDeTravail` y est bornée par une arrivée et un départ,
-jamais par une date, et aucun `ZoneId` ni `LocalDate` n'entre dans ce contexte. Une feuille de temps hebdomadaire
-n'est faite que de ça. C'est ici, et nulle part avant, que minuit existe — et c'est minuit qui décide à quel jour
-appartient une heure de travail. Une équipe de nuit compte sur deux jours ; l'atelier ne saurait pas le dire.
-
-Le découpage était annoncé : les index `(operateur, date_de_survenue)` et `(poste, date_de_survenue)` d'
-`evenement_d_atelier` sont commentés dans le changelog comme ne servant pas l'atelier lui-même, mais « les
-projections transverses des contextes à venir ». `feuilledetemps` est le premier de ces consommateurs.
+`atelier` manipule des instants et s'interdit le calendrier : aucun `ZoneId` ni `LocalDate` n'entre dans ce
+contexte. La feuille ramène les activités aux jours de l'entreprise et aux semaines ISO. Une équipe de nuit
+compte sur deux jours, et une activité du dimanche peut recouvrir le lundi de la semaine suivante. Minuit
+répartit au calendrier sans créer de geste ni de fin métier : une activité terminée de 20 h à 8 h donne
+4 h puis 8 h. Les indications en cours et les plages possibles à résoudre gardent leurs règles ci-dessous.
 
 ### La lecture passe par la base, jamais par un import
 
 `atelier`, `operateur` et `postedetravail` étant annotés `@BusinessContext`, ce contexte déclare ses propres entités
-JPA en lecture seule sur leurs tables — exactement ce que fait déjà `atelier` sur `element_de_fabrication`. Il
-rejoue donc **sa propre** version du repli de présence.
+JPA `@Immutable`. Il lit la projection `activite_d_atelier`, avec l'élément porté par le suivi, et l'identité de
+l'opérateur dans le référentiel. Il ne rejoue aucun journal et ne propose aucune écriture.
 
-Cette duplication est assumée : le partage passerait soit par un import interdit, soit par le shared kernel, qui est
-en anglais et ne peut pas accueillir du vocabulaire d'atelier. Le filet qui tient les deux implémentations alignées
-est le scénario Cucumber, qui pointe par l'API d'`atelier` et relit par celle de la feuille de temps — il échoue dès
-que les deux contextes cessent de lire les mêmes colonnes.
+Le filet est le scénario Cucumber : il écrit par l'API d'atelier puis lit la feuille. Relances, transitions
+ciblées, fins reçues tardivement, régularisations, corrections, annulations et clôtures restituent
+l'interprétation du propriétaire. Le lecteur compare l'échéance projetée à son instant de lecture puis découpe
+les activités au calendrier de l'entreprise.
 
 ### Ce que la feuille montre
 
-Sept jours toujours, du lundi au dimanche de la semaine ISO demandée, vides compris : un trou obligerait le lecteur
-à deviner s'il manque une journée ou si l'opérateur n'était pas là. L'année est celle des semaines ISO, qui diffère
-de l'année civile à ses bornes — la semaine 1 de 2026 commence le 29 décembre 2025.
-
+Sept jours toujours, du lundi au dimanche de la semaine ISO demandée, vides compris. L'année est celle des
+semaines ISO, qui diffère de l'année civile à ses bornes : la semaine 1 de 2026 commence le 29 décembre 2025.
 La semaine est toujours explicite, jamais « la semaine courante ».
 
-**Une plage encore ouverte ne dépasse pas son propre jour.** Sans départ pointé et sous le seuil, rien ne dit que
-l'opérateur était encore là le lendemain ; l'étaler jusqu'à la fin de la semaine affirmerait une présence que personne
-n'a saisie. C'est la transposition de la règle qu'`atelier` applique déjà à un travail jamais arrêté.
+Chaque jour rend les portions d'activité : élément, poste et nature facultatifs, catégorie travail ou
+non-conformité, début et fin éventuelle. La sélection porte sur les activités qui **recouvrent** la semaine,
+même commencées avant elle et sans pointage de la semaine. Une régularisation peut établir une fin bien au-delà
+de 13 h, voire de la semaine : aucune borne basse fixe sur le début ne permet de les retrouver toutes.
 
-**Une journée abandonnée est fermée à sa fin présumée** (lot 5 de [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md)) : sans départ et au-delà du seuil d'amplitude, lu dans la table du paramétrage, sa dernière fenêtre ouverte se ferme au dernier fait connu — son dernier pointage de présence, ou le dernier pointage d'OF de l'opérateur s'il est plus tardif et tombe entre l'arrivée et l'arrivée plus le seuil. Ce qui en découle est marqué **présumé**, à confirmer par une régularisation du départ. Juger l'abandon suppose de savoir quand on lit : ce contexte reçoit donc une horloge, comme `coutderevient`, et deux appels espacés ne rendent plus forcément la même chose. La semaine, elle, reste toujours explicite.
+La feuille accepte un instant `evaluation` facultatif et rend celui effectivement utilisé. Sans paramètre,
+l'heure du serveur est relevée une seule fois. Cet instant gouverne l'expiration et les jours atteints par les
+activités en cours et par les plages possibles à résoudre. Transmettre le même instant à la synthèse assure la
+même décision d'expiration dans le relevé. Les faits connus restent interprétés même postérieurs à cet instant ;
+une écriture entre les appels peut les modifier, donc l'instant commun ne garantit pas un instantané commun.
+Un instant passé est accepté. La borne future est l'heure du serveur plus deux minutes, incluse ; elle est vérifiée
+avec un seul relevé d'horloge. Un dépassement ou un instant fourni vide ou mal formé répond 400, sans rapport.
 
-**Une journée fermée plus de 24 h après son arrivée se lit comme abandonnée** ([D13](strategie/bornes-de-fin-de-journee.md), issue #59) : elle n'a pas pu être vécue d'une traite, et son départ ne dit rien de l'heure à laquelle l'opérateur est parti. Elle se ferme à sa fin présumée, le dernier fait connu **entre l'arrivée et l'arrivée plus le seuil** — ses faits au-delà, départ compris, ne comptent pas — et ce qui dépasse disparaît. Rien n'est réécrit, et elle reste signalée en amplitude excessive. Entre le seuil et 24 h, une journée fermée compte entière. 24 h est une borne physique, jamais un paramètre de l'entreprise.
+Une activité avec fin réelle est `TERMINEE`, même si cette fin dépasse
+l'échéance. À défaut, elle est `EN_COURS` avant l'échéance et `TERMINEE_AUTOMATIQUEMENT` dès celle-ci, à cette borne,
+avec son anomalie visible par l'état. Une activité en conflit est `A_RESOUDRE`, sans fin : l'échéance ne la tranche pas.
+La feuille ne calcule aucune durée. Chaque portion garde l'identité stable, l'état et les bornes de l'activité entière,
+avec une fin seulement pour les deux états terminés. Les portions terminées sont coupées aux minuits locaux et aux
+limites de la semaine ; les bornes de l'activité restent intactes.
 
-À instant égal, l'arrivée passe devant dans le repli : l'arrivée implicite d'un geste tardif partage l'heure de ce geste. Chaque plage de la feuille porte `presumee`.
+Une activité en cours rend une indication sans fin sur chacun des jours atteints à l'instant de lecture, dans la
+semaine : commencée dimanche à 22 h et lue lundi à 1 h, elle apparaît lundi avec son début entier, sans fin à minuit.
+Une fin lundi à 3 h remplace ensuite cette indication par les portions terminées, 2 h dimanche et 3 h lundi.
+Une activité à résoudre figure sur chaque jour de sa plage possible : de son début jusqu'à la fin au plus tard
+projetée par atelier, borne exclusive, limitée par l'instant d'évaluation. Chaque portion reste sans fin réelle
+ni durée ; elle conserve son identité originale et la borne possible entière. Un lundi sans pointage local porte
+ainsi le conflit commencé dimanche, même si une régularisation étend sa plage au-delà d'une semaine.
 
-**Le travail par élément** (lot 2) : chaque jour rend aussi ses activités — l'élément, le poste, la nature figée à la
-saisie, travail ou non-conformité, de quelle heure à quelle heure. Les pointages de l'opérateur sur chaque suivi sont
-rejoués poste par poste avec l'automate d'atelier, puis chaque intervalle est réduit aux fenêtres de présence de la
-journée où il a commencé : un départ referme ce que l'opérateur a oublié d'arrêter, et une fenêtre présumée rend le
-travail présumé. Un début qui ne tombe dans aucune journée de présence est **écarté**, là où `TempsDAtelierService` le
-rend intact : sans présence, aucun jour ne peut l'accueillir sans arbitraire, et l'anomalie reste visible sur
-`GET /api/atelier/suivis/{id}/temps-effectif`. Comme la présence, une activité est coupée à minuit, et une activité
-encore ouverte ne rend que son jour de début. Elle nomme l'élément, jamais le suivi : un élément réengagé après
-clôture reste le même élément. Ni libellé de poste ni fiche d'élément ici — la synthèse des heures les porte.
+La feuille nomme l'élément, jamais le suivi : un élément réengagé après clôture reste le même élément. Ni libellé
+de poste ni fiche d'élément ici — la synthèse des heures les porte. Les activités sont triées par début de portion,
+élément puis identité stable.
 
 ### Points ouverts
 
@@ -290,189 +336,141 @@ journal d'un autre agrégat modifie ; seule une projection le peut.
 
 ### Ce que le rapport montre
 
-Une ligne par nature d'opération — fraisage, tournage, érosion —, plus une ligne sans nature pour ce qui a été
-pointé sans poste. **La nuit d'une journée abandonnée n'est jamais valorisée** : chaque venue sans départ au-delà du
-seuil reçoit la même fin présumée que dans l'atelier, calculée sur les pointages déjà lus pour le rapport. Une venue fermée
-plus de 24 h après son arrivée la reçoit aussi ([D13](strategie/bornes-de-fin-de-journee.md), issue #59). La forme du
-rapport ne change pas ; la part présumée se lit dans le temps effectif de l'atelier. Chaque ligne porte le temps de bon travail, le temps de reprise de non conformité **avec ses
-périodes datées**, et le coût séparé en machine et main d'œuvre.
+Une ligne par nature d'opération, plus une ligne sans nature pour une entreprise sans parc machine.
+Chaque ligne sépare travail et non conformité, ses périodes datées, machine et main d'œuvre.
+L'élément connu mais jamais engagé rend un rapport vide ; un réengagement additionne ses passages.
 
-L'entrée se fait par l'**élément de fabrication**, non par son suivi d'atelier : un élément réengagé après clôture
-additionne ses passages. Un élément connu mais jamais engagé rend un rapport vide, ce qui est une réponse et non une
-erreur.
+Le rapport comptabilise seulement les activités terminées. Une activité encore en cours est entièrement
+exclue du temps, des coûts et du diviseur ; `activitesEnCours` explique leur nombre.
+Sans fin réelle, l'activité devient comptabilisable dès son échéance projetée par atelier, borne incluse, jusqu'à cette
+borne fixe, même lors d'une lecture ultérieure. `finsAutomatiques` expose ses périodes et l'anomalie active.
+Les fins recevables, transitions, corrections, annulations et clôtures sont relues selon l'interprétation
+d'atelier, sans fermeture à l'heure de lecture. Une régularisation peut établir plus de treize heures.
 
-### Les deux règles de valorisation
+### Partage et arrondi
 
-Le client les énonce deux fois de suite, et elles ne se ressemblent pas :
+Le coût de chaque machine court en entier. Le taux humain se partage selon les postes distincts occupés
+par les activités terminées d'un même opérateur, tous éléments confondus. Plusieurs activités sur un même
+poste comptent un poste, et sans poste représente un poste. Le découpage aux changements d'occupation
+limite le partage aux chevauchements. La charge couvre l'union du travail valorisé et de l'occupation lue.
 
-- le **coût horaire de chaque poste actif court en entier**, même quand l'opérateur en mène plusieurs de front —
-  deux machines pendant une heure coûtent deux heures de machine ;
-- le **taux horaire de l'opérateur est divisé** par le nombre de postes qu'il occupait à cet instant, tous éléments
-  confondus — une personne ne peut pas être payée deux fois la même heure.
+Pour A de 08 à 10 h sur fraiseuse, B sur tour ouverte depuis 09 h et 20 €/h humain, A vaut 40 € et B reste
+exclue. Si B se termine à 11 h, le rapport recalculé porte 30 € humain sur chaque activité.
+La ligne arrondit une seule fois au centime après sommation des tranches ; le rapport somme les lignes
+**déjà arrondies**, pour que le total soit exactement la somme affichée.
 
-Le diviseur compte donc des **postes**, jamais des éléments ni des activités. Un opérateur sur trois éléments avec
-une seule machine n'est pas divisé ; un pointage sans poste compte pour un poste, ce qui redonne un diviseur de un à
-une entreprise sans parc machine.
+### Valeurs à résoudre
 
-**Le découpage se fait aux bornes de tous les pointages de l'opérateur.** Un diviseur pris sur l'intervalle entier
-serait faux dès que deux pointages ne commencent pas ensemble : sur une fraiseuse lancée à 9 h et un tour lancé à
-10 h, seule l'heure commune se divise. C'est ce que `ChargeDeLOperateur` produit — des sous-périodes où le nombre de
-postes occupés ne change pas.
+Les durées et montants portent une complétude distincte : travail, non conformité, machine et main d'œuvre.
+Une catégorie certaine garde sa valeur si l'autre est incertaine. Chaque total complet porte son chiffre,
+zéro compris ; chaque total incomplet est dépourvu de chiffre, même quand une partie est certaine.
 
-### L'arrondi est une décision, pas un détail
+Une activité à résoudre rend ses valeurs propres concernées inconnues. Pour les autres activités terminées,
+le partage humain dépend de toute la plage possible factuelle `[debut, finAuPlusTard)`, bornée à l'évaluation,
+sans chercher une portion commune aux chronologies. La machine et le temps certains restent connus.
+Si le poste incertain est déjà occupé avec certitude, il ne change pas le nombre de postes distincts :
+aucune incertitude humaine n'en découle. Le zéro d'un taux absent reste indépendant du diviseur.
 
-Les tranches se somment à l'échelle de travail, la **ligne** arrondit au centime une seule fois, et le total du
-rapport est la somme de lignes **déjà arrondies**. Sans cette discipline, l'écran afficherait un total qui n'est pas
-la somme de ce qu'il montre — ce qu'aucun gestionnaire n'accepte d'un rapport de coût.
+`conflits` expose les séquences de l'élément et toutes les séquences responsables d'une valeur incomplète,
+y compris celles d'autres éléments. Les activités gardent leur identité originale, les pointages leurs
+identités actives. Un conflit sans activité à résoudre reste visible mais ne rend pas les montants inconnus.
+Les annulations et corrections d'atelier recalculent ces dépendances et rétablissent la complétude.
 
-### Ce contexte porte une horloge
+### Lecture et accès
 
-Comme les relevés depuis le lot 5 des bornes de fin de journée. Ici, un travail non terminé n'a pas de durée : le coût de revient d'un élément en
-cours n'a de sens qu'arrêté à l'instant de la lecture. Deux appels espacés sur un élément en cours ne rendent donc
-pas la même chose, et la description OpenAPI de la route le dit.
+Le coût lit les projections d'activités d'atelier par ses entités JPA `@Immutable`, sans import entre
+contextes et sans repli concurrent du journal. Les tarifs sont ceux du fait ouvrant actif figés à la saisie,
+jamais ceux du référentiel courant. L'identité d'origine de l'activité reste stable après correction.
+L'occupation est sélectionnée par recouvrement, même commencée avant la période valorisée : une
+régularisation peut dépasser treize heures, donc aucune borne basse fixe sur le début n'est sûre.
 
-Le reste suit les règles d'`atelier` à la lettre : le temps brut est ramené aux fenêtres de présence de **la journée
-où il a commencé**, si bien qu'un départ referme ce que personne n'a arrêté ; la pause de midi, elle, est pointée
-dans le journal de l'élément, par une fin et un début. Un
-début qui ne tombe dans aucune journée connue est **rendu intact** — c'est le choix d'`atelier`, et non celui de la
-feuille de temps qui l'écarte : ici, l'anomalie doit rester chiffrée plutôt que disparaître du coût.
-
-### La lecture passe par la base, jamais par un import
-
-`atelier`, `elementdefabrication`, `operateur` et `postedetravail` étant annotés `@BusinessContext`, ce contexte
-déclare ses propres entités JPA en lecture seule sur leurs tables. Il rejoue donc **sa propre** version du repli du
-journal d'atelier, et — pour la troisième fois du projet — du repli de présence.
-
-Ces deux replis sont **tolérants**, comme ceux de `syntheseheures` et `pupitre` : un geste que l'automate refuse —
-un départ sans arrivée, une fin sans activité en cours — est ignoré, et le rapport se calcule sur ce qui reste. Le
-calcul du coût ne doit jamais répondre `500` (issue #54). À instant égal, l'arrivée passe devant : l'arrivée implicite
-d'un geste tardif partage l'heure de ce geste, et la base rendait les deux dans l'ordre de leurs identifiants.
-
-Cette duplication est assumée, pour la même raison que dans `feuilledetemps` : le partage passerait soit par un
-import interdit, soit par le shared kernel, qui est en anglais. Le filet est le scénario Cucumber, qui pointe par
-l'API d'`atelier` et relit par celle du coût de revient.
-
-Aucun changelog n'a été nécessaire : les index `(operateur, date_de_survenue)` et `(poste, date_de_survenue)`
-d'`evenement_d_atelier`, posés dès l'origine pour « les projections transverses des contextes à venir », servent
-exactement ce lot.
-
-### Le rapport est réservé au gestionnaire
-
-Il dérive des taux horaires des opérateurs, que le pupitre n'a aucune raison de voir. `USER` reçoit 403.
+L'horloge est relevée une seule fois par rapport et cet instant est rendu dans `evaluation`.
+L'instant gouverne l'expiration et borne les plages possibles à résoudre ; les faits connus restent lus, même postérieurs. Cette route ne prend
+pas de paramètre d'évaluation et ne promet pas un instantané face aux écritures concurrentes.
+Le rapport est réservé au `GESTIONNAIRE`, car il expose des coûts issus des taux horaires humains.
 
 ### Points ouverts
 
-1. **Le coût par période reste à faire** — par opérateur, par poste, par mois. La même couture le porterait, mais
-   aucune demande client n'a été formulée.
-2. **La lecture d'occupation n'a pas de borne basse.** Toute activité recouvrant l'élément ayant commencé avant sa
-   fin, la borne haute suffit à la correction ; mais la requête reste peu sélective sur un opérateur au long
-   historique. La sortie, si elle pèse, est une borne basse calculée sur la plus ancienne activité encore ouverte,
-   ce qui suppose une colonne que le journal n'a pas.
-3. **Aucune restriction sur quel élément un gestionnaire peut chiffrer**, faute de notion d'équipe ou de périmètre.
-   Même point ouvert que sur la feuille de temps, à rouvrir avec le lot « utilisateur connecté ».
-4. **Le rapport ne dit pas ce qui n'a pas de présence.** Un pointage dont le début ne tombe dans aucune journée est
-   valorisé comme les autres, sans que rien ne le signale sur la ligne. L'anomalie reste visible sur
-   `GET /api/atelier/suivis/{id}/temps-effectif` ; l'exposer ici demanderait un indicateur par ligne.
+Le coût par période (opérateur, poste ou mois) et le périmètre d'équipe du gestionnaire restent à définir
+lorsqu'une demande métier les nécessitera.
 
 ## syntheseheures
 
-Troisième **projection transverse** du projet, après `feuilledetemps` et `coutderevient` : un contexte purement
-lecteur, qui ne possède aucune table et recalcule tout à chaque appel. Il répond à une seule question — _combien
-d'heures cette personne a-t-elle été présente cette semaine, et sur quoi a-t-elle travaillé, jour par jour_ — et ne
-sert pas à la paie : ni feuille de paie, ni valorisation en euros, ni heures supplémentaires pour l'instant (règle non
-fournie par le client).
+Projection transverse purement lectrice : _combien de temps opérationnel cette personne a-t-elle accompli cette
+semaine, sur quels éléments, jour par jour_. Elle recalcule ses durées depuis les activités interprétées par
+`atelier` et ne calcule aucun montant.
 
 ### Pourquoi il n'est pas dans atelier
 
-Même raison que `feuilledetemps` : `atelier` s'interdit le calendrier, une `JourneeDeTravail` y est bornée par une
-arrivée et un départ, jamais par une date. C'est ici, et nulle part avant, que minuit décide à quel jour appartient
-une heure de travail.
+Atelier manipule des instants et ne connaît ni fuseau ni jour calendaire. La synthèse ramène ses activités au
+calendrier de l'entreprise, comme `feuilledetemps`, puis additionne les portions terminées. Les deux lectures
+possèdent leurs modèles et leurs adapters ; leurs scénarios Cucumber partagent les mêmes tableaux de faits.
 
 ### Ce que le relevé montre
 
-Sept jours toujours, du lundi au dimanche de la semaine ISO demandée, vides compris. Pour chaque jour : le **journal
-brut des pointages** horodatés (arrivée, départ), et la **durée** — la somme des fenêtres de présence closes. La pause
-n'étant pas un pointage de présence ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)), la
-durée la compte. Le total de la semaine est la somme des sept jours.
+Sept jours toujours, du lundi au dimanche de la semaine ISO explicite, vides compris. L'année est celle des
+semaines ISO, différente de l'année civile à ses bornes. Un poste de nuit se coupe aux minuits locaux,
+y compris entre deux semaines ; le changement d’heure conserve la durée réellement écoulée. Dimanche
+22 h à lundi 3 h donne 2 h puis 3 h dans les deux semaines ISO ; minuit ne termine pas l’activité.
 
-La durée travaillée est celle qui est **pointée**. À côté, chaque jour et la semaine portent une **durée présumée**
-(`dureePresumee`, `dureePresumeeTotale`) : ce qu'une journée abandonnée compte jusqu'à sa fin présumée, et que
-l'assistante doit faire confirmer. Dans l'exemple de référence, lundi vaut 9 h présumées — sans départ, la journée n'a
-qu'une fenêtre, présumée en entier —, puis 10 h pointées une fois le départ régularisé. Un poste de nuit est coupé à minuit, dans
-le fuseau de l'entreprise, y compris quand minuit sépare deux semaines.
+Les activités sont sélectionnées par **recouvrement**, même commencées avant la semaine et sans pointage en son
+sein. Une régularisation peut établir une fin supérieure à 13 h, voire à une semaine : aucune borne basse fixe
+sur le début ne les retrouve toutes. La synthèse reçoit `evaluation` facultatif et rend l'instant effectivement
+utilisé pour l'expiration, le découpage des activités en cours et les plages possibles à résoudre. Sans paramètre, l'heure du serveur est relevée
+une seule fois. Le client transmet le même instant aux deux lectures pour composer le relevé.
+Les faits connus restent interprétés, même postérieurs à cet instant. L'instant commun assure la même décision
+d'expiration ; une écriture entre les appels peut changer les faits lus, sans instantané commun garanti.
+Un instant passé est accepté. La borne
+future est l'heure du serveur plus deux minutes, incluse ; elle est vérifiée avec un seul relevé d'horloge.
+Un dépassement ou un instant fourni vide ou mal formé répond 400, sans rapport.
 
-**Une journée abandonnée est fermée à sa fin présumée** (lot 5 de [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md)) : sans départ et au-delà du seuil d'amplitude, lu dans la table du paramétrage, sa dernière fenêtre ouverte se ferme au dernier fait connu — son dernier pointage de présence, ou le dernier pointage d'OF de l'opérateur s'il est plus tardif et tombe entre l'arrivée et l'arrivée plus le seuil. Ce qui en découle est marqué **présumé**, à confirmer par une régularisation du départ. Juger l'abandon suppose de savoir quand on lit : ce contexte reçoit donc une horloge, comme `coutderevient`, et deux appels espacés ne rendent plus forcément la même chose. La semaine, elle, reste toujours explicite.
+Une fin réelle conserve sa borne, même régularisée au-delà de l'échéance. Sans elle, l'activité ne produit aucune
+durée avant son échéance et compte dès celle-ci jusqu'à sa fin automatique. Les décisions de relance, transition,
+fin tardive, régularisation, correction, annulation et clôture sont celles d'atelier, projetées en base.
+Une activité à résoudre reste sans fin et n'est jamais réinterprétée par la synthèse. Sa plage possible,
+issue des faits d'atelier, atteint chaque jour jusqu'à la première borne entre `finAuPlusTard` et `evaluation`,
+fin exclusive, même sans pointage local. Une clôture peut la limiter mais jamais la prolonger.
 
-**Une journée fermée plus de 24 h après son arrivée se lit comme abandonnée** ([D13](strategie/bornes-de-fin-de-journee.md), issue #59) : elle n'a pas pu être vécue d'une traite, et son départ ne dit rien de l'heure à laquelle l'opérateur est parti. Elle se ferme à sa fin présumée, le dernier fait connu **entre l'arrivée et l'arrivée plus le seuil** — ses faits au-delà, départ compris, ne comptent pas — et ce qui dépasse disparaît. Rien n'est réécrit, et elle reste signalée en amplitude excessive. Entre le seuil et 24 h, une journée fermée compte entière. 24 h est une borne physique, jamais un paramètre de l'entreprise.
+La synthèse rend les séquences en conflit dont une activité ou un pointage est rendu dans la semaine,
+avec les identités des activités et des pointages concernés, même sans activité ni poste. Elle relit la projection
+d'atelier, sans interprétation concurrente. Une séquence sans activité à résoudre laisse les totaux complets.
+Une correction ou annulation retire le conflit dès que les faits redeviennent cohérents.
 
-À instant égal, l'arrivée passe devant dans le repli : l'arrivée implicite d'un geste tardif partage l'heure de ce geste.
+Les durées se **cumulent par élément** : deux éléments simultanés de 08 h à 09 h portent chacun une heure,
+le jour et la semaine deux heures. La NC est comprise une seule fois dans la durée totale et exposée aussi à part.
+Chaque total porte `complete` et, seulement s'il est complet, sa `valeur`. Un total journalier, d'élément ou
+hebdomadaire dépendant d'une activité à résoudre reste incomplet **sans aucun chiffre**, même si une activité
+certaine de 2 h existe à côté. La complétude de la part de NC dépend seulement des NC : un conflit de travail
+laisse une NC certaine chiffrée. Les jours et éléments indépendants restent chiffrés. Quand ils sont complets,
+les sommes des jours et des éléments sont égales à la durée opérationnelle de la semaine. Une activité en cours
+conserve son élément sur chaque jour atteint, même sans pointage dans la semaine, sans durée comptabilisée
+et sans rendre un total incomplet.
 
-### Le temps opérationnel
+Les éléments rendus portent une activité ou un pointage dans la semaine, par première apparition puis nom.
+Un réengagement reste le même élément. Le nom et le type viennent du suivi ; référence et description sont
+relues au référentiel, et peuvent être absentes. Les couples poste/nature suivent leur première apparition,
+activité et pointage confondus ; l'absence de poste ou de nature est nominale.
 
-À côté de la présence, le relevé rend le **temps opérationnel** : ce que l'opérateur a pointé sur ses éléments. Ses
-pointages sur chaque suivi sont rejoués poste par poste avec l'automate d'atelier, réduits aux fenêtres de présence
-de la journée où chaque intervalle a commencé — exactement comme la feuille de temps —, coupés à minuit, puis
-additionnés. Un intervalle clos compte en pointé, ou en présumé s'il est borné par la fin présumée d'une journée
-abandonnée ; un intervalle ouvert ne compte rien, comme une fenêtre de présence ouverte. Un début qui ne tombe dans
-aucune journée ne compte pas.
-
-**Le temps opérationnel n'est pas le temps effectif d'`atelier`**, bien qu'il en partage la base : même réduction aux
-fenêtres de la journée où le travail a commencé, même addition quand deux activités courent de front. Il en diffère
-sur deux points : un début hors de toute journée, rendu intact par le temps effectif, ne compte pas ici ; et il est
-coupé à minuit et borné à la semaine. Pour un même élément, la synthèse peut donc afficher moins que
-`GET /api/atelier/suivis/{id}/temps-effectif` : l'écart est une présence manquante, à régulariser dans `atelier`.
-La feuille de temps applique les mêmes règles pour en exposer les périodes : les deux changent ensemble.
-
-**Les durées se cumulent par élément** : une heure passée sur deux éléments compte sur chacun, et le temps
-opérationnel d'un jour peut donc dépasser sa présence. Chaque jour porte `dureeOperationnelle` et
-`dureeOperationnellePresumee`, la semaine leurs totaux, qui valent aussi la somme de ses éléments.
-
-La semaine rend ses **éléments** : tout élément qui porte un intervalle ou un pointage dans la semaine, par première
-apparition puis par nom. Chacun porte sa durée pointée (non-conformité comprise), la part de non-conformité, sa durée
-présumée, et un couple par poste et nature distincts — tout poste nommé au journal y trouve son libellé. Un
-réengagement après clôture reste le même élément. Le nom et
-le type viennent du suivi, qui les a copiés à l'engagement ; la référence et la description sont relues au
-référentiel, et absentes si l'élément a été supprimé ; le libellé du poste aussi.
-
-Le **journal brut** de chaque jour mêle la présence et tous les pointages d'élément de l'opérateur datés de ce jour,
-même hors de toute journée. À instant égal : l'arrivée, puis les pointages d'élément, puis le départ ; deux éléments
-pointés au même instant se départagent par leur identifiant, et un même élément garde l'ordre de son journal.
-
-### La résilience face aux anomalies du journal
-
-**Un pointage qui casse l'automate de présence n'empêche jamais la génération du relevé.** Contrairement à
-`feuilledetemps`, qui lève une exception sur la même situation, ce contexte l'**ignore silencieusement** — ni
-exception, ni marqueur exposé : le pointage fautif est simplement absent du relevé, comme s'il n'existait pas.
-
-Ce cas n'est en pratique **pas atteignable par l'API** : `atelier` valide tout le journal à chaque écriture, y
-compris une annulation, et refuse déjà celle qui laisserait un pointage orphelin
-(`409 transition-de-presence-interdite`). Conséquence assumée (YAGNI) : ce contexte ne porte **aucun champ
-`valide`/anomalie**, ni domaine ni API — un flag qui vaudrait toujours vrai ne porte aucune information. La
-résilience elle-même (ne jamais lever d'exception) reste une défense en profondeur légitime — donnée migrée,
-validation d'`atelier` amenée à évoluer, accès direct à la base — vérifiée par les tests unitaires du domaine, qui
-construisent l'incohérence directement ; aucun scénario Cucumber ne la couvre, faute de moyen de la déclencher.
-
-Le **catalogue transverse des anomalies** (toutes semaines, tous opérateurs confondus) et l'écran récapitulatif du
-gestionnaire ne vivent pas ici : une anomalie de transition est une propriété du **journal** lui-même, pas d'une
-semaine ni d'un rapport demandé. `atelier` possède déjà l'écran de correction du journal de présence
-(régularisation, annulation, correction) — c'est lui qui portera, plus tard, ce catalogue.
+Le **journal brut** est lu indépendamment des activités : tous les pointages actifs de l'opérateur datés de la
+semaine sont rendus, même sans activité interprétable, avec leur identité, intention et cible éventuelle. Leur ordre est l'heure métier, puis l'intention
+(fin, transition, ouverture), puis l'identité du pointage. L'heure d'enregistrement ne départage jamais.
+Chaque élément et chaque poste nommés au journal trouvent leur fiche ou leur libellé dans la synthèse.
 
 ### La lecture passe par la base, jamais par un import
 
-`atelier` étant annoté `@BusinessContext`, ce contexte déclare ses propres entités JPA en lecture seule sur ses
-tables — pour la troisième fois du projet, il rejoue **sa propre** version du repli de présence, tolérante aux
-anomalies, et pour la cinquième fois l'automate d'atelier. Il lit aussi `element_de_fabrication` et
-`poste_de_travail`, pour la référence, la description et le libellé.
+La synthèse déclare ses propres entités JPA `@Immutable` sur `activite_d_atelier`, `suivi_d_atelier`,
+`evenement_d_atelier`, `sequence_en_conflit`, `pointage_en_conflit` et les référentiels. Elle n'importe aucun contexte métier voisin, ne rejoue aucun journal
+et ne possède aucune table. Les activités sont lues en une requête, le journal en deux requêtes groupées ;
+les conflits et leurs activités en deux requêtes groupées par opérateur, puis filtrés sur les identités rendues.
+Les fiches et les postes sont aussi résolus par lots. Cucumber écrit réellement dans atelier puis lit le relevé,
+ce qui confronte la projection à son propriétaire.
 
 ### Points ouverts
 
-1. **La mesure d'heures retenue** — fermé le 28/09/2026, avec le point 2 d'`atelier` : la présence ne sert pas à
-   payer, et le relevé compte la pause ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)).
+1. **Le fuseau reste fixé à `Europe/Paris`** par un adapter derrière son port.
 2. **Les heures supplémentaires ne sont pas calculées**, faute de règle fournie par le client.
-3. **Le catalogue transverse des anomalies et l'écran récapitulatif du gestionnaire restent à concevoir**, côté
-   `atelier` (voir ci-dessus).
-4. **Aucune restriction sur qui lit le relevé de qui**, comme `feuilledetemps`, faute de lien entre un utilisateur
-   authentifié et une fiche du référentiel. À rouvrir avec le lot « utilisateur connecté ».
+3. **Aucune restriction sur qui lit le relevé de qui** : `USER` et `GESTIONNAIRE` lisent les opérateurs de leur
+   entreprise, faute de lien entre utilisateur authentifié et fiche d'opérateur.
 
 ## pupitre
 
@@ -502,26 +500,19 @@ Quatre défauts en découlaient, tous du ressort du back :
 
 ### Ce que la route rend, et ce qu'elle ne rend pas
 
-Les opérateurs désignables — identité, matricule, postes habilités, **état de présence** —, les éléments encore
-pointables — identité, nom d'atelier, référence, type, état, activités en cours —, et `genereLe`.
+Les opérateurs désignables — identité, matricule, postes habilités —, les éléments encore pointables — identité,
+nom d'atelier, référence, type, état, activités en cours, conflits —, et `genereLe`. Un opérateur sans activité
+reste rendu avec toutes ses habilitations.
 
-L'**état de présence**, `ABSENT` ou `PRESENT`, est ce qui permet à l'écran d'atelier de proposer, hors ligne compris,
-l'arrivée ou le départ. La pause n'en est pas un ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)) :
-un opérateur en pause reste présent, et c'est le journal du pupitre qui sait qu'une pause est en cours. C'est l'état de la journée en cours de l'opérateur, choisie comme l'atelier la choisit, **tant
-qu'elle n'est pas abandonnée** : au-delà du seuil d'amplitude, lu dans la table du paramétrage, l'opérateur redevient
-`ABSENT`. Chaque opérateur présent porte `presentJusqua`, son arrivée plus le seuil, pour que le pupitre hors ligne le
-bascule seul. Un opérateur sans journée en cours vaut `ABSENT` et reste rendu : la liste est celle des opérateurs
-_désignables_, pas des opérateurs présents.
+La liste des opérateurs dépend du référentiel et des habilitations, indépendamment des pointages.
+Les activités et les conflits viennent des projections d'atelier ; les opérateurs restent désignables sans activité.
 
 Elle ne rend **ni montant** (taux horaire, coût horaire : les entités de lecture ne les mappent même pas), **ni
-journal d'événements**, **ni élément clôturé**, **aucun instant de présence** — « présent depuis 7 h 02 »
-supposerait de replier le journal de présence de tous les opérateurs à chaque appel, et donnerait une seconde source
-de durée en désaccord visible avec celles que le pupitre fige déjà —, et **aucune métadonnée d'engagement ou de
-clôture** : rien de tout cela n'est lu par un écran d'atelier.
+journal d'événements**, **ni élément clôturé**, ni métadonnée d'engagement ou de clôture.
 
-### `genereLe` est la version, et c'est une date
+### `genereLe` date l'évaluation
 
-Le pupitre peut donc dire « référentiel du 14/09 à 09:31 » et mesurer son retard. Elle change à chaque appel, y
+Le pupitre peut donc dire « référentiel du 14/09 à 09:31 » et mesurer son retard. Cette date change à chaque appel, y
 compris quand rien n'a bougé : elle dit quand le serveur a produit la réponse, pas quand le référentiel a changé
 pour la dernière fois. Dater le dernier changement supposerait d'horodater les modifications d'`operateur`,
 `poste_de_travail` et `operateur_poste` — trois tables sans colonne de modification, et une date de modification est
@@ -531,7 +522,8 @@ une donnée du domaine, qui ouvrirait deux agrégats voisins. Écarté tant que 
 
 C'est la pagination qui imposait au front ses gardes sur les totaux, les doublons et les pages vides. Tout est ici lu
 en **un appel et une transaction unique** : il n'y a plus de pages à recoudre. Le volume est borné par la taille de
-l'atelier.
+l'atelier. `genereLe` donne un instant commun d'expiration aux activités lues ; les écritures concurrentes
+peuvent toutefois modifier les données entre les requêtes.
 
 La transaction ne fait pas pour autant de la réponse un instantané. La route a demandé une **lecture répétable** de
 sa livraison au 21/09/2026, précisément pour cela — sous `READ COMMITTED`, chaque requête prend son propre
@@ -546,18 +538,21 @@ s'approprier l'acquisition de connexion du multi-tenant ; le détail est dans le
 ### La lecture passe par la base, jamais par un import
 
 `atelier`, `operateur`, `postedetravail` et `elementdefabrication` étant annotés `@BusinessContext`, ce contexte
-déclare ses propres entités JPA en lecture seule sur leurs tables. Il rejoue donc — pour la **quatrième** fois du
-projet — sa propre version du repli du journal d'atelier, avec une différence assumée : un pointage que l'automate
-refuse est **ignoré** plutôt que refusé, comme `syntheseheures` le fait de la présence. Un écran d'atelier ne doit
-jamais s'éteindre parce qu'un journal est bizarre.
+porte ses propres entités JPA en lecture seule. Il lit l'interprétation projetée dans `activite_d_atelier`, sans
+rejouer le journal d'atelier : seules les activités interprétables sans fin réelle peuvent être courantes.
+L'échéance est inclusive : à début plus 13 h pile, l'activité disparaît de la liste. La correction d'un début
+déplace cette échéance et conserve l'identité de l'activité, rendue dans `ouverture` ; le pupitre peut donc viser
+la même activité après cette correction. Le suivi est `EN_COURS` si l'une de ces activités l'est à `genereLe`,
+sinon `INTERROMPU` s'il porte un événement actif, sinon `EN_ATTENTE`.
 
-Une exception, et une seule : l'**état de présence** se lit sur la colonne de projection `journee_de_travail.etat`
-plutôt qu'en repliant le journal. Ce qu'on demande ici est l'état courant de tous les opérateurs à la fois ; le
-replier supposerait de rapporter tous les journaux de présence ouverts à chaque synchronisation pour n'en garder que
-la dernière valeur.
+Chaque suivi rend aussi `conflits` : le couple opérateur/poste, les identités stables des activités à résoudre
+et les identités des pointages, dans leur ordre métier. Cette liste vient de `sequence_en_conflit` et
+`pointage_en_conflit`, sans repli local. Une séquence sans activité reste rendue ; un poste absent reste absent.
+Un rejeu ne la duplique pas, une résolution la retire à l’écriture suivante. Aucune de ces activités n’est
+actionnable, mais une nouvelle ouverture cohérente peut être en cours à côté du conflit.
 
-Le filet est le scénario Cucumber, qui engage, pointe, annule et clôture par l'API d'`atelier` — présence comprise —
-puis relit par celle du pupitre : il échoue dès que les deux contextes cessent de lire les mêmes colonnes.
+Les scénarios Cucumber écrivent par l'API d'atelier puis relisent par le référentiel, avec correction, annulation,
+échéance et conflit : ils vérifient les colonnes réellement partagées entre les deux contextes.
 
 ### Le nom vient du suivi, la référence du référentiel
 
@@ -573,25 +568,10 @@ laisse donc sa tuile intacte, privée de sa seule référence.
    ci-dessus. À rouvrir si le volume le justifie.
 2. **La quarantaine des gestes refusés reste à faire**, côté serveur : un rejeu refusé pour raison métier —
    habilitation retirée, suivi clôturé — ne vit aujourd'hui que dans le journal local du pupitre.
-   `strategie/authentification-pointage.md` en fait une exigence. Le lot 8 de
-   [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md) l'a écartée le 26/09/2026 (lots 8b
-   et 8c abandonnés) : habilitation retirée, date inhabituelle, référentiel inconnu, geste hors séquence et
-   identifiant réutilisé restent refusés, et ne vivent que dans le journal local du pupitre.
+   La [réflexion d’authentification](strategie/authentification-pointage.md) envisage cette quarantaine ;
+   elle n’est pas une fonctionnalité livrée. Les refus du [catalogue courant](codes-erreur.md) restent
+   durables dans le journal local. Une contradiction conservée en conflit est une acceptation, distincte d’un refus.
 3. **Le client Keycloak du pupitre n'existe pas dans le realm.** `glm-front` attend `pupitre_device`, avec le
    device grant activé et le client scope `glmproject` — sans lui, le jeton ne porte pas de claim `tenant` et toute
    la surface `/api/**` répond 403. C'est la dernière pièce d'infrastructure avant qu'un pupitre déployé puisse
    s'enrôler.
-
-## parametrage
-
-Porte le **paramétrage d'une entreprise** : pour l'instant, la seule **amplitude maximale** d'une journée de travail (décision D1 de [strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md)). Au-delà de cette durée depuis l'arrivée, une journée sans départ sera abandonnée (lot 3). Le gestionnaire la fixe ; l'opérateur la lit.
-
-**La valeur par défaut n'est pas une constante du code.** Elle est semée en base, 13 h, par le changelog qui crée la table, dans chaque schéma d'entreprise. C'est la règle du dépôt pour toute donnée de paramétrage : le domaine la reçoit par un port. Une entreprise neuve reçoit donc sa ligne en même temps que son schéma, et aucune lecture ne tombe jamais sur une valeur absente.
-
-**L'amplitude se compte à la minute et reste strictement sous 24 h.** C'est ce qui garantit qu'un retour le lendemain à la même heure soit toujours une nouvelle arrivée, même pour un poste de nuit. La règle vit dans `AmplitudeMaximale` ; la validation de la requête la répète pour répondre 400 plutôt que 500, et deux contraintes du schéma servent de filet.
-
-**Seule la dernière modification est tracée** — auteur, lu dans le jeton, et instant. Changer le seuil peut déplacer la fin présumée d'une journée non régularisée (exemple E8) : savoir qui l'a changé, et quand, suffit à l'expliquer. Un historique complet n'est pas demandé.
-
-### Points ouverts
-
-1. **Les autres paramètres de l'entreprise** — fuseau horaire des relevés, préfixes des éléments de fabrication — vivent encore en configuration ou en constante. Ils ont vocation à rejoindre ce contexte.

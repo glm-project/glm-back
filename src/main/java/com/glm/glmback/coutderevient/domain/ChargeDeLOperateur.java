@@ -5,7 +5,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 /**
  * Ce qu'un operateur menait de front, decoupe en sous-periodes ou le nombre de postes occupes ne change pas.
@@ -35,12 +37,16 @@ public record ChargeDeLOperateur(List<SousPeriode> sousPeriodes) {
    * </p>
    */
   static ChargeDeLOperateur de(List<TrancheDActivite> tranches) {
-    List<Instant> bornes = bornes(tranches);
+    return de(tranches, List.of());
+  }
+
+  static ChargeDeLOperateur de(List<TrancheDActivite> tranches, List<ZoneIncertaine> zones) {
+    List<Instant> bornes = bornes(tranches, zones);
     List<SousPeriode> sousPeriodes = new ArrayList<>();
 
     for (int rang = 0; rang + 1 < bornes.size(); rang++) {
       Periode candidate = new Periode(bornes.get(rang), bornes.get(rang + 1));
-      sousPeriode(tranches, candidate).ifPresent(sousPeriodes::add);
+      sousPeriode(tranches, zones, candidate).ifPresent(sousPeriodes::add);
     }
 
     return new ChargeDeLOperateur(List.copyOf(sousPeriodes));
@@ -55,37 +61,45 @@ public record ChargeDeLOperateur(List<SousPeriode> sousPeriodes) {
       .flatMap(sousPeriode ->
         tranche
           .reduiteA(sousPeriode.periode())
-          .map(part -> new TrancheValorisable(part, sousPeriode.diviseur()))
+          .map(part -> new TrancheValorisable(part, sousPeriode.diviseur(), sousPeriode.responsables()))
           .stream()
       )
       .toList();
   }
 
-  private static List<Instant> bornes(List<TrancheDActivite> tranches) {
+  private static List<Instant> bornes(List<TrancheDActivite> tranches, List<ZoneIncertaine> zones) {
     TreeSet<Instant> bornes = new TreeSet<>();
     tranches.forEach(tranche -> {
       bornes.add(tranche.periode().debut());
       bornes.add(tranche.periode().fin());
     });
 
+    zones.forEach(zone -> {
+      bornes.add(zone.periode().debut());
+      bornes.add(zone.periode().fin());
+    });
     return List.copyOf(bornes);
   }
 
   /**
    * Rien n'est rendu la ou l'operateur ne travaillait pas : entre deux pointages, il n'y a aucun diviseur a poser.
    */
-  private static Optional<SousPeriode> sousPeriode(List<TrancheDActivite> tranches, Periode candidate) {
-    long postes = tranches
+  private static Optional<SousPeriode> sousPeriode(List<TrancheDActivite> tranches, List<ZoneIncertaine> zones, Periode candidate) {
+    Set<Optional<PosteDeTravailId>> postes = tranches
       .stream()
       .filter(tranche -> tranche.periode().intersection(candidate).isPresent())
       .map(tranche -> tranche.activite().poste())
-      .distinct()
-      .count();
-
-    if (postes == 0) {
+      .collect(Collectors.toSet());
+    if (postes.isEmpty()) {
       return Optional.empty();
     }
-
-    return Optional.of(new SousPeriode(candidate, new Diviseur(Math.toIntExact(postes))));
+    Set<ActiviteInterpretee> responsables = zones
+      .stream()
+      .filter(zone -> zone.periode().intersection(candidate).isPresent())
+      .map(ZoneIncertaine::activite)
+      .filter(activite -> !postes.contains(activite.activite().poste()))
+      .collect(Collectors.toSet());
+    Optional<Diviseur> diviseur = responsables.isEmpty() ? Optional.of(new Diviseur(postes.size())) : Optional.empty();
+    return Optional.of(new SousPeriode(candidate, diviseur, responsables));
   }
 }

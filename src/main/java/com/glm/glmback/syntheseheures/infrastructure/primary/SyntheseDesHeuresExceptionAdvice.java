@@ -1,5 +1,6 @@
 package com.glm.glmback.syntheseheures.infrastructure.primary;
 
+import com.glm.glmback.syntheseheures.domain.EvaluationFutureException;
 import com.glm.glmback.syntheseheures.domain.OperateurInconnuException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -10,6 +11,11 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 @ControllerAdvice
 @Order(Ordered.LOWEST_PRECEDENCE - 20_000)
 class SyntheseDesHeuresExceptionAdvice {
+
+  @ExceptionHandler(EvaluationFutureException.class)
+  ProblemDetail handleEvaluationFuture(EvaluationFutureException e) {
+    return ErreurDeSyntheseDesHeures.EVALUATION_FUTURE.problem(e);
+  }
 
   @ExceptionHandler(OperateurInconnuException.class)
   ProblemDetail handleOperateurInconnu(OperateurInconnuException e) {

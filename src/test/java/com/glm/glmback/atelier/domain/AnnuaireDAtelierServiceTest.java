@@ -36,29 +36,13 @@ class AnnuaireDAtelierServiceTest {
 
   @Test
   void shouldResoudreLesRessourcesDesIntervalles() {
-    List<IntervalleDActivite> intervalles = suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)).activites();
+    List<IntervalleDActivite> intervalles = suiviDAtelierEngage()
+      .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))
+      .intervalles(LE_10_MAI_2026_A_17H);
 
     AnnuaireDAtelier annuaire = annuaires.pourIntervalles(intervalles);
 
     assertThat(annuaire.operateur(OPERATEUR_ID_DUPONT)).contains(OPERATEUR_CONNU_DUPONT);
     assertThat(annuaire.poste(POSTE_ID_FRAISEUSE_1)).contains(POSTE_CONNU_FRAISEUSE_1);
-  }
-
-  /**
-   * La presence ne connait aucun poste : seul l'operateur de la journee est a resoudre.
-   */
-  @Test
-  void shouldResoudreLeSeulOperateurDUneJournee() {
-    AnnuaireDAtelier annuaire = annuaires.pour(journeeDeDupontOuverteA7H());
-
-    assertThat(annuaire.operateur(OPERATEUR_ID_DUPONT)).contains(OPERATEUR_CONNU_DUPONT);
-    assertThat(annuaire.postes()).isEmpty();
-  }
-
-  @Test
-  void shouldResoudreLesOperateursDUneListeDeJournees() {
-    AnnuaireDAtelier annuaire = annuaires.pourJournees(List.of(journeeDeDupontOuverteA7H(), journeeDeDupontDe7HA17H()));
-
-    assertThat(annuaire.operateurs()).containsOnlyKeys(OPERATEUR_ID_DUPONT);
   }
 }

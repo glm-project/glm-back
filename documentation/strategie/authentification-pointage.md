@@ -1,9 +1,6 @@
 # Stratégie — authentification et identification au pupitre
 
-> **28/09/2026 : la pause n'est plus un événement de présence ([ADR 0002](../adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)).**
-> Le pupitre la traduit en fins d'activité, puis en débuts à la reprise ; la présence ne connaît plus que l'arrivée et le départ, et ses états se réduisent à absent et présent. Les passages qui parlent de pause ou de reprise décrivent le modèle d'avant.
-
-Document de réflexion, pas de spécification. Il fixe la stratégie retenue pour reconnaître l'opérateur qui pointe, sécuriser le pupitre d'atelier et survivre à une coupure réseau. Le détail métier et sa justification par le verbatim client vivent dans [contexte-metier.md](../contexte-metier.md), l'isolation par entreprise dans [multitenancy.md](../multitenancy.md), les invariants du pointage dans le [AGENTS.md du contexte `atelier`](../../src/main/java/com/glm/glmback/atelier/AGENTS.md) — ne rien dupliquer ici.
+Document de réflexion historique, pas de spécification des fonctionnalités livrées. Les constats de configuration décrivent l’état consulté pour cette réflexion. Les propositions de signature, de biométrie, de quarantaine serveur et de supervision restent à évaluer dans leurs propres chantiers. Il expose la stratégie envisagée pour reconnaître l'opérateur qui pointe, sécuriser le pupitre d'atelier et survivre à une coupure réseau. Le détail métier et sa justification par le verbatim client vivent dans [contexte-metier.md](../contexte-metier.md), l'isolation par entreprise dans [multitenancy.md](../multitenancy.md), les invariants du pointage dans le [AGENTS.md du contexte `atelier`](../../src/main/java/com/glm/glmback/atelier/AGENTS.md) — ne rien dupliquer ici.
 
 Il répond au point ouvert « Utilisateur connecté » (`contexte-metier.md`, section `operateur`), resté non tranché depuis la livraison des référentiels.
 
@@ -145,7 +142,7 @@ Le poste est partagé. Ré-identification à chaque acte, ou fenêtre très cour
 
 Aujourd'hui `AuteurConnecte` pose le `preferred_username` du jeton sur chaque événement. Avec un compte d'appareil, tout ce que le pupitre pousse portera `pupitre-atelier-1`.
 
-La personne identifiée **et la façon dont elle l'a été** — signature, code, désignée par un gestionnaire — doivent donc voyager avec la saisie. Ce n'est pas un complément de l'auteur : **c'est ce qui le remplace comme preuve**, pour la paie comme pour un litige.
+La personne identifiée **et la façon dont elle l'a été** — signature, code, désignée par un gestionnaire — doivent donc voyager avec la saisie. Ce n'est pas un complément de l'auteur : **c'est ce qui le remplace comme preuve**, pour l’audit des faits comme pour un litige.
 
 C'est aussi ce qui rouvre `estSaisiParUnTiers`, mais sur une base neuve. Il ne s'agira plus de comparer deux identités que rien ne rapproche, mais de lire une **qualité d'identification** portée par l'événement lui-même.
 
@@ -166,22 +163,17 @@ La dégradation n'est pas uniforme, et c'est ce qui rend le problème tenable.
 |                                    | Sans cache | Avec cache du référentiel | En ligne |
 | ---------------------------------- | ---------- | ------------------------- | -------- |
 | Identifier l'opérateur             | non        | oui                       | oui      |
-| Présence — arrivée, pause, départ  | non        | **oui**                   | oui      |
 | Pointer sur un élément déjà engagé | non        | oui                       | oui      |
 | Mettre un élément à l'atelier      | non        | non                       | oui      |
-
-**La paie tient à la colonne du milieu.** Le besoin central — « une pointeuse à laquelle on rajoute une option OF » — ne dépend d'aucun élément : une `JourneeDeTravail` n'a besoin que de l'existence de l'opérateur. Ce qui casse hors ligne est l'option, pas la pointeuse.
 
 **La mise à l'atelier est le seul vrai trou, et aucun dispositif technique ne le comble.** Engager est un acte du back-office ; le domaine refuse tout événement antérieur à l'engagement, et le nom de l'élément est numéroté par le serveur. Déplacer l'engagement au bord reviendrait à y déplacer la numérotation, donc le domaine — et à faire du poste d'atelier une seconde instance de l'application, ce que toute cette stratégie évite.
 
 **Réponse retenue : l'engagement par anticipation.** Le back-office met les éléments à l'atelier à l'avance, le cache du pupitre les porte déjà. C'est une contrainte d'organisation, pas de logiciel, et elle est cohérente avec ce que le client décrit : engager est un geste de préparation, pas une réaction à l'urgence.
 
-**Filet de dernier recours**, si le cas se produit quand même : la présence continue de courir, le travail non rattachable tombe dans la présence sans affectation — la présence moins le temps affecté, définie dans [contexte-metier.md](../contexte-metier.md#la-présence-de-larrivée-au-départ) —, et le gestionnaire l'affecte après coup par `regularise` ou `corrige`. Ces trois actes existent exactement pour ça ; rien à ajouter au modèle.
-
 ## Le rejeu
 
-- **Idempotence : l'identifiant de l'événement doit naître au pupitre.** Il naît aujourd'hui dans le domaine, côté serveur. C'est la conséquence la plus concrète de tout le dispositif, et la seule qui touche un choix existant.
-- **L'horodatage bitemporel est exactement la couture qu'il faut**, et il est déjà là. Un pointage rejoué garde sa date de survenue au moment du geste et sa date d'enregistrement **au moment de la saisie au pupitre**. Le serveur ne réhorodate jamais : sans cette règle, chaque coupure produirait un flot de fausses régularisations, puisque `estUneRegularisation()` se lit sur l'écart entre les deux dates.
+- **Idempotence : l’identifiant de l’événement naît au geste au pupitre.** Le contrat livré et son registre sont décrits dans l’[ADR 0001](../adr/0001-generate-event-identities-in-the-offline-first-pupitre.md). Les autres pistes de cette section restent des propositions de continuité.
+- **L'horodatage bitemporel est exactement la couture qu'il faut**, et il est déjà là. Un pointage rejoué garde sa date de survenue au moment du geste et sa date d'enregistrement **au moment de la saisie au pupitre**. Le serveur ne réhorodate jamais la survenue. L'écart qui en résulte avec la date d'enregistrement ne fait pas du pointage une régularisation : `estUneRegularisation()` lit l'origine conservée sur l'événement, que seuls la régularisation et la correction du gestionnaire portent.
 - **Le rejeu peut échouer pour des raisons métier**, et c'est le risque le plus sérieux : habilitation retirée entre-temps, suivi clôturé, saisie concurrente, ou date de survenue devenue future si l'horloge du poste a dérivé. Il faut une issue **côté serveur** — mise en quarantaine et reprise explicite par un gestionnaire —, jamais un rejet silencieux ni une file qui grossit sur une machine que personne ne regarde. Le rejeu respecte par ailleurs l'ordre par agrégat : l'automate d'état en dépend.
 - **La file locale est le seul point de perte du dispositif**, et le pupitre en est le porteur : un poste remplacé emporte ses saisies non acquittées. La supervision n'est donc pas un confort — le serveur alerte quand un pupitre n'a plus rien poussé, et l'écran affiche sa désynchronisation. **Une coupure silencieuse de trois semaines est le vrai scénario de perte de données**, bien plus que la panne franche.
 - **Décalage de versions** : entre un pupitre resté en arrière et un serveur qui a évolué, l'API de poussée doit être versionnée et tolérante.

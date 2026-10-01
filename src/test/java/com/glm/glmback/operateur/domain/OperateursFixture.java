@@ -60,6 +60,16 @@ public final class OperateursFixture {
       .postes(habilitationsDeSoudureEtDeTournage());
   }
 
+  public static Operateur operateurDeRejeuSansPoste(OperateurId id) {
+    return Operateur.builder()
+      .id(id)
+      .nom(new Nom("Rejeu cible"))
+      .prenom(new Prenom("Concurrence"))
+      .matricule(null)
+      .tauxHoraire(null)
+      .postes(Set.of());
+  }
+
   public static Operateur operateurMartinSansMatricule() {
     return Operateur.builder()
       .id(OperateurId.newId())

@@ -8,7 +8,7 @@ import java.util.Optional;
  * reprise.
  *
  * <p>
- * L'activite dit tout sauf quand : c'est ce qui permet de la couper sur les fenetres de presence puis a minuit sans
+ * Cette affectation accompagne les portions calendaires de l'activite sans
  * jamais recopier ses composants.
  * </p>
  */

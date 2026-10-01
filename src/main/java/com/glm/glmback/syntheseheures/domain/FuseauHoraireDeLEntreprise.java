@@ -7,7 +7,7 @@ import java.time.ZoneId;
  *
  * <p>
  * C'est une donnee de parametrage, donc un port : le domaine ne code pas une zone en constante, sans quoi une
- * entreprise cliente d'un autre fuseau verrait ses journees coupees a la mauvaise heure.
+ * entreprise cliente d'un autre fuseau verrait ses activites coupees a la mauvaise heure.
  * </p>
  */
 public interface FuseauHoraireDeLEntreprise {

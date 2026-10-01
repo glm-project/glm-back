@@ -8,8 +8,7 @@ Feature: Cout de revient d'un element de fabrication
   # Deux regles gouvernent les montants, enoncees deux fois de suite par le client : le cout horaire de chaque machine
   # active court en entier, et le taux horaire de l'operateur se divise par le nombre de machines qu'il utilise.
   #
-  # Ce scenario pointe par l'API d'atelier et relit par celle du cout de revient : c'est ce qui tient alignes les deux
-  # replis de journal, qu'aucun import Java ne relie.
+  # Ces scenarios ecrivent par l'API d'atelier et relisent sa projection interpretee par le cout, sans import Java.
   Background:
     Given I am logged in as "gestionnaire" with role "GESTIONNAIRE"
     And le rapport connait le poste "fraiseuse" de nature "Fraisage" a "45.00" de l'heure
@@ -28,7 +27,6 @@ Feature: Cout de revient d'un element de fabrication
   Scenario: Deux heures de fraisage valorisent la machine et l'operateur
     Given l'entreprise fabrique "OF 3002"
     And "OF 3002" est mis en atelier a "2026-05-11T07:00:00Z"
-    And "dupont" prend son poste a "2026-05-11T08:00:00Z"
     And "dupont" pointe "DEBUT" sur "OF 3002" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
     And "dupont" pointe "FIN" sur "OF 3002" au poste "fraiseuse" a "2026-05-11T11:00:00Z"
     When je consulte le cout de revient de "OF 3002" a "2026-05-11T18:00:00Z"
@@ -41,7 +39,6 @@ Feature: Cout de revient d'un element de fabrication
   Scenario: La pause de midi retire son creux du temps valorise
     Given l'entreprise fabrique "OF 3003"
     And "OF 3003" est mis en atelier a "2026-05-11T07:00:00Z"
-    And "dupont" prend son poste a "2026-05-11T08:00:00Z"
     And "dupont" pointe "DEBUT" sur "OF 3003" au poste "fraiseuse" a "2026-05-11T10:00:00Z"
     And "dupont" pointe "FIN" sur "OF 3003" au poste "fraiseuse" a "2026-05-11T12:00:00Z"
     And "dupont" pointe "DEBUT" sur "OF 3003" au poste "fraiseuse" a "2026-05-11T13:00:00Z"
@@ -57,7 +54,6 @@ Feature: Cout de revient d'un element de fabrication
   Scenario: La reprise de non conformite se compte a part, datee
     Given l'entreprise fabrique "OF 3004"
     And "OF 3004" est mis en atelier a "2026-05-11T07:00:00Z"
-    And "dupont" prend son poste a "2026-05-11T08:00:00Z"
     And "dupont" pointe "DEBUT" sur "OF 3004" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
     And "dupont" pointe "NON_CONFORMITE" sur "OF 3004" au poste "fraiseuse" a "2026-05-11T10:00:00Z"
     And "dupont" pointe "FIN" sur "OF 3004" au poste "fraiseuse" a "2026-05-11T11:00:00Z"
@@ -70,10 +66,9 @@ Feature: Cout de revient d'un element de fabrication
     And le rapport porte la non conformite de "2026-05-11T10:00:00Z" a "2026-05-11T11:00:00Z"
 
   Scenario: Un double appui sur demarrer ne valorise rien de plus
-    # D9 : demarrer une activite deja en cours la relance. Le repli du cout de revient la relit comme l'atelier.
+    # D9 : demarrer une activite deja en cours la relance. La projection conserve les bornes de la relance.
     Given l'entreprise fabrique "OF 3010"
     And "OF 3010" est mis en atelier a "2026-05-11T07:00:00Z"
-    And "dupont" prend son poste a "2026-05-11T08:00:00Z"
     And "dupont" pointe "DEBUT" sur "OF 3010" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
     And "dupont" pointe "DEBUT" sur "OF 3010" au poste "fraiseuse" a "2026-05-11T09:00:03Z"
     And "dupont" pointe "FIN" sur "OF 3010" au poste "fraiseuse" a "2026-05-11T11:00:00Z"
@@ -84,14 +79,11 @@ Feature: Cout de revient d'un element de fabrication
       | Fraisage | PT2H    | PT0S          | 90.00   | 40.00       |
 
   Scenario: Un ordre relance le lendemain valorise les deux journees, sans la nuit
-    # E2 de la strategie « bornes de fin de journee » : sans relance, le debut de mardi serait refuse et la fin de
-    # mardi refermerait l'intervalle de lundi. Le rapport ne vaudrait pas trois heures.
+    # Les deux activites ont chacune leurs faits ouvrant et fermant : le rapport valorise deux heures lundi et une mardi.
     Given l'entreprise fabrique "OF 3011"
     And "OF 3011" est mis en atelier a "2026-05-11T07:00:00Z"
-    And "dupont" prend son poste a "2026-05-11T08:00:00Z"
     And "dupont" pointe "DEBUT" sur "OF 3011" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
-    And "dupont" pointe sa presence "DEPART" a "2026-05-11T11:00:00Z"
-    And "dupont" prend son poste a "2026-05-12T08:00:00Z"
+    And "dupont" pointe "FIN" sur "OF 3011" au poste "fraiseuse" a "2026-05-11T11:00:00Z"
     And "dupont" pointe "DEBUT" sur "OF 3011" au poste "fraiseuse" a "2026-05-12T09:00:00Z"
     And "dupont" pointe "FIN" sur "OF 3011" au poste "fraiseuse" a "2026-05-12T10:00:00Z"
     When je consulte le cout de revient de "OF 3011" a "2026-05-12T18:00:00Z"
@@ -100,49 +92,9 @@ Feature: Cout de revient d'un element de fabrication
       | nature   | travail | nonConformite | machine | mainDOeuvre |
       | Fraisage | PT3H    | PT0S          | 135.00  | 60.00       |
 
-  Scenario: Une journee abandonnee n'est valorisee que jusqu'a sa fin presumee
-    # Lot 4 : lundi, Dupont ne pointe pas son depart. Sa journee s'arrete au dernier fait connu, son debut sur l'OF
-    # 3015 a 15:00. Mardi, sa relance sur l'OF 3014 compte dans mardi, jamais dans la nuit de lundi.
-    Given l'entreprise fabrique "OF 3014"
-    And l'entreprise fabrique "OF 3015"
-    And "OF 3014" est mis en atelier a "2026-05-11T07:00:00Z"
-    And "OF 3015" est mis en atelier a "2026-05-11T07:00:00Z"
-    And "dupont" prend son poste a "2026-05-11T08:00:00Z"
-    And "dupont" pointe "DEBUT" sur "OF 3014" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
-    And "dupont" pointe "FIN" sur "OF 3014" au poste "fraiseuse" a "2026-05-11T12:00:00Z"
-    And "dupont" pointe "DEBUT" sur "OF 3014" au poste "fraiseuse" a "2026-05-11T13:00:00Z"
-    And "dupont" pointe "DEBUT" sur "OF 3015" au poste "tour" a "2026-05-11T15:00:00Z"
-    And "dupont" prend son poste a "2026-05-12T08:00:00Z"
-    And "dupont" pointe "DEBUT" sur "OF 3014" au poste "fraiseuse" a "2026-05-12T09:00:00Z"
-    And "dupont" pointe "FIN" sur "OF 3014" au poste "fraiseuse" a "2026-05-12T10:00:00Z"
-    When je consulte le cout de revient de "OF 3014" a "2026-05-12T18:00:00Z"
-    Then la reponse a le statut http 200
-    # Lundi 9-12 et 13-15, mardi 9-10 : six heures, la nuit n'est pas valorisee.
-    And le rapport porte les lignes
-      | nature   | travail | nonConformite | machine | mainDOeuvre |
-      | Fraisage | PT6H    | PT0S          | 270.00  | 120.00      |
-
-  Scenario: Une journee fermee de plus de 24 h n'est valorisee que jusqu'a sa fin presumee
-    # Issue #59 : lundi, Dupont ne pointe pas son depart ; le gestionnaire le saisit mercredi a 8 h sur la meme journee.
-    # Plus de 24 h ne se vivent pas d'une traite : la journee s'arrete au dernier fait de lundi, la relance de 13:00.
-    Given l'entreprise fabrique "OF 3016"
-    And "OF 3016" est mis en atelier a "2026-05-11T07:00:00Z"
-    And "dupont" prend son poste a "2026-05-11T08:00:00Z"
-    And "dupont" pointe "DEBUT" sur "OF 3016" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
-    And "dupont" pointe "FIN" sur "OF 3016" au poste "fraiseuse" a "2026-05-11T12:00:00Z"
-    And "dupont" pointe "DEBUT" sur "OF 3016" au poste "fraiseuse" a "2026-05-11T13:00:00Z"
-    And le depart de "dupont" est rattrape sur sa journee a "2026-05-13T08:00:00Z"
-    When je consulte le cout de revient de "OF 3016" a "2026-05-13T18:00:00Z"
-    Then la reponse a le statut http 200
-    # Lundi 9-12 seulement : ni l'apres-midi presume, ni les deux nuits jusqu'au depart.
-    And le rapport porte les lignes
-      | nature   | travail | nonConformite | machine | mainDOeuvre |
-      | Fraisage | PT3H    | PT0S          | 135.00  | 60.00       |
-
   Scenario: Deux machines menees de front divisent l'operateur, jamais les machines
     Given l'entreprise fabrique "OF 3005"
     And "OF 3005" est mis en atelier a "2026-05-11T07:00:00Z"
-    And "dupont" prend son poste a "2026-05-11T08:00:00Z"
     And "dupont" pointe "DEBUT" sur "OF 3005" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
     And "dupont" pointe "DEBUT" sur "OF 3005" au poste "tour" a "2026-05-11T10:00:00Z"
     And "dupont" pointe "FIN" sur "OF 3005" au poste "tour" a "2026-05-11T11:00:00Z"
@@ -156,44 +108,9 @@ Feature: Cout de revient d'un element de fabrication
       | Fraisage | PT3H    | PT0S          | 135.00  | 50.00       |
       | Tournage | PT1H    | PT0S          | 60.00   | 10.00       |
 
-  Scenario: Un travail encore en cours est arrete au depart de l'operateur
-    Given l'entreprise fabrique "OF 3006"
-    And "OF 3006" est mis en atelier a "2026-05-11T07:00:00Z"
-    And "dupont" prend son poste a "2026-05-11T08:00:00Z"
-    And "dupont" pointe "DEBUT" sur "OF 3006" au poste "fraiseuse" a "2026-05-11T14:00:00Z"
-    And "dupont" pointe sa presence "DEPART" a "2026-05-11T17:00:00Z"
-    When je consulte le cout de revient de "OF 3006" a "2026-05-11T23:00:00Z"
-    Then la reponse a le statut http 200
-    # Le depart referme ce que l'operateur a oublie d'arreter : trois heures, pas neuf.
-    And le rapport porte les lignes
-      | nature   | travail | nonConformite | machine | mainDOeuvre |
-      | Fraisage | PT3H    | PT0S          | 135.00  | 60.00       |
-
-  Scenario: Un depart pointe hors journee ne fait pas echouer le rapport
-    Given l'entreprise fabrique "OF 3013"
-    And "OF 3013" est mis en atelier a "2026-05-11T07:00:00Z"
-    And "dupont" prend son poste a "2026-05-11T08:00:00Z"
-    And "dupont" pointe "DEBUT" sur "OF 3013" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
-    And "dupont" pointe sa presence "DEPART" a "2026-05-11T12:00:00Z"
-    # Chaque depart tardif ouvre sa propre journee par une arrivee implicite a la meme heure (lot 8a), lue par le
-    # rapport puisque le travail n'a jamais ete arrete. La base rend les deux evenements dans l'ordre de leurs
-    # identifiants, tires au hasard : plusieurs departs rendent l'inversion quasi certaine si le repli ne les departage
-    # pas lui-meme (issue #54).
-    And "dupont" pointe sa presence "DEPART" a "2026-05-11T12:05:00Z"
-    And "dupont" pointe sa presence "DEPART" a "2026-05-11T12:10:00Z"
-    And "dupont" pointe sa presence "DEPART" a "2026-05-11T12:15:00Z"
-    And "dupont" pointe sa presence "DEPART" a "2026-05-11T12:20:00Z"
-    When je consulte le cout de revient de "OF 3013" a "2026-05-11T18:00:00Z"
-    Then la reponse a le statut http 200
-    # Le travail reste borne au depart de 12 h : les journees vides d'apres ne valorisent rien.
-    And le rapport porte les lignes
-      | nature   | travail | nonConformite | machine | mainDOeuvre |
-      | Fraisage | PT3H    | PT0S          | 135.00  | 60.00       |
-
   Scenario: La cloture referme le travail laisse ouvert
     Given l'entreprise fabrique "OF 3007"
     And "OF 3007" est mis en atelier a "2026-05-11T07:00:00Z"
-    And "dupont" prend son poste a "2026-05-11T08:00:00Z"
     And "dupont" pointe "DEBUT" sur "OF 3007" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
     And "OF 3007" est cloture a "2026-05-11T10:00:00Z"
     When je consulte le cout de revient de "OF 3007" a "2026-05-11T18:00:00Z"
@@ -205,7 +122,6 @@ Feature: Cout de revient d'un element de fabrication
   Scenario: Un pointage sans poste n'a ni nature ni cout machine
     Given l'entreprise fabrique "OF 3008"
     And "OF 3008" est mis en atelier a "2026-05-11T07:00:00Z"
-    And "dupont" prend son poste a "2026-05-11T08:00:00Z"
     And "dupont" pointe "DEBUT" sur "OF 3008" sans poste a "2026-05-11T09:00:00Z"
     And "dupont" pointe "FIN" sur "OF 3008" sans poste a "2026-05-11T10:00:00Z"
     When je consulte le cout de revient de "OF 3008" a "2026-05-11T18:00:00Z"
@@ -218,7 +134,6 @@ Feature: Cout de revient d'un element de fabrication
   Scenario: Chaque nature d'operation a sa ligne
     Given l'entreprise fabrique "OF 3009"
     And "OF 3009" est mis en atelier a "2026-05-11T07:00:00Z"
-    And "dupont" prend son poste a "2026-05-11T08:00:00Z"
     And "dupont" pointe "DEBUT" sur "OF 3009" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
     And "dupont" pointe "FIN" sur "OF 3009" au poste "fraiseuse" a "2026-05-11T10:00:00Z"
     And "dupont" pointe "DEBUT" sur "OF 3009" au poste "tour" a "2026-05-11T10:30:00Z"
@@ -240,3 +155,399 @@ Feature: Cout de revient d'un element de fabrication
     And I am logged in as "user" with role "USER"
     When je consulte le cout de revient de "OF 3010" a "2026-05-11T18:00:00Z"
     Then la reponse a le statut http 403
+
+  @t7_exclusion
+  Scenario: Une activite ouverte est exclue du cout et du diviseur puis entre apres sa fin
+    Given l'entreprise fabrique "OF T7 A"
+    And l'entreprise fabrique "OF T7 B"
+    And "OF T7 A" est mis en atelier a "2026-05-11T07:00:00Z"
+    And "OF T7 B" est mis en atelier a "2026-05-11T07:00:00Z"
+    And pour le cout, "OF T7 A" recoit les pointages
+      | alias | type  | intention | cible | operateur | poste     | survenue             |
+      | A     | DEBUT | OUVERTURE |       | dupont    | fraiseuse | 2026-05-11T08:00:00Z |
+      | F     | FIN   | FIN       | A     | dupont    | fraiseuse | 2026-05-11T10:00:00Z |
+    And pour le cout, "OF T7 B" recoit les pointages
+      | alias | type  | intention | cible | operateur | poste | survenue             |
+      | B     | DEBUT | OUVERTURE |       | dupont    | tour  | 2026-05-11T09:00:00Z |
+    When je consulte le cout de revient de "OF T7 A" a "2026-05-11T10:00:00Z"
+    Then le rapport porte les lignes
+      | nature   | travail | nonConformite | machine | mainDOeuvre |
+      | Fraisage | PT2H    | PT0S          | 90.00   | 40.00       |
+    And le cout est evalue a "2026-05-11T10:00:00Z" avec 0 activites en cours exclues
+    When je consulte le cout de revient de "OF T7 B" a "2026-05-11T10:00:00Z"
+    Then le rapport ne porte aucune ligne
+    And le cout total du rapport est "0.00" dont "0.00" de machine
+    And le cout est evalue a "2026-05-11T10:00:00Z" avec 1 activites en cours exclues
+    Given pour le cout, "OF T7 B" recoit les pointages
+      | alias | type | intention | cible | operateur | poste | survenue             |
+      | FB    | FIN  | FIN       | B     | dupont    | tour  | 2026-05-11T11:00:00Z |
+    When je consulte le cout de revient de "OF T7 A" a "2026-05-11T11:00:00Z"
+    Then le rapport porte les lignes
+      | nature   | travail | nonConformite | machine | mainDOeuvre |
+      | Fraisage | PT2H    | PT0S          | 90.00   | 30.00       |
+    When je consulte le cout de revient de "OF T7 B" a "2026-05-11T11:00:00Z"
+    Then le rapport porte les lignes
+      | nature   | travail | nonConformite | machine | mainDOeuvre |
+      | Tournage | PT2H    | PT0S          | 120.00  | 30.00       |
+
+  Scenario: La fin automatique compte treize heures exactement et rend sa periode
+    Given l'entreprise fabrique "OF T7 auto"
+    And "OF T7 auto" est mis en atelier a "2026-05-11T07:00:00Z"
+    And pour le cout, "OF T7 auto" recoit les pointages
+      | alias | type  | intention | operateur | poste     | survenue             |
+      | A     | DEBUT | OUVERTURE | dupont    | fraiseuse | 2026-05-11T08:00:00Z |
+    When je consulte le cout de revient de "OF T7 auto" a "2026-05-11T20:59:00Z"
+    Then le rapport ne porte aucune ligne
+    And le cout est evalue a "2026-05-11T20:59:00Z" avec 1 activites en cours exclues
+    When je consulte le cout de revient de "OF T7 auto" a "2026-05-11T21:00:00Z"
+    Then le rapport porte les lignes
+      | nature   | travail | nonConformite | machine | mainDOeuvre |
+      | Fraisage | PT13H   | PT0S          | 585.00  | 260.00      |
+    And le cout est evalue a "2026-05-11T21:00:00Z" avec 0 activites en cours exclues
+    And le cout porte la fin automatique de "2026-05-11T08:00:00Z" a "2026-05-11T21:00:00Z"
+    When je consulte le cout de revient de "OF T7 auto" a "2026-05-12T10:00:00Z"
+    Then le cout porte la fin automatique de "2026-05-11T08:00:00Z" a "2026-05-11T21:00:00Z"
+
+  Scenario Outline: Le conflit laisse les categories et les couts concernes sans chiffre
+    Given l'entreprise fabrique "OF T7 conflit"
+    And "OF T7 conflit" est mis en atelier a "2026-05-11T05:00:00Z"
+    And pour le cout, "OF T7 conflit" recoit les pointages
+      | alias | type  | intention | cible | operateur | poste     | survenue             | reception            |
+      | A     | DEBUT | OUVERTURE |       | dupont    | fraiseuse | 2026-05-11T08:00:00Z | 2026-05-12T08:00:00Z |
+      | <a>   | <t1>  | <i1>      | A     | dupont    | fraiseuse | <d1>                 | 2026-05-12T08:01:00Z |
+      | <b>   | <t2>  | <i2>      | A     | dupont    | fraiseuse | <d2>                 | 2026-05-12T08:02:00Z |
+      | C     | DEBUT | OUVERTURE |       | dupont    | tour      | 2026-05-11T06:00:00Z | 2026-05-12T08:03:00Z |
+      | FC    | FIN   | FIN       | C     | dupont    | tour      | 2026-05-11T07:00:00Z | 2026-05-12T08:04:00Z |
+    When je consulte le cout de revient de "OF T7 conflit" a "2026-05-12T09:00:00Z"
+    Then le total du cout "$.temps.travail" est incomplet sans chiffre
+    And le total du cout "$.temps.nonConformite" est incomplet sans chiffre
+    And le total du cout "$.temps.total" est incomplet sans chiffre
+    And le total du cout "$.cout.machine" est incomplet sans chiffre
+    And le total du cout "$.cout.mainDOeuvre" est incomplet sans chiffre
+    And le total du cout "$.cout.total" est incomplet sans chiffre
+    And le total du cout "$.lignes[0].temps.travail" est incomplet sans chiffre
+    And le total du cout "$.lignes[0].cout.machine" est incomplet sans chiffre
+    And le total du cout "$.lignes[1].cout.machine" est complet avec "60.00"
+    And le total du cout "$.lignes[1].cout.mainDOeuvre" est complet avec "20.00"
+    And le cout porte les conflits
+      | element       | operateur | poste     | activites | pointages |
+      | OF T7 conflit | dupont    | fraiseuse | A,N       | A,N,F     |
+
+    Examples:
+      | a | t1             | i1         | d1                   | b | t2             | i2         | d2                   |
+      | N | NON_CONFORMITE | TRANSITION | 2026-05-11T12:00:00Z | F | FIN            | FIN        | 2026-05-11T17:00:00Z |
+      | F | FIN            | FIN        | 2026-05-11T17:00:00Z | N | NON_CONFORMITE | TRANSITION | 2026-05-11T12:00:00Z |
+
+  Scenario: Tous les conflits responsables d'autres elements rendent la main d'oeuvre incompletement connue
+    Given l'entreprise fabrique "source fraise"
+    And l'entreprise fabrique "source sans poste"
+    And l'entreprise fabrique "cible tour"
+    And "source fraise" est mis en atelier a "2026-05-11T05:00:00Z"
+    And "source sans poste" est mis en atelier a "2026-05-11T05:00:00Z"
+    And "cible tour" est mis en atelier a "2026-05-11T05:00:00Z"
+    And pour le cout, "source fraise" recoit les pointages
+      | alias | type           | intention  | cible | operateur | poste     | survenue             |
+      | A     | DEBUT          | OUVERTURE  |       | dupont    | fraiseuse | 2026-05-11T08:00:00Z |
+      | N     | NON_CONFORMITE | TRANSITION | A     | dupont    | fraiseuse | 2026-05-11T12:00:00Z |
+      | F     | FIN            | FIN        | A     | dupont    | fraiseuse | 2026-05-11T17:00:00Z |
+    And pour le cout, "source sans poste" recoit les pointages
+      | alias | type           | intention  | cible | operateur | survenue             |
+      | S     | DEBUT          | OUVERTURE  |       | dupont    | 2026-05-11T08:00:00Z |
+      | NS    | NON_CONFORMITE | TRANSITION | S     | dupont    | 2026-05-11T12:00:00Z |
+      | FS    | FIN            | FIN        | S     | dupont    | 2026-05-11T17:00:00Z |
+    And pour le cout, "cible tour" recoit les pointages
+      | alias | type  | intention | cible | operateur | poste | survenue             |
+      | C     | DEBUT | OUVERTURE |       | dupont    | tour  | 2026-05-11T06:00:00Z |
+      | FC    | FIN   | FIN       | C     | dupont    | tour  | 2026-05-11T10:00:00Z |
+      | G     | DEBUT | OUVERTURE |       | dupont    | tour  | 2026-05-12T02:00:00Z |
+      | FG    | FIN   | FIN       | G     | dupont    | tour  | 2026-05-12T03:00:00Z |
+    When je consulte le cout de revient de "cible tour" a "2026-05-12T09:00:00Z"
+    Then le total du cout "$.temps.travail" est complet avec "PT5H"
+    And le total du cout "$.cout.machine" est complet avec "300.00"
+    And le total du cout "$.cout.mainDOeuvre" est incomplet sans chiffre
+    And le total du cout "$.cout.total" est incomplet sans chiffre
+    And le cout porte les conflits
+      | element           | operateur | poste     | activites | pointages |
+      | source fraise     | dupont    | fraiseuse | A,N       | A,N,F     |
+      | source sans poste | dupont    |           | S,NS      | S,NS,FS   |
+    Given pour le cout, le pointage "N" sur "source fraise" est annule a "2026-05-12T10:00:00Z"
+    And pour le cout, la cible du pointage "FS" sur "source sans poste" est corrigee vers "NS" a "2026-05-12T10:01:00Z"
+    When je consulte le cout de revient de "cible tour" a "2026-05-12T10:02:00Z"
+    Then le cout ne porte aucun conflit
+    And le total du cout "$.cout.machine" est complet avec "300.00"
+    And le total du cout "$.cout.mainDOeuvre" est complet avec "73.33"
+    And le total du cout "$.cout.total" est complet avec "373.33"
+
+  Scenario: Le poste certain neutralise l'incertitude sur le meme poste distinct
+    Given l'entreprise fabrique "source incertaine"
+    And l'entreprise fabrique "source certaine"
+    And l'entreprise fabrique "cible certaine"
+    And "source incertaine" est mis en atelier a "2026-05-11T05:00:00Z"
+    And "source certaine" est mis en atelier a "2026-05-11T05:00:00Z"
+    And "cible certaine" est mis en atelier a "2026-05-11T05:00:00Z"
+    And pour le cout, "source incertaine" recoit les pointages
+      | alias | type           | intention  | cible | operateur | poste     | survenue             |
+      | A     | DEBUT          | OUVERTURE  |       | dupont    | fraiseuse | 2026-05-11T08:00:00Z |
+      | N     | NON_CONFORMITE | TRANSITION | A     | dupont    | fraiseuse | 2026-05-11T12:00:00Z |
+      | F     | FIN            | FIN        | A     | dupont    | fraiseuse | 2026-05-11T17:00:00Z |
+    And pour le cout, "source certaine" recoit les pointages
+      | alias | type  | intention | cible | operateur | poste     | survenue             |
+      | P     | DEBUT | OUVERTURE |       | dupont    | fraiseuse | 2026-05-11T06:00:00Z |
+      | FP    | FIN   | FIN       | P     | dupont    | fraiseuse | 2026-05-11T21:00:00Z |
+    And pour le cout, "cible certaine" recoit les pointages
+      | alias | type  | intention | cible | operateur | poste | survenue             |
+      | C     | DEBUT | OUVERTURE |       | dupont    | tour  | 2026-05-11T08:00:00Z |
+      | FC    | FIN   | FIN       | C     | dupont    | tour  | 2026-05-11T10:00:00Z |
+    When je consulte le cout de revient de "cible certaine" a "2026-05-12T09:00:00Z"
+    Then le rapport porte les lignes
+      | nature   | travail | nonConformite | machine | mainDOeuvre |
+      | Tournage | PT2H    | PT0S          | 120.00  | 20.00       |
+    And le cout ne porte aucun conflit
+
+  Scenario: Une sequence sans activite reste visible sans rendre le zero incomplet
+    Given l'entreprise fabrique "orphelin"
+    And "orphelin" est mis en atelier a "2026-05-11T05:00:00Z"
+    And pour le cout, "orphelin" recoit les pointages
+      | alias | type  | intention | cible | operateur | survenue             |
+      | A     | DEBUT | OUVERTURE |       | dupont    | 2026-05-11T08:00:00Z |
+      | F     | FIN   | FIN       | A     | dupont    | 2026-05-11T10:00:00Z |
+    And pour le cout, le pointage "A" sur "orphelin" est annule a "2026-05-11T11:00:00Z"
+    When je consulte le cout de revient de "orphelin" a "2026-05-11T12:00:00Z"
+    Then le rapport ne porte aucune ligne
+    And le total du cout "$.temps.total" est complet avec "PT0S"
+    And le total du cout "$.cout.total" est complet avec "0.00"
+    And le cout porte les conflits
+      | element  | operateur | poste | activites | pointages |
+      | orphelin | dupont    |       |           | F         |
+
+  Scenario Outline: La borne effective respecte les faits tardifs, l'echeance et la regularisation
+    Given l'entreprise fabrique "fin tardive"
+    And "fin tardive" est mis en atelier a "2026-05-11T05:00:00Z"
+    And pour le cout, "fin tardive" recoit les pointages
+      | alias | type  | intention | operateur | poste     | survenue             |
+      | A     | DEBUT | OUVERTURE | dupont    | fraiseuse | 2026-05-11T08:00:00Z |
+    When je consulte le cout de revient de "fin tardive" a "2026-05-11T21:00:00Z"
+    Then le cout porte 1 fins automatiques
+    Given pour le cout, "fin tardive" recoit les pointages
+      | alias | type | intention | cible | operateur | poste     | survenue | reception            | acte   |
+      | F     | FIN  | FIN       | A     | dupont    | fraiseuse | <fin>    | 2026-05-12T08:00:00Z | <acte> |
+    When je consulte le cout de revient de "fin tardive" a "2026-05-12T09:00:00Z"
+    Then le rapport porte les lignes
+      | nature   | travail | nonConformite | machine   | mainDOeuvre |
+      | Fraisage | <temps> | PT0S          | <machine> | <humain>    |
+    And le cout porte <auto> fins automatiques
+    And le cout ne porte aucun conflit
+
+    Examples:
+      | fin                  | acte           | temps | machine | humain | auto |
+      | 2026-05-11T17:00:00Z |                | PT9H  | 405.00  | 180.00 | 0    |
+      | 2026-05-11T23:00:00Z |                | PT13H | 585.00  | 260.00 | 1    |
+      | 2026-05-11T23:00:00Z | REGULARISATION | PT15H | 675.00  | 300.00 | 0    |
+      | 2026-05-11T21:00:00Z |                | PT13H | 585.00  | 260.00 | 0    |
+
+  Scenario Outline: Une transition tardive conserve le trou ou la duree explicitement regularisee
+    Given l'entreprise fabrique "transition tardive"
+    And "transition tardive" est mis en atelier a "2026-05-11T05:00:00Z"
+    And pour le cout, "transition tardive" recoit les pointages
+      | alias | type           | intention  | cible | operateur | poste     | survenue             | acte   |
+      | A     | DEBUT          | OUVERTURE  |       | dupont    | fraiseuse | 2026-05-11T08:00:00Z |        |
+      | N     | NON_CONFORMITE | TRANSITION | A     | dupont    | fraiseuse | 2026-05-11T23:00:00Z | <acte> |
+      | FN    | FIN            | FIN        | N     | dupont    | fraiseuse | 2026-05-12T00:00:00Z |        |
+    When je consulte le cout de revient de "transition tardive" a "2026-05-12T01:00:00Z"
+    Then le rapport porte les lignes
+      | nature   | travail | nonConformite | machine   | mainDOeuvre |
+      | Fraisage | <temps> | PT1H          | <machine> | <humain>    |
+    And le cout porte <auto> fins automatiques
+    And le rapport porte la non conformite de "2026-05-11T23:00:00Z" a "2026-05-12T00:00:00Z"
+    And le cout ne porte aucun conflit
+
+    Examples:
+      | acte           | temps | machine | humain | auto |
+      |                | PT13H | 630.00  | 280.00 | 1    |
+      | REGULARISATION | PT15H | 720.00  | 320.00 | 0    |
+
+  Scenario: La transition travail NC laisse son activite ouverte exclue jusqu'a sa propre echeance
+    Given l'entreprise fabrique "transition"
+    And "transition" est mis en atelier a "2026-05-11T05:00:00Z"
+    And pour le cout, "transition" recoit les pointages
+      | alias | type           | intention  | cible | operateur | poste     | survenue             |
+      | A     | DEBUT          | OUVERTURE  |       | dupont    | fraiseuse | 2026-05-11T08:00:00Z |
+      | N     | NON_CONFORMITE | TRANSITION | A     | dupont    | fraiseuse | 2026-05-11T12:00:00Z |
+    When je consulte le cout de revient de "transition" a "2026-05-11T21:00:00Z"
+    Then le rapport porte les lignes
+      | nature   | travail | nonConformite | machine | mainDOeuvre |
+      | Fraisage | PT4H    | PT0S          | 180.00  | 80.00       |
+    And le cout est evalue a "2026-05-11T21:00:00Z" avec 1 activites en cours exclues
+    And le cout ne porte aucune fin automatique
+    When je consulte le cout de revient de "transition" a "2026-05-12T01:00:00Z"
+    Then le rapport porte les lignes
+      | nature   | travail | nonConformite | machine | mainDOeuvre |
+      | Fraisage | PT4H    | PT13H         | 765.00  | 340.00      |
+    And le cout porte 1 fins automatiques
+    And le rapport porte la non conformite de "2026-05-11T12:00:00Z" a "2026-05-12T01:00:00Z"
+
+  Scenario: Corriger le debut remet l'activite en cours et recalcule les autres elements
+    Given l'entreprise fabrique "debut corrige"
+    And l'entreprise fabrique "autre termine"
+    And "debut corrige" est mis en atelier a "2026-05-11T05:00:00Z"
+    And "autre termine" est mis en atelier a "2026-05-11T05:00:00Z"
+    And pour le cout, "debut corrige" recoit les pointages
+      | alias | type  | intention | operateur | poste     | survenue             |
+      | A     | DEBUT | OUVERTURE | dupont    | fraiseuse | 2026-05-11T08:00:00Z |
+    And pour le cout, "autre termine" recoit les pointages
+      | alias | type  | intention | cible | operateur | poste | survenue             |
+      | B     | DEBUT | OUVERTURE |       | dupont    | tour  | 2026-05-11T08:00:00Z |
+      | FB    | FIN   | FIN       | B     | dupont    | tour  | 2026-05-11T10:00:00Z |
+    When je consulte le cout de revient de "autre termine" a "2026-05-11T22:00:00Z"
+    Then le total du cout "$.cout.mainDOeuvre" est complet avec "20.00"
+    Given pour le cout, le pointage "A" sur "debut corrige" est corrige a "2026-05-11T22:00:00Z" vers "2026-05-11T12:00:00Z"
+    When je consulte le cout de revient de "debut corrige" a "2026-05-11T22:00:00Z"
+    Then le rapport ne porte aucune ligne
+    And le cout est evalue a "2026-05-11T22:00:00Z" avec 1 activites en cours exclues
+    And le total du cout "$.cout.total" est complet avec "0.00"
+    When je consulte le cout de revient de "autre termine" a "2026-05-11T22:00:00Z"
+    Then le total du cout "$.cout.mainDOeuvre" est complet avec "40.00"
+
+  Scenario: Annuler une fin puis cloturer tard ne prolonge pas la fin automatique
+    Given l'entreprise fabrique "annulation fin"
+    And "annulation fin" est mis en atelier a "2026-05-11T05:00:00Z"
+    And pour le cout, "annulation fin" recoit les pointages
+      | alias | type  | intention | cible | operateur | poste     | survenue             |
+      | A     | DEBUT | OUVERTURE |       | dupont    | fraiseuse | 2026-05-11T08:00:00Z |
+      | F     | FIN   | FIN       | A     | dupont    | fraiseuse | 2026-05-11T17:00:00Z |
+    And pour le cout, le pointage "F" sur "annulation fin" est annule a "2026-05-12T08:00:00Z"
+    And "annulation fin" est cloture a "2026-05-12T09:00:00Z"
+    When je consulte le cout de revient de "annulation fin" a "2026-05-12T10:00:00Z"
+    Then le total du cout "$.temps.travail" est complet avec "PT13H"
+    And le cout porte la fin automatique de "2026-05-11T08:00:00Z" a "2026-05-11T21:00:00Z"
+    And le cout ne porte aucun conflit
+
+  Scenario: Le tarif capture reste fige puis celui de la correction active valorise l'activite originale
+    Given l'entreprise fabrique "tarif fige"
+    And "tarif fige" est mis en atelier a "2026-05-11T05:00:00Z"
+    And pour le cout, "tarif fige" recoit les pointages
+      | alias | type  | intention | cible | operateur | poste     | survenue             |
+      | A     | DEBUT | OUVERTURE |       | dupont    | fraiseuse | 2026-05-11T08:00:00Z |
+      | F     | FIN   | FIN       | A     | dupont    | fraiseuse | 2026-05-11T10:00:00Z |
+    And pour le cout, le poste "fraiseuse" est revise a "100.00" de l'heure et l'operateur "dupont" a "50.00" a "2026-05-11T11:00:00Z"
+    When je consulte le cout de revient de "tarif fige" a "2026-05-11T12:00:00Z"
+    Then le rapport porte les lignes
+      | nature   | travail | nonConformite | machine | mainDOeuvre |
+      | Fraisage | PT2H    | PT0S          | 90.00   | 40.00       |
+    Given pour le cout, le pointage "A" sur "tarif fige" est corrige a "2026-05-11T13:00:00Z" vers "2026-05-11T09:00:00Z"
+    When je consulte le cout de revient de "tarif fige" a "2026-05-11T14:00:00Z"
+    Then le rapport porte les lignes
+      | nature   | travail | nonConformite | machine | mainDOeuvre |
+      | Fraisage | PT1H    | PT0S          | 100.00  | 50.00       |
+    And le cout ne porte aucun conflit
+
+  Scenario: Corriger un conflit conserve l'identite originale et chaque tarif du fait ouvrant actif
+    Given l'entreprise fabrique "identite stable"
+    And "identite stable" est mis en atelier a "2026-05-11T05:00:00Z"
+    And pour le cout, "identite stable" recoit les pointages
+      | alias | type           | intention  | cible | operateur | poste     | survenue             |
+      | A     | DEBUT          | OUVERTURE  |       | dupont    | fraiseuse | 2026-05-11T08:00:00Z |
+      | N     | NON_CONFORMITE | TRANSITION | A     | dupont    | fraiseuse | 2026-05-11T12:00:00Z |
+      | F     | FIN            | FIN        | A     | dupont    | fraiseuse | 2026-05-11T17:00:00Z |
+    And pour le cout, le poste "fraiseuse" est revise a "90.00" de l'heure et l'operateur "dupont" a "40.00" a "2026-05-11T18:00:00Z"
+    And pour le cout, le pointage "A" sur "identite stable" est corrige a "2026-05-11T19:00:00Z" vers "2026-05-11T09:00:00Z"
+    When je consulte le cout de revient de "identite stable" a "2026-05-11T20:00:00Z"
+    Then le cout porte les conflits
+      | element         | operateur | poste     | activites | pointages     |
+      | identite stable | dupont    | fraiseuse | A,N       | A-corrige,N,F |
+    And le total du cout "$.cout.total" est incomplet sans chiffre
+    Given pour le cout, la cible du pointage "F" sur "identite stable" est corrigee vers "N" a "2026-05-11T20:00:00Z"
+    When je consulte le cout de revient de "identite stable" a "2026-05-11T21:00:00Z"
+    Then le rapport porte les lignes
+      | nature   | travail | nonConformite | machine | mainDOeuvre |
+      | Fraisage | PT3H    | PT5H          | 495.00  | 220.00      |
+    And le cout ne porte aucun conflit
+
+  Scenario Outline: Une categorie incertaine ne rend pas l'autre categorie incomplete
+    Given l'entreprise fabrique "categories independantes"
+    And "categories independantes" est mis en atelier a "2026-05-11T05:00:00Z"
+    And pour le cout, "categories independantes" recoit les pointages
+      | alias | type    | intention | cible | operateur | poste     | survenue             |
+      | A     | <type>  | OUVERTURE |       | dupont    | fraiseuse | 2026-05-11T08:00:00Z |
+      | F     | FIN     | FIN       | A     | dupont    | fraiseuse | 2026-05-11T10:00:00Z |
+      | G     | FIN     | FIN       | A     | dupont    | fraiseuse | 2026-05-11T12:00:00Z |
+      | C     | <autre> | OUVERTURE |       | dupont    | tour      | 2026-05-12T02:00:00Z |
+      | FC    | FIN     | FIN       | C     | dupont    | tour      | 2026-05-12T03:00:00Z |
+    When je consulte le cout de revient de "categories independantes" a "2026-05-12T09:00:00Z"
+    Then le total du cout "$.temps.<incomplete>" est incomplet sans chiffre
+    And le total du cout "$.temps.<complete>" est complet avec "PT1H"
+    And le total du cout "$.temps.total" est incomplet sans chiffre
+    And le total du cout "$.cout.total" est incomplet sans chiffre
+    And le total du cout "$.lignes[1].cout.mainDOeuvre" est complet avec "20.00"
+    And le cout porte les conflits
+      | element                  | operateur | poste     | activites | pointages |
+      | categories independantes | dupont    | fraiseuse | A         | A,F,G     |
+
+    Examples:
+      | type           | autre          | incomplete    | complete      |
+      | DEBUT          | NON_CONFORMITE | travail       | nonConformite |
+      | NON_CONFORMITE | DEBUT          | nonConformite | travail       |
+
+  Scenario: Toute la plage possible regularisee au dela de treize heures affecte le diviseur
+    Given l'entreprise fabrique "source longue"
+    And l'entreprise fabrique "cible tardive"
+    And l'entreprise fabrique "cible limite"
+    And "source longue" est mis en atelier a "2026-05-11T05:00:00Z"
+    And "cible tardive" est mis en atelier a "2026-05-11T05:00:00Z"
+    And "cible limite" est mis en atelier a "2026-05-11T05:00:00Z"
+    And pour le cout, "source longue" recoit les pointages
+      | alias | type  | intention | cible | operateur | poste     | survenue             | reception            | acte           |
+      | A     | DEBUT | OUVERTURE |       | dupont    | fraiseuse | 2026-05-11T08:00:00Z | 2026-05-12T08:00:00Z |                |
+      | F     | FIN   | FIN       | A     | dupont    | fraiseuse | 2026-05-11T17:00:00Z | 2026-05-12T08:01:00Z |                |
+      | G     | FIN   | FIN       | A     | dupont    | fraiseuse | 2026-05-11T23:00:00Z | 2026-05-12T08:02:00Z | REGULARISATION |
+    And pour le cout, "cible tardive" recoit les pointages
+      | alias | type  | intention | cible | operateur | poste | survenue             | reception            |
+      | C     | DEBUT | OUVERTURE |       | dupont    | tour  | 2026-05-11T22:00:00Z | 2026-05-12T08:03:00Z |
+      | FC    | FIN   | FIN       | C     | dupont    | tour  | 2026-05-11T23:00:00Z | 2026-05-12T08:04:00Z |
+    And pour le cout, "cible limite" recoit les pointages
+      | alias | type  | intention | cible | operateur | poste | survenue             | reception            |
+      | L     | DEBUT | OUVERTURE |       | dupont    | tour  | 2026-05-11T23:00:00Z | 2026-05-12T08:05:00Z |
+      | FL    | FIN   | FIN       | L     | dupont    | tour  | 2026-05-12T00:00:00Z | 2026-05-12T08:06:00Z |
+    When je consulte le cout de revient de "cible tardive" a "2026-05-12T09:00:00Z"
+    Then le total du cout "$.cout.machine" est complet avec "60.00"
+    And le total du cout "$.cout.mainDOeuvre" est incomplet sans chiffre
+    And le cout porte les conflits
+      | element       | operateur | poste     | activites | pointages |
+      | source longue | dupont    | fraiseuse | A         | A,F,G     |
+    When je consulte le cout de revient de "cible limite" a "2026-05-12T09:00:00Z"
+    Then le rapport porte les lignes
+      | nature   | travail | nonConformite | machine | mainDOeuvre |
+      | Tournage | PT1H    | PT0S          | 60.00   | 20.00       |
+    And le cout ne porte aucun conflit
+    When je consulte le cout de revient de "cible tardive" a "2026-05-11T22:00:00Z"
+    Then le total du cout "$.cout.mainDOeuvre" est complet avec "20.00"
+    And le cout ne porte aucun conflit
+
+  Scenario: Plusieurs elements sur le meme poste et sans poste ne multiplient pas les postes distincts
+    Given l'entreprise fabrique "poste A"
+    And l'entreprise fabrique "poste B"
+    And l'entreprise fabrique "sans poste"
+    And "poste A" est mis en atelier a "2026-05-11T05:00:00Z"
+    And "poste B" est mis en atelier a "2026-05-11T05:00:00Z"
+    And "sans poste" est mis en atelier a "2026-05-11T05:00:00Z"
+    And pour le cout, "poste A" recoit les pointages
+      | alias | type  | intention | cible | operateur | poste     | survenue             |
+      | A     | DEBUT | OUVERTURE |       | dupont    | fraiseuse | 2026-05-11T08:00:00Z |
+      | FA    | FIN   | FIN       | A     | dupont    | fraiseuse | 2026-05-11T10:00:00Z |
+    And pour le cout, "poste B" recoit les pointages
+      | alias | type  | intention | cible | operateur | poste     | survenue             |
+      | B     | DEBUT | OUVERTURE |       | dupont    | fraiseuse | 2026-05-11T08:00:00Z |
+      | FB    | FIN   | FIN       | B     | dupont    | fraiseuse | 2026-05-11T10:00:00Z |
+    When je consulte le cout de revient de "poste A" a "2026-05-11T11:00:00Z"
+    Then le total du cout "$.cout.mainDOeuvre" est complet avec "40.00"
+    Given pour le cout, "sans poste" recoit les pointages
+      | alias | type  | intention | cible | operateur | survenue             |
+      | S     | DEBUT | OUVERTURE |       | dupont    | 2026-05-11T09:00:00Z |
+      | FS    | FIN   | FIN       | S     | dupont    | 2026-05-11T10:00:00Z |
+    When je consulte le cout de revient de "poste A" a "2026-05-11T11:00:00Z"
+    Then le total du cout "$.cout.machine" est complet avec "90.00"
+    And le total du cout "$.cout.mainDOeuvre" est complet avec "30.00"
+    When je consulte le cout de revient de "sans poste" a "2026-05-11T11:00:00Z"
+    Then le rapport porte les lignes
+      | nature | travail | nonConformite | machine | mainDOeuvre |
+      | null   | PT1H    | PT0S          | 0.00    | 10.00       |

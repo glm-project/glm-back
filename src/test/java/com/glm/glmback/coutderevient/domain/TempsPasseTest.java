@@ -28,7 +28,7 @@ class TempsPasseTest {
   void shouldAddBothCategories() {
     TempsPasse temps = new TempsPasse(Duration.ofHours(2), Duration.ofMinutes(30));
 
-    assertThat(temps.total()).isEqualTo(Duration.ofMinutes(150));
+    assertThat(temps.total().valeur().orElseThrow()).isEqualTo(Duration.ofMinutes(150));
   }
 
   @Test
@@ -42,6 +42,6 @@ class TempsPasseTest {
 
   @Test
   void shouldStartFromAucun() {
-    assertThat(TempsPasse.AUCUN.total()).isZero();
+    assertThat(TempsPasse.AUCUN.total().valeur().orElseThrow()).isZero();
   }
 }

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <changeSet id="identite_evenement_atelier_intention" author="glm">
+    <comment>
+      L'empreinte d'un geste d'atelier retient aussi son intention et l'activite qu'il vise : un meme identifiant
+      rejoue avec une autre intention ou une autre cible n'est pas le meme geste. Les deux colonnes restent vides pour
+      une identite reservee hors pupitre, qui n'en a pas. activite_visee_id n'est pas le suivi,
+      que cible_id designe.
+    </comment>
+
+    <addColumn tableName="identite_evenement_atelier">
+      <column name="intention" type="varchar(20)" />
+      <column name="activite_visee_id" type="uuid" />
+    </addColumn>
+  </changeSet>
+</databaseChangeLog>

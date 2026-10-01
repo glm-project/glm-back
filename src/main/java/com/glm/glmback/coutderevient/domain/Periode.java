@@ -10,7 +10,7 @@ import java.util.Optional;
  *
  * <p>
  * C'est ce qui la separe de {@link Plage} : tant qu'un travail n'est pas arrete, il n'a pas de duree, et rien ne se
- * valorise. La fermeture a l'horloge est le passage de l'une a l'autre.
+ * valorise. Une activite encore en cours est exclue du calcul.
  * </p>
  */
 public record Periode(Instant debut, Instant fin) {
@@ -27,7 +27,7 @@ public record Periode(Instant debut, Instant fin) {
    * La part commune aux deux periodes, s'il y en a une de duree non nulle.
    *
    * <p>
-   * Deux periodes qui ne font que se toucher n'en partagent aucune : un depart pointe a la seconde ou le travail
+   * Deux periodes qui ne font que se toucher n'en partagent aucune : une activite terminee a la seconde ou une autre
    * commence ne doit pas ouvrir une ligne de rapport sur du vide.
    * </p>
    */

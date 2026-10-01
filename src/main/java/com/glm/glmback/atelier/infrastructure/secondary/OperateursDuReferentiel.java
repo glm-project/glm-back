@@ -22,11 +22,6 @@ class OperateursDuReferentiel implements OperateursConnus {
   }
 
   @Override
-  public boolean existe(OperateurId id) {
-    return operateurs.existsById(id.uuid());
-  }
-
-  @Override
   public Optional<OperateurConnu> get(OperateurId id) {
     return operateurs.findById(id.uuid()).map(OperateurConnuEntity::toDomain);
   }

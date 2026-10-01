@@ -22,7 +22,7 @@ d'après le vocabulaire d'un seul client.
 - **L'exécution** — engagement en atelier, pointages, temps passé, clôture. Tout cela appartient à `atelier`, qui ne
   connaît de ce contexte qu'une copie du nom et du type, prise à l'engagement.
 - **La suppression** — le client ne parle que de clôture. Le jour où des temps seront saisis, supprimer un élément qui
-  en porte détruirait des heures de paie.
+  en porte empêcherait de relire les faits et leurs coûts.
 - **Le lien produit → ordre de fabrication**, que le client décrit mais ne demande pas.
 - **L'isolation par entreprise** — assurée par l'infrastructure multi-tenant. Aucun agrégat ne porte d'identifiant
   d'entreprise.

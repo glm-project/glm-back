@@ -14,20 +14,9 @@ class OperateurDuPupitreTest {
 
   @Test
   void shouldNotBuildWithoutPostes() {
-    assertThatThrownBy(() ->
-      new OperateurDuPupitre(OPERATEUR_ID_DUPONT, NOM_DUPONT, PRENOM_JEAN, Optional.empty(), EtatDePresence.ABSENT, Optional.empty(), null)
-    )
+    assertThatThrownBy(() -> new OperateurDuPupitre(OPERATEUR_ID_DUPONT, NOM_DUPONT, PRENOM_JEAN, Optional.empty(), null))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("postes");
-  }
-
-  @Test
-  void shouldNotBuildWithoutEtatDePresence() {
-    assertThatThrownBy(() ->
-      new OperateurDuPupitre(OPERATEUR_ID_DUPONT, NOM_DUPONT, PRENOM_JEAN, Optional.empty(), null, Optional.empty(), List.of())
-    )
-      .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("etat de presence");
   }
 
   @Test
@@ -37,8 +26,6 @@ class OperateurDuPupitreTest {
       .nom(new Nom("Dupont"))
       .prenom(new Prenom("Jean"))
       .matricule("049")
-      .etat(EtatDePresence.PRESENT)
-      .presentJusqua(Optional.of(LE_10_MAI_2026_A_20H))
       .postes(List.of(POSTE_HABILITE_FRAISEUSE_1));
 
     assertThat(operateur.id()).isEqualTo(OPERATEUR_ID_DUPONT);
@@ -46,30 +33,6 @@ class OperateurDuPupitreTest {
     assertThat(operateur.prenom()).isEqualTo(PRENOM_JEAN);
     assertThat(operateur.matricule()).contains(MATRICULE_049);
     assertThat(operateur.postes()).containsExactly(POSTE_HABILITE_FRAISEUSE_1);
-  }
-
-  @Test
-  void shouldNotBuildWithoutPresentJusqua() {
-    assertThatThrownBy(() ->
-      new OperateurDuPupitre(OPERATEUR_ID_DUPONT, NOM_DUPONT, PRENOM_JEAN, Optional.empty(), EtatDePresence.PRESENT, null, List.of())
-    )
-      .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("present jusqu'a");
-  }
-
-  @Test
-  void shouldPorterSonEtatDePresence() {
-    OperateurDuPupitre operateur = OperateurDuPupitre.builder()
-      .id(OPERATEUR_ID_DUPONT)
-      .nom(NOM_DUPONT)
-      .prenom(PRENOM_JEAN)
-      .matricule(MATRICULE_049.value())
-      .etat(EtatDePresence.PRESENT)
-      .presentJusqua(Optional.of(LE_10_MAI_2026_A_20H))
-      .postes(List.of(POSTE_HABILITE_FRAISEUSE_1));
-
-    assertThat(operateur.etat()).isEqualTo(EtatDePresence.PRESENT);
-    assertThat(operateur.presentJusqua()).contains(LE_10_MAI_2026_A_20H);
   }
 
   /**
@@ -83,8 +46,6 @@ class OperateurDuPupitreTest {
       .nom(NOM_DUPONT)
       .prenom(PRENOM_JEAN)
       .matricule(null)
-      .etat(EtatDePresence.ABSENT)
-      .presentJusqua(Optional.empty())
       .postes(List.of());
 
     assertThat(operateur.matricule()).isEmpty();

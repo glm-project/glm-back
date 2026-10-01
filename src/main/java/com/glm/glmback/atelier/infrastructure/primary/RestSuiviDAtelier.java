@@ -3,6 +3,7 @@ package com.glm.glmback.atelier.infrastructure.primary;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
 import com.glm.glmback.atelier.domain.Cloture;
 import com.glm.glmback.atelier.domain.EtatDAtelier;
+import com.glm.glmback.atelier.domain.LectureDuSuivi;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.TypeDElementEngage;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -35,16 +36,35 @@ record RestSuiviDAtelier(
   )
   String engagePar,
   @Schema(description = "Instant de l'engagement.", requiredMode = Schema.RequiredMode.REQUIRED) Instant engageLe,
-  @Schema(description = "EN_ATTENTE, EN_COURS, INTERROMPU ou CLOTURE. Deduit du journal.", requiredMode = Schema.RequiredMode.REQUIRED)
+  @Schema(
+    description = "EN_ATTENTE, EN_COURS, INTERROMPU ou CLOTURE. Deduit du journal a l'instant de la lecture.",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
   EtatDAtelier etat,
   @Schema(description = "Utilisateur ayant cloture l'element, absent tant qu'il ne l'est pas.") String cloturePar,
   @Schema(description = "Instant metier de la cloture, absent tant que l'element n'est pas cloture.") Instant clotureLe,
   @Schema(description = "Le journal complet, annules compris, du plus ancien au plus recent.", requiredMode = Schema.RequiredMode.REQUIRED)
   List<RestEvenementDAtelier> journal,
-  @Schema(description = "Les activites ouvertes a cet instant.", requiredMode = Schema.RequiredMode.REQUIRED)
-  List<RestActiviteEnCours> activitesEnCours
+  @Schema(
+    description = """
+    Les activites en cours a l'instant de la lecture ; une activite dont l'echeance est atteinte n'y figure plus, ni une
+    activite a resoudre.
+    """,
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  List<RestActiviteEnCours> activitesEnCours,
+  @Schema(
+    description = """
+    Les sequences en conflit du journal, vide quand ses faits sont coherents. Elles ne dependent pas de l'instant de la
+    lecture, et ne changent pas l'etat, juge sur les seules activites interpretables.
+    """,
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  List<RestSequenceEnConflit> conflits
 ) {
-  static RestSuiviDAtelier from(SuiviDAtelier suivi, AnnuaireDAtelier annuaire) {
+  static RestSuiviDAtelier from(LectureDuSuivi lecture, AnnuaireDAtelier annuaire) {
+    SuiviDAtelier suivi = lecture.suivi();
+
     return new RestSuiviDAtelier(
       suivi.id().uuid(),
       suivi.element().id().uuid(),
@@ -52,7 +72,7 @@ record RestSuiviDAtelier(
       suivi.element().type(),
       suivi.engagement().auteur().value(),
       suivi.engagement().date(),
-      suivi.etat(),
+      lecture.etat(),
       suivi
         .cloture()
         .map(cloture -> cloture.auteur().value())
@@ -64,10 +84,15 @@ record RestSuiviDAtelier(
         .stream()
         .map(evenement -> RestEvenementDAtelier.from(evenement, annuaire))
         .toList(),
-      suivi
+      lecture
         .activitesEnCours()
         .stream()
         .map(activite -> RestActiviteEnCours.from(activite, annuaire))
+        .toList(),
+      lecture
+        .conflits()
+        .stream()
+        .map(sequence -> RestSequenceEnConflit.from(sequence, annuaire))
         .toList()
     );
   }

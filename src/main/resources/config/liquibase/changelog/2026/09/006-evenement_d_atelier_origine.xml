@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <changeSet id="evenement_d_atelier_origine" author="glm">
+    <comment>
+      L'acte qui a porte un fait au journal d'atelier : POINTAGE pour la route des pointages, quel que soit
+      l'ecart entre l'heure du fait et celle de sa saisie, REGULARISATION pour la regularisation du
+      gestionnaire et le remplacant d'une correction. L'ecart des dates ne suffit plus a reconnaitre une
+      regularisation : un pointage rejoue hors ligne arrive lui aussi apres coup. Aucune valeur par defaut
+      n'est posee, l'origine d'un fait deja enregistre ne se deduisant pas de ses dates : une base qui en
+      porte deja se remet a zero plutot que de migrer.
+    </comment>
+
+    <addColumn tableName="evenement_d_atelier">
+      <column name="origine" type="varchar(20)">
+        <constraints nullable="false" />
+      </column>
+    </addColumn>
+  </changeSet>
+</databaseChangeLog>

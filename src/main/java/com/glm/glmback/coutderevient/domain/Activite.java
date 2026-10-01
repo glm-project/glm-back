@@ -9,7 +9,7 @@ import java.util.Optional;
  *
  * <p>
  * L'activite dit tout sauf quand : c'est ce qui permet de decouper une meme activite en autant de tranches que la
- * presence et le parallelisme l'exigent, sans jamais recopier ses six composants.
+ * variations du parallelisme l'exigent, sans jamais recopier ses six composants.
  * </p>
  */
 public record Activite(

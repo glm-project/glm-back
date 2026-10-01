@@ -1,7 +1,11 @@
 package com.glm.glmback.syntheseheures.infrastructure.secondary;
 
+import com.glm.glmback.syntheseheures.domain.ActiviteId;
+import com.glm.glmback.syntheseheures.domain.ElementId;
+import com.glm.glmback.syntheseheures.domain.IntentionDePointage;
 import com.glm.glmback.syntheseheures.domain.NatureDOperation;
-import com.glm.glmback.syntheseheures.domain.PointageDAtelier;
+import com.glm.glmback.syntheseheures.domain.PointageDElement;
+import com.glm.glmback.syntheseheures.domain.PointageId;
 import com.glm.glmback.syntheseheures.domain.PosteDeTravailId;
 import com.glm.glmback.syntheseheures.domain.TypeDEvenementDAtelier;
 import jakarta.persistence.Column;
@@ -16,7 +20,7 @@ import java.util.UUID;
 import org.hibernate.annotations.Immutable;
 
 /**
- * Vue en lecture seule des evenements d'atelier : le dernier pointage d'un operateur, et le journal de ses suivis.
+ * Vue en lecture seule des evenements d'atelier : le journal brut de l'operateur.
  *
  * <p>
  * Les colonnes reprennent le style de nommage des entites de l'atelier, colonne par colonne : deux noms logiques pour
@@ -42,10 +46,17 @@ class PointageDAtelierDeLaSyntheseEntity {
   @Column(name = "operateur_id")
   private UUID operateurId;
 
+  @Enumerated(EnumType.STRING)
+  @Column(length = 20)
+  private IntentionDePointage intention;
+
   @Column(name = "poste_id")
   private UUID posteId;
 
   private String nature;
+
+  @Column(name = "activite_visee_id")
+  private UUID activiteViseeId;
 
   private Instant dateDeSurvenue;
 
@@ -59,13 +70,13 @@ class PointageDAtelierDeLaSyntheseEntity {
     return suiviId;
   }
 
-  Instant dateDeSurvenue() {
-    return dateDeSurvenue;
-  }
-
-  PointageDAtelier toDomain() {
-    return PointageDAtelier.builder()
+  PointageDElement toDomain(ElementId element) {
+    return PointageDElement.builder()
+      .id(new PointageId(id))
+      .intention(intention)
+      .cible(Optional.ofNullable(activiteViseeId).map(ActiviteId::new))
       .type(type)
+      .element(element)
       .poste(Optional.ofNullable(posteId).map(PosteDeTravailId::new))
       .nature(Optional.ofNullable(nature).map(NatureDOperation::new))
       .dateDeSurvenue(dateDeSurvenue);

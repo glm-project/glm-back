@@ -1,30 +1,25 @@
 package com.glm.glmback.syntheseheures.application;
 
 import com.glm.glmback.shared.time.domain.Clock;
+import com.glm.glmback.syntheseheures.domain.ActivitesDeLOperateur;
+import com.glm.glmback.syntheseheures.domain.ConflitsDeLOperateur;
 import com.glm.glmback.syntheseheures.domain.ElementsDeFabrication;
 import com.glm.glmback.syntheseheures.domain.FuseauHoraireDeLEntreprise;
+import com.glm.glmback.syntheseheures.domain.JournalDeLOperateur;
 import com.glm.glmback.syntheseheures.domain.OperateurId;
 import com.glm.glmback.syntheseheures.domain.OperateursConnus;
-import com.glm.glmback.syntheseheures.domain.PointagesDAtelier;
 import com.glm.glmback.syntheseheures.domain.PostesDeTravail;
-import com.glm.glmback.syntheseheures.domain.PresenceDeLOperateur;
 import com.glm.glmback.syntheseheures.domain.SemaineCalendaire;
-import com.glm.glmback.syntheseheures.domain.SeuilDAmplitude;
 import com.glm.glmback.syntheseheures.domain.SyntheseDesHeures;
 import com.glm.glmback.syntheseheures.domain.SynthesesDesHeuresService;
-import com.glm.glmback.syntheseheures.domain.TravailDeLOperateur;
+import java.time.Instant;
+import java.util.Optional;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Orchestration de la lecture des syntheses des heures.
- *
- * <p>
- * Rien a ecrire : le contexte ne fait que relire les journaux de l'atelier et le referentiel. La transaction est donc
- * en lecture seule, et elle couvre toutes les requetes du meme coup — journees, suivis, leurs journaux, fiches et
- * postes — pour que le releve ne melange pas deux etats de la base.
- * </p>
+/** Lecture des activites, du journal et du referentiel dans une transaction en lecture seule.
+ * Cette transaction ne garantit pas un instantane face aux ecritures concurrentes.
  */
 @Service
 public class SynthesesDesHeuresApplicationService {
@@ -32,23 +27,21 @@ public class SynthesesDesHeuresApplicationService {
   private final SynthesesDesHeuresService synthesesDesHeures;
 
   public SynthesesDesHeuresApplicationService(
-    PresenceDeLOperateur presences,
     OperateursConnus operateurs,
     FuseauHoraireDeLEntreprise fuseau,
-    SeuilDAmplitude seuil,
-    PointagesDAtelier pointages,
-    TravailDeLOperateur travail,
+    ActivitesDeLOperateur activites,
+    JournalDeLOperateur journal,
+    ConflitsDeLOperateur conflits,
     ElementsDeFabrication elements,
     PostesDeTravail postes,
     Clock clock
   ) {
     this.synthesesDesHeures = SynthesesDesHeuresService.builder()
-      .presences(presences)
       .operateurs(operateurs)
       .fuseau(fuseau)
-      .seuil(seuil)
-      .pointages(pointages)
-      .travail(travail)
+      .activites(activites)
+      .journal(journal)
+      .conflits(conflits)
       .elements(elements)
       .postes(postes)
       .clock(clock);
@@ -61,7 +54,7 @@ public class SynthesesDesHeuresApplicationService {
    */
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
   @Transactional(readOnly = true)
-  public SyntheseDesHeures synthese(OperateurId operateur, SemaineCalendaire semaine) {
-    return synthesesDesHeures.synthese(operateur, semaine);
+  public SyntheseDesHeures synthese(OperateurId operateur, SemaineCalendaire semaine, Optional<Instant> evaluation) {
+    return synthesesDesHeures.synthese(operateur, semaine, evaluation);
   }
 }

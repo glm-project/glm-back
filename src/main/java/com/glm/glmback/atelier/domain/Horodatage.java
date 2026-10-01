@@ -20,12 +20,4 @@ public record Horodatage(Instant dateDeSurvenue, Instant dateDEnregistrement) {
   public static Horodatage saisiA(Instant date) {
     return new Horodatage(date, date);
   }
-
-  /**
-   * Vrai si le fait a ete enregistre apres coup. C'est le seul critere qui distingue une regularisation d'un pointage
-   * en direct : l'identite de l'auteur, elle, dit qui a saisi, pas quand.
-   */
-  public boolean estDifferee() {
-    return !dateDEnregistrement.equals(dateDeSurvenue);
-  }
 }

@@ -5,9 +5,8 @@ import java.util.function.Supplier;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * Deux saisies simultanees sur la meme journee ou le meme OF ne sont jamais un refus pour l'operateur (lot 8a de la
- * strategie « bornes de fin de journee ») : l'ecriture devancee est rejouee, chaque fois dans une nouvelle
- * transaction, qui relit l'agregat a jour.
+ * Deux saisies simultanees sur le meme suivi provoquent le rejeu de l'ecriture devancee, chaque fois dans une
+ * nouvelle transaction, qui relit l'agregat a jour.
  *
  * <p>
  * Trois essais suffisent : le verrou pose a l'ecriture met les redacteurs en file, et un troisieme echec trahirait

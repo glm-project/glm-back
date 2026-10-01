@@ -1,7 +1,6 @@
 package com.glm.glmback.syntheseheures.domain;
 
 import com.glm.glmback.shared.error.domain.Assert;
-import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,9 +17,8 @@ public record ElementDeLaSynthese(
   ElementEngage element,
   Optional<ReferenceDElement> reference,
   Optional<DescriptionDElement> description,
-  Duration duree,
-  Duration dureeNonConformite,
-  Duration dureePresumee,
+  DureeTotale duree,
+  DureeTotale dureeNonConformite,
   List<PosteDeLElement> postes
 ) {
   public ElementDeLaSynthese {
@@ -29,20 +27,11 @@ public record ElementDeLaSynthese(
     Assert.notNull("description", description);
     Assert.notNull("duree", duree);
     Assert.notNull("duree de non conformite", dureeNonConformite);
-    Assert.notNull("duree presumee", dureePresumee);
     Assert.field("postes", postes).notNull().noNullElement();
   }
 
   private ElementDeLaSynthese(ElementDeLaSyntheseBuilder builder) {
-    this(
-      builder.element,
-      builder.reference,
-      builder.description,
-      builder.duree,
-      builder.dureeNonConformite,
-      builder.dureePresumee,
-      builder.postes
-    );
+    this(builder.element, builder.reference, builder.description, builder.duree, builder.dureeNonConformite, builder.postes);
   }
 
   static ElementDeLaSyntheseElementBuilder builder() {
@@ -56,16 +45,14 @@ public record ElementDeLaSynthese(
       ElementDeLaSyntheseDescriptionBuilder,
       ElementDeLaSyntheseDureeBuilder,
       ElementDeLaSyntheseDureeNonConformiteBuilder,
-      ElementDeLaSyntheseDureePresumeeBuilder,
       ElementDeLaSynthesePostesBuilder
   {
 
     private ElementEngage element;
     private Optional<ReferenceDElement> reference;
     private Optional<DescriptionDElement> description;
-    private Duration duree;
-    private Duration dureeNonConformite;
-    private Duration dureePresumee;
+    private DureeTotale duree;
+    private DureeTotale dureeNonConformite;
     private List<PosteDeLElement> postes;
 
     @Override
@@ -90,22 +77,15 @@ public record ElementDeLaSynthese(
     }
 
     @Override
-    public ElementDeLaSyntheseDureeNonConformiteBuilder duree(Duration duree) {
+    public ElementDeLaSyntheseDureeNonConformiteBuilder duree(DureeTotale duree) {
       this.duree = duree;
 
       return this;
     }
 
     @Override
-    public ElementDeLaSyntheseDureePresumeeBuilder dureeNonConformite(Duration dureeNonConformite) {
+    public ElementDeLaSynthesePostesBuilder dureeNonConformite(DureeTotale dureeNonConformite) {
       this.dureeNonConformite = dureeNonConformite;
-
-      return this;
-    }
-
-    @Override
-    public ElementDeLaSynthesePostesBuilder dureePresumee(Duration dureePresumee) {
-      this.dureePresumee = dureePresumee;
 
       return this;
     }
@@ -131,15 +111,11 @@ public record ElementDeLaSynthese(
   }
 
   interface ElementDeLaSyntheseDureeBuilder {
-    ElementDeLaSyntheseDureeNonConformiteBuilder duree(Duration duree);
+    ElementDeLaSyntheseDureeNonConformiteBuilder duree(DureeTotale duree);
   }
 
   interface ElementDeLaSyntheseDureeNonConformiteBuilder {
-    ElementDeLaSyntheseDureePresumeeBuilder dureeNonConformite(Duration dureeNonConformite);
-  }
-
-  interface ElementDeLaSyntheseDureePresumeeBuilder {
-    ElementDeLaSynthesePostesBuilder dureePresumee(Duration dureePresumee);
+    ElementDeLaSynthesePostesBuilder dureeNonConformite(DureeTotale dureeNonConformite);
   }
 
   interface ElementDeLaSynthesePostesBuilder {

@@ -1,16 +1,15 @@
 package com.glm.glmback.feuilledetemps.application;
 
+import com.glm.glmback.feuilledetemps.domain.ActivitesDeLOperateur;
 import com.glm.glmback.feuilledetemps.domain.FeuilleDeTemps;
 import com.glm.glmback.feuilledetemps.domain.FeuillesDeTempsService;
 import com.glm.glmback.feuilledetemps.domain.FuseauHoraireDeLEntreprise;
 import com.glm.glmback.feuilledetemps.domain.OperateurId;
 import com.glm.glmback.feuilledetemps.domain.OperateursConnus;
-import com.glm.glmback.feuilledetemps.domain.PointagesDAtelier;
-import com.glm.glmback.feuilledetemps.domain.PresenceDeLOperateur;
 import com.glm.glmback.feuilledetemps.domain.SemaineCalendaire;
-import com.glm.glmback.feuilledetemps.domain.SeuilDAmplitude;
-import com.glm.glmback.feuilledetemps.domain.TravailDeLOperateur;
 import com.glm.glmback.shared.time.domain.Clock;
+import java.time.Instant;
+import java.util.Optional;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,9 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
  * Orchestration de la lecture des feuilles de temps.
  *
  * <p>
- * Rien a ecrire : le contexte ne fait que relire les journaux de l'atelier. La transaction est donc en lecture seule,
- * et elle couvre toutes les requetes du meme coup — journees et leurs journaux, puis suivis et leurs journaux — pour
- * que la feuille ne melange pas deux etats de la base.
+ * La transaction en lecture seule couvre le referentiel, les activites projetees par atelier.
+ * L'isolation par defaut ne garantit pas un instantane commun face aux ecritures concurrentes.
  * </p>
  */
 @Service
@@ -30,22 +28,12 @@ public class FeuillesDeTempsApplicationService {
   private final FeuillesDeTempsService feuillesDeTemps;
 
   public FeuillesDeTempsApplicationService(
-    PresenceDeLOperateur presences,
     OperateursConnus operateurs,
     FuseauHoraireDeLEntreprise fuseau,
-    SeuilDAmplitude seuil,
-    PointagesDAtelier pointages,
-    TravailDeLOperateur travail,
+    ActivitesDeLOperateur activites,
     Clock clock
   ) {
-    this.feuillesDeTemps = FeuillesDeTempsService.builder()
-      .presences(presences)
-      .operateurs(operateurs)
-      .fuseau(fuseau)
-      .seuil(seuil)
-      .pointages(pointages)
-      .travail(travail)
-      .clock(clock);
+    this.feuillesDeTemps = FeuillesDeTempsService.builder().operateurs(operateurs).fuseau(fuseau).activites(activites).clock(clock);
   }
 
   /**
@@ -54,7 +42,7 @@ public class FeuillesDeTempsApplicationService {
    */
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
   @Transactional(readOnly = true)
-  public FeuilleDeTemps historique(OperateurId operateur, SemaineCalendaire semaine) {
-    return feuillesDeTemps.historique(operateur, semaine);
+  public FeuilleDeTemps historique(OperateurId operateur, SemaineCalendaire semaine, Optional<Instant> evaluation) {
+    return feuillesDeTemps.historique(operateur, semaine, evaluation);
   }
 }

@@ -1,8 +1,10 @@
 package com.glm.glmback.atelier.infrastructure.primary;
 
+import com.glm.glmback.atelier.domain.ActiviteId;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
 import com.glm.glmback.atelier.domain.CoutHoraire;
 import com.glm.glmback.atelier.domain.EvenementDAtelier;
+import com.glm.glmback.atelier.domain.IntentionDePointage;
 import com.glm.glmback.atelier.domain.NatureDOperation;
 import com.glm.glmback.atelier.domain.TauxHoraire;
 import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
@@ -15,8 +17,8 @@ import java.util.UUID;
   description = """
   Un evenement du journal d'un element engage.
 
-  Comme pour la presence, l'horodatage est bitemporel. Le depart de l'operateur **ne figure jamais ici** : c'est un
-  fait de sa journee de travail, croise a la lecture. Sa pause, elle, s'y lit : une fin, puis un debut a la reprise.
+  L'horodatage est bitemporel : heure du fait et heure de son enregistrement. Une pause s'y lit par une fin
+  ciblee, puis une ouverture a la reprise.
   """
 )
 record RestEvenementDAtelier(
@@ -26,10 +28,24 @@ record RestEvenementDAtelier(
   )
   UUID id,
   @Schema(
-    description = "Nature du pointage. Une reprise apres non conformite se pointe comme un DEBUT.",
+    description = "Nature du pointage. La reprise du travail apres une non conformite se pointe DEBUT, en transition.",
     requiredMode = Schema.RequiredMode.REQUIRED
   )
   TypeDEvenementDAtelier type,
+  @Schema(
+    description = "Ce que le pointage fait d'une activite : OUVERTURE, TRANSITION ou FIN.",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  IntentionDePointage intention,
+  @Schema(
+    description = """
+    Identite de l'activite qu'ouvre une ouverture ou une transition, absente pour une fin. C'est l'identifiant du
+    pointage ouvrant d'origine : le remplacant d'une correction garde celle de l'ouvrant qu'il corrige. C'est elle
+    qu'une transition ou une fin vise dans `cible`.
+    """
+  )
+  UUID activite,
+  @Schema(description = "Activite que vise une transition ou une fin, absente pour une ouverture.") UUID cible,
   @Schema(description = "Operateur dont le temps est affecte, absent si la fiche n'est plus resolue au referentiel.")
   RestOperateur operateur,
   @Schema(description = "Poste de travail, toujours facultatif.") RestPosteDeTravail poste,
@@ -46,7 +62,14 @@ record RestEvenementDAtelier(
   @Schema(description = "Heure metier a laquelle le fait a eu lieu.", requiredMode = Schema.RequiredMode.REQUIRED) Instant dateDeSurvenue,
   @Schema(description = "Heure a laquelle la saisie a ete enregistree.", requiredMode = Schema.RequiredMode.REQUIRED)
   Instant dateDEnregistrement,
-  @Schema(description = "Vrai lorsque la saisie a ete faite apres coup.", requiredMode = Schema.RequiredMode.REQUIRED)
+  @Schema(
+    description = """
+    Vrai lorsque l'evenement a ete saisi par le gestionnaire, en regularisation ou comme remplacant d'une correction.
+    Un pointage ne l'est jamais, meme rejoue hors ligne avec l'heure de son geste : une saisie differee se lit a l'ecart
+    entre dateDeSurvenue et dateDEnregistrement.
+    """,
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
   boolean estUneRegularisation,
   @Schema(description = "Presente lorsque l'evenement a ete annule. L'evenement reste au journal.") RestAnnulation annulation
 ) {
@@ -54,6 +77,9 @@ record RestEvenementDAtelier(
     return new RestEvenementDAtelier(
       evenement.id().uuid(),
       evenement.type(),
+      evenement.intention(),
+      evenement.activite().map(ActiviteId::uuid).orElse(null),
+      evenement.activiteVisee().map(ActiviteId::uuid).orElse(null),
       RestOperateur.resolu(annuaire, evenement.operateur()),
       RestPosteDeTravail.resolu(annuaire, evenement.poste()),
       evenement.nature().map(NatureDOperation::value).orElse(null),

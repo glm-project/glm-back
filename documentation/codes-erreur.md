@@ -8,10 +8,10 @@ urn:glm:erreur:<contexte>:<code>
 
 ```json
 {
-  "type": "urn:glm:erreur:atelier:transition-de-presence-interdite",
-  "title": "transition de presence interdite",
+  "type": "urn:glm:erreur:atelier:identifiant-evenement-reutilise",
+  "title": "identifiant d'evenement reutilise",
   "status": 409,
-  "message": "Un evenement de presence DEPART ne peut pas suivre l'etat ABSENT"
+  "message": "Identifiant deja reserve pour un autre geste"
 }
 ```
 
@@ -69,22 +69,16 @@ tests sont le seul endroit qui les tient.
 | Code                                 | Statut | `title`                            | Exception                                 |
 | ------------------------------------ | ------ | ---------------------------------- | ----------------------------------------- |
 | `suivi-d-atelier-introuvable`        | 404    | suivi d'atelier introuvable        | `SuiviDAtelierIntrouvableException`       |
-| `journee-de-travail-introuvable`     | 404    | journee de travail introuvable     | `JourneeDeTravailIntrouvableException`    |
 | `evenement-d-atelier-introuvable`    | 404    | evenement d'atelier introuvable    | `EvenementDAtelierIntrouvableException`   |
-| `evenement-de-presence-introuvable`  | 404    | evenement de presence introuvable  | `EvenementDePresenceIntrouvableException` |
 | `element-de-fabrication-introuvable` | 404    | element de fabrication introuvable | `ElementEngageableIntrouvableException`   |
 | `operateur-introuvable`              | 404    | operateur introuvable              | `OperateurDAtelierIntrouvableException`   |
 | `poste-de-travail-introuvable`       | 404    | poste de travail introuvable       | `PosteDAtelierIntrouvableException`       |
-| `aucune-journee-de-travail-en-cours` | 404    | aucune journee de travail en cours | `AucuneJourneeDeTravailEnCoursException`  |
+| `activite-visee-introuvable`         | 404    | activite visee introuvable         | `ActiviteViseeIntrouvableException`       |
 | `operateur-non-habilite`             | 409    | operateur non habilite             | `OperateurNonHabiliteException`           |
+| `activite-visee-incoherente`         | 409    | activite visee incoherente         | `ActiviteViseeIncoherenteException`       |
 | `element-deja-engage`                | 409    | element deja engage                | `ElementDejaEngageException`              |
-| `journee-de-travail-deja-ouverte`    | 409    | journee de travail deja ouverte    | `JourneeDeTravailDejaOuverteException`    |
-| `chevauchement-de-journees`          | 409    | chevauchement de journees          | `ChevauchementDeJourneesException`        |
 | `evenement-deja-annule`              | 409    | evenement deja annule              | `EvenementDejaAnnuleException`            |
-| `evenement-de-presence-deja-annule`  | 409    | evenement de presence deja annule  | `EvenementDePresenceDejaAnnuleException`  |
 | `suivi-d-atelier-cloture`            | 409    | suivi d'atelier cloture            | `SuiviDAtelierClotureException`           |
-| `transition-d-atelier-interdite`     | 409    | transition d'atelier interdite     | `TransitionDAtelierInterditeException`    |
-| `transition-de-presence-interdite`   | 409    | transition de presence interdite   | `TransitionDePresenceInterditeException`  |
 | `evenement-anterieur-a-l-engagement` | 409    | evenement anterieur a l'engagement | `EvenementAvantEngagementException`       |
 | `saisie-concurrente`                 | 409    | saisie concurrente                 | `SaisieConcurrenteException`              |
 | `identifiant-evenement-reutilise`    | 409    | identifiant d'evenement reutilise  | `IdentifiantDEvenementReutiliseException` |
@@ -92,6 +86,17 @@ tests sont le seul endroit qui les tient.
 
 `saisie-concurrente` est le seul code sur lequel **rejouer** l'appel est la bonne réaction : la saisie était valide,
 un autre pointage s'est glissé entre la lecture et l'écriture.
+
+`identifiant-evenement-reutilise` refuse un identifiant de geste déjà réservé pour un autre contenu : autre nature,
+suivi, opérateur, type, poste ou date fournie, et pour un pointage d'atelier autre intention ou autre cible.
+
+`activite-visee-introuvable` et `activite-visee-incoherente` refusent une transition ou une fin dont la cible n'est
+pas une activité de ce suivi, ou appartient à un autre opérateur ou à un autre poste. Ils valent pour le pointage, la
+régularisation et la correction, et sont définitifs : le même geste rejoué reçoit le même refus.
+
+Aucun code ne refuse un geste qui contredit le journal d'un élément : sa cible déjà terminée ou remplacée à son heure,
+son ouvrant annulé, une transition vers sa propre catégorie. Pointage, régularisation, correction et annulation
+l’enregistrent, et sa séquence est en conflit jusqu’à ce que le gestionnaire la résolve.
 
 ### `operateur` — `urn:glm:erreur:operateur:`
 
@@ -126,9 +131,17 @@ segment de contexte, et lui seul, qui les distingue.
 
 ### `feuille-de-temps` — `urn:glm:erreur:feuille-de-temps:`
 
-| Code                    | Statut | `title`               | Exception                   |
-| ----------------------- | ------ | --------------------- | --------------------------- |
-| `operateur-introuvable` | 404    | operateur introuvable | `OperateurInconnuException` |
+| Code                    | Statut | `title`                    | Exception                   |
+| ----------------------- | ------ | -------------------------- | --------------------------- |
+| `operateur-introuvable` | 404    | operateur introuvable      | `OperateurInconnuException` |
+| `evaluation-future`     | 400    | instant d'evaluation futur | `EvaluationFutureException` |
+
+### `synthese-des-heures` — `urn:glm:erreur:synthese-des-heures:`
+
+| Code                    | Statut | `title`                    | Exception                   |
+| ----------------------- | ------ | -------------------------- | --------------------------- |
+| `operateur-introuvable` | 404    | operateur introuvable      | `OperateurInconnuException` |
+| `evaluation-future`     | 400    | instant d'evaluation futur | `EvaluationFutureException` |
 
 ## Ajouter une erreur
 
@@ -139,15 +152,8 @@ segment de contexte, et lui seul, qui les distingue.
 4. Une ligne dans le catalogue ci-dessus. Celle-là, aucun test ne la réclame : le catalogue est tenu à la main, et
    c'est la seule pièce du contrat qui puisse se démoder en silence.
 
-`journee-de-travail-deja-ouverte` ne sort plus d'une arrivée : depuis le lot 3 de
-[strategie/bornes-de-fin-de-journee.md](strategie/bornes-de-fin-de-journee.md), une arrivée redondante est absorbée
-et une journée abandonnée en fait ouvrir une nouvelle. Le code reste publié pour le seul cas d'une identité de journée
-créée deux fois. `chevauchement-de-journees` ne répond qu'aux actes du gestionnaire (régularisation, correction).
-
-Depuis le lot 8a, les routes de pointage n'émettent plus `aucune-journee-de-travail-en-cours` que pour un geste rejoué
-dans une journée déjà fermée, ni `transition-de-presence-interdite` ou `transition-d-atelier-interdite` que pour un
-geste rejoué dans le désordre. Ces deux refus restent définitifs, comme `operateur-introuvable`,
+Les refus définitifs des gestes d’activité sont `activite-visee-introuvable`, `activite-visee-incoherente`, `operateur-introuvable`,
 `poste-de-travail-introuvable`, `suivi-d-atelier-introuvable`, `identifiant-evenement-reutilise`,
-`operateur-non-habilite`, `evenement-anterieur-a-l-engagement` et `date-de-survenue-future` (lots 8b et 8c abandonnés). `suivi-d-atelier-cloture` n'y sort
+`operateur-non-habilite`, `evenement-anterieur-a-l-engagement` et `date-de-survenue-future`. `suivi-d-atelier-cloture` n'y sort
 plus que pour un démarrage ou une non conformité — la seule erreur à afficher à l'opérateur. `saisie-concurrente`
-n'y remonte qu'après trois essais du serveur.
+n'y remonte qu'après trois essais du serveur. Un pointage d'atelier qui contredit le journal n'y est jamais refusé.

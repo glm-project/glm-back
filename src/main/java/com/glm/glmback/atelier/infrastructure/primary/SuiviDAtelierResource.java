@@ -4,8 +4,8 @@ import com.glm.glmback.atelier.application.SuivisDAtelierApplicationService;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
 import com.glm.glmback.atelier.domain.EtatDAtelier;
 import com.glm.glmback.atelier.domain.IntervalleDActivite;
+import com.glm.glmback.atelier.domain.LectureDuSuivi;
 import com.glm.glmback.atelier.domain.Periode;
-import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
@@ -42,7 +42,10 @@ import org.springframework.web.bind.annotation.RestController;
   Deux publics se partagent ces routes. L'operateur (role USER) consulte le tableau des elements actifs et pointe son
   travail. Le gestionnaire (role GESTIONNAIRE) engage les elements, les cloture et corrige les saisies.
 
-  Rien de ce qui se deduit n'est stocke : etat, activites en cours et temps sont recalcules du journal a chaque lecture.
+  Rien de ce qui se deduit n'est stocke : etat, activites en cours, sequences en conflit et temps sont recalcules du
+  journal a chaque lecture, a l'instant de cette lecture. Une activite que rien n'a terminee se termine automatiquement
+  a son echeance, son debut plus 13 heures, sans qu'aucun evenement ne soit ecrit. Des pointages qui se contredisent
+  sont conserves en sequence en conflit, que le gestionnaire resout en corrigeant ou en annulant les faits concernes.
   """
 )
 class SuiviDAtelierResource {
@@ -61,7 +64,8 @@ class SuiviDAtelierResource {
 
     Tous les filtres sont facultatifs : l'ecran des operateurs veut tous les elements actifs d'un coup, sans notion de
     date. Le parametre etats accepte plusieurs valeurs (?etats=EN_ATTENTE&etats=EN_COURS) ; absent, il ne filtre rien.
-    La periode, quand elle est fournie, porte sur la date d'engagement.
+    L'etat se juge a l'instant de la lecture, celui de chaque ligne rendue : un element dont la seule activite a atteint
+    son echeance n'est plus EN_COURS. La periode, quand elle est fournie, porte sur la date d'engagement.
 
     Chaque ligne conserve l'etat et les activites en cours, mais ne contient pas de journal.
     Le journal complet, annules compris, se consulte via GET /api/atelier/suivis/{id}.
@@ -75,10 +79,10 @@ class SuiviDAtelierResource {
     @RequestParam(defaultValue = "0") int page,
     @RequestParam(defaultValue = "20") int size
   ) {
-    Page<SuiviDAtelier> resultat = applicationService.list(periode(debut, fin), etats(etats), new Pageable(page, size));
-    AnnuaireDAtelier annuaire = applicationService.annuairePourSuivis(resultat.content());
+    Page<LectureDuSuivi> resultat = applicationService.list(periode(debut, fin), etats(etats), new Pageable(page, size));
+    AnnuaireDAtelier annuaire = applicationService.annuairePourSuivis(resultat.content().stream().map(LectureDuSuivi::suivi).toList());
 
-    return RestPage.from(resultat, suivi -> RestSyntheseDeSuiviDAtelier.from(suivi, annuaire));
+    return RestPage.from(resultat, lecture -> RestSyntheseDeSuiviDAtelier.from(lecture, annuaire));
   }
 
   @PostMapping
@@ -110,10 +114,12 @@ class SuiviDAtelierResource {
   @Operation(
     summary = "Lire le temps effectivement passe sur un element",
     description = """
-    Les intervalles bruts du journal, ramenes aux fenetres de presence des operateurs.
+    Les intervalles des activites de l'element, tels que le journal les interprete a l'instant de la lecture.
 
-    C'est ici qu'un depart referme ce que l'operateur a oublie d'arreter, sans avoir eu besoin d'etre recopie dans le
-    journal de l'element. Un intervalle sans fin est encore en cours.
+    Un intervalle sans fin est encore en cours a l'instant de la lecture, sauf s'il est a resoudre (aResoudre) : une
+    sequence en conflit ne permet d'en affirmer ni la fin ni la duree. Une activite que rien n'a terminee avant son
+    echeance, son debut plus 13 heures, y est terminee automatiquement, a cette echeance, et signalee par
+    finAutomatique.
     """
   )
   @ApiResponse(responseCode = "404", description = "Suivi introuvable.")
@@ -133,21 +139,40 @@ class SuiviDAtelierResource {
     description = """
     Le geste de l'operateur, date a l'instant present.
 
-    Ne jamais pointer ici un depart : c'est un fait de la journee de travail de l'operateur, ecrit une seule fois via
-    POST /api/atelier/journees/pointages. Une pause, elle, se pointe ici : une fin par activite en cours, puis un
-    debut, ou une non conformite, a la reprise.
+    Son intention dit ce qu'il fait d'une activite : OUVERTURE en cree une, TRANSITION remplace l'activite visee par une
+    activite de l'autre categorie, FIN termine l'activite visee. La transition et la fin designent leur cible par
+    l'identifiant du pointage ouvrant de l'activite.
+
+    Une pause se pointe par une fin ciblee pour chaque activite en cours, puis une ouverture, en debut ou en non
+    conformite, a la reprise.
     """
   )
-  @ApiResponse(responseCode = "201", description = "Le pointage est enregistre.")
-  @ApiResponse(responseCode = "200", description = "Le geste identique est rejoue, ou l'arret sans effet est absorbe.")
-  @ApiResponse(responseCode = "400", description = "Le corps est invalide ou la date de survenue est future.")
-  @ApiResponse(responseCode = "404", description = "Suivi, operateur ou poste de travail introuvable.")
+  @ApiResponse(
+    responseCode = "201",
+    description = """
+    Le pointage est enregistre, y compris une fin pointee apres l'echeance de sa cible, conservee sans effet, et un
+    geste qui contredit le journal, conserve dans une sequence en conflit : son identifiant figure alors dans
+    conflits[].pointages.
+    """
+  )
+  @ApiResponse(
+    responseCode = "200",
+    description = """
+    Le geste identique est rejoue, sequence en conflit comprise, ou une fin posterieure a la cloture de l'element est
+    absorbee.
+    """
+  )
+  @ApiResponse(
+    responseCode = "400",
+    description = "Le corps est invalide, intention et cible comprises, ou la date de survenue est future."
+  )
+  @ApiResponse(responseCode = "404", description = "Suivi, operateur, poste de travail ou activite visee introuvable.")
   @ApiResponse(
     responseCode = "409",
     description = """
     Demarrer ou pointer une non conformite sur un element cloture (seul refus qu'afficher a l'operateur), operateur non
-    habilite sur ce poste, fin rejouee dans le desordre ou identifiant reutilise. Arreter une activite qui n'est pas en
-    cours, ou un element cloture, est absorbe : 200.
+    habilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, ou identifiant reutilise. Un geste
+    qui contredit le journal n'est jamais refuse : il est enregistre, et sa sequence est en conflit.
     """
   )
   ResponseEntity<RestSuiviDAtelier> pointe(@PathVariable UUID id, @RequestBody @Valid RestPointage request) {
@@ -158,11 +183,18 @@ class SuiviDAtelierResource {
   @PostMapping("/{id}/regularisations")
   @ResponseStatus(HttpStatus.CREATED)
   @Operation(summary = "Rattraper une saisie oubliee", description = "Premier des trois actes de correction.")
-  @ApiResponse(responseCode = "201", description = "La regularisation est enregistree.")
-  @ApiResponse(responseCode = "404", description = "Suivi, operateur ou poste de travail introuvable.")
+  @ApiResponse(
+    responseCode = "201",
+    description = "La regularisation est enregistree, y compris quand elle contredit le journal : sa sequence est alors en conflit."
+  )
+  @ApiResponse(responseCode = "400", description = "Le corps est invalide, intention et cible comprises.")
+  @ApiResponse(responseCode = "404", description = "Suivi, operateur, poste de travail ou activite visee introuvable.")
   @ApiResponse(
     responseCode = "409",
-    description = "Operateur non habilite sur ce poste, transition impossible, ou evenement anterieur a l'engagement."
+    description = """
+    Operateur non habilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, ou evenement anterieur
+    a l'engagement.
+    """
   )
   RestSuiviDAtelier regularise(@PathVariable UUID id, @RequestBody @Valid RestRegularisation request) {
     return rendu(applicationService.regularise(request.toDomain(new SuiviDAtelierId(id), AuteurConnecte.get())));
@@ -181,8 +213,15 @@ class SuiviDAtelierResource {
     summary = "Corriger une saisie fausse",
     description = "Troisieme acte : une annulation et une regularisation en un seul appel."
   )
-  @ApiResponse(responseCode = "404", description = "Suivi, evenement, operateur ou poste de travail introuvable.")
-  @ApiResponse(responseCode = "409", description = "Operateur non habilite sur ce poste, evenement deja annule, ou transition impossible.")
+  @ApiResponse(responseCode = "400", description = "Le corps est invalide, intention et cible comprises.")
+  @ApiResponse(responseCode = "404", description = "Suivi, evenement, operateur, poste de travail ou activite visee introuvable.")
+  @ApiResponse(
+    responseCode = "409",
+    description = """
+    Operateur non habilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, ou evenement deja
+    annule.
+    """
+  )
   RestSuiviDAtelier corrige(@PathVariable UUID id, @PathVariable UUID evenementId, @RequestBody @Valid RestCorrection request) {
     return rendu(applicationService.corrige(request.toDomain(new SuiviDAtelierId(id), evenementId, AuteurConnecte.get())));
   }
@@ -211,8 +250,8 @@ class SuiviDAtelierResource {
   /**
    * Le suivi rendu avec ses ressources resolues : le journal ne stockant que des identifiants, l'affichage les relit.
    */
-  private RestSuiviDAtelier rendu(SuiviDAtelier suivi) {
-    return RestSuiviDAtelier.from(suivi, applicationService.annuairePour(suivi));
+  private RestSuiviDAtelier rendu(LectureDuSuivi lecture) {
+    return RestSuiviDAtelier.from(lecture, applicationService.annuairePour(lecture.suivi()));
   }
 
   private static Optional<Periode> periode(Instant debut, Instant fin) {
