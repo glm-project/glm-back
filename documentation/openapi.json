@@ -1707,6 +1707,34 @@
         "required" : [ "activites", "conflits", "etat", "id", "nom", "type" ],
         "type" : "object"
       },
+      "RestSupervisionDAtelier" : {
+        "properties" : {
+          "activites" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RestActiviteEnCours"
+            },
+            "type" : "array"
+          },
+          "evaluation" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "operateurs" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RestOperateurDAtelier"
+            },
+            "type" : "array"
+          },
+          "sequencesEnConflit" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RestSequenceEnConflit"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "activites", "evaluation", "operateurs", "sequencesEnConflit" ],
+        "type" : "object"
+      },
       "RestSyntheseDesHeures" : {
         "description" : "Temps operationnel d'un operateur sur une semaine ISO, recalcule depuis les activites interpretees par atelier. Aucun montant n'est calcule.",
         "properties" : {
@@ -2321,6 +2349,25 @@
         },
         "summary" : "Lire le temps effectivement passe sur un element",
         "tags" : [ "Atelier - elements engages" ]
+      }
+    },
+    "/api/atelier/supervision" : {
+      "get" : {
+        "operationId" : "read",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestSupervisionDAtelier"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Lire la supervision complete de l'entreprise connectee",
+        "tags" : [ "Atelier - supervision" ]
       }
     },
     "/api/couts-de-revient/{elementId}" : {
