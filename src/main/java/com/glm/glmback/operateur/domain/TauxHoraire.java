@@ -8,7 +8,7 @@ import java.util.Optional;
  * Le taux horaire de l'operateur, destine au lot cout de revient.
  *
  * <p>
- * Facultatif, comme le matricule : une entreprise qui ne valorise pas encore ses operateurs retrouve un comportement
+ * Facultatif, comme l'identifiant : une entreprise qui ne valorise pas encore ses operateurs retrouve un comportement
  * coherent plutot qu'un cas degrade.
  * </p>
  */

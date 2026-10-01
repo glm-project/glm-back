@@ -71,7 +71,7 @@ class OperateurResource {
   @Operation(summary = "Declarer un operateur")
   @ApiResponse(responseCode = "201", description = "L'operateur est declare.")
   @ApiResponse(responseCode = "404", description = "Un des postes references est introuvable.")
-  @ApiResponse(responseCode = "409", description = "Cette identite ou ce matricule appartient deja a un autre operateur.")
+  @ApiResponse(responseCode = "409", description = "Cette identite ou cet identifiant appartient deja a un autre operateur.")
   RestOperateur create(@RequestBody @Valid RestCreationOperateur request) {
     return RestOperateur.from(applicationService.create(request.toDomain()));
   }
@@ -86,10 +86,10 @@ class OperateurResource {
   @PutMapping("/{id}")
   @Operation(
     summary = "Reviser un operateur",
-    description = "La liste de postes fournie remplace la precedente ; un matricule laisse vide est retire."
+    description = "La liste de postes fournie remplace la precedente ; un identifiant laisse vide est retire."
   )
   @ApiResponse(responseCode = "404", description = "Operateur ou poste reference introuvable.")
-  @ApiResponse(responseCode = "409", description = "Cette identite ou ce matricule appartient deja a un autre operateur.")
+  @ApiResponse(responseCode = "409", description = "Cette identite ou cet identifiant appartient deja a un autre operateur.")
   RestOperateur update(@PathVariable UUID id, @RequestBody @Valid RestModificationOperateur request) {
     return RestOperateur.from(applicationService.update(request.toDomain(new OperateurId(id))));
   }

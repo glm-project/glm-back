@@ -24,11 +24,11 @@ class OperateurCriteriaTest {
 
   @Test
   void shouldNotMatchOperateurWithoutHabilitationOnPoste() {
-    assertThat(criteresDeTournage().matches(operateurMartinSansMatricule())).isFalse();
+    assertThat(criteresDeTournage().matches(operateurMartinSansIdentifiant())).isFalse();
   }
 
   @Test
   void shouldMatchAnyOperateurWithoutPoste() {
-    assertThat(criteresSansFiltre().matches(operateurMartinSansMatricule())).isTrue();
+    assertThat(criteresSansFiltre().matches(operateurMartinSansIdentifiant())).isTrue();
   }
 }

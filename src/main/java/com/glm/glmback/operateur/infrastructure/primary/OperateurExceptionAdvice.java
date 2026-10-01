@@ -1,7 +1,7 @@
 package com.glm.glmback.operateur.infrastructure.primary;
 
+import com.glm.glmback.operateur.domain.IdentifiantDejaUtiliseException;
 import com.glm.glmback.operateur.domain.IdentiteDejaUtiliseeException;
-import com.glm.glmback.operateur.domain.MatriculeDejaUtiliseException;
 import com.glm.glmback.operateur.domain.OperateurAPointeException;
 import com.glm.glmback.operateur.domain.OperateurIntrouvableException;
 import com.glm.glmback.operateur.domain.PosteHabilitableIntrouvableException;
@@ -35,8 +35,8 @@ class OperateurExceptionAdvice {
     return ErreurDOperateur.IDENTITE_DEJA_UTILISEE.problem(e);
   }
 
-  @ExceptionHandler(MatriculeDejaUtiliseException.class)
-  ProblemDetail handleMatriculeDejaUtilise(MatriculeDejaUtiliseException e) {
-    return ErreurDOperateur.MATRICULE_DEJA_UTILISE.problem(e);
+  @ExceptionHandler(IdentifiantDejaUtiliseException.class)
+  ProblemDetail handleIdentifiantDejaUtilise(IdentifiantDejaUtiliseException e) {
+    return ErreurDOperateur.IDENTIFIANT_DEJA_UTILISE.problem(e);
   }
 }

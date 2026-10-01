@@ -17,7 +17,7 @@ public record Operateur(
   OperateurId id,
   Nom nom,
   Prenom prenom,
-  Optional<Matricule> matricule,
+  Optional<Identifiant> identifiant,
   Optional<TauxHoraire> tauxHoraire,
   Set<PosteHabilitableId> postes
 ) {
@@ -25,7 +25,7 @@ public record Operateur(
     Assert.notNull("id", id);
     Assert.notNull("nom", nom);
     Assert.notNull("prenom", prenom);
-    Assert.notNull("matricule", matricule);
+    Assert.notNull("identifiant", identifiant);
     Assert.notNull("taux horaire", tauxHoraire);
     Assert.field("postes", postes).notNull().noNullElement();
 
@@ -36,18 +36,18 @@ public record Operateur(
     return id ->
       nom ->
         prenom ->
-          matricule ->
-            tauxHoraire -> postes -> new Operateur(id, nom, prenom, Matricule.of(matricule), TauxHoraire.of(tauxHoraire), postes);
+          identifiant ->
+            tauxHoraire -> postes -> new Operateur(id, nom, prenom, Identifiant.of(identifiant), TauxHoraire.of(tauxHoraire), postes);
   }
 
   public Operateur revise(
     Nom nom,
     Prenom prenom,
-    Optional<Matricule> matricule,
+    Optional<Identifiant> identifiant,
     Optional<TauxHoraire> tauxHoraire,
     Set<PosteHabilitableId> postes
   ) {
-    return new Operateur(id, nom, prenom, matricule, tauxHoraire, postes);
+    return new Operateur(id, nom, prenom, identifiant, tauxHoraire, postes);
   }
 
   public interface OperateurIdBuilder {
@@ -59,11 +59,11 @@ public record Operateur(
   }
 
   public interface OperateurPrenomBuilder {
-    OperateurMatriculeBuilder prenom(Prenom prenom);
+    OperateurIdentifiantBuilder prenom(Prenom prenom);
   }
 
-  public interface OperateurMatriculeBuilder {
-    OperateurTauxHoraireBuilder matricule(String matricule);
+  public interface OperateurIdentifiantBuilder {
+    OperateurTauxHoraireBuilder identifiant(String identifiant);
   }
 
   public interface OperateurTauxHoraireBuilder {

@@ -521,11 +521,10 @@
       "RestCreationOperateur" : {
         "description" : "Declaration d'un operateur.",
         "properties" : {
-          "matricule" : {
-            "description" : "Matricule interne. Facultatif : toutes les entreprises n'en attribuent pas. Unique des qu'il est renseigne.",
-            "example" : "049",
-            "maxLength" : 50,
-            "minLength" : 0,
+          "identifiant" : {
+            "description" : "Identifiant que l'operateur tape au pupitre : de 1 a 6 chiffres, zeros en tete conserves. Facultatif : toutes les entreprises n'en attribuent pas. Unique des qu'il est renseigne.",
+            "example" : "007",
+            "pattern" : "\\s*|\\d{1,6}",
             "type" : "string"
           },
           "nom" : {
@@ -993,11 +992,10 @@
       "RestModificationOperateur" : {
         "description" : "Revision d'un operateur.",
         "properties" : {
-          "matricule" : {
-            "description" : "Matricule interne, laisse vide pour le retirer.",
-            "example" : "049",
-            "maxLength" : 50,
-            "minLength" : 0,
+          "identifiant" : {
+            "description" : "Identifiant que l'operateur tape au pupitre : de 1 a 6 chiffres, zeros en tete conserves. Laisse vide pour le retirer.",
+            "example" : "007",
+            "pattern" : "\\s*|\\d{1,6}",
             "type" : "string"
           },
           "nom" : {
@@ -1084,9 +1082,9 @@
             "format" : "uuid",
             "type" : "string"
           },
-          "matricule" : {
-            "description" : "Matricule interne, absent si l'entreprise n'en attribue pas.",
-            "example" : "049",
+          "identifiant" : {
+            "description" : "Identifiant que l'operateur tape au pupitre, de 1 a 6 chiffres ; absent si l'entreprise n'en attribue pas.",
+            "example" : "007",
             "type" : "string"
           },
           "natures" : {
@@ -1190,14 +1188,14 @@
         "type" : "object"
       },
       "RestOperateurDuPupitre" : {
-        "description" : "Un operateur designable au pupitre, et les postes sur lesquels il peut pointer.\n\nPas de taux horaire, contrairement a GET /api/operateurs : un ecran d'atelier partage n'a aucune raison de recevoir\nce que le rapport de cout de revient reserve au gestionnaire. Le matricule, lui, est ce que l'operateur tape : il\ndesigne, il ne prouve rien, et un operateur qui n'en a pas n'est pas designable.\n",
+        "description" : "Un operateur designable au pupitre, et les postes sur lesquels il peut pointer.\n\nPas de taux horaire, contrairement a GET /api/operateurs : un ecran d'atelier partage n'a aucune raison de recevoir\nce que le rapport de cout de revient reserve au gestionnaire. L'identifiant, lui, est ce que l'operateur tape : il\ndesigne, il ne prouve rien, et un operateur qui n'en a pas n'est pas designable.\n",
         "properties" : {
           "id" : {
             "description" : "Identifiant de l'operateur. C'est lui, et lui seul, que le pupitre renvoie en pointant.",
             "format" : "uuid",
             "type" : "string"
           },
-          "matricule" : {
+          "identifiant" : {
             "description" : "Code tape au pupitre pour se designer, absent si l'entreprise n'en attribue pas.",
             "example" : "049",
             "type" : "string"
@@ -2704,7 +2702,7 @@
                 }
               }
             },
-            "description" : "Cette identite ou ce matricule appartient deja a un autre operateur."
+            "description" : "Cette identite ou cet identifiant appartient deja a un autre operateur."
           }
         },
         "summary" : "Declarer un operateur",
@@ -2764,7 +2762,7 @@
         "tags" : [ "Operateurs" ]
       },
       "put" : {
-        "description" : "La liste de postes fournie remplace la precedente ; un matricule laisse vide est retire.",
+        "description" : "La liste de postes fournie remplace la precedente ; un identifiant laisse vide est retire.",
         "operationId" : "update_1",
         "parameters" : [ {
           "in" : "path",
@@ -2804,7 +2802,7 @@
                 }
               }
             },
-            "description" : "Cette identite ou ce matricule appartient deja a un autre operateur."
+            "description" : "Cette identite ou cet identifiant appartient deja a un autre operateur."
           }
         },
         "summary" : "Reviser un operateur",
@@ -2997,7 +2995,7 @@
     },
     "/api/pupitre/referentiel" : {
       "get" : {
-        "description" : "Rend en une seule reponse les operateurs designables avec leurs habilitations, et les\nelements sur lesquels on peut encore pointer avec leurs activites en cours et leurs conflits. C'est la lecture que le pupitre\nrejoue a chaque synchronisation pour rafraichir son cache local.\n\nLa reponse entiere evite l'assemblage de pages. La lecture se fait dans une transaction unique sous\nREAD COMMITTED : une ecriture concurrente peut changer les faits entre les requetes successives.\nL'instant commun genereLe assure la meme decision d'expiration, sans garantir un instantane commun.\n\nLes operateurs restent designables sans activite, avec leur identite, leur matricule et leurs habilitations. Les activites a resoudre\nsont exclues des activites en cours et leurs identites sont rendues dans les conflits. Une ouverture coherente\npeut etre en cours a cote d'un conflit. L'expiration des activites se juge a genereLe, echeance incluse.\n\n`genereLe` date l'evaluation. Elle change a chaque appel, y compris quand rien n'a bouge : elle\ndit quand le serveur a produit la reponse, pas quand le referentiel a change pour la derniere fois.\n\nCe que la reponse ne porte pas, et n'a pas a porter : aucun montant — ni taux horaire d'operateur, ni cout\nhoraire de poste —, aucun journal d'evenements, aucun element cloture.\n",
+        "description" : "Rend en une seule reponse les operateurs designables avec leurs habilitations, et les\nelements sur lesquels on peut encore pointer avec leurs activites en cours et leurs conflits. C'est la lecture que le pupitre\nrejoue a chaque synchronisation pour rafraichir son cache local.\n\nLa reponse entiere evite l'assemblage de pages. La lecture se fait dans une transaction unique sous\nREAD COMMITTED : une ecriture concurrente peut changer les faits entre les requetes successives.\nL'instant commun genereLe assure la meme decision d'expiration, sans garantir un instantane commun.\n\nLes operateurs restent designables sans activite, avec leur identite, leur identifiant et leurs habilitations. Les activites a resoudre\nsont exclues des activites en cours et leurs identites sont rendues dans les conflits. Une ouverture coherente\npeut etre en cours a cote d'un conflit. L'expiration des activites se juge a genereLe, echeance incluse.\n\n`genereLe` date l'evaluation. Elle change a chaque appel, y compris quand rien n'a bouge : elle\ndit quand le serveur a produit la reponse, pas quand le referentiel a change pour la derniere fois.\n\nCe que la reponse ne porte pas, et n'a pas a porter : aucun montant — ni taux horaire d'operateur, ni cout\nhoraire de poste —, aucun journal d'evenements, aucun element cloture.\n",
         "operationId" : "referentiel",
         "responses" : {
           "200" : {

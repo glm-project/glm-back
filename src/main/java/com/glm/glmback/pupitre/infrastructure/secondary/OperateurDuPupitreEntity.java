@@ -38,7 +38,7 @@ class OperateurDuPupitreEntity {
 
   private String prenom;
 
-  private String matricule;
+  private String identifiant;
 
   @ManyToMany(fetch = FetchType.LAZY)
   @JoinTable(
@@ -60,7 +60,7 @@ class OperateurDuPupitreEntity {
       .id(identite)
       .nom(new Nom(nom))
       .prenom(new Prenom(prenom))
-      .matricule(matricule)
+      .identifiant(identifiant)
       .postes(postes.stream().map(PosteDuPupitreEntity::toDomain).toList());
   }
 }

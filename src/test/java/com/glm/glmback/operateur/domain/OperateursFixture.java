@@ -12,8 +12,8 @@ public final class OperateursFixture {
   public static final Prenom PRENOM_JEAN = new Prenom("Jean");
   public static final Prenom PRENOM_SOPHIE = new Prenom("Sophie");
 
-  public static final Matricule MATRICULE_049 = new Matricule("049");
-  public static final Matricule MATRICULE_050 = new Matricule("050");
+  public static final Identifiant IDENTIFIANT_049 = new Identifiant("049");
+  public static final Identifiant IDENTIFIANT_050 = new Identifiant("050");
 
   public static final TauxHoraire TAUX_HORAIRE_22 = new TauxHoraire(new BigDecimal("22.00"));
   public static final TauxHoraire TAUX_HORAIRE_25 = new TauxHoraire(new BigDecimal("25.00"));
@@ -55,7 +55,7 @@ public final class OperateursFixture {
       .id(id)
       .nom(NOM_DUPONT)
       .prenom(PRENOM_JEAN)
-      .matricule(MATRICULE_049.value())
+      .identifiant(IDENTIFIANT_049.value())
       .tauxHoraire(null)
       .postes(habilitationsDeSoudureEtDeTournage());
   }
@@ -65,49 +65,55 @@ public final class OperateursFixture {
       .id(id)
       .nom(new Nom("Rejeu cible"))
       .prenom(new Prenom("Concurrence"))
-      .matricule(null)
+      .identifiant(null)
       .tauxHoraire(null)
       .postes(Set.of());
   }
 
-  public static Operateur operateurMartinSansMatricule() {
+  public static Operateur operateurMartinSansIdentifiant() {
     return Operateur.builder()
       .id(OperateurId.newId())
       .nom(NOM_MARTIN)
       .prenom(PRENOM_SOPHIE)
-      .matricule(null)
+      .identifiant(null)
       .tauxHoraire(null)
       .postes(Set.of());
   }
 
   public static OperateurACreer operateurACreerDupont() {
-    return new OperateurACreer(NOM_DUPONT, PRENOM_JEAN, Optional.of(MATRICULE_049), Optional.empty(), habilitationsDeSoudureEtDeTournage());
+    return new OperateurACreer(
+      NOM_DUPONT,
+      PRENOM_JEAN,
+      Optional.of(IDENTIFIANT_049),
+      Optional.empty(),
+      habilitationsDeSoudureEtDeTournage()
+    );
   }
 
   public static OperateurACreer operateurACreerDupontAvecTauxHoraire() {
     return new OperateurACreer(
       NOM_DUPONT,
       PRENOM_JEAN,
-      Optional.of(MATRICULE_049),
+      Optional.of(IDENTIFIANT_049),
       Optional.of(TAUX_HORAIRE_22),
       habilitationsDeSoudureEtDeTournage()
     );
   }
 
   public static OperateurACreer operateurACreerMartin() {
-    return new OperateurACreer(NOM_MARTIN, PRENOM_SOPHIE, Optional.of(MATRICULE_050), Optional.empty(), habilitationDeTournage());
+    return new OperateurACreer(NOM_MARTIN, PRENOM_SOPHIE, Optional.of(IDENTIFIANT_050), Optional.empty(), habilitationDeTournage());
   }
 
-  public static OperateurACreer operateurACreerMartinSansMatricule() {
+  public static OperateurACreer operateurACreerMartinSansIdentifiant() {
     return new OperateurACreer(NOM_MARTIN, PRENOM_SOPHIE, Optional.empty(), Optional.empty(), Set.of());
   }
 
-  public static OperateurACreer operateurACreerDupontSansMatricule() {
+  public static OperateurACreer operateurACreerDupontSansIdentifiant() {
     return new OperateurACreer(NOM_DUPONT, PRENOM_JEAN, Optional.empty(), Optional.empty(), Set.of());
   }
 
   public static OperateurAModifier operateurAModifierDupont(OperateurId id) {
-    return new OperateurAModifier(id, NOM_DUPONT, PRENOM_JEAN, Optional.of(MATRICULE_049), Optional.empty(), habilitationDeTournage());
+    return new OperateurAModifier(id, NOM_DUPONT, PRENOM_JEAN, Optional.of(IDENTIFIANT_049), Optional.empty(), habilitationDeTournage());
   }
 
   public static OperateurAModifier operateurAModifierDupontAvecTauxHoraire(OperateurId id) {
@@ -115,14 +121,14 @@ public final class OperateursFixture {
       id,
       NOM_DUPONT,
       PRENOM_JEAN,
-      Optional.of(MATRICULE_049),
+      Optional.of(IDENTIFIANT_049),
       Optional.of(TAUX_HORAIRE_25),
       habilitationDeTournage()
     );
   }
 
   public static OperateurAModifier operateurAModifierMartin(OperateurId id) {
-    return new OperateurAModifier(id, NOM_MARTIN, PRENOM_SOPHIE, Optional.of(MATRICULE_050), Optional.empty(), habilitationDeTournage());
+    return new OperateurAModifier(id, NOM_MARTIN, PRENOM_SOPHIE, Optional.of(IDENTIFIANT_050), Optional.empty(), habilitationDeTournage());
   }
 
   public static ProfilDOperateur profilDeDupont() {

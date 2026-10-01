@@ -69,14 +69,14 @@ Trois points de configuration à connaître, vérifiés sur le realm actuel :
 
 C'est la distinction qui structure tout le reste, et elle simplifie plus qu'elle ne complique.
 
-**Sur un pupitre déjà sécurisé, un code saisi sert à identifier, pas à authentifier.** Ce n'est pas un secret : c'est un désignateur — un matricule tapé au clavier numérique plutôt que choisi dans une liste de soixante noms. Ce qui sécurise l'acte est alors le poste, par son identité d'appareil, et le contrôle physique de l'atelier.
+**Sur un pupitre déjà sécurisé, un code saisi sert à identifier, pas à authentifier.** Ce n'est pas un secret : c'est un désignateur — un identifiant tapé au clavier numérique plutôt que choisi dans une liste de soixante noms. Ce qui sécurise l'acte est alors le poste, par son identité d'appareil, et le contrôle physique de l'atelier.
 
 Il faut l'écrire, parce que la pente naturelle est de traiter tout code comme un mot de passe et de réintroduire plus tard ce que cette lecture fait tomber :
 
 - **pas de hachage, pas de rotation, pas de verrouillage après N échecs**, pas de « comment déverrouiller sans réseau » — aucune de ces questions ne se pose sur un désignateur ;
 - **aucun secret à embarquer sur l'appareil**, donc rien à casser en force brute. Un code à quatre chiffres protégé par un hachage stocké localement se casse instantanément ; un désignateur n'a rien à protéger. La faiblesse principale du mode dégradé disparaît avec la question ;
 - pas de « désignation puis code », qui n'aurait de sens que si le code prouvait quelque chose ;
-- **`Matricule` existe déjà** au référentiel `operateur`, facultatif et unique quand il est renseigné. C'est le code. Seul arbitrage résiduel : réutiliser le matricule de paie, ou porter un code de pupitre distinct pour qu'un changement de matricule ne change pas ce que les gens tapent au mur.
+- **`Identifiant` existe déjà** au référentiel `operateur`, facultatif et unique quand il est renseigné. C'est le code. Seul arbitrage résiduel : réutiliser l'identifiant de paie, ou porter un code de pupitre distinct pour qu'un changement d'identifiant ne change pas ce que les gens tapent au mur.
 
 ### Le revers, à dire au client
 
@@ -194,7 +194,7 @@ Règle proposée : **le hors-ligne dégrade, il ne remplace pas.** Pas de back-o
 ## Points ouverts
 
 1. **Le code est-il ouvert à tous, ou réservé à l'exception ?** C'est la décision qui fixe le niveau d'assurance de l'ensemble. Recommandation : réservé à l'exception, et tracé comme telle.
-2. **Code de pupitre ou matricule de paie ?** Le `Matricule` existe déjà et suffit ; un code distinct évite qu'un changement de matricule change ce que les gens tapent au mur.
+2. **Code de pupitre ou identifiant de paie ?** L'`Identifiant` existe déjà et suffit ; un code distinct évite qu'un changement d'identifiant change ce que les gens tapent au mur.
 3. **Geste unique ou code puis doigt ?** Question à poser au client en lui exposant ce que le geste unique coûte : conformité, enfermement matériel, perte de la preuve.
 4. **Matériel des pupitres.** Le choix de la vérification 1:1 suppose des terminaux dotés d'un authentifieur de plateforme. À qualifier avant tout engagement.
 5. **L'engagement par anticipation est-il acceptable pour l'organisation du client ?** C'est la seule contrainte que cette stratégie fait porter au métier plutôt qu'au logiciel.

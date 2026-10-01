@@ -4,7 +4,7 @@ import static com.glm.glmback.shared.pagination.domain.PaginationFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.IntegrationTest;
-import com.glm.glmback.operateur.domain.Matricule;
+import com.glm.glmback.operateur.domain.Identifiant;
 import com.glm.glmback.operateur.domain.Nom;
 import com.glm.glmback.operateur.domain.Operateur;
 import com.glm.glmback.operateur.domain.OperateurCriteria;
@@ -79,7 +79,7 @@ class JpaOperateurRepositoryIT {
       .id(OperateurId.newId())
       .nom(new Nom("IT-nom-taux-%06d".formatted(numero)))
       .prenom(new Prenom("IT-prenom-taux-%06d".formatted(numero)))
-      .matricule("IT-mat-taux-%06d".formatted(numero))
+      .identifiant("%06d".formatted(numero))
       .tauxHoraire(new BigDecimal("22.00"))
       .postes(Set.of());
 
@@ -90,7 +90,7 @@ class JpaOperateurRepositoryIT {
 
   @Test
   @WithTenant(IMPECCMOLD)
-  void shouldCreateAndGetOperateurWithoutMatriculeNorHabilitation() {
+  void shouldCreateAndGetOperateurWithoutIdentifiantNorHabilitation() {
     Operateur operateur = operateurHabiliteSur(Set.of(), null);
 
     inTransaction(() -> operateurs.create(operateur));
@@ -100,7 +100,7 @@ class JpaOperateurRepositoryIT {
 
   @Test
   @WithTenant(IMPECCMOLD)
-  void shouldCreateManyOperateursWithoutMatricule() {
+  void shouldCreateManyOperateursWithoutIdentifiant() {
     Operateur premier = operateurHabiliteSur(Set.of(), null);
     Operateur second = operateurHabiliteSur(Set.of(), null);
 
@@ -137,7 +137,7 @@ class JpaOperateurRepositoryIT {
     Operateur revise = operateur.revise(
       operateur.nom(),
       operateur.prenom(),
-      operateur.matricule(),
+      operateur.identifiant(),
       operateur.tauxHoraire(),
       Set.of(conserve, ajoute)
     );
@@ -152,7 +152,7 @@ class JpaOperateurRepositoryIT {
 
   @Test
   @WithTenant(IMPECCMOLD)
-  void shouldUpdateOperateurRemovingHisMatricule() {
+  void shouldUpdateOperateurRemovingHisIdentifiant() {
     Operateur operateur = operateurHabiliteSur(Set.of());
     inTransaction(() -> operateurs.create(operateur));
 
@@ -162,7 +162,7 @@ class JpaOperateurRepositoryIT {
     assertThat(
       inTransaction(() -> operateurs.get(operateur.id()))
         .orElseThrow()
-        .matricule()
+        .identifiant()
     ).isEmpty();
   }
 
@@ -220,17 +220,17 @@ class JpaOperateurRepositoryIT {
 
   @Test
   @WithTenant(IMPECCMOLD)
-  void shouldGetIdOfOperateurHoldingMatricule() {
+  void shouldGetIdOfOperateurHoldingIdentifiant() {
     Operateur operateur = operateurHabiliteSur(Set.of());
     inTransaction(() -> operateurs.create(operateur));
 
-    assertThat(inTransaction(() -> operateurs.idPourMatricule(operateur.matricule().orElseThrow()))).contains(operateur.id());
+    assertThat(inTransaction(() -> operateurs.idPourIdentifiant(operateur.identifiant().orElseThrow()))).contains(operateur.id());
   }
 
   @Test
   @WithTenant(IMPECCMOLD)
-  void shouldNotGetIdOfUnusedMatricule() {
-    assertThat(inTransaction(() -> operateurs.idPourMatricule(new Matricule("IT-matricule-inconnu")))).isEmpty();
+  void shouldNotGetIdOfUnusedIdentifiant() {
+    assertThat(inTransaction(() -> operateurs.idPourIdentifiant(new Identifiant("999999")))).isEmpty();
   }
 
   @Test
@@ -287,17 +287,17 @@ class JpaOperateurRepositoryIT {
   }
 
   private static Operateur operateurHabiliteSur(Set<PosteHabilitableId> habilitations) {
-    return operateurHabiliteSur(habilitations, "IT-mat-%06d".formatted(COMPTEUR.incrementAndGet()));
+    return operateurHabiliteSur(habilitations, "%06d".formatted(COMPTEUR.incrementAndGet()));
   }
 
-  private static Operateur operateurHabiliteSur(Set<PosteHabilitableId> habilitations, String matricule) {
+  private static Operateur operateurHabiliteSur(Set<PosteHabilitableId> habilitations, String identifiant) {
     long numero = COMPTEUR.incrementAndGet();
 
     return Operateur.builder()
       .id(OperateurId.newId())
       .nom(new Nom("IT-nom-%06d".formatted(numero)))
       .prenom(new Prenom("IT-prenom-%06d".formatted(numero)))
-      .matricule(matricule)
+      .identifiant(identifiant)
       .tauxHoraire(null)
       .postes(habilitations);
   }
@@ -307,7 +307,7 @@ class JpaOperateurRepositoryIT {
       .id(OperateurId.newId())
       .nom(nom)
       .prenom(prenom)
-      .matricule("IT-mat-%06d".formatted(COMPTEUR.incrementAndGet()))
+      .identifiant("%06d".formatted(COMPTEUR.incrementAndGet()))
       .tauxHoraire(null)
       .postes(Set.of());
   }

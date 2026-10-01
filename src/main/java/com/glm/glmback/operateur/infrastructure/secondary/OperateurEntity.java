@@ -1,6 +1,6 @@
 package com.glm.glmback.operateur.infrastructure.secondary;
 
-import com.glm.glmback.operateur.domain.Matricule;
+import com.glm.glmback.operateur.domain.Identifiant;
 import com.glm.glmback.operateur.domain.Nom;
 import com.glm.glmback.operateur.domain.Operateur;
 import com.glm.glmback.operateur.domain.OperateurId;
@@ -35,7 +35,7 @@ class OperateurEntity {
   private String prenom;
 
   @Column(length = 50)
-  private String matricule;
+  private String identifiant;
 
   @Column(name = "taux_horaire", precision = 10, scale = 2)
   private BigDecimal tauxHoraire;
@@ -53,7 +53,7 @@ class OperateurEntity {
     id = operateur.id().uuid();
     nom = operateur.nom().value();
     prenom = operateur.prenom().value();
-    matricule = operateur.matricule().map(Matricule::value).orElse(null);
+    identifiant = operateur.identifiant().map(Identifiant::value).orElse(null);
     tauxHoraire = operateur.tauxHoraire().map(TauxHoraire::value).orElse(null);
     postes = operateur.postes().stream().map(PosteHabilitableId::uuid).collect(Collectors.toSet());
   }
@@ -67,7 +67,7 @@ class OperateurEntity {
       .id(new OperateurId(id))
       .nom(new Nom(nom))
       .prenom(new Prenom(prenom))
-      .matricule(matricule)
+      .identifiant(identifiant)
       .tauxHoraire(tauxHoraire)
       .postes(postes.stream().map(PosteHabilitableId::new).collect(Collectors.toSet()));
   }

@@ -65,7 +65,7 @@ public class PupitreSteps {
   private final Map<String, String> postes = new HashMap<>();
   private final Map<String, String> libelles = new HashMap<>();
   private final Map<String, String> operateurs = new HashMap<>();
-  private final Map<String, String> matricules = new HashMap<>();
+  private final Map<String, String> identifiants = new HashMap<>();
   private final Map<String, String> elements = new HashMap<>();
   private final Map<String, String> references = new HashMap<>();
   private final Map<String, String> nomsDAtelier = new HashMap<>();
@@ -85,20 +85,20 @@ public class PupitreSteps {
 
   @Given("le pupitre connait l'operateur {string} habilite sur")
   public void lePupitreConnaitLOperateur(String alias, List<String> habilitations) {
-    String matricule = String.valueOf(900 + SEQUENCE.incrementAndGet());
+    String identifiant = String.valueOf(900 + SEQUENCE.incrementAndGet());
     Map<String, Object> corps = Map.of(
       "nom",
       alias,
       "prenom",
       "Pupitre " + SEQUENCE.incrementAndGet(),
-      "matricule",
-      matricule,
+      "identifiant",
+      identifiant,
       "postes",
       habilitations.stream().map(postes::get).toList()
     );
     rest.post(OPERATEURS_URI, JSON.writeValueAsString(corps));
     operateurs.put(alias, id());
-    matricules.put(alias, matricule);
+    identifiants.put(alias, identifiant);
   }
 
   @Given("le pupitre fabrique {string}")
@@ -251,9 +251,9 @@ public class PupitreSteps {
     assertThat(CucumberRestTestContext.getElement("$.genereLe")).isEqualTo(instant);
   }
 
-  @Then("le referentiel du pupitre porte l'operateur {string} avec son matricule")
+  @Then("le referentiel du pupitre porte l'operateur {string} avec son identifiant")
   public void leReferentielPorteLOperateur(String alias) {
-    assertThat(operateur(alias)).containsEntry("nom", alias).containsEntry("matricule", matricules.get(alias));
+    assertThat(operateur(alias)).containsEntry("nom", alias).containsEntry("identifiant", identifiants.get(alias));
   }
 
   @Then("{string} ne porte aucun etat ni echeance de presence au referentiel du pupitre")

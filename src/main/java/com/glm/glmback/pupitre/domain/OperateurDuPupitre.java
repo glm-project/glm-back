@@ -12,12 +12,12 @@ import java.util.Optional;
  * recevoir ce que {@code coutderevient} reserve au gestionnaire. Pas de natures non plus, le pupitre n'agrege rien.
  * </p>
  */
-public record OperateurDuPupitre(OperateurId id, Nom nom, Prenom prenom, Optional<Matricule> matricule, List<PosteHabilite> postes) {
+public record OperateurDuPupitre(OperateurId id, Nom nom, Prenom prenom, Optional<Identifiant> identifiant, List<PosteHabilite> postes) {
   public OperateurDuPupitre {
     Assert.notNull("id de l'operateur", id);
     Assert.notNull("nom", nom);
     Assert.notNull("prenom", prenom);
-    Assert.notNull("matricule", matricule);
+    Assert.notNull("identifiant", identifiant);
     Assert.field("postes", postes).notNull().noNullElement();
     postes = List.copyOf(postes);
   }
@@ -27,7 +27,7 @@ public record OperateurDuPupitre(OperateurId id, Nom nom, Prenom prenom, Optiona
    * {@code infrastructure/secondary}.
    */
   public static OperateurDuPupitreIdBuilder builder() {
-    return id -> nom -> prenom -> matricule -> postes -> new OperateurDuPupitre(id, nom, prenom, Matricule.of(matricule), postes);
+    return id -> nom -> prenom -> identifiant -> postes -> new OperateurDuPupitre(id, nom, prenom, Identifiant.of(identifiant), postes);
   }
 
   public interface OperateurDuPupitreIdBuilder {
@@ -39,11 +39,11 @@ public record OperateurDuPupitre(OperateurId id, Nom nom, Prenom prenom, Optiona
   }
 
   public interface OperateurDuPupitrePrenomBuilder {
-    OperateurDuPupitreMatriculeBuilder prenom(Prenom prenom);
+    OperateurDuPupitreIdentifiantBuilder prenom(Prenom prenom);
   }
 
-  public interface OperateurDuPupitreMatriculeBuilder {
-    OperateurDuPupitrePostesBuilder matricule(String matricule);
+  public interface OperateurDuPupitreIdentifiantBuilder {
+    OperateurDuPupitrePostesBuilder identifiant(String identifiant);
   }
 
   public interface OperateurDuPupitrePostesBuilder {

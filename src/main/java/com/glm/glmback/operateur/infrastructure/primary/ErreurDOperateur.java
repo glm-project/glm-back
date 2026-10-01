@@ -8,7 +8,7 @@ enum ErreurDOperateur implements ProblemCode {
   POSTE_DE_TRAVAIL_INTROUVABLE(HttpStatus.NOT_FOUND, "poste de travail introuvable"),
   OPERATEUR_AYANT_POINTE(HttpStatus.CONFLICT, "operateur ayant pointe"),
   IDENTITE_DEJA_UTILISEE(HttpStatus.CONFLICT, "identite deja utilisee"),
-  MATRICULE_DEJA_UTILISE(HttpStatus.CONFLICT, "matricule deja utilise");
+  IDENTIFIANT_DEJA_UTILISE(HttpStatus.CONFLICT, "identifiant deja utilise");
 
   private final HttpStatus status;
   private final String title;

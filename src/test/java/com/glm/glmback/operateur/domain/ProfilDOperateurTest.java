@@ -52,7 +52,7 @@ class ProfilDOperateurTest {
 
   @Test
   void shouldDeduceNoMetierWithoutHabilitation() {
-    ProfilDOperateur profil = new ProfilDOperateur(operateurMartinSansMatricule(), List.of());
+    ProfilDOperateur profil = new ProfilDOperateur(operateurMartinSansIdentifiant(), List.of());
 
     assertThat(profil.natures()).isEmpty();
   }

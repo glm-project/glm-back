@@ -66,7 +66,7 @@ une nouvelle ouverture cohérente peut rester en cours sur le même suivi.
   `genereLe`. Une correction conserve l'identité de l'activité et peut déplacer son début et son échéance.
   L'identité rendue dans `ouverture` vient d'`activite_d_atelier.id`, jamais de l'ouvrant actif corrigé.
   `cloture_date_de_survenue` continue d'écarter les suivis clôturés.
-- **Un opérateur sans activité n'est jamais omis.** La liste rend l'identité, le matricule éventuel et les postes
+- **Un opérateur sans activité n'est jamais omis.** La liste rend l'identité, l'identifiant éventuel et les postes
   habilités des opérateurs désignables, indépendamment des pointages.
 - **Les lectures se font par ensembles.** Opérateurs et habilitations, activités, conflits et références se lisent
   sans requête par opérateur, suivi ou séquence.

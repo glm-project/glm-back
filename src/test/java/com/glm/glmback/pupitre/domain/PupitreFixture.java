@@ -24,7 +24,7 @@ public final class PupitreFixture {
 
   public static final Nom NOM_DUPONT = new Nom("Dupont");
   public static final Prenom PRENOM_JEAN = new Prenom("Jean");
-  public static final Matricule MATRICULE_049 = new Matricule("049");
+  public static final Identifiant IDENTIFIANT_049 = new Identifiant("049");
   public static final LibelleDePoste LIBELLE_FRAISEUSE_1 = new LibelleDePoste("Fraiseuse 1");
   public static final LibelleDePoste LIBELLE_FRAISEUSE_2 = new LibelleDePoste("Fraiseuse 2");
   public static final NomDElement NOM_OF_42 = new NomDElement("OF-2026-000042");
@@ -58,7 +58,7 @@ public final class PupitreFixture {
       .id(OPERATEUR_ID_DUPONT)
       .nom(NOM_DUPONT)
       .prenom(PRENOM_JEAN)
-      .matricule(MATRICULE_049.value())
+      .identifiant(IDENTIFIANT_049.value())
       .postes(List.of(POSTE_HABILITE_FRAISEUSE_1, POSTE_HABILITE_FRAISEUSE_2));
   }
 

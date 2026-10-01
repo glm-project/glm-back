@@ -41,12 +41,12 @@ class OperateurTest {
   }
 
   @Test
-  void shouldNotBuildWithoutMatricule() {
+  void shouldNotBuildWithoutIdentifiant() {
     OperateurId id = OperateurId.newId();
 
     assertThatThrownBy(() -> new Operateur(id, NOM_DUPONT, PRENOM_JEAN, null, Optional.empty(), Set.of()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("matricule");
+      .hasMessageContaining("identifiant");
   }
 
   @Test
@@ -86,29 +86,29 @@ class OperateurTest {
       .id(id)
       .nom(NOM_DUPONT)
       .prenom(PRENOM_JEAN)
-      .matricule("049")
+      .identifiant("049")
       .tauxHoraire(new BigDecimal("22.00"))
       .postes(habilitationsDeSoudureEtDeTournage());
 
     assertThat(operateur.id()).isEqualTo(id);
     assertThat(operateur.nom()).isEqualTo(NOM_DUPONT);
     assertThat(operateur.prenom()).isEqualTo(PRENOM_JEAN);
-    assertThat(operateur.matricule()).contains(MATRICULE_049);
+    assertThat(operateur.identifiant()).contains(IDENTIFIANT_049);
     assertThat(operateur.tauxHoraire()).contains(TAUX_HORAIRE_22);
     assertThat(operateur.postes()).containsExactlyInAnyOrder(ID_TOUR_1, ID_POSTE_DE_SOUDURE);
   }
 
   @Test
-  void shouldBuildOperateurWithoutMatriculeNorPoste() {
+  void shouldBuildOperateurWithoutIdentifiantNorPoste() {
     Operateur operateur = Operateur.builder()
       .id(OperateurId.newId())
       .nom(NOM_MARTIN)
       .prenom(PRENOM_SOPHIE)
-      .matricule(null)
+      .identifiant(null)
       .tauxHoraire(null)
       .postes(Set.of());
 
-    assertThat(operateur.matricule()).isEmpty();
+    assertThat(operateur.identifiant()).isEmpty();
     assertThat(operateur.tauxHoraire()).isEmpty();
     assertThat(operateur.postes()).isEmpty();
   }
@@ -130,7 +130,7 @@ class OperateurTest {
     Operateur revise = operateur.revise(
       NOM_MARTIN,
       PRENOM_SOPHIE,
-      Optional.of(MATRICULE_050),
+      Optional.of(IDENTIFIANT_050),
       Optional.of(TAUX_HORAIRE_25),
       habilitationDeTournage()
     );
@@ -138,7 +138,7 @@ class OperateurTest {
     assertThat(revise.id()).isEqualTo(operateur.id());
     assertThat(revise.nom()).isEqualTo(NOM_MARTIN);
     assertThat(revise.prenom()).isEqualTo(PRENOM_SOPHIE);
-    assertThat(revise.matricule()).contains(MATRICULE_050);
+    assertThat(revise.identifiant()).contains(IDENTIFIANT_050);
     assertThat(revise.tauxHoraire()).contains(TAUX_HORAIRE_25);
     assertThat(revise.postes()).containsExactly(ID_TOUR_1);
   }

@@ -39,12 +39,12 @@ class OperateurAModifierTest {
   }
 
   @Test
-  void shouldNotBuildWithoutMatricule() {
+  void shouldNotBuildWithoutIdentifiant() {
     OperateurId id = OperateurId.newId();
 
     assertThatThrownBy(() -> new OperateurAModifier(id, NOM_DUPONT, PRENOM_JEAN, null, Optional.empty(), Set.of()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("matricule");
+      .hasMessageContaining("identifiant");
   }
 
   @Test
@@ -74,18 +74,18 @@ class OperateurAModifierTest {
     assertThat(aModifier.id()).isEqualTo(id);
     assertThat(aModifier.nom()).isEqualTo(NOM_DUPONT);
     assertThat(aModifier.prenom()).isEqualTo(PRENOM_JEAN);
-    assertThat(aModifier.matricule()).contains(MATRICULE_049);
+    assertThat(aModifier.identifiant()).contains(IDENTIFIANT_049);
     assertThat(aModifier.tauxHoraire()).contains(TAUX_HORAIRE_22);
     assertThat(aModifier.postes()).containsExactly(ID_TOUR_1);
   }
 
   @Test
-  void shouldRemoveMatriculeWhenBlank() {
+  void shouldRemoveIdentifiantWhenBlank() {
     OperateurId id = OperateurId.newId();
 
     OperateurAModifier aModifier = new OperateurAModifier(id, "Dupont", "Jean", " ", null, Set.of());
 
-    assertThat(aModifier.matricule()).isEmpty();
+    assertThat(aModifier.identifiant()).isEmpty();
   }
 
   @Test

@@ -37,7 +37,7 @@ class OperateursServiceTest {
     ProfilDOperateur profil = operateurs.create(operateurACreerDupont());
 
     assertThat(profil.operateur().nom()).isEqualTo(NOM_DUPONT);
-    assertThat(profil.operateur().matricule()).contains(MATRICULE_049);
+    assertThat(profil.operateur().identifiant()).contains(IDENTIFIANT_049);
     assertThat(profil.natures()).containsExactly(NATURE_SOUDAGE, NATURE_TOURNAGE);
   }
 
@@ -49,20 +49,20 @@ class OperateursServiceTest {
   }
 
   @Test
-  void shouldCreateOperateurWithoutMatriculeNorPoste() {
-    ProfilDOperateur profil = operateurs.create(operateurACreerMartinSansMatricule());
+  void shouldCreateOperateurWithoutIdentifiantNorPoste() {
+    ProfilDOperateur profil = operateurs.create(operateurACreerMartinSansIdentifiant());
 
-    assertThat(profil.operateur().matricule()).isEmpty();
+    assertThat(profil.operateur().identifiant()).isEmpty();
     assertThat(profil.natures()).isEmpty();
   }
 
   @Test
-  void shouldCreateManyOperateursWithoutMatricule() {
-    operateurs.create(operateurACreerMartinSansMatricule());
+  void shouldCreateManyOperateursWithoutIdentifiant() {
+    operateurs.create(operateurACreerMartinSansIdentifiant());
 
-    ProfilDOperateur second = operateurs.create(operateurACreerDupontSansMatricule());
+    ProfilDOperateur second = operateurs.create(operateurACreerDupontSansIdentifiant());
 
-    assertThat(second.operateur().matricule()).isEmpty();
+    assertThat(second.operateur().identifiant()).isEmpty();
   }
 
   @Test
@@ -75,18 +75,18 @@ class OperateursServiceTest {
   }
 
   @Test
-  void shouldNotCreateOperateurWithAlreadyUsedMatricule() {
+  void shouldNotCreateOperateurWithAlreadyUsedIdentifiant() {
     operateurs.create(operateurACreerDupont());
-    OperateurACreer homonymeDeMatricule = new OperateurACreer(
+    OperateurACreer homonymeDeIdentifiant = new OperateurACreer(
       NOM_MARTIN,
       PRENOM_SOPHIE,
-      Optional.of(MATRICULE_049),
+      Optional.of(IDENTIFIANT_049),
       Optional.empty(),
       Set.of()
     );
 
-    assertThatThrownBy(() -> operateurs.create(homonymeDeMatricule))
-      .isExactlyInstanceOf(MatriculeDejaUtiliseException.class)
+    assertThatThrownBy(() -> operateurs.create(homonymeDeIdentifiant))
+      .isExactlyInstanceOf(IdentifiantDejaUtiliseException.class)
       .hasMessageContaining("049");
   }
 
@@ -134,13 +134,13 @@ class OperateursServiceTest {
   }
 
   @Test
-  void shouldUpdateOperateurKeepingHisOwnIdentiteAndMatricule() {
+  void shouldUpdateOperateurKeepingHisOwnIdentiteAndIdentifiant() {
     ProfilDOperateur cree = operateurs.create(operateurACreerDupont());
 
     ProfilDOperateur revise = operateurs.update(operateurAModifierDupont(cree.operateur().id()));
 
     assertThat(revise.operateur().nom()).isEqualTo(NOM_DUPONT);
-    assertThat(revise.operateur().matricule()).contains(MATRICULE_049);
+    assertThat(revise.operateur().identifiant()).contains(IDENTIFIANT_049);
   }
 
   @Test
@@ -152,7 +152,7 @@ class OperateursServiceTest {
       autre.operateur().id(),
       NOM_DUPONT,
       PRENOM_JEAN,
-      Optional.of(MATRICULE_050),
+      Optional.of(IDENTIFIANT_050),
       Optional.empty(),
       Set.of()
     );
@@ -161,7 +161,7 @@ class OperateursServiceTest {
   }
 
   @Test
-  void shouldNotUpdateOperateurWithMatriculeOfAnother() {
+  void shouldNotUpdateOperateurWithIdentifiantOfAnother() {
     operateurs.create(operateurACreerDupont());
     ProfilDOperateur autre = operateurs.create(operateurACreerMartin());
 
@@ -169,12 +169,12 @@ class OperateursServiceTest {
       autre.operateur().id(),
       NOM_MARTIN,
       PRENOM_SOPHIE,
-      Optional.of(MATRICULE_049),
+      Optional.of(IDENTIFIANT_049),
       Optional.empty(),
       Set.of()
     );
 
-    assertThatThrownBy(() -> operateurs.update(aModifier)).isExactlyInstanceOf(MatriculeDejaUtiliseException.class);
+    assertThatThrownBy(() -> operateurs.update(aModifier)).isExactlyInstanceOf(IdentifiantDejaUtiliseException.class);
   }
 
   @Test
@@ -233,7 +233,7 @@ class OperateursServiceTest {
   @Test
   void shouldListOnlyOperateursHabilitatedOnPoste() {
     operateurs.create(operateurACreerDupont());
-    operateurs.create(operateurACreerMartinSansMatricule());
+    operateurs.create(operateurACreerMartinSansIdentifiant());
 
     Page<ProfilDOperateur> page = operateurs.list(Optional.of(ID_POSTE_DE_SOUDURE), firstPageOfTen());
 

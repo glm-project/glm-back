@@ -239,7 +239,7 @@ class FreshActivitySchemaIT {
     );
     assertThat(query(database, "SELECT indexname FROM pg_indexes WHERE schemaname = '" + schema + "'")).contains(
       "ux_operateur_identite",
-      "ux_operateur_matricule",
+      "ux_operateur_identifiant",
       "ix_operateur_poste_poste",
       "ix_activite_d_atelier_suivi",
       "ix_activite_d_atelier_operateur",

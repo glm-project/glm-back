@@ -28,10 +28,10 @@ class OperateurACreerTest {
   }
 
   @Test
-  void shouldNotBuildWithoutMatricule() {
+  void shouldNotBuildWithoutIdentifiant() {
     assertThatThrownBy(() -> new OperateurACreer(NOM_DUPONT, PRENOM_JEAN, null, Optional.empty(), Set.of()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("matricule");
+      .hasMessageContaining("identifiant");
   }
 
   @Test
@@ -54,16 +54,16 @@ class OperateurACreerTest {
 
     assertThat(aCreer.nom()).isEqualTo(NOM_DUPONT);
     assertThat(aCreer.prenom()).isEqualTo(PRENOM_JEAN);
-    assertThat(aCreer.matricule()).contains(MATRICULE_049);
+    assertThat(aCreer.identifiant()).contains(IDENTIFIANT_049);
     assertThat(aCreer.tauxHoraire()).contains(TAUX_HORAIRE_22);
     assertThat(aCreer.postes()).containsExactly(ID_TOUR_1);
   }
 
   @Test
-  void shouldAcceptBlankMatriculeAsAbsent() {
+  void shouldAcceptBlankIdentifiantAsAbsent() {
     OperateurACreer aCreer = new OperateurACreer("Dupont", "Jean", " ", null, Set.of());
 
-    assertThat(aCreer.matricule()).isEmpty();
+    assertThat(aCreer.identifiant()).isEmpty();
   }
 
   @Test

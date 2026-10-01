@@ -106,7 +106,7 @@ l’enregistrent, et sa séquence est en conflit jusqu’à ce que le gestionnai
 | `poste-de-travail-introuvable` | 404    | poste de travail introuvable | `PosteHabilitableIntrouvableException` |
 | `operateur-ayant-pointe`       | 409    | operateur ayant pointe       | `OperateurAPointeException`            |
 | `identite-deja-utilisee`       | 409    | identite deja utilisee       | `IdentiteDejaUtiliseeException`        |
-| `matricule-deja-utilise`       | 409    | matricule deja utilise       | `MatriculeDejaUtiliseException`        |
+| `identifiant-deja-utilise`     | 409    | identifiant deja utilise     | `IdentifiantDejaUtiliseException`      |
 
 `urn:glm:erreur:operateur:poste-de-travail-introuvable` n'est pas
 `urn:glm:erreur:poste-de-travail:poste-de-travail-introuvable` : le premier refuse une habilitation qu'on posait sur

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <changeSet id="operateur_identifiant" author="glm">
+    <comment>
+      Le matricule devient l'identifiant : le code que l'operateur tape au pupitre. Renommage seul, ni le type ni les
+      donnees ne changent ; le format (1 a 6 chiffres) est garanti par le domaine.
+    </comment>
+    <renameColumn tableName="operateur" oldColumnName="matricule" newColumnName="identifiant" columnDataType="varchar(50)" />
+    <dropUniqueConstraint tableName="operateur" constraintName="ux_operateur_matricule" />
+    <addUniqueConstraint tableName="operateur" columnNames="identifiant" constraintName="ux_operateur_identifiant" />
+  </changeSet>
+</databaseChangeLog>
