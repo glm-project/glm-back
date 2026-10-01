@@ -25,7 +25,7 @@ public final class OperateursService {
   public ProfilDOperateur create(OperateurACreer aCreer) {
     OperateurId id = OperateurId.newId();
     verifierIdentiteLibre(id, aCreer.nom(), aCreer.prenom());
-    verifierMatriculeLibre(id, aCreer.matricule());
+    verifierIdentifiantLibre(id, aCreer.identifiant());
     List<PosteHabilitable> habilitations = resoudre(aCreer.postes());
 
     Operateur cree = repository.create(
@@ -33,7 +33,7 @@ public final class OperateursService {
         .id(id)
         .nom(aCreer.nom())
         .prenom(aCreer.prenom())
-        .matricule(aCreer.matricule().map(Matricule::value).orElse(null))
+        .identifiant(aCreer.identifiant().map(Identifiant::value).orElse(null))
         .tauxHoraire(aCreer.tauxHoraire().map(TauxHoraire::value).orElse(null))
         .postes(aCreer.postes())
     );
@@ -50,11 +50,11 @@ public final class OperateursService {
   public ProfilDOperateur update(OperateurAModifier aModifier) {
     Operateur existant = charger(aModifier.id());
     verifierIdentiteLibre(existant.id(), aModifier.nom(), aModifier.prenom());
-    verifierMatriculeLibre(existant.id(), aModifier.matricule());
+    verifierIdentifiantLibre(existant.id(), aModifier.identifiant());
     List<PosteHabilitable> habilitations = resoudre(aModifier.postes());
 
     Operateur revise = repository.update(
-      existant.revise(aModifier.nom(), aModifier.prenom(), aModifier.matricule(), aModifier.tauxHoraire(), aModifier.postes())
+      existant.revise(aModifier.nom(), aModifier.prenom(), aModifier.identifiant(), aModifier.tauxHoraire(), aModifier.postes())
     );
 
     return new ProfilDOperateur(revise, habilitations);
@@ -135,12 +135,12 @@ public final class OperateursService {
       });
   }
 
-  private void verifierMatriculeLibre(OperateurId id, Optional<Matricule> matricule) {
-    matricule
-      .flatMap(repository::idPourMatricule)
+  private void verifierIdentifiantLibre(OperateurId id, Optional<Identifiant> identifiant) {
+    identifiant
+      .flatMap(repository::idPourIdentifiant)
       .filter(detenteur -> !detenteur.equals(id))
       .ifPresent(detenteur -> {
-        throw new MatriculeDejaUtiliseException(matricule.orElseThrow());
+        throw new IdentifiantDejaUtiliseException(identifiant.orElseThrow());
       });
   }
 }

@@ -1,6 +1,6 @@
 package com.glm.glmback.pupitre.infrastructure.primary;
 
-import com.glm.glmback.pupitre.domain.Matricule;
+import com.glm.glmback.pupitre.domain.Identifiant;
 import com.glm.glmback.pupitre.domain.OperateurDuPupitre;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
@@ -12,7 +12,7 @@ import java.util.UUID;
   Un operateur designable au pupitre, et les postes sur lesquels il peut pointer.
 
   Pas de taux horaire, contrairement a GET /api/operateurs : un ecran d'atelier partage n'a aucune raison de recevoir
-  ce que le rapport de cout de revient reserve au gestionnaire. Le matricule, lui, est ce que l'operateur tape : il
+  ce que le rapport de cout de revient reserve au gestionnaire. L'identifiant, lui, est ce que l'operateur tape : il
   designe, il ne prouve rien, et un operateur qui n'en a pas n'est pas designable.
   """
 )
@@ -25,7 +25,7 @@ record RestOperateurDuPupitre(
   @Schema(description = "Nom de famille.", example = "Dupont", requiredMode = Schema.RequiredMode.REQUIRED) String nom,
   @Schema(description = "Prenom.", example = "Jean", requiredMode = Schema.RequiredMode.REQUIRED) String prenom,
   @Schema(description = "Code tape au pupitre pour se designer, absent si l'entreprise n'en attribue pas.", example = "049")
-  String matricule,
+  String identifiant,
   @Schema(description = "Postes habilites, tries par libelle.", requiredMode = Schema.RequiredMode.REQUIRED) List<RestPosteDuPupitre> postes
 ) {
   static RestOperateurDuPupitre from(OperateurDuPupitre operateur) {
@@ -33,7 +33,7 @@ record RestOperateurDuPupitre(
       operateur.id().uuid(),
       operateur.nom().value(),
       operateur.prenom().value(),
-      operateur.matricule().map(Matricule::value).orElse(null),
+      operateur.identifiant().map(Identifiant::value).orElse(null),
       operateur.postes().stream().map(RestPosteDuPupitre::from).toList()
     );
   }

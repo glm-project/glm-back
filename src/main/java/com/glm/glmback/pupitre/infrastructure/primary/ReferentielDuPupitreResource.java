@@ -31,7 +31,7 @@ class ReferentielDuPupitreResource {
     READ COMMITTED : une ecriture concurrente peut changer les faits entre les requetes successives.
     L'instant commun genereLe assure la meme decision d'expiration, sans garantir un instantane commun.
 
-    Les operateurs restent designables sans activite, avec leur identite, leur matricule et leurs habilitations. Les activites a resoudre
+    Les operateurs restent designables sans activite, avec leur identite, leur identifiant et leurs habilitations. Les activites a resoudre
     sont exclues des activites en cours et leurs identites sont rendues dans les conflits. Une ouverture coherente
     peut etre en cours a cote d'un conflit. L'expiration des activites se juge a genereLe, echeance incluse.
 

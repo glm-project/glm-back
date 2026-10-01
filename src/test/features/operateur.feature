@@ -7,15 +7,15 @@ Feature: Referentiel des operateurs
     Given j'ai un poste de travail "Poste de soudure A" de nature "soudage"
     And j'ai un poste de travail "Tour A" de nature "tournage"
     When je declare un operateur
-      | nom       | Dupont                     |
-      | prenom    | Jean                       |
-      | matricule | 049                        |
-      | postes    | Tour A, Poste de soudure A |
+      | nom         | Dupont                     |
+      | prenom      | Jean                       |
+      | identifiant | 049                        |
+      | postes      | Tour A, Poste de soudure A |
     Then la reponse a le statut http 201
     And la reponse d'operateur contient
-      | nom       | Dupont |
-      | prenom    | Jean   |
-      | matricule | 049    |
+      | nom         | Dupont |
+      | prenom      | Jean   |
+      | identifiant | 049    |
     And la reponse d'operateur a les metiers "soudage, tournage"
     And la reponse d'operateur a les postes "Poste de soudure A, Tour A"
 
@@ -41,15 +41,15 @@ Feature: Referentiel des operateurs
     And la reponse d'operateur contient
       | tauxHoraire | 27.5 |
 
-  Scenario: Declaration d'un operateur sans matricule ni habilitation
+  Scenario: Declaration d'un operateur sans identifiant ni habilitation
     When je declare un operateur
       | nom    | Martin |
       | prenom | Sophie |
     Then la reponse a le statut http 201
-    And la reponse d'operateur n'a pas de matricule
+    And la reponse d'operateur n'a pas d'identifiant
     And la reponse d'operateur a les metiers ""
 
-  Scenario: Plusieurs operateurs peuvent rester sans matricule
+  Scenario: Plusieurs operateurs peuvent rester sans identifiant
     Given j'ai declare un operateur
       | nom    | Durand |
       | prenom | Paul   |
@@ -67,15 +67,15 @@ Feature: Referentiel des operateurs
       | prenom | Anne  |
     Then la reponse a le statut http 409
 
-  Scenario: Declaration refusee si le matricule est deja utilise
+  Scenario: Declaration refusee si l'identifiant est deja utilise
     Given j'ai declare un operateur
-      | nom       | Moreau |
-      | prenom    | Luc    |
-      | matricule | 100    |
+      | nom         | Moreau |
+      | prenom      | Luc    |
+      | identifiant | 100    |
     When je declare un operateur
-      | nom       | Simon |
-      | prenom    | Eve   |
-      | matricule | 100   |
+      | nom         | Simon |
+      | prenom      | Eve   |
+      | identifiant | 100   |
     Then la reponse a le statut http 409
 
   Scenario: Declaration refusee si un poste est inconnu
@@ -127,29 +127,29 @@ Feature: Referentiel des operateurs
     Then la reponse a le statut http 200
     And la reponse d'operateur a les metiers "soudage"
 
-  Scenario: Revision retirant le matricule
+  Scenario: Revision retirant l'identifiant
     Given j'ai declare un operateur
-      | nom       | Noel |
-      | prenom    | Remi |
-      | matricule | 200  |
+      | nom         | Noel |
+      | prenom      | Remi |
+      | identifiant | 200  |
     When je revise cet operateur
       | nom    | Noel |
       | prenom | Remi |
     Then la reponse a le statut http 200
-    And la reponse d'operateur n'a pas de matricule
+    And la reponse d'operateur n'a pas d'identifiant
 
-  Scenario: Revision conservant sa propre identite et son propre matricule
+  Scenario: Revision conservant sa propre identite et son propre identifiant
     Given j'ai declare un operateur
-      | nom       | Bonnet |
-      | prenom    | Yann   |
-      | matricule | 201    |
+      | nom         | Bonnet |
+      | prenom      | Yann   |
+      | identifiant | 201    |
     When je revise cet operateur
-      | nom       | Bonnet |
-      | prenom    | Yann   |
-      | matricule | 201    |
+      | nom         | Bonnet |
+      | prenom      | Yann   |
+      | identifiant | 201    |
     Then la reponse a le statut http 200
     And la reponse d'operateur contient
-      | matricule | 201 |
+      | identifiant | 201 |
 
   Scenario: Revision refusee si l'identite appartient a un autre operateur
     Given j'ai declare un operateur
@@ -163,19 +163,19 @@ Feature: Referentiel des operateurs
       | prenom | Nina  |
     Then la reponse a le statut http 409
 
-  Scenario: Revision refusee si le matricule appartient a un autre operateur
+  Scenario: Revision refusee si l'identifiant appartient a un autre operateur
     Given j'ai declare un operateur
-      | nom       | Colin |
-      | prenom    | Ines  |
-      | matricule | 300   |
+      | nom         | Colin |
+      | prenom      | Ines  |
+      | identifiant | 300   |
     And j'ai declare un operateur
-      | nom       | Meyer |
-      | prenom    | Sacha |
-      | matricule | 301   |
+      | nom         | Meyer |
+      | prenom      | Sacha |
+      | identifiant | 301   |
     When je revise cet operateur
-      | nom       | Meyer |
-      | prenom    | Sacha |
-      | matricule | 300   |
+      | nom         | Meyer |
+      | prenom      | Sacha |
+      | identifiant | 300   |
     Then la reponse a le statut http 409
 
   Scenario: Revision d'un operateur inexistant renvoie 404
@@ -268,13 +268,13 @@ Feature: Referentiel des operateurs
   Scenario: Deux entreprises peuvent employer la meme identite
     Given I am logged in as "gestionnaire" with role "GESTIONNAIRE" for tenant "impeccmold"
     When je declare un operateur
-      | nom       | Partage |
-      | prenom    | Louis   |
-      | matricule | 400     |
+      | nom         | Partage |
+      | prenom      | Louis   |
+      | identifiant | 400     |
     Then la reponse a le statut http 201
     Given I am logged in as "gestionnaire" with role "GESTIONNAIRE" for tenant "katilys"
     When je declare un operateur
-      | nom       | Partage |
-      | prenom    | Louis   |
-      | matricule | 400     |
+      | nom         | Partage |
+      | prenom      | Louis   |
+      | identifiant | 400     |
     Then la reponse a le statut http 201

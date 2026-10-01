@@ -15,7 +15,7 @@ public interface OperateurRepository {
 
   Optional<OperateurId> idPourIdentite(Nom nom, Prenom prenom);
 
-  Optional<OperateurId> idPourMatricule(Matricule matricule);
+  Optional<OperateurId> idPourIdentifiant(Identifiant identifiant);
 
   Page<Operateur> list(OperateurCriteria criteria, Pageable pageable);
 }

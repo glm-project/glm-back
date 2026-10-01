@@ -99,9 +99,9 @@ public class OperateurSteps {
     assertThatLastResponse().hasResponse().containing(attendu);
   }
 
-  @Then("la reponse d'operateur n'a pas de matricule")
-  public void laReponseDOperateurNAPasDeMatricule() {
-    assertThat(CucumberRestTestContext.getElement("$.matricule")).isNull();
+  @Then("la reponse d'operateur n'a pas d'identifiant")
+  public void laReponseDOperateurNAPasDeIdentifiant() {
+    assertThat(CucumberRestTestContext.getElement("$.identifiant")).isNull();
   }
 
   @Then("la reponse d'operateur a les metiers {string}")

@@ -11,6 +11,6 @@ interface SpringDataOperateurRepository extends JpaRepository<OperateurEntity, U
   @Query("SELECT operateur.id FROM OperateurEntity operateur WHERE operateur.nom = :nom AND operateur.prenom = :prenom")
   Optional<UUID> findIdByIdentite(@Param("nom") String nom, @Param("prenom") String prenom);
 
-  @Query("SELECT operateur.id FROM OperateurEntity operateur WHERE operateur.matricule = :matricule")
-  Optional<UUID> findIdByMatricule(@Param("matricule") String matricule);
+  @Query("SELECT operateur.id FROM OperateurEntity operateur WHERE operateur.identifiant = :identifiant")
+  Optional<UUID> findIdByIdentifiant(@Param("identifiant") String identifiant);
 }

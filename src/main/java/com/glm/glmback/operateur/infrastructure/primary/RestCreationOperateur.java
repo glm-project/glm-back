@@ -19,11 +19,11 @@ record RestCreationOperateur(
   @Schema(description = "Prenom.", example = "Jean", requiredMode = Schema.RequiredMode.REQUIRED) @NotBlank @Size(max = 100) String prenom,
 
   @Schema(
-    description = "Matricule interne. Facultatif : toutes les entreprises n'en attribuent pas. Unique des qu'il est renseigne.",
+    description = "Identifiant interne. Facultatif : toutes les entreprises n'en attribuent pas. Unique des qu'il est renseigne.",
     example = "049"
   )
   @Size(max = 50)
-  String matricule,
+  String identifiant,
 
   @Schema(
     description = "Taux horaire de l'operateur, destine au cout de revient. Facultatif : toutes les entreprises ne le valorisent pas.",
@@ -36,6 +36,6 @@ record RestCreationOperateur(
   Set<UUID> postes
 ) {
   OperateurACreer toDomain() {
-    return new OperateurACreer(nom, prenom, matricule, tauxHoraire, RestHabilitations.toDomain(postes));
+    return new OperateurACreer(nom, prenom, identifiant, tauxHoraire, RestHabilitations.toDomain(postes));
   }
 }

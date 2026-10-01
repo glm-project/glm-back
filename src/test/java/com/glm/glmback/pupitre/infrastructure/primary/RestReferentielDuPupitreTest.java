@@ -35,7 +35,7 @@ class RestReferentielDuPupitreTest {
     assertThat(operateur.id()).isEqualTo(OPERATEUR_ID_DUPONT.uuid());
     assertThat(operateur.nom()).isEqualTo("Dupont");
     assertThat(operateur.prenom()).isEqualTo("Jean");
-    assertThat(operateur.matricule()).isEqualTo("049");
+    assertThat(operateur.identifiant()).isEqualTo("049");
     assertThat(operateur.postes()).containsExactly(
       new RestPosteDuPupitre(POSTE_ID_FRAISEUSE_1.uuid(), "Fraiseuse 1"),
       new RestPosteDuPupitre(POSTE_ID_FRAISEUSE_2.uuid(), "Fraiseuse 2")
@@ -43,15 +43,15 @@ class RestReferentielDuPupitreTest {
   }
 
   @Test
-  void shouldTaireLeMatriculeDUnOperateurQuiNEnAPas() {
-    OperateurDuPupitre sansMatricule = OperateurDuPupitre.builder()
+  void shouldTaireLeIdentifiantDUnOperateurQuiNEnAPas() {
+    OperateurDuPupitre sansIdentifiant = OperateurDuPupitre.builder()
       .id(OPERATEUR_ID_MARTIN)
       .nom(NOM_DUPONT)
       .prenom(PRENOM_JEAN)
-      .matricule(null)
+      .identifiant(null)
       .postes(List.of());
 
-    assertThat(RestOperateurDuPupitre.from(sansMatricule).matricule()).isNull();
+    assertThat(RestOperateurDuPupitre.from(sansIdentifiant).identifiant()).isNull();
   }
 
   @Test

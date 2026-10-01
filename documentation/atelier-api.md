@@ -308,7 +308,7 @@ GET /api/pupitre/referentiel
 ```
 
 Un pupitre hors ligne ne reconstitue plus son cache en paginant `GET /api/operateurs` puis
-`GET /api/atelier/suivis`. Cette route rend **tout d'un coup** : les opérateurs désignables avec leur matricule et
+`GET /api/atelier/suivis`. Cette route rend **tout d'un coup** : les opérateurs désignables avec leur identifiant et
 leurs postes habilités, et les éléments encore pointables avec leurs activités en cours.
 Les séquences en conflit sont également rendues sur chaque suivi.
 
@@ -320,7 +320,7 @@ Les séquences en conflit sont également rendues sur chaque suivi.
       "id": "…",
       "nom": "Dupont",
       "prenom": "Jean",
-      "matricule": "049",
+      "identifiant": "049",
       "postes": [{ "id": "…", "libelle": "Fraiseuse 1" }]
     }
   ],
@@ -361,7 +361,7 @@ Les séquences en conflit sont également rendues sur chaque suivi.
   afficher « référentiel du 14/09 à 09:31 » et mesurer un retard. Elle **change à chaque appel**, y compris quand
   rien n'a bougé : ce n'est pas la date du dernier changement, et s'en servir pour décider d'un rafraîchissement
   n'aurait aucun sens. Il n'y a ni `ETag` ni `304`.
-- **Les opérateurs sont désignables indépendamment de leurs activités.** Ils portent leur identité, leur matricule
+- **Les opérateurs sont désignables indépendamment de leurs activités.** Ils portent leur identité, leur identifiant
   éventuel et leurs habilitations.
 
 - **Les activités sont interprétées par atelier**, puis leur expiration est évaluée à `genereLe`. Une activité

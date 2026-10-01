@@ -9,7 +9,7 @@ public record OperateurAModifier(
   OperateurId id,
   Nom nom,
   Prenom prenom,
-  Optional<Matricule> matricule,
+  Optional<Identifiant> identifiant,
   Optional<TauxHoraire> tauxHoraire,
   Set<PosteHabilitableId> postes
 ) {
@@ -17,7 +17,7 @@ public record OperateurAModifier(
     Assert.notNull("id", id);
     Assert.notNull("nom", nom);
     Assert.notNull("prenom", prenom);
-    Assert.notNull("matricule", matricule);
+    Assert.notNull("identifiant", identifiant);
     Assert.notNull("taux horaire", tauxHoraire);
     Assert.field("postes", postes).notNull().noNullElement();
 
@@ -28,10 +28,10 @@ public record OperateurAModifier(
     OperateurId id,
     String nom,
     String prenom,
-    String matricule,
+    String identifiant,
     BigDecimal tauxHoraire,
     Set<PosteHabilitableId> postes
   ) {
-    this(id, new Nom(nom), new Prenom(prenom), Matricule.of(matricule), TauxHoraire.of(tauxHoraire), postes);
+    this(id, new Nom(nom), new Prenom(prenom), Identifiant.of(identifiant), TauxHoraire.of(tauxHoraire), postes);
   }
 }

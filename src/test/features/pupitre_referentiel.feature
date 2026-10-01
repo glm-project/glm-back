@@ -19,7 +19,7 @@ Feature: Le referentiel que le pupitre met en cache
     When je lis le referentiel du pupitre a "2026-05-11T07:00:00Z"
     Then la reponse a le statut http 200
     And le referentiel du pupitre est date du "2026-05-11T07:00:00Z"
-    And le referentiel du pupitre porte l'operateur "dupont" avec son matricule
+    And le referentiel du pupitre porte l'operateur "dupont" avec son identifiant
     And "dupont" ne porte aucun etat ni echeance de presence au referentiel du pupitre
     And les postes proposes a "dupont" sont
       | fraiseuse |

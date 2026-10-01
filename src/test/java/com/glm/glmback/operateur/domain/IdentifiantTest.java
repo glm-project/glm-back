@@ -9,48 +9,48 @@ import com.glm.glmback.shared.error.domain.StringTooLongException;
 import org.junit.jupiter.api.Test;
 
 @UnitTest
-class MatriculeTest {
+class IdentifiantTest {
 
   @Test
   void shouldNotBuildWithoutValue() {
-    assertThatThrownBy(() -> new Matricule(null))
+    assertThatThrownBy(() -> new Identifiant(null))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("matricule");
+      .hasMessageContaining("identifiant");
   }
 
   @Test
   void shouldNotBuildWithBlankValue() {
-    assertThatThrownBy(() -> new Matricule(" "))
+    assertThatThrownBy(() -> new Identifiant(" "))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("matricule");
+      .hasMessageContaining("identifiant");
   }
 
   @Test
   void shouldNotBuildWithTooLongValue() {
     String tooLong = "a".repeat(51);
 
-    assertThatThrownBy(() -> new Matricule(tooLong))
+    assertThatThrownBy(() -> new Identifiant(tooLong))
       .isExactlyInstanceOf(StringTooLongException.class)
-      .hasMessageContaining("matricule");
+      .hasMessageContaining("identifiant");
   }
 
   @Test
-  void shouldGetValueFromValidMatricule() {
-    assertThat(MATRICULE_049.value()).isEqualTo("049");
+  void shouldGetValueFromValidIdentifiant() {
+    assertThat(IDENTIFIANT_049.value()).isEqualTo("049");
   }
 
   @Test
-  void shouldNotBuildOptionalMatriculeFromNull() {
-    assertThat(Matricule.of(null)).isEmpty();
+  void shouldNotBuildOptionalIdentifiantFromNull() {
+    assertThat(Identifiant.of(null)).isEmpty();
   }
 
   @Test
-  void shouldNotBuildOptionalMatriculeFromBlank() {
-    assertThat(Matricule.of(" ")).isEmpty();
+  void shouldNotBuildOptionalIdentifiantFromBlank() {
+    assertThat(Identifiant.of(" ")).isEmpty();
   }
 
   @Test
-  void shouldBuildOptionalMatriculeFromValue() {
-    assertThat(Matricule.of("049")).contains(MATRICULE_049);
+  void shouldBuildOptionalIdentifiantFromValue() {
+    assertThat(Identifiant.of("049")).contains(IDENTIFIANT_049);
   }
 }

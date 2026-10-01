@@ -7,7 +7,7 @@ import java.util.UUID;
  * L'identite de la personne qui pointe, telle que le referentiel des operateurs la designe.
  *
  * <p>
- * C'est la seule chose que le pupitre renvoie au serveur quand il pointe : le matricule sert a retrouver la fiche
+ * C'est la seule chose que le pupitre renvoie au serveur quand il pointe : l'identifiant saisi sert a retrouver la fiche
  * localement, jamais a ecrire.
  * </p>
  */

@@ -1,6 +1,6 @@
 package com.glm.glmback.operateur.infrastructure.secondary;
 
-import com.glm.glmback.operateur.domain.Matricule;
+import com.glm.glmback.operateur.domain.Identifiant;
 import com.glm.glmback.operateur.domain.Nom;
 import com.glm.glmback.operateur.domain.Operateur;
 import com.glm.glmback.operateur.domain.OperateurCriteria;
@@ -70,8 +70,8 @@ class JpaOperateurRepository implements OperateurRepository {
   }
 
   @Override
-  public Optional<OperateurId> idPourMatricule(Matricule matricule) {
-    return operateurs.findIdByMatricule(matricule.value()).map(OperateurId::new);
+  public Optional<OperateurId> idPourIdentifiant(Identifiant identifiant) {
+    return operateurs.findIdByIdentifiant(identifiant.value()).map(OperateurId::new);
   }
 
   @Override

@@ -215,7 +215,7 @@ Le terme reste volontairement générique, comme dans l'atelier : une machine ch
 
 ## operateur
 
-Gère le **référentiel des personnes qui pointent**. Un `Operateur` porte son nom, son prénom, un matricule facultatif, un taux horaire facultatif, et l'ensemble des postes sur lesquels il est habilité.
+Gère le **référentiel des personnes qui pointent**. Un `Operateur` porte son nom, son prénom, un identifiant facultatif, un taux horaire facultatif, et l'ensemble des postes sur lesquels il est habilité.
 
 ### Le métier vient du poste, jamais de la personne
 
@@ -229,9 +229,9 @@ La phrase du client « la machine est liée à l'opérateur, et l'opérateur a l
 
 **Un opérateur dont un fait historique d'activité existe ne se supprime pas**, même si ce fait est annulé. Le journal conserve son identifiant pour lire l'histoire ; `OperateursQuiOntPointe` lit les faits par une entité propre en lecture seule, sans filtre d'annulation.
 
-### Identité et matricule
+### Identité et identifiant
 
-L'identité (nom, prénom) est **unique par entreprise**. Le **matricule** est l'identifiant que l'entreprise donne elle-même à ses collaborateurs : **facultatif**, car toutes n'en attribuent pas, et **unique dès qu'il est renseigné** — patron exact de `elementdefabrication.Reference`, `NULL` distincts compris, donc autant d'opérateurs sans matricule que nécessaire.
+L'identité (nom, prénom) est **unique par entreprise**. L'**identifiant** est le code que l'entreprise donne elle-même à ses collaborateurs : **facultatif**, car toutes n'en attribuent pas, et **unique dès qu'il est renseigné** — patron exact de `elementdefabrication.Reference`, `NULL` distincts compris, donc autant d'opérateurs sans identifiant que nécessaire.
 
 ### Frontière avec postedetravail
 
@@ -500,7 +500,7 @@ Quatre défauts en découlaient, tous du ressort du back :
 
 ### Ce que la route rend, et ce qu'elle ne rend pas
 
-Les opérateurs désignables — identité, matricule, postes habilités —, les éléments encore pointables — identité,
+Les opérateurs désignables — identité, identifiant, postes habilités —, les éléments encore pointables — identité,
 nom d'atelier, référence, type, état, activités en cours, conflits —, et `genereLe`. Un opérateur sans activité
 reste rendu avec toutes ses habilitations.
 

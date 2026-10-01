@@ -25,30 +25,30 @@ class OperateurDuPupitreTest {
       .id(OPERATEUR_ID_DUPONT)
       .nom(new Nom("Dupont"))
       .prenom(new Prenom("Jean"))
-      .matricule("049")
+      .identifiant("049")
       .postes(List.of(POSTE_HABILITE_FRAISEUSE_1));
 
     assertThat(operateur.id()).isEqualTo(OPERATEUR_ID_DUPONT);
     assertThat(operateur.nom()).isEqualTo(NOM_DUPONT);
     assertThat(operateur.prenom()).isEqualTo(PRENOM_JEAN);
-    assertThat(operateur.matricule()).contains(MATRICULE_049);
+    assertThat(operateur.identifiant()).contains(IDENTIFIANT_049);
     assertThat(operateur.postes()).containsExactly(POSTE_HABILITE_FRAISEUSE_1);
   }
 
   /**
-   * Un operateur sans matricule n'est simplement pas designable au pupitre : le referentiel le rend quand meme, il
+   * Un operateur sans identifiant n'est simplement pas designable au pupitre : le referentiel le rend quand meme, il
    * apparaitra des que l'entreprise lui en donnera un.
    */
   @Test
-  void shouldBuildSansMatricule() {
+  void shouldBuildSansIdentifiant() {
     OperateurDuPupitre operateur = OperateurDuPupitre.builder()
       .id(OPERATEUR_ID_MARTIN)
       .nom(NOM_DUPONT)
       .prenom(PRENOM_JEAN)
-      .matricule(null)
+      .identifiant(null)
       .postes(List.of());
 
-    assertThat(operateur.matricule()).isEmpty();
+    assertThat(operateur.identifiant()).isEmpty();
     assertThat(operateur.postes()).isEmpty();
   }
 }

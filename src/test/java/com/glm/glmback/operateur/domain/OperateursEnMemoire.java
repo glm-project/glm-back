@@ -59,11 +59,11 @@ final class OperateursEnMemoire implements OperateurRepository {
   }
 
   @Override
-  public Optional<OperateurId> idPourMatricule(Matricule matricule) {
+  public Optional<OperateurId> idPourIdentifiant(Identifiant identifiant) {
     return operateurs
       .values()
       .stream()
-      .filter(operateur -> operateur.matricule().filter(matricule::equals).isPresent())
+      .filter(operateur -> operateur.identifiant().filter(identifiant::equals).isPresent())
       .findFirst()
       .map(Operateur::id);
   }

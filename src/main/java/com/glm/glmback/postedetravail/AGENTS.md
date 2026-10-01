@@ -38,7 +38,7 @@ aucune inversion ne compile. `builder()` est public parce que la relecture depui
   la règle.
 - **La nature est obligatoire**, contrairement à l'atelier où elle reste facultative. Un poste n'est déclaré que pour
   dire quel travail s'y fait — c'est de lui, et non de la personne, que vient le métier exercé à un instant donné.
-- **Le coût horaire est facultatif et strictement positif** quand il est renseigné, sur le patron de `Matricule` :
+- **Le coût horaire est facultatif et strictement positif** quand il est renseigné, sur le patron d'`Identifiant` :
   toutes les entreprises ne valorisent pas encore leurs postes, et un coût à zéro n'a pas de sens métier — s'il est
   inconnu, le champ reste absent plutôt qu'à zéro.
 - **Un poste encore habilité ne se supprime pas** : cela laisserait des opérateurs pointer sur du vide. La règle vit

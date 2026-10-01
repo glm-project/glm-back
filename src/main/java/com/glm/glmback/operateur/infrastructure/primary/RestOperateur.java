@@ -1,6 +1,6 @@
 package com.glm.glmback.operateur.infrastructure.primary;
 
-import com.glm.glmback.operateur.domain.Matricule;
+import com.glm.glmback.operateur.domain.Identifiant;
 import com.glm.glmback.operateur.domain.NatureDeTravail;
 import com.glm.glmback.operateur.domain.ProfilDOperateur;
 import com.glm.glmback.operateur.domain.TauxHoraire;
@@ -17,7 +17,7 @@ record RestOperateur(
 
   @Schema(description = "Prenom.", example = "Jean", requiredMode = Schema.RequiredMode.REQUIRED) String prenom,
 
-  @Schema(description = "Matricule interne, absent si l'entreprise n'en attribue pas.", example = "049") String matricule,
+  @Schema(description = "Identifiant interne, absent si l'entreprise n'en attribue pas.", example = "049") String identifiant,
 
   @Schema(description = "Taux horaire de l'operateur, absent si l'entreprise ne le valorise pas.", example = "22.00")
   BigDecimal tauxHoraire,
@@ -36,7 +36,7 @@ record RestOperateur(
       profil.operateur().id().uuid(),
       profil.operateur().nom().value(),
       profil.operateur().prenom().value(),
-      profil.operateur().matricule().map(Matricule::value).orElse(null),
+      profil.operateur().identifiant().map(Identifiant::value).orElse(null),
       profil.operateur().tauxHoraire().map(TauxHoraire::value).orElse(null),
       profil.postes().stream().map(RestPosteHabilite::from).toList(),
       profil.natures().stream().map(NatureDeTravail::value).toList()

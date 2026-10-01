@@ -4,8 +4,8 @@ import static com.glm.glmback.operateur.domain.OperateursFixture.*;
 import static org.springframework.http.HttpStatus.*;
 
 import com.glm.glmback.UnitTest;
+import com.glm.glmback.operateur.domain.IdentifiantDejaUtiliseException;
 import com.glm.glmback.operateur.domain.IdentiteDejaUtiliseeException;
-import com.glm.glmback.operateur.domain.MatriculeDejaUtiliseException;
 import com.glm.glmback.operateur.domain.OperateurAPointeException;
 import com.glm.glmback.operateur.domain.OperateurId;
 import com.glm.glmback.operateur.domain.OperateurIntrouvableException;
@@ -41,7 +41,11 @@ class OperateurExceptionAdviceTest extends ExceptionAdviceContract {
         "urn:glm:erreur:operateur:identite-deja-utilisee",
         CONFLICT
       ),
-      new PublishedProblem(new MatriculeDejaUtiliseException(MATRICULE_049), "urn:glm:erreur:operateur:matricule-deja-utilise", CONFLICT)
+      new PublishedProblem(
+        new IdentifiantDejaUtiliseException(IDENTIFIANT_049),
+        "urn:glm:erreur:operateur:identifiant-deja-utilise",
+        CONFLICT
+      )
     );
   }
 }

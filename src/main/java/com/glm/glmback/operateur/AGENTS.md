@@ -6,7 +6,7 @@ Responsabilité, frontières et invariants de ce contexte. Les règles de code c
 
 ## Ce dont ce contexte s'occupe
 
-Le **référentiel des personnes qui pointent** : nom, prénom, matricule facultatif, et les **postes sur lesquels elles
+Le **référentiel des personnes qui pointent** : nom, prénom, identifiant facultatif, et les **postes sur lesquels elles
 sont habilitées**.
 
 Il en déduit, à la lecture seulement, les **métiers** de l'opérateur : `ProfilDOperateur.natures()` rend les natures de
@@ -24,7 +24,7 @@ ne l'ait saisi deux fois.
   sur ses faits, `coutderevient` les valorise.
 - **Le pointage**, qui appartient à `atelier` — lequel ne connaît de ce contexte que l'identifiant, lu par port, et
   copie le taux horaire sur ses faits.
-- **L'identification à la borne** et l'authentification. Le matricule est un attribut d'identité, pas un moyen de
+- **L'identification à la borne** et l'authentification. L'identifiant est un attribut d'identité, pas un moyen de
   connexion.
 
 ## Agrégat
@@ -39,10 +39,10 @@ résolus.
 ## Invariants à ne pas casser
 
 - **L'identité (nom, prénom) est unique par entreprise** → `IdentiteDejaUtiliseeException` (409).
-- **Le matricule est unique quand il est renseigné**, et plusieurs opérateurs peuvent rester sans — patron
+- **L'identifiant est unique quand il est renseigné**, et plusieurs opérateurs peuvent rester sans — patron
   `elementdefabrication.Reference`. PostgreSQL considérant les `NULL` comme distincts, l'index unique laisse coexister
-  autant d'opérateurs sans matricule que nécessaire.
-- **Le taux horaire est facultatif et strictement positif** quand il est renseigné, sur le patron du matricule : un
+  autant d'opérateurs sans identifiant que nécessaire.
+- **Le taux horaire est facultatif et strictement positif** quand il est renseigné, sur le patron de l'identifiant : un
   taux à zéro n'a pas de sens métier — s'il est inconnu, le champ reste absent plutôt qu'à zéro.
 - **Tout poste référencé existe.** Invariant inter-contextes : il ne peut pas vivre dans le constructeur, qui ne voit
   que des identifiants. Il est porté par `OperateursService`, qui détient les deux ports.
