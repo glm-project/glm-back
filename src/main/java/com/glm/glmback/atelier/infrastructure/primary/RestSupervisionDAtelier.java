@@ -8,5 +8,5 @@ record RestSupervisionDAtelier(
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) Instant evaluation,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<RestOperateurDeSupervision> operateurs,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<RestActiviteDeSupervision> activites,
-  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<RestSequenceEnConflit> sequencesEnConflit
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<RestSequenceEnConflitDeSupervision> sequencesEnConflit
 ) {}

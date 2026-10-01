@@ -159,6 +159,37 @@ class SupervisionDAtelierResourceIT {
 
   @Test
   @WithTenant("supervision_fixture")
+  void shouldKeepConflictDescriptionsSeparateFromInterpretableActivitiesAfterTheirDeadline() throws Exception {
+    var travail = debutSansPosteParDupontA(LE_10_MAI_2026_A_8H);
+    var nc = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_12H);
+    var suivi = suiviDAtelierEngage().enregistre(travail).enregistre(nc).enregistre(finDe(travail).a(LE_10_MAI_2026_A_17H));
+    when(clock.now()).thenReturn(LE_11_MAI_2026_A_9H);
+    transactions.executeWithoutResult(status -> suivis.create(suivi));
+
+    rest
+      .perform(get("/api/atelier/supervision"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.activites").isEmpty())
+      .andExpect(jsonPath("$.sequencesEnConflit.length()").value(1))
+      .andExpect(jsonPath("$.sequencesEnConflit[0].id").value(travail.id().uuid().toString()))
+      .andExpect(jsonPath("$.sequencesEnConflit[0].operateurId").value(OPERATEUR_ID_DUPONT.uuid().toString()))
+      .andExpect(jsonPath("$.sequencesEnConflit[0].poste").doesNotExist())
+      .andExpect(jsonPath("$.sequencesEnConflit[0].activites.length()").value(2))
+      .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].id").value(travail.activite().orElseThrow().uuid().toString()))
+      .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].operateurId").value(OPERATEUR_ID_DUPONT.uuid().toString()))
+      .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].element.nom").value(NOM_OF_2026_000042.value()))
+      .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].element.type").value("ORDRE_DE_FABRICATION"))
+      .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].categorie").value("TRAVAIL"))
+      .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].debut").value("2026-05-10T08:00:00Z"))
+      .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].echeance").value("2026-05-10T21:00:00Z"))
+      .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].etat").doesNotExist())
+      .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].finRetenue").doesNotExist())
+      .andExpect(jsonPath("$.sequencesEnConflit[0].activites[1].id").value(nc.activite().orElseThrow().uuid().toString()))
+      .andExpect(jsonPath("$.sequencesEnConflit[0].activites[1].categorie").value("NON_CONFORMITE"));
+  }
+
+  @Test
+  @WithTenant("supervision_fixture")
   void shouldDeriveDistinctTradesFromEachOperatorsAuthorizedPosts() throws Exception {
     when(clock.now()).thenReturn(Instant.parse("2026-09-13T10:00:00Z"));
     transactions.executeWithoutResult(status -> {

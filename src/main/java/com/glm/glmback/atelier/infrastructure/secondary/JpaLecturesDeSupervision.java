@@ -55,24 +55,54 @@ class JpaLecturesDeSupervision implements LecturesDeSupervision {
         """
         select a.id as id, a.operateurId as operateurId, a.categorie as categorie, a.debut as debut, a.echeance as echeance,
         s.elementId as elementId, s.elementNom as elementNom, s.elementType as elementType, e.reference as reference,
-          a.posteId as posteId, p.libelle as posteLibelle, a.nature as nature
+          a.posteId as posteId, p.libelle as posteLibelle, a.nature as nature, q.id as sequenceId, a.aResoudre as aResoudre
         from ActiviteDAtelierEntity a join a.suivi s
           left join ElementEngageableEntity e on e.id = s.elementId
           left join PosteConnuEntity p on p.id = a.posteId
-        where a.aResoudre = false and a.fin is null order by a.debut, a.id
+          left join a.sequence q
+        where a.fin is null order by a.ordreDansSequence nulls last, a.debut, a.id
         """,
         Tuple.class
       )
       .getResultList();
-    return new LectureDeSupervision(
-      evaluation,
-      operateurs,
-      activites
-        .stream()
-        .map(this::toDescription)
-        .map(description -> ActiviteDeSupervision.a(description, evaluation))
-        .toList()
-    );
+    Map<UUID, List<DescriptionDActiviteDeSupervision>> descriptionsEnConflit = activites
+      .stream()
+      .filter(row -> row.get("aResoudre", Boolean.class))
+      .collect(
+        Collectors.groupingBy(row -> row.get("sequenceId", UUID.class), Collectors.mapping(this::toDescription, Collectors.toList()))
+      );
+    List<Tuple> sequences = entities
+      .createQuery(
+        """
+        select q.id as id, q.operateurId as operateurId, q.posteId as posteId, p.libelle as posteLibelle, p.nature as nature
+        from SequenceEnConflitDAtelierEntity q left join PosteConnuEntity p on p.id = q.posteId order by q.id
+        """,
+        Tuple.class
+      )
+      .getResultList();
+    return LectureDeSupervision.builder()
+      .evaluation(evaluation)
+      .operateurs(operateurs)
+      .activites(
+        activites
+          .stream()
+          .filter(row -> !row.get("aResoudre", Boolean.class))
+          .map(this::toDescription)
+          .map(description -> ActiviteDeSupervision.a(description, evaluation))
+          .toList()
+      )
+      .sequencesEnConflit(
+        sequences
+          .stream()
+          .map(row ->
+            SequenceEnConflitDeSupervision.builder()
+              .id(new EvenementDAtelierId(row.get("id", UUID.class)))
+              .operateur(new OperateurId(row.get("operateurId", UUID.class)))
+              .poste(toPoste(row))
+              .activites(descriptionsEnConflit.getOrDefault(row.get("id", UUID.class), List.of()))
+          )
+          .toList()
+      );
   }
 
   private DescriptionDActiviteDeSupervision toDescription(Tuple row) {
@@ -85,18 +115,20 @@ class JpaLecturesDeSupervision implements LecturesDeSupervision {
       .id(new ActiviteId(row.get("id", UUID.class)))
       .operateur(new OperateurId(row.get("operateurId", UUID.class)))
       .element(new ElementDeSupervision(element, Optional.ofNullable(row.get("reference", String.class))))
-      .poste(
-        Optional.ofNullable(row.get("posteId", UUID.class)).map(id ->
-          new PosteDeSupervision(
-            new PosteDeTravailId(id),
-            new LibelleDePoste(row.get("posteLibelle", String.class)),
-            Optional.ofNullable(row.get("nature", String.class)).map(NatureDOperation::new)
-          )
-        )
-      )
+      .poste(toPoste(row))
       .categorie(row.get("categorie", CategorieDActivite.class))
       .debut(row.get("debut", Instant.class))
       .echeance(row.get("echeance", Instant.class));
+  }
+
+  private Optional<PosteDeSupervision> toPoste(Tuple row) {
+    return Optional.ofNullable(row.get("posteId", UUID.class)).map(id ->
+      new PosteDeSupervision(
+        new PosteDeTravailId(id),
+        new LibelleDePoste(row.get("posteLibelle", String.class)),
+        Optional.ofNullable(row.get("nature", String.class)).map(NatureDOperation::new)
+      )
+    );
   }
 
   private OperateurDeSupervision toOperateur(Tuple row, Map<UUID, List<NatureDOperation>> metiers) {
