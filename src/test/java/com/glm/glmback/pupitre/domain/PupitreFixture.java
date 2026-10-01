@@ -82,18 +82,6 @@ public final class PupitreFixture {
       .postes(List.of(POSTE_HABILITE_FRAISEUSE_1, POSTE_HABILITE_FRAISEUSE_2));
   }
 
-  public static EvenementDuPupitre debut(Instant dateDeSurvenue) {
-    return new EvenementDuPupitre(TypeDePointage.DEBUT, ACTIVITE_DUPONT_SUR_FRAISEUSE_1, dateDeSurvenue);
-  }
-
-  public static EvenementDuPupitre nonConformite(Instant dateDeSurvenue) {
-    return new EvenementDuPupitre(TypeDePointage.NON_CONFORMITE, ACTIVITE_DUPONT_SUR_FRAISEUSE_1, dateDeSurvenue);
-  }
-
-  public static EvenementDuPupitre fin(Instant dateDeSurvenue) {
-    return new EvenementDuPupitre(TypeDePointage.FIN, ACTIVITE_DUPONT_SUR_FRAISEUSE_1, dateDeSurvenue);
-  }
-
   public static SuiviDuPupitre suiviOf42(SituationDuSuivi situation) {
     return SuiviDuPupitre.builder()
       .id(SUIVI_ID_OF_42)
