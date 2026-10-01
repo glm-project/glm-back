@@ -2,6 +2,8 @@ package com.glm.glmback.atelier.infrastructure.primary;
 
 import static com.glm.glmback.atelier.domain.AtelierFixture.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.anonymous;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -15,8 +17,12 @@ import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -49,17 +55,19 @@ class SupervisionDAtelierResourceIT {
 
   @AfterEach
   void cleanupFixture() {
-    TenantSecurityContexts.authenticateOn("supervision_fixture");
-    transactions.executeWithoutResult(status -> {
-      entities.createNativeQuery("delete from activite_d_atelier").executeUpdate();
-      entities.createNativeQuery("delete from pointage_en_conflit").executeUpdate();
-      entities.createNativeQuery("delete from sequence_en_conflit").executeUpdate();
-      entities.createNativeQuery("delete from evenement_d_atelier").executeUpdate();
-      entities.createNativeQuery("delete from suivi_d_atelier").executeUpdate();
-      entities.createNativeQuery("delete from element_de_fabrication").executeUpdate();
-      entities.createNativeQuery("delete from operateur_poste").executeUpdate();
-      entities.createNativeQuery("delete from poste_de_travail").executeUpdate();
-      entities.createNativeQuery("delete from operateur").executeUpdate();
+    java.util.List.of("supervision_fixture", "supervision_voisine").forEach(tenant -> {
+      TenantSecurityContexts.authenticateOn(tenant);
+      transactions.executeWithoutResult(status -> {
+        entities.createNativeQuery("delete from activite_d_atelier").executeUpdate();
+        entities.createNativeQuery("delete from pointage_en_conflit").executeUpdate();
+        entities.createNativeQuery("delete from sequence_en_conflit").executeUpdate();
+        entities.createNativeQuery("delete from evenement_d_atelier").executeUpdate();
+        entities.createNativeQuery("delete from suivi_d_atelier").executeUpdate();
+        entities.createNativeQuery("delete from element_de_fabrication").executeUpdate();
+        entities.createNativeQuery("delete from operateur_poste").executeUpdate();
+        entities.createNativeQuery("delete from poste_de_travail").executeUpdate();
+        entities.createNativeQuery("delete from operateur").executeUpdate();
+      });
     });
   }
 
@@ -328,6 +336,123 @@ class SupervisionDAtelierResourceIT {
 
   @Test
   @WithTenant("supervision_fixture")
+  void shouldReadEveryCollectionFromOnlyTheAuthenticatedCompany() throws Exception {
+    var debut = debutSansPosteParDupontA(LE_10_MAI_2026_A_8H);
+    var suivi = suiviDAtelierEngage().enregistre(debut);
+    when(clock.now()).thenReturn(LE_10_MAI_2026_A_9H);
+    transactions.executeWithoutResult(status -> {
+      entities
+        .createNativeQuery("insert into operateur (id,nom,prenom) values (:id,'Dupont','Jean')")
+        .setParameter("id", OPERATEUR_ID_DUPONT.uuid())
+        .executeUpdate();
+      suivis.create(suivi);
+    });
+    TenantSecurityContexts.authenticateOn("supervision_voisine");
+    var autre = suiviDAtelierEngage()
+      .enregistre(debut)
+      .enregistre(finDe(debut).a(LE_10_MAI_2026_A_9H))
+      .annule(debut.id(), annulationParLeroy());
+    transactions.executeWithoutResult(status -> {
+      entities
+        .createNativeQuery("insert into operateur (id,nom,prenom) values (:id,'Martin','Paul')")
+        .setParameter("id", OPERATEUR_ID_DUPONT.uuid())
+        .executeUpdate();
+      suivis.create(autre);
+    });
+    rest
+      .perform(get("/api/atelier/supervision").with(readerFrom("supervision_voisine")))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.operateurs.length()").value(1))
+      .andExpect(jsonPath("$.operateurs[0].nom").value("Martin"))
+      .andExpect(jsonPath("$.activites").isEmpty())
+      .andExpect(jsonPath("$.sequencesEnConflit.length()").value(1));
+
+    TenantSecurityContexts.authenticateOn("supervision_fixture");
+    rest
+      .perform(get("/api/atelier/supervision").with(readerFrom("supervision_fixture")))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.operateurs.length()").value(1))
+      .andExpect(jsonPath("$.operateurs[0].nom").value("Dupont"))
+      .andExpect(jsonPath("$.activites.length()").value(1))
+      .andExpect(jsonPath("$.sequencesEnConflit").isEmpty());
+  }
+
+  @ParameterizedTest
+  @CsvSource({ "ROLE_USER,200", "ROLE_GESTIONNAIRE,200", "ROLE_ADMIN,403", "ROLE_AUTRE,403" })
+  void shouldRestrictSupervisionToBusinessReaders(String role, int statut) throws Exception {
+    when(clock.now()).thenReturn(LE_10_MAI_2026_A_9H);
+    rest
+      .perform(
+        get("/api/atelier/supervision").with(
+          jwt()
+            .jwt(token -> token.claim("tenant", "supervision_fixture"))
+            .authorities(new SimpleGrantedAuthority(role))
+        )
+      )
+      .andExpect(status().is(statut));
+  }
+
+  @Test
+  void shouldRejectAnUnknownCompanyBeforeReadingSupervision() throws Exception {
+    rest
+      .perform(
+        get("/api/atelier/supervision").with(
+          jwt()
+            .jwt(token -> token.claim("tenant", "inconnue"))
+            .authorities(new SimpleGrantedAuthority("ROLE_USER"))
+        )
+      )
+      .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void shouldRejectAuthenticationWithoutACompany() throws Exception {
+    rest
+      .perform(get("/api/atelier/supervision").with(jwt().authorities(new SimpleGrantedAuthority("ROLE_USER"))))
+      .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void shouldRequireAuthenticationForSupervision() throws Exception {
+    rest.perform(get("/api/atelier/supervision").with(anonymous())).andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  @WithTenant("supervision_fixture")
+  void shouldReturnTheCompleteOperatorDirectoryBeyondAUsualPage() throws Exception {
+    when(clock.now()).thenReturn(LE_10_MAI_2026_A_9H);
+    transactions.executeWithoutResult(status ->
+      entities
+        .createNativeQuery(
+          "insert into operateur (id,nom,prenom) select gen_random_uuid(), 'Operateur ' || n, 'Camille' from generate_series(1,121) n"
+        )
+        .executeUpdate()
+    );
+    rest.perform(get("/api/atelier/supervision")).andExpect(status().isOk()).andExpect(jsonPath("$.operateurs.length()").value(121));
+  }
+
+  @Test
+  @WithTenant("supervision_fixture")
+  void shouldKeepAPostWithoutInventingAnAbsentProjectedNature() throws Exception {
+    var suivi = suiviDAtelierEngage().enregistre(debutSansNatureSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H));
+    when(clock.now()).thenReturn(LE_10_MAI_2026_A_9H);
+    transactions.executeWithoutResult(status -> {
+      entities
+        .createNativeQuery("insert into poste_de_travail (id,libelle,nature) values (:id,'Fraiseuse 1','fraisage')")
+        .setParameter("id", POSTE_ID_FRAISEUSE_1.uuid())
+        .executeUpdate();
+      suivis.create(suivi);
+    });
+    rest
+      .perform(get("/api/atelier/supervision"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.activites[0].poste.id").value(POSTE_ID_FRAISEUSE_1.uuid().toString()))
+      .andExpect(jsonPath("$.activites[0].poste.libelle").value("Fraiseuse 1"))
+      .andExpect(jsonPath("$.activites[0].poste.nature").doesNotExist());
+  }
+
+  @Test
+  @WithTenant("supervision_fixture")
   void shouldDeriveDistinctTradesFromEachOperatorsAuthorizedPosts() throws Exception {
     when(clock.now()).thenReturn(Instant.parse("2026-09-13T10:00:00Z"));
     transactions.executeWithoutResult(status -> {
@@ -379,5 +504,11 @@ class SupervisionDAtelierResourceIT {
       .andExpect(jsonPath("$.operateurs[0].prenom").value("Camille"))
       .andExpect(jsonPath("$.operateurs[0].metiers").isEmpty())
       .andExpect(jsonPath("$.activites").isEmpty());
+  }
+
+  private static JwtRequestPostProcessor readerFrom(String tenant) {
+    return jwt()
+      .jwt(token -> token.claim("tenant", tenant))
+      .authorities(new SimpleGrantedAuthority("ROLE_USER"));
   }
 }
