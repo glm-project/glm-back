@@ -161,6 +161,60 @@ class PariteDesRepositoriesDAtelierIT {
     }
   }
 
+  @Test
+  @WithTenant("impeccmold")
+  void shouldSelectConflictsEvenWithoutActivitiesOrOnClosedSuivi() {
+    Instant debut = Instant.parse("2045-01-01T22:00:00Z");
+    EvenementDAtelier ouverture = debutA(debut);
+    SuiviDAtelier sansActivite = suiviEngageA(debut)
+      .enregistre(ouverture)
+      .enregistre(finDe(ouverture).a(debut.plusSeconds(3600)))
+      .annule(ouverture.id(), new Annulation(AUTEUR_LEROY, debut.plusSeconds(7200), MOTIF_ERREUR_DE_SAISIE));
+    EvenementDAtelier autre = debutA(debut.plusSeconds(1));
+    SuiviDAtelier cloture = suiviEngageA(debut.plusSeconds(1))
+      .enregistre(autre)
+      .enregistre(finDe(autre).a(debut.plusSeconds(3600)))
+      .enregistre(finDe(autre).a(debut.plusSeconds(7200)))
+      .cloture(new Cloture(AUTEUR_LEROY, Horodatage.saisiA(debut.plusSeconds(10800))));
+    SuiviDAtelier courant = suiviEngageA(debut.plusSeconds(2)).enregistre(debutA(debut.plusSeconds(2)));
+    SuivisDAtelierEnMemoire memoire = new SuivisDAtelierEnMemoire();
+    for (SuiviDAtelier suivi : List.of(sansActivite, cloture, courant)) {
+      memoire.create(suivi);
+      inTransaction(() -> suivisPersistes.create(suivi));
+    }
+    SuiviDAtelierCriteria criteres = new SuiviDAtelierCriteria(
+      Optional.of(new Periode(debut, debut.plusSeconds(2))),
+      new SelectionDeSuivis(Set.of(EtatDAtelier.EN_COURS), true),
+      debut.plusSeconds(10800)
+    );
+    assertThat(inTransaction(() -> suivisPersistes.list(criteres, PREMIERE_PAGE)).content())
+      .containsExactlyElementsOf(memoire.list(criteres, PREMIERE_PAGE).content())
+      .hasSize(3);
+    var deuxiemePage = new Pageable(1, 1);
+    assertThat(inTransaction(() -> suivisPersistes.list(criteres, deuxiemePage)).content()).containsExactly(cloture);
+    com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurityContexts.authenticateOn("katilys");
+    assertThat(inTransaction(() -> suivisPersistes.list(criteres, PREMIERE_PAGE)).content()).isEmpty();
+  }
+
+  @Test
+  @WithTenant("impeccmold")
+  void shouldSelectOpenVenuesAcrossMidnightAndPreserveTenantIsolation() {
+    OperateurId operateur = new OperateurId(UUID.randomUUID());
+    Instant debut = Instant.parse("2045-02-01T22:00:00Z");
+    JourneeDeTravail ouverte = journeeOuverteA(operateur, debut);
+    JourneeDeTravail fermee = journeeCompleteA(operateur, debut.minus(Duration.ofDays(1)));
+    inTransaction(() -> journeesPersistees.create(ouverte));
+    inTransaction(() -> journeesPersistees.create(fermee));
+    JourneeDeTravailCriteria criteres = new JourneeDeTravailCriteria(
+      Optional.empty(),
+      Optional.of(operateur),
+      Optional.of(EtatDePresence.PRESENT)
+    );
+    assertThat(inTransaction(() -> journeesPersistees.list(criteres, PREMIERE_PAGE)).content()).containsExactly(ouverte);
+    com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurityContexts.authenticateOn("katilys");
+    assertThat(inTransaction(() -> journeesPersistees.list(criteres, PREMIERE_PAGE)).content()).isEmpty();
+  }
+
   private static SuiviDAtelier suiviEngageA(Instant date) {
     return SuiviDAtelier.builder()
       .id(SuiviDAtelierId.newId())

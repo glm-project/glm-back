@@ -102,7 +102,11 @@ class JpaSuiviDAtelierRepository implements SuiviDAtelierRepository {
 
       if (!criteria.etats().isEmpty()) {
         EtatALaLecture etat = new EtatALaLecture(racine, requete, constructeur, criteria.evaluation());
-        predicats.add(constructeur.or(criteria.etats().stream().map(etat::est).toArray(Predicate[]::new)));
+        List<Predicate> selections = new ArrayList<>(criteria.etats().stream().map(etat::est).toList());
+        if (criteria.selection().inclureConflits()) {
+          selections.add(etat.enConflit());
+        }
+        predicats.add(constructeur.or(selections.toArray(Predicate[]::new)));
       }
 
       return constructeur.and(predicats.toArray(Predicate[]::new));
@@ -131,6 +135,36 @@ class JpaSuiviDAtelierRepository implements SuiviDAtelierRepository {
         );
         case EN_ATTENTE -> constructeur.and(constructeur.not(cloture()), constructeur.not(constructeur.exists(evenementActif())));
       };
+    }
+
+    Predicate enConflit() {
+      Subquery<UUID> activites = requete.subquery(UUID.class);
+      Root<ActiviteDAtelierEntity> activite = activites.from(ActiviteDAtelierEntity.class);
+      activites
+        .select(activite.get("id"))
+        .where(constructeur.equal(activite.get("suivi"), suivi), constructeur.isTrue(activite.get("aResoudre")));
+
+      // Une fin visant un ouvrant annule porte un conflit sans aucune activite projetee.
+      Subquery<UUID> pointages = requete.subquery(UUID.class);
+      Root<EvenementDAtelierEntity> pointage = pointages.from(EvenementDAtelierEntity.class);
+      Subquery<UUID> ouvrants = pointages.subquery(UUID.class);
+      Root<EvenementDAtelierEntity> ouvrant = ouvrants.from(EvenementDAtelierEntity.class);
+      ouvrants
+        .select(ouvrant.get("id"))
+        .where(
+          constructeur.equal(ouvrant.get("suivi"), suivi),
+          constructeur.equal(ouvrant.get("activiteId"), pointage.get("activiteViseeId")),
+          constructeur.isNull(ouvrant.get("annulationDate"))
+        );
+      pointages
+        .select(pointage.get("id"))
+        .where(
+          constructeur.equal(pointage.get("suivi"), suivi),
+          constructeur.isNull(pointage.get("annulationDate")),
+          constructeur.isNotNull(pointage.get("activiteViseeId")),
+          constructeur.not(constructeur.exists(ouvrants))
+        );
+      return constructeur.or(constructeur.exists(activites), constructeur.exists(pointages));
     }
 
     private Predicate cloture() {

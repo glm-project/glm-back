@@ -2,7 +2,9 @@ package com.glm.glmback.atelier.infrastructure.primary;
 
 import com.glm.glmback.atelier.application.JourneesDeTravailApplicationService;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
+import com.glm.glmback.atelier.domain.EtatDePresence;
 import com.glm.glmback.atelier.domain.JourneeDeTravail;
+import com.glm.glmback.atelier.domain.JourneeDeTravailCriteria;
 import com.glm.glmback.atelier.domain.JourneeDeTravailId;
 import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.Periode;
@@ -54,17 +56,21 @@ class JourneeDeTravailResource {
   @GetMapping
   @Operation(
     summary = "Lister les journees de travail",
-    description = "Filtres facultatifs. La periode, quand elle est fournie, porte sur l'heure d'arrivee."
+    description = "Filtres facultatifs. etat=PRESENT selectionne toutes les venues ouvertes, meme anciennes ou traversant minuit, sans borne calendaire implicite. La periode, quand elle est fournie, porte sur l'heure d'arrivee."
   )
   @ApiResponse(responseCode = "200", description = "La page demandee, triee par debut descendant.")
   RestPage<RestJourneeDeTravail> list(
     @RequestParam(required = false) Instant debut,
     @RequestParam(required = false) Instant fin,
     @RequestParam(required = false) UUID operateur,
+    @RequestParam(required = false) EtatDePresence etat,
     @RequestParam(defaultValue = "0") int page,
     @RequestParam(defaultValue = "20") int size
   ) {
-    Page<JourneeDeTravail> resultat = applicationService.list(periode(debut, fin), operateur(operateur), new Pageable(page, size));
+    Page<JourneeDeTravail> resultat = applicationService.list(
+      new JourneeDeTravailCriteria(periode(debut, fin), operateur(operateur), Optional.ofNullable(etat)),
+      new Pageable(page, size)
+    );
     AnnuaireDAtelier annuaire = applicationService.annuairePourJournees(resultat.content());
 
     return RestPage.from(resultat, journee -> RestJourneeDeTravail.from(journee, annuaire));

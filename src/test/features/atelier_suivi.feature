@@ -43,12 +43,23 @@ Feature: Suivi des elements engages en atelier
     When j'annule l'evenement 1 de "OF 2962"
       | motif | Pointe sur le mauvais ordre |
     Then le journal du suivi contient 2 evenements
-    And je retiens les informations du suivi hors journal et conflits
+    And je retiens les informations du suivi hors journal
     When je liste les elements engages entre "2026-07-02T00:00:00Z" et "2026-07-03T00:00:00Z"
-    Then la grille contient les memes informations sans journal ni conflits
+    Then la grille contient les memes informations sans journal
+    And l'element "OF 2962" de la grille a la reference "2962"
     When je consulte "OF 2962"
     Then le journal du suivi contient 2 evenements
     And l'evenement 1 du suivi est annule avec le motif "Pointe sur le mauvais ordre"
+
+  Scenario: La grille conserve le nom d'un element sans reference
+    Given il est "2026-08-02T08:00:00Z"
+    And l'entreprise a cree l'element de fabrication "Produit sans reference"
+      | type | PRODUIT |
+    And j'ai engage l'element "Produit sans reference" en atelier
+    And je retiens les informations du suivi hors journal
+    When je liste les elements engages entre "2026-08-02T00:00:00Z" et "2026-08-03T00:00:00Z"
+    Then la grille contient les memes informations sans journal
+    And l'element "Produit sans reference" de la grille n'a pas de reference
 
   Scenario: Un element deja engage ne peut pas l'etre deux fois
     Given l'entreprise a cree l'element de fabrication "OF 2002"

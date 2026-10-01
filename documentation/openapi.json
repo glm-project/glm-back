@@ -817,6 +817,7 @@
             "type" : "string"
           }
         },
+        "required" : [ "debut" ],
         "type" : "object"
       },
       "RestFeuilleDeTemps" : {
@@ -1000,9 +1001,10 @@
           },
           "operateur" : {
             "$ref" : "#/components/schemas/RestOperateurDAtelier",
-            "description" : "Operateur concerne."
+            "description" : "Operateur concerne, absent si sa fiche n'est plus resolue."
           }
         },
+        "required" : [ "etat", "fenetres", "id", "journal" ],
         "type" : "object"
       },
       "RestLigneDeCout" : {
@@ -1744,7 +1746,7 @@
         "type" : "object"
       },
       "RestSuiviDAtelierEnGrille" : {
-        "description" : "Une ligne du tableau d'atelier, sans le journal des evenements ni ses sequences en conflit.\nL'etat et les activites en cours restent deduits du journal a chaque lecture.\nLe journal complet, annules compris, et ses sequences en conflit se consultent via GET /api/atelier/suivis/{id}.\n",
+        "description" : "Une ligne du tableau d'atelier, sans le journal des evenements, avec ses sequences en conflit.\nL'etat et les activites en cours restent deduits du journal a chaque lecture.\nLe journal complet, annules compris, se consulte via GET /api/atelier/suivis/{id}.\n",
         "properties" : {
           "activitesEnCours" : {
             "description" : "Les activites en cours a l'instant de la lecture ; une activite dont l'echeance est atteinte n'y figure plus, ni une\nactivite a resoudre.\n",
@@ -1761,6 +1763,13 @@
           "cloturePar" : {
             "description" : "Utilisateur ayant cloture l'element, absent tant qu'il ne l'est pas.",
             "type" : "string"
+          },
+          "conflits" : {
+            "description" : "Sequences en conflit, independantes des activites en cours et pouvant ne contenir aucune activite.",
+            "items" : {
+              "$ref" : "#/components/schemas/RestSequenceEnConflit"
+            },
+            "type" : "array"
           },
           "element" : {
             "description" : "Identifiant de l'element de fabrication engage.",
@@ -1782,6 +1791,11 @@
             "enum" : [ "EN_ATTENTE", "EN_COURS", "INTERROMPU", "CLOTURE" ],
             "type" : "string"
           },
+          "evaluation" : {
+            "description" : "Instant d'evaluation de cette page. Des pages ou lectures distinctes ne forment pas un instantane transactionnel.",
+            "format" : "date-time",
+            "type" : "string"
+          },
           "id" : {
             "description" : "Identifiant du suivi. C'est lui, et non celui de l'element, que portent les URLs.",
             "format" : "uuid",
@@ -1792,13 +1806,17 @@
             "example" : "OF-2026-000042",
             "type" : "string"
           },
+          "reference" : {
+            "description" : "Reference actuelle de l'element, absente si elle n'est pas renseignee ou si l'element n'est plus resolu. Le nom reste conserve.",
+            "type" : "string"
+          },
           "type" : {
             "description" : "Type de l'element, copie a l'engagement.",
             "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
             "type" : "string"
           }
         },
-        "required" : [ "activitesEnCours", "element", "engageLe", "engagePar", "etat", "id", "nom", "type" ],
+        "required" : [ "activitesEnCours", "conflits", "element", "engageLe", "engagePar", "etat", "evaluation", "id", "nom", "type" ],
         "type" : "object"
       },
       "RestSuiviDuPupitre" : {
@@ -2006,7 +2024,7 @@
     },
     "/api/atelier/journees" : {
       "get" : {
-        "description" : "Filtres facultatifs. La periode, quand elle est fournie, porte sur l'heure d'arrivee.",
+        "description" : "Filtres facultatifs. etat=PRESENT selectionne toutes les venues ouvertes, meme anciennes ou traversant minuit, sans borne calendaire implicite. La periode, quand elle est fournie, porte sur l'heure d'arrivee.",
         "operationId" : "list_4",
         "parameters" : [ {
           "in" : "query",
@@ -2030,6 +2048,14 @@
           "required" : false,
           "schema" : {
             "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "etat",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "ABSENT", "PRESENT" ],
             "type" : "string"
           }
         }, {
@@ -2409,7 +2435,7 @@
     },
     "/api/atelier/suivis" : {
       "get" : {
-        "description" : "Le tableau de l'atelier.\n\nTous les filtres sont facultatifs : l'ecran des operateurs veut tous les elements actifs d'un coup, sans notion de\ndate. Le parametre etats accepte plusieurs valeurs (?etats=EN_ATTENTE&etats=EN_COURS) ; absent, il ne filtre rien.\nL'etat se juge a l'instant de la lecture, celui de chaque ligne rendue : un element dont la seule activite a atteint\nson echeance n'est plus EN_COURS. La periode, quand elle est fournie, porte sur la date d'engagement.\n\nChaque ligne conserve l'etat et les activites en cours, mais ne contient pas de journal.\nLe journal complet, annules compris, se consulte via GET /api/atelier/suivis/{id}.\n",
+        "description" : "Le tableau de l'atelier.\n\nTous les filtres sont facultatifs : l'ecran des operateurs veut tous les elements actifs d'un coup, sans notion de\ndate. Le parametre etats accepte plusieurs valeurs (?etats=EN_ATTENTE&etats=EN_COURS) ; absent, il ne filtre rien.\nL'etat se juge a l'instant de la lecture, celui de chaque ligne rendue : un element dont la seule activite a atteint\nson echeance n'est plus EN_COURS. La periode, quand elle est fournie, porte sur la date d'engagement.\n\ninclureConflits=true etend les etats demandes aux suivis portant un conflit, meme clotures ou sans activite.\nChaque ligne conserve l'etat, les activites en cours, les conflits et l'instant d'evaluation, mais pas le journal.\nLes pages et les lectures des autres ressources ne forment pas un instantane transactionnel.\nLe journal complet, annules compris, se consulte via GET /api/atelier/suivis/{id}.\n",
         "operationId" : "list_3",
         "parameters" : [ {
           "in" : "query",
@@ -2438,6 +2464,14 @@
             },
             "type" : "array",
             "uniqueItems" : true
+          }
+        }, {
+          "in" : "query",
+          "name" : "inclureConflits",
+          "required" : false,
+          "schema" : {
+            "default" : false,
+            "type" : "boolean"
           }
         }, {
           "in" : "query",

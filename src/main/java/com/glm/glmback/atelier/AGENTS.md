@@ -149,7 +149,7 @@ activités, tels que le journal les interprète, et aucune présence ne les born
 ## Ports sortants
 
 `SuiviDAtelierRepository`, `JourneeDeTravailRepository`, `ElementsEngageables`, `OperateursConnus`, `PostesConnus`,
-`Habilitations`, `IdentitesDEvenements`, `SeuilDAmplitude`, `Clock`.
+`Habilitations`, `ReferencesDElements`, `IdentitesDEvenements`, `SeuilDAmplitude`, `Clock`.
 
 `SeuilDAmplitude` lit l'amplitude maximale dans la table `parametrage`, par une entité en lecture seule, sans
 importer le contexte voisin. Le seuil est lu à chaque geste : un changement vaut pour les gestes qui suivent.
@@ -194,6 +194,12 @@ chaque écriture. Jamais de fin automatique ni d'anomalie, qui dépendent de l'i
 l'instant d'évaluation de `SuiviDAtelierCriteria`, une activité interprétable sans fin réelle étant en cours tant que
 son échéance n'est pas atteinte. C'est
 aussi la projection que les autres contextes liront, plutôt que de réinterpréter le journal.
+
+La supervision sélectionne les états demandés **ou** les suivis en conflit (`SelectionDeSuivis`). Un conflit sans
+activité ne figure pas dans `activite_d_atelier` : le SQL doit aussi retenir un pointage actif visant une identité
+sans ouvrant actif. Un remplaçant de correction portant cette identité compte comme ouvrant actif. Les conflits de
+la grille restent une collection indépendante, y compris sur un suivi clôturé. La référence actuelle de l'élément
+est résolue en groupe par `ReferencesDElements`, jamais copiée dans le journal ; son absence conserve le nom engagé.
 
 Leur contrepartie : `SuiviDAtelierCriteria.matches` et `JourneeDeTravailCriteria.matches` ne sont plus appelées par la
 production, qui traduit les mêmes règles en SQL. C'est `PariteDesRepositoriesDAtelierIT` qui rétablit par l'exécution

@@ -178,7 +178,11 @@ public final class SuivisDAtelierService {
    * Les suivis dont l'etat, a l'instant d'evaluation fourni, est l'un de ceux demandes.
    */
   public Page<SuiviDAtelier> list(Optional<Periode> periode, Set<EtatDAtelier> etats, Instant evaluation, Pageable pageable) {
-    return repository.list(new SuiviDAtelierCriteria(periode, etats, evaluation), pageable);
+    return list(new SuiviDAtelierCriteria(periode, etats, evaluation), pageable);
+  }
+
+  public Page<SuiviDAtelier> list(SuiviDAtelierCriteria criteres, Pageable pageable) {
+    return repository.list(criteres, pageable);
   }
 
   private EvenementDAtelier regularisation(RegularisationAEnregistrer commande, EvenementDAtelierId evenement) {

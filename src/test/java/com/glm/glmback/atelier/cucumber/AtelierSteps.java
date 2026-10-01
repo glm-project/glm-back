@@ -452,22 +452,32 @@ public class AtelierSteps {
     assertThat(CucumberRestTestContext.countEntries("$[?(!@.fin)]")).isZero();
   }
 
-  @Then("je retiens les informations du suivi hors journal et conflits")
+  @Then("je retiens les informations du suivi hors journal")
   @SuppressWarnings("unchecked")
-  public void jeRetiensLesInformationsDuSuiviHorsJournalEtConflits() {
+  public void jeRetiensLesInformationsDuSuiviHorsJournal() {
     suiviSansJournal = new HashMap<>((Map<String, Object>) CucumberRestTestContext.getElement("$"));
     suiviSansJournal.remove("journal");
-    suiviSansJournal.remove("conflits");
+    suiviSansJournal.put("evaluation", horloge.instant().toString());
   }
 
-  @Then("la grille contient les memes informations sans journal ni conflits")
-  public void laGrilleContientLesMemesInformationsSansJournalNiConflits() {
-    assertThatLastResponse()
-      .hasOkStatus()
-      .hasElement("$.content[?(@.id == '" + suiviSansJournal.get("id") + "')]")
-      .withValue(List.of(suiviSansJournal));
+  @Then("la grille contient les memes informations sans journal")
+  @SuppressWarnings("unchecked")
+  public void laGrilleContientLesMemesInformationsSansJournal() {
+    var ligne = new HashMap<>((Map<String, Object>) CucumberRestTestContext.getElement("$.content[0]"));
+    ligne.remove("reference");
+    assertThat(ligne).isEqualTo(suiviSansJournal);
+    assertThatLastResponse().hasOkStatus();
     assertThatLastResponse().hasElement("$.content[*].journal").withElementsCount(0);
-    assertThatLastResponse().hasElement("$.content[*].conflits").withElementsCount(0);
+  }
+
+  @Then("l'element {string} de la grille a la reference {string}")
+  public void laReferenceDeLElementDansLaGrille(String alias, String reference) {
+    assertThatLastResponse().hasElement("$.content[?(@.id == '" + suivis.get(alias) + "')].reference").withValue(List.of(reference));
+  }
+
+  @Then("l'element {string} de la grille n'a pas de reference")
+  public void laGrilleSansReference(String alias) {
+    assertThatLastResponse().hasElement("$.content[?(@.id == '" + suivis.get(alias) + "')].reference").withElementsCount(0);
   }
 
   @Then("la liste des elements engages contient {int} elements")

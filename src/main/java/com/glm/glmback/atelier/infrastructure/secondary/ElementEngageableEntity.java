@@ -35,8 +35,18 @@ class ElementEngageableEntity {
 
   private String nom;
 
+  private String reference;
+
   protected ElementEngageableEntity() {
     // Constructeur requis par JPA.
+  }
+
+  ElementEngageId id() {
+    return new ElementEngageId(id);
+  }
+
+  String reference() {
+    return reference;
   }
 
   ElementEngage toDomain() {

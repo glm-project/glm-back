@@ -6,6 +6,7 @@ import com.glm.glmback.atelier.domain.EtatDAtelier;
 import com.glm.glmback.atelier.domain.IntervalleDActivite;
 import com.glm.glmback.atelier.domain.LectureDuSuivi;
 import com.glm.glmback.atelier.domain.Periode;
+import com.glm.glmback.atelier.domain.SelectionDeSuivis;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
@@ -67,7 +68,9 @@ class SuiviDAtelierResource {
     L'etat se juge a l'instant de la lecture, celui de chaque ligne rendue : un element dont la seule activite a atteint
     son echeance n'est plus EN_COURS. La periode, quand elle est fournie, porte sur la date d'engagement.
 
-    Chaque ligne conserve l'etat et les activites en cours, mais ne contient pas de journal.
+    inclureConflits=true etend les etats demandes aux suivis portant un conflit, meme clotures ou sans activite.
+    Chaque ligne conserve l'etat, les activites en cours, les conflits et l'instant d'evaluation, mais pas le journal.
+    Les pages et les lectures des autres ressources ne forment pas un instantane transactionnel.
     Le journal complet, annules compris, se consulte via GET /api/atelier/suivis/{id}.
     """
   )
@@ -76,13 +79,21 @@ class SuiviDAtelierResource {
     @RequestParam(required = false) Instant debut,
     @RequestParam(required = false) Instant fin,
     @RequestParam(required = false) Set<EtatDAtelier> etats,
+    @RequestParam(defaultValue = "false") boolean inclureConflits,
     @RequestParam(defaultValue = "0") int page,
     @RequestParam(defaultValue = "20") int size
   ) {
-    Page<LectureDuSuivi> resultat = applicationService.list(periode(debut, fin), etats(etats), new Pageable(page, size));
+    Page<LectureDuSuivi> resultat = applicationService.list(
+      periode(debut, fin),
+      new SelectionDeSuivis(etats(etats), inclureConflits),
+      new Pageable(page, size)
+    );
     AnnuaireDAtelier annuaire = applicationService.annuairePourSuivis(resultat.content().stream().map(LectureDuSuivi::suivi).toList());
 
-    return RestPage.from(resultat, lecture -> RestSyntheseDeSuiviDAtelier.from(lecture, annuaire));
+    var references = applicationService.referencesPourSuivis(resultat.content().stream().map(LectureDuSuivi::suivi).toList());
+    return RestPage.from(resultat, lecture ->
+      RestSyntheseDeSuiviDAtelier.from(lecture, annuaire, references.get(lecture.suivi().element().id()))
+    );
   }
 
   @PostMapping

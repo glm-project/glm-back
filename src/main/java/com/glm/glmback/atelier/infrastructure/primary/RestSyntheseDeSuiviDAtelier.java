@@ -15,9 +15,9 @@ import java.util.UUID;
 @Schema(
   name = "RestSuiviDAtelierEnGrille",
   description = """
-  Une ligne du tableau d'atelier, sans le journal des evenements ni ses sequences en conflit.
+  Une ligne du tableau d'atelier, sans le journal des evenements, avec ses sequences en conflit.
   L'etat et les activites en cours restent deduits du journal a chaque lecture.
-  Le journal complet, annules compris, et ses sequences en conflit se consultent via GET /api/atelier/suivis/{id}.
+  Le journal complet, annules compris, se consulte via GET /api/atelier/suivis/{id}.
   """
 )
 final class RestSyntheseDeSuiviDAtelier {
@@ -78,7 +78,34 @@ final class RestSyntheseDeSuiviDAtelier {
   )
   private final List<RestActiviteEnCours> activitesEnCours;
 
-  private RestSyntheseDeSuiviDAtelier(LectureDuSuivi lecture, AnnuaireDAtelier annuaire) {
+  @JsonProperty
+  @Schema(
+    description = "Sequences en conflit, independantes des activites en cours et pouvant ne contenir aucune activite.",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  private final List<RestSequenceEnConflit> conflits;
+
+  @JsonProperty
+  @Schema(
+    description = "Instant d'evaluation de cette page. Des pages ou lectures distinctes ne forment pas un instantane transactionnel.",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  private final Instant evaluation;
+
+  @JsonProperty
+  @Schema(
+    description = "Reference actuelle de l'element, absente si elle n'est pas renseignee ou si l'element n'est plus resolu. Le nom reste conserve."
+  )
+  private final String reference;
+
+  private RestSyntheseDeSuiviDAtelier(LectureDuSuivi lecture, AnnuaireDAtelier annuaire, String reference) {
+    this.reference = reference;
+    evaluation = lecture.evaluation();
+    conflits = lecture
+      .conflits()
+      .stream()
+      .map(conflit -> RestSequenceEnConflit.from(conflit, annuaire))
+      .toList();
     SuiviDAtelier suivi = lecture.suivi();
     id = suivi.id().uuid();
     element = suivi.element().id().uuid();
@@ -100,6 +127,10 @@ final class RestSyntheseDeSuiviDAtelier {
   }
 
   static RestSyntheseDeSuiviDAtelier from(LectureDuSuivi lecture, AnnuaireDAtelier annuaire) {
-    return new RestSyntheseDeSuiviDAtelier(lecture, annuaire);
+    return from(lecture, annuaire, null);
+  }
+
+  static RestSyntheseDeSuiviDAtelier from(LectureDuSuivi lecture, AnnuaireDAtelier annuaire, String reference) {
+    return new RestSyntheseDeSuiviDAtelier(lecture, annuaire, reference);
   }
 }

@@ -23,6 +23,7 @@ import com.glm.glmback.atelier.domain.OperateursConnus;
 import com.glm.glmback.atelier.domain.PointageAEnregistrer;
 import com.glm.glmback.atelier.domain.PointageDePresenceAEnregistrer;
 import com.glm.glmback.atelier.domain.PostesConnus;
+import com.glm.glmback.atelier.domain.ReferencesDElements;
 import com.glm.glmback.atelier.domain.RegularisationAEnregistrer;
 import com.glm.glmback.atelier.domain.RegularisationDePresenceAEnregistrer;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
@@ -192,6 +193,7 @@ class ReservationDIdentiteServeurTest {
     return new SuivisDAtelierApplicationService(
       repository,
       Mockito.mock(ElementsEngageables.class),
+      Mockito.mock(ReferencesDElements.class),
       operateurs,
       Mockito.mock(PostesConnus.class),
       Mockito.mock(Habilitations.class),
@@ -228,6 +230,7 @@ class ReservationDIdentiteServeurTest {
     return new SuivisDAtelierApplicationService(
       suivis,
       Mockito.mock(ElementsEngageables.class),
+      Mockito.mock(ReferencesDElements.class),
       Mockito.mock(OperateursConnus.class),
       Mockito.mock(PostesConnus.class),
       Mockito.mock(Habilitations.class),

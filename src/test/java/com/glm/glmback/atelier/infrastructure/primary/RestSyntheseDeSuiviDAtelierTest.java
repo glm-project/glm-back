@@ -24,14 +24,15 @@ class RestSyntheseDeSuiviDAtelierTest {
 
   @ParameterizedTest
   @MethodSource("suivis")
-  void shouldKeepEveryDetailFieldExceptJournalAndConflits(SuiviDAtelier suivi) {
+  void shouldKeepEveryDetailFieldExceptJournal(SuiviDAtelier suivi) {
     AnnuaireDAtelier annuaire = annuaireDeDupontEtMartin();
     LectureDuSuivi lecture = new LectureDuSuivi(suivi, LE_10_MAI_2026_A_17H);
     ObjectNode detail = (ObjectNode) JSON.valueToTree(RestSuiviDAtelier.from(lecture, annuaire));
     assertThat(detail.has("journal")).isTrue();
     assertThat(detail.has("conflits")).isTrue();
     detail.remove("journal");
-    detail.remove("conflits");
+    detail.putNull("reference");
+    detail.put("evaluation", LE_10_MAI_2026_A_17H.toString());
 
     ObjectNode grille = (ObjectNode) JSON.valueToTree(RestSyntheseDeSuiviDAtelier.from(lecture, annuaire));
     assertThat(grille).isEqualTo(detail);

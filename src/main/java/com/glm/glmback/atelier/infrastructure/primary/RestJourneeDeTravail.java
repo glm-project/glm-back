@@ -16,12 +16,14 @@ import java.util.UUID;
   """
 )
 record RestJourneeDeTravail(
-  @Schema(description = "Identifiant de la journee.") UUID id,
-  @Schema(description = "Operateur concerne.") RestOperateur operateur,
-  @Schema(description = "ABSENT ou PRESENT. Deduit du journal.") EtatDePresence etat,
+  @Schema(description = "Identifiant de la journee.", requiredMode = Schema.RequiredMode.REQUIRED) UUID id,
+  @Schema(description = "Operateur concerne, absent si sa fiche n'est plus resolue.") RestOperateur operateur,
+  @Schema(description = "ABSENT ou PRESENT. Deduit du journal.", requiredMode = Schema.RequiredMode.REQUIRED) EtatDePresence etat,
   @Schema(description = "De l'arrivee au depart. Absente tant que la journee est ouverte.") RestPeriode amplitude,
-  @Schema(description = "Les intervalles de presence, chacun de l'arrivee au depart.") List<RestFenetreDePresence> fenetres,
-  @Schema(description = "Le journal complet, annules compris, du plus ancien au plus recent.") List<RestEvenementDePresence> journal
+  @Schema(description = "Les intervalles de presence, chacun de l'arrivee au depart.", requiredMode = Schema.RequiredMode.REQUIRED)
+  List<RestFenetreDePresence> fenetres,
+  @Schema(description = "Le journal complet, annules compris, du plus ancien au plus recent.", requiredMode = Schema.RequiredMode.REQUIRED)
+  List<RestEvenementDePresence> journal
 ) {
   static RestJourneeDeTravail from(JourneeDeTravail journee, AnnuaireDAtelier annuaire) {
     return new RestJourneeDeTravail(

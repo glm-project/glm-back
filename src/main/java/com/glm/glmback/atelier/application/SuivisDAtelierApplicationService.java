@@ -6,9 +6,9 @@ import com.glm.glmback.atelier.domain.AnnuaireDAtelierService;
 import com.glm.glmback.atelier.domain.AnnulationAEnregistrer;
 import com.glm.glmback.atelier.domain.ClotureAEnregistrer;
 import com.glm.glmback.atelier.domain.CorrectionAEnregistrer;
+import com.glm.glmback.atelier.domain.ElementEngageId;
 import com.glm.glmback.atelier.domain.ElementsEngageables;
 import com.glm.glmback.atelier.domain.EngagementAEnregistrer;
-import com.glm.glmback.atelier.domain.EtatDAtelier;
 import com.glm.glmback.atelier.domain.Habilitations;
 import com.glm.glmback.atelier.domain.IntervalleDActivite;
 import com.glm.glmback.atelier.domain.LectureDuSuivi;
@@ -17,8 +17,11 @@ import com.glm.glmback.atelier.domain.Periode;
 import com.glm.glmback.atelier.domain.PointageAEnregistrer;
 import com.glm.glmback.atelier.domain.PointageDAtelierTraite;
 import com.glm.glmback.atelier.domain.PostesConnus;
+import com.glm.glmback.atelier.domain.ReferencesDElements;
 import com.glm.glmback.atelier.domain.RegularisationAEnregistrer;
+import com.glm.glmback.atelier.domain.SelectionDeSuivis;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
+import com.glm.glmback.atelier.domain.SuiviDAtelierCriteria;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
 import com.glm.glmback.atelier.domain.SuivisDAtelierService;
@@ -29,9 +32,10 @@ import com.glm.glmback.shared.time.domain.Clock;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
@@ -60,10 +64,12 @@ public class SuivisDAtelierApplicationService {
   private final IdentitesDEvenements identites;
   private final TransactionTemplate transactions;
   private final Clock clock;
+  private final ReferencesDElements references;
 
   public SuivisDAtelierApplicationService(
     SuiviDAtelierRepository repository,
     ElementsEngageables elements,
+    ReferencesDElements references,
     OperateursConnus operateurs,
     PostesConnus postes,
     Habilitations habilitations,
@@ -83,6 +89,7 @@ public class SuivisDAtelierApplicationService {
     this.identites = identites;
     this.transactions = transactions;
     this.clock = clock;
+    this.references = references;
   }
 
   @Secured("ROLE_GESTIONNAIRE")
@@ -168,9 +175,9 @@ public class SuivisDAtelierApplicationService {
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
   @Transactional(readOnly = true)
-  public Page<LectureDuSuivi> list(Optional<Periode> periode, Set<EtatDAtelier> etats, Pageable pageable) {
+  public Page<LectureDuSuivi> list(Optional<Periode> periode, SelectionDeSuivis selection, Pageable pageable) {
     Instant evaluation = clock.now();
-    Page<SuiviDAtelier> suivis = suivisDAtelier.list(periode, etats, evaluation, pageable);
+    Page<SuiviDAtelier> suivis = suivisDAtelier.list(new SuiviDAtelierCriteria(periode, selection, evaluation), pageable);
 
     return Page.<LectureDuSuivi>builder()
       .content(
@@ -195,6 +202,17 @@ public class SuivisDAtelierApplicationService {
   @Transactional(readOnly = true)
   public AnnuaireDAtelier annuairePour(SuiviDAtelier suivi) {
     return annuaires.pour(suivi);
+  }
+
+  @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
+  @Transactional(readOnly = true)
+  public Map<ElementEngageId, String> referencesPourSuivis(Collection<SuiviDAtelier> suivis) {
+    return references.parIds(
+      suivis
+        .stream()
+        .map(suivi -> suivi.element().id())
+        .collect(Collectors.toSet())
+    );
   }
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })

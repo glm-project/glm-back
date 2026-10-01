@@ -7,8 +7,8 @@ import java.util.Optional;
  * Regles de selection de l'historique de presence.
  *
  * <p>
- * Les deux criteres sont facultatifs : l'assistante consulte une semaine tous operateurs confondus, un operateur
- * consulte la sienne, et l'ecran temps reel ne filtre sur rien.
+ * Les criteres sont facultatifs : la supervision selectionne les venues ouvertes par leur etat, sans periode
+ * calendaire qui masquerait une arrivee ancienne ou une venue traversant minuit.
  * </p>
  */
 public record JourneeDeTravailCriteria(Optional<Periode> periode, Optional<OperateurId> operateur, Optional<EtatDePresence> etat) {

@@ -13,7 +13,7 @@ import java.time.Instant;
   """
 )
 record RestFenetreDePresence(
-  @Schema(description = "Debut de la fenetre.") Instant debut,
+  @Schema(description = "Debut de la fenetre.", requiredMode = Schema.RequiredMode.REQUIRED) Instant debut,
   @Schema(description = "Fin de la fenetre, absente si l'operateur est toujours present.") Instant fin
 ) {
   static RestFenetreDePresence from(FenetreDePresence fenetre) {

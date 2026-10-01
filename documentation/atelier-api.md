@@ -242,10 +242,34 @@ rien. `debut`/`fin` ne servent qu'au back-office, et **une borne seule est ignor
 Le filtre `etats` juge l'état à l'instant de la lecture, le même que celui de chaque ligne rendue : un élément dont la
 seule activité a atteint son échéance sort de `etats=EN_COURS` et entre dans `etats=INTERROMPU`, sans aucune écriture.
 
-La liste rend une page de **`RestSuiviDAtelierEnGrille`**, sans propriétés `journal` ni `conflits` (ni tableau vide, ni
-valeur `null`). Tous les autres champs sont conservés : `id`, `element`, `nom`, `type`, `engagePar`, `engageLe`,
-`etat`, `cloturePar`, `clotureLe` et `activitesEnCours`. L'état et les activités restent calculés par le serveur depuis
-le journal ; ce changement allège la réponse HTTP et le cache du pupitre, pas la relecture en base.
+La liste rend une page de **`RestSuiviDAtelierEnGrille`**, sans propriété `journal`. Les champs `id`, `element`,
+`nom`, `type`, `engagePar`, `engageLe`, `etat`, `cloturePar`, `clotureLe` et `activitesEnCours` sont conservés.
+Elle expose aussi `conflits`, indépendamment des activités courantes, et `evaluation`, l'instant auquel le serveur
+juge les activités de cette page. Une séquence dont l'ouverture est annulée garde ses pointages même sans activité.
+`reference` est la référence actuelle de l'élément, résolue en groupe pour la page ; elle est facultative, et son
+absence ne retire jamais le `nom` copié à l'engagement.
+
+Pour la supervision :
+
+```
+GET /api/atelier/journees?etat=PRESENT
+GET /api/atelier/suivis?etats=EN_COURS&inclureConflits=true
+GET /api/operateurs
+GET /api/postes-de-travail
+```
+
+Le filtre `etat=PRESENT` retient toutes les venues ouvertes, même anciennes ou traversant minuit ; aucune date
+calendaire implicite ne les borne. `inclureConflits=true` étend les états demandés par un OU : il inclut aussi un
+suivi interrompu ou clôturé qui porte un conflit, même sans activité. Sans `etats`, tous les suivis restent sélectionnés.
+Les listes sont paginées avec un ordre total : début ou engagement descendant, puis identifiant ascendant.
+Il faut lire toutes les pages nécessaires ; plusieurs pages et plusieurs endpoints ne garantissent pas un instantané
+transactionnel, même si leurs totaux sont stables.
+
+L'opérateur est facultatif dans les projections quand sa fiche ne peut plus être résolue. Le poste est facultatif ;
+sa nature actuelle vient du référentiel des postes. L'arrivée d'une venue ouverte se lit dans `fenetres[].debut` ;
+une valeur absente dans une autre projection ne doit pas être fabriquée. Une activité est identifiée par `ouverture`
+et porte `depuis`, `echeance` et `categorie`. À l'échéance exacte, elle n'est plus courante. Les conflits restent
+indépendants de cet instant et ne constituent jamais un état de présence.
 
 Le journal complet, **événements annulés compris**, se lit via `GET /api/atelier/suivis/{id}`, qui conserve
 `RestSuiviDAtelier`, comme les réponses des actes métier. Un consommateur qui lisait le journal dans la liste doit

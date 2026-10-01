@@ -7,12 +7,11 @@ import com.glm.glmback.atelier.domain.ArriveeAEnregistrer;
 import com.glm.glmback.atelier.domain.CorrectionDePresenceAEnregistrer;
 import com.glm.glmback.atelier.domain.EvenementDePresenceId;
 import com.glm.glmback.atelier.domain.JourneeDeTravail;
+import com.glm.glmback.atelier.domain.JourneeDeTravailCriteria;
 import com.glm.glmback.atelier.domain.JourneeDeTravailId;
 import com.glm.glmback.atelier.domain.JourneeDeTravailRepository;
 import com.glm.glmback.atelier.domain.JourneesDeTravailService;
-import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.OperateursConnus;
-import com.glm.glmback.atelier.domain.Periode;
 import com.glm.glmback.atelier.domain.PointageDePresenceAEnregistrer;
 import com.glm.glmback.atelier.domain.PostesConnus;
 import com.glm.glmback.atelier.domain.PresenceTraitee;
@@ -158,8 +157,8 @@ public class JourneesDeTravailApplicationService {
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
   @Transactional(readOnly = true)
-  public Page<JourneeDeTravail> list(Optional<Periode> periode, Optional<OperateurId> operateur, Pageable pageable) {
-    return journeesDeTravail.list(periode, operateur, pageable);
+  public Page<JourneeDeTravail> list(JourneeDeTravailCriteria criteres, Pageable pageable) {
+    return journeesDeTravail.list(criteres, pageable);
   }
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })

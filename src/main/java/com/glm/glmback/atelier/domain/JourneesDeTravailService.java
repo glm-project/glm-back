@@ -172,7 +172,11 @@ public final class JourneesDeTravailService {
   }
 
   public Page<JourneeDeTravail> list(Optional<Periode> periode, Optional<OperateurId> operateur, Pageable pageable) {
-    return repository.list(new JourneeDeTravailCriteria(periode, operateur), pageable);
+    return list(new JourneeDeTravailCriteria(periode, operateur), pageable);
+  }
+
+  public Page<JourneeDeTravail> list(JourneeDeTravailCriteria criteres, Pageable pageable) {
+    return repository.list(criteres, pageable);
   }
 
   private static JourneeDeTravail nouvelleJournee(

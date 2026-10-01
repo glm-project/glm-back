@@ -177,6 +177,7 @@ class JpaJourneeDeTravailRepository implements JourneeDeTravailRepository {
   private static Specification<JourneeDeTravailEntity> correspondA(JourneeDeTravailCriteria criteria) {
     return (racine, requete, constructeur) -> {
       List<Predicate> predicats = new ArrayList<>();
+      criteria.etat().ifPresent(etat -> predicats.add(constructeur.equal(racine.get("etat"), etat)));
       criteria.operateur().ifPresent(operateur -> predicats.add(constructeur.equal(racine.get("operateurId"), operateur.uuid())));
       criteria.periode().ifPresent(periode -> predicats.add(constructeur.between(racine.get("debut"), periode.debut(), periode.fin())));
 
