@@ -5,8 +5,10 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.shared.error.domain.MissingMandatoryValueException;
-import com.glm.glmback.shared.error.domain.StringTooLongException;
+import com.glm.glmback.shared.error.domain.StringNotMatchingPatternException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @UnitTest
 class IdentifiantTest {
@@ -25,13 +27,23 @@ class IdentifiantTest {
       .hasMessageContaining("identifiant");
   }
 
-  @Test
-  void shouldNotBuildWithTooLongValue() {
-    String tooLong = "a".repeat(51);
-
-    assertThatThrownBy(() -> new Identifiant(tooLong))
-      .isExactlyInstanceOf(StringTooLongException.class)
+  @ParameterizedTest
+  @ValueSource(strings = { "1234567", "12A", "AB-12", "-12", "12 3", "１２" })
+  void shouldNotBuildWithAnythingButOneToSixDigits(String value) {
+    assertThatThrownBy(() -> new Identifiant(value))
+      .isExactlyInstanceOf(StringNotMatchingPatternException.class)
       .hasMessageContaining("identifiant");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = { "0", "7", "007", "123456" })
+  void shouldBuildWithOneToSixDigits(String value) {
+    assertThat(new Identifiant(value).value()).isEqualTo(value);
+  }
+
+  @Test
+  void shouldKeepLeadingZeros() {
+    assertThat(new Identifiant("007")).isNotEqualTo(new Identifiant("7"));
   }
 
   @Test

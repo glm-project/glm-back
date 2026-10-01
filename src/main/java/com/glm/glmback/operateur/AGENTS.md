@@ -22,7 +22,7 @@ ne l'ait saisi deux fois.
 - **Le calcul du coût de revient**. L'opérateur porte son `TauxHoraire` (facultatif, strictement positif), mais ce
   contexte ne fait rien d'autre que le stocker et le restituer : aucun calcul, aucune répartition. `atelier` le copie
   sur ses faits, `coutderevient` les valorise.
-- **Le pointage**, qui appartient à `atelier` — lequel ne connaît de ce contexte que l'identifiant, lu par port, et
+- **Le pointage**, qui appartient à `atelier` — lequel ne connaît de ce contexte que l'`OperateurId`, lu par port, et
   copie le taux horaire sur ses faits.
 - **L'identification à la borne** et l'authentification. L'identifiant est un attribut d'identité, pas un moyen de
   connexion.
@@ -39,6 +39,8 @@ résolus.
 ## Invariants à ne pas casser
 
 - **L'identité (nom, prénom) est unique par entreprise** → `IdentiteDejaUtiliseeException` (409).
+- **L'identifiant compte de 1 à 6 chiffres** (`^\d{1,6}$`) : c'est ce que l'opérateur tape au pavé du pupitre. Une
+  chaîne, pas un nombre — `007` reste distinct de `7`.
 - **L'identifiant est unique quand il est renseigné**, et plusieurs opérateurs peuvent rester sans — patron
   `elementdefabrication.Reference`. PostgreSQL considérant les `NULL` comme distincts, l'index unique laisse coexister
   autant d'opérateurs sans identifiant que nécessaire.

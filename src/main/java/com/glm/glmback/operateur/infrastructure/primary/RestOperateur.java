@@ -17,7 +17,11 @@ record RestOperateur(
 
   @Schema(description = "Prenom.", example = "Jean", requiredMode = Schema.RequiredMode.REQUIRED) String prenom,
 
-  @Schema(description = "Identifiant interne, absent si l'entreprise n'en attribue pas.", example = "049") String identifiant,
+  @Schema(
+    description = "Identifiant que l'operateur tape au pupitre, de 1 a 6 chiffres ; absent si l'entreprise n'en attribue pas.",
+    example = "007"
+  )
+  String identifiant,
 
   @Schema(description = "Taux horaire de l'operateur, absent si l'entreprise ne le valorise pas.", example = "22.00")
   BigDecimal tauxHoraire,

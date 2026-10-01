@@ -90,6 +90,38 @@ Feature: Referentiel des operateurs
       | prenom | Jean |
     Then la reponse a le statut http 400
 
+  Scenario: L'identifiant conserve ses zeros en tete
+    When je declare un operateur
+      | nom         | Garnier |
+      | prenom      | Ines    |
+      | identifiant | 007     |
+    Then la reponse a le statut http 201
+    And la reponse d'operateur contient
+      | identifiant | 007 |
+
+  Scenario Outline: Declaration refusee si l'identifiant n'est pas fait de 1 a 6 chiffres
+    When je declare un operateur
+      | nom         | Lambert       |
+      | prenom      | Paul          |
+      | identifiant | <identifiant> |
+    Then la reponse a le statut http 400
+
+    Examples:
+      | identifiant |
+      | 12A         |
+      | AB-12       |
+      | 1234567     |
+
+  Scenario: Revision refusee si l'identifiant depasse 6 chiffres
+    Given j'ai declare un operateur
+      | nom    | Marchand |
+      | prenom | Hugo     |
+    When je revise cet operateur
+      | nom         | Marchand |
+      | prenom      | Hugo     |
+      | identifiant | 1234567  |
+    Then la reponse a le statut http 400
+
   Scenario: Lecture d'un operateur existant
     Given j'ai un poste de travail "Tour B" de nature "tournage"
     And j'ai declare un operateur

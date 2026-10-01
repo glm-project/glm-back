@@ -522,10 +522,9 @@
         "description" : "Declaration d'un operateur.",
         "properties" : {
           "identifiant" : {
-            "description" : "Identifiant interne. Facultatif : toutes les entreprises n'en attribuent pas. Unique des qu'il est renseigne.",
-            "example" : "049",
-            "maxLength" : 50,
-            "minLength" : 0,
+            "description" : "Identifiant que l'operateur tape au pupitre : de 1 a 6 chiffres, zeros en tete conserves. Facultatif : toutes les entreprises n'en attribuent pas. Unique des qu'il est renseigne.",
+            "example" : "007",
+            "pattern" : "\\s*|\\d{1,6}",
             "type" : "string"
           },
           "nom" : {
@@ -994,10 +993,9 @@
         "description" : "Revision d'un operateur.",
         "properties" : {
           "identifiant" : {
-            "description" : "Identifiant interne, laisse vide pour le retirer.",
-            "example" : "049",
-            "maxLength" : 50,
-            "minLength" : 0,
+            "description" : "Identifiant que l'operateur tape au pupitre : de 1 a 6 chiffres, zeros en tete conserves. Laisse vide pour le retirer.",
+            "example" : "007",
+            "pattern" : "\\s*|\\d{1,6}",
             "type" : "string"
           },
           "nom" : {
@@ -1085,8 +1083,8 @@
             "type" : "string"
           },
           "identifiant" : {
-            "description" : "Identifiant interne, absent si l'entreprise n'en attribue pas.",
-            "example" : "049",
+            "description" : "Identifiant que l'operateur tape au pupitre, de 1 a 6 chiffres ; absent si l'entreprise n'en attribue pas.",
+            "example" : "007",
             "type" : "string"
           },
           "natures" : {

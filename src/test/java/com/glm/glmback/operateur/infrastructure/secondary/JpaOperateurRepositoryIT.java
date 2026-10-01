@@ -79,7 +79,7 @@ class JpaOperateurRepositoryIT {
       .id(OperateurId.newId())
       .nom(new Nom("IT-nom-taux-%06d".formatted(numero)))
       .prenom(new Prenom("IT-prenom-taux-%06d".formatted(numero)))
-      .identifiant("IT-mat-taux-%06d".formatted(numero))
+      .identifiant("%06d".formatted(numero))
       .tauxHoraire(new BigDecimal("22.00"))
       .postes(Set.of());
 
@@ -230,7 +230,7 @@ class JpaOperateurRepositoryIT {
   @Test
   @WithTenant(IMPECCMOLD)
   void shouldNotGetIdOfUnusedIdentifiant() {
-    assertThat(inTransaction(() -> operateurs.idPourIdentifiant(new Identifiant("IT-identifiant-inconnu")))).isEmpty();
+    assertThat(inTransaction(() -> operateurs.idPourIdentifiant(new Identifiant("999999")))).isEmpty();
   }
 
   @Test
@@ -287,7 +287,7 @@ class JpaOperateurRepositoryIT {
   }
 
   private static Operateur operateurHabiliteSur(Set<PosteHabilitableId> habilitations) {
-    return operateurHabiliteSur(habilitations, "IT-mat-%06d".formatted(COMPTEUR.incrementAndGet()));
+    return operateurHabiliteSur(habilitations, "%06d".formatted(COMPTEUR.incrementAndGet()));
   }
 
   private static Operateur operateurHabiliteSur(Set<PosteHabilitableId> habilitations, String identifiant) {
@@ -307,7 +307,7 @@ class JpaOperateurRepositoryIT {
       .id(OperateurId.newId())
       .nom(nom)
       .prenom(prenom)
-      .identifiant("IT-mat-%06d".formatted(COMPTEUR.incrementAndGet()))
+      .identifiant("%06d".formatted(COMPTEUR.incrementAndGet()))
       .tauxHoraire(null)
       .postes(Set.of());
   }

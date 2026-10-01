@@ -4,6 +4,7 @@ import com.glm.glmback.operateur.domain.OperateurACreer;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.Set;
@@ -19,10 +20,10 @@ record RestCreationOperateur(
   @Schema(description = "Prenom.", example = "Jean", requiredMode = Schema.RequiredMode.REQUIRED) @NotBlank @Size(max = 100) String prenom,
 
   @Schema(
-    description = "Identifiant interne. Facultatif : toutes les entreprises n'en attribuent pas. Unique des qu'il est renseigne.",
-    example = "049"
+    description = "Identifiant que l'operateur tape au pupitre : de 1 a 6 chiffres, zeros en tete conserves. Facultatif : toutes les entreprises n'en attribuent pas. Unique des qu'il est renseigne.",
+    example = "007"
   )
-  @Size(max = 50)
+  @Pattern(regexp = "\\s*|\\d{1,6}")
   String identifiant,
 
   @Schema(
