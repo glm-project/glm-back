@@ -158,7 +158,7 @@
             "$ref" : "#/components/schemas/RestElementDeSupervision"
           },
           "etat" : {
-            "enum" : [ "EN_COURS" ],
+            "enum" : [ "EN_COURS", "TERMINEE_AUTOMATIQUEMENT" ],
             "type" : "string"
           },
           "finRetenue" : {

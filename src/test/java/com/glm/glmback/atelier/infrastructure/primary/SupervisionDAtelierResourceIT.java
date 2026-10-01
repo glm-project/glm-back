@@ -144,6 +144,21 @@ class SupervisionDAtelierResourceIT {
 
   @Test
   @WithTenant("supervision_fixture")
+  void shouldRetainTheAutomaticEndAtTheInclusiveDeadline() throws Exception {
+    var suivi = suiviDAtelierEngage().enregistre(debutSansPosteParDupontA(LE_10_MAI_2026_A_8H));
+    when(clock.now()).thenReturn(Instant.parse("2026-05-10T21:00:00Z"));
+    transactions.executeWithoutResult(status -> suivis.create(suivi));
+
+    rest
+      .perform(get("/api/atelier/supervision"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.activites.length()").value(1))
+      .andExpect(jsonPath("$.activites[0].etat").value("TERMINEE_AUTOMATIQUEMENT"))
+      .andExpect(jsonPath("$.activites[0].finRetenue").value("2026-05-10T21:00:00Z"));
+  }
+
+  @Test
+  @WithTenant("supervision_fixture")
   void shouldDeriveDistinctTradesFromEachOperatorsAuthorizedPosts() throws Exception {
     when(clock.now()).thenReturn(Instant.parse("2026-09-13T10:00:00Z"));
     transactions.executeWithoutResult(status -> {
