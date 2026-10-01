@@ -6,7 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.glm.glmback.IntegrationTest;
-import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
+import com.glm.glmback.atelier.domain.*;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurityContexts;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.time.domain.Clock;
@@ -56,6 +56,7 @@ class SupervisionDAtelierResourceIT {
       entities.createNativeQuery("delete from sequence_en_conflit").executeUpdate();
       entities.createNativeQuery("delete from evenement_d_atelier").executeUpdate();
       entities.createNativeQuery("delete from suivi_d_atelier").executeUpdate();
+      entities.createNativeQuery("delete from element_de_fabrication").executeUpdate();
       entities.createNativeQuery("delete from operateur_poste").executeUpdate();
       entities.createNativeQuery("delete from poste_de_travail").executeUpdate();
       entities.createNativeQuery("delete from operateur").executeUpdate();
@@ -100,6 +101,45 @@ class SupervisionDAtelierResourceIT {
       .andExpect(jsonPath("$.activites[0].echeance").value("2026-05-10T21:00:00Z"))
       .andExpect(jsonPath("$.activites[0].etat").value("EN_COURS"))
       .andExpect(jsonPath("$.activites[0].finRetenue").doesNotExist());
+  }
+
+  @Test
+  @WithTenant("supervision_fixture")
+  void shouldDescribeANonConformityOnAReferencedMoldAndItsPost() throws Exception {
+    var element = new ElementEngage(ELEMENT_OF_2026_000043, NOM_OF_2026_000043, TypeDElementEngage.PRODUIT);
+    var suivi = SuiviDAtelier.builder()
+      .id(SuiviDAtelierId.newId())
+      .element(element)
+      .engagement(engagementParLeroy())
+      .journal(JournalDAtelier.vide())
+      .enregistre(nonConformiteSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H));
+    when(clock.now()).thenReturn(LE_10_MAI_2026_A_9H);
+    transactions.executeWithoutResult(status -> {
+      entities
+        .createNativeQuery(
+          "insert into element_de_fabrication (id, type, nom, reference, date_de_creation, date_de_modification) values (:id, 'PRODUIT', 'PRD-2026-000043', 'M-43', :date, :date)"
+        )
+        .setParameter("id", element.id().uuid())
+        .setParameter("date", LE_10_MAI_2026_A_7H)
+        .executeUpdate();
+      entities
+        .createNativeQuery("insert into poste_de_travail (id, libelle, nature) values (:id, 'Fraiseuse 1', 'Tournage')")
+        .setParameter("id", POSTE_ID_FRAISEUSE_1.uuid())
+        .executeUpdate();
+      suivis.create(suivi);
+    });
+
+    rest
+      .perform(get("/api/atelier/supervision"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.activites.length()").value(1))
+      .andExpect(jsonPath("$.activites[0].categorie").value("NON_CONFORMITE"))
+      .andExpect(jsonPath("$.activites[0].element.type").value("PRODUIT"))
+      .andExpect(jsonPath("$.activites[0].element.nom").value(NOM_OF_2026_000043.value()))
+      .andExpect(jsonPath("$.activites[0].element.reference").value("M-43"))
+      .andExpect(jsonPath("$.activites[0].poste.id").value(POSTE_ID_FRAISEUSE_1.uuid().toString()))
+      .andExpect(jsonPath("$.activites[0].poste.libelle").value("Fraiseuse 1"))
+      .andExpect(jsonPath("$.activites[0].poste.nature").value(NATURE_FRAISAGE.value()));
   }
 
   @Test

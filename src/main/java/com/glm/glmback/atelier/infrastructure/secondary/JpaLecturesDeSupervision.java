@@ -54,8 +54,11 @@ class JpaLecturesDeSupervision implements LecturesDeSupervision {
       .createQuery(
         """
         select a.id as id, a.operateurId as operateurId, a.categorie as categorie, a.debut as debut, a.echeance as echeance,
-        s.elementId as elementId, s.elementNom as elementNom, s.elementType as elementType
+        s.elementId as elementId, s.elementNom as elementNom, s.elementType as elementType, e.reference as reference,
+          a.posteId as posteId, p.libelle as posteLibelle, a.nature as nature
         from ActiviteDAtelierEntity a join a.suivi s
+          left join ElementEngageableEntity e on e.id = s.elementId
+          left join PosteConnuEntity p on p.id = a.posteId
         where a.aResoudre = false and a.fin is null order by a.debut, a.id
         """,
         Tuple.class
@@ -81,8 +84,16 @@ class JpaLecturesDeSupervision implements LecturesDeSupervision {
     return DescriptionDActiviteDeSupervision.builder()
       .id(new ActiviteId(row.get("id", UUID.class)))
       .operateur(new OperateurId(row.get("operateurId", UUID.class)))
-      .element(new ElementDeSupervision(element, Optional.empty()))
-      .poste(Optional.empty())
+      .element(new ElementDeSupervision(element, Optional.ofNullable(row.get("reference", String.class))))
+      .poste(
+        Optional.ofNullable(row.get("posteId", UUID.class)).map(id ->
+          new PosteDeSupervision(
+            new PosteDeTravailId(id),
+            new LibelleDePoste(row.get("posteLibelle", String.class)),
+            Optional.ofNullable(row.get("nature", String.class)).map(NatureDOperation::new)
+          )
+        )
+      )
       .categorie(row.get("categorie", CategorieDActivite.class))
       .debut(row.get("debut", Instant.class))
       .echeance(row.get("echeance", Instant.class));

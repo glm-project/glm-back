@@ -174,7 +174,7 @@
             "type" : "string"
           },
           "poste" : {
-            "$ref" : "#/components/schemas/RestPosteDAtelier"
+            "$ref" : "#/components/schemas/RestPosteDeSupervision"
           }
         },
         "required" : [ "categorie", "debut", "echeance", "element", "etat", "id", "operateurId" ],
@@ -1447,6 +1447,22 @@
           "libelle" : {
             "description" : "Libelle du poste, relu a chaque appel.",
             "example" : "DMU 50",
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "libelle" ],
+        "type" : "object"
+      },
+      "RestPosteDeSupervision" : {
+        "properties" : {
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "libelle" : {
+            "type" : "string"
+          },
+          "nature" : {
             "type" : "string"
           }
         },

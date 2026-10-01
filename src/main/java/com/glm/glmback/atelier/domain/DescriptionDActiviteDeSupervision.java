@@ -8,7 +8,7 @@ public record DescriptionDActiviteDeSupervision(
   ActiviteId id,
   OperateurId operateur,
   ElementDeSupervision element,
-  Optional<PosteConnu> poste,
+  Optional<PosteDeSupervision> poste,
   CategorieDActivite categorie,
   Instant debut,
   Instant echeance
@@ -36,7 +36,7 @@ public record DescriptionDActiviteDeSupervision(
     private ActiviteId id;
     private OperateurId operateur;
     private ElementDeSupervision element;
-    private Optional<PosteConnu> poste;
+    private Optional<PosteDeSupervision> poste;
     private CategorieDActivite categorie;
     private Instant debut;
     private Instant echeance;
@@ -56,7 +56,7 @@ public record DescriptionDActiviteDeSupervision(
       return this;
     }
 
-    public CategorieStep poste(Optional<PosteConnu> poste) {
+    public CategorieStep poste(Optional<PosteDeSupervision> poste) {
       this.poste = poste;
       return this;
     }
@@ -90,7 +90,7 @@ public record DescriptionDActiviteDeSupervision(
   }
 
   public interface PosteStep {
-    CategorieStep poste(Optional<PosteConnu> poste);
+    CategorieStep poste(Optional<PosteDeSupervision> poste);
   }
 
   public interface CategorieStep {
