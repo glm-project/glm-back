@@ -18,10 +18,11 @@ interface SpringDataSuivisDuPupitreRepository extends JpaRepository<SuiviDuPupit
   List<SuiviDuPupitreEntity> ouverts();
 
   @Query(
-    """
-    select distinct evenement.suiviId from EvenementDuPupitreEntity evenement
-    where evenement.suiviId in :suivis and evenement.annulationDate is null
-    """
+    value = """
+    select distinct suivi_id from evenement_d_atelier
+    where suivi_id in :suivis and annulation_date is null
+    """,
+    nativeQuery = true
   )
   Set<UUID> avecPointages(Set<UUID> suivis);
 }
