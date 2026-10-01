@@ -16,11 +16,11 @@ public record ActiviteDeSupervision(
   }
 
   public static ActiviteDeSupervision a(DescriptionDActiviteDeSupervision description, Instant evaluation) {
-    if (!evaluation.isBefore(description.echeance())) {
+    if (description.echeance().estAtteinteA(evaluation)) {
       return new ActiviteDeSupervision(
         description,
         EtatDActiviteDeSupervision.TERMINEE_AUTOMATIQUEMENT,
-        Optional.of(description.echeance())
+        Optional.of(description.echeance().value())
       );
     }
     return new ActiviteDeSupervision(description, EtatDActiviteDeSupervision.EN_COURS, Optional.empty());

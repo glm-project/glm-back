@@ -1,13 +1,28 @@
 package com.glm.glmback.atelier.infrastructure.secondary;
 
-import com.glm.glmback.atelier.domain.*;
+import com.glm.glmback.atelier.domain.ActiviteDeSupervision;
+import com.glm.glmback.atelier.domain.ActiviteId;
+import com.glm.glmback.atelier.domain.CategorieDActivite;
+import com.glm.glmback.atelier.domain.DescriptionDActiviteDeSupervision;
+import com.glm.glmback.atelier.domain.Echeance;
+import com.glm.glmback.atelier.domain.ElementDeSupervision;
+import com.glm.glmback.atelier.domain.ElementEngage;
+import com.glm.glmback.atelier.domain.ElementEngageId;
+import com.glm.glmback.atelier.domain.EvenementDAtelierId;
+import com.glm.glmback.atelier.domain.LectureDeSupervision;
 import com.glm.glmback.atelier.domain.LecturesDeSupervision;
+import com.glm.glmback.atelier.domain.LibelleDePoste;
 import com.glm.glmback.atelier.domain.NatureDOperation;
 import com.glm.glmback.atelier.domain.Nom;
+import com.glm.glmback.atelier.domain.NomDElement;
 import com.glm.glmback.atelier.domain.OperateurConnu;
 import com.glm.glmback.atelier.domain.OperateurDeSupervision;
 import com.glm.glmback.atelier.domain.OperateurId;
+import com.glm.glmback.atelier.domain.PosteDeSupervision;
+import com.glm.glmback.atelier.domain.PosteDeTravailId;
 import com.glm.glmback.atelier.domain.Prenom;
+import com.glm.glmback.atelier.domain.SequenceEnConflitDeSupervision;
+import com.glm.glmback.atelier.domain.TypeDElementEngage;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Tuple;
 import java.time.Instant;
@@ -29,6 +44,23 @@ class JpaLecturesDeSupervision implements LecturesDeSupervision {
 
   @Override
   public LectureDeSupervision read(Instant evaluation) {
+    List<OperateurDeSupervision> operateurs = readOperateurs();
+    List<Tuple> activites = readActivites();
+    return LectureDeSupervision.builder()
+      .evaluation(evaluation)
+      .operateurs(operateurs)
+      .activites(
+        activites
+          .stream()
+          .filter(row -> !row.get("aResoudre", Boolean.class))
+          .map(this::toDescription)
+          .map(description -> ActiviteDeSupervision.a(description, evaluation))
+          .toList()
+      )
+      .sequencesEnConflit(readSequences(activites));
+  }
+
+  private List<OperateurDeSupervision> readOperateurs() {
     List<?> rows = entities.createNativeQuery("select id, nom, prenom from operateur order by id", Tuple.class).getResultList();
     List<?> habilitations = entities
       .createNativeQuery(
@@ -45,12 +77,15 @@ class JpaLecturesDeSupervision implements LecturesDeSupervision {
           Collectors.mapping(row -> new NatureDOperation(row.get("nature", String.class)), Collectors.toList())
         )
       );
-    List<OperateurDeSupervision> operateurs = rows
+    return rows
       .stream()
       .map(Tuple.class::cast)
       .map(row -> toOperateur(row, metiers))
       .toList();
-    List<Tuple> activites = entities
+  }
+
+  private List<Tuple> readActivites() {
+    return entities
       .createQuery(
         """
         select a.id as id, a.operateurId as operateurId, a.categorie as categorie, a.debut as debut, a.echeance as echeance,
@@ -65,6 +100,9 @@ class JpaLecturesDeSupervision implements LecturesDeSupervision {
         Tuple.class
       )
       .getResultList();
+  }
+
+  private List<SequenceEnConflitDeSupervision> readSequences(List<Tuple> activites) {
     Map<UUID, List<DescriptionDActiviteDeSupervision>> descriptionsEnConflit = activites
       .stream()
       .filter(row -> row.get("aResoudre", Boolean.class))
@@ -80,29 +118,16 @@ class JpaLecturesDeSupervision implements LecturesDeSupervision {
         Tuple.class
       )
       .getResultList();
-    return LectureDeSupervision.builder()
-      .evaluation(evaluation)
-      .operateurs(operateurs)
-      .activites(
-        activites
-          .stream()
-          .filter(row -> !row.get("aResoudre", Boolean.class))
-          .map(this::toDescription)
-          .map(description -> ActiviteDeSupervision.a(description, evaluation))
-          .toList()
+    return sequences
+      .stream()
+      .map(row ->
+        SequenceEnConflitDeSupervision.builder()
+          .id(new EvenementDAtelierId(row.get("id", UUID.class)))
+          .operateur(new OperateurId(row.get("operateurId", UUID.class)))
+          .poste(toPoste(row))
+          .activites(descriptionsEnConflit.getOrDefault(row.get("id", UUID.class), List.of()))
       )
-      .sequencesEnConflit(
-        sequences
-          .stream()
-          .map(row ->
-            SequenceEnConflitDeSupervision.builder()
-              .id(new EvenementDAtelierId(row.get("id", UUID.class)))
-              .operateur(new OperateurId(row.get("operateurId", UUID.class)))
-              .poste(toPoste(row))
-              .activites(descriptionsEnConflit.getOrDefault(row.get("id", UUID.class), List.of()))
-          )
-          .toList()
-      );
+      .toList();
   }
 
   private DescriptionDActiviteDeSupervision toDescription(Tuple row) {
@@ -118,7 +143,7 @@ class JpaLecturesDeSupervision implements LecturesDeSupervision {
       .poste(toPoste(row))
       .categorie(row.get("categorie", CategorieDActivite.class))
       .debut(row.get("debut", Instant.class))
-      .echeance(row.get("echeance", Instant.class));
+      .echeance(new Echeance(row.get("echeance", Instant.class)));
   }
 
   private Optional<PosteDeSupervision> toPoste(Tuple row) {

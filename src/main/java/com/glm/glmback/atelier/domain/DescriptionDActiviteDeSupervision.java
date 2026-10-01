@@ -11,7 +11,7 @@ public record DescriptionDActiviteDeSupervision(
   Optional<PosteDeSupervision> poste,
   CategorieDActivite categorie,
   Instant debut,
-  Instant echeance
+  Echeance echeance
 ) {
   public DescriptionDActiviteDeSupervision {
     Assert.notNull("id", id);
@@ -39,7 +39,7 @@ public record DescriptionDActiviteDeSupervision(
     private Optional<PosteDeSupervision> poste;
     private CategorieDActivite categorie;
     private Instant debut;
-    private Instant echeance;
+    private Echeance echeance;
 
     public OperateurStep id(ActiviteId id) {
       this.id = id;
@@ -71,7 +71,7 @@ public record DescriptionDActiviteDeSupervision(
       return this;
     }
 
-    public DescriptionDActiviteDeSupervision echeance(Instant echeance) {
+    public DescriptionDActiviteDeSupervision echeance(Echeance echeance) {
       this.echeance = echeance;
       return new DescriptionDActiviteDeSupervision(this);
     }
@@ -102,6 +102,6 @@ public record DescriptionDActiviteDeSupervision(
   }
 
   public interface EcheanceStep {
-    DescriptionDActiviteDeSupervision echeance(Instant echeance);
+    DescriptionDActiviteDeSupervision echeance(Echeance echeance);
   }
 }

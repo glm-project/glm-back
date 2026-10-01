@@ -27,7 +27,7 @@ record RestActiviteDeSupervision(
       description.poste().map(RestPosteDeSupervision::from).orElse(null),
       description.categorie(),
       description.debut(),
-      description.echeance(),
+      description.echeance().value(),
       activite.etat(),
       activite.finRetenue().orElse(null)
     );
