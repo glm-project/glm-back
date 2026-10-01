@@ -1,5 +1,6 @@
 package com.glm.glmback.pupitre.domain;
 
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -12,5 +13,5 @@ import java.util.List;
  */
 @FunctionalInterface
 public interface SuivisOuvertsDuPupitre {
-  List<SuiviDuPupitre> tous();
+  List<SuiviDuPupitre> tous(Instant evaluation);
 }

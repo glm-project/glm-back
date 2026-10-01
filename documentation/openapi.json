@@ -189,7 +189,7 @@
         "type" : "object"
       },
       "RestActiviteDuPupitre" : {
-        "description" : "Une activite ouverte sur cet element : qui travaille, sur quel poste, dans quel etat, depuis quand.\n\nUne non conformite ne ferme pas l'activite — ce temps-la se compte aussi. C'est la categorie qui change, pas\nl'etat de l'element.\n",
+        "description" : "Une activite pointable a genereLe, sans fin ni conflit : qui travaille, sur quel poste, depuis quand\net jusqu'a quelle echeance. Son ouverture stable est la cible des fins et transitions.\n",
         "properties" : {
           "categorie" : {
             "description" : "TRAVAIL ou NON_CONFORMITE.",
@@ -201,8 +201,18 @@
             "format" : "date-time",
             "type" : "string"
           },
+          "echeance" : {
+            "description" : "Echeance publiee par l'atelier.",
+            "format" : "date-time",
+            "type" : "string"
+          },
           "operateur" : {
             "description" : "Identifiant de l'operateur en activite.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "ouverture" : {
+            "description" : "Identite stable de l'activite, cible des fins et transitions.",
             "format" : "uuid",
             "type" : "string"
           },
@@ -212,7 +222,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "categorie", "depuis", "operateur" ],
+        "required" : [ "categorie", "depuis", "echeance", "operateur", "ouverture" ],
         "type" : "object"
       },
       "RestActiviteEnCours" : {

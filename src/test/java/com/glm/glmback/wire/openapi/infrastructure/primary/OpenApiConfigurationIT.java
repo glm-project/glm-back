@@ -77,6 +77,7 @@ class OpenApiConfigurationIT {
       .andExpect(requiredFields("RestJourneeDeTravail", "id", "etat", "fenetres", "journal"))
       .andExpect(requiredFields("RestFenetreDePresence", "debut"))
       .andExpect(requiredFields("RestActiviteEnCours", "categorie", "depuis", "ouverture", "echeance"))
+      .andExpect(requiredFields("RestActiviteDuPupitre", "operateur", "categorie", "depuis", "ouverture", "echeance"))
       .andExpect(requiredFields("RestIntervalleDActivite", "activite", "finAutomatique", "aResoudre"))
       .andExpect(
         requiredFields(

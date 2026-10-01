@@ -94,6 +94,7 @@ Feature: Le referentiel que le pupitre met en cache
     And au pupitre, "dupont" pointe "DEBUT" sur "OF 4002" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
     When je lis le referentiel du pupitre a "2026-05-11T10:00:00Z"
     Then "OF 4002" figure au referentiel du pupitre dans l'etat "EN_COURS"
+    And l'activite de "OF 4002" vise le dernier ouvrant et echeoit a "2026-05-11T22:00:00Z"
     And les activites de "OF 4002" au referentiel du pupitre sont
       | operateur | poste     | categorie | depuis               |
       | dupont    | fraiseuse | TRAVAIL   | 2026-05-11T09:00:00Z |
@@ -217,3 +218,59 @@ Feature: Le referentiel que le pupitre met en cache
     Given I am logged in as "pupitre-atelier-1" with role "USER" without tenant
     When je lis le referentiel du pupitre a "2026-05-11T07:00:00Z"
     Then la reponse a le statut http 403
+
+  Scenario: Une activite du pupitre respecte son debut et son echeance exacte
+    Given le pupitre fabrique "OF 4090"
+    And "OF 4090" est engage au pupitre a "2026-05-11T07:00:00Z"
+    And au pupitre, "dupont" pointe "DEBUT" sur "OF 4090" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
+    When je lis le referentiel du pupitre a "2026-05-11T08:59:59Z"
+    Then "OF 4090" ne porte aucune activite au referentiel du pupitre
+    When je lis le referentiel du pupitre a "2026-05-11T09:00:00Z"
+    Then l'activite de "OF 4090" vise le dernier ouvrant et echeoit a "2026-05-11T22:00:00Z"
+    When je lis le referentiel du pupitre a "2026-05-11T21:59:59Z"
+    Then "OF 4090" figure au referentiel du pupitre dans l'etat "EN_COURS"
+    When je lis le referentiel du pupitre a "2026-05-11T22:00:00Z"
+    Then "OF 4090" ne porte aucune activite au referentiel du pupitre
+    And "OF 4090" figure au referentiel du pupitre dans l'etat "INTERROMPU"
+
+  Scenario: Le pupitre ne propose aucune cible issue d'une sequence en conflit
+    Given le pupitre fabrique "OF 4091"
+    And "OF 4091" est engage au pupitre a "2026-05-11T07:00:00Z"
+    And au pupitre, "dupont" pointe "DEBUT" sur "OF 4091" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
+    And je retiens l'ouverture du pupitre
+    And au pupitre, "dupont" pointe "NON_CONFORMITE" sur "OF 4091" au poste "fraiseuse" a "2026-05-11T10:00:00Z"
+    And au pupitre, "dupont" termine l'ouverture retenue sur "OF 4091" au poste "fraiseuse" a "2026-05-11T11:00:00Z"
+    When je lis le referentiel du pupitre a "2026-05-11T11:01:00Z"
+    Then "OF 4091" ne porte aucune activite au referentiel du pupitre
+    And "OF 4091" figure au referentiel du pupitre dans l'etat "INTERROMPU"
+    Given au pupitre, "dupont" pointe "DEBUT" sur "OF 4091" au poste "fraiseuse" a "2026-05-11T12:00:00Z"
+    When je lis le referentiel du pupitre a "2026-05-11T12:01:00Z"
+    Then l'activite de "OF 4091" vise le dernier ouvrant et echeoit a "2026-05-12T01:00:00Z"
+
+  Scenario: La correction d'une ouverture conserve la cible du pupitre
+    Given le pupitre fabrique "OF 4092"
+    And "OF 4092" est engage au pupitre a "2026-05-11T07:00:00Z"
+    And au pupitre, "dupont" pointe "DEBUT" sur "OF 4092" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
+    And au pupitre, l'ouverture de "dupont" sur "OF 4092" au poste "fraiseuse" est corrigee a "2026-05-11T08:30:00Z"
+    When je lis le referentiel du pupitre a "2026-05-11T10:00:00Z"
+    Then l'activite de "OF 4092" vise le dernier ouvrant et echeoit a "2026-05-11T21:30:00Z"
+
+  Scenario: Un conflit sans activite laisse la tuile du pupitre interrompue
+    Given le pupitre fabrique "OF 4093"
+    And "OF 4093" est engage au pupitre a "2026-05-11T07:00:00Z"
+    And au pupitre, "dupont" pointe "DEBUT" sur "OF 4093" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
+    And je retiens l'ouverture du pupitre
+    And au pupitre, "dupont" termine l'ouverture retenue sur "OF 4093" au poste "fraiseuse" a "2026-05-11T10:00:00Z"
+    And l'ouverture retenue sur "OF 4093" est annulee a "2026-05-11T11:00:00Z"
+    When je lis le referentiel du pupitre a "2026-05-11T11:01:00Z"
+    Then "OF 4093" ne porte aucune activite au referentiel du pupitre
+    And "OF 4093" figure au referentiel du pupitre dans l'etat "INTERROMPU"
+
+  Scenario: Une fin regularisee apres treize heures retire l'activite du pupitre
+    Given le pupitre fabrique "OF 4094"
+    And "OF 4094" est engage au pupitre a "2026-05-11T07:00:00Z"
+    And au pupitre, "dupont" pointe "DEBUT" sur "OF 4094" au poste "fraiseuse" a "2026-05-11T08:00:00Z"
+    And au pupitre, "dupont" regularise la fin de "OF 4094" au poste "fraiseuse" a "2026-05-11T22:00:00Z"
+    When je lis le referentiel du pupitre a "2026-05-11T22:01:00Z"
+    Then "OF 4094" ne porte aucune activite au referentiel du pupitre
+    And "OF 4094" figure au referentiel du pupitre dans l'etat "INTERROMPU"

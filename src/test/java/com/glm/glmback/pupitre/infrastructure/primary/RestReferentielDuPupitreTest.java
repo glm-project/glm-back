@@ -4,11 +4,10 @@ import static com.glm.glmback.pupitre.domain.PupitreFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
-import com.glm.glmback.pupitre.domain.ActiviteEnCours;
+import com.glm.glmback.pupitre.domain.ActivitePointable;
 import com.glm.glmback.pupitre.domain.CategorieDActivite;
 import com.glm.glmback.pupitre.domain.EtatDePresence;
 import com.glm.glmback.pupitre.domain.EtatDuSuivi;
-import com.glm.glmback.pupitre.domain.JournalDuPupitre;
 import com.glm.glmback.pupitre.domain.OperateurDuPupitre;
 import com.glm.glmback.pupitre.domain.ReferentielDuPupitre;
 import com.glm.glmback.pupitre.domain.SuiviDuPupitre;
@@ -23,7 +22,7 @@ class RestReferentielDuPupitreTest {
   @Test
   void shouldExposerLaDateDeLInstantaneEtSesDeuxCollections() {
     RestReferentielDuPupitre referentiel = RestReferentielDuPupitre.from(
-      new ReferentielDuPupitre(LE_10_MAI_2026_A_8H, List.of(OPERATEUR_DUPONT), List.of(suiviOf42(JournalDuPupitre.vide())))
+      new ReferentielDuPupitre(LE_10_MAI_2026_A_8H, List.of(OPERATEUR_DUPONT), List.of(suiviOf42(SITUATION_EN_ATTENTE)))
     );
 
     assertThat(referentiel.genereLe()).isEqualTo(LE_10_MAI_2026_A_8H);
@@ -64,7 +63,7 @@ class RestReferentielDuPupitreTest {
 
   @Test
   void shouldExposerLaTuileEtSonEtat() {
-    RestSuiviDuPupitre suivi = RestSuiviDuPupitre.from(suiviOf42(new JournalDuPupitre(List.of(debut(LE_10_MAI_2026_A_8H)))));
+    RestSuiviDuPupitre suivi = RestSuiviDuPupitre.from(suiviOf42(SITUATION_EN_COURS));
 
     assertThat(suivi.id()).isEqualTo(SUIVI_ID_OF_42.uuid());
     assertThat(suivi.nom()).isEqualTo("OF-2026-000042");
@@ -72,7 +71,14 @@ class RestReferentielDuPupitreTest {
     assertThat(suivi.type()).isEqualTo(TypeDElementEngage.ORDRE_DE_FABRICATION);
     assertThat(suivi.etat()).isEqualTo(EtatDuSuivi.EN_COURS);
     assertThat(suivi.activites()).containsExactly(
-      new RestActiviteDuPupitre(OPERATEUR_ID_DUPONT.uuid(), POSTE_ID_FRAISEUSE_1.uuid(), CategorieDActivite.TRAVAIL, LE_10_MAI_2026_A_8H)
+      new RestActiviteDuPupitre(
+        OPERATEUR_ID_DUPONT.uuid(),
+        POSTE_ID_FRAISEUSE_1.uuid(),
+        CategorieDActivite.TRAVAIL,
+        LE_10_MAI_2026_A_8H,
+        OUVERTURE_A_8H.id(),
+        LE_10_MAI_2026_A_21H
+      )
     );
   }
 
@@ -83,14 +89,14 @@ class RestReferentielDuPupitreTest {
       .nom(NOM_OF_42)
       .reference(null)
       .type(TypeDElementEngage.PRODUIT)
-      .journal(JournalDuPupitre.vide());
+      .situation(SITUATION_EN_ATTENTE);
 
     assertThat(RestSuiviDuPupitre.from(sansReference).reference()).isNull();
   }
 
   @Test
   void shouldTaireLePosteDUneActiviteQuiNEnAPas() {
-    ActiviteEnCours sansPoste = new ActiviteEnCours(ACTIVITE_DUPONT_SANS_POSTE, CategorieDActivite.TRAVAIL, LE_10_MAI_2026_A_8H);
+    ActivitePointable sansPoste = new ActivitePointable(ACTIVITE_DUPONT_SANS_POSTE, CategorieDActivite.TRAVAIL, OUVERTURE_A_8H);
 
     assertThat(RestActiviteDuPupitre.from(sansPoste).poste()).isNull();
   }

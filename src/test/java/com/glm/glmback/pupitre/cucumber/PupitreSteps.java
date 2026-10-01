@@ -70,6 +70,7 @@ public class PupitreSteps {
   private final Map<String, String> references = new HashMap<>();
   private final Map<String, String> suivis = new HashMap<>();
   private String dernierEvenement;
+  private String ouvertureRetenue;
 
   @Given("le pupitre connait le poste {string}")
   public void lePupitreConnaitLePoste(String alias) {
@@ -145,6 +146,91 @@ public class PupitreSteps {
   @Given("au pupitre, {string} pointe {string} sur {string} sans poste a {string}")
   public void pointeSansPoste(String operateur, String type, String element, String instant) {
     pointe(instant, element, Map.of("id", UUID.randomUUID(), "type", type, "operateur", operateurs.get(operateur)));
+  }
+
+  @Given("je retiens l'ouverture du pupitre")
+  public void retenirLOuverture() {
+    ouvertureRetenue = dernierEvenement;
+  }
+
+  @Given("au pupitre, {string} termine l'ouverture retenue sur {string} au poste {string} a {string}")
+  public void terminerLOuvertureRetenue(String operateur, String element, String poste, String instant) {
+    horloge.ilEst(Instant.parse(instant));
+    rest.post(
+      SUIVIS_URI + "/" + suivis.get(element) + "/pointages",
+      JSON.writeValueAsString(
+        Map.of(
+          "id",
+          UUID.randomUUID(),
+          "type",
+          "FIN",
+          "intention",
+          "FIN",
+          "cible",
+          ouvertureRetenue,
+          "operateur",
+          operateurs.get(operateur),
+          "poste",
+          postes.get(poste)
+        )
+      )
+    );
+  }
+
+  @Given("au pupitre, l'ouverture de {string} sur {string} au poste {string} est corrigee a {string}")
+  public void corrigerLOuverture(String operateur, String element, String poste, String instant) {
+    rest.put(
+      SUIVIS_URI + "/" + suivis.get(element) + "/evenements/" + dernierEvenement,
+      JSON.writeValueAsString(
+        Map.of(
+          "motif",
+          "Heure erronee",
+          "type",
+          "DEBUT",
+          "intention",
+          "OUVERTURE",
+          "operateur",
+          operateurs.get(operateur),
+          "poste",
+          postes.get(poste),
+          "dateDeSurvenue",
+          instant
+        )
+      )
+    );
+  }
+
+  @Given("au pupitre, {string} regularise la fin de {string} au poste {string} a {string}")
+  public void regulariserLaFin(String operateur, String element, String poste, String instant) {
+    horloge.ilEst(Instant.parse(instant));
+    rest.post(
+      SUIVIS_URI + "/" + suivis.get(element) + "/regularisations",
+      JSON.writeValueAsString(
+        Map.of(
+          "type",
+          "FIN",
+          "intention",
+          "FIN",
+          "cible",
+          dernierEvenement,
+          "operateur",
+          operateurs.get(operateur),
+          "poste",
+          postes.get(poste),
+          "dateDeSurvenue",
+          instant
+        )
+      )
+    );
+  }
+
+  @Given("l'ouverture retenue sur {string} est annulee a {string}")
+  public void annulerLOuvertureRetenue(String element, String instant) {
+    horloge.ilEst(Instant.parse(instant));
+    rest.post(
+      SUIVIS_URI + "/" + suivis.get(element) + "/evenements/" + ouvertureRetenue + "/annulation",
+      JSON.writeValueAsString(Map.of("motif", "ouverture saisie en trop"))
+    );
   }
 
   @Given("le dernier pointage sur {string} est annule a {string}")
@@ -226,6 +312,13 @@ public class PupitreSteps {
   @Then("les activites de {string} au referentiel du pupitre sont")
   public void lesActivitesSont(String element, List<Map<String, String>> attendues) {
     assertThat(resume(element)).isEqualTo(attendues);
+  }
+
+  @Then("l'activite de {string} vise le dernier ouvrant et echeoit a {string}")
+  public void activiteAvecCibleEtEcheance(String element, String echeance) {
+    assertThat(activites(element))
+      .singleElement()
+      .satisfies(activite -> assertThat(activite).containsEntry("ouverture", dernierEvenement).containsEntry("echeance", echeance));
   }
 
   @Then("l'activite de {string} au referentiel du pupitre ne porte aucun poste")

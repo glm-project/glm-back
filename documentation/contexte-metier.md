@@ -365,16 +365,16 @@ feuille de temps qui l'écarte : ici, l'anomalie doit rester chiffrée plutôt q
 ### La lecture passe par la base, jamais par un import
 
 `atelier`, `elementdefabrication`, `operateur` et `postedetravail` étant annotés `@BusinessContext`, ce contexte
-déclare ses propres entités JPA en lecture seule sur leurs tables. Il rejoue donc **sa propre** version du repli du
-journal d'atelier, et — pour la troisième fois du projet — du repli de présence.
+déclare ses propres entités JPA en lecture seule sur leurs tables. Les activités pointables viennent de la
+projection `activite_d_atelier`, dont `atelier` possède l'interprétation causale. Elles n'ont ni fin réelle ni
+conflit et vérifient `debut <= genereLe < echeance`. Leurs identités d'ouverture restent stables après correction :
+le pupitre peut les viser par une fin ou une transition sans déduire la cible du dernier événement.
 
-Ces deux replis sont **tolérants**, comme ceux de `syntheseheures` et `pupitre` : un geste que l'automate refuse —
-un départ sans arrivée, une fin sans activité en cours — est ignoré, et le rapport se calcule sur ce qui reste. Le
-calcul du coût ne doit jamais répondre `500` (issue #54). À instant égal, l'arrivée passe devant : l'arrivée implicite
-d'un geste tardif partage l'heure de ce geste, et la base rendait les deux dans l'ordre de leurs identifiants.
+L'**état de présence** se lit sur la colonne de projection `journee_de_travail.etat`. Ce qu'on demande ici est
+l'état courant de tous les opérateurs à la fois ; le replier supposerait de rapporter tous les journaux de présence
+ouverts à chaque synchronisation pour n'en garder que la dernière valeur.
 
-Cette duplication est assumée, pour la même raison que dans `feuilledetemps` : le partage passerait soit par un
-import interdit, soit par le shared kernel, qui est en anglais. Le filet est le scénario Cucumber, qui pointe par
+Le filet est le scénario Cucumber, qui pointe par
 l'API d'`atelier` et relit par celle du coût de revient.
 
 Aucun changelog n'a été nécessaire : les index `(operateur, date_de_survenue)` et `(poste, date_de_survenue)`

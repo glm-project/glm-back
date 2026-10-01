@@ -367,13 +367,22 @@ leurs postes habilités, et les éléments encore pointables avec leurs activit�
       "reference": "M-1187",
       "type": "ORDRE_DE_FABRICATION",
       "etat": "EN_COURS",
-      "activites": [{ "operateur": "…", "poste": "…", "categorie": "TRAVAIL", "depuis": "2026-09-14T08:02:00Z" }]
+      "activites": [
+        {
+          "operateur": "…",
+          "poste": "…",
+          "categorie": "TRAVAIL",
+          "depuis": "2026-09-14T08:02:00Z",
+          "ouverture": "…",
+          "echeance": "2026-09-14T21:02:00Z"
+        }
+      ]
     }
   ]
 }
 ```
 
-Six choses à savoir avant de brancher un cache dessus :
+À savoir avant de brancher un cache dessus :
 
 - **Elle n'est pas paginée, et c'est le point.** Tout est lu en un appel et une transaction unique : plus de boucle
   de pages à écrire, ni de gardes sur les totaux, les doublons ou les pages vides — ces trois gardes existaient
@@ -399,6 +408,10 @@ Six choses à savoir avant de brancher un cache dessus :
   Ce que l'état ne porte pas, volontairement : **aucun instant de début** — pas de « présent depuis 7 h 02 »,
   l'écran n'affiche que l'état — et **aucun marqueur d'idempotence** : les gestes locaux pas encore reflétés se replient avec
   le marqueur que le pupitre tient déjà lui-même, comme pour les pointages.
+- **Les activités sont pointables à `genereLe`.** Leur début est atteint et leur échéance strictement future ;
+  aucune activité terminée, en conflit ou échue n'est proposée. `ouverture` est l'identité stable à envoyer dans
+  `cible` pour une fin ou une transition, y compris après correction de l'ouverture. `echeance` permet au cache
+  d'écarter la cible dès cet instant, sans attendre la prochaine lecture. Ces deux champs sont toujours présents.
 - **Aucun montant.** Ni `tauxHoraire` d'opérateur, ni `coutHoraire` de poste : un écran d'atelier partagé n'a pas à
   les recevoir, et `GET /api/couts-de-revient/{elementId}` reste réservé au `GESTIONNAIRE`.
 - **Aucun élément clôturé, aucun journal.** `etat` ne vaut donc jamais `CLOTURE` ici. Le journal complet, événements

@@ -123,7 +123,7 @@ activités, tels que le journal les interprète, et aucune présence ne les born
   activité échue. Seule une régularisation — fin ou transition — termine une activité au-delà de son échéance.
 - **Une ouverture sur une activité déjà en cours la relance**, elle n'est jamais refusée (décision D9 de
   [bornes-de-fin-de-journee.md](../../../../../../../documentation/strategie/bornes-de-fin-de-journee.md)). Les
-  replis recopiés de `pupitre`, `coutderevient`, `feuilledetemps` et `syntheseheures` relisent encore le journal par
+  replis recopiés de `coutderevient`, `feuilledetemps` et `syntheseheures` relisent encore le journal par
   type seul, sans échéance ni séquence en conflit, et départagent les gestes simultanés sur leur date d'enregistrement :
   ils ne rendent les mêmes intervalles que l'atelier que si aucune clé ne porte deux gestes à la même heure ni de
   contradiction. Sur une séquence en conflit, une fin qui vise une activité remplacée y termine encore sa remplaçante,

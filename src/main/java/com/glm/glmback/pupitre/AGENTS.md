@@ -45,8 +45,9 @@ rejoignent — l'adapter des opérateurs ne fait qu'interroger le relevé, il ne
 
 `PresencesDesOperateurs` porte la règle de correspondance : qu'aucune journée en cours ne nomme est `ABSENT`.
 
-`JournalDuPupitre` porte le repli : les événements actifs d'un élément, groupés par `CleDActivite`, donnent les
-activités encore ouvertes ; `SuiviDuPupitre.etat()` en déduit `EN_ATTENTE`, `EN_COURS` ou `INTERROMPU`.
+`SituationDuSuivi` reçoit les activités pointables déjà interprétées par `atelier` et l'existence de pointages
+actifs ; `SuiviDuPupitre.etat()` en déduit `EN_ATTENTE`, `EN_COURS` ou `INTERROMPU`. Le contexte ne rejoue pas la
+causalité du journal. `OuvertureDActivite` porte l'identité stable, le début et l'échéance de chaque cible.
 
 ## Invariants à ne pas casser
 
@@ -69,10 +70,12 @@ activités encore ouvertes ; `SuiviDuPupitre.etat()` en déduit `EN_ATTENTE`, `E
   produit la réponse, pas quand le référentiel a changé pour la dernière fois. Dater le dernier changement
   supposerait d'horodater les modifications d'`operateur`, `poste_de_travail` et `operateur_poste`, qui ne portent
   aucune colonne de modification.
-- **Le journal reste la source de vérité.** L'état et les activités **d'un élément** se déduisent du repli. Aucune
-  projection de l'atelier n'est lue : c'est `cloture_date_de_survenue` qui écarte les éléments clôturés, parce que la
-  clôture est un fait et non une projection.
-- **L'état de présence, lui, se lit sur la projection `journee_de_travail.etat`**, et c'est la seule exception. Ce
+- **Les activités viennent de la projection `activite_d_atelier` maintenue par `atelier`.** Une activité est
+  pointable si elle n'a ni fin réelle ni conflit et si `debut <= genereLe < echeance`. Les corrections conservent
+  son identité d'ouverture, cible des fins et transitions. Le pupitre ne réinterprète aucun événement brut.
+  L'existence de pointages actifs distingue `INTERROMPU` d'`EN_ATTENTE`, même après un conflit sans activité.
+  `cloture_date_de_survenue` écarte les éléments clôturés.
+- **L'état de présence se lit sur la projection `journee_de_travail.etat`.** Ce
   qu'on demande ici est l'état courant de **tous** les opérateurs à la fois : le replier supposerait de rapporter
   tous les journaux de présence ouverts à chaque synchronisation, pour n'en garder que la dernière valeur. La
   journée en cours est choisie comme l'atelier la choisit — la plus récemment commencée parmi celles dont l'état
@@ -93,18 +96,6 @@ activités encore ouvertes ; `SuiviDuPupitre.etat()` en déduit `EN_ATTENTE`, `E
 - **Aucun import d'`atelier`, `operateur`, `postedetravail` ni `elementdefabrication`**, tous annotés
   `@BusinessContext`. Ce contexte déclare ses propres entités JPA `@Immutable` sur leurs tables.
 
-## Une tolérance assumée, comme `syntheseheures`
-
-`atelier` refuse un pointage que l'automate d'activité n'admet pas ; ici, un tel pointage est **ignoré**, sans
-exception ni marqueur. Le cas n'est pas atteignable par l'API — `atelier` valide tout le journal à chaque écriture —
-mais un écran d'atelier ne doit jamais s'éteindre parce qu'un journal est bizarre. La résilience reste une défense
-en profondeur (donnée migrée, accès direct à la base), vérifiée par `JournalDuPupitreTest`, qui construit
-l'incohérence directement.
-
-C'est le **quatrième** rejeu du repli du journal d'atelier dans le projet, après `feuilledetemps` et
-`coutderevient`. La duplication est assumée pour la même raison : le partage passerait soit par un import interdit,
-soit par le shared kernel, qui est en anglais.
-
 ## Les adapters ne peuvent porter aucun nom déjà pris
 
 Spring nomme un bean d'après le nom **simple** de sa classe, et Hibernate enregistre une entité JPA sous son nom
@@ -122,10 +113,11 @@ dans deux classes fait échouer **toute** la suite. `PupitreSteps` porte donc so
 
 `OperateursDuPupitre`, `SuivisOuvertsDuPupitre`, `PresencesDuPupitre`, `SeuilDuPupitre`, `Clock`.
 
-Les trois premiers rendent tout d'un coup, sans critères ni pagination : c'est leur raison d'être. Les adapters
-lisent `operateur`, `operateur_poste`, `poste_de_travail`, `suivi_d_atelier`, `evenement_d_atelier`,
-`journee_de_travail`, `element_de_fabrication` et `parametrage`, et **écartent les événements annulés dès le SQL** — les rapporter pour les filtrer ensuite
-ferait porter au domaine une correction qui ne le regarde pas.
+Les trois premiers rendent tout d'un coup, sans pagination. `SuivisOuvertsDuPupitre` reçoit l'instant commun
+`genereLe` pour sélectionner les activités pointables. Les adapters lisent `operateur`, `operateur_poste`,
+`poste_de_travail`, `suivi_d_atelier`, `activite_d_atelier`, `journee_de_travail`, `element_de_fabrication` et
+`parametrage`. Une requête groupée sur `evenement_d_atelier` ne relève que les suivis portant des pointages actifs :
+aucun journal complet n'est chargé, aucune lecture n'est répétée par élément.
 
 ## État d'avancement
 

@@ -1,7 +1,7 @@
 package com.glm.glmback.pupitre.infrastructure.secondary;
 
-import com.glm.glmback.pupitre.domain.JournalDuPupitre;
 import com.glm.glmback.pupitre.domain.NomDElement;
+import com.glm.glmback.pupitre.domain.SituationDuSuivi;
 import com.glm.glmback.pupitre.domain.SuiviDuPupitre;
 import com.glm.glmback.pupitre.domain.SuiviDuPupitreId;
 import com.glm.glmback.pupitre.domain.TypeDElementEngage;
@@ -60,12 +60,12 @@ class SuiviDuPupitreEntity {
     return elementId;
   }
 
-  SuiviDuPupitre toDomain(JournalDuPupitre journal, String reference) {
+  SuiviDuPupitre toDomain(SituationDuSuivi situation, String reference) {
     return SuiviDuPupitre.builder()
       .id(new SuiviDuPupitreId(id))
       .nom(new NomDElement(elementNom))
       .reference(reference)
       .type(elementType)
-      .journal(journal);
+      .situation(situation);
   }
 }

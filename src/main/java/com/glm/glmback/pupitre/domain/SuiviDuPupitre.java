@@ -10,7 +10,7 @@ import java.util.Optional;
  * <p>
  * Le nom est celui copie a l'engagement — un element renomme depuis ne reecrit pas l'histoire de l'atelier — tandis
  * que la reference est relue au referentiel a chaque lecture, comme les identites d'operateurs. L'etat et les
- * activites ne sont jamais stockes : ils se deduisent du journal.
+ * activites viennent de la situation interpretee par l'atelier a l'instant du referentiel.
  * </p>
  */
 public record SuiviDuPupitre(
@@ -18,14 +18,14 @@ public record SuiviDuPupitre(
   NomDElement nom,
   Optional<ReferenceDElement> reference,
   TypeDElementEngage type,
-  JournalDuPupitre journal
+  SituationDuSuivi situation
 ) {
   public SuiviDuPupitre {
     Assert.notNull("id du suivi", id);
     Assert.notNull("nom de l'element", nom);
     Assert.notNull("reference de l'element", reference);
     Assert.notNull("type de l'element", type);
-    Assert.notNull("journal", journal);
+    Assert.notNull("situation", situation);
   }
 
   /**
@@ -33,11 +33,11 @@ public record SuiviDuPupitre(
    * {@code infrastructure/secondary}.
    */
   public static SuiviDuPupitreIdBuilder builder() {
-    return id -> nom -> reference -> type -> journal -> new SuiviDuPupitre(id, nom, ReferenceDElement.of(reference), type, journal);
+    return id -> nom -> reference -> type -> situation -> new SuiviDuPupitre(id, nom, ReferenceDElement.of(reference), type, situation);
   }
 
-  public List<ActiviteEnCours> activitesEnCours() {
-    return journal.activitesEnCours();
+  public List<ActivitePointable> activitesEnCours() {
+    return situation.activites();
   }
 
   /**
@@ -45,11 +45,7 @@ public record SuiviDuPupitre(
    * pupitre.
    */
   public EtatDuSuivi etat() {
-    if (!activitesEnCours().isEmpty()) {
-      return EtatDuSuivi.EN_COURS;
-    }
-
-    return journal.estVierge() ? EtatDuSuivi.EN_ATTENTE : EtatDuSuivi.INTERROMPU;
+    return situation.etat();
   }
 
   public interface SuiviDuPupitreIdBuilder {
@@ -65,10 +61,10 @@ public record SuiviDuPupitre(
   }
 
   public interface SuiviDuPupitreTypeBuilder {
-    SuiviDuPupitreJournalBuilder type(TypeDElementEngage type);
+    SuiviDuPupitreSituationBuilder type(TypeDElementEngage type);
   }
 
-  public interface SuiviDuPupitreJournalBuilder {
-    SuiviDuPupitre journal(JournalDuPupitre journal);
+  public interface SuiviDuPupitreSituationBuilder {
+    SuiviDuPupitre situation(SituationDuSuivi situation);
   }
 }

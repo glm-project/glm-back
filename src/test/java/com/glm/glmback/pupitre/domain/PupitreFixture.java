@@ -49,6 +49,26 @@ public final class PupitreFixture {
 
   public static final OperateurDuPupitre OPERATEUR_DUPONT = operateurDupont(PRESENCE_PRESENTE_JUSQU_A_20H);
 
+  public static final OuvertureDActivite OUVERTURE_A_8H = new OuvertureDActivite(
+    UUID.fromString("11111111-1111-1111-1111-111111111111"),
+    LE_10_MAI_2026_A_8H,
+    LE_10_MAI_2026_A_21H
+  );
+  public static final ActivitePointable TRAVAIL_DUPONT_A_8H = new ActivitePointable(
+    ACTIVITE_DUPONT_SUR_FRAISEUSE_1,
+    CategorieDActivite.TRAVAIL,
+    OUVERTURE_A_8H
+  );
+  public static final ActivitePointable NC_DUPONT_A_8H = new ActivitePointable(
+    ACTIVITE_DUPONT_SUR_FRAISEUSE_1,
+    CategorieDActivite.NON_CONFORMITE,
+    OUVERTURE_A_8H
+  );
+  public static final SituationDuSuivi SITUATION_EN_ATTENTE = new SituationDuSuivi(List.of(), false);
+  public static final SituationDuSuivi SITUATION_EN_COURS = new SituationDuSuivi(List.of(TRAVAIL_DUPONT_A_8H), true);
+  public static final SituationDuSuivi SITUATION_EN_NC = new SituationDuSuivi(List.of(NC_DUPONT_A_8H), true);
+  public static final SituationDuSuivi SITUATION_INTERROMPUE = new SituationDuSuivi(List.of(), true);
+
   private PupitreFixture() {}
 
   public static OperateurDuPupitre operateurDupont(PresenceDuPupitre presence) {
@@ -74,12 +94,12 @@ public final class PupitreFixture {
     return new EvenementDuPupitre(TypeDePointage.FIN, ACTIVITE_DUPONT_SUR_FRAISEUSE_1, dateDeSurvenue);
   }
 
-  public static SuiviDuPupitre suiviOf42(JournalDuPupitre journal) {
+  public static SuiviDuPupitre suiviOf42(SituationDuSuivi situation) {
     return SuiviDuPupitre.builder()
       .id(SUIVI_ID_OF_42)
       .nom(NOM_OF_42)
       .reference(REFERENCE_M_1187.value())
       .type(TypeDElementEngage.ORDRE_DE_FABRICATION)
-      .journal(journal);
+      .situation(situation);
   }
 }

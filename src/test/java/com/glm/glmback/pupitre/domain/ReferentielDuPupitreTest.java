@@ -40,11 +40,11 @@ class ReferentielDuPupitreTest {
     ReferentielDuPupitre referentiel = new ReferentielDuPupitre(
       LE_10_MAI_2026_A_8H,
       List.of(OPERATEUR_DUPONT),
-      List.of(suiviOf42(JournalDuPupitre.vide()))
+      List.of(suiviOf42(SITUATION_EN_ATTENTE))
     );
 
     assertThat(referentiel.genereLe()).isEqualTo(LE_10_MAI_2026_A_8H);
     assertThat(referentiel.operateurs()).containsExactly(OPERATEUR_DUPONT);
-    assertThat(referentiel.suivis()).containsExactly(suiviOf42(JournalDuPupitre.vide()));
+    assertThat(referentiel.suivis()).containsExactly(suiviOf42(SITUATION_EN_ATTENTE));
   }
 }

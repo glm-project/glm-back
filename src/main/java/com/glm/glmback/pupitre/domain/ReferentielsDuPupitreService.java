@@ -44,7 +44,7 @@ public final class ReferentielsDuPupitreService {
     return new ReferentielDuPupitre(
       maintenant,
       operateurs.tous(presences.toutes().a(maintenant, seuil.amplitudeMaximale())),
-      suivis.tous()
+      suivis.tous(maintenant)
     );
   }
 

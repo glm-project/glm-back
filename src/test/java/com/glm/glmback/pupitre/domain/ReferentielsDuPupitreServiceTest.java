@@ -21,7 +21,7 @@ class ReferentielsDuPupitreServiceTest {
   void shouldDaterLInstantaneDeLHeureDuPort() {
     ReferentielsDuPupitreService service = ReferentielsDuPupitreService.builder()
       .operateurs(presences -> List.of(OPERATEUR_DUPONT))
-      .suivis(() -> List.of(suiviOf42(JournalDuPupitre.vide())))
+      .suivis(evaluation -> List.of(suiviOf42(SITUATION_EN_ATTENTE)))
       .presences(() -> new JourneesEnCours(Map.of()))
       .seuil(() -> AMPLITUDE_MAXIMALE_13H)
       .clock(() -> LE_10_MAI_2026_A_9H);
@@ -30,7 +30,7 @@ class ReferentielsDuPupitreServiceTest {
 
     assertThat(referentiel.genereLe()).isEqualTo(LE_10_MAI_2026_A_9H);
     assertThat(referentiel.operateurs()).containsExactly(OPERATEUR_DUPONT);
-    assertThat(referentiel.suivis()).containsExactly(suiviOf42(JournalDuPupitre.vide()));
+    assertThat(referentiel.suivis()).containsExactly(suiviOf42(SITUATION_EN_ATTENTE));
   }
 
   @Test
@@ -64,7 +64,7 @@ class ReferentielsDuPupitreServiceTest {
   void shouldAppliquerLeSeuilDuPort() {
     ReferentielsDuPupitreService service = ReferentielsDuPupitreService.builder()
       .operateurs(presences -> List.of(operateurDupont(presences.de(OPERATEUR_ID_DUPONT))))
-      .suivis(List::of)
+      .suivis(evaluation -> List.of())
       .presences(() -> new JourneesEnCours(Map.of(OPERATEUR_ID_DUPONT, new JourneeEnCours(EtatDePresence.PRESENT, LE_10_MAI_2026_A_7H))))
       .seuil(() -> new AmplitudeMaximale(Duration.ofHours(2)))
       .clock(() -> LE_10_MAI_2026_A_12H);
@@ -75,7 +75,7 @@ class ReferentielsDuPupitreServiceTest {
   private static ReferentielDuPupitre referentielA(Instant maintenant, JourneeEnCours journee) {
     return ReferentielsDuPupitreService.builder()
       .operateurs(presences -> List.of(operateurDupont(presences.de(OPERATEUR_ID_DUPONT))))
-      .suivis(List::of)
+      .suivis(evaluation -> List.of())
       .presences(() -> new JourneesEnCours(Map.of(OPERATEUR_ID_DUPONT, journee)))
       .seuil(() -> AMPLITUDE_MAXIMALE_13H)
       .clock(() -> maintenant)
@@ -86,7 +86,7 @@ class ReferentielsDuPupitreServiceTest {
   void shouldRendreUnReferentielVideQuandLEntrepriseNAEncoreRienDeclare() {
     ReferentielsDuPupitreService service = ReferentielsDuPupitreService.builder()
       .operateurs(presences -> List.of())
-      .suivis(List::of)
+      .suivis(evaluation -> List.of())
       .presences(() -> new JourneesEnCours(Map.of()))
       .seuil(() -> AMPLITUDE_MAXIMALE_13H)
       .clock(() -> LE_10_MAI_2026_A_7H);
