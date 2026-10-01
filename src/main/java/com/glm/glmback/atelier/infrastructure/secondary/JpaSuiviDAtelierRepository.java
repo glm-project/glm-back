@@ -138,13 +138,19 @@ class JpaSuiviDAtelierRepository implements SuiviDAtelierRepository {
     }
 
     Predicate enConflit() {
+      return constructeur.or(constructeur.exists(activiteAResoudre()), constructeur.exists(pointageSansOuvrantActif()));
+    }
+
+    private Subquery<UUID> activiteAResoudre() {
       Subquery<UUID> activites = requete.subquery(UUID.class);
       Root<ActiviteDAtelierEntity> activite = activites.from(ActiviteDAtelierEntity.class);
-      activites
+      return activites
         .select(activite.get("id"))
         .where(constructeur.equal(activite.get("suivi"), suivi), constructeur.isTrue(activite.get("aResoudre")));
+    }
 
-      // Une fin visant un ouvrant annule porte un conflit sans aucune activite projetee.
+    /** Une fin visant un ouvrant annule porte un conflit sans aucune activite projetee. */
+    private Subquery<UUID> pointageSansOuvrantActif() {
       Subquery<UUID> pointages = requete.subquery(UUID.class);
       Root<EvenementDAtelierEntity> pointage = pointages.from(EvenementDAtelierEntity.class);
       Subquery<UUID> ouvrants = pointages.subquery(UUID.class);
@@ -156,7 +162,7 @@ class JpaSuiviDAtelierRepository implements SuiviDAtelierRepository {
           constructeur.equal(ouvrant.get("activiteId"), pointage.get("activiteViseeId")),
           constructeur.isNull(ouvrant.get("annulationDate"))
         );
-      pointages
+      return pointages
         .select(pointage.get("id"))
         .where(
           constructeur.equal(pointage.get("suivi"), suivi),
@@ -164,7 +170,6 @@ class JpaSuiviDAtelierRepository implements SuiviDAtelierRepository {
           constructeur.isNotNull(pointage.get("activiteViseeId")),
           constructeur.not(constructeur.exists(ouvrants))
         );
-      return constructeur.or(constructeur.exists(activites), constructeur.exists(pointages));
     }
 
     private Predicate cloture() {
