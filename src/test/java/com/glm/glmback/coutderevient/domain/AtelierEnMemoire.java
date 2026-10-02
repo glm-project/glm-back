@@ -3,14 +3,28 @@ package com.glm.glmback.coutderevient.domain;
 import java.util.*;
 
 /** Les ports de lecture servis depuis la memoire. */
-final class AtelierEnMemoire implements ElementsValorisables, TravailDeLElement, OccupationDesOperateurs, ConflitsDuCout {
+final class AtelierEnMemoire
+  implements ElementsValorisables, TravailDeLElement, OccupationDesOperateurs, ConflitsDuCout, OperateursNommes, PostesNommes
+{
 
   private final Map<ElementId, ElementValorise> elements = new HashMap<>();
   private final Map<ElementId, List<ActiviteInterpretee>> travaux = new HashMap<>();
   private final List<ActiviteInterpretee> occupation = new ArrayList<>();
+  private final List<OperateurNomme> operateurs = new ArrayList<>();
+  private final List<PosteNomme> postes = new ArrayList<>();
 
   AtelierEnMemoire connait(ElementValorise element) {
     elements.put(element.element(), element);
+    return this;
+  }
+
+  AtelierEnMemoire nomme(OperateurNomme operateur) {
+    operateurs.add(operateur);
+    return this;
+  }
+
+  AtelierEnMemoire nomme(PosteNomme poste) {
+    postes.add(poste);
     return this;
   }
 
@@ -28,6 +42,30 @@ final class AtelierEnMemoire implements ElementsValorisables, TravailDeLElement,
   @Override
   public Optional<ElementValorise> get(ElementId element) {
     return Optional.ofNullable(elements.get(element));
+  }
+
+  @Override
+  public List<ElementValorise> tous(Set<ElementId> ids) {
+    return ids
+      .stream()
+      .flatMap(id -> Optional.ofNullable(elements.get(id)).stream())
+      .toList();
+  }
+
+  @Override
+  public List<OperateurNomme> operateurs(Set<OperateurId> ids) {
+    return operateurs
+      .stream()
+      .filter(operateur -> ids.contains(operateur.operateur()))
+      .toList();
+  }
+
+  @Override
+  public List<PosteNomme> postes(Set<PosteDeTravailId> ids) {
+    return postes
+      .stream()
+      .filter(poste -> ids.contains(poste.poste()))
+      .toList();
   }
 
   @Override

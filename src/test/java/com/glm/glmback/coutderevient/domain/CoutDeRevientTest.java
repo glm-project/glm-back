@@ -24,16 +24,25 @@ class CoutDeRevientTest {
 
   @Test
   void shouldNotBuildWithoutElement() {
-    assertThatThrownBy(() -> new CoutDeRevient(null, List.of(), new EvaluationDuCout(LE_11_MAI_A_17H, 0), List.of()))
+    assertThatThrownBy(() -> new CoutDeRevient(null, List.of(), new EvaluationDuCout(LE_11_MAI_A_17H, 0), List.of(), AnnuaireDuCout.VIDE))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("element");
   }
 
   @Test
   void shouldNotBuildWithoutLignes() {
-    assertThatThrownBy(() -> new CoutDeRevient(ELEMENT_VALORISE_OF, null, new EvaluationDuCout(LE_11_MAI_A_17H, 0), List.of()))
+    assertThatThrownBy(() ->
+      new CoutDeRevient(ELEMENT_VALORISE_OF, null, new EvaluationDuCout(LE_11_MAI_A_17H, 0), List.of(), AnnuaireDuCout.VIDE)
+    )
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("lignes");
+  }
+
+  @Test
+  void shouldNotBuildWithoutAnnuaire() {
+    assertThatThrownBy(() -> new CoutDeRevient(ELEMENT_VALORISE_OF, List.of(), new EvaluationDuCout(LE_11_MAI_A_17H, 0), List.of(), null))
+      .isExactlyInstanceOf(MissingMandatoryValueException.class)
+      .hasMessageContaining("annuaire");
   }
 
   @Test
@@ -44,7 +53,8 @@ class CoutDeRevientTest {
       .aResoudre(List.of())
       .charges(ChargesDesOperateurs.de(List.of()))
       .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
-      .conflits(List.of());
+      .conflits(List.of())
+      .annuaire(AnnuaireDuCout.VIDE);
 
     assertThat(rapport.lignes()).isEmpty();
     assertThat(rapport.temps()).isEqualTo(TempsPasse.AUCUN);
@@ -64,7 +74,8 @@ class CoutDeRevientTest {
       .aResoudre(List.of())
       .charges(ChargesDesOperateurs.de(tranches))
       .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
-      .conflits(List.of());
+      .conflits(List.of())
+      .annuaire(AnnuaireDuCout.VIDE);
 
     assertThat(rapport.lignes())
       .singleElement()
@@ -95,7 +106,8 @@ class CoutDeRevientTest {
       .aResoudre(List.of())
       .charges(ChargesDesOperateurs.de(tranches))
       .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
-      .conflits(List.of());
+      .conflits(List.of())
+      .annuaire(AnnuaireDuCout.VIDE);
 
     assertThat(rapport.lignes())
       .singleElement()
@@ -119,7 +131,8 @@ class CoutDeRevientTest {
       .aResoudre(List.of())
       .charges(ChargesDesOperateurs.de(tranches))
       .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
-      .conflits(List.of());
+      .conflits(List.of())
+      .annuaire(AnnuaireDuCout.VIDE);
 
     assertThat(rapport.lignes())
       .extracting(LigneDeCout::nature)
@@ -143,7 +156,8 @@ class CoutDeRevientTest {
       .aResoudre(List.of())
       .charges(ChargesDesOperateurs.de(tranches))
       .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
-      .conflits(List.of());
+      .conflits(List.of())
+      .annuaire(AnnuaireDuCout.VIDE);
 
     assertThat(rapport.lignes().getFirst().cout()).isEqualTo(
       new Cout(new Montant(new BigDecimal("90.00")), new Montant(new BigDecimal("20.00")))
@@ -168,7 +182,8 @@ class CoutDeRevientTest {
       .aResoudre(List.of())
       .charges(ChargesDesOperateurs.de(tranches))
       .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
-      .conflits(List.of());
+      .conflits(List.of())
+      .annuaire(AnnuaireDuCout.VIDE);
 
     assertThat(rapport.lignes().getFirst().cout().machine().valeur()).contains(new Montant(new BigDecimal("0.26")));
   }
@@ -193,7 +208,8 @@ class CoutDeRevientTest {
       .aResoudre(List.of())
       .charges(ChargesDesOperateurs.de(tranches))
       .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
-      .conflits(List.of());
+      .conflits(List.of())
+      .annuaire(AnnuaireDuCout.VIDE);
 
     assertThat(rapport.lignes())
       .extracting(ligne -> ligne.cout().mainDOeuvre().valeur().orElseThrow())
@@ -218,7 +234,8 @@ class CoutDeRevientTest {
       .aResoudre(List.of())
       .charges(ChargesDesOperateurs.de(tranches))
       .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
-      .conflits(List.of());
+      .conflits(List.of())
+      .annuaire(AnnuaireDuCout.VIDE);
 
     assertThat(rapport.lignes()).extracting(LigneDeCout::nature).containsExactly(Optional.of(NATURE_FRAISAGE), Optional.empty());
     assertThat(rapport.lignes().getLast().cout().machine().valeur().orElseThrow()).isEqualTo(Montant.ZERO);
@@ -237,7 +254,8 @@ class CoutDeRevientTest {
       .aResoudre(List.of())
       .charges(ChargesDesOperateurs.de(tranches))
       .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
-      .conflits(List.of());
+      .conflits(List.of())
+      .annuaire(AnnuaireDuCout.VIDE);
 
     assertThat(rapport.temps()).isEqualTo(new TempsPasse(Duration.ofHours(2), Duration.ofHours(1)));
   }

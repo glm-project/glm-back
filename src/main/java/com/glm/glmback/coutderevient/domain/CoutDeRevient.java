@@ -13,7 +13,13 @@ import java.util.Optional;
  * par atelier. Une saisie regularisee apres coup compte donc a l'heure ou le travail a eu lieu.
  * </p>
  */
-public record CoutDeRevient(ElementValorise element, List<LigneDeCout> lignes, EvaluationDuCout lecture, List<SequenceEnConflit> conflits) {
+public record CoutDeRevient(
+  ElementValorise element,
+  List<LigneDeCout> lignes,
+  EvaluationDuCout lecture,
+  List<SequenceEnConflit> conflits,
+  AnnuaireDuCout annuaire
+) {
   /**
    * Les natures dans l'ordre alphabetique, et la ligne sans nature en dernier : elle est le residu de ce qui a ete
    * pointe sans poste, et n'a pas de place dans l'ordre des metiers.
@@ -28,12 +34,16 @@ public record CoutDeRevient(ElementValorise element, List<LigneDeCout> lignes, E
     Assert.field("lignes", lignes).notNull().noNullElement();
     Assert.notNull("lecture", lecture);
     Assert.field("conflits", conflits).notNull().noNullElement();
+    Assert.notNull("annuaire", annuaire);
   }
 
   public static ElementBuilder builder() {
     return element ->
       tranches ->
-        aResoudre -> charges -> lecture -> conflits -> new CoutDeRevient(element, lignes(tranches, charges, aResoudre), lecture, conflits);
+        aResoudre ->
+          charges ->
+            lecture ->
+              conflits -> annuaire -> new CoutDeRevient(element, lignes(tranches, charges, aResoudre), lecture, conflits, annuaire);
   }
 
   public interface ElementBuilder {
@@ -57,7 +67,11 @@ public record CoutDeRevient(ElementValorise element, List<LigneDeCout> lignes, E
   }
 
   public interface ConflitsBuilder {
-    CoutDeRevient conflits(List<SequenceEnConflit> conflits);
+    AnnuaireBuilder conflits(List<SequenceEnConflit> conflits);
+  }
+
+  public interface AnnuaireBuilder {
+    CoutDeRevient annuaire(AnnuaireDuCout annuaire);
   }
 
   public TempsPasse temps() {

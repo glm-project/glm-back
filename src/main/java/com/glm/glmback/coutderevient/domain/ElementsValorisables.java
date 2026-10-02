@@ -1,6 +1,8 @@
 package com.glm.glmback.coutderevient.domain;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Le referentiel des elements de fabrication, atteint par identifiant.
@@ -10,7 +12,8 @@ import java.util.Optional;
  * sur ses heures anciennes.
  * </p>
  */
-@FunctionalInterface
 public interface ElementsValorisables {
   Optional<ElementValorise> get(ElementId element);
+
+  List<ElementValorise> tous(Set<ElementId> elements);
 }

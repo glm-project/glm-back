@@ -40,11 +40,26 @@ public final class CoutDeRevientFixture {
     TypeDElement.ORDRE_DE_FABRICATION
   );
 
+  public static final ElementId ELEMENT_ID_OF_2 = new ElementId(UUID.fromString("22222222-2222-2222-2222-222222222222"));
+  public static final ElementValorise ELEMENT_VALORISE_OF_2026_000002 = new ElementValorise(
+    ELEMENT_ID_OF_2,
+    new NomDElement("OF-2026-000002"),
+    TypeDElement.ORDRE_DE_FABRICATION
+  );
+
   public static final OperateurId OPERATEUR_ID_DUPONT = new OperateurId(UUID.fromString("33333333-3333-3333-3333-333333333333"));
   public static final OperateurId OPERATEUR_ID_MARTIN = new OperateurId(UUID.fromString("44444444-4444-4444-4444-444444444444"));
 
   public static final PosteDeTravailId POSTE_ID_FRAISEUSE = new PosteDeTravailId(UUID.fromString("55555555-5555-5555-5555-555555555555"));
   public static final PosteDeTravailId POSTE_ID_TOUR = new PosteDeTravailId(UUID.fromString("66666666-6666-6666-6666-666666666666"));
+
+  public static final OperateurNomme OPERATEUR_NOMME_JEAN_DUPONT = new OperateurNomme(
+    OPERATEUR_ID_DUPONT,
+    new PrenomDOperateur("Jean"),
+    new NomDOperateur("Dupont")
+  );
+  public static final PosteNomme POSTE_NOMME_DMG_DMU_50 = new PosteNomme(POSTE_ID_FRAISEUSE, new LibelleDePoste("DMG DMU 50"));
+  public static final PosteNomme POSTE_NOMME_HAAS_VF_2 = new PosteNomme(POSTE_ID_TOUR, new LibelleDePoste("Haas VF-2"));
 
   public static final NatureDOperation NATURE_FRAISAGE = new NatureDOperation("Fraisage");
   public static final NatureDOperation NATURE_TOURNAGE = new NatureDOperation("Tournage");
@@ -86,6 +101,15 @@ public final class CoutDeRevientFixture {
     .tauxHoraire(Optional.empty())
     .categorie(CategorieDActivite.TRAVAIL);
 
+  public static final Activite ACTIVITE_TOURNAGE_DE_L_OF_2 = Activite.builder()
+    .operateur(OPERATEUR_ID_DUPONT)
+    .element(ELEMENT_ID_OF_2)
+    .poste(Optional.of(POSTE_ID_TOUR))
+    .nature(Optional.of(NATURE_TOURNAGE))
+    .coutHoraire(Optional.of(COUT_HORAIRE_DE_60_EUROS))
+    .tauxHoraire(Optional.of(TAUX_HORAIRE_DE_20_EUROS))
+    .categorie(CategorieDActivite.TRAVAIL);
+
   private CoutDeRevientFixture() {}
 
   public static ActiviteInterpretee activiteInterpreteeDeFraisage(Plage plage) {
@@ -101,6 +125,15 @@ public final class CoutDeRevientFixture {
     return ActiviteInterpretee.builder()
       .id(new ActiviteId(UUID.randomUUID()))
       .activite(ACTIVITE_TOURNAGE)
+      .plage(plage)
+      .echeance(plage.debut().plusSeconds(46800))
+      .finAuPlusTard(Optional.empty());
+  }
+
+  public static ActiviteInterpretee activiteInterpreteeDeTournageDeLOf2(Plage plage) {
+    return ActiviteInterpretee.builder()
+      .id(new ActiviteId(UUID.randomUUID()))
+      .activite(ACTIVITE_TOURNAGE_DE_L_OF_2)
       .plage(plage)
       .echeance(plage.debut().plusSeconds(46800))
       .finAuPlusTard(Optional.empty());
