@@ -152,6 +152,28 @@ class CoutDeRevientTest {
   }
 
   /**
+   * Deux pointages de dix secondes a 45 EUR de l'heure valent chacun 0,125 EUR de machine. Chacun s'arrondit a
+   * 0,13 EUR, et la ligne additionne ce qu'elle affichera pointage par pointage : 0,26 EUR.
+   */
+  @Test
+  void shouldRoundTheMachineOncePerTranche() {
+    List<TrancheDActivite> tranches = List.of(
+      fraisage(CategorieDActivite.TRAVAIL, Instant.parse("2026-05-11T09:00:00Z"), Instant.parse("2026-05-11T09:00:10Z")),
+      fraisage(CategorieDActivite.TRAVAIL, Instant.parse("2026-05-11T10:00:00Z"), Instant.parse("2026-05-11T10:00:10Z"))
+    );
+
+    CoutDeRevient rapport = CoutDeRevient.builder()
+      .element(ELEMENT_VALORISE_OF)
+      .tranches(tranches)
+      .aResoudre(List.of())
+      .charges(ChargesDesOperateurs.de(tranches))
+      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
+      .conflits(List.of());
+
+    assertThat(rapport.lignes().getFirst().cout().machine().valeur()).contains(new Montant(new BigDecimal("0.26")));
+  }
+
+  /**
    * Sans poste, il n'y a ni nature ni cout machine : c'est le comportement nominal d'une entreprise sans parc
    * machine, pas un cas degrade. La ligne sans nature passe en dernier.
    */

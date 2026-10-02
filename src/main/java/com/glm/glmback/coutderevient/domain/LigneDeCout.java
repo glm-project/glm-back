@@ -116,7 +116,7 @@ public record LigneDeCout(
       .finsAutomatiques(
         tranches.stream().filter(TrancheDActivite::finAutomatique).map(TrancheDActivite::periode).sorted(PAR_DEBUT).toList()
       )
-      .cout(travail.aResoudre().isEmpty() ? cout(parts) : new Cout(MontantTotal.incomplet(), MontantTotal.incomplet()));
+      .cout(travail.aResoudre().isEmpty() ? cout(tranches, parts) : new Cout(MontantTotal.incomplet(), MontantTotal.incomplet()));
   }
 
   private static Plage periode(TravailDeLaLigne travail) {
@@ -174,9 +174,13 @@ public record LigneDeCout(
       .toList();
   }
 
-  private static Cout cout(List<TrancheValorisable> parts) {
+  /**
+   * La machine se somme tranche par tranche, chacune deja arrondie : elle n'est jamais partagee, donc jamais
+   * decoupee pour etre chiffree.
+   */
+  private static Cout cout(List<TrancheDActivite> tranches, List<TrancheValorisable> parts) {
     return new Cout(
-      MontantTotal.de(new Montant(somme(parts, TrancheValorisable::coutMachine))),
+      MontantTotal.de(tranches.stream().map(TrancheDActivite::coutMachine).reduce(Montant.ZERO, Montant::plus)),
       parts.stream().allMatch(part -> part.coutDeMainDOeuvre().isPresent())
         ? MontantTotal.de(
             new Montant(
@@ -188,10 +192,6 @@ public record LigneDeCout(
           )
         : MontantTotal.incomplet()
     );
-  }
-
-  private static BigDecimal somme(List<TrancheValorisable> parts, java.util.function.Function<TrancheValorisable, BigDecimal> montant) {
-    return parts.stream().map(montant).reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 
   interface LigneDeCoutNatureBuilder {

@@ -11,13 +11,12 @@ import java.util.Set;
  * Une tranche d'activite et le diviseur qui s'y applique : tout ce qu'il faut pour la chiffrer.
  *
  * <p>
- * Le diviseur ne concerne que la main d'oeuvre. Le cout de la machine court en entier sur la meme tranche, et c'est
- * pourquoi les deux restent separes jusqu'au bout.
+ * Le diviseur ne concerne que la main d'oeuvre. La machine, jamais partagee, se chiffre sur la tranche entiere
+ * ({@link TrancheDActivite#coutMachine()}) : elle n'a rien a faire d'un decoupage qui ne la concerne pas.
  * </p>
  *
  * <p>
- * Les deux montants sortent d'ici a l'echelle de travail, pas encore arrondis : le rapport n'arrondit qu'une fois la
- * ligne entiere sommee, pour que son total soit exactement la somme de ce qu'il affiche.
+ * La main d'oeuvre sort d'ici a l'echelle de travail, pas encore arrondie : la ligne l'arrondit une fois sommee.
  * </p>
  */
 public record TrancheValorisable(TrancheDActivite tranche, Optional<Diviseur> diviseur, Set<ActiviteInterpretee> responsables) {
@@ -36,17 +35,6 @@ public record TrancheValorisable(TrancheDActivite tranche, Optional<Diviseur> di
 
   public Duration duree() {
     return tranche.duree();
-  }
-
-  /**
-   * Ce que la machine a coute pendant cette tranche, jamais divise : le client enonce la regle deux fois, chaque
-   * machine active court en entier. Rien quand le poste n'est pas valorise, ou qu'il n'y a pas de poste.
-   */
-  public BigDecimal coutMachine() {
-    return activite()
-      .coutHoraire()
-      .map(cout -> cout.value().multiply(heures()))
-      .orElse(BigDecimal.ZERO);
   }
 
   /**
