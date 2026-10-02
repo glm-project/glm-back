@@ -26,6 +26,26 @@ public record PointageAResoudre(ActiviteInterpretee interpretee, List<PointageEn
     return interpretee.plage().debut();
   }
 
+  @Override
+  public Optional<Instant> fin() {
+    return Optional.empty();
+  }
+
+  @Override
+  public DureeTotale duree() {
+    return DureeTotale.incomplet();
+  }
+
+  @Override
+  public Cout cout() {
+    return new Cout(MontantTotal.incomplet(), MontantTotal.incomplet());
+  }
+
+  @Override
+  public List<AnomalieDuPointage> anomalies() {
+    return List.of(AnomalieDuPointage.A_RESOUDRE);
+  }
+
   public Optional<Instant> finAuPlusTard() {
     return interpretee.finAuPlusTard();
   }

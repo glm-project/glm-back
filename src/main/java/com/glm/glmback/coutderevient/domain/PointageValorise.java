@@ -26,6 +26,31 @@ public record PointageValorise(TrancheDActivite tranche, List<TrancheValorisable
     return tranche.periode().debut();
   }
 
+  @Override
+  public Optional<Instant> fin() {
+    return Optional.of(tranche.periode().fin());
+  }
+
+  @Override
+  public DureeTotale duree() {
+    return DureeTotale.de(tranche.duree());
+  }
+
+  @Override
+  public Cout cout() {
+    return new Cout(MontantTotal.de(machine()), mainDOeuvre().map(MontantTotal::de).orElseGet(MontantTotal::incomplet));
+  }
+
+  @Override
+  public List<AnomalieDuPointage> anomalies() {
+    return java.util.stream.Stream.of(
+      finAutomatique() ? Optional.of(AnomalieDuPointage.FIN_AUTOMATIQUE) : Optional.<AnomalieDuPointage>empty(),
+      partageInconnu() ? Optional.of(AnomalieDuPointage.PARTAGE_INCONNU) : Optional.<AnomalieDuPointage>empty()
+    )
+      .flatMap(Optional::stream)
+      .toList();
+  }
+
   public Montant machine() {
     return tranche.coutMachine();
   }

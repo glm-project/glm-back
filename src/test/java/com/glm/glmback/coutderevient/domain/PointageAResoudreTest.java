@@ -41,5 +41,9 @@ class PointageAResoudreTest {
     assertThat(pointage.activite()).isEqualTo(ACTIVITE_FRAISAGE);
     assertThat(pointage.debut()).isEqualTo(LE_11_MAI_A_9H);
     assertThat(pointage.finAuPlusTard()).contains(LE_11_MAI_A_11H);
+    assertThat(pointage.fin()).isEmpty();
+    assertThat(pointage.duree().complete()).isFalse();
+    assertThat(pointage.cout()).isEqualTo(new Cout(MontantTotal.incomplet(), MontantTotal.incomplet()));
+    assertThat(pointage.anomalies()).containsExactly(AnomalieDuPointage.A_RESOUDRE);
   }
 }

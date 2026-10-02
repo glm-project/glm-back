@@ -50,6 +50,10 @@ class PointageValoriseTest {
     assertThat(pointage.mainDOeuvre()).contains(new Montant(new BigDecimal("30.00")));
     assertThat(pointage.partageInconnu()).isFalse();
     assertThat(pointage.finAutomatique()).isFalse();
+    assertThat(pointage.fin()).contains(LE_11_MAI_A_11H);
+    assertThat(pointage.duree()).isEqualTo(DureeTotale.de(java.time.Duration.ofHours(2)));
+    assertThat(pointage.cout()).isEqualTo(new Cout(new Montant(new BigDecimal("90.00")), new Montant(new BigDecimal("30.00"))));
+    assertThat(pointage.anomalies()).isEmpty();
   }
 
   @Test
@@ -64,12 +68,18 @@ class PointageValoriseTest {
 
     assertThat(pointage.partageInconnu()).isTrue();
     assertThat(pointage.mainDOeuvre()).isEmpty();
+    assertThat(pointage.cout().machine().complete()).isTrue();
+    assertThat(pointage.cout().mainDOeuvre().complete()).isFalse();
+    assertThat(pointage.anomalies()).containsExactly(AnomalieDuPointage.PARTAGE_INCONNU);
   }
 
   @Test
   void shouldTellAnAutomaticEnd() {
     TrancheDActivite arreteeAutomatiquement = new TrancheDActivite(ACTIVITE_FRAISAGE, new Periode(LE_11_MAI_A_9H, LE_11_MAI_A_11H), true);
 
-    assertThat(new PointageValorise(arreteeAutomatiquement, List.of()).finAutomatique()).isTrue();
+    PointageValorise pointage = new PointageValorise(arreteeAutomatiquement, List.of());
+
+    assertThat(pointage.finAutomatique()).isTrue();
+    assertThat(pointage.anomalies()).containsExactly(AnomalieDuPointage.FIN_AUTOMATIQUE);
   }
 }

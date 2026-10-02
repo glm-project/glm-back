@@ -36,7 +36,11 @@ record RestCoutDeRevient(
       rapport.lecture().evaluation(),
       rapport.lecture().activitesEnCours(),
       RestElement.from(rapport.element()),
-      rapport.lignes().stream().map(RestLigneDeCout::from).toList(),
+      rapport
+        .lignes()
+        .stream()
+        .map(ligne -> RestLigneDeCout.from(ligne, rapport.annuaire()))
+        .toList(),
       rapport.conflits().stream().map(RestConflitDuCout::from).toList(),
       RestTempsPasse.from(rapport.temps()),
       RestCout.from(rapport.cout())
