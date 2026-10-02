@@ -197,6 +197,36 @@ class ChargeDeLOperateurTest {
       .containsExactly(Optional.empty(), Optional.of(new Montant(new BigDecimal("20.00"))));
   }
 
+  /**
+   * De 10 h a 11 h, le tour justifie le diviseur de deux ; de 9 h a 10 h, la fraiseuse etait seule.
+   */
+  @Test
+  void shouldNameWhatTheOperateurRanInParallel() {
+    TrancheDActivite fraisage = surFraiseuse(LE_11_MAI_A_9H, LE_11_MAI_A_11H);
+    TrancheDActivite tournage = surTour(LE_11_MAI_A_10H, LE_11_MAI_A_12H);
+
+    List<TrancheValorisable> parts = ChargeDeLOperateur.de(List.of(fraisage, tournage)).decoupe(fraisage);
+
+    assertThat(parts).extracting(TrancheValorisable::paralleles).containsExactly(List.of(), List.of(tournage.activite()));
+  }
+
+  /**
+   * Deux fraisages se suivent dans une fenetre partagee avec un tour : chacun n'a pour parallele que le tour, jamais
+   * l'autre fraisage, qui ne courait pas en meme temps que lui.
+   */
+  @Test
+  void shouldNotNameASuccessiveActiviteAsParallel() {
+    Instant aNeufHeuresVingt = Instant.parse("2026-05-11T09:20:00Z");
+    TrancheDActivite premierFraisage = surFraiseuse(LE_11_MAI_A_9H, aNeufHeuresVingt);
+    TrancheDActivite tournage = surTour(LE_11_MAI_A_9H, LE_11_MAI_A_10H);
+
+    ChargeDeLOperateur charge = ChargeDeLOperateur.de(List.of(premierFraisage, surFraiseuse(aNeufHeuresVingt, LE_11_MAI_A_10H), tournage));
+
+    assertThat(charge.decoupe(premierFraisage))
+      .singleElement()
+      .satisfies(part -> assertThat(part.paralleles()).containsExactly(tournage.activite()));
+  }
+
   private static TrancheDActivite surFraiseuse(Instant debut, Instant fin) {
     return sur(Optional.of(POSTE_ID_FRAISEUSE), debut, fin);
   }

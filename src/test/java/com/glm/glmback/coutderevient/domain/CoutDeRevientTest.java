@@ -241,6 +241,36 @@ class CoutDeRevientTest {
     assertThat(rapport.lignes().getLast().cout().machine().valeur().orElseThrow()).isEqualTo(Montant.ZERO);
   }
 
+  /**
+   * Le detail montre tous les pointages de la ligne dans l'ordre ou ils ont commence, celui a resoudre compris.
+   */
+  @Test
+  void shouldListThePointagesOfALigneInTheOrderTheyStarted() {
+    TrancheDActivite deuxieme = fraisage(CategorieDActivite.TRAVAIL, LE_11_MAI_A_10H, LE_11_MAI_A_11H);
+    TrancheDActivite premier = fraisage(CategorieDActivite.TRAVAIL, LE_11_MAI_A_8H, LE_11_MAI_A_9H);
+    ActiviteInterpretee aResoudre = ActiviteInterpretee.builder()
+      .id(new ActiviteId(java.util.UUID.randomUUID()))
+      .activite(premier.activite())
+      .plage(new Plage(LE_11_MAI_A_9H, Optional.empty()))
+      .echeance(LE_11_MAI_A_21H)
+      .finAuPlusTard(Optional.of(LE_11_MAI_A_10H));
+    List<TrancheDActivite> tranches = List.of(deuxieme, premier);
+
+    CoutDeRevient rapport = CoutDeRevient.builder()
+      .element(ELEMENT_VALORISE_OF)
+      .tranches(tranches)
+      .aResoudre(List.of(aResoudre))
+      .charges(ChargesDesOperateurs.de(tranches))
+      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
+      .conflits(List.of())
+      .annuaire(AnnuaireDuCout.VIDE);
+
+    assertThat(rapport.lignes().getFirst().pointages())
+      .extracting(PointageDeCout::debut)
+      .containsExactly(LE_11_MAI_A_8H, LE_11_MAI_A_9H, LE_11_MAI_A_10H);
+    assertThat(rapport.lignes().getFirst().pointages().get(1)).isEqualTo(new PointageAResoudre(aResoudre));
+  }
+
   @Test
   void shouldSumTempsOfEveryLigne() {
     List<TrancheDActivite> tranches = List.of(

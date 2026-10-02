@@ -96,7 +96,11 @@ public record ChargeDeLOperateur(List<SousPeriode> sousPeriodes, List<FenetreDeP
           etendue
             .diviseur()
             .map(diviseur -> RepartitionDeMainDOeuvre.de(tranches, etendue.periode(), diviseur))
-            .orElse(RepartitionDeMainDOeuvre.AUCUNE)
+            .orElse(RepartitionDeMainDOeuvre.AUCUNE),
+          tranches
+            .stream()
+            .filter(tranche -> tranche.periode().intersection(etendue.periode()).isPresent())
+            .toList()
         )
       )
       .toList();

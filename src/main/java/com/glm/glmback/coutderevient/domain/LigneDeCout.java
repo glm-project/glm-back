@@ -22,6 +22,7 @@ public record LigneDeCout(
   TempsPasse temps,
   List<Periode> nonConformites,
   List<Periode> finsAutomatiques,
+  List<PointageDeCout> pointages,
   Cout cout
 ) {
   private static final Comparator<Periode> PAR_DEBUT = Comparator.comparing(Periode::debut).thenComparing(Periode::fin);
@@ -32,11 +33,13 @@ public record LigneDeCout(
     Assert.notNull("temps", temps);
     Assert.field("non conformites", nonConformites).notNull().noNullElement();
     Assert.field("fins automatiques", finsAutomatiques).notNull().noNullElement();
+    Assert.field("pointages", pointages).notNull().noNullElement();
     Assert.notNull("cout", cout);
+    pointages = List.copyOf(pointages);
   }
 
   private LigneDeCout(Builder builder) {
-    this(builder.nature, builder.periode, builder.temps, builder.nonConformites, builder.finsAutomatiques, builder.cout);
+    this(builder.nature, builder.periode, builder.temps, builder.nonConformites, builder.finsAutomatiques, builder.pointages, builder.cout);
   }
 
   static LigneDeCoutNatureBuilder builder() {
@@ -50,6 +53,7 @@ public record LigneDeCout(
       LigneDeCoutTempsBuilder,
       LigneDeCoutNonConformitesBuilder,
       LigneDeCoutFinsAutomatiquesBuilder,
+      LigneDeCoutPointagesBuilder,
       LigneDeCoutCoutBuilder
   {
 
@@ -58,6 +62,7 @@ public record LigneDeCout(
     private TempsPasse temps;
     private List<Periode> nonConformites;
     private List<Periode> finsAutomatiques;
+    private List<PointageDeCout> pointages;
     private Cout cout;
 
     @Override
@@ -85,8 +90,14 @@ public record LigneDeCout(
     }
 
     @Override
-    public LigneDeCoutCoutBuilder finsAutomatiques(List<Periode> finsAutomatiques) {
+    public LigneDeCoutPointagesBuilder finsAutomatiques(List<Periode> finsAutomatiques) {
       this.finsAutomatiques = finsAutomatiques;
+      return this;
+    }
+
+    @Override
+    public LigneDeCoutCoutBuilder pointages(List<PointageDeCout> pointages) {
+      this.pointages = pointages;
       return this;
     }
 
@@ -103,9 +114,13 @@ public record LigneDeCout(
    */
   static LigneDeCout de(TravailDeLaLigne travail, ChargesDesOperateurs charges) {
     List<TrancheDActivite> tranches = travail.terminees();
-    List<TrancheValorisable> parts = tranches
+    List<PointageValorise> valorises = tranches
       .stream()
-      .flatMap(tranche -> charges.decoupe(tranche).stream())
+      .map(tranche -> new PointageValorise(tranche, charges.decoupe(tranche)))
+      .toList();
+    List<TrancheValorisable> parts = valorises
+      .stream()
+      .flatMap(pointage -> pointage.parts().stream())
       .toList();
     return builder()
       .nature(travail.nature())
@@ -115,7 +130,18 @@ public record LigneDeCout(
       .finsAutomatiques(
         tranches.stream().filter(TrancheDActivite::finAutomatique).map(TrancheDActivite::periode).sorted(PAR_DEBUT).toList()
       )
+      .pointages(pointages(valorises, travail.aResoudre()))
       .cout(travail.aResoudre().isEmpty() ? cout(tranches, parts) : new Cout(MontantTotal.incomplet(), MontantTotal.incomplet()));
+  }
+
+  /**
+   * Les pointages de la ligne dans l'ordre ou ils ont commence, ceux a resoudre compris : le detail les montre tous,
+   * sans quoi la somme qu'il justifie aurait des trous. L'ordre de lecture departage deux debuts identiques.
+   */
+  private static List<PointageDeCout> pointages(List<PointageValorise> valorises, List<ActiviteInterpretee> aResoudre) {
+    return java.util.stream.Stream.<PointageDeCout>concat(valorises.stream(), aResoudre.stream().map(PointageAResoudre::new))
+      .sorted(Comparator.comparing(PointageDeCout::debut))
+      .toList();
   }
 
   private static Plage periode(TravailDeLaLigne travail) {
@@ -208,7 +234,11 @@ public record LigneDeCout(
   }
 
   interface LigneDeCoutFinsAutomatiquesBuilder {
-    LigneDeCoutCoutBuilder finsAutomatiques(List<Periode> finsAutomatiques);
+    LigneDeCoutPointagesBuilder finsAutomatiques(List<Periode> finsAutomatiques);
+  }
+
+  interface LigneDeCoutPointagesBuilder {
+    LigneDeCoutCoutBuilder pointages(List<PointageDeCout> pointages);
   }
 
   interface LigneDeCoutCoutBuilder {
