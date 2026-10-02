@@ -112,7 +112,7 @@ public record LigneDeCout(
    * La ligne deduite des tranches d'une meme nature, chacune decoupee sur les fenetres de partage de son
    * operateur.
    */
-  static LigneDeCout de(TravailDeLaLigne travail, ChargesDesOperateurs charges) {
+  static LigneDeCout de(TravailDeLaLigne travail, ChargesDesOperateurs charges, List<SequenceEnConflit> conflits) {
     List<TrancheDActivite> tranches = travail.terminees();
     List<PointageValorise> valorises = tranches
       .stream()
@@ -130,7 +130,7 @@ public record LigneDeCout(
       .finsAutomatiques(
         tranches.stream().filter(TrancheDActivite::finAutomatique).map(TrancheDActivite::periode).sorted(PAR_DEBUT).toList()
       )
-      .pointages(pointages(valorises, travail.aResoudre()))
+      .pointages(pointages(valorises, travail.aResoudre(), conflits))
       .cout(travail.aResoudre().isEmpty() ? cout(tranches, parts) : new Cout(MontantTotal.incomplet(), MontantTotal.incomplet()));
   }
 
@@ -138,9 +138,25 @@ public record LigneDeCout(
    * Les pointages de la ligne dans l'ordre ou ils ont commence, ceux a resoudre compris : le detail les montre tous,
    * sans quoi la somme qu'il justifie aurait des trous. L'ordre de lecture departage deux debuts identiques.
    */
-  private static List<PointageDeCout> pointages(List<PointageValorise> valorises, List<ActiviteInterpretee> aResoudre) {
-    return java.util.stream.Stream.<PointageDeCout>concat(valorises.stream(), aResoudre.stream().map(PointageAResoudre::new))
+  private static List<PointageDeCout> pointages(
+    List<PointageValorise> valorises,
+    List<ActiviteInterpretee> aResoudre,
+    List<SequenceEnConflit> conflits
+  ) {
+    return java.util.stream.Stream.<PointageDeCout>concat(
+      valorises.stream(),
+      aResoudre.stream().map(activite -> new PointageAResoudre(activite, contradictoires(activite, conflits)))
+    )
       .sorted(Comparator.comparing(PointageDeCout::debut))
+      .toList();
+  }
+
+  private static List<PointageEnConflit> contradictoires(ActiviteInterpretee activite, List<SequenceEnConflit> conflits) {
+    return conflits
+      .stream()
+      .filter(sequence -> sequence.activites().contains(activite.id()))
+      .flatMap(sequence -> sequence.pointages().stream())
+      .distinct()
       .toList();
   }
 

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.shared.error.domain.MissingMandatoryValueException;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -14,9 +15,16 @@ class PointageAResoudreTest {
 
   @Test
   void shouldNotBuildWithoutActivite() {
-    assertThatThrownBy(() -> new PointageAResoudre(null))
+    assertThatThrownBy(() -> new PointageAResoudre(null, List.of()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("activite a resoudre");
+  }
+
+  @Test
+  void shouldNotBuildWithoutContradictoires() {
+    assertThatThrownBy(() -> new PointageAResoudre(activiteInterpreteeDeFraisage(new Plage(LE_11_MAI_A_9H, Optional.empty())), null))
+      .isExactlyInstanceOf(MissingMandatoryValueException.class)
+      .hasMessageContaining("pointages contradictoires");
   }
 
   @Test
@@ -28,7 +36,7 @@ class PointageAResoudreTest {
       .echeance(LE_11_MAI_A_21H)
       .finAuPlusTard(Optional.of(LE_11_MAI_A_11H));
 
-    PointageAResoudre pointage = new PointageAResoudre(aResoudre);
+    PointageAResoudre pointage = new PointageAResoudre(aResoudre, List.of());
 
     assertThat(pointage.activite()).isEqualTo(ACTIVITE_FRAISAGE);
     assertThat(pointage.debut()).isEqualTo(LE_11_MAI_A_9H);

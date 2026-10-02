@@ -43,7 +43,8 @@ public record CoutDeRevient(
         aResoudre ->
           charges ->
             lecture ->
-              conflits -> annuaire -> new CoutDeRevient(element, lignes(tranches, charges, aResoudre), lecture, conflits, annuaire);
+              conflits ->
+                annuaire -> new CoutDeRevient(element, lignes(tranches, charges, aResoudre, conflits), lecture, conflits, annuaire);
   }
 
   public interface ElementBuilder {
@@ -85,7 +86,8 @@ public record CoutDeRevient(
   private static List<LigneDeCout> lignes(
     List<TrancheDActivite> tranches,
     ChargesDesOperateurs charges,
-    List<ActiviteInterpretee> aResoudre
+    List<ActiviteInterpretee> aResoudre,
+    List<SequenceEnConflit> conflits
   ) {
     List<Optional<NatureDOperation>> natures = java.util.stream.Stream.concat(
       tranches.stream().map(tranche -> tranche.activite().nature()),
@@ -109,7 +111,8 @@ public record CoutDeRevient(
               .filter(activite -> activite.activite().nature().equals(nature))
               .toList()
           ),
-          charges
+          charges,
+          conflits
         )
       )
       .toList();

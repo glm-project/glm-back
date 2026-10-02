@@ -242,7 +242,8 @@ class CoutDeRevientTest {
   }
 
   /**
-   * Le detail montre tous les pointages de la ligne dans l'ordre ou ils ont commence, celui a resoudre compris.
+   * Le detail montre tous les pointages de la ligne dans l'ordre ou ils ont commence, celui a resoudre compris, avec
+   * les pointages contradictoires de sa propre sequence et d'aucune autre.
    */
   @Test
   void shouldListThePointagesOfALigneInTheOrderTheyStarted() {
@@ -255,6 +256,20 @@ class CoutDeRevientTest {
       .echeance(LE_11_MAI_A_21H)
       .finAuPlusTard(Optional.of(LE_11_MAI_A_10H));
     List<TrancheDActivite> tranches = List.of(deuxieme, premier);
+    PointageEnConflit premierDebut = new PointageEnConflit(java.util.UUID.randomUUID(), TypeDePointage.DEBUT, LE_11_MAI_A_9H);
+    PointageEnConflit secondDebut = new PointageEnConflit(java.util.UUID.randomUUID(), TypeDePointage.DEBUT, LE_11_MAI_A_10H);
+    SequenceEnConflit sienne = SequenceEnConflit.builder()
+      .element(ELEMENT_ID_OF)
+      .operateur(OPERATEUR_ID_DUPONT)
+      .poste(Optional.of(POSTE_ID_FRAISEUSE))
+      .activites(List.of(aResoudre.id()))
+      .pointages(List.of(premierDebut, secondDebut));
+    SequenceEnConflit etrangere = SequenceEnConflit.builder()
+      .element(ELEMENT_ID_OF_2)
+      .operateur(OPERATEUR_ID_DUPONT)
+      .poste(Optional.of(POSTE_ID_TOUR))
+      .activites(List.of(new ActiviteId(java.util.UUID.randomUUID())))
+      .pointages(List.of(new PointageEnConflit(java.util.UUID.randomUUID(), TypeDePointage.FIN, LE_11_MAI_A_12H)));
 
     CoutDeRevient rapport = CoutDeRevient.builder()
       .element(ELEMENT_VALORISE_OF)
@@ -262,13 +277,15 @@ class CoutDeRevientTest {
       .aResoudre(List.of(aResoudre))
       .charges(ChargesDesOperateurs.de(tranches))
       .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
-      .conflits(List.of())
+      .conflits(List.of(sienne, etrangere))
       .annuaire(AnnuaireDuCout.VIDE);
 
     assertThat(rapport.lignes().getFirst().pointages())
       .extracting(PointageDeCout::debut)
       .containsExactly(LE_11_MAI_A_8H, LE_11_MAI_A_9H, LE_11_MAI_A_10H);
-    assertThat(rapport.lignes().getFirst().pointages().get(1)).isEqualTo(new PointageAResoudre(aResoudre));
+    assertThat(rapport.lignes().getFirst().pointages().get(1)).isEqualTo(
+      new PointageAResoudre(aResoudre, List.of(premierDebut, secondDebut))
+    );
   }
 
   @Test
