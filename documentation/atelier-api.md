@@ -531,8 +531,9 @@ Sur les routes de pointage, la **saisie concurrente** est rejouée par le serveu
 pointé sur le même élément entre la lecture et l'écriture. C'est le seul cas où **rejouer** l'appel
 tel quel est la bonne réaction — relire l'agrégat, et reproposer la saisie.
 
-Une `dateDeSurvenue` strictement postérieure à l'instant courant répond 400 avec le code stable
-`date-de-survenue-future`. Le pupitre peut alors corriger son contenu et réutiliser le même UUID.
+Le pupitre date ses gestes avec l'horloge du poste, qui peut avancer un peu sur celle du serveur : une
+`dateDeSurvenue` en avance de **deux minutes au plus** est ramenée à l'instant courant du serveur. Au-delà, elle
+répond 400 avec le code stable `date-de-survenue-future`. Le pupitre peut alors corriger son contenu et réutiliser le même UUID.
 
 ---
 
