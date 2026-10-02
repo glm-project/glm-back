@@ -1,6 +1,8 @@
 package com.glm.glmback.coutderevient.domain;
 
 import com.glm.glmback.shared.error.domain.Assert;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -14,6 +16,9 @@ import java.util.Optional;
  * </p>
  */
 public record TrancheDActivite(Activite activite, Periode periode, boolean finAutomatique) {
+  private static final BigDecimal MILLISECONDES_PAR_HEURE = new BigDecimal(3_600_000);
+  private static final int ECHELLE_DE_TRAVAIL = 10;
+
   public TrancheDActivite {
     Assert.notNull("activite", activite);
     Assert.notNull("periode", periode);
@@ -25,6 +30,25 @@ public record TrancheDActivite(Activite activite, Periode periode, boolean finAu
 
   public Duration duree() {
     return periode.duree();
+  }
+
+  /**
+   * Ce que la machine a coute pendant toute la tranche, arrondi une seule fois au centime. La machine n'est jamais
+   * partagee : la decouper pour l'arrondir ferait deriver son cout pour une raison qui lui est etrangere. Rien quand
+   * le poste n'est pas valorise, ou qu'il n'y a pas de poste.
+   */
+  public Montant coutMachine() {
+    return activite
+      .coutHoraire()
+      .map(cout ->
+        new Montant(
+          cout
+            .value()
+            .multiply(new BigDecimal(duree().toMillis()))
+            .divide(MILLISECONDES_PAR_HEURE, ECHELLE_DE_TRAVAIL, RoundingMode.HALF_UP)
+        )
+      )
+      .orElse(Montant.ZERO);
   }
 
   public OperateurId operateur() {

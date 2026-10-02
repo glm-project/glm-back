@@ -108,6 +108,35 @@ Feature: Cout de revient d'un element de fabrication
       | Fraisage | PT3H    | PT0S          | 135.00  | 50.00       |
       | Tournage | PT1H    | PT0S          | 60.00   | 10.00       |
 
+  Scenario: Une periode partagee sur trois elements vaut exactement le cout de l'operateur
+    Given l'entreprise fabrique "OF 3020"
+    And l'entreprise fabrique "OF 3021"
+    And l'entreprise fabrique "OF 3022"
+    And "OF 3020" est mis en atelier a "2026-05-11T07:00:00Z"
+    And "OF 3021" est mis en atelier a "2026-05-11T07:00:00Z"
+    And "OF 3022" est mis en atelier a "2026-05-11T07:00:00Z"
+    And "dupont" pointe "DEBUT" sur "OF 3020" au poste "fraiseuse" a "2026-05-11T08:00:00Z"
+    And "dupont" pointe "DEBUT" sur "OF 3021" au poste "tour" a "2026-05-11T09:00:00Z"
+    And "dupont" pointe "DEBUT" sur "OF 3022" sans poste a "2026-05-11T09:00:00Z"
+    And "dupont" pointe "FIN" sur "OF 3020" au poste "fraiseuse" a "2026-05-11T09:20:00Z"
+    And "dupont" pointe "FIN" sur "OF 3021" au poste "tour" a "2026-05-11T09:20:00Z"
+    And "dupont" pointe "FIN" sur "OF 3022" sans poste a "2026-05-11T09:20:00Z"
+    # De 9 h a 9 h 20, trois postes se partagent 20 EUR x 1/3 h = 6,67 EUR : 2,23 + 2,22 + 2,22. Arrondi element par
+    # element, l'operateur n'aurait coute que 3 x 2,22 = 6,66 EUR. Le centime va a la fraiseuse, commencee a 8 h,
+    # qui porte aussi son heure seule : 20,00 + 2,23 EUR.
+    When je consulte le cout de revient de "OF 3020" a "2026-05-11T18:00:00Z"
+    Then le rapport porte les lignes
+      | nature   | travail | nonConformite | machine | mainDOeuvre |
+      | Fraisage | PT1H20M | PT0S          | 60.00   | 22.23       |
+    When je consulte le cout de revient de "OF 3021" a "2026-05-11T18:00:00Z"
+    Then le rapport porte les lignes
+      | nature   | travail | nonConformite | machine | mainDOeuvre |
+      | Tournage | PT20M   | PT0S          | 20.00   | 2.22        |
+    When je consulte le cout de revient de "OF 3022" a "2026-05-11T18:00:00Z"
+    Then le rapport porte les lignes
+      | nature | travail | nonConformite | machine | mainDOeuvre |
+      | null   | PT20M   | PT0S          | 0.00    | 2.22        |
+
   Scenario: La cloture referme le travail laisse ouvert
     Given l'entreprise fabrique "OF 3007"
     And "OF 3007" est mis en atelier a "2026-05-11T07:00:00Z"
@@ -274,9 +303,11 @@ Feature: Cout de revient d'un element de fabrication
     And pour le cout, la cible du pointage "FS" sur "source sans poste" est corrigee vers "NS" a "2026-05-12T10:01:00Z"
     When je consulte le cout de revient de "cible tour" a "2026-05-12T10:02:00Z"
     Then le cout ne porte aucun conflit
+    # De 8 h a 10 h, trois postes se partagent 40 EUR : 13,34 + 13,33 + 13,33. Le centime restant va au tour,
+    # commence le premier a 6 h. La cible vaut donc 40,00 + 13,34 + 20,00 EUR de main d'oeuvre.
     And le total du cout "$.cout.machine" est complet avec "300.00"
-    And le total du cout "$.cout.mainDOeuvre" est complet avec "73.33"
-    And le total du cout "$.cout.total" est complet avec "373.33"
+    And le total du cout "$.cout.mainDOeuvre" est complet avec "73.34"
+    And le total du cout "$.cout.total" est complet avec "373.34"
 
   Scenario: Le poste certain neutralise l'incertitude sur le meme poste distinct
     Given l'entreprise fabrique "source incertaine"

@@ -152,6 +152,56 @@ class CoutDeRevientTest {
   }
 
   /**
+   * Deux pointages de dix secondes a 45 EUR de l'heure valent chacun 0,125 EUR de machine. Chacun s'arrondit a
+   * 0,13 EUR, et la ligne additionne ce qu'elle affichera pointage par pointage : 0,26 EUR.
+   */
+  @Test
+  void shouldRoundTheMachineOncePerTranche() {
+    List<TrancheDActivite> tranches = List.of(
+      fraisage(CategorieDActivite.TRAVAIL, Instant.parse("2026-05-11T09:00:00Z"), Instant.parse("2026-05-11T09:00:10Z")),
+      fraisage(CategorieDActivite.TRAVAIL, Instant.parse("2026-05-11T10:00:00Z"), Instant.parse("2026-05-11T10:00:10Z"))
+    );
+
+    CoutDeRevient rapport = CoutDeRevient.builder()
+      .element(ELEMENT_VALORISE_OF)
+      .tranches(tranches)
+      .aResoudre(List.of())
+      .charges(ChargesDesOperateurs.de(tranches))
+      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
+      .conflits(List.of());
+
+    assertThat(rapport.lignes().getFirst().cout().machine().valeur()).contains(new Montant(new BigDecimal("0.26")));
+  }
+
+  /**
+   * Vingt minutes menees sur trois postes, donc sur trois lignes : 20 EUR x 1/3 h = 6,67 EUR, reparti en 2,23 + 2,22 +
+   * 2,22. Arrondie ligne par ligne, chacune aurait valu 2,22 EUR et l'operateur n'aurait coute que 6,66 EUR.
+   */
+  @Test
+  void shouldPayASharedPeriodExactlyOnceAcrossLignes() {
+    Instant debut = Instant.parse("2026-05-11T09:00:00Z");
+    Instant fin = Instant.parse("2026-05-11T09:20:00Z");
+    List<TrancheDActivite> tranches = List.of(
+      fraisage(CategorieDActivite.TRAVAIL, debut, fin),
+      tournage(CategorieDActivite.TRAVAIL, debut, fin),
+      sansPoste(debut, fin)
+    );
+
+    CoutDeRevient rapport = CoutDeRevient.builder()
+      .element(ELEMENT_VALORISE_OF)
+      .tranches(tranches)
+      .aResoudre(List.of())
+      .charges(ChargesDesOperateurs.de(tranches))
+      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
+      .conflits(List.of());
+
+    assertThat(rapport.lignes())
+      .extracting(ligne -> ligne.cout().mainDOeuvre().valeur().orElseThrow())
+      .containsExactly(new Montant(new BigDecimal("2.23")), new Montant(new BigDecimal("2.22")), new Montant(new BigDecimal("2.22")));
+    assertThat(rapport.cout().mainDOeuvre().valeur()).contains(new Montant(new BigDecimal("6.67")));
+  }
+
+  /**
    * Sans poste, il n'y a ni nature ni cout machine : c'est le comportement nominal d'une entreprise sans parc
    * machine, pas un cas degrade. La ligne sans nature passe en dernier.
    */

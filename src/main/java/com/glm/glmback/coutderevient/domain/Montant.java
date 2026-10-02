@@ -8,8 +8,9 @@ import java.math.RoundingMode;
  * Une somme d'argent, arrondie au centime.
  *
  * <p>
- * C'est le seul endroit ou le calcul quitte son echelle de travail. Le rapport arrondit par ligne, puis totalise des
- * lignes deja arrondies : sans quoi l'ecran afficherait un total qui ne serait pas la somme de ce qu'il montre.
+ * Le calcul quitte ici son echelle de travail : la machine une fois par activite, la main d'oeuvre une fois par
+ * fenetre de partage avant d'etre repartie au centime. Lignes et rapport ne totalisent que des montants deja
+ * arrondis : sans quoi l'ecran afficherait un total qui ne serait pas la somme de ce qu'il montre.
  * </p>
  */
 public record Montant(BigDecimal value) {

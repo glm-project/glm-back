@@ -370,8 +370,12 @@ limite le partage aux chevauchements. La charge couvre l'union du travail valori
 
 Pour A de 08 à 10 h sur fraiseuse, B sur tour ouverte depuis 09 h et 20 €/h humain, A vaut 40 € et B reste
 exclue. Si B se termine à 11 h, le rapport recalculé porte 30 € humain sur chaque activité.
-La ligne arrondit une seule fois au centime après sommation des tranches ; le rapport somme les lignes
-**déjà arrondies**, pour que le total soit exactement la somme affichée.
+Le coût humain s'arrondit une fois par **fenêtre de partage**, période où l'opérateur occupe le même ensemble
+de postes, puis se répartit en centimes entiers entre les activités. Le centime restant va au plus fort reste,
+puis à l'activité commencée la première : 1 h à 35 €/h sur trois postes vaut 11,67 + 11,67 + 11,66 = 35,00 €,
+quels que soient les éléments. La machine s'arrondit une fois par activité. La ligne et le rapport ne font
+qu'additionner des montants **déjà arrondis**, pour que chaque total soit exactement la somme affichée
+([ADR 0004](adr/0004-split-the-operator-cost-to-the-cent.md)).
 
 ### Valeurs à résoudre
 

@@ -36,8 +36,10 @@ ou de l'opérateur, ni un ancien ouvrant annulé.
 - Découper aux changements d'occupation. Bâtir la charge sur l'union du travail valorisé et de l'occupation lue
   pour que chaque tranche valorisée ait un diviseur. Sélectionner l'occupation par recouvrement, sans borne
   basse fixe sur le début : une régularisation peut dépasser treize heures.
-- Additionner les tranches à l'échelle de travail, arrondir au centime une seule fois par ligne, puis sommer
-  les lignes déjà arrondies dans le rapport.
+- Arrondir le coût humain une fois par **fenêtre de partage** (ensemble de postes constant, diviseur connu),
+  puis le répartir en centimes entiers : plus forts restes, puis activité commencée la première
+  ([ADR 0004](../../../../../../../documentation/adr/0004-split-the-operator-cost-to-the-cent.md)). Arrondir la
+  machine une fois par activité. La ligne et le rapport n'additionnent que des montants déjà arrondis.
 
 ## Incertitude et dépendances
 
