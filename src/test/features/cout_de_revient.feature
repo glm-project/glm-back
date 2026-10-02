@@ -107,6 +107,12 @@ Feature: Cout de revient d'un element de fabrication
       | nature   | travail | nonConformite | machine | mainDOeuvre |
       | Fraisage | PT3H    | PT0S          | 135.00  | 50.00       |
       | Tournage | PT1H    | PT0S          | 60.00   | 10.00       |
+    # Le detail nomme le tour comme parallele, meme quand il porte sur le meme ordre.
+    And le pointage de la ligne "Fraisage" commence a "2026-05-11T09:00:00Z" se partage en
+      | debut                | fin                  | diviseur | mainDOeuvre | paralleles   | bloquants |
+      | 2026-05-11T09:00:00Z | 2026-05-11T10:00:00Z | 1        | 20.00       |              |           |
+      | 2026-05-11T10:00:00Z | 2026-05-11T11:00:00Z | 2        | 10.00       | tour@OF 3005 |           |
+      | 2026-05-11T11:00:00Z | 2026-05-11T12:00:00Z | 1        | 20.00       |              |           |
 
   Scenario: Le detail justifie chaque pointage et le partage de son operateur
     Given l'entreprise fabrique "OF D1"
