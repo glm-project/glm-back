@@ -141,6 +141,21 @@ Feature: Suivi des elements engages en atelier
     Then la reponse a le statut http 400
     And la reponse porte le code d'erreur "urn:glm:erreur:atelier:date-de-survenue-future"
 
+  Scenario: Un pointage date par un poste qui avance un peu sur le serveur est ramene a l'instant courant
+    Given il est "2026-05-10T06:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 2996"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 2996                 |
+    And j'ai engage l'element "OF 2996" en atelier
+    When je pointe sur "OF 2996"
+      | id             | 00000000-0000-0000-0000-000000000037 |
+      | type           | DEBUT                                |
+      | operateur      | dupont                               |
+      | poste          | fraiseuse-1                          |
+      | dateDeSurvenue | 2026-05-10T06:01:30Z                 |
+    Then la reponse a le statut http 201
+    And l'evenement 0 du suivi a survenu a "2026-05-10T06:00:00Z" et a ete saisi a "2026-05-10T06:00:00Z" par "gestionnaire"
+
   Scenario: Une non conformite interrompt l'element, une reprise se pointe comme un debut
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2004"
