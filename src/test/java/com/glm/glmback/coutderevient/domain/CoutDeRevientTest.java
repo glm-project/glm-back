@@ -263,6 +263,7 @@ class CoutDeRevientTest {
   ) {
     Activite activite = Activite.builder()
       .operateur(OPERATEUR_ID_DUPONT)
+      .element(ELEMENT_ID_OF)
       .poste(poste)
       .nature(nature)
       .coutHoraire(poste.map(ignore -> COUT_HORAIRE_DE_45_EUROS))

@@ -164,6 +164,7 @@ class RepartitionDeMainDOeuvreTest {
   private static Activite activite(Optional<PosteDeTravailId> poste, Optional<TauxHoraire> taux) {
     return Activite.builder()
       .operateur(OPERATEUR_ID_DUPONT)
+      .element(ELEMENT_ID_OF)
       .poste(poste)
       .nature(Optional.of(NATURE_FRAISAGE))
       .coutHoraire(Optional.of(COUT_HORAIRE_DE_45_EUROS))

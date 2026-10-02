@@ -55,6 +55,7 @@ public final class CoutDeRevientFixture {
 
   public static final Activite ACTIVITE_FRAISAGE = Activite.builder()
     .operateur(OPERATEUR_ID_DUPONT)
+    .element(ELEMENT_ID_OF)
     .poste(Optional.of(POSTE_ID_FRAISEUSE))
     .nature(Optional.of(NATURE_FRAISAGE))
     .coutHoraire(Optional.of(COUT_HORAIRE_DE_45_EUROS))
@@ -62,6 +63,7 @@ public final class CoutDeRevientFixture {
     .categorie(CategorieDActivite.TRAVAIL);
   public static final Activite ACTIVITE_TOURNAGE = Activite.builder()
     .operateur(OPERATEUR_ID_DUPONT)
+    .element(ELEMENT_ID_OF)
     .poste(Optional.of(POSTE_ID_TOUR))
     .nature(Optional.of(NATURE_TOURNAGE))
     .coutHoraire(Optional.of(COUT_HORAIRE_DE_60_EUROS))
@@ -69,6 +71,7 @@ public final class CoutDeRevientFixture {
     .categorie(CategorieDActivite.TRAVAIL);
   public static final Activite ACTIVITE_NC_FRAISAGE = Activite.builder()
     .operateur(OPERATEUR_ID_DUPONT)
+    .element(ELEMENT_ID_OF)
     .poste(Optional.of(POSTE_ID_FRAISEUSE))
     .nature(Optional.of(NATURE_FRAISAGE))
     .coutHoraire(Optional.of(COUT_HORAIRE_DE_45_EUROS))
@@ -76,6 +79,7 @@ public final class CoutDeRevientFixture {
     .categorie(CategorieDActivite.NON_CONFORMITE);
   public static final Activite ACTIVITE_TOURNAGE_SANS_TAUX = Activite.builder()
     .operateur(OPERATEUR_ID_DUPONT)
+    .element(ELEMENT_ID_OF)
     .poste(Optional.of(POSTE_ID_TOUR))
     .nature(Optional.of(NATURE_TOURNAGE))
     .coutHoraire(Optional.of(COUT_HORAIRE_DE_60_EUROS))

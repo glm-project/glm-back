@@ -66,6 +66,7 @@ class ActiviteValoriseeEntity {
       .activite(
         new Activite(
           new OperateurId(operateurId),
+          suivi.element(),
           Optional.ofNullable(posteId).map(PosteDeTravailId::new),
           Optional.ofNullable(nature).map(NatureDOperation::new),
           ouverture.coutHoraire(),
