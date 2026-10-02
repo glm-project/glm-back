@@ -1,7 +1,6 @@
 package com.glm.glmback.coutderevient.domain;
 
 import com.glm.glmback.shared.error.domain.Assert;
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
@@ -12,9 +11,9 @@ import java.util.Optional;
  * Une ligne du rapport : tout ce qui a ete fait sur l'element a une meme nature d'operation.
  *
  * <p>
- * C'est l'unite d'arrondi. Les tranches se somment a l'echelle de travail, la ligne arrondit une fois, et le rapport
- * totalise des lignes deja arrondies : sans quoi l'ecran afficherait un total qui ne serait pas la somme de ce qu'il
- * montre.
+ * La ligne n'arrondit plus rien : elle additionne des montants deja au centime, la machine de chaque activite et la
+ * main d'oeuvre de chaque part repartie dans sa fenetre de partage. Le rapport totalise des lignes, et chaque total
+ * est ainsi exactement la somme de ce que l'ecran montre.
  * </p>
  */
 public record LigneDeCout(
@@ -99,8 +98,8 @@ public record LigneDeCout(
   }
 
   /**
-   * La ligne deduite des tranches d'une meme nature, chacune decoupee sur les sous-periodes ou le diviseur de son
-   * operateur est constant.
+   * La ligne deduite des tranches d'une meme nature, chacune decoupee sur les fenetres de partage de son
+   * operateur.
    */
   static LigneDeCout de(TravailDeLaLigne travail, ChargesDesOperateurs charges) {
     List<TrancheDActivite> tranches = travail.terminees();
@@ -183,12 +182,10 @@ public record LigneDeCout(
       MontantTotal.de(tranches.stream().map(TrancheDActivite::coutMachine).reduce(Montant.ZERO, Montant::plus)),
       parts.stream().allMatch(part -> part.coutDeMainDOeuvre().isPresent())
         ? MontantTotal.de(
-            new Montant(
-              parts
-                .stream()
-                .map(part -> part.coutDeMainDOeuvre().orElseThrow())
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
-            )
+            parts
+              .stream()
+              .map(part -> part.coutDeMainDOeuvre().orElseThrow())
+              .reduce(Montant.ZERO, Montant::plus)
           )
         : MontantTotal.incomplet()
     );

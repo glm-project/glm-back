@@ -22,10 +22,15 @@ import java.util.stream.Collectors;
  * Un pointage sans poste compte pour un poste, comme la cle d'activite de l'atelier ou l'absence de poste est une
  * valeur : une entreprise sans parc machine retrouve un diviseur de un partout.
  * </p>
+ *
+ * <p>
+ * Les sous-periodes se reunissent en fenetres de partage, ou la main d'oeuvre est arrondie puis repartie au centime.
+ * </p>
  */
-public record ChargeDeLOperateur(List<SousPeriode> sousPeriodes) {
+public record ChargeDeLOperateur(List<SousPeriode> sousPeriodes, List<FenetreDePartage> fenetres) {
   public ChargeDeLOperateur {
     Assert.field("sous periodes", sousPeriodes).notNull().noNullElement();
+    Assert.field("fenetres", fenetres).notNull().noNullElement();
   }
 
   /**
@@ -49,22 +54,61 @@ public record ChargeDeLOperateur(List<SousPeriode> sousPeriodes) {
       sousPeriode(tranches, zones, candidate).ifPresent(sousPeriodes::add);
     }
 
-    return new ChargeDeLOperateur(List.copyOf(sousPeriodes));
+    return new ChargeDeLOperateur(List.copyOf(sousPeriodes), fenetres(tranches, sousPeriodes));
   }
 
   /**
-   * La tranche donnee, decoupee en autant de parts que de sous-periodes qu'elle traverse.
+   * La tranche donnee, decoupee en autant de parts que de fenetres de partage qu'elle traverse.
    */
   public List<TrancheValorisable> decoupe(TrancheDActivite tranche) {
-    return sousPeriodes
+    return fenetres
       .stream()
-      .flatMap(sousPeriode ->
+      .flatMap(fenetre ->
         tranche
-          .reduiteA(sousPeriode.periode())
-          .map(part -> new TrancheValorisable(part, sousPeriode.diviseur(), sousPeriode.responsables()))
+          .reduiteA(fenetre.periode())
+          .map(part -> new TrancheValorisable(part, fenetre))
           .stream()
       )
       .toList();
+  }
+
+  /**
+   * Les sous-periodes adjacentes ou l'operateur occupe le meme ensemble de postes, avec un diviseur connu, ne forment
+   * qu'une fenetre : une heure qui n'est pas partagee n'est jamais coupee en morceaux arrondis.
+   */
+  private static List<FenetreDePartage> fenetres(List<TrancheDActivite> tranches, List<SousPeriode> sousPeriodes) {
+    List<SousPeriode> etendues = new ArrayList<>();
+    for (SousPeriode sousPeriode : sousPeriodes) {
+      if (!etendues.isEmpty() && prolonge(tranches, etendues.getLast(), sousPeriode)) {
+        SousPeriode precedente = etendues.removeLast();
+        etendues.add(
+          new SousPeriode(new Periode(precedente.periode().debut(), sousPeriode.periode().fin()), precedente.diviseur().orElseThrow())
+        );
+      } else {
+        etendues.add(sousPeriode);
+      }
+    }
+    return etendues
+      .stream()
+      .map(etendue ->
+        new FenetreDePartage(
+          etendue,
+          etendue
+            .diviseur()
+            .map(diviseur -> RepartitionDeMainDOeuvre.de(tranches, etendue.periode(), diviseur))
+            .orElse(RepartitionDeMainDOeuvre.AUCUNE)
+        )
+      )
+      .toList();
+  }
+
+  private static boolean prolonge(List<TrancheDActivite> tranches, SousPeriode precedente, SousPeriode suivante) {
+    return (
+      precedente.periode().fin().equals(suivante.periode().debut())
+      && precedente.diviseur().isPresent()
+      && suivante.diviseur().isPresent()
+      && postes(tranches, precedente.periode()).equals(postes(tranches, suivante.periode()))
+    );
   }
 
   private static List<Instant> bornes(List<TrancheDActivite> tranches, List<ZoneIncertaine> zones) {
@@ -85,11 +129,7 @@ public record ChargeDeLOperateur(List<SousPeriode> sousPeriodes) {
    * Rien n'est rendu la ou l'operateur ne travaillait pas : entre deux pointages, il n'y a aucun diviseur a poser.
    */
   private static Optional<SousPeriode> sousPeriode(List<TrancheDActivite> tranches, List<ZoneIncertaine> zones, Periode candidate) {
-    Set<Optional<PosteDeTravailId>> postes = tranches
-      .stream()
-      .filter(tranche -> tranche.periode().intersection(candidate).isPresent())
-      .map(tranche -> tranche.activite().poste())
-      .collect(Collectors.toSet());
+    Set<Optional<PosteDeTravailId>> postes = postes(tranches, candidate);
     if (postes.isEmpty()) {
       return Optional.empty();
     }
@@ -101,5 +141,13 @@ public record ChargeDeLOperateur(List<SousPeriode> sousPeriodes) {
       .collect(Collectors.toSet());
     Optional<Diviseur> diviseur = responsables.isEmpty() ? Optional.of(new Diviseur(postes.size())) : Optional.empty();
     return Optional.of(new SousPeriode(candidate, diviseur, responsables));
+  }
+
+  private static Set<Optional<PosteDeTravailId>> postes(List<TrancheDActivite> tranches, Periode periode) {
+    return tranches
+      .stream()
+      .filter(tranche -> tranche.periode().intersection(periode).isPresent())
+      .map(tranche -> tranche.activite().poste())
+      .collect(Collectors.toSet());
   }
 }
