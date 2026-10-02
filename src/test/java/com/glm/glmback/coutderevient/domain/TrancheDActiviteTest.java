@@ -16,6 +16,7 @@ class TrancheDActiviteTest {
 
   private static final Activite TOURNAGE_DE_DUPONT = Activite.builder()
     .operateur(OPERATEUR_ID_DUPONT)
+    .element(ELEMENT_ID_OF)
     .poste(Optional.of(POSTE_ID_TOUR))
     .nature(Optional.of(NATURE_TOURNAGE))
     .coutHoraire(Optional.of(COUT_HORAIRE_DE_45_EUROS))
@@ -83,6 +84,7 @@ class TrancheDActiviteTest {
   void shouldNotCostAMachineWithoutCoutHoraire() {
     Activite sansPoste = Activite.builder()
       .operateur(OPERATEUR_ID_DUPONT)
+      .element(ELEMENT_ID_OF)
       .poste(Optional.empty())
       .nature(Optional.empty())
       .coutHoraire(Optional.empty())

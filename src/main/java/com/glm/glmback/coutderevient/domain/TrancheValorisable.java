@@ -1,6 +1,7 @@
 package com.glm.glmback.coutderevient.domain;
 
 import com.glm.glmback.shared.error.domain.Assert;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -28,6 +29,20 @@ public record TrancheValorisable(TrancheDActivite tranche, FenetreDePartage fene
 
   public Set<ActiviteInterpretee> responsables() {
     return fenetre.responsables();
+  }
+
+  /**
+   * Ce que l'operateur menait d'autre pendant cette part, tous elements confondus : de quoi justifier son diviseur.
+   */
+  public List<Activite> paralleles() {
+    return fenetre
+      .occupation()
+      .stream()
+      .filter(autre -> autre.periode().intersection(tranche.periode()).isPresent())
+      .filter(autre -> !autre.reduiteA(fenetre.periode()).equals(Optional.of(tranche)))
+      .map(TrancheDActivite::activite)
+      .distinct()
+      .toList();
   }
 
   /**

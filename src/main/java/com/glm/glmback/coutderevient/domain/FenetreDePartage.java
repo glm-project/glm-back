@@ -1,6 +1,7 @@
 package com.glm.glmback.coutderevient.domain;
 
 import com.glm.glmback.shared.error.domain.Assert;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -14,10 +15,16 @@ import java.util.Set;
  * reste le meme et que le diviseur est connu. Une sous-periode incertaine reste seule, sans repartition.
  * </p>
  */
-public record FenetreDePartage(SousPeriode etendue, RepartitionDeMainDOeuvre repartition) {
+public record FenetreDePartage(SousPeriode etendue, RepartitionDeMainDOeuvre repartition, List<TrancheDActivite> occupation) {
+  /**
+   * L'occupation garde les tranches de l'operateur qui recouvrent la fenetre, tous elements confondus : ce sont elles
+   * qui expliquent un partage, aussi sur tel poste pour tel element.
+   */
   public FenetreDePartage {
     Assert.notNull("etendue", etendue);
     Assert.notNull("repartition", repartition);
+    Assert.field("occupation", occupation).notNull().noNullElement();
+    occupation = List.copyOf(occupation);
   }
 
   public Periode periode() {

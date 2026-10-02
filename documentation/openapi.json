@@ -97,6 +97,26 @@
         "required" : [ "content", "currentPage", "pageSize", "totalElementsCount" ],
         "type" : "object"
       },
+      "RestActiviteCiteeDuCout" : {
+        "description" : "Une autre activite du meme operateur, menee de front ou responsable d'un partage inconnu, tous elements confondus.",
+        "properties" : {
+          "element" : {
+            "$ref" : "#/components/schemas/RestElementCiteDuCout",
+            "description" : "Element sur lequel portait l'activite, ce meme element compris."
+          },
+          "nature" : {
+            "description" : "Nature de l'operation, absente sans poste.",
+            "example" : "Fraisage",
+            "type" : "string"
+          },
+          "poste" : {
+            "$ref" : "#/components/schemas/RestPosteDuCout",
+            "description" : "Poste de l'activite, absent sans poste."
+          }
+        },
+        "required" : [ "element" ],
+        "type" : "object"
+      },
       "RestActiviteDeLaFeuilleDeTemps" : {
         "description" : "Une periode de travail de l'operateur sur un element, ramenee au jour qui la porte.\n\nLe champ activite porte l'identite, les bornes entieres et l'etat explicite. Une activite en cours ou a resoudre\nn'a pas de fin ; une fin automatique porte l'echeance et signale son anomalie.\n",
         "properties" : {
@@ -712,6 +732,28 @@
         },
         "type" : "object"
       },
+      "RestElementCiteDuCout" : {
+        "description" : "L'element sur lequel portait une activite citee par le detail, nomme a la lecture ; nom et type absents s'il est inconnu.",
+        "properties" : {
+          "id" : {
+            "description" : "Identifiant de l'element de fabrication.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "nom" : {
+            "description" : "Nom de l'element.",
+            "example" : "OF-2026-000002",
+            "type" : "string"
+          },
+          "type" : {
+            "description" : "Type de l'element.",
+            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "id" ],
+        "type" : "object"
+      },
       "RestElementDeFabrication" : {
         "properties" : {
           "dateDeCreation" : {
@@ -1034,7 +1076,7 @@
         "properties" : {
           "cout" : {
             "$ref" : "#/components/schemas/RestCout",
-            "description" : "Cout de la ligne, arrondi au centime."
+            "description" : "Cout de la ligne, somme de montants deja au centime."
           },
           "finsAutomatiques" : {
             "description" : "Periodes terminees automatiquement, signalant une anomalie active.",
@@ -1059,11 +1101,19 @@
             "$ref" : "#/components/schemas/RestPeriodeDuCout",
             "description" : "Premier debut comptabilise, derniere fin certaine de cette nature si elle existe."
           },
+          "pointages" : {
+            "description" : "Les pointages de la ligne dans l'ordre ou ils ont commence, ceux a resoudre compris : de quoi justifier son cout.",
+            "items" : {
+              "$ref" : "#/components/schemas/RestPointageDuCout"
+            },
+            "type" : "array"
+          },
           "temps" : {
             "$ref" : "#/components/schemas/RestTempsPasse",
             "description" : "Temps passe, bon travail et non conformite separes."
           }
         },
+        "required" : [ "pointages" ],
         "type" : "object"
       },
       "RestModificationElementDeFabrication" : {
@@ -1301,6 +1351,28 @@
         "required" : [ "id", "nom", "prenom" ],
         "type" : "object"
       },
+      "RestOperateurDuCout" : {
+        "description" : "L'operateur d'un pointage, nomme a la lecture ; prenom et nom absents s'il est inconnu.",
+        "properties" : {
+          "id" : {
+            "description" : "Identifiant de l'operateur.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "nom" : {
+            "description" : "Nom de l'operateur.",
+            "example" : "Martin",
+            "type" : "string"
+          },
+          "prenom" : {
+            "description" : "Prenom de l'operateur.",
+            "example" : "Julien",
+            "type" : "string"
+          }
+        },
+        "required" : [ "id" ],
+        "type" : "object"
+      },
       "RestOperateurDuPupitre" : {
         "description" : "Un operateur designable au pupitre, et les postes sur lesquels il peut pointer.\n\nPas de taux horaire, contrairement a GET /api/operateurs : un ecran d'atelier partage n'a aucune raison de recevoir\nce que le rapport de cout de revient reserve au gestionnaire. L'identifiant, lui, est ce que l'operateur tape : il\ndesigne, il ne prouve rien, et un operateur qui n'en a pas n'est pas designable.\n",
         "properties" : {
@@ -1333,6 +1405,52 @@
           }
         },
         "required" : [ "id", "nom", "postes", "prenom" ],
+        "type" : "object"
+      },
+      "RestPartDuPointageDuCout" : {
+        "description" : "Une part d'un pointage termine : la periode ou l'operateur occupait le meme ensemble de postes.\n\nSa main d'oeuvre vaut taux horaire x duree / diviseur, deja repartie au centime dans la fenetre de partage. Elle est\nincomplete, sans diviseur, quand un pointage a resoudre de l'operateur, sur un autre poste, empeche de la partager.\n",
+        "properties" : {
+          "bloquants" : {
+            "description" : "Les activites a resoudre qui empechent de connaitre le diviseur.",
+            "items" : {
+              "$ref" : "#/components/schemas/RestActiviteCiteeDuCout"
+            },
+            "type" : "array"
+          },
+          "debut" : {
+            "description" : "Debut de la part.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "diviseur" : {
+            "description" : "Nombre de postes occupes en meme temps, absent quand le partage est inconnu.",
+            "example" : 2,
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "duree" : {
+            "description" : "Duree ISO-8601 de la part.",
+            "example" : "PT1H30M",
+            "type" : "string"
+          },
+          "fin" : {
+            "description" : "Fin de la part.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "mainDOeuvre" : {
+            "$ref" : "#/components/schemas/RestMontantDuCout",
+            "description" : "Main d'oeuvre de la part, au centime."
+          },
+          "paralleles" : {
+            "description" : "Ce que l'operateur menait d'autre pendant la part.",
+            "items" : {
+              "$ref" : "#/components/schemas/RestActiviteCiteeDuCout"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "bloquants", "debut", "duree", "fin", "mainDOeuvre", "paralleles" ],
         "type" : "object"
       },
       "RestPeriodeDuCout" : {
@@ -1435,6 +1553,103 @@
         "required" : [ "dateDeSurvenue", "element", "id", "intention", "type" ],
         "type" : "object"
       },
+      "RestPointageDuCout" : {
+        "description" : "Un pointage d'une ligne, avec tout ce qui permet de refaire son calcul.\n\nTermine, il porte sa duree, sa machine (cout horaire x duree, jamais divisee) et sa main d'oeuvre, somme de ses\nparts. A resoudre, il n'a ni fin, ni duree, ni montant : seulement sa fin au plus tard et les faits contradictoires\nde sa sequence. Les montants sont deja au centime, et ceux des pointages s'additionnent exactement au cout de la\nligne quand il est complet.\n",
+        "properties" : {
+          "anomalies" : {
+            "description" : "Anomalies du pointage, vide s'il n'en a aucune.",
+            "items" : {
+              "enum" : [ "FIN_AUTOMATIQUE", "A_RESOUDRE", "PARTAGE_INCONNU" ],
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "categorie" : {
+            "description" : "Travail ou reprise de non conformite.",
+            "enum" : [ "TRAVAIL", "NON_CONFORMITE" ],
+            "type" : "string"
+          },
+          "contradictoires" : {
+            "description" : "Faits contradictoires d'un pointage a resoudre, dans leur ordre ; vide sinon.",
+            "items" : {
+              "$ref" : "#/components/schemas/RestPointageEnConflitDuCout"
+            },
+            "type" : "array"
+          },
+          "cout" : {
+            "$ref" : "#/components/schemas/RestCout",
+            "description" : "Cout du pointage."
+          },
+          "coutHoraire" : {
+            "description" : "Cout horaire du poste fige a la saisie, absent s'il n'est pas valorise.",
+            "example" : 48.0,
+            "type" : "number"
+          },
+          "debut" : {
+            "description" : "Debut du pointage.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "duree" : {
+            "$ref" : "#/components/schemas/RestDureeDuCout",
+            "description" : "Duree du pointage, incomplete s'il est a resoudre."
+          },
+          "fin" : {
+            "description" : "Fin du pointage, absente s'il est a resoudre.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "finAuPlusTard" : {
+            "description" : "Fin au plus tard d'un pointage a resoudre.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "operateur" : {
+            "$ref" : "#/components/schemas/RestOperateurDuCout",
+            "description" : "Operateur du pointage."
+          },
+          "parts" : {
+            "description" : "Parts du pointage termine, une par fenetre de partage ; vide s'il est a resoudre.",
+            "items" : {
+              "$ref" : "#/components/schemas/RestPartDuPointageDuCout"
+            },
+            "type" : "array"
+          },
+          "poste" : {
+            "$ref" : "#/components/schemas/RestPosteDuCout",
+            "description" : "Poste du pointage, absent sans poste."
+          },
+          "tauxHoraire" : {
+            "description" : "Taux horaire de l'operateur fige a la saisie, absent s'il n'est pas valorise.",
+            "example" : 35.0,
+            "type" : "number"
+          }
+        },
+        "required" : [ "anomalies", "categorie", "contradictoires", "cout", "debut", "duree", "operateur", "parts" ],
+        "type" : "object"
+      },
+      "RestPointageEnConflitDuCout" : {
+        "description" : "Un fait actif contradictoire de la sequence qui laisse le pointage a resoudre.",
+        "properties" : {
+          "id" : {
+            "description" : "Identite du fait.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "survenue" : {
+            "description" : "Quand il est survenu.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "type" : {
+            "description" : "Ce que le fait disait.",
+            "enum" : [ "DEBUT", "NON_CONFORMITE", "FIN" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "survenue", "type" ],
+        "type" : "object"
+      },
       "RestPosteDAtelier" : {
         "description" : "Un poste de travail du referentiel, resolu a la lecture.\n\nToujours facultatif : une entreprise sans parc machine laisse le champ vide et retrouve une activite unique par\noperateur.\n",
         "properties" : {
@@ -1526,6 +1741,23 @@
           }
         },
         "required" : [ "id", "libelle", "nature" ],
+        "type" : "object"
+      },
+      "RestPosteDuCout" : {
+        "description" : "Le poste d'un pointage, nomme a la lecture ; libelle absent s'il est inconnu.",
+        "properties" : {
+          "id" : {
+            "description" : "Identifiant du poste de travail.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "libelle" : {
+            "description" : "Libelle du poste.",
+            "example" : "DMG DMU 50",
+            "type" : "string"
+          }
+        },
+        "required" : [ "id" ],
         "type" : "object"
       },
       "RestPosteDuPupitre" : {

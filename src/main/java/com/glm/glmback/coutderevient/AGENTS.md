@@ -64,6 +64,9 @@ correction rétablissent les valeurs lorsque l'interprétation d'atelier les ré
 ## Contrat et vérification
 
 `GET /api/couts-de-revient/{elementId}` est réservé au `GESTIONNAIRE` : il expose les tarifs humains.
+Chaque ligne rend ses pointages : parts par fenêtre de partage, activités parallèles et bloquantes, anomalies,
+faits contradictoires. Les noms (opérateurs, postes, éléments) sont relus aux tables voisines par leurs noms
+logiques de colonnes, jamais copiés ; un nom absent laisse l'identifiant seul.
 Conserver l'isolation des entreprises, les natures et la ligne sans nature en dernier.
 Le service public et les scénarios REST Cucumber vérifient le calcul ; les scénarios écrivent par l'API
 atelier puis lisent le coût des activités. Respecter les noms logiques des colonnes d'atelier,

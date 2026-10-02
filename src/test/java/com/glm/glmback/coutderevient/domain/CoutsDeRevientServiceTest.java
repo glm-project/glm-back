@@ -202,8 +202,44 @@ class CoutsDeRevientServiceTest {
       .travaux(atelier)
       .occupations((operateurs, periode) -> java.util.List.of())
       .conflits(atelier)
+      .operateursNommes(atelier)
+      .postesNommes(atelier)
       .clock(() -> LE_11_MAI_A_17H);
     assertThat(service.rapport(ELEMENT_ID_OF).cout().mainDOeuvre().valeur()).contains(new Montant(new BigDecimal("40.00")));
+  }
+
+  /**
+   * Le rapport nomme ce que ses activites citent, y compris l'autre element ou l'operateur menait le tour de front :
+   * c'est la que le detail trouvera « aussi sur Haas VF-2, OF-2026-000002 ».
+   */
+  @Test
+  void shouldNameTheOperateursPostesAndElementsItCites() {
+    AtelierEnMemoire atelier = new AtelierEnMemoire()
+      .connait(ELEMENT_VALORISE_OF)
+      .connait(ELEMENT_VALORISE_OF_2026_000002)
+      .nomme(OPERATEUR_NOMME_JEAN_DUPONT)
+      .nomme(POSTE_NOMME_DMG_DMU_50)
+      .nomme(POSTE_NOMME_HAAS_VF_2)
+      .aTravaille(ELEMENT_ID_OF, activiteInterpreteeDeFraisage(new Plage(LE_11_MAI_A_8H, Optional.of(LE_11_MAI_A_10H))))
+      .aMeneDeFront(activiteInterpreteeDeTournageDeLOf2(new Plage(LE_11_MAI_A_9H, Optional.of(LE_11_MAI_A_10H))));
+
+    AnnuaireDuCout annuaire = service(atelier, LE_11_MAI_A_17H).rapport(ELEMENT_ID_OF).annuaire();
+
+    assertThat(annuaire.operateurs()).containsExactly(OPERATEUR_NOMME_JEAN_DUPONT);
+    assertThat(annuaire.postes()).containsExactlyInAnyOrder(POSTE_NOMME_DMG_DMU_50, POSTE_NOMME_HAAS_VF_2);
+    assertThat(annuaire.elements()).containsExactlyInAnyOrder(ELEMENT_VALORISE_OF, ELEMENT_VALORISE_OF_2026_000002);
+  }
+
+  @Test
+  void shouldNameTheActivitesOfAnElementWithoutFinishedWork() {
+    AtelierEnMemoire atelier = new AtelierEnMemoire()
+      .connait(ELEMENT_VALORISE_OF)
+      .nomme(OPERATEUR_NOMME_JEAN_DUPONT)
+      .aTravaille(ELEMENT_ID_OF, activiteInterpreteeDeFraisage(new Plage(LE_11_MAI_A_8H, Optional.empty())));
+
+    assertThat(service(atelier, LE_11_MAI_A_9H).rapport(ELEMENT_ID_OF).annuaire().operateurs()).containsExactly(
+      OPERATEUR_NOMME_JEAN_DUPONT
+    );
   }
 
   @Test
@@ -215,6 +251,8 @@ class CoutsDeRevientServiceTest {
       .travaux(atelier)
       .occupations(atelier)
       .conflits(atelier)
+      .operateursNommes(atelier)
+      .postesNommes(atelier)
       .clock(() -> {
         lectures.incrementAndGet();
         return LE_11_MAI_A_17H;
@@ -229,6 +267,8 @@ class CoutsDeRevientServiceTest {
       .travaux(atelier)
       .occupations(atelier)
       .conflits(atelier)
+      .operateursNommes(atelier)
+      .postesNommes(atelier)
       .clock(() -> evaluation);
   }
 }

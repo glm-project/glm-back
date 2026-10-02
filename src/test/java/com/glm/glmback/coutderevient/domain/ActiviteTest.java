@@ -16,6 +16,7 @@ class ActiviteTest {
     assertThatThrownBy(() ->
       new Activite(
         null,
+        ELEMENT_ID_OF,
         Optional.of(POSTE_ID_FRAISEUSE),
         Optional.of(NATURE_FRAISAGE),
         Optional.of(COUT_HORAIRE_DE_45_EUROS),
@@ -28,10 +29,28 @@ class ActiviteTest {
   }
 
   @Test
+  void shouldNotBuildWithoutElement() {
+    assertThatThrownBy(() ->
+      new Activite(
+        OPERATEUR_ID_DUPONT,
+        null,
+        Optional.of(POSTE_ID_FRAISEUSE),
+        Optional.of(NATURE_FRAISAGE),
+        Optional.of(COUT_HORAIRE_DE_45_EUROS),
+        Optional.of(TAUX_HORAIRE_DE_20_EUROS),
+        CategorieDActivite.TRAVAIL
+      )
+    )
+      .isExactlyInstanceOf(MissingMandatoryValueException.class)
+      .hasMessageContaining("element");
+  }
+
+  @Test
   void shouldNotBuildWithoutPoste() {
     assertThatThrownBy(() ->
       new Activite(
         OPERATEUR_ID_DUPONT,
+        ELEMENT_ID_OF,
         null,
         Optional.of(NATURE_FRAISAGE),
         Optional.of(COUT_HORAIRE_DE_45_EUROS),
@@ -48,6 +67,7 @@ class ActiviteTest {
     assertThatThrownBy(() ->
       new Activite(
         OPERATEUR_ID_DUPONT,
+        ELEMENT_ID_OF,
         Optional.of(POSTE_ID_FRAISEUSE),
         null,
         Optional.of(COUT_HORAIRE_DE_45_EUROS),
@@ -64,6 +84,7 @@ class ActiviteTest {
     assertThatThrownBy(() ->
       new Activite(
         OPERATEUR_ID_DUPONT,
+        ELEMENT_ID_OF,
         Optional.of(POSTE_ID_FRAISEUSE),
         Optional.of(NATURE_FRAISAGE),
         null,
@@ -80,6 +101,7 @@ class ActiviteTest {
     assertThatThrownBy(() ->
       new Activite(
         OPERATEUR_ID_DUPONT,
+        ELEMENT_ID_OF,
         Optional.of(POSTE_ID_FRAISEUSE),
         Optional.of(NATURE_FRAISAGE),
         Optional.of(COUT_HORAIRE_DE_45_EUROS),
@@ -96,6 +118,7 @@ class ActiviteTest {
     assertThatThrownBy(() ->
       new Activite(
         OPERATEUR_ID_DUPONT,
+        ELEMENT_ID_OF,
         Optional.of(POSTE_ID_FRAISEUSE),
         Optional.of(NATURE_FRAISAGE),
         Optional.of(COUT_HORAIRE_DE_45_EUROS),
@@ -111,6 +134,7 @@ class ActiviteTest {
   void shouldBuildFromBuilder() {
     Activite activite = Activite.builder()
       .operateur(OPERATEUR_ID_DUPONT)
+      .element(ELEMENT_ID_OF)
       .poste(Optional.of(POSTE_ID_FRAISEUSE))
       .nature(Optional.of(NATURE_FRAISAGE))
       .coutHoraire(Optional.of(COUT_HORAIRE_DE_45_EUROS))
@@ -118,5 +142,6 @@ class ActiviteTest {
       .categorie(CategorieDActivite.TRAVAIL);
 
     assertThat(activite.operateur()).isEqualTo(OPERATEUR_ID_DUPONT);
+    assertThat(activite.element()).isEqualTo(ELEMENT_ID_OF);
   }
 }

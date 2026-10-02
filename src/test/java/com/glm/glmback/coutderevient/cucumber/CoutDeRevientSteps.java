@@ -348,6 +348,126 @@ public class CoutDeRevientSteps {
       .withValue(fin);
   }
 
+  @SuppressWarnings("unchecked")
+  @Then("la ligne {string} detaille les pointages")
+  public void laLigneDetailleLesPointages(String nature, List<Map<String, String>> attendus) {
+    List<Map<String, String>> lus = pointagesDeLaLigne(nature)
+      .stream()
+      .map(pointage -> {
+        Map<String, String> resume = new java.util.LinkedHashMap<>();
+        resume.put("operateur", String.valueOf(((Map<String, Object>) pointage.get("operateur")).get("nom")));
+        resume.put("poste", poste(pointage.get("poste")));
+        resume.put("debut", String.valueOf(pointage.get("debut")));
+        resume.put("fin", texte(pointage.get("fin")));
+        resume.put("anomalies", String.join(",", (List<String>) pointage.get("anomalies")));
+        resume.put("machine", montantOuIncomplet(((Map<String, Object>) pointage.get("cout")).get("machine")));
+        resume.put("mainDOeuvre", montantOuIncomplet(((Map<String, Object>) pointage.get("cout")).get("mainDOeuvre")));
+        return resume;
+      })
+      .toList();
+
+    assertThat(lus).isEqualTo(sansCellulesVides(attendus));
+  }
+
+  @SuppressWarnings("unchecked")
+  @Then("le pointage de la ligne {string} commence a {string} se partage en")
+  public void lePointageSePartageEn(String nature, String debut, List<Map<String, String>> attendues) {
+    List<Map<String, String>> lues = ((List<Map<String, Object>>) pointage(nature, debut).get("parts")).stream()
+      .map(part -> {
+        Map<String, String> resume = new java.util.LinkedHashMap<>();
+        resume.put("debut", String.valueOf(part.get("debut")));
+        resume.put("fin", String.valueOf(part.get("fin")));
+        resume.put("diviseur", texte(part.get("diviseur")));
+        resume.put("mainDOeuvre", montantOuIncomplet(part.get("mainDOeuvre")));
+        resume.put("paralleles", activitesCitees(part.get("paralleles")));
+        resume.put("bloquants", activitesCitees(part.get("bloquants")));
+        return resume;
+      })
+      .toList();
+
+    assertThat(lues).isEqualTo(sansCellulesVides(attendues));
+  }
+
+  @SuppressWarnings("unchecked")
+  @Then("le pointage de la ligne {string} commence a {string} est a resoudre, contredit par {string}")
+  public void lePointageEstAResoudre(String nature, String debut, String contradictoires) {
+    Map<String, Object> pointage = pointage(nature, debut);
+    Map<String, String> alias = new HashMap<>();
+    pointages.forEach((nom, id) -> alias.put(id, nom));
+
+    assertThat(pointage.get("anomalies")).isEqualTo(List.of("A_RESOUDRE"));
+    assertThat(pointage.get("fin")).isNull();
+    assertThat(
+      String.join(
+        ",",
+        ((List<Map<String, Object>>) pointage.get("contradictoires")).stream()
+          .map(fait -> alias.get(String.valueOf(fait.get("id"))) + ":" + fait.get("type"))
+          .toList()
+      )
+    ).isEqualTo(contradictoires);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static List<Map<String, Object>> pointagesDeLaLigne(String nature) {
+    List<Map<String, Object>> lues = (List<Map<String, Object>>) CucumberRestTestContext.getElement("$.lignes");
+    return lues
+      .stream()
+      .filter(ligne -> nature.equals(String.valueOf(ligne.get("nature"))))
+      .findFirst()
+      .map(ligne -> (List<Map<String, Object>>) ligne.get("pointages"))
+      .orElseThrow();
+  }
+
+  private static Map<String, Object> pointage(String nature, String debut) {
+    return pointagesDeLaLigne(nature)
+      .stream()
+      .filter(pointage -> debut.equals(String.valueOf(pointage.get("debut"))))
+      .findFirst()
+      .orElseThrow();
+  }
+
+  /**
+   * Les activites citees se lisent « poste@element », dans l'ordre alphabetique : deux activites commencees au meme
+   * instant n'ont pas d'ordre que le scenario puisse attendre. Le poste se reconnait a son libelle, cree avec un suffixe.
+   */
+  @SuppressWarnings("unchecked")
+  private String activitesCitees(Object citees) {
+    Map<String, String> alias = new HashMap<>();
+    elements.forEach((nom, id) -> alias.put(id, nom));
+    return ((List<Map<String, Object>>) citees).stream()
+      .map(citee -> poste(citee.get("poste")) + "@" + alias.get(String.valueOf(((Map<String, Object>) citee.get("element")).get("id"))))
+      .sorted()
+      .collect(java.util.stream.Collectors.joining(","));
+  }
+
+  @SuppressWarnings("unchecked")
+  private static String poste(Object poste) {
+    if (poste == null) {
+      return "sans poste";
+    }
+    return String.valueOf(((Map<String, Object>) poste).get("libelle")).replaceAll(" \\d+$", "");
+  }
+
+  @SuppressWarnings("unchecked")
+  private static String montantOuIncomplet(Object total) {
+    return Boolean.TRUE.equals(((Map<String, Object>) total).get("complete")) ? montant(total) : "incomplet";
+  }
+
+  private static String texte(Object valeur) {
+    return valeur == null ? "" : String.valueOf(valeur);
+  }
+
+  private static List<Map<String, String>> sansCellulesVides(List<Map<String, String>> attendues) {
+    return attendues
+      .stream()
+      .map(ligne -> {
+        Map<String, String> complete = new java.util.LinkedHashMap<>();
+        ligne.forEach((colonne, valeur) -> complete.put(colonne, valeur == null ? "" : valeur));
+        return complete;
+      })
+      .toList();
+  }
+
   /**
    * Chaque ligne reduite a ce qui se verifie a la main : la nature, les deux temps, et les deux couts.
    */
