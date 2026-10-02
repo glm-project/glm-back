@@ -140,6 +140,46 @@
         "required" : [ "activite", "categorie", "debut", "element" ],
         "type" : "object"
       },
+      "RestActiviteDeSupervision" : {
+        "properties" : {
+          "categorie" : {
+            "enum" : [ "TRAVAIL", "NON_CONFORMITE" ],
+            "type" : "string"
+          },
+          "debut" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "echeance" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "element" : {
+            "$ref" : "#/components/schemas/RestElementDeSupervision"
+          },
+          "etat" : {
+            "enum" : [ "EN_COURS", "TERMINEE_AUTOMATIQUEMENT" ],
+            "type" : "string"
+          },
+          "finRetenue" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "operateurId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "poste" : {
+            "$ref" : "#/components/schemas/RestPosteDeSupervision"
+          }
+        },
+        "required" : [ "categorie", "debut", "echeance", "element", "etat", "id", "operateurId" ],
+        "type" : "object"
+      },
       "RestActiviteDuPupitre" : {
         "description" : "Une activite ouverte sur cet element : qui travaille, sur quel poste, dans quel etat, depuis quand.\n\nUne transition ouvre une activite distincte de l autre categorie. Les activites a resoudre et celles dont\nl echeance est atteinte ne sont pas actionnables et ne figurent pas ici.\n",
         "properties" : {
@@ -587,6 +627,38 @@
         "required" : [ "libelle", "nature" ],
         "type" : "object"
       },
+      "RestDescriptionDActiviteDeSupervision" : {
+        "properties" : {
+          "categorie" : {
+            "enum" : [ "TRAVAIL", "NON_CONFORMITE" ],
+            "type" : "string"
+          },
+          "debut" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "echeance" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "element" : {
+            "$ref" : "#/components/schemas/RestElementDeSupervision"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "operateurId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "poste" : {
+            "$ref" : "#/components/schemas/RestPosteDeSupervision"
+          }
+        },
+        "required" : [ "categorie", "debut", "echeance", "element", "id", "operateurId" ],
+        "type" : "object"
+      },
       "RestDureeDeSynthese" : {
         "description" : "Total complet chiffre, ou incomplet sans valeur, jamais une somme partielle ni zero par defaut.",
         "properties" : {
@@ -715,6 +787,26 @@
           }
         },
         "required" : [ "duree", "dureeNonConformite", "id", "nom", "postes", "type" ],
+        "type" : "object"
+      },
+      "RestElementDeSupervision" : {
+        "properties" : {
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "nom" : {
+            "type" : "string"
+          },
+          "reference" : {
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "nom", "type" ],
         "type" : "object"
       },
       "RestEngagement" : {
@@ -1165,6 +1257,28 @@
         "required" : [ "id", "nom", "prenom" ],
         "type" : "object"
       },
+      "RestOperateurDeSupervision" : {
+        "properties" : {
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "metiers" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "nom" : {
+            "type" : "string"
+          },
+          "prenom" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "metiers", "nom", "prenom" ],
+        "type" : "object"
+      },
       "RestOperateurDeSyntheseDesHeures" : {
         "description" : "L'operateur dont la synthese des heures est lue, resolu au referentiel a la lecture.\n\nNom et prenom sont relus a chaque appel : une fiche corrigee s'affiche corrigee sur tout l'historique.\n",
         "properties" : {
@@ -1371,6 +1485,22 @@
         "required" : [ "id", "libelle" ],
         "type" : "object"
       },
+      "RestPosteDeSupervision" : {
+        "properties" : {
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "libelle" : {
+            "type" : "string"
+          },
+          "nature" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "libelle" ],
+        "type" : "object"
+      },
       "RestPosteDeTravail" : {
         "description" : "Un poste de travail du referentiel de l'entreprise.",
         "properties" : {
@@ -1529,6 +1659,29 @@
           }
         },
         "required" : [ "activites", "pointages" ],
+        "type" : "object"
+      },
+      "RestSequenceEnConflitDeSupervision" : {
+        "properties" : {
+          "activites" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RestDescriptionDActiviteDeSupervision"
+            },
+            "type" : "array"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "operateurId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "poste" : {
+            "$ref" : "#/components/schemas/RestPosteDeSupervision"
+          }
+        },
+        "required" : [ "activites", "id", "operateurId" ],
         "type" : "object"
       },
       "RestSuiviDAtelier" : {
@@ -1705,6 +1858,34 @@
           }
         },
         "required" : [ "activites", "conflits", "etat", "id", "nom", "type" ],
+        "type" : "object"
+      },
+      "RestSupervisionDAtelier" : {
+        "properties" : {
+          "activites" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RestActiviteDeSupervision"
+            },
+            "type" : "array"
+          },
+          "evaluation" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "operateurs" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RestOperateurDeSupervision"
+            },
+            "type" : "array"
+          },
+          "sequencesEnConflit" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RestSequenceEnConflitDeSupervision"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "activites", "evaluation", "operateurs", "sequencesEnConflit" ],
         "type" : "object"
       },
       "RestSyntheseDesHeures" : {
@@ -2321,6 +2502,25 @@
         },
         "summary" : "Lire le temps effectivement passe sur un element",
         "tags" : [ "Atelier - elements engages" ]
+      }
+    },
+    "/api/atelier/supervision" : {
+      "get" : {
+        "operationId" : "read",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestSupervisionDAtelier"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Lire la supervision complete de l'entreprise connectee",
+        "tags" : [ "Atelier - supervision" ]
       }
     },
     "/api/couts-de-revient/{elementId}" : {

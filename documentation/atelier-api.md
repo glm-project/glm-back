@@ -301,6 +301,51 @@ Attention : une non conformité **ne fait pas** passer à `INTERROMPU`. L'activi
 aussi —, seule sa `categorie` change. Pour signaler visuellement une non conformité, lire
 `activitesEnCours[].categorie`, pas `etat`.
 
+### La supervision de l'atelier, en une lecture complète (rôles `USER` et `GESTIONNAIRE`)
+
+```http
+GET /api/atelier/supervision
+```
+
+La réponse rend `evaluation`, `operateurs`, `activites` et `sequencesEnConflit`, sans pagination. `evaluation` est
+l'instant relevé une seule fois sur l'horloge du serveur ; il gouverne toutes les expirations de cette lecture.
+Chaque acquisition relit les référentiels et les projections, sans cache ni données de démonstration.
+
+`operateurs` contient le référentiel complet, même les personnes sans activité ou sans métier : `id`, `nom`,
+`prenom` et `metiers`. Les métiers sont les natures distinctes des postes actuellement habilités. Aucun taux
+horaire ni coût n'est rendu. Les activités et les séquences gardent leur `operateurId`, même lorsque sa fiche ne
+figure pas dans cette collection : le consommateur peut alors constater que la lecture est inexploitable.
+
+`activites` contient les activités interprétables encore sans fin réelle. Chacune porte son `id`, identité stable
+de l'ouvrant d'origine, `operateurId`, `categorie`, `debut`, `echeance`, `element` et le `poste` facultatif. L'élément
+porte son identité, son type `ORDRE_DE_FABRICATION` ou `PRODUIT`, son nom copié à l'engagement et sa référence
+courante facultative. Le poste porte son identité, son libellé courant et la nature facultative copiée sur
+l'activité ; requalifier le poste ne réécrit pas cette nature historique.
+
+Avant l'échéance, l'état est `EN_COURS`, sans `finRetenue`. Dès l'échéance, borne incluse, il est
+`TERMINEE_AUTOMATIQUEMENT` et `finRetenue` porte cette échéance. Cette anomalie reste rendue après une relance ou
+la clôture du suivi : une ouverture de 8 h oubliée garde sa fin automatique de 21 h, même si un autre travail
+commence le lendemain. Une fin recevable ou régularisée retire l'anomalie ; une correction de l'ouverture peut
+repousser l'échéance et rendre la même activité en cours. Les activités terminées réellement sortent de cette
+collection.
+
+`sequencesEnConflit` se lit séparément. Chaque séquence porte un `id` déterministe issu du premier pointage de sa
+projection, `operateurId`, le `poste` facultatif et les descriptions complètes de ses `activites` à résoudre,
+dans leur ordre projeté. Ces descriptions portent les mêmes identité, élément, poste, catégorie, début et échéance
+que les activités interprétables, sans état ni fin retenue. Une séquence sans activité reste rendue avec une liste
+vide ; elle peut coexister avec une activité indépendante du même opérateur. L'échéance et la clôture ne résolvent
+aucun conflit. La correction ou l'annulation retire la séquence dès que la projection redevient cohérente.
+
+La lecture consomme `activite_d_atelier` et `sequence_en_conflit`, sans rejouer les journaux. Elle utilise une
+transaction unique en `READ COMMITTED` : l'évaluation est commune, mais les requêtes peuvent observer une écriture
+concurrente entre les collections. Elle ne promet donc pas un instantané de la base. La lecture répétable exige
+un autre patron d'acquisition de connexion, comme expliqué dans le
+[contexte pupitre](../src/main/java/com/glm/glmback/pupitre/AGENTS.md).
+
+La supervision ne rend que des activités rattachées à un élément de fabrication. Le travail personnel ou non
+facturable sera déclaré par le superviseur sous la forme d'un OF de type Perso ; sa création et ce sous-type
+appartiennent à un chantier distinct. Aucun travail sans élément n'est créé par cette lecture.
+
 ### Le référentiel du pupitre, en un seul appel (rôle `USER`)
 
 ```

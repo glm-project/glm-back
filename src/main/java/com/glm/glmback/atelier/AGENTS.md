@@ -129,11 +129,16 @@ interprétés de ses activités ; seuls les faits d'activité, la clôture et l'
 ## Ports sortants
 
 `SuiviDAtelierRepository`, `ElementsEngageables`, `OperateursConnus`, `PostesConnus`, `Habilitations`,
-`IdentitesDEvenements`, `Clock`.
+`IdentitesDEvenements`, `LecturesDeSupervision`, `Clock`.
 
 `OperateursConnus.get` résout la fiche pour copier le taux horaire au fait ; `parIds` résout les libellés d'une page.
 Le registre `IdentitesDEvenements` réserve durablement les UUID par entreprise, pupitre et hors pupitre compris.
 L'association au suivi et la cible d'activité sont distinctes ; date absente et date fournie le restent.
+
+La supervision utilise `LecturesDeSupervision` pour lire les projections à l'évaluation reçue du service applicatif.
+Avant de modifier cette lecture, consulter son
+[contrat dans atelier-api.md](../../../../../../../documentation/atelier-api.md#la-supervision-de-latelier-en-une-lecture-complète-rôles-user-et-gestionnaire) :
+les anomalies après relance ou clôture et les conflits sans activité restent des données à rendre.
 
 ## État d'avancement
 

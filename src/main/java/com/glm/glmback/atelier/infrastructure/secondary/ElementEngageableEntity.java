@@ -35,6 +35,8 @@ class ElementEngageableEntity {
 
   private String nom;
 
+  private String reference;
+
   protected ElementEngageableEntity() {
     // Constructeur requis par JPA.
   }
