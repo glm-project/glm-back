@@ -3,17 +3,21 @@ package com.glm.glmback.atelier.infrastructure.primary;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
 import com.glm.glmback.atelier.domain.EtatDAdresseDossier;
 import com.glm.glmback.atelier.domain.LectureDossierConflit;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.List;
 
+@Schema(
+  description = "Un dossier ancre dans le journal immutable, avec revision et interpretation a un meme instant. Les activites concernees restent presentes dans le resultat d un acte meme quand l ancre est annulee."
+)
 record RestDossierConflit(
-  EtatDAdresseDossier kind,
-  RestAdresseDossierConflit adresse,
-  long revision,
-  Instant evaluation,
-  RestSuiviDAtelier suivi,
-  List<RestDiagnosticDeConflit> diagnostics,
-  List<RestActiviteDuDossier> activites
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) EtatDAdresseDossier kind,
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestAdresseDossierConflit adresse,
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) long revision,
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) Instant evaluation,
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestSuiviDAtelier suivi,
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<RestDiagnosticDeConflit> diagnostics,
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<RestActiviteDuDossier> activites
 ) {
   static RestDossierConflit from(LectureDossierConflit dossier, AnnuaireDAtelier annuaire) {
     return new RestDossierConflit(

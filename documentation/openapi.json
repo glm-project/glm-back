@@ -200,6 +200,53 @@
         "required" : [ "categorie", "debut", "echeance", "element", "etat", "id", "operateurId" ],
         "type" : "object"
       },
+      "RestActiviteDuDossier" : {
+        "properties" : {
+          "activite" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "categorie" : {
+            "enum" : [ "TRAVAIL", "NON_CONFORMITE" ],
+            "type" : "string"
+          },
+          "debut" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "duree" : {
+            "type" : "string"
+          },
+          "etat" : {
+            "enum" : [ "A_RESOUDRE", "EN_COURS", "TERMINEE", "ECHUE" ],
+            "type" : "string"
+          },
+          "evenement" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "fin" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "operateur" : {
+            "$ref" : "#/components/schemas/RestOperateurDAtelier"
+          },
+          "operateurId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "poste" : {
+            "$ref" : "#/components/schemas/RestPosteDAtelier"
+          },
+          "posteId" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "required" : [ "activite", "categorie", "debut", "etat", "evenement", "operateurId" ],
+        "type" : "object"
+      },
       "RestActiviteDuPupitre" : {
         "description" : "Une activite ouverte sur cet element : qui travaille, sur quel poste, dans quel etat, depuis quand.\n\nUne transition ouvre une activite distincte de l autre categorie. Les activites a resoudre et celles dont\nl echeance est atteinte ne sont pas actionnables et ne figurent pas ici.\n",
         "properties" : {
@@ -315,6 +362,7 @@
             "type" : "string"
           }
         },
+        "required" : [ "pointage", "suivi" ],
         "type" : "object"
       },
       "RestAnnulation" : {
@@ -350,6 +398,24 @@
           }
         },
         "required" : [ "motif" ],
+        "type" : "object"
+      },
+      "RestCibleDuConflit" : {
+        "properties" : {
+          "activite" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "ouvrant" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "termineePar" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "required" : [ "activite" ],
         "type" : "object"
       },
       "RestCloture" : {
@@ -733,6 +799,60 @@
           }
         },
         "required" : [ "categorie", "debut", "echeance", "element", "id", "operateurId" ],
+        "type" : "object"
+      },
+      "RestDiagnosticDeConflit" : {
+        "properties" : {
+          "cible" : {
+            "$ref" : "#/components/schemas/RestCibleDuConflit"
+          },
+          "pointage" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "raison" : {
+            "enum" : [ "CIBLE_REMPLACEE", "CIBLE_DEJA_TERMINEE" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "cible", "pointage", "raison" ],
+        "type" : "object"
+      },
+      "RestDossierConflit" : {
+        "description" : "Un dossier ancre dans le journal immutable, avec revision et interpretation a un meme instant. Les activites concernees restent presentes dans le resultat d un acte meme quand l ancre est annulee.",
+        "properties" : {
+          "activites" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RestActiviteDuDossier"
+            },
+            "type" : "array"
+          },
+          "adresse" : {
+            "$ref" : "#/components/schemas/RestAdresseDossierConflit"
+          },
+          "diagnostics" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RestDiagnosticDeConflit"
+            },
+            "type" : "array"
+          },
+          "evaluation" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "kind" : {
+            "enum" : [ "EN_CONFLIT", "INTROUVABLE", "ANCRE_ANNULEE", "HORS_CONFLIT" ],
+            "type" : "string"
+          },
+          "revision" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "suivi" : {
+            "$ref" : "#/components/schemas/RestSuiviDAtelier"
+          }
+        },
+        "required" : [ "activites", "adresse", "diagnostics", "evaluation", "kind", "revision", "suivi" ],
         "type" : "object"
       },
       "RestDureeDeSynthese" : {
@@ -2583,6 +2703,53 @@
           }
         },
         "summary" : "Cloturer un element, ou deplacer sa cloture",
+        "tags" : [ "Atelier - elements engages" ]
+      }
+    },
+    "/api/atelier/suivis/{id}/conflits/{pointage}" : {
+      "get" : {
+        "description" : "Le journal, la revision et les consequences interpretees du suivi a un instant d'evaluation. L'adresse ne redirige jamais vers une autre sequence : une ancre absente, annulee ou active hors conflit garde son etat et l'historique accessible.",
+        "operationId" : "dossier",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "pointage",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestDossierConflit"
+                }
+              }
+            },
+            "description" : "Le dossier et l'etat de son adresse, pour USER ou GESTIONNAIRE."
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestDossierConflit"
+                }
+              }
+            },
+            "description" : "Suivi introuvable dans l'entreprise courante."
+          }
+        },
+        "summary" : "Consulter un dossier de conflit par un pointage",
         "tags" : [ "Atelier - elements engages" ]
       }
     },

@@ -1,21 +1,22 @@
 package com.glm.glmback.atelier.infrastructure.primary;
 
 import com.glm.glmback.atelier.domain.*;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
 record RestActiviteDuDossier(
-  UUID evenement,
-  UUID activite,
-  UUID operateurId,
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) UUID evenement,
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) UUID activite,
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) UUID operateurId,
   RestOperateur operateur,
   UUID posteId,
   RestPosteDeTravail poste,
-  CategorieDActivite categorie,
-  Instant debut,
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) CategorieDActivite categorie,
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) Instant debut,
   Instant fin,
-  String etat,
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED, allowableValues = { "A_RESOUDRE", "EN_COURS", "TERMINEE", "ECHUE" }) String etat,
   String duree
 ) {
   static RestActiviteDuDossier from(IntervalleDActivite intervalle, AnnuaireDAtelier annuaire) {

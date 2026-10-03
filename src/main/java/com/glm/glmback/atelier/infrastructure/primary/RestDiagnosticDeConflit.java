@@ -3,9 +3,14 @@ package com.glm.glmback.atelier.infrastructure.primary;
 import com.glm.glmback.atelier.domain.DiagnosticDeConflit;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.RaisonDuConflit;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.UUID;
 
-record RestDiagnosticDeConflit(UUID pointage, RestCibleDuConflit cible, RaisonDuConflit raison) {
+record RestDiagnosticDeConflit(
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) UUID pointage,
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestCibleDuConflit cible,
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RaisonDuConflit raison
+) {
   static RestDiagnosticDeConflit from(DiagnosticDeConflit diagnostic) {
     var cible = diagnostic.cible();
     return new RestDiagnosticDeConflit(
@@ -19,5 +24,5 @@ record RestDiagnosticDeConflit(UUID pointage, RestCibleDuConflit cible, RaisonDu
     );
   }
 
-  record RestCibleDuConflit(UUID activite, UUID ouvrant, UUID termineePar) {}
+  record RestCibleDuConflit(@Schema(requiredMode = Schema.RequiredMode.REQUIRED) UUID activite, UUID ouvrant, UUID termineePar) {}
 }
