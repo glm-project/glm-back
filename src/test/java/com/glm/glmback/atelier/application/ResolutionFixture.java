@@ -18,6 +18,15 @@ public final class ResolutionFixture {
     TENANT_IMPECCMOLD,
     GESTIONNAIRE_LEROY_RENOMME
   );
+  public static final ContexteDeResolution CONTEXTE_MARTIN_IMPECCMOLD = new ContexteDeResolution(
+    TENANT_IMPECCMOLD,
+    new IdentiteDuGestionnaire(AUTEUR_LEROY, "user-martin-uuid", EMETTEUR_GLM)
+  );
+  public static final ContexteDeResolution CONTEXTE_LEROY_AUTRE_EMETTEUR = new ContexteDeResolution(
+    TENANT_IMPECCMOLD,
+    new IdentiteDuGestionnaire(AUTEUR_LEROY, SUJET_LEROY, "https://identity.other.example/realms/glm")
+  );
+  public static final ContexteDeResolution CONTEXTE_LEROY_KATILYS = new ContexteDeResolution("katilys", GESTIONNAIRE_LEROY);
 
   private ResolutionFixture() {}
 }

@@ -41,6 +41,7 @@ public class CucumberSecurityConfiguration {
 
     Jwt.Builder jwt = Jwt.withTokenValue(token)
       .header("alg", "none")
+      .issuer("https://identity.glm.example/realms/glm")
       .claim("sub", username)
       .claim("preferred_username", username)
       .claim("groups", roles)
