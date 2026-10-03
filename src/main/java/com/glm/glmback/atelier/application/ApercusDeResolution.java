@@ -4,7 +4,11 @@ import com.glm.glmback.atelier.domain.*;
 import com.glm.glmback.shared.time.domain.Clock;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.security.access.annotation.Secured;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+@Service
 public class ApercusDeResolution {
 
   private final SuiviDAtelierRepository suivis;
@@ -32,6 +36,8 @@ public class ApercusDeResolution {
       preparation -> references -> clock -> validite -> new ApercusDeResolution(suivis, preparation, references, clock, validite);
   }
 
+  @Secured("ROLE_GESTIONNAIRE")
+  @Transactional(readOnly = true)
   public ApercuDeResolution apercu(
     UUID commande,
     AdresseDossierConflit adresse,

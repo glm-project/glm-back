@@ -97,6 +97,78 @@
         "required" : [ "content", "currentPage", "pageSize", "totalElementsCount" ],
         "type" : "object"
       },
+      "RestActeAnnulation" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/RestActeDeResolution"
+        }, {
+          "properties" : {
+            "motif" : {
+              "maxLength" : 255,
+              "minLength" : 0,
+              "type" : "string"
+            },
+            "pointage" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          },
+          "type" : "object"
+        } ],
+        "required" : [ "motif", "pointage" ]
+      },
+      "RestActeCorrection" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/RestActeDeResolution"
+        }, {
+          "properties" : {
+            "fait" : {
+              "$ref" : "#/components/schemas/RestFaitDeResolution"
+            },
+            "motif" : {
+              "maxLength" : 255,
+              "minLength" : 0,
+              "type" : "string"
+            },
+            "pointage" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          },
+          "type" : "object"
+        } ],
+        "required" : [ "fait", "motif", "pointage" ]
+      },
+      "RestActeDeResolution" : {
+        "discriminator" : {
+          "propertyName" : "kind"
+        },
+        "oneOf" : [ {
+          "$ref" : "#/components/schemas/RestActeAnnulation"
+        }, {
+          "$ref" : "#/components/schemas/RestActeCorrection"
+        }, {
+          "$ref" : "#/components/schemas/RestActeRegularisation"
+        } ],
+        "properties" : {
+          "kind" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "kind" ]
+      },
+      "RestActeRegularisation" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/RestActeDeResolution"
+        }, {
+          "properties" : {
+            "fait" : {
+              "$ref" : "#/components/schemas/RestFaitDeResolution"
+            }
+          },
+          "type" : "object"
+        } ],
+        "required" : [ "fait" ]
+      },
       "RestActiviteCiteeDuCout" : {
         "description" : "Une autre activite du meme operateur, menee de front ou responsable d'un partage inconnu, tous elements confondus.",
         "properties" : {
@@ -399,6 +471,44 @@
           }
         },
         "required" : [ "motif" ],
+        "type" : "object"
+      },
+      "RestApercuDeResolution" : {
+        "description" : "L'acte exact et ses consequences autoritaires, sans ecriture. La reference opaque est liee a la commande, l'adresse, la revision et l'identite authentifiee.",
+        "properties" : {
+          "acte" : {
+            "$ref" : "#/components/schemas/RestActeDeResolution"
+          },
+          "adresse" : {
+            "$ref" : "#/components/schemas/RestAdresseDossierConflit"
+          },
+          "apres" : {
+            "$ref" : "#/components/schemas/RestDossierConflit"
+          },
+          "avant" : {
+            "$ref" : "#/components/schemas/RestDossierConflit"
+          },
+          "commande" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "evaluation" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "expireLe" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "reference" : {
+            "type" : "string"
+          },
+          "revision" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "acte", "adresse", "apres", "avant", "commande", "evaluation", "expireLe", "reference", "revision" ],
         "type" : "object"
       },
       "RestCibleDuConflit" : {
@@ -770,6 +880,23 @@
         "required" : [ "libelle", "nature" ],
         "type" : "object"
       },
+      "RestDemandeDApercu" : {
+        "properties" : {
+          "acte" : {
+            "$ref" : "#/components/schemas/RestActeDeResolution"
+          },
+          "commande" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "revision" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "acte", "commande", "revision" ],
+        "type" : "object"
+      },
       "RestDescriptionDActiviteDeSupervision" : {
         "properties" : {
           "categorie" : {
@@ -1137,6 +1264,37 @@
           }
         },
         "required" : [ "auteur", "dateDEnregistrement", "dateDeSurvenue", "estUneRegularisation", "id", "intention", "operateurId", "type" ],
+        "type" : "object"
+      },
+      "RestFaitDeResolution" : {
+        "properties" : {
+          "activiteVisee" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "instant" : {
+            "description" : "Instant saisi, conserve avec son decalage et ses decimales.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "intention" : {
+            "enum" : [ "OUVERTURE", "TRANSITION", "FIN" ],
+            "type" : "string"
+          },
+          "operateur" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "poste" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "DEBUT", "NON_CONFORMITE", "FIN" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "instant", "intention", "operateur", "type" ],
         "type" : "object"
       },
       "RestFeuilleDeTemps" : {
@@ -2802,6 +2960,73 @@
         },
         "summary" : "Consulter un dossier de conflit par un pointage",
         "tags" : [ "Atelier - elements engages" ]
+      }
+    },
+    "/api/atelier/suivis/{id}/conflits/{pointage}/apercus" : {
+      "post" : {
+        "description" : "Reserve au gestionnaire. Prepare le meme acte que sa confirmation, sans ecrire ni reserver son identifiant. Une revision perimee est refusee ; la reference authentifiee expire selon la politique serveur.",
+        "operationId" : "apercu",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "pointage",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RestDemandeDApercu"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestApercuDeResolution"
+                }
+              }
+            },
+            "description" : "L'acte exact, avant/apres, l'adresse et la reference opaque de sa commande."
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestApercuDeResolution"
+                }
+              }
+            },
+            "description" : "Acte invalide."
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestApercuDeResolution"
+                }
+              }
+            },
+            "description" : "Apercu obsolete ou acte refuse."
+          }
+        },
+        "summary" : "Previsualiser un acte de resolution",
+        "tags" : [ "apercu-de-resolution-resource" ]
       }
     },
     "/api/atelier/suivis/{id}/evenements/{evenementId}" : {
