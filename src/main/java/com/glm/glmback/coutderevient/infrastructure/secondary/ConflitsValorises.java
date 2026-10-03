@@ -14,10 +14,16 @@ class ConflitsValorises implements ConflitsDuCout {
 
   private final SpringDataConflitsDuCoutRepository conflits;
   private final SpringDataActivitesValoriseesRepository activites;
+  private final SpringDataEvenementsValorisesRepository evenements;
 
-  ConflitsValorises(SpringDataConflitsDuCoutRepository conflits, SpringDataActivitesValoriseesRepository activites) {
+  ConflitsValorises(
+    SpringDataConflitsDuCoutRepository conflits,
+    SpringDataActivitesValoriseesRepository activites,
+    SpringDataEvenementsValorisesRepository evenements
+  ) {
     this.conflits = conflits;
     this.activites = activites;
+    this.evenements = evenements;
   }
 
   @Override
@@ -44,9 +50,19 @@ class ConflitsValorises implements ConflitsDuCout {
           Collectors.mapping(ActiviteValoriseeEntity::identite, Collectors.toList())
         )
       );
+    Map<UUID, PointageEnConflit> faits = evenements
+      .findAllById(
+        lues
+          .stream()
+          .flatMap(sequence -> sequence.pointages().stream())
+          .distinct()
+          .toList()
+      )
+      .stream()
+      .collect(Collectors.toMap(EvenementDAtelierValoriseEntity::id, EvenementDAtelierValoriseEntity::enConflit));
     return lues
       .stream()
-      .map(sequence -> sequence.toDomain(parSequence.getOrDefault(sequence.id(), List.of())))
+      .map(sequence -> sequence.toDomain(parSequence.getOrDefault(sequence.id(), List.of()), faits))
       .toList();
   }
 }

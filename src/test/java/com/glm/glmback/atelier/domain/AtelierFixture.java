@@ -186,6 +186,25 @@ public final class AtelierFixture {
     );
   }
 
+  public static EvenementDAtelier debutSansNatureSurFraiseuse1ParDupontA(Instant date) {
+    EvenementDAtelierId id = EvenementDAtelierId.newId();
+    return EvenementDAtelier.builder()
+      .id(id)
+      .type(TypeDEvenementDAtelier.DEBUT)
+      .intention(IntentionDePointage.OUVERTURE)
+      .activite(Optional.of(ActiviteId.ouvertePar(id)))
+      .activiteVisee(Optional.empty())
+      .operateur(OPERATEUR_ID_DUPONT)
+      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
+      .nature(Optional.empty())
+      .coutHoraire(Optional.empty())
+      .tauxHoraire(Optional.empty())
+      .auteur(AUTEUR_DUPONT)
+      .origine(OrigineDuPointage.POINTAGE)
+      .remplace(Optional.empty())
+      .horodatage(Horodatage.saisiA(date));
+  }
+
   public static EvenementDAtelier debutSurFraiseuse1ParMartinA(Instant date) {
     return pointageDAtelier(
       TypeDEvenementDAtelier.DEBUT,

@@ -1,69 +1,59 @@
 package com.glm.glmback.coutderevient.domain;
 
 import com.glm.glmback.shared.error.domain.Assert;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 /**
- * Une tranche d'activite et le diviseur qui s'y applique : tout ce qu'il faut pour la chiffrer.
+ * Une tranche d'activite reduite a une fenetre de partage : tout ce qu'il faut pour chiffrer sa main d'oeuvre.
  *
  * <p>
- * Le diviseur ne concerne que la main d'oeuvre. Le cout de la machine court en entier sur la meme tranche, et c'est
- * pourquoi les deux restent separes jusqu'au bout.
- * </p>
- *
- * <p>
- * Les deux montants sortent d'ici a l'echelle de travail, pas encore arrondis : le rapport n'arrondit qu'une fois la
- * ligne entiere sommee, pour que son total soit exactement la somme de ce qu'il affiche.
+ * Le diviseur ne concerne que la main d'oeuvre. La machine, jamais partagee, se chiffre sur la tranche entiere
+ * ({@link TrancheDActivite#coutMachine()}) : elle n'a rien a faire d'un decoupage qui ne la concerne pas.
  * </p>
  */
-public record TrancheValorisable(TrancheDActivite tranche, Optional<Diviseur> diviseur, Set<ActiviteInterpretee> responsables) {
-  private static final BigDecimal MILLISECONDES_PAR_HEURE = new BigDecimal(3_600_000);
-  private static final int ECHELLE_DE_TRAVAIL = 6;
-
+public record TrancheValorisable(TrancheDActivite tranche, FenetreDePartage fenetre) {
   public TrancheValorisable {
     Assert.notNull("tranche", tranche);
-    Assert.notNull("diviseur", diviseur);
-    Assert.field("responsables", responsables).notNull().noNullElement();
+    Assert.notNull("fenetre", fenetre);
   }
 
   public Activite activite() {
     return tranche.activite();
   }
 
-  public Duration duree() {
-    return tranche.duree();
+  public Optional<Diviseur> diviseur() {
+    return fenetre.diviseur();
+  }
+
+  public Set<ActiviteInterpretee> responsables() {
+    return fenetre.responsables();
   }
 
   /**
-   * Ce que la machine a coute pendant cette tranche, jamais divise : le client enonce la regle deux fois, chaque
-   * machine active court en entier. Rien quand le poste n'est pas valorise, ou qu'il n'y a pas de poste.
+   * Ce que l'operateur menait d'autre pendant cette part, tous elements confondus : de quoi justifier son diviseur.
    */
-  public BigDecimal coutMachine() {
-    return activite()
-      .coutHoraire()
-      .map(cout -> cout.value().multiply(heures()))
-      .orElse(BigDecimal.ZERO);
+  public List<Activite> paralleles() {
+    return fenetre
+      .occupation()
+      .stream()
+      .filter(autre -> autre.periode().intersection(tranche.periode()).isPresent())
+      .filter(autre -> !autre.reduiteA(fenetre.periode()).equals(Optional.of(tranche)))
+      .map(TrancheDActivite::activite)
+      .distinct()
+      .toList();
   }
 
   /**
-   * Ce que la personne a coute pendant cette tranche, divise par le nombre de postes qu'elle occupait alors : elle ne
-   * peut pas etre payee deux fois la meme heure. Rien quand l'operateur n'est pas valorise.
+   * Ce que la personne a coute pendant cette part, deja arrondi au centime par la repartition de sa fenetre : elle
+   * ne peut pas etre payee deux fois la meme heure. Zero quand l'operateur n'est pas valorise, quel que soit le
+   * diviseur ; rien quand le diviseur n'est pas connu.
    */
-  public Optional<BigDecimal> coutDeMainDOeuvre() {
-    Optional<TauxHoraire> taux = activite().tauxHoraire();
-    if (taux.isEmpty()) {
-      return Optional.of(BigDecimal.ZERO);
+  public Optional<Montant> coutDeMainDOeuvre() {
+    if (activite().tauxHoraire().isEmpty()) {
+      return Optional.of(Montant.ZERO);
     }
-    return diviseur.map(partage ->
-      taux.orElseThrow().value().multiply(heures()).divide(new BigDecimal(partage.value()), ECHELLE_DE_TRAVAIL, RoundingMode.HALF_UP)
-    );
-  }
-
-  private BigDecimal heures() {
-    return new BigDecimal(duree().toMillis()).divide(MILLISECONDES_PAR_HEURE, ECHELLE_DE_TRAVAIL, RoundingMode.HALF_UP);
+    return fenetre.repartition().de(tranche);
   }
 }

@@ -21,7 +21,7 @@ record RestConflitDuCout(
       sequence.operateur().uuid(),
       sequence.poste().map(PosteDeTravailId::uuid).orElse(null),
       sequence.activites().stream().map(ActiviteId::uuid).toList(),
-      sequence.pointages()
+      sequence.pointages().stream().map(PointageEnConflit::evenement).toList()
     );
   }
 }

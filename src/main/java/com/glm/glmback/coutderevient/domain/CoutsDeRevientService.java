@@ -15,6 +15,8 @@ public final class CoutsDeRevientService {
   private final TravailDeLElement travaux;
   private final OccupationDesOperateurs occupations;
   private final ConflitsDuCout conflits;
+  private final OperateursNommes operateursNommes;
+  private final PostesNommes postesNommes;
   private final Clock clock;
 
   private CoutsDeRevientService(
@@ -22,18 +24,27 @@ public final class CoutsDeRevientService {
     TravailDeLElement travaux,
     OccupationDesOperateurs occupations,
     ConflitsDuCout conflits,
+    OperateursNommes operateursNommes,
+    PostesNommes postesNommes,
     Clock clock
   ) {
     this.elements = elements;
     this.travaux = travaux;
     this.occupations = occupations;
     this.conflits = conflits;
+    this.operateursNommes = operateursNommes;
+    this.postesNommes = postesNommes;
     this.clock = clock;
   }
 
   public static ElementsBuilder builder() {
     return elements ->
-      travaux -> occupations -> conflits -> clock -> new CoutsDeRevientService(elements, travaux, occupations, conflits, clock);
+      travaux ->
+        occupations ->
+          conflits ->
+            operateursNommes ->
+              postesNommes ->
+                clock -> new CoutsDeRevientService(elements, travaux, occupations, conflits, operateursNommes, postesNommes, clock);
   }
 
   public CoutDeRevient rapport(ElementId id) {
@@ -59,7 +70,8 @@ public final class CoutsDeRevientService {
         .aResoudre(aResoudre)
         .charges(ChargesDesOperateurs.de(List.of()))
         .lecture(lecture)
-        .conflits(propres);
+        .conflits(propres)
+        .annuaire(annuaire(activites));
     }
     Set<OperateurId> operateurs = tranches.stream().map(TrancheDActivite::operateur).collect(Collectors.toSet());
     List<ActiviteInterpretee> occupation = occupations.activites(operateurs, couverture(tranches));
@@ -84,7 +96,26 @@ public final class CoutsDeRevientService {
       .aResoudre(aResoudre)
       .charges(charges)
       .lecture(lecture)
-      .conflits(dependances);
+      .conflits(dependances)
+      .annuaire(annuaire(Stream.concat(activites.stream(), occupation.stream()).toList()));
+  }
+
+  /**
+   * Les noms de tout ce que les activites lues citent, celles de l'element comme celles menees de front ailleurs :
+   * c'est la que le detail trouve l'autre element d'un temps partage.
+   */
+  private AnnuaireDuCout annuaire(List<ActiviteInterpretee> lues) {
+    List<Activite> activites = lues.stream().map(ActiviteInterpretee::activite).toList();
+    return new AnnuaireDuCout(
+      operateursNommes.operateurs(activites.stream().map(Activite::operateur).collect(Collectors.toSet())),
+      postesNommes.postes(
+        activites
+          .stream()
+          .flatMap(activite -> activite.poste().stream())
+          .collect(Collectors.toSet())
+      ),
+      elements.tous(activites.stream().map(Activite::element).collect(Collectors.toSet()))
+    );
   }
 
   private static List<TrancheDActivite> terminees(List<ActiviteInterpretee> activites, Instant evaluation) {
@@ -121,7 +152,15 @@ public final class CoutsDeRevientService {
   }
 
   public interface ConflitsBuilder {
-    ClockBuilder conflits(ConflitsDuCout conflits);
+    OperateursNommesBuilder conflits(ConflitsDuCout conflits);
+  }
+
+  public interface OperateursNommesBuilder {
+    PostesNommesBuilder operateursNommes(OperateursNommes operateursNommes);
+  }
+
+  public interface PostesNommesBuilder {
+    ClockBuilder postesNommes(PostesNommes postesNommes);
   }
 
   public interface ClockBuilder {

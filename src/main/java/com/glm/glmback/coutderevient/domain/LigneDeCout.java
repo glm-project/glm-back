@@ -1,7 +1,6 @@
 package com.glm.glmback.coutderevient.domain;
 
 import com.glm.glmback.shared.error.domain.Assert;
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
@@ -12,9 +11,9 @@ import java.util.Optional;
  * Une ligne du rapport : tout ce qui a ete fait sur l'element a une meme nature d'operation.
  *
  * <p>
- * C'est l'unite d'arrondi. Les tranches se somment a l'echelle de travail, la ligne arrondit une fois, et le rapport
- * totalise des lignes deja arrondies : sans quoi l'ecran afficherait un total qui ne serait pas la somme de ce qu'il
- * montre.
+ * La ligne n'arrondit plus rien : elle additionne des montants deja au centime, la machine de chaque activite et la
+ * main d'oeuvre de chaque part repartie dans sa fenetre de partage. Le rapport totalise des lignes, et chaque total
+ * est ainsi exactement la somme de ce que l'ecran montre.
  * </p>
  */
 public record LigneDeCout(
@@ -23,6 +22,7 @@ public record LigneDeCout(
   TempsPasse temps,
   List<Periode> nonConformites,
   List<Periode> finsAutomatiques,
+  List<PointageDeCout> pointages,
   Cout cout
 ) {
   private static final Comparator<Periode> PAR_DEBUT = Comparator.comparing(Periode::debut).thenComparing(Periode::fin);
@@ -33,11 +33,13 @@ public record LigneDeCout(
     Assert.notNull("temps", temps);
     Assert.field("non conformites", nonConformites).notNull().noNullElement();
     Assert.field("fins automatiques", finsAutomatiques).notNull().noNullElement();
+    Assert.field("pointages", pointages).notNull().noNullElement();
     Assert.notNull("cout", cout);
+    pointages = List.copyOf(pointages);
   }
 
   private LigneDeCout(Builder builder) {
-    this(builder.nature, builder.periode, builder.temps, builder.nonConformites, builder.finsAutomatiques, builder.cout);
+    this(builder.nature, builder.periode, builder.temps, builder.nonConformites, builder.finsAutomatiques, builder.pointages, builder.cout);
   }
 
   static LigneDeCoutNatureBuilder builder() {
@@ -51,6 +53,7 @@ public record LigneDeCout(
       LigneDeCoutTempsBuilder,
       LigneDeCoutNonConformitesBuilder,
       LigneDeCoutFinsAutomatiquesBuilder,
+      LigneDeCoutPointagesBuilder,
       LigneDeCoutCoutBuilder
   {
 
@@ -59,6 +62,7 @@ public record LigneDeCout(
     private TempsPasse temps;
     private List<Periode> nonConformites;
     private List<Periode> finsAutomatiques;
+    private List<PointageDeCout> pointages;
     private Cout cout;
 
     @Override
@@ -86,8 +90,14 @@ public record LigneDeCout(
     }
 
     @Override
-    public LigneDeCoutCoutBuilder finsAutomatiques(List<Periode> finsAutomatiques) {
+    public LigneDeCoutPointagesBuilder finsAutomatiques(List<Periode> finsAutomatiques) {
       this.finsAutomatiques = finsAutomatiques;
+      return this;
+    }
+
+    @Override
+    public LigneDeCoutCoutBuilder pointages(List<PointageDeCout> pointages) {
+      this.pointages = pointages;
       return this;
     }
 
@@ -99,14 +109,18 @@ public record LigneDeCout(
   }
 
   /**
-   * La ligne deduite des tranches d'une meme nature, chacune decoupee sur les sous-periodes ou le diviseur de son
-   * operateur est constant.
+   * La ligne deduite des tranches d'une meme nature, chacune decoupee sur les fenetres de partage de son
+   * operateur.
    */
-  static LigneDeCout de(TravailDeLaLigne travail, ChargesDesOperateurs charges) {
+  static LigneDeCout de(TravailDeLaLigne travail, ChargesDesOperateurs charges, List<SequenceEnConflit> conflits) {
     List<TrancheDActivite> tranches = travail.terminees();
-    List<TrancheValorisable> parts = tranches
+    List<PointageValorise> valorises = tranches
       .stream()
-      .flatMap(tranche -> charges.decoupe(tranche).stream())
+      .map(tranche -> new PointageValorise(tranche, charges.decoupe(tranche)))
+      .toList();
+    List<TrancheValorisable> parts = valorises
+      .stream()
+      .flatMap(pointage -> pointage.parts().stream())
       .toList();
     return builder()
       .nature(travail.nature())
@@ -116,7 +130,34 @@ public record LigneDeCout(
       .finsAutomatiques(
         tranches.stream().filter(TrancheDActivite::finAutomatique).map(TrancheDActivite::periode).sorted(PAR_DEBUT).toList()
       )
-      .cout(travail.aResoudre().isEmpty() ? cout(parts) : new Cout(MontantTotal.incomplet(), MontantTotal.incomplet()));
+      .pointages(pointages(valorises, travail.aResoudre(), conflits))
+      .cout(travail.aResoudre().isEmpty() ? cout(tranches, parts) : new Cout(MontantTotal.incomplet(), MontantTotal.incomplet()));
+  }
+
+  /**
+   * Les pointages de la ligne dans l'ordre ou ils ont commence, ceux a resoudre compris : le detail les montre tous,
+   * sans quoi la somme qu'il justifie aurait des trous. L'ordre de lecture departage deux debuts identiques.
+   */
+  private static List<PointageDeCout> pointages(
+    List<PointageValorise> valorises,
+    List<ActiviteInterpretee> aResoudre,
+    List<SequenceEnConflit> conflits
+  ) {
+    return java.util.stream.Stream.<PointageDeCout>concat(
+      valorises.stream(),
+      aResoudre.stream().map(activite -> new PointageAResoudre(activite, contradictoires(activite, conflits)))
+    )
+      .sorted(Comparator.comparing(PointageDeCout::debut))
+      .toList();
+  }
+
+  private static List<PointageEnConflit> contradictoires(ActiviteInterpretee activite, List<SequenceEnConflit> conflits) {
+    return conflits
+      .stream()
+      .filter(sequence -> sequence.activites().contains(activite.id()))
+      .flatMap(sequence -> sequence.pointages().stream())
+      .distinct()
+      .toList();
   }
 
   private static Plage periode(TravailDeLaLigne travail) {
@@ -174,24 +215,22 @@ public record LigneDeCout(
       .toList();
   }
 
-  private static Cout cout(List<TrancheValorisable> parts) {
+  /**
+   * La machine se somme tranche par tranche, chacune deja arrondie : elle n'est jamais partagee, donc jamais
+   * decoupee pour etre chiffree.
+   */
+  private static Cout cout(List<TrancheDActivite> tranches, List<TrancheValorisable> parts) {
     return new Cout(
-      MontantTotal.de(new Montant(somme(parts, TrancheValorisable::coutMachine))),
+      MontantTotal.de(tranches.stream().map(TrancheDActivite::coutMachine).reduce(Montant.ZERO, Montant::plus)),
       parts.stream().allMatch(part -> part.coutDeMainDOeuvre().isPresent())
         ? MontantTotal.de(
-            new Montant(
-              parts
-                .stream()
-                .map(part -> part.coutDeMainDOeuvre().orElseThrow())
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
-            )
+            parts
+              .stream()
+              .map(part -> part.coutDeMainDOeuvre().orElseThrow())
+              .reduce(Montant.ZERO, Montant::plus)
           )
         : MontantTotal.incomplet()
     );
-  }
-
-  private static BigDecimal somme(List<TrancheValorisable> parts, java.util.function.Function<TrancheValorisable, BigDecimal> montant) {
-    return parts.stream().map(montant).reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 
   interface LigneDeCoutNatureBuilder {
@@ -211,7 +250,11 @@ public record LigneDeCout(
   }
 
   interface LigneDeCoutFinsAutomatiquesBuilder {
-    LigneDeCoutCoutBuilder finsAutomatiques(List<Periode> finsAutomatiques);
+    LigneDeCoutPointagesBuilder finsAutomatiques(List<Periode> finsAutomatiques);
+  }
+
+  interface LigneDeCoutPointagesBuilder {
+    LigneDeCoutCoutBuilder pointages(List<PointageDeCout> pointages);
   }
 
   interface LigneDeCoutCoutBuilder {

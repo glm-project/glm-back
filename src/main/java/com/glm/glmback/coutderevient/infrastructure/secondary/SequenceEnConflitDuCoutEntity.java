@@ -3,6 +3,7 @@ package com.glm.glmback.coutderevient.infrastructure.secondary;
 import com.glm.glmback.coutderevient.domain.*;
 import jakarta.persistence.*;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.hibernate.annotations.Immutable;
@@ -40,12 +41,21 @@ class SequenceEnConflitDuCoutEntity {
     return id;
   }
 
-  SequenceEnConflit toDomain(List<ActiviteId> activites) {
+  List<UUID> pointages() {
+    return pointages;
+  }
+
+  SequenceEnConflit toDomain(List<ActiviteId> activites, Map<UUID, PointageEnConflit> faits) {
     return SequenceEnConflit.builder()
       .element(suivi.element())
       .operateur(new OperateurId(operateurId))
       .poste(Optional.ofNullable(posteId).map(PosteDeTravailId::new))
       .activites(activites)
-      .pointages(pointages);
+      .pointages(
+        pointages
+          .stream()
+          .flatMap(pointage -> Optional.ofNullable(faits.get(pointage)).stream())
+          .toList()
+      );
   }
 }

@@ -149,6 +149,9 @@ grant sur le client depuis la console d'administration.
   cette seule annotation, tout appel a `/api/**` repond 403.
 - `TenantSecurityContexts.authenticateOn(...)` fait la meme chose au milieu d'un test, pour comparer
   deux entreprises dans le meme scenario.
+- Avec MockMvc, une requete vers une autre entreprise porte son propre JWT via `jwt().jwt(...)`.
+  `TenantSecurityContexts.authenticateOn(...)` change le contexte du thread pour la preparation en base,
+  mais ne remplace pas le contexte de test que `@WithTenant` reapplique a la requete HTTP.
 - Un test d'integration ne peut pas etre `@Transactional` : le listener transactionnel s'execute avant
   celui qui installe le contexte de securite, la session s'ouvrirait donc sans tenant. Passer par le
   `TransactionTemplate` **dans** le corps du test.

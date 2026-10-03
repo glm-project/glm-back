@@ -13,7 +13,8 @@ import java.util.List;
   regularisee apres coup compte a l'heure ou le travail a eu lieu.
 
   Chaque total complet est chiffre ; un total incomplet ne porte aucune somme partielle.
-  Les montants sont arrondis une fois par ligne, puis sommes au rapport.
+  La main d'oeuvre est arrondie par fenetre de partage puis repartie au centime, la machine une fois par activite ;
+  lignes et rapport additionnent ces montants.
   """
 )
 record RestCoutDeRevient(
@@ -35,7 +36,11 @@ record RestCoutDeRevient(
       rapport.lecture().evaluation(),
       rapport.lecture().activitesEnCours(),
       RestElement.from(rapport.element()),
-      rapport.lignes().stream().map(RestLigneDeCout::from).toList(),
+      rapport
+        .lignes()
+        .stream()
+        .map(ligne -> RestLigneDeCout.from(ligne, rapport.annuaire()))
+        .toList(),
       rapport.conflits().stream().map(RestConflitDuCout::from).toList(),
       RestTempsPasse.from(rapport.temps()),
       RestCout.from(rapport.cout())

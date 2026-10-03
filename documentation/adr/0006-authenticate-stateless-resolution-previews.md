@@ -1,4 +1,4 @@
-# 0004 — Authenticate stateless resolution previews
+# 0006 — Authenticate stateless resolution previews
 
 ## Status
 

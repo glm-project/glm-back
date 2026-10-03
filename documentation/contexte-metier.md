@@ -45,7 +45,8 @@ la reprise, en travail ou en non conformité. Le serveur reçoit les faits d'act
 
 **GLM n'est pas un concept du modèle.** C'est le nom que le client de référence donne à son travail non facturable,
 sur un projet interne par exemple, qu'il veut déclarer manuellement (« De toute façon il y aura ce bouton GLM »).
-Ce travail fera l'objet d'une spécification séparée.
+Ce travail sera déclaré par le superviseur sous la forme d'un OF de type Perso. La création et ce sous-type feront
+l'objet d'un chantier séparé ; la supervision actuelle ne crée aucune activité sans élément.
 
 ### Le temps effectif, celui des seules activités
 
@@ -181,6 +182,19 @@ et cible.
 
 L'API est décrite par OpenAPI (`/swagger-ui.html`) et par [atelier-api.md](atelier-api.md), qui porte ce que la spec ne peut pas dire.
 
+### La supervision de l'atelier
+
+`GET /api/atelier/supervision` rend une lecture complète de l'entreprise : tous les opérateurs et leurs métiers
+courants, les activités interprétables en cours ou terminées automatiquement, et les séquences en conflit avec
+les descriptions de leurs activités à résoudre, y compris les séquences vides. Une fin automatique reste à traiter
+après une relance ou la clôture ; elle disparaît quand une fin recevable retire son anomalie. Les activités terminées
+réellement ne sont plus supervisées.
+
+La route lit les projections d'atelier, sans repli des journaux, à un seul instant d'évaluation fourni par l'horloge
+applicative. Le classement visuel et les compteurs appartiennent au consommateur. Le
+[guide d'intégration](atelier-api.md#la-supervision-de-latelier-en-une-lecture-complète-rôles-user-et-gestionnaire)
+porte le contrat détaillé et les limites de cohérence face aux écritures concurrentes.
+
 ### Points ouverts
 
 1. **Régulariser après une dé-habilitation est refusé.** L'habilitation étant vérifiée sur les trois écritures du journal, un gestionnaire ne peut plus rattraper une saisie oubliée sur un poste dont l'opérateur a été retiré depuis. Le cas est assumé pour ce lot — il ferme la porte au contournement —, mais il empêcherait le rattrapage des activités concernées : à rouvrir si le client le rencontre.
@@ -194,7 +208,7 @@ L'API est décrite par OpenAPI (`/swagger-ui.html`) et par [atelier-api.md](atel
    les activités encore actionnables et efface durablement la mémoire de reprise. Le serveur reçoit les gestes
    d'activité correspondants ; les activités en conflit ou expirées sont exclues de ces commandes. Voir
    l'[ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md) pour la frontière serveur/pupitre.
-4. **La déclaration du travail non facturable.** Le client veut son bouton GLM, placé en bas de l'écran, pour déclarer à la main le travail qu'il ne facture pas. Rien ne le modélise encore : le mode de déclaration, le rattachement éventuel à un projet interne et la coexistence avec d'autres activités feront l'objet d'une spec à part.
+4. **La déclaration du travail non facturable.** Le client veut son bouton GLM, placé en bas de l'écran, pour déclarer à la main le travail qu'il ne facture pas. Il sera déclaré par le superviseur comme un OF de type Perso. Sa création, le sous-type et le rattachement éventuel à un projet interne feront l'objet d'un chantier distinct.
 5. **Le cycle de vie de l'élément lui-même.** La clôture existe côté atelier, sur le suivi. Reste à trancher si l'élément de fabrication porte en propre un statut, ou si son activité se lit entièrement par la présence ou l'absence d'un suivi non clôturé.
 6. **Aucune garde d'unicité en base** sur « un seul suivi non clôturé par élément », contrairement à ce que `elementdefabrication` fait pour la `Reference`. La règle vit dans le service, mais une contrainte partielle transformerait en 500 un état que le domaine admet aujourd'hui : rouvrir la clôture d'un suivi dont l'élément a été réengagé depuis. À trancher côté domaine avant de poser la contrainte.
 7. **L'écriture du journal rapproche par identifiant**, ce qui coûte une lecture indexée de la collection à chaque pointage. Si un journal devenait assez long pour que cette lecture pèse, la sortie est un upsert natif gardé (`on conflict (id) do update ... where ... is distinct from ...`), qui épargne à PostgreSQL toute version de tuple sur les lignes inchangées — au prix d'une scission permanente entre lecture JPA et écriture JDBC.
@@ -356,8 +370,12 @@ limite le partage aux chevauchements. La charge couvre l'union du travail valori
 
 Pour A de 08 à 10 h sur fraiseuse, B sur tour ouverte depuis 09 h et 20 €/h humain, A vaut 40 € et B reste
 exclue. Si B se termine à 11 h, le rapport recalculé porte 30 € humain sur chaque activité.
-La ligne arrondit une seule fois au centime après sommation des tranches ; le rapport somme les lignes
-**déjà arrondies**, pour que le total soit exactement la somme affichée.
+Le coût humain s'arrondit une fois par **fenêtre de partage**, période où l'opérateur occupe le même ensemble
+de postes, puis se répartit en centimes entiers entre les activités. Le centime restant va au plus fort reste,
+puis à l'activité commencée la première : 1 h à 35 €/h sur trois postes vaut 11,67 + 11,67 + 11,66 = 35,00 €,
+quels que soient les éléments. La machine s'arrondit une fois par activité. La ligne et le rapport ne font
+qu'additionner des montants **déjà arrondis**, pour que chaque total soit exactement la somme affichée
+([ADR 0004](adr/0004-split-the-operator-cost-to-the-cent.md)).
 
 ### Valeurs à résoudre
 

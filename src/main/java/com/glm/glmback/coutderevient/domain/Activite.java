@@ -9,11 +9,13 @@ import java.util.Optional;
  *
  * <p>
  * L'activite dit tout sauf quand : c'est ce qui permet de decouper une meme activite en autant de tranches que la
- * variations du parallelisme l'exigent, sans jamais recopier ses six composants.
+ * variations du parallelisme l'exigent, sans jamais recopier ses sept composants. L'element est ce sur quoi
+ * l'operateur travaillait : il dit, pour un partage, ou etait l'autre moitie de son temps.
  * </p>
  */
 public record Activite(
   OperateurId operateur,
+  ElementId element,
   Optional<PosteDeTravailId> poste,
   Optional<NatureDOperation> nature,
   Optional<CoutHoraire> coutHoraire,
@@ -22,6 +24,7 @@ public record Activite(
 ) {
   public Activite {
     Assert.notNull("operateur", operateur);
+    Assert.notNull("element", element);
     Assert.notNull("poste de travail", poste);
     Assert.notNull("nature de l'operation", nature);
     Assert.notNull("cout horaire", coutHoraire);
@@ -31,12 +34,18 @@ public record Activite(
 
   static ActiviteOperateurBuilder builder() {
     return operateur ->
-      poste ->
-        nature -> coutHoraire -> tauxHoraire -> categorie -> new Activite(operateur, poste, nature, coutHoraire, tauxHoraire, categorie);
+      element ->
+        poste ->
+          nature ->
+            coutHoraire -> tauxHoraire -> categorie -> new Activite(operateur, element, poste, nature, coutHoraire, tauxHoraire, categorie);
   }
 
   interface ActiviteOperateurBuilder {
-    ActivitePosteBuilder operateur(OperateurId operateur);
+    ActiviteElementBuilder operateur(OperateurId operateur);
+  }
+
+  interface ActiviteElementBuilder {
+    ActivitePosteBuilder element(ElementId element);
   }
 
   interface ActivitePosteBuilder {

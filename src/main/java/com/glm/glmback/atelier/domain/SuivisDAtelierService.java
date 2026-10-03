@@ -3,6 +3,7 @@ package com.glm.glmback.atelier.domain;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import com.glm.glmback.shared.time.domain.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
@@ -34,6 +35,8 @@ import java.util.Set;
  * </p>
  */
 public final class SuivisDAtelierService {
+
+  private static final Duration DERIVE_D_HORLOGE_TOLEREE = Duration.ofMinutes(2);
 
   private final SuiviDAtelierRepository repository;
   private final ElementsEngageables elements;
@@ -109,8 +112,7 @@ public final class SuivisDAtelierService {
     }
 
     Instant maintenant = clock.now();
-    refuseDateFuture(commande.dateDeSurvenue(), maintenant);
-    Horodatage horodatage = new Horodatage(commande.dateDeSurvenue().orElse(maintenant), maintenant);
+    Horodatage horodatage = new Horodatage(survenue(commande.dateDeSurvenue(), maintenant), maintenant);
     EvenementDAtelier evenement = evenement(
       commande.evenement(),
       commande.type(),
@@ -170,7 +172,7 @@ public final class SuivisDAtelierService {
 
   public SuiviDAtelier cloture(ClotureAEnregistrer commande) {
     Instant maintenant = clock.now();
-    Horodatage horodatage = new Horodatage(commande.dateDeSurvenue().orElse(maintenant), maintenant);
+    Horodatage horodatage = new Horodatage(survenue(commande.dateDeSurvenue(), maintenant), maintenant);
 
     return repository.update(get(commande.suivi()).cloture(new Cloture(commande.auteur(), horodatage)));
   }
@@ -208,6 +210,22 @@ public final class SuivisDAtelierService {
 
   private Annulation annulation(Auteur auteur, MotifDAnnulation motif) {
     return new Annulation(auteur, clock.now(), motif);
+  }
+
+  /**
+   * La date de survenue d'un geste horodate par le pupitre, lue sur l'horloge du serveur.
+   *
+   * <p>
+   * Le poste date le geste avec sa propre horloge, qui peut avancer un peu sur celle du serveur : une avance
+   * jusqu'a {@link #DERIVE_D_HORLOGE_TOLEREE} est ramenee a l'instant courant, au-dela la date est refusee.
+   * </p>
+   */
+  private static Instant survenue(Optional<Instant> dateDeSurvenue, Instant maintenant) {
+    if (dateDeSurvenue.filter(date -> date.isAfter(maintenant.plus(DERIVE_D_HORLOGE_TOLEREE))).isPresent()) {
+      throw new DateDeSurvenueFutureException(dateDeSurvenue.orElseThrow());
+    }
+
+    return dateDeSurvenue.filter(date -> date.isBefore(maintenant)).orElse(maintenant);
   }
 
   private static void refuseDateFuture(Optional<Instant> dateDeSurvenue, Instant maintenant) {

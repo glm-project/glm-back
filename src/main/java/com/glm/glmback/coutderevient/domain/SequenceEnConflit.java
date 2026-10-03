@@ -4,7 +4,6 @@ import com.glm.glmback.shared.error.domain.Assert;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 
 /** Les faits contradictoires projetes par atelier, sans interpretation du lecteur. */
 public record SequenceEnConflit(
@@ -12,7 +11,7 @@ public record SequenceEnConflit(
   OperateurId operateur,
   Optional<PosteDeTravailId> poste,
   List<ActiviteId> activites,
-  List<UUID> pointages
+  List<PointageEnConflit> pointages
 ) {
   public SequenceEnConflit {
     Assert.notNull("element", element);
@@ -50,6 +49,6 @@ public record SequenceEnConflit(
   }
 
   public interface PointagesBuilder {
-    SequenceEnConflit pointages(List<UUID> pointages);
+    SequenceEnConflit pointages(List<PointageEnConflit> pointages);
   }
 }
