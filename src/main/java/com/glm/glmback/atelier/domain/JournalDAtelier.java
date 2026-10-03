@@ -133,6 +133,12 @@ public record JournalDAtelier(List<EvenementDAtelier> evenements) {
       .toList();
   }
 
+  public List<DiagnosticDeConflit> diagnostics(Optional<Instant> cloture) {
+    return parCle()
+      .flatMap(faits -> SequenceDActivites.diagnostics(faits, cloture).stream())
+      .toList();
+  }
+
   /**
    * Les faits de chaque cle, annules compris : un geste qui vise une ouverture annulee se situe par elle.
    */

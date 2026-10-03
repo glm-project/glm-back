@@ -57,6 +57,8 @@ final class SequenceDActivites {
   private final Map<ActiviteId, Activite> activites = new LinkedHashMap<>();
   private final Set<ActiviteId> expirees = new HashSet<>();
   private final List<Contradiction> contradictions = new ArrayList<>();
+  private final List<DiagnosticDeConflit> diagnostics = new ArrayList<>();
+  private final Map<ActiviteId, EvenementDAtelierId> termineesPar = new HashMap<>();
   private Optional<ActiviteId> courante = Optional.empty();
   private Optional<Instant> cloture = Optional.empty();
 
@@ -96,6 +98,10 @@ final class SequenceDActivites {
     return interpretation(faits, cloture).sequencesEnConflit();
   }
 
+  static List<DiagnosticDeConflit> diagnostics(List<EvenementDAtelier> faits, Optional<Instant> cloture) {
+    return List.copyOf(interpretation(faits, cloture).diagnostics);
+  }
+
   private static SequenceDActivites interpretation(List<EvenementDAtelier> faits, Optional<Instant> cloture) {
     SequenceDActivites sequence = new SequenceDActivites(faits);
     sequence.actifs.forEach(sequence::interprete);
@@ -132,7 +138,10 @@ final class SequenceDActivites {
    * Une ouverture termine a son heure l'activite en cours sur la cle, s'il y en a une : c'est la relance.
    */
   private void ouvre(EvenementDAtelier ouvrant) {
-    courante.ifPresent(activite -> termine(activite, ouvrant.dateDeSurvenue()));
+    courante.ifPresent(activite -> {
+      termine(activite, ouvrant.dateDeSurvenue());
+      termineesPar.put(activite, ouvrant.id());
+    });
     Activite ouverte = Activite.ouvertePar(ouvrant);
     activites.put(ouverte.id(), ouverte);
     courante = Optional.of(ouverte.id());
@@ -206,6 +215,17 @@ final class SequenceDActivites {
   private Contradiction contradiction(EvenementDAtelier geste, ActiviteId visee) {
     Instant heure = geste.dateDeSurvenue();
     Instant debut = debuts.getOrDefault(visee, heure);
+    diagnostics.add(
+      new DiagnosticDeConflit(
+        geste.id(),
+        new CibleDuConflit(
+          visee,
+          Optional.ofNullable(activites.get(visee)).map(activite -> activite.ouvrant().id()),
+          Optional.ofNullable(termineesPar.get(visee))
+        ),
+        RaisonDuConflit.CIBLE_REMPLACEE
+      )
+    );
 
     return debut.isBefore(heure) ? new Contradiction(geste, visee, debut, heure) : new Contradiction(geste, visee, heure, debut);
   }
