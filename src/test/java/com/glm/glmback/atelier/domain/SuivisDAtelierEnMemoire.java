@@ -28,6 +28,9 @@ class SuivisDAtelierEnMemoire implements SuiviDAtelierRepository {
     if (!suivis.containsKey(suivi.id())) {
       throw new SuiviDAtelierIntrouvableException(suivi.id());
     }
+    if (!suivis.get(suivi.id()).revision().equals(suivi.revision())) {
+      throw new SaisieConcurrenteException(suivi.id());
+    }
     if (suivis.get(suivi.id()).equals(suivi)) {
       return suivi;
     }

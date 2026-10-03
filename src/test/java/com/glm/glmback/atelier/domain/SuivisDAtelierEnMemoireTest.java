@@ -69,6 +69,16 @@ class SuivisDAtelierEnMemoireTest {
   }
 
   @Test
+  void shouldRefuserLUpdateDUneRevisionPerimee() {
+    // GIVEN
+    SuiviDAtelier suivi = suivis.create(suiviDAtelierEngage());
+    var clos = suivis.update(suivi.cloture(clotureParLeroyA(LE_10_MAI_2026_A_17H)));
+    // WHEN THEN
+    assertThatThrownBy(() -> suivis.update(suivi)).isExactlyInstanceOf(SaisieConcurrenteException.class);
+    assertThat(suivis.get(suivi.id())).contains(clos);
+  }
+
+  @Test
   void shouldListerLesSuivisDeLaPeriodeDuPlusRecentAuPlusAncien() {
     SuiviDAtelier suivi = suivis.create(suiviDAtelierEngage());
 
