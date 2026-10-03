@@ -134,6 +134,37 @@ class ListeDesConflitsDAtelierIT {
       .containsExactly(cherche.id());
     assertThat(suivante.totalElementsCount()).isEqualTo(1);
     assertThat(suivante.content()).isEmpty();
+    var annuaire = new com.glm.glmback.atelier.domain.AnnuaireDAtelier(
+      java.util.Map.of(jean.id(), jean, paul.id(), paul),
+      java.util.Map.of()
+    );
+    var candidates = java.util.List.of(cherche, autreOperateur, autreElement)
+      .stream()
+      .map(com.glm.glmback.atelier.domain.ConflitsFixture::ligneDuPremierConflitDe)
+      .toList();
+    var ordreCanonique = java.util.Comparator.comparing((com.glm.glmback.atelier.domain.ConflitEnListe ligne) ->
+      ligne.repere().premierPointage()
+    )
+      .thenComparing(ligne -> ligne.adresse().suivi().uuid().toString())
+      .thenComparing(ligne -> ligne.adresse().pointage().uuid().toString());
+    for (var recherche : java.util.List.of(
+      criteria,
+      new ConflitsDAtelierCriteria("JEAN", "FILTRE_2043"),
+      new ConflitsDAtelierCriteria("", "FILTRE_2043_%"),
+      new ConflitsDAtelierCriteria(jean.id().uuid().toString().substring(0, 8), "FILTRE_2043"),
+      new ConflitsDAtelierCriteria("", cherche.element().id().uuid().toString()),
+      new ConflitsDAtelierCriteria("ABSENT", "FILTRE_2043"),
+      new ConflitsDAtelierCriteria("", "FILTRE_2043_ABSENT")
+    )) {
+      var attendues = candidates
+        .stream()
+        .filter(ligne -> recherche.matches(ligne, annuaire))
+        .sorted(ordreCanonique)
+        .toList();
+      var acquises = transactions.execute(transaction -> conflits.list(recherche, new Pageable(0, 20)));
+      assertThat(acquises.totalElementsCount()).isEqualTo(attendues.size());
+      assertThat(acquises.content()).containsExactlyElementsOf(attendues);
+    }
   }
 
   @Test
@@ -185,6 +216,62 @@ class ListeDesConflitsDAtelierIT {
     assertThat(page.content())
       .extracting(ligne -> ligne.adresse().suivi())
       .containsExactly(suivi.id());
+  }
+
+  @Test
+  @WithTenant("impeccmold")
+  void shouldTrierParNanosecondePuisUuidCanoniquesDesDeuxMoities() {
+    Instant debut = Instant.parse("2043-01-12T08:00:00.123456789Z");
+    var ids = java.util.List.of(
+      java.util.UUID.fromString("00000000-0000-0000-0000-000000000010"),
+      java.util.UUID.fromString("00000000-0000-0000-8000-000000000010"),
+      java.util.UUID.fromString("80000000-0000-0000-0000-000000000010")
+    );
+    var ancres = java.util.List.of(
+      java.util.UUID.fromString("00000000-0000-0000-0000-000000000020"),
+      java.util.UUID.fromString("00000000-0000-0000-8000-000000000020"),
+      java.util.UUID.fromString("80000000-0000-0000-0000-000000000020"),
+      java.util.UUID.fromString("00000000-0000-0000-0000-000000000030"),
+      java.util.UUID.fromString("00000000-0000-0000-0000-000000000040"),
+      java.util.UUID.fromString("00000000-0000-0000-0000-000000000050")
+    );
+    var faits = ancres
+      .stream()
+      .map(id ->
+        debutIdentifieSurUnPosteDeMemeUuid(new com.glm.glmback.atelier.domain.EvenementDAtelierId(id)).horodatage(
+          com.glm.glmback.atelier.domain.Horodatage.saisiA(id.equals(ancres.get(5)) ? debut : debut.plusNanos(1))
+        )
+      )
+      .toList();
+    transactions.executeWithoutResult(transaction -> {
+      for (int index = 0; index < ids.size(); index++) {
+        var suivi = suiviDu12Janvier2043Identifie(new com.glm.glmback.atelier.domain.SuiviDAtelierId(ids.get(index)));
+        var ouvertures = index == 0 ? faits.subList(0, 3) : index == 1 ? faits.subList(3, 4) : faits.subList(4, 6);
+        for (var ouvrant : ouvertures) {
+          suivi = suivi
+            .enregistre(ouvrant)
+            .enregistre(finDe(ouvrant).a(debut.plusSeconds(3600)))
+            .enregistre(finDe(ouvrant).a(debut.plusSeconds(7200)));
+        }
+        suivis.create(suivi);
+      }
+    });
+
+    var premiere = transactions.execute(transaction ->
+      conflits.list(new ConflitsDAtelierCriteria("", "ORDRE_2043_01_12"), new Pageable(0, 3))
+    );
+    var seconde = transactions.execute(transaction ->
+      conflits.list(new ConflitsDAtelierCriteria("", "ORDRE_2043_01_12"), new Pageable(1, 3))
+    );
+
+    assertThat(premiere.totalElementsCount()).isEqualTo(6);
+    assertThat(premiere.content())
+      .extracting(ligne -> ligne.adresse().pointage().uuid())
+      .containsExactly(ancres.get(5), ancres.get(0), ancres.get(1));
+    assertThat(seconde.totalElementsCount()).isEqualTo(6);
+    assertThat(seconde.content())
+      .extracting(ligne -> ligne.adresse().pointage().uuid())
+      .containsExactly(ancres.get(2), ancres.get(3), ancres.get(4));
   }
 
   private void insere(OperateurConnu operateur) {

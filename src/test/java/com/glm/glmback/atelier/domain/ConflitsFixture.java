@@ -117,4 +117,29 @@ public final class ConflitsFixture {
       .cle(sequence.cle())
       .repere(new RepereDeSequence(premier.dateDeSurvenue(), sequence.pointages().size()));
   }
+
+  public static SuiviDAtelier suiviDu12Janvier2043Identifie(SuiviDAtelierId id) {
+    return SuiviDAtelier.builder()
+      .id(id)
+      .element(new ElementEngage(new ElementEngageId(UUID.randomUUID()), new NomDElement("ORDRE_2043_01_12"), TypeDElementEngage.PRODUIT))
+      .engagement(new Engagement(AUTEUR_LEROY, Instant.parse("2043-01-12T07:00:00Z")))
+      .journal(JournalDAtelier.vide());
+  }
+
+  public static EvenementDAtelier.EvenementDAtelierHorodatageBuilder debutIdentifieSurUnPosteDeMemeUuid(EvenementDAtelierId id) {
+    return EvenementDAtelier.builder()
+      .id(id)
+      .type(TypeDEvenementDAtelier.DEBUT)
+      .intention(IntentionDePointage.OUVERTURE)
+      .activite(Optional.of(ActiviteId.ouvertePar(id)))
+      .activiteVisee(Optional.empty())
+      .operateur(OPERATEUR_ID_DUPONT)
+      .poste(Optional.of(new PosteDeTravailId(id.uuid())))
+      .nature(Optional.empty())
+      .coutHoraire(Optional.empty())
+      .tauxHoraire(Optional.empty())
+      .auteur(AUTEUR_DUPONT)
+      .origine(OrigineDuPointage.POINTAGE)
+      .remplace(Optional.empty());
+  }
 }
