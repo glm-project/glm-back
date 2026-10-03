@@ -18,8 +18,9 @@ public record ConflitsDAtelierCriteria(String operateur, String element) {
       .map(fiche -> fiche.prenom().value() + " " + fiche.nom().value())
       .orElse("");
     return (
-      libelleOperateur.toLowerCase(Locale.ROOT).contains(operateur)
-      && ligne.element().nom().value().toLowerCase(Locale.ROOT).contains(element)
+      (libelleOperateur.toLowerCase(Locale.ROOT).contains(operateur) || ligne.cle().operateur().uuid().toString().contains(operateur))
+      && (ligne.element().nom().value().toLowerCase(Locale.ROOT).contains(element)
+        || ligne.element().id().uuid().toString().contains(element))
     );
   }
 }
