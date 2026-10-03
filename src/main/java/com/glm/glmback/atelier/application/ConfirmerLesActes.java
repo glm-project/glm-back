@@ -2,6 +2,7 @@ package com.glm.glmback.atelier.application;
 
 import com.glm.glmback.atelier.domain.ConfirmationReutiliseeException;
 import com.glm.glmback.atelier.domain.ApercuInvalideException;
+import com.glm.glmback.atelier.domain.ApercuObsoleteException;
 import com.glm.glmback.atelier.domain.EvenementDAtelier;
 import com.glm.glmback.atelier.domain.LectureDossierConflit;
 import com.glm.glmback.atelier.domain.LectureDuSuivi;
@@ -61,6 +62,9 @@ public class ConfirmerLesActes {
       throw new ApercuInvalideException();
     }
     var avant = suivis.getForUpdate(suivi).orElseThrow(() -> new SuiviDAtelierIntrouvableException(suivi));
+    if (!avant.revision().equals(preuve.revision())) {
+      throw new ApercuObsoleteException();
+    }
     var maintenant = clock.now();
     var dossierAvant = new LectureDossierConflit(preuve.adresse(), new LectureDuSuivi(avant, maintenant));
     var prepare = preparation.prepare(avant, preuve.acte(), preuve.evenement(), contexte.gestionnaire().auteur(), maintenant);

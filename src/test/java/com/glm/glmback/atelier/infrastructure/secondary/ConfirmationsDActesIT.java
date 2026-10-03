@@ -14,6 +14,7 @@ import com.glm.glmback.atelier.application.RecusDActes;
 import com.glm.glmback.atelier.application.ReferencesDApercu;
 import com.glm.glmback.atelier.domain.ConfirmationReutiliseeException;
 import com.glm.glmback.atelier.domain.ApercuInvalideException;
+import com.glm.glmback.atelier.domain.ApercuObsoleteException;
 import com.glm.glmback.atelier.domain.ElementsEngageables;
 import com.glm.glmback.atelier.domain.Habilitations;
 import com.glm.glmback.atelier.domain.OperateursConnus;
@@ -198,6 +199,22 @@ class ConfirmationsDActesIT {
     ).isExactlyInstanceOf(ApercuInvalideException.class);
     assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(suivi);
     assertThat(inTransaction(() -> suivis.get(autre.id()))).contains(autre);
+    assertThat(inTransaction(() -> recus.get(preuve.commande()))).isEmpty();
+  }
+
+  @Test
+  @WithTenant("impeccmold")
+  void shouldRefuserUnApercuAnterieurAUneCloture() {
+    // GIVEN
+    var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
+    var preuve = preuveDAnnulationDeTransition(suivi);
+    when(references.read("reference-annulation")).thenReturn(preuve);
+    var cloture = inTransaction(() -> suivis.update(suivi.cloture(clotureParLeroyA(LE_10_MAI_2026_A_17H))));
+    // WHEN THEN
+    assertThatThrownBy(() ->
+      confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD)
+    ).isExactlyInstanceOf(ApercuObsoleteException.class);
+    assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(cloture);
     assertThat(inTransaction(() -> recus.get(preuve.commande()))).isEmpty();
   }
 
