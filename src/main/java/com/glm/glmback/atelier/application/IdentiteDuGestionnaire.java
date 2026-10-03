@@ -10,4 +10,8 @@ public record IdentiteDuGestionnaire(Auteur auteur, String sujet, String emetteu
     Assert.notBlank("sujet", sujet);
     Assert.notBlank("emetteur", emetteur);
   }
+
+  public boolean estLaMemePersonneQue(IdentiteDuGestionnaire autre) {
+    return sujet.equals(autre.sujet) && emetteur.equals(autre.emetteur);
+  }
 }
