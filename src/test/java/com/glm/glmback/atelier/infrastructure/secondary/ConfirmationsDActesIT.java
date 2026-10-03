@@ -458,6 +458,69 @@ class ConfirmationsDActesIT {
     assertThat(inTransaction(() -> recus.get(preuve.commande()))).isEmpty();
   }
 
+  @Test
+  @WithTenant("impeccmold")
+  void shouldCorrigerEnUnSeulActeAvecLAuteurActuelEtUnRecuExact() {
+    // GIVEN
+    var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
+    var preuve = preuveDeCorrectionDeTransition(suivi);
+    var remplacement = preuve.evenement().orElseThrow();
+    var original = suivi.journal().evenement(preuve.adresse().pointage()).orElseThrow();
+    when(references.read("reference-correction")).thenReturn(preuve);
+    // WHEN
+    var resultat = confirmations.confirmer(suivi.id(), preuve.commande(), "reference-correction", CONTEXTE_LEROY_RENOMME_IMPECCMOLD);
+    // THEN
+    var relu = resultat.dossier().lecture().suivi();
+    assertThat(relu.revision().value()).isEqualTo(1);
+    assertThat(relu.conflits()).isEmpty();
+    assertThat(relu.journal().evenement(original.id()))
+      .get().satisfies(fait -> {
+        assertThat(fait.annulation()).get().satisfies(annulation -> {
+          assertThat(annulation.auteur()).isEqualTo(AUTEUR_MARTIN);
+          assertThat(annulation.date()).isEqualTo(LE_10_MAI_2026_A_17H);
+        });
+        assertThat(fait).isEqualTo(original.annule(fait.annulation().orElseThrow()));
+      });
+    assertThat(relu.journal().evenement(remplacement))
+      .get().satisfies(fait -> {
+        assertThat(fait.remplace()).contains(original.id());
+        assertThat(fait.auteur()).isEqualTo(AUTEUR_MARTIN);
+        assertThat(fait.dateDeSurvenue()).isEqualTo(java.time.Instant.parse("2026-05-10T12:00:00.123456789Z"));
+      });
+    assertThat(resultat.recu().evenementsTouches()).containsExactly(original.id(), remplacement);
+    assertThat(inTransaction(() -> recus.get(preuve.commande()))).contains(resultat.recu());
+  }
+
+  @Test
+  @WithTenant("impeccmold")
+  void shouldAnnulerEnsembleLesFaitsProjectionsReservationEtRecuSurRollback() {
+    // GIVEN
+    var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
+    var preuve = preuveDeCorrectionDeTransition(suivi);
+    var evenement = preuve.evenement().orElseThrow();
+    when(references.read("reference-correction")).thenReturn(preuve);
+    var projectionsAvant = inTransaction(() -> entities.createNativeQuery("select * from activite_d_atelier where suivi_id = ? order by id")
+      .setParameter(1, suivi.id().uuid()).getResultList());
+    // WHEN
+    transactions.execute(status -> {
+      var resultat = confirmations.confirmer(suivi.id(), preuve.commande(), "reference-correction", CONTEXTE_LEROY_IMPECCMOLD);
+      assertThat(resultat.recu().revisionEnregistree().value()).isEqualTo(1);
+      assertThat(recus.get(preuve.commande())).contains(resultat.recu());
+      status.setRollbackOnly();
+      return resultat;
+    });
+    // THEN
+    assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(suivi);
+    assertThat(inTransaction(() -> recus.get(preuve.commande()))).isEmpty();
+    assertThat(inTransaction(() ->
+      ((Number) entities.createNativeQuery("select count(*) from identite_evenement_atelier where id = ?")
+        .setParameter(1, evenement.uuid()).getSingleResult()).longValue()
+    )).isZero();
+    var projectionsApres = inTransaction(() -> entities.createNativeQuery("select * from activite_d_atelier where suivi_id = ? order by id")
+      .setParameter(1, suivi.id().uuid()).getResultList());
+    assertThat(projectionsApres).usingRecursiveComparison().isEqualTo(projectionsAvant);
+  }
+
   private static <T> Supplier<T> avecContexteDeRequete(Supplier<T> action) {
     var authentication = SecurityContextHolder.getContext().getAuthentication();
     var requete = RequestContextHolder.getRequestAttributes();

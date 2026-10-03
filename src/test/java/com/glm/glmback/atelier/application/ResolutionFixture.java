@@ -11,6 +11,7 @@ import com.glm.glmback.atelier.domain.RegularisationAEnregistrer;
 import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
 import com.glm.glmback.atelier.domain.IntentionDePointage;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
+import com.glm.glmback.atelier.domain.CorrectionAEnregistrer;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -107,5 +108,23 @@ public final class ResolutionFixture {
       .evaluation(LE_10_MAI_2026_A_17H)
       .expireLe(LE_10_MAI_2026_A_17H.plusSeconds(900))
       .empreinteConsequences("consequences-annulation");
+  }
+
+  public static PreuveDApercu preuveDeCorrectionDeTransition(SuiviDAtelier suivi) {
+    var preuve = preuveDeRegularisationDeFin(suivi);
+    var regularisation = (ActeDeResolution.Regularisation) preuve.acte();
+    return PreuveDApercu.builder()
+      .commande(preuve.commande())
+      .adresse(preuve.adresse())
+      .revision(preuve.revision())
+      .contexte(preuve.contexte())
+      .acte(new ActeDeResolution.Correction(
+        new CorrectionAEnregistrer(preuve.adresse().pointage(), MOTIF_ERREUR_DE_SAISIE, regularisation.commande()),
+        regularisation.instant()
+      ))
+      .evenement(preuve.evenement())
+      .evaluation(preuve.evaluation())
+      .expireLe(preuve.expireLe())
+      .empreinteConsequences(preuve.empreinteConsequences());
   }
 }
