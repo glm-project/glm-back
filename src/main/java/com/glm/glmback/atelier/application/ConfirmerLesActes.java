@@ -1,7 +1,7 @@
 package com.glm.glmback.atelier.application;
 
-import com.glm.glmback.atelier.domain.EvenementDAtelier;
 import com.glm.glmback.atelier.domain.ConfirmationReutiliseeException;
+import com.glm.glmback.atelier.domain.EvenementDAtelier;
 import com.glm.glmback.atelier.domain.LectureDossierConflit;
 import com.glm.glmback.atelier.domain.LectureDuSuivi;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
@@ -44,7 +44,7 @@ public class ConfirmerLesActes {
     var existant = recus.get(commande);
     if (existant.isPresent()) {
       var recu = existant.orElseThrow();
-      if (!recu.reference().equals(reference)) {
+      if (!recu.reference().equals(reference) || !recu.preuve().contexte().correspondA(contexte)) {
         throw new ConfirmationReutiliseeException(commande);
       }
       return canonique(recu);
@@ -77,10 +77,7 @@ public class ConfirmerLesActes {
   private ResultatDActe canonique(RecuDActe recu) {
     var adresse = recu.preuve().adresse();
     var suivi = suivis.getForUpdate(adresse.suivi()).orElseThrow(() -> new SuiviDAtelierIntrouvableException(adresse.suivi()));
-    return new ResultatDActe(
-      recu,
-      new LectureDossierConflit(adresse, new LectureDuSuivi(suivi, clock.now()), recu.activitesConcernees())
-    );
+    return new ResultatDActe(recu, new LectureDossierConflit(adresse, new LectureDuSuivi(suivi, clock.now()), recu.activitesConcernees()));
   }
 
   public interface SuivisBuilder {

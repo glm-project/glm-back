@@ -12,9 +12,9 @@ import com.glm.glmback.atelier.application.EmpreintesDesConsequences;
 import com.glm.glmback.atelier.application.PreparationDesActes;
 import com.glm.glmback.atelier.application.RecusDActes;
 import com.glm.glmback.atelier.application.ReferencesDApercu;
+import com.glm.glmback.atelier.domain.ConfirmationReutiliseeException;
 import com.glm.glmback.atelier.domain.ElementsEngageables;
 import com.glm.glmback.atelier.domain.Habilitations;
-import com.glm.glmback.atelier.domain.ConfirmationReutiliseeException;
 import com.glm.glmback.atelier.domain.OperateursConnus;
 import com.glm.glmback.atelier.domain.PostesConnus;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
@@ -112,8 +112,24 @@ class ConfirmationsDActesIT {
     when(references.read("reference-annulation")).thenReturn(preuve);
     var premier = confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD);
     // WHEN THEN
-    assertThatThrownBy(() -> confirmations.confirmer(suivi.id(), preuve.commande(), "reference-modifiee", CONTEXTE_LEROY_IMPECCMOLD))
-      .isExactlyInstanceOf(ConfirmationReutiliseeException.class);
+    assertThatThrownBy(() ->
+      confirmations.confirmer(suivi.id(), preuve.commande(), "reference-modifiee", CONTEXTE_LEROY_IMPECCMOLD)
+    ).isExactlyInstanceOf(ConfirmationReutiliseeException.class);
+    assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(premier.dossier().lecture().suivi());
+  }
+
+  @Test
+  @WithTenant("impeccmold")
+  void shouldRefuserUnAutreSujetQuiPorteLeMemeNomDAuteur() {
+    // GIVEN
+    var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
+    var preuve = preuveDAnnulationDeTransition(suivi);
+    when(references.read("reference-annulation")).thenReturn(preuve);
+    var premier = confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD);
+    // WHEN THEN
+    assertThatThrownBy(() ->
+      confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_MARTIN_IMPECCMOLD)
+    ).isExactlyInstanceOf(ConfirmationReutiliseeException.class);
     assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(premier.dossier().lecture().suivi());
   }
 
