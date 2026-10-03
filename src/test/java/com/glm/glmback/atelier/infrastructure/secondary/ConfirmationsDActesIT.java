@@ -218,6 +218,22 @@ class ConfirmationsDActesIT {
     assertThat(inTransaction(() -> recus.get(preuve.commande()))).isEmpty();
   }
 
+  @Test
+  @WithTenant("impeccmold")
+  void shouldRefuserUnApercuALInstantDeSonExpiration() {
+    // GIVEN
+    var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
+    var preuve = preuveDAnnulationDeTransition(suivi);
+    when(references.read("reference-annulation")).thenReturn(preuve);
+    when(clock.now()).thenReturn(preuve.expireLe());
+    // WHEN THEN
+    assertThatThrownBy(() ->
+      confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD)
+    ).isExactlyInstanceOf(ApercuObsoleteException.class);
+    assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(suivi);
+    assertThat(inTransaction(() -> recus.get(preuve.commande()))).isEmpty();
+  }
+
   private <T> T inTransaction(Supplier<T> action) {
     return transactions.execute(status -> action.get());
   }

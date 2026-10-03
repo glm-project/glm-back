@@ -66,6 +66,9 @@ public class ConfirmerLesActes {
       throw new ApercuObsoleteException();
     }
     var maintenant = clock.now();
+    if (!maintenant.isBefore(preuve.expireLe())) {
+      throw new ApercuObsoleteException();
+    }
     var dossierAvant = new LectureDossierConflit(preuve.adresse(), new LectureDuSuivi(avant, maintenant));
     var prepare = preparation.prepare(avant, preuve.acte(), preuve.evenement(), contexte.gestionnaire().auteur(), maintenant);
     var enregistre = suivis.update(prepare.apres());
