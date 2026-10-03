@@ -56,4 +56,36 @@ class ListeDesConflitsDAtelierIT {
         assertThat(ligne.repere().nombrePointages()).isEqualTo(3);
       });
   }
+
+  @Test
+  @WithTenant("impeccmold")
+  void shouldPaginerDeuxSequencesDuMemeSuiviEtGarderLeTotalSurUnePageVide() {
+    Instant debut = Instant.parse("2043-01-07T08:00:00Z");
+    EvenementDAtelier premier = debutSurFraiseuse1ParDupontA(debut);
+    EvenementDAtelier second = debutSurFraiseuse1ParDupontA(debut.plusSeconds(14400));
+    SuiviDAtelier suivi = suiviOF2026000042EngageA(debut)
+      .enregistre(premier)
+      .enregistre(finDe(premier).a(debut.plusSeconds(3600)))
+      .enregistre(finDe(premier).a(debut.plusSeconds(7200)))
+      .enregistre(second)
+      .enregistre(finDe(second).a(debut.plusSeconds(18000)))
+      .enregistre(finDe(second).a(debut.plusSeconds(21600)));
+    transactions.executeWithoutResult(transaction -> suivis.create(suivi));
+    var criteria = new ConflitsDAtelierCriteria("", suivi.element().id().uuid().toString());
+
+    var premiere = transactions.execute(transaction -> conflits.list(criteria, new Pageable(0, 1)));
+    var suivante = transactions.execute(transaction -> conflits.list(criteria, new Pageable(1, 1)));
+    var vide = transactions.execute(transaction -> conflits.list(criteria, new Pageable(2, 1)));
+
+    assertThat(premiere.totalElementsCount()).isEqualTo(2);
+    assertThat(premiere.content())
+      .extracting(ligne -> ligne.adresse().pointage())
+      .containsExactly(premier.id());
+    assertThat(suivante.totalElementsCount()).isEqualTo(2);
+    assertThat(suivante.content())
+      .extracting(ligne -> ligne.adresse().pointage())
+      .containsExactly(second.id());
+    assertThat(vide.content()).isEmpty();
+    assertThat(vide.totalElementsCount()).isEqualTo(2);
+  }
 }

@@ -30,17 +30,21 @@ import org.springframework.stereotype.Repository;
 class JpaConflitsDAtelier implements ConflitsDAtelier {
 
   private static final String LIGNES = """
-    select sequence.id as ancre, suivi.id as suivi, suivi.revision as revision,
-      suivi.element_id as element_id, suivi.element_nom as element_nom, suivi.element_type as element_type,
-      sequence.operateur_id as operateur_id, sequence.poste_id as poste_id,
-      premier.date_de_survenue as premier_pointage,
-      (select count(*) from pointage_en_conflit where sequence_id = sequence.id) as nombre_pointages,
-      count(*) over() as total
-    from sequence_en_conflit sequence
-    join suivi_d_atelier suivi on suivi.id = sequence.suivi_id
-    join evenement_d_atelier premier on premier.id = sequence.id
-    where cast(suivi.element_id as varchar) = :element
-    order by premier.date_de_survenue, suivi.id, sequence.id
+    with filtre as (
+      select sequence.id as ancre, suivi.id as suivi, suivi.revision as revision,
+        suivi.element_id as element_id, suivi.element_nom as element_nom, suivi.element_type as element_type,
+        sequence.operateur_id as operateur_id, sequence.poste_id as poste_id,
+        premier.date_de_survenue as premier_pointage,
+        (select count(*) from pointage_en_conflit where sequence_id = sequence.id) as nombre_pointages
+      from sequence_en_conflit sequence
+      join suivi_d_atelier suivi on suivi.id = sequence.suivi_id
+      join evenement_d_atelier premier on premier.id = sequence.id
+      where cast(suivi.element_id as varchar) = :element
+    ), page as (
+      select * from filtre order by premier_pointage, suivi, ancre limit :taille offset :position
+    )
+    select compte.total, page.* from (select count(*) as total from filtre) compte
+    left join page on true order by page.premier_pointage, page.suivi, page.ancre
     """;
 
   private final EntityManager entities;
@@ -51,17 +55,28 @@ class JpaConflitsDAtelier implements ConflitsDAtelier {
 
   @Override
   public Page<ConflitEnListe> list(ConflitsDAtelierCriteria criteria, Pageable pageable) {
-    List<Tuple> lignes = lignes(criteria);
+    List<Tuple> lignes = lignes(criteria, pageable);
     return Page.<ConflitEnListe>builder()
-      .content(lignes.stream().map(JpaConflitsDAtelier::from).toList())
+      .content(
+        lignes
+          .stream()
+          .filter(ligne -> ligne.get("ancre") != null)
+          .map(JpaConflitsDAtelier::from)
+          .toList()
+      )
       .currentPage(pageable.page())
       .pageSize(pageable.size())
-      .totalElementsCount(lignes.isEmpty() ? 0 : ((Number) lignes.getFirst().get("total")).longValue());
+      .totalElementsCount(((Number) lignes.getFirst().get("total")).longValue());
   }
 
   @SuppressWarnings("unchecked")
-  private List<Tuple> lignes(ConflitsDAtelierCriteria criteria) {
-    return entities.createNativeQuery(LIGNES, Tuple.class).setParameter("element", criteria.element()).getResultList();
+  private List<Tuple> lignes(ConflitsDAtelierCriteria criteria, Pageable pageable) {
+    return entities
+      .createNativeQuery(LIGNES, Tuple.class)
+      .setParameter("element", criteria.element())
+      .setParameter("taille", pageable.size())
+      .setParameter("position", pageable.offset())
+      .getResultList();
   }
 
   private static ConflitEnListe from(Tuple ligne) {
