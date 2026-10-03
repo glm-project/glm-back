@@ -39,7 +39,9 @@ class JpaConflitsDAtelier implements ConflitsDAtelier {
       from sequence_en_conflit sequence
       join suivi_d_atelier suivi on suivi.id = sequence.suivi_id
       join evenement_d_atelier premier on premier.id = sequence.id
-      where cast(suivi.element_id as varchar) = :element
+      left join operateur on operateur.id = sequence.operateur_id
+      where lower(coalesce(operateur.prenom || ' ' || operateur.nom, '')) like :operateur
+        and (lower(suivi.element_nom) like :element or cast(suivi.element_id as varchar) like :element)
     ), page as (
       select * from filtre order by premier_pointage, suivi, ancre limit :taille offset :position
     )
@@ -73,7 +75,8 @@ class JpaConflitsDAtelier implements ConflitsDAtelier {
   private List<Tuple> lignes(ConflitsDAtelierCriteria criteria, Pageable pageable) {
     return entities
       .createNativeQuery(LIGNES, Tuple.class)
-      .setParameter("element", criteria.element())
+      .setParameter("element", "%" + criteria.element() + "%")
+      .setParameter("operateur", "%" + criteria.operateur() + "%")
       .setParameter("taille", pageable.size())
       .setParameter("position", pageable.offset())
       .getResultList();

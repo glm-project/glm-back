@@ -8,10 +8,12 @@ import com.glm.glmback.IntegrationTest;
 import com.glm.glmback.atelier.domain.ConflitsDAtelier;
 import com.glm.glmback.atelier.domain.ConflitsDAtelierCriteria;
 import com.glm.glmback.atelier.domain.EvenementDAtelier;
+import com.glm.glmback.atelier.domain.OperateurConnu;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.pagination.domain.Pageable;
+import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +30,9 @@ class ListeDesConflitsDAtelierIT {
 
   @Autowired
   private TransactionTemplate transactions;
+
+  @Autowired
+  private EntityManager entities;
 
   @Test
   @WithTenant("impeccmold")
@@ -87,5 +92,56 @@ class ListeDesConflitsDAtelierIT {
       .containsExactly(second.id());
     assertThat(vide.content()).isEmpty();
     assertThat(vide.totalElementsCount()).isEqualTo(2);
+  }
+
+  @Test
+  @WithTenant("impeccmold")
+  void shouldCombinerLesRecherchesPartiellesSansCasseAvantLaPagination() {
+    var jean = operateurJeanMartinPourcent();
+    var paul = operateurPaulDurand();
+    transactions.executeWithoutResult(transaction -> {
+      insere(jean);
+      insere(paul);
+    });
+    var premier = debutDu9Janvier2043A8hPar(jean.id());
+    var second = debutDu9Janvier2043A8hPar(paul.id());
+    var troisieme = debutDu9Janvier2043A8hPar(jean.id());
+    SuiviDAtelier cherche = suiviPourFiltre2043(elementFiltrePourcentA())
+      .enregistre(premier)
+      .enregistre(finDe(premier).a(premier.dateDeSurvenue().plusSeconds(3600)))
+      .enregistre(finDe(premier).a(premier.dateDeSurvenue().plusSeconds(7200)));
+    SuiviDAtelier autreOperateur = suiviPourFiltre2043(elementFiltrePourcentB())
+      .enregistre(second)
+      .enregistre(finDe(second).a(second.dateDeSurvenue().plusSeconds(3600)))
+      .enregistre(finDe(second).a(second.dateDeSurvenue().plusSeconds(7200)));
+    SuiviDAtelier autreElement = suiviPourFiltre2043(elementAutre2043())
+      .enregistre(troisieme)
+      .enregistre(finDe(troisieme).a(troisieme.dateDeSurvenue().plusSeconds(3600)))
+      .enregistre(finDe(troisieme).a(troisieme.dateDeSurvenue().plusSeconds(7200)));
+    transactions.executeWithoutResult(transaction -> {
+      suivis.create(cherche);
+      suivis.create(autreOperateur);
+      suivis.create(autreElement);
+    });
+    var criteria = new ConflitsDAtelierCriteria("mArTiN_%", "fIlTrE_2043_%");
+
+    var page = transactions.execute(transaction -> conflits.list(criteria, new Pageable(0, 1)));
+    var suivante = transactions.execute(transaction -> conflits.list(criteria, new Pageable(1, 1)));
+
+    assertThat(page.totalElementsCount()).isEqualTo(1);
+    assertThat(page.content())
+      .extracting(ligne -> ligne.adresse().suivi())
+      .containsExactly(cherche.id());
+    assertThat(suivante.totalElementsCount()).isEqualTo(1);
+    assertThat(suivante.content()).isEmpty();
+  }
+
+  private void insere(OperateurConnu operateur) {
+    entities
+      .createNativeQuery("insert into operateur (id, nom, prenom) values (:id, :nom, :prenom)")
+      .setParameter("id", operateur.id().uuid())
+      .setParameter("nom", operateur.nom().value())
+      .setParameter("prenom", operateur.prenom().value())
+      .executeUpdate();
   }
 }

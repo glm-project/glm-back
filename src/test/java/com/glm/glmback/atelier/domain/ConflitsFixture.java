@@ -3,6 +3,7 @@ package com.glm.glmback.atelier.domain;
 import static com.glm.glmback.atelier.domain.AtelierFixture.*;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 public final class ConflitsFixture {
@@ -15,5 +16,72 @@ public final class ConflitsFixture {
       .element(new ElementEngage(new ElementEngageId(UUID.randomUUID()), NOM_OF_2026_000042, TypeDElementEngage.ORDRE_DE_FABRICATION))
       .engagement(new Engagement(AUTEUR_LEROY, debut.minusSeconds(3600)))
       .journal(JournalDAtelier.vide());
+  }
+
+  public static OperateurConnu operateurJeanMartinPourcent() {
+    return OperateurConnu.builder()
+      .id(new OperateurId(UUID.randomUUID()))
+      .nom(new Nom("Martin_%"))
+      .prenom(new Prenom("Jean"))
+      .tauxHoraire(null);
+  }
+
+  public static OperateurConnu operateurPaulDurand() {
+    return OperateurConnu.builder()
+      .id(new OperateurId(UUID.randomUUID()))
+      .nom(new Nom("Durand"))
+      .prenom(new Prenom("Paul"))
+      .tauxHoraire(null);
+  }
+
+  public static ElementEngage elementFiltrePourcentA() {
+    return new ElementEngage(
+      new ElementEngageId(UUID.randomUUID()),
+      new NomDElement("FILTRE_2043_%A"),
+      TypeDElementEngage.ORDRE_DE_FABRICATION
+    );
+  }
+
+  public static ElementEngage elementFiltrePourcentB() {
+    return new ElementEngage(
+      new ElementEngageId(UUID.randomUUID()),
+      new NomDElement("FILTRE_2043_%B"),
+      TypeDElementEngage.ORDRE_DE_FABRICATION
+    );
+  }
+
+  public static ElementEngage elementAutre2043() {
+    return new ElementEngage(
+      new ElementEngageId(UUID.randomUUID()),
+      new NomDElement("AUTRE_2043"),
+      TypeDElementEngage.ORDRE_DE_FABRICATION
+    );
+  }
+
+  public static SuiviDAtelier suiviPourFiltre2043(ElementEngage element) {
+    return SuiviDAtelier.builder()
+      .id(SuiviDAtelierId.newId())
+      .element(element)
+      .engagement(new Engagement(AUTEUR_LEROY, Instant.parse("2043-01-09T07:00:00Z")))
+      .journal(JournalDAtelier.vide());
+  }
+
+  public static EvenementDAtelier debutDu9Janvier2043A8hPar(OperateurId operateur) {
+    EvenementDAtelierId id = EvenementDAtelierId.newId();
+    return EvenementDAtelier.builder()
+      .id(id)
+      .type(TypeDEvenementDAtelier.DEBUT)
+      .intention(IntentionDePointage.OUVERTURE)
+      .activite(Optional.of(ActiviteId.ouvertePar(id)))
+      .activiteVisee(Optional.empty())
+      .operateur(operateur)
+      .poste(Optional.empty())
+      .nature(Optional.empty())
+      .coutHoraire(Optional.empty())
+      .tauxHoraire(Optional.empty())
+      .auteur(AUTEUR_DUPONT)
+      .origine(OrigineDuPointage.POINTAGE)
+      .remplace(Optional.empty())
+      .horodatage(Horodatage.saisiA(Instant.parse("2043-01-09T08:00:00Z")));
   }
 }
