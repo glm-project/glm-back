@@ -60,4 +60,19 @@ class LectureDossierConflitTest {
     assertThat(dossier.sequence()).isEmpty();
     assertThat(dossier.lecture().suivi().journal().evenement(travail.id())).get().extracting(EvenementDAtelier::estAnnule).isEqualTo(true);
   }
+
+  @Test
+  void shouldSignalerUnPointageActifHorsConflit() {
+    EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(travail);
+
+    LectureDossierConflit dossier = new LectureDossierConflit(
+      new AdresseDossierConflit(suivi.id(), travail.id()),
+      new LectureDuSuivi(suivi, LE_10_MAI_2026_A_17H)
+    );
+
+    assertThat(dossier.kind().name()).isEqualTo("HORS_CONFLIT");
+    assertThat(dossier.sequence()).isEmpty();
+    assertThat(dossier.lecture().suivi().journal().evenements()).containsExactly(travail);
+  }
 }

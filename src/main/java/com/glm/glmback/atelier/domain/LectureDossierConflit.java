@@ -9,7 +9,10 @@ public record LectureDossierConflit(AdresseDossierConflit adresse, LectureDuSuiv
     if (pointage.isEmpty()) {
       return EtatDAdresseDossier.INTROUVABLE;
     }
-    return pointage.orElseThrow().estAnnule() ? EtatDAdresseDossier.ANCRE_ANNULEE : EtatDAdresseDossier.EN_CONFLIT;
+    if (pointage.orElseThrow().estAnnule()) {
+      return EtatDAdresseDossier.ANCRE_ANNULEE;
+    }
+    return sequence().isPresent() ? EtatDAdresseDossier.EN_CONFLIT : EtatDAdresseDossier.HORS_CONFLIT;
   }
 
   public Optional<SequenceEnConflit> sequence() {
