@@ -50,6 +50,11 @@ class SuivisDAtelierEnMemoire implements SuiviDAtelierRepository {
   }
 
   @Override
+  public Optional<SuiviDAtelier> getForUpdate(SuiviDAtelierId id) {
+    return get(id);
+  }
+
+  @Override
   public Optional<SuiviDAtelier> getEnCoursPour(ElementEngageId element) {
     return suivis
       .values()

@@ -72,6 +72,16 @@ class JpaSuiviDAtelierRepository implements SuiviDAtelierRepository {
   }
 
   @Override
+  public Optional<SuiviDAtelier> getForUpdate(SuiviDAtelierId id) {
+    return suivis
+      .findForUpdateById(id.uuid())
+      .map(entity -> {
+        entities.refresh(entity, LockModeType.PESSIMISTIC_WRITE);
+        return entity.toDomain();
+      });
+  }
+
+  @Override
   public Optional<SuiviDAtelier> getEnCoursPour(ElementEngageId element) {
     return suivis
       .findFirstByElementIdAndClotureDateDeSurvenueIsNullOrderByEngagementDateDescIdAsc(element.uuid())

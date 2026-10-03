@@ -11,6 +11,8 @@ public interface SuiviDAtelierRepository {
 
   Optional<SuiviDAtelier> get(SuiviDAtelierId id);
 
+  Optional<SuiviDAtelier> getForUpdate(SuiviDAtelierId id);
+
   Optional<SuiviDAtelier> getEnCoursPour(ElementEngageId element);
 
   Page<SuiviDAtelier> list(SuiviDAtelierCriteria criteria, Pageable pageable);
