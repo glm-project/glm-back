@@ -788,9 +788,19 @@
             "$ref" : "#/components/schemas/RestOperateurDAtelier",
             "description" : "Operateur dont le temps est affecte, absent si la fiche n'est plus resolue au referentiel."
           },
+          "operateurId" : {
+            "description" : "Identite brute de l'operateur, conservee meme si la fiche est absente.",
+            "format" : "uuid",
+            "type" : "string"
+          },
           "poste" : {
             "$ref" : "#/components/schemas/RestPosteDAtelier",
             "description" : "Poste de travail, toujours facultatif."
+          },
+          "posteId" : {
+            "description" : "Identite brute du poste, absente uniquement lorsqu'aucun poste n'a ete pointe.",
+            "format" : "uuid",
+            "type" : "string"
           },
           "remplace" : {
             "description" : "Evenement corrige par ce remplacant. Absent pour un pointage, une regularisation ou un historique sans lien explicite.",
@@ -808,7 +818,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "auteur", "dateDEnregistrement", "dateDeSurvenue", "estUneRegularisation", "id", "intention", "type" ],
+        "required" : [ "auteur", "dateDEnregistrement", "dateDeSurvenue", "estUneRegularisation", "id", "intention", "operateurId", "type" ],
         "type" : "object"
       },
       "RestFeuilleDeTemps" : {
