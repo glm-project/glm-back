@@ -284,6 +284,30 @@ class ConfirmationsDActesIT {
     assertThat(inTransaction(() -> recus.get(preuve.commande()))).isPresent();
   }
 
+  @Test
+  @WithTenant("impeccmold")
+  void shouldRetrouverLActeApresUneReponsePerdueEtRelireLeSuiviActuel() {
+    // GIVEN
+    var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
+    var preuve = preuveDAnnulationDeTransition(suivi);
+    when(references.read("reference-annulation")).thenReturn(preuve);
+    confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD);
+    var avantCloture = inTransaction(() -> suivis.get(suivi.id())).orElseThrow();
+    var cloture = inTransaction(() -> suivis.update(avantCloture.cloture(clotureParLeroyA(LE_10_MAI_2026_A_17H))));
+    // WHEN
+    var resultat = confirmations.verifier(suivi.id(), preuve.commande(), CONTEXTE_LEROY_IMPECCMOLD);
+    // THEN
+    assertThat(resultat)
+      .get()
+      .satisfies(atteste -> {
+        assertThat(atteste.recu().preuve()).isEqualTo(preuve);
+        assertThat(atteste.recu().revisionEnregistree().value()).isEqualTo(1);
+        assertThat(atteste.dossier().lecture().suivi()).isEqualTo(cloture);
+        assertThat(atteste.dossier().lecture().suivi().revision().value()).isEqualTo(2);
+        assertThat(atteste.dossier().activites()).hasSize(1);
+      });
+  }
+
   private static <T> Supplier<T> avecContexteDeRequete(Supplier<T> action) {
     var authentication = SecurityContextHolder.getContext().getAuthentication();
     var requete = RequestContextHolder.getRequestAttributes();

@@ -12,6 +12,7 @@ import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.shared.time.domain.Clock;
 import java.util.UUID;
+import java.util.Optional;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -89,6 +90,12 @@ public class ConfirmerLesActes {
       .evenementsTouches(touches);
     recus.create(recu);
     return new ResultatDActe(recu, dossier);
+  }
+
+  @Secured("ROLE_GESTIONNAIRE")
+  @Transactional
+  public Optional<ResultatDActe> verifier(SuiviDAtelierId suivi, UUID commande, ContexteDeResolution contexte) {
+    return recus.get(commande).map(recu -> rejoue(recu, suivi, recu.reference(), contexte));
   }
 
   private ResultatDActe rejoue(RecuDActe recu, SuiviDAtelierId suivi, String reference, ContexteDeResolution contexte) {
