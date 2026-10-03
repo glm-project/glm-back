@@ -59,6 +59,16 @@ class SuivisDAtelierEnMemoireTest {
   }
 
   @Test
+  void shouldConserverLaRevisionQuandLeSuiviEstInchange() {
+    // GIVEN
+    SuiviDAtelier suivi = suivis.create(suiviDAtelierEngage());
+    // WHEN
+    SuiviDAtelier inchange = suivis.update(suivi);
+    // THEN
+    assertThat(inchange).isEqualTo(suivi);
+  }
+
+  @Test
   void shouldListerLesSuivisDeLaPeriodeDuPlusRecentAuPlusAncien() {
     SuiviDAtelier suivi = suivis.create(suiviDAtelierEngage());
 
