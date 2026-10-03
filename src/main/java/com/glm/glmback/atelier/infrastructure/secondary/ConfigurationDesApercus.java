@@ -1,10 +1,18 @@
 package com.glm.glmback.atelier.infrastructure.secondary;
 
+import com.glm.glmback.atelier.application.ValiditeDesApercus;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.Map;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.DefaultValue;
 
-public record ConfigurationDesApercus(String cleActive, Map<String, String> cles, Duration validite) {
+@ConfigurationProperties("atelier.resolution.apercus")
+public record ConfigurationDesApercus(
+  String cleActive,
+  Map<String, String> cles,
+  @DefaultValue("PT15M") Duration validite
+) implements ValiditeDesApercus {
   public ConfigurationDesApercus {
     if (cleActive == null || !cleActive.matches("[a-zA-Z0-9_-]{1,32}") || cles == null || !cles.containsKey(cleActive)) {
       throw new IllegalArgumentException("Un trousseau explicite et une cle active sont requis");
