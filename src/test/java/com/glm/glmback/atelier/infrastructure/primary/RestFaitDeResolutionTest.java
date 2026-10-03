@@ -6,6 +6,9 @@ import static com.glm.glmback.atelier.application.ResolutionFixture.*;
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.atelier.domain.IntentionDePointage;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @UnitTest
 class RestFaitDeResolutionTest {
@@ -35,5 +38,15 @@ class RestFaitDeResolutionTest {
     var fait = ((RestActeDeResolution.Regularisation) RestActeDeResolution.from(preuve.acte())).fait();
     var incoherent = new RestFaitDeResolution(fait.type(), fait.intention(), fait.activiteVisee(), fait.operateur(), fait.poste(), "hier a midi");
     assertThatBean(incoherent).hasInvalidProperty("instantValide");
+  }
+
+  @ParameterizedTest
+  @NullAndEmptySource
+  @ValueSource(strings = { " " })
+  void shouldLaisserLInstantManquantASaContrainteObligatoire(String instant) {
+    var preuve = preuveDeRegularisationDeFin(suiviAvecTransitionDeMemeCategorie());
+    var fait = ((RestActeDeResolution.Regularisation) RestActeDeResolution.from(preuve.acte())).fait();
+    var incomplet = new RestFaitDeResolution(fait.type(), fait.intention(), fait.activiteVisee(), fait.operateur(), fait.poste(), instant);
+    assertThatBean(incomplet).hasInvalidProperty("instant");
   }
 }
