@@ -164,6 +164,29 @@ class ListeDesConflitsDAtelierIT {
       .containsExactly(cherche.id());
   }
 
+  @Test
+  @WithTenant("impeccmold")
+  void shouldRechercherUneReferenceOperateurAbsenteParSonIdentifiantPartiel() {
+    Instant debut = Instant.parse("2043-01-10T08:00:00Z");
+    var ouvrant = debutSurFraiseuse1ParDupontA(debut);
+    SuiviDAtelier suivi = suiviOF2026000042EngageA(debut)
+      .enregistre(ouvrant)
+      .enregistre(finDe(ouvrant).a(debut.plusSeconds(3600)))
+      .enregistre(finDe(ouvrant).a(debut.plusSeconds(7200)));
+    transactions.executeWithoutResult(transaction -> suivis.create(suivi));
+    var criteria = new ConflitsDAtelierCriteria(
+      ouvrant.operateur().uuid().toString().substring(0, 12).toUpperCase(java.util.Locale.ROOT),
+      suivi.element().id().uuid().toString()
+    );
+
+    var page = transactions.execute(transaction -> conflits.list(criteria, new Pageable(0, 5)));
+
+    assertThat(page.totalElementsCount()).isEqualTo(1);
+    assertThat(page.content())
+      .extracting(ligne -> ligne.adresse().suivi())
+      .containsExactly(suivi.id());
+  }
+
   private void insere(OperateurConnu operateur) {
     entities
       .createNativeQuery("insert into operateur (id, nom, prenom) values (:id, :nom, :prenom)")

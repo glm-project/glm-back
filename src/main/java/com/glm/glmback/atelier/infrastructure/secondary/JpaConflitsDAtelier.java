@@ -40,7 +40,8 @@ class JpaConflitsDAtelier implements ConflitsDAtelier {
       join suivi_d_atelier suivi on suivi.id = sequence.suivi_id
       join evenement_d_atelier premier on premier.id = sequence.id
       left join operateur on operateur.id = sequence.operateur_id
-      where lower(coalesce(operateur.prenom || ' ' || operateur.nom, '')) like :operateur escape '\\'
+      where (lower(coalesce(operateur.prenom || ' ' || operateur.nom, '')) like :operateur escape '\\'
+        or cast(sequence.operateur_id as varchar) like :operateur escape '\\')
         and (lower(suivi.element_nom) like :element escape '\\' or cast(suivi.element_id as varchar) like :element escape '\\')
     ), page as (
       select * from filtre order by premier_pointage, suivi, ancre limit :taille offset :position
