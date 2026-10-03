@@ -9,6 +9,7 @@ import com.glm.glmback.atelier.domain.LectureDuSuivi;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
+import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.shared.time.domain.Clock;
 import java.util.UUID;
 import org.springframework.security.access.annotation.Secured;
@@ -45,15 +46,7 @@ public class ConfirmerLesActes {
   public ResultatDActe confirmer(SuiviDAtelierId suivi, UUID commande, String reference, ContexteDeResolution contexte) {
     var existant = recus.get(commande);
     if (existant.isPresent()) {
-      var recu = existant.orElseThrow();
-      if (
-        !recu.preuve().adresse().suivi().equals(suivi) ||
-        !recu.reference().equals(reference) ||
-        !recu.preuve().contexte().correspondA(contexte)
-      ) {
-        throw new ConfirmationReutiliseeException(commande);
-      }
-      return canonique(recu);
+      return rejoue(existant.orElseThrow(), suivi, reference, contexte);
     }
     var preuve = references.read(reference);
     if (
@@ -61,7 +54,7 @@ public class ConfirmerLesActes {
     ) {
       throw new ApercuInvalideException();
     }
-    var avant = suivis.getForUpdate(suivi).orElseThrow(() -> new SuiviDAtelierIntrouvableException(suivi));
+    var avant = verrouille(suivi);
     if (!avant.revision().equals(preuve.revision())) {
       throw new ApercuObsoleteException();
     }
@@ -94,9 +87,24 @@ public class ConfirmerLesActes {
     return new ResultatDActe(recu, dossier);
   }
 
+  private ResultatDActe rejoue(RecuDActe recu, SuiviDAtelierId suivi, String reference, ContexteDeResolution contexte) {
+    if (
+      !recu.preuve().adresse().suivi().equals(suivi) ||
+      !recu.reference().equals(reference) ||
+      !recu.preuve().contexte().correspondA(contexte)
+    ) {
+      throw new ConfirmationReutiliseeException(recu.preuve().commande());
+    }
+    return canonique(recu);
+  }
+
+  private SuiviDAtelier verrouille(SuiviDAtelierId suivi) {
+    return suivis.getForUpdate(suivi).orElseThrow(() -> new SuiviDAtelierIntrouvableException(suivi));
+  }
+
   private ResultatDActe canonique(RecuDActe recu) {
     var adresse = recu.preuve().adresse();
-    var suivi = suivis.getForUpdate(adresse.suivi()).orElseThrow(() -> new SuiviDAtelierIntrouvableException(adresse.suivi()));
+    var suivi = verrouille(adresse.suivi());
     return new ResultatDActe(recu, new LectureDossierConflit(adresse, new LectureDuSuivi(suivi, clock.now()), recu.activitesConcernees()));
   }
 
