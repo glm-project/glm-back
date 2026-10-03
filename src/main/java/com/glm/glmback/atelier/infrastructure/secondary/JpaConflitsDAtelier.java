@@ -1,0 +1,96 @@
+package com.glm.glmback.atelier.infrastructure.secondary;
+
+import com.glm.glmback.atelier.domain.AdresseDossierConflit;
+import com.glm.glmback.atelier.domain.CleDActivite;
+import com.glm.glmback.atelier.domain.ConflitEnListe;
+import com.glm.glmback.atelier.domain.ConflitsDAtelier;
+import com.glm.glmback.atelier.domain.ConflitsDAtelierCriteria;
+import com.glm.glmback.atelier.domain.ElementEngage;
+import com.glm.glmback.atelier.domain.ElementEngageId;
+import com.glm.glmback.atelier.domain.EvenementDAtelierId;
+import com.glm.glmback.atelier.domain.NomDElement;
+import com.glm.glmback.atelier.domain.OperateurId;
+import com.glm.glmback.atelier.domain.PosteDeTravailId;
+import com.glm.glmback.atelier.domain.RepereDeSequence;
+import com.glm.glmback.atelier.domain.RevisionDuSuivi;
+import com.glm.glmback.atelier.domain.SuiviDAtelierId;
+import com.glm.glmback.atelier.domain.TypeDElementEngage;
+import com.glm.glmback.shared.pagination.domain.Page;
+import com.glm.glmback.shared.pagination.domain.Pageable;
+import com.glm.glmback.shared.time.infrastructure.secondary.ExactInstantConverter;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Tuple;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import org.springframework.stereotype.Repository;
+
+@Repository
+class JpaConflitsDAtelier implements ConflitsDAtelier {
+
+  private static final String LIGNES = """
+    select sequence.id as ancre, suivi.id as suivi, suivi.revision as revision,
+      suivi.element_id as element_id, suivi.element_nom as element_nom, suivi.element_type as element_type,
+      sequence.operateur_id as operateur_id, sequence.poste_id as poste_id,
+      premier.date_de_survenue as premier_pointage,
+      (select count(*) from pointage_en_conflit where sequence_id = sequence.id) as nombre_pointages,
+      count(*) over() as total
+    from sequence_en_conflit sequence
+    join suivi_d_atelier suivi on suivi.id = sequence.suivi_id
+    join evenement_d_atelier premier on premier.id = sequence.id
+    where cast(suivi.element_id as varchar) = :element
+    order by premier.date_de_survenue, suivi.id, sequence.id
+    """;
+
+  private final EntityManager entities;
+
+  JpaConflitsDAtelier(EntityManager entities) {
+    this.entities = entities;
+  }
+
+  @Override
+  public Page<ConflitEnListe> list(ConflitsDAtelierCriteria criteria, Pageable pageable) {
+    List<Tuple> lignes = lignes(criteria);
+    return Page.<ConflitEnListe>builder()
+      .content(lignes.stream().map(JpaConflitsDAtelier::from).toList())
+      .currentPage(pageable.page())
+      .pageSize(pageable.size())
+      .totalElementsCount(lignes.isEmpty() ? 0 : ((Number) lignes.getFirst().get("total")).longValue());
+  }
+
+  @SuppressWarnings("unchecked")
+  private List<Tuple> lignes(ConflitsDAtelierCriteria criteria) {
+    return entities.createNativeQuery(LIGNES, Tuple.class).setParameter("element", criteria.element()).getResultList();
+  }
+
+  private static ConflitEnListe from(Tuple ligne) {
+    return ConflitEnListe.builder()
+      .adresse(
+        new AdresseDossierConflit(
+          new SuiviDAtelierId(ligne.get("suivi", UUID.class)),
+          new EvenementDAtelierId(ligne.get("ancre", UUID.class))
+        )
+      )
+      .revision(new RevisionDuSuivi(((Number) ligne.get("revision")).longValue()))
+      .element(
+        new ElementEngage(
+          new ElementEngageId(ligne.get("element_id", UUID.class)),
+          new NomDElement(ligne.get("element_nom", String.class)),
+          TypeDElementEngage.valueOf(ligne.get("element_type", String.class))
+        )
+      )
+      .cle(
+        new CleDActivite(
+          new OperateurId(ligne.get("operateur_id", UUID.class)),
+          Optional.ofNullable(ligne.get("poste_id", UUID.class)).map(PosteDeTravailId::new)
+        )
+      )
+      .repere(
+        new RepereDeSequence(
+          new ExactInstantConverter().convertToEntityAttribute(ligne.get("premier_pointage", BigDecimal.class)),
+          ((Number) ligne.get("nombre_pointages")).intValue()
+        )
+      );
+  }
+}
