@@ -188,6 +188,15 @@ régularisation et la correction.
 
 ### Des pointages contradictoires restent en conflit, jusqu'à la décision du gestionnaire
 
+Le gestionnaire et l'opérateur peuvent consulter `GET /api/atelier/conflits`. Cette page lit les projections
+courantes sans charger les journaux : une ligne désigne une séquence par `adresse.suivi` et `adresse.pointage`,
+avec la révision du suivi, les références brutes, les fiches disponibles, le premier instant métier exact et
+le nombre de pointages. `operateur` et `element` cherchent du texte partiel sans casse, y compris dans les
+identifiants, et se combinent avant `page` et `size`. Les caractères `%`, `_` et `\` restent littéraux.
+Le tri suit le premier pointage, puis les identifiants du suivi et de l'ancrage. `total` et les `lignes` proviennent
+d'une même acquisition SQL. `complete: true` caractérise une lecture réussie, même vide ; un échec d'acquisition
+remonte en erreur HTTP. Les explications détaillées appartiennent au dossier de la séquence.
+
 Le serveur ne choisit jamais entre deux pointages qui se contredisent, quel que soit leur ordre d'arrivée. Travail A à
 8 h, transition de A vers une non conformité à 12 h, fin de A à 17 h : que la transition arrive avant la fin ou le
 lendemain, après elle, les trois faits sont conservés, la fin ne termine pas la non conformité et la transition n'est
