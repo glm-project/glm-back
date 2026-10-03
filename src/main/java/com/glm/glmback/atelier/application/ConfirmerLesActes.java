@@ -22,6 +22,7 @@ public class ConfirmerLesActes {
   private final RecusDActes recus;
   private final ReferencesDApercu references;
   private final PreparationDesActes preparation;
+  private final IdentitesDEvenements identites;
   private final Clock clock;
 
   ConfirmerLesActes(
@@ -29,17 +30,19 @@ public class ConfirmerLesActes {
     RecusDActes recus,
     ReferencesDApercu references,
     PreparationDesActes preparation,
+    IdentitesDEvenements identites,
     Clock clock
   ) {
     this.suivis = suivis;
     this.recus = recus;
     this.references = references;
     this.preparation = preparation;
+    this.identites = identites;
     this.clock = clock;
   }
 
   public static SuivisBuilder builder() {
-    return suivis -> recus -> references -> preparation -> clock -> new ConfirmerLesActes(suivis, recus, references, preparation, clock);
+    return suivis -> recus -> references -> preparation -> identites -> clock -> new ConfirmerLesActes(suivis, recus, references, preparation, identites, clock);
   }
 
   @Secured("ROLE_GESTIONNAIRE")
@@ -72,7 +75,15 @@ public class ConfirmerLesActes {
     if (!prepare.empreinteConsequences().equals(preuve.empreinteConsequences())) {
       throw new ApercuObsoleteException();
     }
+    preuve.evenement().ifPresent(evenement -> {
+      if (!identites.reserveHorsPupitre(evenement.uuid())) {
+        throw new ApercuObsoleteException();
+      }
+    });
     var enregistre = suivis.update(prepare.apres());
+    preuve.evenement().ifPresent(evenement ->
+      identites.associe(evenement.uuid(), new AgregatDEvenement(TypeDAgregatDEvenement.SUIVI_D_ATELIER, enregistre.id().uuid()))
+    );
     var dossier = dossierAvant.apresActe(new LectureDuSuivi(enregistre, maintenant));
     var touches = enregistre
       .journal()
@@ -132,7 +143,11 @@ public class ConfirmerLesActes {
   }
 
   public interface PreparationBuilder {
-    ClockBuilder preparation(PreparationDesActes value);
+    IdentitesBuilder preparation(PreparationDesActes value);
+  }
+
+  public interface IdentitesBuilder {
+    ClockBuilder identites(IdentitesDEvenements value);
   }
 
   public interface ClockBuilder {

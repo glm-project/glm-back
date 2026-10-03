@@ -12,6 +12,7 @@ import com.glm.glmback.atelier.application.EmpreintesDesConsequences;
 import com.glm.glmback.atelier.application.PreparationDesActes;
 import com.glm.glmback.atelier.application.RecusDActes;
 import com.glm.glmback.atelier.application.ReferencesDApercu;
+import com.glm.glmback.atelier.application.IdentitesDEvenements;
 import com.glm.glmback.atelier.domain.ConfirmationReutiliseeException;
 import com.glm.glmback.atelier.domain.ApercuInvalideException;
 import com.glm.glmback.atelier.domain.ApercuObsoleteException;
@@ -37,6 +38,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.context.request.RequestContextHolder;
+import jakarta.persistence.EntityManager;
+import java.util.Optional;
 
 @IntegrationTest
 @Import(ConfirmationsDActesIT.Configuration.class)
@@ -54,6 +57,9 @@ class ConfirmationsDActesIT {
   @Autowired
   private TransactionTemplate transactions;
 
+  @Autowired
+  private EntityManager entities;
+
   @MockitoBean
   private ReferencesDApercu references;
 
@@ -63,10 +69,14 @@ class ConfirmationsDActesIT {
   @MockitoBean
   private Clock clock;
 
+  @MockitoBean
+  private OperateursConnus operateurs;
+
   @BeforeEach
   void evaluation() {
     when(clock.now()).thenReturn(LE_10_MAI_2026_A_17H);
     when(empreintes.calcule(any(), any())).thenReturn("consequences-annulation");
+    when(operateurs.get(OPERATEUR_ID_DUPONT)).thenReturn(Optional.of(OPERATEUR_CONNU_DUPONT));
   }
 
   @Test
@@ -338,6 +348,32 @@ class ConfirmationsDActesIT {
     assertThat(confirmations.verifier(suivi.id(), preuve.commande(), CONTEXTE_LEROY_IMPECCMOLD)).isPresent();
   }
 
+  @Test
+  @WithTenant("impeccmold")
+  void shouldReserverEtAssocierLIdentiteProspectiveDeLaRegularisation() {
+    // GIVEN
+    var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
+    var preuve = preuveDeRegularisationDeFin(suivi);
+    var evenement = preuve.evenement().orElseThrow();
+    when(references.read("reference-regularisation")).thenReturn(preuve);
+    // WHEN
+    var resultat = confirmations.confirmer(suivi.id(), preuve.commande(), "reference-regularisation", CONTEXTE_LEROY_IMPECCMOLD);
+    // THEN
+    assertThat(inTransaction(() ->
+      ((Number) entities.createNativeQuery("select count(*) from identite_evenement_atelier where id = ?")
+        .setParameter(1, evenement.uuid()).getSingleResult()).longValue()
+    )).isEqualTo(1);
+    Object[] identite = inTransaction(() ->
+      (Object[]) entities.createNativeQuery("select type_agregat, agregat_id from identite_evenement_atelier where id = ?")
+        .setParameter(1, evenement.uuid()).getSingleResult()
+    );
+    assertThat(identite).containsExactly("SUIVI_D_ATELIER", suivi.id().uuid());
+    assertThat(resultat.recu().evenementsTouches()).containsExactly(evenement);
+    assertThat(resultat.dossier().lecture().suivi().journal().evenement(evenement))
+      .get().satisfies(fait -> assertThat(fait.horodatage().dateDeSurvenue()).isEqualTo(java.time.Instant.parse("2026-05-10T12:00:00.123456789Z")));
+    assertThat(inTransaction(() -> recus.get(preuve.commande()))).contains(resultat.recu());
+  }
+
   private static <T> Supplier<T> avecContexteDeRequete(Supplier<T> action) {
     var authentication = SecurityContextHolder.getContext().getAuthentication();
     var requete = RequestContextHolder.getRequestAttributes();
@@ -386,9 +422,10 @@ class ConfirmationsDActesIT {
       RecusDActes recus,
       ReferencesDApercu references,
       PreparationDesActes preparation,
+      IdentitesDEvenements identites,
       Clock clock
     ) {
-      return ConfirmerLesActes.builder().suivis(suivis).recus(recus).references(references).preparation(preparation).clock(clock);
+      return ConfirmerLesActes.builder().suivis(suivis).recus(recus).references(references).preparation(preparation).identites(identites).clock(clock);
     }
   }
 }

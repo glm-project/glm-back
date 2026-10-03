@@ -7,6 +7,11 @@ import com.glm.glmback.atelier.domain.AdresseDossierConflit;
 import com.glm.glmback.atelier.domain.AnnulationAEnregistrer;
 import com.glm.glmback.atelier.domain.RevisionDuSuivi;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
+import com.glm.glmback.atelier.domain.RegularisationAEnregistrer;
+import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
+import com.glm.glmback.atelier.domain.IntentionDePointage;
+import com.glm.glmback.atelier.domain.EvenementDAtelierId;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -75,6 +80,30 @@ public final class ResolutionFixture {
       .contexte(CONTEXTE_LEROY_IMPECCMOLD)
       .acte(new ActeDeResolution.Annulation(new AnnulationAEnregistrer(suivi.id(), pointage, AUTEUR_LEROY, MOTIF_ERREUR_DE_SAISIE)))
       .evenement(Optional.empty())
+      .evaluation(LE_10_MAI_2026_A_17H)
+      .expireLe(LE_10_MAI_2026_A_17H.plusSeconds(900))
+      .empreinteConsequences("consequences-annulation");
+  }
+
+  public static PreuveDApercu preuveDeRegularisationDeFin(SuiviDAtelier suivi) {
+    var debut = suivi.journal().evenements().getFirst();
+    var instant = "2026-05-10T14:00:00.123456789+02:00";
+    var commande = RegularisationAEnregistrer.builder()
+      .suivi(suivi.id())
+      .type(TypeDEvenementDAtelier.FIN)
+      .intention(IntentionDePointage.FIN)
+      .activiteVisee(debut.activite())
+      .operateur(OPERATEUR_ID_DUPONT)
+      .poste(Optional.empty())
+      .auteur(AUTEUR_LEROY)
+      .dateDeSurvenue(Instant.parse(instant));
+    return PreuveDApercu.builder()
+      .commande(UUID.randomUUID())
+      .adresse(new AdresseDossierConflit(suivi.id(), suivi.journal().evenements().getLast().id()))
+      .revision(suivi.revision())
+      .contexte(CONTEXTE_LEROY_IMPECCMOLD)
+      .acte(new ActeDeResolution.Regularisation(commande, instant))
+      .evenement(Optional.of(EvenementDAtelierId.newId()))
       .evaluation(LE_10_MAI_2026_A_17H)
       .expireLe(LE_10_MAI_2026_A_17H.plusSeconds(900))
       .empreinteConsequences("consequences-annulation");
