@@ -4,6 +4,12 @@ import java.util.List;
 import java.util.Optional;
 
 public record LectureDossierConflit(AdresseDossierConflit adresse, LectureDuSuivi lecture) {
+  public EtatDAdresseDossier kind() {
+    return lecture.suivi().journal().evenement(adresse.pointage()).isEmpty()
+      ? EtatDAdresseDossier.INTROUVABLE
+      : EtatDAdresseDossier.EN_CONFLIT;
+  }
+
   public Optional<SequenceEnConflit> sequence() {
     return lecture
       .conflits()

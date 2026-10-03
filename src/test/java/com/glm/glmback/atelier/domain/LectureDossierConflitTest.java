@@ -26,4 +26,21 @@ class LectureDossierConflitTest {
     assertThat(dossier.lecture().suivi().journal().evenements()).containsExactly(travail, nonConformite, finDuTravail);
     assertThat(dossier.lecture().suivi().revision()).isEqualTo(suivi.revision());
   }
+
+  @Test
+  void shouldRendreUneAdresseIntrouvableAvecLeJournalAccessible() {
+    EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier autrePointage = finDe(travail).a(LE_10_MAI_2026_A_17H);
+    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(travail);
+
+    LectureDossierConflit dossier = new LectureDossierConflit(
+      new AdresseDossierConflit(suivi.id(), autrePointage.id()),
+      new LectureDuSuivi(suivi, LE_10_MAI_2026_A_17H)
+    );
+
+    assertThat(dossier.kind()).isEqualTo(EtatDAdresseDossier.INTROUVABLE);
+    assertThat(dossier.sequence()).isEmpty();
+    assertThat(dossier.diagnostics()).isEmpty();
+    assertThat(dossier.lecture().suivi().journal().evenements()).containsExactly(travail);
+  }
 }
