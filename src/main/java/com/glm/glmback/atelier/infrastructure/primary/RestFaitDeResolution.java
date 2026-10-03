@@ -31,6 +31,13 @@ record RestFaitDeResolution(
     return CoherenceDuGeste.intentionAdmise(type, intention);
   }
 
+  @JsonIgnore
+  @Schema(hidden = true)
+  @AssertTrue(message = CoherenceDuGeste.CIBLE_CONFORME)
+  boolean isCibleConformeALIntention() {
+    return CoherenceDuGeste.cibleConforme(intention, activiteVisee);
+  }
+
   static RestFaitDeResolution from(RegularisationAEnregistrer commande, String instant) {
     return new RestFaitDeResolution(
       commande.type(),

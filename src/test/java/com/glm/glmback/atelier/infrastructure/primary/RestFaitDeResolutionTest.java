@@ -20,4 +20,12 @@ class RestFaitDeResolutionTest {
     );
     assertThatBean(incoherent).hasInvalidProperty("intentionAdmiseParLeType");
   }
+
+  @Test
+  void shouldRefuserUneFinSansActiviteVisee() {
+    var preuve = preuveDeRegularisationDeFin(suiviAvecTransitionDeMemeCategorie());
+    var fait = ((RestActeDeResolution.Regularisation) RestActeDeResolution.from(preuve.acte())).fait();
+    var incoherent = new RestFaitDeResolution(fait.type(), fait.intention(), null, fait.operateur(), fait.poste(), fait.instant());
+    assertThatBean(incoherent).hasInvalidProperty("cibleConformeALIntention");
+  }
 }
