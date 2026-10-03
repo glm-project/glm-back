@@ -187,11 +187,19 @@ la garantie que donnait le code partagé — le modifier en même temps que l'un
 
 ### Concurrence
 
-Deux saisies parties du même état construisent chacune un journal qui ignore le geste de l'autre. `update`
-charge donc l'agrégat sous verrou pessimiste, puis refuse par `SaisieConcurrenteException` (409) toute saisie dont le
-journal ignore un événement déjà stocké ; l'application réessaie les pointages avec le journal complet. Ce contrôle protège la
-conservation des faits, dont l'interprétation peut ensuite révéler un conflit. Un `@Version` n'aurait rien protégé : la collection d'événements est le côté
-inverse de l'association, donc l'insertion d'un événement ne salit pas la ligne parente et n'incrémente aucune version.
+Toute écriture transporte la `RevisionDuSuivi` lue avec l'agrégat ; l'update compare cette révision sous
+verrou pessimiste puis rend le suivi avec sa nouvelle révision. Garder ce retour pour toute écriture suivante :
+les transitions immuables conservent la révision lue jusqu'à leur persistance. Le journal et la clôture partagent
+la même révision, même si une annulation ou une clôture ne change aucun identifiant de fait.
+
+Après la prise du verrou, rafraîchir la ligne et ses collections : une entité déjà chargée dans le contexte JPA
+peut rester périmée malgré la requête verrouillée. `RevisionDuSuiviIT` synchronise deux transactions pour
+éprouver ce cas. Une saisie périmée est refusée par `SaisieConcurrenteException` (409) ; seuls les pointages
+Pupitre réessaient dans une nouvelle transaction en conservant leur UUID, intention et cible.
+
+Un `@Version` posé seul ne protège pas le journal : sa collection d'événements est le côté inverse de
+l'association, donc l'insertion d'un événement ne salit pas la ligne parente. La révision avance explicitement
+dans la transaction qui réconcilie les faits et leurs projections.
 
 L'`Auteur` d'une saisie vient toujours du jeton (`AuteurConnecte`), jamais du corps de la requête ; l'opérateur, lui,
 reste dans le corps, sous forme d'identifiant. Les deux ne sont pas comparables tant que rien ne relie un utilisateur

@@ -30,7 +30,8 @@ public record SuiviDAtelier(
   ElementEngage element,
   Engagement engagement,
   JournalDAtelier journal,
-  Optional<Cloture> cloture
+  Optional<Cloture> cloture,
+  RevisionDuSuivi revision
 ) {
   public SuiviDAtelier {
     Assert.notNull("id", id);
@@ -38,11 +39,22 @@ public record SuiviDAtelier(
     Assert.notNull("engagement", engagement);
     Assert.notNull("journal", journal);
     Assert.notNull("cloture", cloture);
+    Assert.notNull("revision", revision);
     valide(engagement, journal, cloture);
   }
 
+  public SuiviDAtelier(
+    SuiviDAtelierId id,
+    ElementEngage element,
+    Engagement engagement,
+    JournalDAtelier journal,
+    Optional<Cloture> cloture
+  ) {
+    this(id, element, engagement, journal, cloture, new RevisionDuSuivi(0));
+  }
+
   private SuiviDAtelier(SuiviDAtelierBuilder builder) {
-    this(builder.id, builder.element, builder.engagement, builder.journal, Optional.empty());
+    this(builder.id, builder.element, builder.engagement, builder.journal, Optional.empty(), builder.revision);
   }
 
   /**
@@ -50,15 +62,19 @@ public record SuiviDAtelier(
    * {@code infrastructure/secondary}. La creation, elle, reste l'affaire de ce domaine.
    */
   public static SuiviDAtelierIdBuilder builder() {
-    return new SuiviDAtelierBuilder();
+    return relectureBuilder(new RevisionDuSuivi(0));
+  }
+
+  public static SuiviDAtelierIdBuilder relectureBuilder(RevisionDuSuivi revision) {
+    return new SuiviDAtelierBuilder(revision);
   }
 
   public SuiviDAtelier enregistre(EvenementDAtelier evenement) {
-    return new SuiviDAtelier(id, element, engagement, journal.enregistre(evenement), cloture);
+    return new SuiviDAtelier(id, element, engagement, journal.enregistre(evenement), cloture, revision);
   }
 
   public SuiviDAtelier annule(EvenementDAtelierId evenement, Annulation annulation) {
-    return new SuiviDAtelier(id, element, engagement, journal.annule(evenement, annulation), cloture);
+    return new SuiviDAtelier(id, element, engagement, journal.annule(evenement, annulation), cloture, revision);
   }
 
   /**
@@ -66,15 +82,15 @@ public record SuiviDAtelier(
    * l'activite qu'il ouvrait, et les gestes qui la visent y restent rattaches.
    */
   public SuiviDAtelier corrige(EvenementDAtelierId evenement, Annulation annulation, EvenementDAtelier remplacant) {
-    return new SuiviDAtelier(id, element, engagement, journal.corrige(evenement, annulation, remplacant), cloture);
+    return new SuiviDAtelier(id, element, engagement, journal.corrige(evenement, annulation, remplacant), cloture, revision);
   }
 
   public SuiviDAtelier cloture(Cloture cloture) {
-    return new SuiviDAtelier(id, element, engagement, journal, Optional.of(cloture));
+    return new SuiviDAtelier(id, element, engagement, journal, Optional.of(cloture), revision);
   }
 
   public SuiviDAtelier annuleLaCloture() {
-    return new SuiviDAtelier(id, element, engagement, journal, Optional.empty());
+    return new SuiviDAtelier(id, element, engagement, journal, Optional.empty(), revision);
   }
 
   /**
@@ -154,10 +170,15 @@ public record SuiviDAtelier(
     implements SuiviDAtelierIdBuilder, SuiviDAtelierElementBuilder, SuiviDAtelierEngagementBuilder, SuiviDAtelierJournalBuilder
   {
 
+    private final RevisionDuSuivi revision;
     private SuiviDAtelierId id;
     private ElementEngage element;
     private Engagement engagement;
     private JournalDAtelier journal;
+
+    private SuiviDAtelierBuilder(RevisionDuSuivi revision) {
+      this.revision = revision;
+    }
 
     @Override
     public SuiviDAtelierElementBuilder id(SuiviDAtelierId id) {

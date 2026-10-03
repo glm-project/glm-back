@@ -11,6 +11,8 @@ import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
@@ -32,9 +34,11 @@ class JpaSuiviDAtelierRepository implements SuiviDAtelierRepository {
   private static final Sort PAR_DATE_D_ENGAGEMENT_DESCENDANTE = Sort.by(Sort.Order.desc("engagementDate"), Sort.Order.asc("id"));
 
   private final SpringDataSuiviDAtelierRepository suivis;
+  private final EntityManager entities;
 
-  JpaSuiviDAtelierRepository(SpringDataSuiviDAtelierRepository suivis) {
+  JpaSuiviDAtelierRepository(SpringDataSuiviDAtelierRepository suivis, EntityManager entities) {
     this.suivis = suivis;
+    this.entities = entities;
   }
 
   @Override
@@ -53,12 +57,13 @@ class JpaSuiviDAtelierRepository implements SuiviDAtelierRepository {
       .findForUpdateById(suivi.id().uuid())
       .orElseThrow(() -> new SuiviDAtelierIntrouvableException(suivi.id()));
 
-    if (entity.contientDesEvenementsAbsentsDe(suivi)) {
+    entities.refresh(entity, LockModeType.PESSIMISTIC_WRITE);
+    if (entity.porteUneAutreRevisionQue(suivi)) {
       throw new SaisieConcurrenteException(suivi.id());
     }
-    entity.reconcilie(suivi);
+    entity.enregistre(suivi);
 
-    return suivi;
+    return entity.toDomain();
   }
 
   @Override
