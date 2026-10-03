@@ -40,6 +40,9 @@ public class ApercusDeResolution {
     ContexteDeResolution contexte
   ) {
     var suivi = suivis.get(adresse.suivi()).orElseThrow();
+    if (!suivi.revision().equals(revision)) {
+      throw new ApercuObsoleteException();
+    }
     var maintenant = clock.now();
     Optional<EvenementDAtelierId> evenement =
       acte instanceof ActeDeResolution.Annulation ? Optional.empty() : Optional.of(EvenementDAtelierId.newId());
