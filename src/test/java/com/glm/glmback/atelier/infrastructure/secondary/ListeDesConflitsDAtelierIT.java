@@ -274,6 +274,47 @@ class ListeDesConflitsDAtelierIT {
       .containsExactly(ancres.get(2), ancres.get(3), ancres.get(4));
   }
 
+  @Test
+  @WithTenant("impeccmold")
+  void shouldConserverUneSequenceSansActiviteSurUnSuiviCloturePuisLaRetirerApresResolution() {
+    Instant debut = Instant.parse("2043-01-13T08:00:00.123456789Z");
+    var ouvrant = debutSansPosteParDupontA(debut);
+    var premiereFin = finDe(ouvrant).a(debut.plusSeconds(3600));
+    var secondeFin = finDe(ouvrant).a(debut.plusSeconds(7200));
+    var suivi = suiviOF2026000042EngageA(debut)
+      .enregistre(ouvrant)
+      .enregistre(premiereFin)
+      .enregistre(secondeFin)
+      .cloture(clotureParLeroyA(debut.plusSeconds(10800)));
+    var criteria = new ConflitsDAtelierCriteria("", suivi.element().id().uuid().toString());
+    var cree = transactions.execute(transaction -> suivis.create(suivi));
+    var cloture = transactions.execute(transaction -> conflits.list(criteria, new Pageable(0, 5)));
+    assertThat(cloture.totalElementsCount()).isEqualTo(1);
+
+    var annulation = new com.glm.glmback.atelier.domain.Annulation(AUTEUR_LEROY, debut.plusSeconds(14400), MOTIF_ERREUR_DE_SAISIE);
+    var sansActivite = transactions.execute(transaction -> suivis.update(cree.annule(ouvrant.id(), annulation)));
+    assertThat(sansActivite.activites()).isEmpty();
+    assertThat(sansActivite.cloture()).isEqualTo(suivi.cloture());
+    var orpheline = transactions.execute(transaction -> conflits.list(criteria, new Pageable(0, 5)));
+    assertThat(orpheline.totalElementsCount()).isEqualTo(1);
+    assertThat(orpheline.content())
+      .singleElement()
+      .satisfies(ligne -> {
+        assertThat(ligne.adresse().pointage()).isEqualTo(premiereFin.id());
+        assertThat(ligne.repere().nombrePointages()).isEqualTo(2);
+        assertThat(ligne.cle().poste()).isEmpty();
+        assertThat(ligne.revision()).isEqualTo(sansActivite.revision());
+      });
+
+    var uneFin = transactions.execute(transaction -> suivis.update(sansActivite.annule(premiereFin.id(), annulation)));
+    var resolu = transactions.execute(transaction -> suivis.update(uneFin.annule(secondeFin.id(), annulation)));
+    var vide = transactions.execute(transaction -> conflits.list(criteria, new Pageable(0, 5)));
+    assertThat(vide.totalElementsCount()).isZero();
+    assertThat(vide.content()).isEmpty();
+    assertThat(resolu.activites()).isEmpty();
+    assertThat(resolu.cloture()).isEqualTo(suivi.cloture());
+  }
+
   private void insere(OperateurConnu operateur) {
     entities
       .createNativeQuery("insert into operateur (id, nom, prenom) values (:id, :nom, :prenom)")
