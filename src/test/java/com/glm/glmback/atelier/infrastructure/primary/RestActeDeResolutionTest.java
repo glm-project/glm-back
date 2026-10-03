@@ -33,4 +33,15 @@ class RestActeDeResolutionTest {
     assertThat(json.path("motif").asString()).isEqualTo("Erreur de saisie");
     assertThat(json.has("auteur")).isFalse();
   }
+
+  @Test
+  void shouldEchoLaRegularisationAvecLInstantExactEtSansIdentiteDuSuivi() {
+    var preuve = preuveDeRegularisationDeFin(suiviAvecTransitionDeMemeCategorie());
+    var json = JsonMapper.builder().build().valueToTree(RestActeDeResolution.from(preuve.acte()));
+    assertThat(json.path("kind").asString()).isEqualTo("REGULARISATION");
+    assertThat(json.at("/fait/instant").asString()).isEqualTo("2026-05-10T14:00:00.123456789+02:00");
+    assertThat(json.at("/fait/type").asString()).isEqualTo("FIN");
+    assertThat(json.has("auteur")).isFalse();
+    assertThat(json.has("suivi")).isFalse();
+  }
 }

@@ -32,7 +32,8 @@ sealed interface RestActeDeResolution {
     if (acte instanceof ActeDeResolution.Annulation annulation) {
       return new Annulation(annulation.commande().evenement().uuid(), annulation.commande().motif().value());
     }
-    return null;
+    var regularisation = (ActeDeResolution.Regularisation) acte;
+    return new Regularisation(RestFaitDeResolution.from(regularisation.commande(), regularisation.instant()));
   }
 
   @Schema(name = "RestActeAnnulation")
