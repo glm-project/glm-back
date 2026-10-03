@@ -9,6 +9,7 @@ import jakarta.validation.constraints.AssertTrue;
 import java.util.UUID;
 import java.util.Optional;
 import java.time.Instant;
+import java.time.format.DateTimeParseException;
 
 record RestFaitDeResolution(
   @NotNull @Schema(requiredMode = Schema.RequiredMode.REQUIRED) TypeDEvenementDAtelier type,
@@ -36,6 +37,21 @@ record RestFaitDeResolution(
   @AssertTrue(message = CoherenceDuGeste.CIBLE_CONFORME)
   boolean isCibleConformeALIntention() {
     return CoherenceDuGeste.cibleConforme(intention, activiteVisee);
+  }
+
+  @JsonIgnore
+  @Schema(hidden = true)
+  @AssertTrue(message = "l'instant du fait doit respecter le format ISO-8601")
+  boolean isInstantValide() {
+    if (instant == null || instant.isBlank()) {
+      return true;
+    }
+    try {
+      Instant.parse(instant);
+      return true;
+    } catch (DateTimeParseException exception) {
+      return false;
+    }
   }
 
   static RestFaitDeResolution from(RegularisationAEnregistrer commande, String instant) {

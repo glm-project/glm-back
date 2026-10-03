@@ -28,4 +28,12 @@ class RestFaitDeResolutionTest {
     var incoherent = new RestFaitDeResolution(fait.type(), fait.intention(), null, fait.operateur(), fait.poste(), fait.instant());
     assertThatBean(incoherent).hasInvalidProperty("cibleConformeALIntention");
   }
+
+  @Test
+  void shouldRefuserUnInstantQuiNePeutPasEtreLuSansPasserAuDomaine() {
+    var preuve = preuveDeRegularisationDeFin(suiviAvecTransitionDeMemeCategorie());
+    var fait = ((RestActeDeResolution.Regularisation) RestActeDeResolution.from(preuve.acte())).fait();
+    var incoherent = new RestFaitDeResolution(fait.type(), fait.intention(), fait.activiteVisee(), fait.operateur(), fait.poste(), "hier a midi");
+    assertThatBean(incoherent).hasInvalidProperty("instantValide");
+  }
 }
