@@ -26,4 +26,20 @@ class JournalDAtelierDiagnosticTest {
       )
     );
   }
+
+  @Test
+  void shouldDesignerLaPremiereFinQuandUneSecondeFinLaContredit() {
+    EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier premiereFin = finDe(travail).a(LE_10_MAI_2026_A_12H);
+    EvenementDAtelier secondeFin = finDe(travail).a(LE_10_MAI_2026_A_17H);
+    JournalDAtelier journal = new JournalDAtelier(List.of(travail, premiereFin, secondeFin));
+
+    assertThat(journal.diagnostics(Optional.empty()))
+      .singleElement()
+      .satisfies(diagnostic -> {
+        assertThat(diagnostic.pointage()).isEqualTo(secondeFin.id());
+        assertThat(diagnostic.raison().name()).isEqualTo("CIBLE_DEJA_TERMINEE");
+        assertThat(diagnostic.cible().termineePar()).contains(premiereFin.id());
+      });
+  }
 }

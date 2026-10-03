@@ -183,6 +183,7 @@ final class SequenceDActivites {
     if (courante.filter(visee::equals).isPresent()) {
       if (peutTerminer(activites.get(visee), fin)) {
         termine(visee, fin.dateDeSurvenue());
+        termineesPar.put(visee, fin.id());
         courante = Optional.empty();
       }
       return;
@@ -223,7 +224,12 @@ final class SequenceDActivites {
           Optional.ofNullable(activites.get(visee)).map(activite -> activite.ouvrant().id()),
           Optional.ofNullable(termineesPar.get(visee))
         ),
-        RaisonDuConflit.CIBLE_REMPLACEE
+        actifs
+          .stream()
+          .filter(fait -> fait.id().equals(termineesPar.get(visee)))
+          .map(fait -> fait.intention() == IntentionDePointage.FIN ? RaisonDuConflit.CIBLE_DEJA_TERMINEE : RaisonDuConflit.CIBLE_REMPLACEE)
+          .findFirst()
+          .orElse(RaisonDuConflit.CIBLE_REMPLACEE)
       )
     );
 
