@@ -55,7 +55,7 @@ public class ConfirmerLesActes {
       return canonique(recu);
     }
     var preuve = references.read(reference);
-    if (!preuve.contexte().correspondA(contexte)) {
+    if (!preuve.commande().equals(commande) || !preuve.contexte().correspondA(contexte)) {
       throw new ApercuInvalideException();
     }
     var avant = suivis.getForUpdate(suivi).orElseThrow(() -> new SuiviDAtelierIntrouvableException(suivi));

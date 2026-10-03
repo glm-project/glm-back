@@ -22,6 +22,7 @@ import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.time.domain.Clock;
 import java.util.function.Supplier;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -164,6 +165,23 @@ class ConfirmationsDActesIT {
     ).isExactlyInstanceOf(ApercuInvalideException.class);
     assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(suivi);
     assertThat(inTransaction(() -> recus.get(preuve.commande()))).isEmpty();
+  }
+
+  @Test
+  @WithTenant("impeccmold")
+  void shouldRefuserUneCommandeQuiNeCorrespondPasALaPreuve() {
+    // GIVEN
+    var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
+    var preuve = preuveDAnnulationDeTransition(suivi);
+    var autreCommande = UUID.randomUUID();
+    when(references.read("reference-annulation")).thenReturn(preuve);
+    // WHEN THEN
+    assertThatThrownBy(() ->
+      confirmations.confirmer(suivi.id(), autreCommande, "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD)
+    ).isExactlyInstanceOf(ApercuInvalideException.class);
+    assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(suivi);
+    assertThat(inTransaction(() -> recus.get(preuve.commande()))).isEmpty();
+    assertThat(inTransaction(() -> recus.get(autreCommande))).isEmpty();
   }
 
   private <T> T inTransaction(Supplier<T> action) {
