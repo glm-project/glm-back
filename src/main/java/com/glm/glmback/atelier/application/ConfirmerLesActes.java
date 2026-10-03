@@ -71,6 +71,9 @@ public class ConfirmerLesActes {
     }
     var dossierAvant = new LectureDossierConflit(preuve.adresse(), new LectureDuSuivi(avant, maintenant));
     var prepare = preparation.prepare(avant, preuve.acte(), preuve.evenement(), contexte.gestionnaire().auteur(), maintenant);
+    if (!prepare.empreinteConsequences().equals(preuve.empreinteConsequences())) {
+      throw new ApercuObsoleteException();
+    }
     var enregistre = suivis.update(prepare.apres());
     var dossier = dossierAvant.apresActe(new LectureDuSuivi(enregistre, maintenant));
     var touches = enregistre
