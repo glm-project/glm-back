@@ -40,6 +40,10 @@ public class ConfirmerLesActes {
   @Secured("ROLE_GESTIONNAIRE")
   @Transactional
   public ResultatDActe confirmer(SuiviDAtelierId suivi, UUID commande, String reference, ContexteDeResolution contexte) {
+    var existant = recus.get(commande);
+    if (existant.isPresent()) {
+      return canonique(existant.orElseThrow());
+    }
     var preuve = references.read(reference);
     var avant = suivis.getForUpdate(suivi).orElseThrow(() -> new SuiviDAtelierIntrouvableException(suivi));
     var maintenant = clock.now();
@@ -63,6 +67,15 @@ public class ConfirmerLesActes {
       .evenementsTouches(touches);
     recus.create(recu);
     return new ResultatDActe(recu, dossier);
+  }
+
+  private ResultatDActe canonique(RecuDActe recu) {
+    var adresse = recu.preuve().adresse();
+    var suivi = suivis.getForUpdate(adresse.suivi()).orElseThrow(() -> new SuiviDAtelierIntrouvableException(adresse.suivi()));
+    return new ResultatDActe(
+      recu,
+      new LectureDossierConflit(adresse, new LectureDuSuivi(suivi, clock.now()), recu.activitesConcernees())
+    );
   }
 
   public interface SuivisBuilder {

@@ -86,6 +86,22 @@ class ConfirmationsDActesIT {
     ).isPresent();
   }
 
+  @Test
+  @WithTenant("impeccmold")
+  void shouldRejouerLaMemeConfirmationSansEnregistrerUnSecondActe() {
+    // GIVEN
+    var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
+    var preuve = preuveDAnnulationDeTransition(suivi);
+    when(references.read("reference-annulation")).thenReturn(preuve);
+    var premier = confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD);
+    // WHEN
+    var rejeu = confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD);
+    // THEN
+    assertThat(rejeu.recu()).isEqualTo(premier.recu());
+    assertThat(rejeu.dossier()).isEqualTo(premier.dossier());
+    assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(premier.dossier().lecture().suivi());
+  }
+
   private <T> T inTransaction(Supplier<T> action) {
     return transactions.execute(status -> action.get());
   }
