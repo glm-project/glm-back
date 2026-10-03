@@ -184,6 +184,23 @@ class ConfirmationsDActesIT {
     assertThat(inTransaction(() -> recus.get(autreCommande))).isEmpty();
   }
 
+  @Test
+  @WithTenant("impeccmold")
+  void shouldRefuserUnePreuveDestineeAUnAutreSuivi() {
+    // GIVEN
+    var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
+    var autre = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
+    var preuve = preuveDAnnulationDeTransition(suivi);
+    when(references.read("reference-annulation")).thenReturn(preuve);
+    // WHEN THEN
+    assertThatThrownBy(() ->
+      confirmations.confirmer(autre.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD)
+    ).isExactlyInstanceOf(ApercuInvalideException.class);
+    assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(suivi);
+    assertThat(inTransaction(() -> suivis.get(autre.id()))).contains(autre);
+    assertThat(inTransaction(() -> recus.get(preuve.commande()))).isEmpty();
+  }
+
   private <T> T inTransaction(Supplier<T> action) {
     return transactions.execute(status -> action.get());
   }
