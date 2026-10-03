@@ -5,6 +5,8 @@ import com.glm.glmback.atelier.domain.ActiviteId;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.LectureDossierConflit;
+import com.glm.glmback.atelier.domain.LectureDuSuivi;
+import com.glm.glmback.atelier.domain.PerimetreDeDossier;
 import com.glm.glmback.atelier.domain.PosteDeTravailId;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
@@ -43,22 +45,27 @@ final class RestSequenceDuDossier {
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
   private final int nombrePointages;
 
-  private RestSequenceDuDossier(LectureDossierConflit dossier, AnnuaireDAtelier annuaire) {
-    var sequence = dossier.sequence().orElseThrow();
-    operateurId = sequence.operateur().uuid();
-    operateur = RestOperateur.resolu(annuaire, sequence.operateur());
-    posteId = sequence.poste().map(PosteDeTravailId::uuid).orElse(null);
-    poste = RestPosteDeTravail.resolu(annuaire, sequence.poste());
+  private RestSequenceDuDossier(PerimetreDeDossier sequence, LectureDuSuivi lecture, AnnuaireDAtelier annuaire) {
+    operateurId = sequence.cle().operateur().uuid();
+    operateur = RestOperateur.resolu(annuaire, sequence.cle().operateur());
+    posteId = sequence.cle().poste().map(PosteDeTravailId::uuid).orElse(null);
+    poste = RestPosteDeTravail.resolu(annuaire, sequence.cle().poste());
     activites = sequence.activites().stream().map(ActiviteId::uuid).toList();
     pointages = sequence.pointages().stream().map(EvenementDAtelierId::uuid).toList();
-    datePremierPointage = dossier.lecture().suivi().journal().evenement(sequence.pointages().getFirst()).orElseThrow().dateDeSurvenue();
+    datePremierPointage = lecture.suivi().journal().evenement(sequence.pointages().getFirst()).orElseThrow().dateDeSurvenue();
     nombrePointages = sequence.pointages().size();
   }
 
   static RestSequenceDuDossier from(LectureDossierConflit dossier, AnnuaireDAtelier annuaire) {
     return dossier
       .sequence()
-      .map(sequence -> new RestSequenceDuDossier(dossier, annuaire))
+      .map(sequence ->
+        new RestSequenceDuDossier(
+          new PerimetreDeDossier(sequence.cle(), sequence.activites(), sequence.pointages()),
+          dossier.lecture(),
+          annuaire
+        )
+      )
       .orElse(null);
   }
 }
