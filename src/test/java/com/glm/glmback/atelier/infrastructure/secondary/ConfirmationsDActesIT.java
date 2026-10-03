@@ -13,6 +13,11 @@ import com.glm.glmback.atelier.application.PreparationDesActes;
 import com.glm.glmback.atelier.application.RecusDActes;
 import com.glm.glmback.atelier.application.ReferencesDApercu;
 import com.glm.glmback.atelier.application.IdentitesDEvenements;
+import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
+import java.util.List;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.access.AccessDeniedException;
 import com.glm.glmback.atelier.domain.ConfirmationReutiliseeException;
 import com.glm.glmback.atelier.domain.ApercuInvalideException;
 import com.glm.glmback.atelier.domain.ApercuObsoleteException;
@@ -59,6 +64,9 @@ class ConfirmationsDActesIT {
 
   @Autowired
   private EntityManager entities;
+
+  @Autowired
+  private IdentitesDEvenements identites;
 
   @MockitoBean
   private ReferencesDApercu references;
@@ -372,6 +380,82 @@ class ConfirmationsDActesIT {
     assertThat(resultat.dossier().lecture().suivi().journal().evenement(evenement))
       .get().satisfies(fait -> assertThat(fait.horodatage().dateDeSurvenue()).isEqualTo(java.time.Instant.parse("2026-05-10T12:00:00.123456789Z")));
     assertThat(inTransaction(() -> recus.get(preuve.commande()))).contains(resultat.recu());
+  }
+
+  @Test
+  @WithTenant("impeccmold")
+  void shouldRefuserUneCollisionDIdentiteSansRemplacementImplicite() {
+    // GIVEN
+    var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
+    var preuve = preuveDeRegularisationDeFin(suivi);
+    var evenement = preuve.evenement().orElseThrow();
+    when(references.read("reference-regularisation")).thenReturn(preuve);
+    assertThat(inTransaction(() -> identites.reserveHorsPupitre(evenement.uuid()))).isTrue();
+    // WHEN THEN
+    assertThatThrownBy(() ->
+      confirmations.confirmer(suivi.id(), preuve.commande(), "reference-regularisation", CONTEXTE_LEROY_IMPECCMOLD)
+    ).isExactlyInstanceOf(ApercuObsoleteException.class);
+    assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(suivi);
+    assertThat(inTransaction(() -> recus.get(preuve.commande()))).isEmpty();
+  }
+
+  @Test
+  @WithTenant("impeccmold")
+  void shouldRejouerAvantLeCodecEtLExpirationSansRevaliderLeMetier() {
+    // GIVEN
+    var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
+    var preuve = preuveDAnnulationDeTransition(suivi);
+    when(references.read("reference-annulation")).thenReturn(preuve);
+    var premier = confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD);
+    var courant = inTransaction(() -> suivis.update(premier.dossier().lecture().suivi().cloture(clotureParLeroyA(LE_10_MAI_2026_A_17H))));
+    when(clock.now()).thenReturn(preuve.expireLe().plusSeconds(1));
+    when(references.read(anyString())).thenThrow(new ApercuInvalideException());
+    when(operateurs.get(any())).thenReturn(Optional.empty());
+    clearInvocations(references, empreintes, operateurs);
+    // WHEN
+    var rejeu = confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_RENOMME_IMPECCMOLD);
+    // THEN
+    assertThat(rejeu.recu()).isEqualTo(premier.recu());
+    assertThat(rejeu.dossier().lecture().suivi()).isEqualTo(courant);
+    verifyNoInteractions(references, empreintes, operateurs);
+  }
+
+  @Test
+  @WithTenant("impeccmold")
+  void shouldRecontrolerLeRoleSurLeRejeuEtLaVerification() {
+    // GIVEN
+    var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
+    var preuve = preuveDAnnulationDeTransition(suivi);
+    when(references.read("reference-annulation")).thenReturn(preuve);
+    confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD);
+    var authentication = (JwtAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
+    SecurityContextHolder.getContext().setAuthentication(
+      new JwtAuthenticationToken(authentication.getToken(), List.of(new SimpleGrantedAuthority("ROLE_USER")))
+    );
+    try {
+      // WHEN THEN
+      assertThatThrownBy(() ->
+        confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD)
+      ).isInstanceOf(AccessDeniedException.class);
+      assertThatThrownBy(() -> confirmations.verifier(suivi.id(), preuve.commande(), CONTEXTE_LEROY_IMPECCMOLD))
+        .isInstanceOf(AccessDeniedException.class);
+    } finally {
+      SecurityContextHolder.getContext().setAuthentication(authentication);
+    }
+  }
+
+  @Test
+  @WithTenant("impeccmold")
+  void shouldRefuserUnSuiviIntrouvableSansEcrireDeRecu() {
+    // GIVEN
+    var suivi = suiviAvecTransitionDeMemeCategorie();
+    var preuve = preuveDAnnulationDeTransition(suivi);
+    when(references.read("reference-annulation")).thenReturn(preuve);
+    // WHEN THEN
+    assertThatThrownBy(() ->
+      confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD)
+    ).isExactlyInstanceOf(SuiviDAtelierIntrouvableException.class);
+    assertThat(inTransaction(() -> recus.get(preuve.commande()))).isEmpty();
   }
 
   private static <T> Supplier<T> avecContexteDeRequete(Supplier<T> action) {
