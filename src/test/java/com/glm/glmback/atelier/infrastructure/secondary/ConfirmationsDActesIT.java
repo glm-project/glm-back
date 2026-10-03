@@ -308,6 +308,36 @@ class ConfirmationsDActesIT {
       });
   }
 
+  @Test
+  @WithTenant("impeccmold")
+  void shouldGarderLAbsenceDeRecuNonConcluantePendantUneConfirmationEnCours() throws Exception {
+    // GIVEN
+    var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
+    var preuve = preuveDAnnulationDeTransition(suivi);
+    var preparationCommencee = new CountDownLatch(1);
+    var termineLaPreparation = new CountDownLatch(1);
+    when(references.read("reference-annulation")).thenAnswer(invocation -> {
+      preparationCommencee.countDown();
+      assertThat(termineLaPreparation.await(10, TimeUnit.SECONDS)).isTrue();
+      return preuve;
+    });
+    var action = avecContexteDeRequete(() ->
+      confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD)
+    );
+    try (var executor = Executors.newSingleThreadExecutor()) {
+      var premiereRequete = executor.submit(action::get);
+      try {
+        assertThat(preparationCommencee.await(10, TimeUnit.SECONDS)).isTrue();
+        // WHEN THEN
+        assertThat(confirmations.verifier(suivi.id(), preuve.commande(), CONTEXTE_LEROY_IMPECCMOLD)).isEmpty();
+      } finally {
+        termineLaPreparation.countDown();
+      }
+      assertThat(premiereRequete.get(15, TimeUnit.SECONDS)).isNotNull();
+    }
+    assertThat(confirmations.verifier(suivi.id(), preuve.commande(), CONTEXTE_LEROY_IMPECCMOLD)).isPresent();
+  }
+
   private static <T> Supplier<T> avecContexteDeRequete(Supplier<T> action) {
     var authentication = SecurityContextHolder.getContext().getAuthentication();
     var requete = RequestContextHolder.getRequestAttributes();
