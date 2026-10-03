@@ -29,6 +29,9 @@ sealed interface RestActeDeResolution {
     if (acte instanceof ActeDeResolution.Correction correction) {
       return new Correction(correction.commande().evenement().uuid(), correction.commande().motif().value(), RestFaitDeResolution.from(correction.commande().remplacement(),correction.instant()));
     }
+    if (acte instanceof ActeDeResolution.Annulation annulation) {
+      return new Annulation(annulation.commande().evenement().uuid(), annulation.commande().motif().value());
+    }
     return null;
   }
 

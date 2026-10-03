@@ -1,6 +1,7 @@
 package com.glm.glmback.atelier.infrastructure.primary;
 
 import static com.glm.glmback.atelier.domain.ActeDeResolutionFixture.*;
+import static com.glm.glmback.atelier.application.ResolutionFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
@@ -20,6 +21,16 @@ class RestActeDeResolutionTest {
     assertThat(json.at("/fait/activiteVisee").asString()).isEqualTo(
       correction.commande().remplacement().activiteVisee().orElseThrow().uuid().toString()
     );
+    assertThat(json.has("auteur")).isFalse();
+  }
+
+  @Test
+  void shouldEchoLAnnulationAvecLeMotifEtLePointage() {
+    var preuve = preuveDAnnulationDeTransition(suiviAvecTransitionDeMemeCategorie());
+    var json = JsonMapper.builder().build().valueToTree(RestActeDeResolution.from(preuve.acte()));
+    assertThat(json.path("kind").asString()).isEqualTo("ANNULATION");
+    assertThat(json.path("pointage").asString()).isEqualTo(preuve.adresse().pointage().uuid().toString());
+    assertThat(json.path("motif").asString()).isEqualTo("Erreur de saisie");
     assertThat(json.has("auteur")).isFalse();
   }
 }
