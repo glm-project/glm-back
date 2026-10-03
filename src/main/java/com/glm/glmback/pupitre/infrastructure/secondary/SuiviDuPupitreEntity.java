@@ -4,7 +4,9 @@ import com.glm.glmback.pupitre.domain.NomDElement;
 import com.glm.glmback.pupitre.domain.SuiviDuPupitre;
 import com.glm.glmback.pupitre.domain.SuiviDuPupitreId;
 import com.glm.glmback.pupitre.domain.TypeDElementEngage;
+import com.glm.glmback.shared.time.infrastructure.secondary.ExactInstantConverter;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -45,6 +47,7 @@ class SuiviDuPupitreEntity {
   @Column(length = 30)
   private TypeDElementEngage elementType;
 
+  @Convert(converter = ExactInstantConverter.class)
   private Instant clotureDateDeSurvenue;
 
   protected SuiviDuPupitreEntity() {

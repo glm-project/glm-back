@@ -15,7 +15,9 @@ import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.TypeDElementEngage;
 import jakarta.persistence.CascadeType;
+import com.glm.glmback.shared.time.infrastructure.secondary.ExactInstantConverter;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -62,13 +64,16 @@ class SuiviDAtelierEntity {
 
   private String engagementAuteur;
 
+  @Convert(converter = ExactInstantConverter.class)
   private Instant engagementDate;
 
   private String clotureAuteur;
 
+  @Convert(converter = ExactInstantConverter.class)
   private Instant clotureDateDeSurvenue;
 
   @Column(name = "cloture_date_d_enregistrement")
+  @Convert(converter = ExactInstantConverter.class)
   private Instant clotureDateDEnregistrement;
 
   @OneToMany(mappedBy = "suivi", cascade = CascadeType.ALL)

@@ -1,5 +1,6 @@
 package com.glm.glmback.syntheseheures.infrastructure.secondary;
 
+import com.glm.glmback.shared.time.infrastructure.secondary.ExactInstantConverter;
 import com.glm.glmback.syntheseheures.domain.ActiviteId;
 import com.glm.glmback.syntheseheures.domain.ElementId;
 import com.glm.glmback.syntheseheures.domain.IntentionDePointage;
@@ -9,6 +10,7 @@ import com.glm.glmback.syntheseheures.domain.PointageId;
 import com.glm.glmback.syntheseheures.domain.PosteDeTravailId;
 import com.glm.glmback.syntheseheures.domain.TypeDEvenementDAtelier;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -58,8 +60,10 @@ class PointageDAtelierDeLaSyntheseEntity {
   @Column(name = "activite_visee_id")
   private UUID activiteViseeId;
 
+  @Convert(converter = ExactInstantConverter.class)
   private Instant dateDeSurvenue;
 
+  @Convert(converter = ExactInstantConverter.class)
   private Instant annulationDate;
 
   protected PointageDAtelierDeLaSyntheseEntity() {

@@ -520,8 +520,9 @@ class JpaSuiviDAtelierRepositoryIT {
   private List<Instant> finsAuPlusTard(SuiviDAtelierId suivi) {
     return inTransaction(() ->
       entities
-        .createNativeQuery(
-          "select fin_au_plus_tard from activite_d_atelier where suivi_id = :suivi and fin_au_plus_tard is not null order by debut",
+        .createQuery(
+          "select activite.finAuPlusTard from ActiviteDAtelierEntity activite "
+            + "where activite.suivi.id = :suivi and activite.finAuPlusTard is not null order by activite.debut",
           Instant.class
         )
         .setParameter("suivi", suivi.uuid())

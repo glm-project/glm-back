@@ -8,7 +8,9 @@ import com.glm.glmback.feuilledetemps.domain.ElementId;
 import com.glm.glmback.feuilledetemps.domain.NatureDOperation;
 import com.glm.glmback.feuilledetemps.domain.Plage;
 import com.glm.glmback.feuilledetemps.domain.PosteDeTravailId;
+import com.glm.glmback.shared.time.infrastructure.secondary.ExactInstantConverter;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -47,11 +49,17 @@ class ActiviteDeLaFeuilleDeTempsEntity {
   @Column(length = 20)
   private CategorieDActivite categorie;
 
+  @Convert(converter = ExactInstantConverter.class)
   private Instant debut;
+
+  @Convert(converter = ExactInstantConverter.class)
   private Instant echeance;
+
+  @Convert(converter = ExactInstantConverter.class)
   private Instant fin;
 
   @Column(name = "fin_au_plus_tard")
+  @Convert(converter = ExactInstantConverter.class)
   private Instant finAuPlusTard;
 
   protected ActiviteDeLaFeuilleDeTempsEntity() {
