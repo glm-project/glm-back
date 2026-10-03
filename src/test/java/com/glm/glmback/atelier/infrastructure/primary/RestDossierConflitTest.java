@@ -16,6 +16,31 @@ import tools.jackson.databind.json.JsonMapper;
 class RestDossierConflitTest {
 
   @Test
+  void shouldConserverLAncreDemandeeEtLePerimetreDUneSeuleSequence() {
+    var dupont = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    var martin = debutSurFraiseuse1ParMartinA(LE_10_MAI_2026_A_9H);
+    var transitionMartin = passageEnNonConformiteDe(martin).a(LE_10_MAI_2026_A_12H);
+    var suivi = suiviDAtelierEngage()
+      .enregistre(dupont)
+      .enregistre(passageEnNonConformiteDe(dupont).a(LE_10_MAI_2026_A_12H))
+      .enregistre(finDe(dupont).a(LE_10_MAI_2026_A_17H))
+      .enregistre(martin)
+      .enregistre(transitionMartin)
+      .enregistre(finDe(martin).a(LE_10_MAI_2026_A_17H));
+    var dossier = new LectureDossierConflit(
+      new AdresseDossierConflit(suivi.id(), transitionMartin.id()),
+      new LectureDuSuivi(suivi, LE_10_MAI_2026_A_17H)
+    );
+    var json = JsonMapper.builder().build().valueToTree(RestDossierConflit.from(dossier, annuaireDeDupontEtMartin()));
+
+    assertThat(json.at("/adresse/pointage").asString()).isEqualTo(transitionMartin.id().uuid().toString());
+    assertThat(json.at("/sequence/operateurId").asString()).isEqualTo(OPERATEUR_ID_MARTIN.uuid().toString());
+    assertThat(json.at("/sequence/datePremierPointage").asString()).isEqualTo("2026-05-10T09:00:00Z");
+    assertThat(json.at("/sequence/nombrePointages").asInt()).isEqualTo(3);
+    assertThat(json.at("/sequence/pointages/0").asString()).isEqualTo(martin.id().uuid().toString());
+  }
+
+  @Test
   void shouldConserverLActiviteEnCoursSansDureeDefinitiveApresAnnulation() {
     var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     var transition = passageEnTravailDe(travail).a(LE_10_MAI_2026_A_12H);
@@ -30,6 +55,7 @@ class RestDossierConflitTest {
     assertThat(json.at("/activites/0/activite").asString()).isEqualTo(travail.activite().orElseThrow().uuid().toString());
     assertThat(json.at("/activites/0/etat").asString()).isEqualTo("EN_COURS");
     assertThat(json.at("/activites/0/duree").isNull()).isTrue();
+
     assertThat(json.at("/activites/0/fin").isNull()).isTrue();
   }
 
@@ -53,6 +79,11 @@ class RestDossierConflitTest {
     assertThat(json.at("/diagnostics/0/cible/termineePar").asString()).isEqualTo(nonConformite.id().uuid().toString());
     assertThat(json.at("/activites/0/etat").asString()).isEqualTo("A_RESOUDRE");
     assertThat(json.at("/activites/0/duree").isNull()).isTrue();
+    assertThat(json.at("/sequence/operateurId").asString()).isEqualTo(OPERATEUR_ID_DUPONT.uuid().toString());
+    assertThat(json.at("/sequence/posteId").asString()).isEqualTo(POSTE_ID_FRAISEUSE_1.uuid().toString());
+    assertThat(json.at("/sequence/pointages").size()).isEqualTo(3);
+    assertThat(json.at("/sequence/datePremierPointage").asString()).isEqualTo("2026-05-10T08:00:00Z");
+    assertThat(json.at("/sequence/nombrePointages").asInt()).isEqualTo(3);
   }
 
   @Test

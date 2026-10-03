@@ -17,7 +17,8 @@ record RestDossierConflit(
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) Instant evaluation,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestSuiviDAtelier suivi,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<RestDiagnosticDeConflit> diagnostics,
-  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<RestActiviteDuDossier> activites
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<RestActiviteDuDossier> activites,
+  RestSequenceDuDossier sequence
 ) {
   static RestDossierConflit from(LectureDossierConflit dossier, AnnuaireDAtelier annuaire) {
     return new RestDossierConflit(
@@ -31,7 +32,8 @@ record RestDossierConflit(
         .activites()
         .stream()
         .map(intervalle -> RestActiviteDuDossier.from(intervalle, annuaire))
-        .toList()
+        .toList(),
+      RestSequenceDuDossier.from(dossier, annuaire)
     );
   }
 }

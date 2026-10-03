@@ -384,6 +384,7 @@
             "type" : "string"
           }
         },
+        "required" : [ "auteur", "date", "motif" ],
         "type" : "object"
       },
       "RestAnnulationDEvenement" : {
@@ -847,6 +848,9 @@
           "revision" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "sequence" : {
+            "$ref" : "#/components/schemas/RestSequenceDuDossier"
           },
           "suivi" : {
             "$ref" : "#/components/schemas/RestSuiviDAtelier"
@@ -2079,6 +2083,49 @@
           }
         },
         "required" : [ "dateDeSurvenue", "intention", "operateur", "type" ],
+        "type" : "object"
+      },
+      "RestSequenceDuDossier" : {
+        "description" : "La sequence autoritaire contenant l'ancre demandee, avec sa cle brute et les seuls faits de son perimetre.",
+        "properties" : {
+          "activites" : {
+            "items" : {
+              "format" : "uuid",
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "datePremierPointage" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "nombrePointages" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "operateur" : {
+            "$ref" : "#/components/schemas/RestOperateurDAtelier"
+          },
+          "operateurId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "pointages" : {
+            "items" : {
+              "format" : "uuid",
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "poste" : {
+            "$ref" : "#/components/schemas/RestPosteDAtelier"
+          },
+          "posteId" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "required" : [ "activites", "datePremierPointage", "nombrePointages", "operateurId", "pointages" ],
         "type" : "object"
       },
       "RestSequenceEnConflit" : {
