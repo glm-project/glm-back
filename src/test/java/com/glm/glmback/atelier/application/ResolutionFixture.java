@@ -60,4 +60,23 @@ public final class ResolutionFixture {
       .activitesConcernees(Set.of())
       .evenementsTouches(List.of(pointage));
   }
+
+  public static SuiviDAtelier suiviAvecTransitionDeMemeCategorie() {
+    var debut = debutSansPosteParDupontA(LE_10_MAI_2026_A_8H);
+    return suiviDAtelierEngage().enregistre(debut).enregistre(passageEnTravailDe(debut).a(LE_10_MAI_2026_A_12H));
+  }
+
+  public static PreuveDApercu preuveDAnnulationDeTransition(SuiviDAtelier suivi) {
+    var pointage = suivi.journal().evenements().getLast().id();
+    return PreuveDApercu.builder()
+      .commande(UUID.randomUUID())
+      .adresse(new AdresseDossierConflit(suivi.id(), pointage))
+      .revision(suivi.revision())
+      .contexte(CONTEXTE_LEROY_IMPECCMOLD)
+      .acte(new ActeDeResolution.Annulation(new AnnulationAEnregistrer(suivi.id(), pointage, AUTEUR_LEROY, MOTIF_ERREUR_DE_SAISIE)))
+      .evenement(Optional.empty())
+      .evaluation(LE_10_MAI_2026_A_17H)
+      .expireLe(LE_10_MAI_2026_A_17H.plusSeconds(900))
+      .empreinteConsequences("consequences-annulation");
+  }
 }
