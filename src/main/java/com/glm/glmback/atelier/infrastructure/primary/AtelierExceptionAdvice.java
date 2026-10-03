@@ -2,6 +2,9 @@ package com.glm.glmback.atelier.infrastructure.primary;
 
 import com.glm.glmback.atelier.domain.ActiviteViseeIncoherenteException;
 import com.glm.glmback.atelier.domain.ActiviteViseeIntrouvableException;
+import com.glm.glmback.atelier.domain.ApercuInvalideException;
+import com.glm.glmback.atelier.domain.ApercuObsoleteException;
+import com.glm.glmback.atelier.domain.ConfirmationReutiliseeException;
 import com.glm.glmback.atelier.domain.DateDeSurvenueFutureException;
 import com.glm.glmback.atelier.domain.ElementDejaEngageException;
 import com.glm.glmback.atelier.domain.ElementEngageableIntrouvableException;
@@ -24,6 +27,21 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 @ControllerAdvice
 @Order(Ordered.LOWEST_PRECEDENCE - 20_000)
 class AtelierExceptionAdvice {
+
+  @ExceptionHandler(ApercuInvalideException.class)
+  ProblemDetail handleApercuInvalide(ApercuInvalideException e) {
+    return ErreurDAtelier.APERCU_INVALIDE.problem(e);
+  }
+
+  @ExceptionHandler(ApercuObsoleteException.class)
+  ProblemDetail handleApercuObsolete(ApercuObsoleteException e) {
+    return ErreurDAtelier.APERCU_OBSOLETE.problem(e);
+  }
+
+  @ExceptionHandler(ConfirmationReutiliseeException.class)
+  ProblemDetail handleConfirmationReutilisee(ConfirmationReutiliseeException e) {
+    return ErreurDAtelier.CONFIRMATION_REUTILISEE.problem(e);
+  }
 
   @ExceptionHandler(SuiviDAtelierIntrouvableException.class)
   ProblemDetail handleSuiviDAtelierIntrouvable(SuiviDAtelierIntrouvableException e) {

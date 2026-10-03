@@ -7,6 +7,9 @@ import com.glm.glmback.UnitTest;
 import com.glm.glmback.atelier.domain.ActiviteId;
 import com.glm.glmback.atelier.domain.ActiviteViseeIncoherenteException;
 import com.glm.glmback.atelier.domain.ActiviteViseeIntrouvableException;
+import com.glm.glmback.atelier.domain.ApercuInvalideException;
+import com.glm.glmback.atelier.domain.ApercuObsoleteException;
+import com.glm.glmback.atelier.domain.ConfirmationReutiliseeException;
 import com.glm.glmback.atelier.domain.DateDeSurvenueFutureException;
 import com.glm.glmback.atelier.domain.ElementDejaEngageException;
 import com.glm.glmback.atelier.domain.ElementEngageableIntrouvableException;
@@ -37,6 +40,13 @@ class AtelierExceptionAdviceTest extends ExceptionAdviceContract {
   @Override
   protected Stream<PublishedProblem> erreursPubliees() {
     return Stream.of(
+      new PublishedProblem(new ApercuInvalideException(), "urn:glm:erreur:atelier:apercu-invalide", BAD_REQUEST),
+      new PublishedProblem(new ApercuObsoleteException(), "urn:glm:erreur:atelier:apercu-obsolete", CONFLICT),
+      new PublishedProblem(
+        new ConfirmationReutiliseeException(java.util.UUID.randomUUID()),
+        "urn:glm:erreur:atelier:confirmation-reutilisee",
+        CONFLICT
+      ),
       new PublishedProblem(
         new SuiviDAtelierIntrouvableException(SuiviDAtelierId.newId()),
         "urn:glm:erreur:atelier:suivi-d-atelier-introuvable",
