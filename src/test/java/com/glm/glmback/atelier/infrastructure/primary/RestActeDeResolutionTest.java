@@ -58,4 +58,18 @@ class RestActeDeResolutionTest {
     assertThat(annulation.auteur()).isEqualTo(GESTIONNAIRE_LEROY_RENOMME.auteur());
     assertThat(annulation.motif().value()).isEqualTo("Erreur de saisie");
   }
+
+  @Test
+  void shouldLireLaRegularisationSansPerdreLeDecalageNiLesNeufDecimales() {
+    var preuve = preuveDeRegularisationDeFin(suiviAvecTransitionDeMemeCategorie());
+    var wire = RestActeDeResolution.from(preuve.acte());
+    var acte = wire.toDomain(preuve.adresse().suivi(), GESTIONNAIRE_LEROY_RENOMME.auteur());
+    assertThat(acte).isInstanceOf(ActeDeResolution.Regularisation.class);
+    var regularisation = (ActeDeResolution.Regularisation) acte;
+    assertThat(regularisation.instant()).isEqualTo("2026-05-10T14:00:00.123456789+02:00");
+    assertThat(regularisation.commande().dateDeSurvenue()).isEqualTo(java.time.Instant.parse("2026-05-10T12:00:00.123456789Z"));
+    assertThat(regularisation.commande().auteur()).isEqualTo(GESTIONNAIRE_LEROY_RENOMME.auteur());
+    assertThat(regularisation.commande().suivi()).isEqualTo(preuve.adresse().suivi());
+    assertThat(regularisation.commande().poste()).isEmpty();
+  }
 }

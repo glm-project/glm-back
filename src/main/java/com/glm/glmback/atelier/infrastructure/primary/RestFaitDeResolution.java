@@ -5,6 +5,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
+import java.util.Optional;
+import java.time.Instant;
 
 record RestFaitDeResolution(
   @NotNull @Schema(requiredMode = Schema.RequiredMode.REQUIRED) TypeDEvenementDAtelier type,
@@ -32,6 +34,14 @@ record RestFaitDeResolution(
   }
 
   RegularisationAEnregistrer toDomain(SuiviDAtelierId suivi, Auteur auteur) {
-    return null;
+    return RegularisationAEnregistrer.builder()
+      .suivi(suivi)
+      .type(type)
+      .intention(intention)
+      .activiteVisee(Optional.ofNullable(activiteVisee).map(ActiviteId::new))
+      .operateur(new OperateurId(operateur))
+      .poste(Optional.ofNullable(poste).map(PosteDeTravailId::new))
+      .auteur(auteur)
+      .dateDeSurvenue(Instant.parse(instant));
   }
 }
