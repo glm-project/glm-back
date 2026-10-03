@@ -199,7 +199,8 @@ Pupitre réessaient dans une nouvelle transaction en conservant leur UUID, inten
 
 Un `@Version` posé seul ne protège pas le journal : sa collection d'événements est le côté inverse de
 l'association, donc l'insertion d'un événement ne salit pas la ligne parente. La révision avance explicitement
-dans la transaction qui réconcilie les faits et leurs projections.
+dans la transaction qui réconcilie les faits et leurs projections. Un suivi inchangé garde sa révision ; le rejeu
+strict d'un pointage et une fin absorbée ne modifient aucun fait.
 
 L'`Auteur` d'une saisie vient toujours du jeton (`AuteurConnecte`), jamais du corps de la requête ; l'opérateur, lui,
 reste dans le corps, sous forme d'identifiant. Les deux ne sont pas comparables tant que rien ne relie un utilisateur

@@ -75,6 +75,19 @@ class RevisionDuSuiviIT {
     }
   }
 
+  @Test
+  @WithTenant("impeccmold")
+  void shouldConserverLaRevisionQuandAucunFaitNiClotureNeChange() {
+    // GIVEN
+    var suivi = inTransaction(() -> suivis.create(suiviDAtelierEngage()));
+    var versionLue = inTransaction(() -> suivis.get(suivi.id())).orElseThrow();
+    // WHEN
+    var inchange = inTransaction(() -> suivis.update(versionLue));
+    // THEN
+    assertThat(inchange.revision()).isEqualTo(versionLue.revision());
+    assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(versionLue);
+  }
+
   private static void attend(CountDownLatch signal) {
     try {
       assertThat(signal.await(10, TimeUnit.SECONDS)).as("La transaction rejoint son rendez-vous").isTrue();

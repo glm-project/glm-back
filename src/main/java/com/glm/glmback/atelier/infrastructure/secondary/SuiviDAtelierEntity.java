@@ -113,8 +113,10 @@ class SuiviDAtelierEntity {
   }
 
   void enregistre(SuiviDAtelier suivi) {
-    reconcilie(suivi);
-    revision++;
+    if (!toDomain().equals(suivi)) {
+      reconcilie(suivi);
+      revision++;
+    }
   }
 
   /**
