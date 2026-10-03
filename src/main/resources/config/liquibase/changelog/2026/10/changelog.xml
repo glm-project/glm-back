@@ -8,4 +8,5 @@
   <include file="003-suivi_d_atelier_revision.xml" relativeToChangelogFile="true" />
   <include file="004-evenement_d_atelier_remplacement.xml" relativeToChangelogFile="true" />
   <include file="005-atelier_instants_exacts.xml" relativeToChangelogFile="true" />
+  <include file="006-recu_d_acte.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>

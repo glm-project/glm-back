@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <changeSet id="recu_d_acte" author="glm">
+    <createTable tableName="recu_d_acte">
+      <column name="commande" type="uuid">
+        <constraints primaryKey="true" primaryKeyName="pk_recu_d_acte" nullable="false" />
+      </column>
+      <column name="suivi_id" type="uuid">
+        <constraints nullable="false" />
+      </column>
+      <column name="pointage_id" type="uuid">
+        <constraints nullable="false" />
+      </column>
+      <column name="sujet" type="varchar(255)">
+        <constraints nullable="false" />
+      </column>
+      <column name="emetteur" type="text">
+        <constraints nullable="false" />
+      </column>
+      <column name="reference" type="text">
+        <constraints nullable="false" />
+      </column>
+      <column name="preuve" type="text">
+        <constraints nullable="false" />
+      </column>
+      <column name="revision_de_depart" type="bigint">
+        <constraints nullable="false" />
+      </column>
+      <column name="revision_enregistree" type="bigint">
+        <constraints nullable="false" />
+      </column>
+      <column name="enregistre_le" type="varchar(35)">
+        <constraints nullable="false" />
+      </column>
+      <column name="activites_concernees" type="text">
+        <constraints nullable="false" />
+      </column>
+      <column name="evenements_touches" type="text">
+        <constraints nullable="false" />
+      </column>
+    </createTable>
+    <addForeignKeyConstraint
+      baseTableName="recu_d_acte"
+      baseColumnNames="suivi_id"
+      referencedTableName="suivi_d_atelier"
+      referencedColumnNames="id"
+      constraintName="fk_recu_d_acte_suivi"
+    />
+    <createIndex tableName="recu_d_acte" indexName="ix_recu_d_acte_suivi">
+      <column name="suivi_id" />
+    </createIndex>
+  </changeSet>
+</databaseChangeLog>

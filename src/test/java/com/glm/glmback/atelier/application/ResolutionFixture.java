@@ -2,6 +2,16 @@ package com.glm.glmback.atelier.application;
 
 import static com.glm.glmback.atelier.domain.AtelierFixture.*;
 
+import com.glm.glmback.atelier.domain.ActeDeResolution;
+import com.glm.glmback.atelier.domain.AdresseDossierConflit;
+import com.glm.glmback.atelier.domain.AnnulationAEnregistrer;
+import com.glm.glmback.atelier.domain.RevisionDuSuivi;
+import com.glm.glmback.atelier.domain.SuiviDAtelier;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+
 public final class ResolutionFixture {
 
   public static final String TENANT_IMPECCMOLD = "impeccmold";
@@ -29,4 +39,25 @@ public final class ResolutionFixture {
   public static final ContexteDeResolution CONTEXTE_LEROY_KATILYS = new ContexteDeResolution("katilys", GESTIONNAIRE_LEROY);
 
   private ResolutionFixture() {}
+
+  public static RecuDActe recuDAnnulation(SuiviDAtelier suivi) {
+    var pointage = suivi.journal().evenements().getFirst().id();
+    var preuve = PreuveDApercu.builder()
+      .commande(UUID.randomUUID())
+      .adresse(new AdresseDossierConflit(suivi.id(), pointage))
+      .revision(suivi.revision())
+      .contexte(CONTEXTE_LEROY_IMPECCMOLD)
+      .acte(new ActeDeResolution.Annulation(new AnnulationAEnregistrer(suivi.id(), pointage, AUTEUR_LEROY, MOTIF_ERREUR_DE_SAISIE)))
+      .evenement(Optional.empty())
+      .evaluation(LE_10_MAI_2026_A_17H)
+      .expireLe(LE_10_MAI_2026_A_17H.plusSeconds(900))
+      .empreinteConsequences("consequences-annulation");
+    return RecuDActe.builder()
+      .preuve(preuve)
+      .reference("reference-annulation")
+      .revisionEnregistree(new RevisionDuSuivi(1))
+      .enregistreLe(LE_10_MAI_2026_A_17H)
+      .activitesConcernees(Set.of())
+      .evenementsTouches(List.of(pointage));
+  }
 }
