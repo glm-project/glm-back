@@ -5,9 +5,11 @@ import java.util.Optional;
 
 public record LectureDossierConflit(AdresseDossierConflit adresse, LectureDuSuivi lecture) {
   public EtatDAdresseDossier kind() {
-    return lecture.suivi().journal().evenement(adresse.pointage()).isEmpty()
-      ? EtatDAdresseDossier.INTROUVABLE
-      : EtatDAdresseDossier.EN_CONFLIT;
+    Optional<EvenementDAtelier> pointage = lecture.suivi().journal().evenement(adresse.pointage());
+    if (pointage.isEmpty()) {
+      return EtatDAdresseDossier.INTROUVABLE;
+    }
+    return pointage.orElseThrow().estAnnule() ? EtatDAdresseDossier.ANCRE_ANNULEE : EtatDAdresseDossier.EN_CONFLIT;
   }
 
   public Optional<SequenceEnConflit> sequence() {
