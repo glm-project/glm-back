@@ -1,0 +1,82 @@
+package com.glm.glmback.atelier.application;
+
+import com.glm.glmback.atelier.domain.*;
+import com.glm.glmback.shared.time.domain.Clock;
+import java.util.Optional;
+import java.util.UUID;
+
+public class ApercusDeResolution {
+
+  private final SuiviDAtelierRepository suivis;
+  private final PreparationDesActes preparation;
+  private final ReferencesDApercu references;
+  private final Clock clock;
+  private final ValiditeDesApercus validite;
+
+  ApercusDeResolution(
+    SuiviDAtelierRepository suivis,
+    PreparationDesActes preparation,
+    ReferencesDApercu references,
+    Clock clock,
+    ValiditeDesApercus validite
+  ) {
+    this.suivis = suivis;
+    this.preparation = preparation;
+    this.references = references;
+    this.clock = clock;
+    this.validite = validite;
+  }
+
+  public static SuivisBuilder builder() {
+    return suivis ->
+      preparation -> references -> clock -> validite -> new ApercusDeResolution(suivis, preparation, references, clock, validite);
+  }
+
+  public ApercuDeResolution apercu(
+    UUID commande,
+    AdresseDossierConflit adresse,
+    RevisionDuSuivi revision,
+    ActeDeResolution acte,
+    ContexteDeResolution contexte
+  ) {
+    var suivi = suivis.get(adresse.suivi()).orElseThrow();
+    var maintenant = clock.now();
+    var prepare = preparation.prepare(suivi, acte, Optional.empty(), contexte.gestionnaire().auteur(), maintenant);
+    var preuve = PreuveDApercu.builder()
+      .commande(commande)
+      .adresse(adresse)
+      .revision(suivi.revision())
+      .contexte(contexte)
+      .acte(acte)
+      .evenement(Optional.empty())
+      .evaluation(maintenant)
+      .expireLe(maintenant.plus(validite.validite()))
+      .empreinteConsequences(prepare.empreinteConsequences());
+    var avant = new LectureDossierConflit(adresse, new LectureDuSuivi(suivi, maintenant));
+    return new ApercuDeResolution(
+      new ReferenceDApercu(preuve, references.issue(preuve)),
+      avant,
+      avant.apresActe(new LectureDuSuivi(prepare.apres(), maintenant))
+    );
+  }
+
+  public interface SuivisBuilder {
+    PreparationBuilder suivis(SuiviDAtelierRepository value);
+  }
+
+  public interface PreparationBuilder {
+    ReferencesBuilder preparation(PreparationDesActes value);
+  }
+
+  public interface ReferencesBuilder {
+    ClockBuilder references(ReferencesDApercu value);
+  }
+
+  public interface ClockBuilder {
+    ValiditeBuilder clock(Clock value);
+  }
+
+  public interface ValiditeBuilder {
+    ApercusDeResolution validite(ValiditeDesApercus value);
+  }
+}
