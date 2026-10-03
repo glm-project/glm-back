@@ -55,6 +55,10 @@ public class ConfirmerLesActes {
       throw new ApercuInvalideException();
     }
     var avant = verrouille(suivi);
+    var terminePendantLAttente = recus.get(commande);
+    if (terminePendantLAttente.isPresent()) {
+      return rejoue(terminePendantLAttente.orElseThrow(), suivi, reference, contexte);
+    }
     if (!avant.revision().equals(preuve.revision())) {
       throw new ApercuObsoleteException();
     }

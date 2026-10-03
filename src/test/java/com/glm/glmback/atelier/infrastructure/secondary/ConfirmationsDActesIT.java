@@ -24,6 +24,9 @@ import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.time.domain.Clock;
 import java.util.function.Supplier;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +35,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.context.request.RequestContextHolder;
 
 @IntegrationTest
 @Import(ConfirmationsDActesIT.Configuration.class)
@@ -248,6 +253,52 @@ class ConfirmationsDActesIT {
     ).isExactlyInstanceOf(ApercuObsoleteException.class);
     assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(suivi);
     assertThat(inTransaction(() -> recus.get(preuve.commande()))).isEmpty();
+  }
+
+  @Test
+  @WithTenant("impeccmold")
+  void shouldRejouerDeuxConfirmationsSimultaneesDeLaMemeCommande() throws Exception {
+    // GIVEN
+    var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
+    var preuve = preuveDAnnulationDeTransition(suivi);
+    var lecturesSansRecu = new CountDownLatch(2);
+    when(references.read("reference-annulation")).thenAnswer(invocation -> {
+      lecturesSansRecu.countDown();
+      assertThat(lecturesSansRecu.await(10, TimeUnit.SECONDS)).as("Les deux requetes ont lu l absence du recu").isTrue();
+      return preuve;
+    });
+    var action = avecContexteDeRequete(() ->
+      catchThrowable(() -> confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD))
+    );
+    // WHEN THEN
+    try (var executor = Executors.newFixedThreadPool(2)) {
+      var premier = executor.submit(action::get);
+      var second = executor.submit(action::get);
+      assertThat(premier.get(15, TimeUnit.SECONDS)).isNull();
+      assertThat(second.get(15, TimeUnit.SECONDS)).isNull();
+    }
+    var relu = inTransaction(() -> suivis.get(suivi.id())).orElseThrow();
+    assertThat(relu.revision().value()).isEqualTo(1);
+    assertThat(relu.journal().evenements()).hasSize(2);
+    assertThat(relu.journal().evenement(preuve.adresse().pointage()).orElseThrow().annulation()).isPresent();
+    assertThat(inTransaction(() -> recus.get(preuve.commande()))).isPresent();
+  }
+
+  private static <T> Supplier<T> avecContexteDeRequete(Supplier<T> action) {
+    var authentication = SecurityContextHolder.getContext().getAuthentication();
+    var requete = RequestContextHolder.getRequestAttributes();
+    return () -> {
+      var contexte = SecurityContextHolder.createEmptyContext();
+      contexte.setAuthentication(authentication);
+      SecurityContextHolder.setContext(contexte);
+      RequestContextHolder.setRequestAttributes(requete);
+      try {
+        return action.get();
+      } finally {
+        SecurityContextHolder.clearContext();
+        RequestContextHolder.resetRequestAttributes();
+      }
+    };
   }
 
   private <T> T inTransaction(Supplier<T> action) {
