@@ -15,7 +15,9 @@ import java.util.UUID;
 import java.util.Optional;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.stereotype.Service;
 
+@Service
 public class ConfirmerLesActes {
 
   private final SuiviDAtelierRepository suivis;
