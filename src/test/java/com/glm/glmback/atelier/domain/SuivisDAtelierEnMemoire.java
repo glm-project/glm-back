@@ -28,9 +28,17 @@ class SuivisDAtelierEnMemoire implements SuiviDAtelierRepository {
     if (!suivis.containsKey(suivi.id())) {
       throw new SuiviDAtelierIntrouvableException(suivi.id());
     }
-    suivis.put(suivi.id(), suivi);
+    SuiviDAtelier enregistre = new SuiviDAtelier(
+      suivi.id(),
+      suivi.element(),
+      suivi.engagement(),
+      suivi.journal(),
+      suivi.cloture(),
+      new RevisionDuSuivi(suivi.revision().value() + 1)
+    );
+    suivis.put(suivi.id(), enregistre);
 
-    return suivi;
+    return enregistre;
   }
 
   @Override
