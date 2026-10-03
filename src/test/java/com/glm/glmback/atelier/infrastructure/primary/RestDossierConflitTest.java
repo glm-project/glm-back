@@ -57,6 +57,11 @@ class RestDossierConflitTest {
     assertThat(json.at("/activites/0/duree").isNull()).isTrue();
 
     assertThat(json.at("/activites/0/fin").isNull()).isTrue();
+    assertThat(json.at("/perimetre/operateurId").asString()).isEqualTo(OPERATEUR_ID_DUPONT.uuid().toString());
+    assertThat(json.at("/perimetre/datePremierPointage").asString()).isEqualTo("2026-05-10T08:00:00Z");
+    assertThat(json.at("/perimetre/nombrePointages").asInt()).isEqualTo(2);
+    assertThat(json.at("/perimetre/pointages/1").asString()).isEqualTo(transition.id().uuid().toString());
+    assertThat(json.path("sequence").isNull()).isTrue();
   }
 
   @Test

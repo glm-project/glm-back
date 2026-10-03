@@ -53,6 +53,36 @@ public record LectureDossierConflit(AdresseDossierConflit adresse, LectureDuSuiv
       .toList();
   }
 
+  public Optional<PerimetreDeDossier> perimetre() {
+    return lecture
+      .suivi()
+      .journal()
+      .evenement(adresse.pointage())
+      .map(ancre -> {
+        List<EvenementDAtelier> faits = lecture
+          .suivi()
+          .journal()
+          .evenements()
+          .stream()
+          .filter(
+            fait ->
+              fait.id().equals(adresse.pointage())
+              || fait.activite().filter(concernees::contains).isPresent()
+              || fait.activiteVisee().filter(concernees::contains).isPresent()
+          )
+          .toList();
+        return new PerimetreDeDossier(
+          ancre.cle(),
+          faits
+            .stream()
+            .flatMap(fait -> fait.activite().stream())
+            .distinct()
+            .toList(),
+          faits.stream().map(EvenementDAtelier::id).toList()
+        );
+      });
+  }
+
   public EtatDAdresseDossier kind() {
     Optional<EvenementDAtelier> pointage = lecture.suivi().journal().evenement(adresse.pointage());
     if (pointage.isEmpty()) {

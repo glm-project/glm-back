@@ -845,6 +845,10 @@
             "enum" : [ "EN_CONFLIT", "INTROUVABLE", "ANCRE_ANNULEE", "HORS_CONFLIT" ],
             "type" : "string"
           },
+          "perimetre" : {
+            "$ref" : "#/components/schemas/RestSequenceDuDossier",
+            "description" : "Le perimetre conserve des faits et activites concernes, y compris apres resolution ou annulation de l ancre."
+          },
           "revision" : {
             "format" : "int64",
             "type" : "integer"

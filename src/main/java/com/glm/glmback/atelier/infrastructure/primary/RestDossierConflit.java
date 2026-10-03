@@ -18,7 +18,9 @@ record RestDossierConflit(
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestSuiviDAtelier suivi,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<RestDiagnosticDeConflit> diagnostics,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<RestActiviteDuDossier> activites,
-  RestSequenceDuDossier sequence
+  RestSequenceDuDossier sequence,
+  @Schema(description = "Le perimetre conserve des faits et activites concernes, y compris apres resolution ou annulation de l ancre.")
+  RestSequenceDuDossier perimetre
 ) {
   static RestDossierConflit from(LectureDossierConflit dossier, AnnuaireDAtelier annuaire) {
     return new RestDossierConflit(
@@ -33,7 +35,8 @@ record RestDossierConflit(
         .stream()
         .map(intervalle -> RestActiviteDuDossier.from(intervalle, annuaire))
         .toList(),
-      RestSequenceDuDossier.from(dossier, annuaire)
+      RestSequenceDuDossier.from(dossier, annuaire),
+      RestSequenceDuDossier.perimetre(dossier, annuaire)
     );
   }
 }

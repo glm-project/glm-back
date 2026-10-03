@@ -68,4 +68,11 @@ final class RestSequenceDuDossier {
       )
       .orElse(null);
   }
+
+  static RestSequenceDuDossier perimetre(LectureDossierConflit dossier, AnnuaireDAtelier annuaire) {
+    return dossier
+      .perimetre()
+      .map(perimetre -> new RestSequenceDuDossier(perimetre, dossier.lecture(), annuaire))
+      .orElse(null);
+  }
 }
