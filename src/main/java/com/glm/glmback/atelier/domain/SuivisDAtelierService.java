@@ -191,6 +191,8 @@ public final class SuivisDAtelierService {
   }
 
   private EvenementDAtelier regularisation(RegularisationAEnregistrer commande, EvenementDAtelierId evenement) {
+    Instant maintenant = clock.now();
+    refuseDateFuture(Optional.of(commande.dateDeSurvenue()), maintenant);
     return evenement(
       evenement,
       commande.type(),
@@ -200,7 +202,7 @@ public final class SuivisDAtelierService {
       commande.poste(),
       commande.auteur(),
       OrigineDuPointage.REGULARISATION,
-      new Horodatage(commande.dateDeSurvenue(), clock.now())
+      new Horodatage(commande.dateDeSurvenue(), maintenant)
     );
   }
 

@@ -41,6 +41,16 @@ class SuivisDAtelierServiceTest {
   }
 
   @Test
+  void shouldRefuserUneRegularisationFutureSansModifierLeSuivi() {
+    // GIVEN
+    var suivi = engage();
+    var commande = regularisationDeDebutA(suivi.id(), LE_10_MAI_2026_A_8H);
+    // WHEN THEN
+    assertThatThrownBy(() -> atelier.regularise(commande)).isExactlyInstanceOf(DateDeSurvenueFutureException.class);
+    assertThat(suivis.get(suivi.id())).contains(suivi);
+  }
+
+  @Test
   void shouldNotEngagerUnElementInconnu() {
     EngagementAEnregistrer commande = new EngagementAEnregistrer(ELEMENT_INCONNU, AUTEUR_LEROY);
 
