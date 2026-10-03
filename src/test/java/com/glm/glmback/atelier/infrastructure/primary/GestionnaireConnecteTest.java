@@ -35,4 +35,12 @@ class GestionnaireConnecteTest {
     // THEN
     assertThat(gestionnaire).isEqualTo(CONTEXTE_LEROY_IMPECCMOLD);
   }
+
+  @Test
+  void shouldGarderLaMemeIdentitePourLEmetteurUrlDUnCompteOidc() throws Exception {
+    // GIVEN
+    SecurityContextHolder.getContext().setAuthentication(GestionnaireConnecteFixture.oidcAvecEmetteurUrl());
+    // WHEN THEN
+    assertThatNoException().isThrownBy(() -> assertThat(GestionnaireConnecte.get()).isEqualTo(CONTEXTE_LEROY_IMPECCMOLD));
+  }
 }
