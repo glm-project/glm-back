@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.IntegrationTest;
 import com.glm.glmback.atelier.application.RecusDActes;
+import com.glm.glmback.atelier.domain.ConfirmationReutiliseeException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import java.util.function.Supplier;
@@ -37,6 +38,26 @@ class RecusDActesIT {
       return null;
     });
     // THEN
+    assertThat(inTransaction(() -> recus.get(recu.preuve().commande()))).contains(recu);
+  }
+
+  @Test
+  @WithTenant("impeccmold")
+  void shouldRefuserUnSecondEnregistrementDeLaMemeCommande() {
+    // GIVEN
+    var suivi = inTransaction(() -> suivis.create(suiviDAtelierEngage().enregistre(debutSansPosteParDupontA(LE_10_MAI_2026_A_8H))));
+    var recu = recuDAnnulation(suivi);
+    inTransaction(() -> {
+      recus.create(recu);
+      return null;
+    });
+    // WHEN THEN
+    assertThatThrownBy(() ->
+      inTransaction(() -> {
+        recus.create(recu);
+        return null;
+      })
+    ).isExactlyInstanceOf(ConfirmationReutiliseeException.class);
     assertThat(inTransaction(() -> recus.get(recu.preuve().commande()))).contains(recu);
   }
 

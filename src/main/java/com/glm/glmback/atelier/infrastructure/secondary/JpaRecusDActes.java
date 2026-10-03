@@ -3,6 +3,7 @@ package com.glm.glmback.atelier.infrastructure.secondary;
 import com.glm.glmback.atelier.application.RecuDActe;
 import com.glm.glmback.atelier.application.RecusDActes;
 import com.glm.glmback.atelier.domain.ActiviteId;
+import com.glm.glmback.atelier.domain.ConfirmationReutiliseeException;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.RevisionDuSuivi;
 import jakarta.persistence.EntityManager;
@@ -26,13 +27,14 @@ class JpaRecusDActes implements RecusDActes {
   @Override
   public void create(RecuDActe recu) {
     var preuve = recu.preuve();
-    entities
+    int enregistre = entities
       .createNativeQuery(
         """
         insert into recu_d_acte
           (commande, suivi_id, pointage_id, sujet, emetteur, reference, preuve, revision_de_depart,
            revision_enregistree, enregistre_le, activites_concernees, evenements_touches)
-        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          on conflict (commande) do nothing
         """
       )
       .setParameter(1, preuve.commande())
@@ -63,6 +65,9 @@ class JpaRecusDActes implements RecusDActes {
           .collect(Collectors.joining(","))
       )
       .executeUpdate();
+    if (enregistre == 0) {
+      throw new ConfirmationReutiliseeException(preuve.commande());
+    }
   }
 
   @Override
