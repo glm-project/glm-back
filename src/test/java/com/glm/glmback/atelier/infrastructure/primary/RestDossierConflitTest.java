@@ -16,6 +16,24 @@ import tools.jackson.databind.json.JsonMapper;
 class RestDossierConflitTest {
 
   @Test
+  void shouldConserverLActiviteEnCoursSansDureeDefinitiveApresAnnulation() {
+    var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    var transition = passageEnTravailDe(travail).a(LE_10_MAI_2026_A_12H);
+    var suivi = suiviDAtelierEngage().enregistre(travail).enregistre(transition);
+    var evaluation = LE_10_MAI_2026_A_12H.plusSeconds(3600);
+    var avant = new LectureDossierConflit(new AdresseDossierConflit(suivi.id(), transition.id()), new LectureDuSuivi(suivi, evaluation));
+    var apres = avant.apresActe(new LectureDuSuivi(suivi.annule(transition.id(), annulationParLeroy()), evaluation));
+
+    var json = JsonMapper.builder().build().valueToTree(RestDossierConflit.from(apres, annuaireDeDupontEtMartin()));
+
+    assertThat(json.path("kind").asString()).isEqualTo("ANCRE_ANNULEE");
+    assertThat(json.at("/activites/0/activite").asString()).isEqualTo(travail.activite().orElseThrow().uuid().toString());
+    assertThat(json.at("/activites/0/etat").asString()).isEqualTo("EN_COURS");
+    assertThat(json.at("/activites/0/duree").isNull()).isTrue();
+    assertThat(json.at("/activites/0/fin").isNull()).isTrue();
+  }
+
+  @Test
   void shouldPublierLeGesteSaCibleEtLeFaitQuiLARemplacee() {
     EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     EvenementDAtelier nonConformite = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_12H);
@@ -33,6 +51,8 @@ class RestDossierConflitTest {
     assertThat(json.at("/diagnostics/0/cible/activite").asString()).isEqualTo(travail.activite().orElseThrow().uuid().toString());
     assertThat(json.at("/diagnostics/0/cible/ouvrant").asString()).isEqualTo(travail.id().uuid().toString());
     assertThat(json.at("/diagnostics/0/cible/termineePar").asString()).isEqualTo(nonConformite.id().uuid().toString());
+    assertThat(json.at("/activites/0/etat").asString()).isEqualTo("A_RESOUDRE");
+    assertThat(json.at("/activites/0/duree").isNull()).isTrue();
   }
 
   @Test

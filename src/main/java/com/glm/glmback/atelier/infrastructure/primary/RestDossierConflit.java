@@ -12,7 +12,8 @@ record RestDossierConflit(
   long revision,
   Instant evaluation,
   RestSuiviDAtelier suivi,
-  List<RestDiagnosticDeConflit> diagnostics
+  List<RestDiagnosticDeConflit> diagnostics,
+  List<RestActiviteDuDossier> activites
 ) {
   static RestDossierConflit from(LectureDossierConflit dossier, AnnuaireDAtelier annuaire) {
     return new RestDossierConflit(
@@ -21,7 +22,12 @@ record RestDossierConflit(
       dossier.lecture().suivi().revision().value(),
       dossier.lecture().evaluation(),
       RestSuiviDAtelier.from(dossier.lecture(), annuaire),
-      dossier.diagnostics().stream().map(RestDiagnosticDeConflit::from).toList()
+      dossier.diagnostics().stream().map(RestDiagnosticDeConflit::from).toList(),
+      dossier
+        .activites()
+        .stream()
+        .map(intervalle -> RestActiviteDuDossier.from(intervalle, annuaire))
+        .toList()
     );
   }
 }
