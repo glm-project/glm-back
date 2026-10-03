@@ -44,7 +44,11 @@ public class ConfirmerLesActes {
     var existant = recus.get(commande);
     if (existant.isPresent()) {
       var recu = existant.orElseThrow();
-      if (!recu.reference().equals(reference) || !recu.preuve().contexte().correspondA(contexte)) {
+      if (
+        !recu.preuve().adresse().suivi().equals(suivi) ||
+        !recu.reference().equals(reference) ||
+        !recu.preuve().contexte().correspondA(contexte)
+      ) {
         throw new ConfirmationReutiliseeException(commande);
       }
       return canonique(recu);

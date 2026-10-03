@@ -133,6 +133,23 @@ class ConfirmationsDActesIT {
     assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(premier.dossier().lecture().suivi());
   }
 
+  @Test
+  @WithTenant("impeccmold")
+  void shouldRefuserLeRejeuSurUnAutreSuivi() {
+    // GIVEN
+    var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
+    var autre = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
+    var preuve = preuveDAnnulationDeTransition(suivi);
+    when(references.read("reference-annulation")).thenReturn(preuve);
+    var premier = confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD);
+    // WHEN THEN
+    assertThatThrownBy(() ->
+      confirmations.confirmer(autre.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD)
+    ).isExactlyInstanceOf(ConfirmationReutiliseeException.class);
+    assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(premier.dossier().lecture().suivi());
+    assertThat(inTransaction(() -> suivis.get(autre.id()))).contains(autre);
+  }
+
   private <T> T inTransaction(Supplier<T> action) {
     return transactions.execute(status -> action.get());
   }
