@@ -41,4 +41,31 @@ class ConflitsDAtelierCriteriaTest {
 
     assertThat(criteria.matches(ligne, annuaire)).isTrue();
   }
+
+  @Test
+  void shouldExigerLesDeuxTextesDeRecherche() {
+    assertThatThrownBy(() -> new ConflitsDAtelierCriteria(null, "")).isInstanceOf(
+      com.glm.glmback.shared.error.domain.MissingMandatoryValueException.class
+    );
+    assertThatThrownBy(() -> new ConflitsDAtelierCriteria("", null)).isInstanceOf(
+      com.glm.glmback.shared.error.domain.MissingMandatoryValueException.class
+    );
+  }
+
+  @Test
+  void shouldExigerQueLesDeuxRecherchesCorrespondent() {
+    var ouvrant = debutDu9Janvier2043A8hPar(OPERATEUR_ID_DUPONT);
+    var ligne = ligneDuPremierConflitDe(
+      suiviPourFiltre2043(elementFiltrePourcentA())
+        .enregistre(ouvrant)
+        .enregistre(finDe(ouvrant).a(ouvrant.dateDeSurvenue().plusSeconds(3600)))
+        .enregistre(finDe(ouvrant).a(ouvrant.dateDeSurvenue().plusSeconds(7200)))
+    );
+    var annuaire = new AnnuaireDAtelier(Map.of(), Map.of());
+
+    assertThat(new ConflitsDAtelierCriteria("", "").matches(ligne, annuaire)).isTrue();
+    assertThat(new ConflitsDAtelierCriteria("inconnu", "").matches(ligne, annuaire)).isFalse();
+    assertThat(new ConflitsDAtelierCriteria("", "inconnu").matches(ligne, annuaire)).isFalse();
+    assertThat(new ConflitsDAtelierCriteria("", "FILTREx2043").matches(ligne, annuaire)).isFalse();
+  }
 }
