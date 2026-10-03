@@ -580,3 +580,59 @@ un autre élément, avec `element`, `operateur`, `poste` facultatif, les identit
 et les faits actifs `pointages`. Une séquence sans activité à résoudre reste visible pour son élément
 sans rendre les montants incomplets. Résoudre les faits par annulation ou correction recalcule les valeurs.
 Cette route ne prend pas de paramètre d'évaluation et ne garantit pas un instantané face aux écritures concurrentes.
+
+## Contrat de résolution manuelle en préparation
+
+Les coutures suivantes sont arrêtées pour la livraison des dossiers de conflit. Cette section décrit
+le contrat à implémenter ; les routes correspondantes ne sont pas encore publiées dans OpenAPI.
+Leur disponibilité sera établie par les scénarios REST et le contrat généré, jamais par ce tableau seul.
+
+| Capacité               | Route                                                                    | Droit                                 |
+| ---------------------- | ------------------------------------------------------------------------ | ------------------------------------- |
+| Liste paginée          | `GET /api/atelier/conflits?operateur=…&element=…&page=0&size=5`          | `USER` ou `GESTIONNAIRE`              |
+| Dossier adressé        | `GET /api/atelier/suivis/{suivi}/conflits/{pointage}`                    | `USER` ou `GESTIONNAIRE`              |
+| Aperçu sans écriture   | `POST /api/atelier/suivis/{suivi}/conflits/{pointage}/apercus`           | `GESTIONNAIRE`                        |
+| Confirmation           | `POST /api/atelier/suivis/{suivi}/confirmations-de-resolution`           | `GESTIONNAIRE`                        |
+| Vérification canonique | `GET /api/atelier/suivis/{suivi}/confirmations-de-resolution/{commande}` | `GESTIONNAIRE`, auteur de la commande |
+
+L'adresse d'un dossier est le couple suivi/pointage ; une identité technique de projection n'est pas
+une adresse. Le résultat porte `EN_CONFLIT`, `INTROUVABLE`, `ANCRE_ANNULEE` ou `HORS_CONFLIT`.
+Un suivi absent du tenant courant répond 404 sans journal. Un suivi accessible conserve son journal
+dans les trois résultats d'adresse sans conflit ; aucun de ces résultats ne redirige implicitement.
+
+Le dossier et son avant/après portent la même `revision` numérique du suivi, son `evaluation`, le
+journal complet, les activités concernées et les conflits restants. La révision commence à zéro à
+l'engagement et progresse à chaque modification effective du journal ou de la clôture, par toutes
+les routes, pointages Pupitre compris. Un rejeu strict ou un geste absorbé ne la fait pas progresser.
+La valeur Java est `RevisionDuSuivi`, séparée des identités de faits et du nombre d'événements.
+
+Les faits portent leurs IDs bruts opérateur/poste indépendamment de la résolution des fiches, leur
+activité créée et visée, auteur, survenue, enregistrement, origine, annulation et lien `remplace`.
+Le poste absent est distinct d'une fiche absente pour un poste identifié. Les activités exposent
+`EN_COURS`, `TERMINEE`, `TERMINEE_AUTOMATIQUEMENT` ou `A_RESOUDRE` ; seuls les états terminés
+portent une durée définitive ISO 8601. Les neuf décimales d'un instant sont conservées.
+
+Le diagnostic vient de l'interprétation du domaine au moment de la contradiction. Il identifie le
+geste, sa cible, l'ouvrant actif ou annulé, le fait qui a terminé ou remplacé la cible et une raison
+structurée. Les premières familles sont cible remplacée, déjà terminée, pas encore ouverte, ouvrant
+annulé, même catégorie, cible échue avec une autre activité en cours et contradiction avec une
+régularisation. Le mapper REST ne rejoue aucun automate. Les propositions portent un code, les faits
+qui les étayent et un acte explicite ; aucune n'est sélectionnée et aucun motif n'est prérempli.
+
+Le corps d'aperçu porte `commande` (UUID créé par le client), `revision` et `acte`. L'acte porte
+`kind` (`CORRECTION`, `ANNULATION`, `REGULARISATION`) et les champs propres à cette intention :
+`pointage` visé et `motif` pour l'annulation ; `pointage` visé, `fait` et `motif` pour la correction ;
+`fait` pour la régularisation, sans justificatif obligatoire. Le fait conserve les UUID
+`operateur`/`poste`, `type`, `intention`, `activiteVisee` éventuelle et chaîne exacte `instant` ; auteur et tarifs restent
+des valeurs serveur. L'aperçu rend la commande, l'acte repris, avant/après, évaluation, révision,
+`reference` opaque et `expireLe`. Il ne réserve aucune identité et n'enregistre rien.
+
+La confirmation reçoit uniquement `commande` et `reference`. Le reçu rend la commande, l'adresse,
+l'acte exact, la révision avant/après, l'instant d'enregistrement, le résultat au dossier d'origine
+et les continuations explicites vers les ancrages actifs des conflits restants. L'enregistrement
+d'un acte laissant un conflit est une réussite. La vérification rend `ENREGISTREE` avec le reçu
+canonique, ou `NON_ATTESTEE` : l'absence momentanée d'un reçu ne permet pas de conclure à un rollback.
+
+La référence autoportante, son intégrité, sa rotation et sa validité sont arrêtées dans
+[l'ADR 0004](adr/0004-authenticate-stateless-resolution-previews.md). Les codes de refus seront
+publiés avec leurs handlers et les scénarios REST dans [le catalogue](codes-erreur.md).
