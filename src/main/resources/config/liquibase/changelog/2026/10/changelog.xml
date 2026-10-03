@@ -6,5 +6,6 @@
 >
   <include file="001-operateur_identifiant.xml" relativeToChangelogFile="true" />
   <include file="003-suivi_d_atelier_revision.xml" relativeToChangelogFile="true" />
+  <include file="004-evenement_d_atelier_remplacement.xml" relativeToChangelogFile="true" />
   <include file="005-atelier_instants_exacts.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>

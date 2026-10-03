@@ -303,6 +303,7 @@ public final class AtelierFixture {
       .tauxHoraire(Optional.of(TAUX_HORAIRE_DUPONT))
       .auteur(auteur)
       .origine(origine)
+      .remplace(Optional.empty())
       .horodatage(horodatage);
   }
 }

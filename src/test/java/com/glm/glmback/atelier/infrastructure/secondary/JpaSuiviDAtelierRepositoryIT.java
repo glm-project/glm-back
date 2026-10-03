@@ -722,6 +722,7 @@ class JpaSuiviDAtelierRepositoryIT {
       .tauxHoraire(Optional.of(TAUX_HORAIRE_DUPONT))
       .auteur(AUTEUR_LEROY)
       .origine(OrigineDuPointage.REGULARISATION)
+      .remplace(Optional.empty())
       .horodatage(Horodatage.saisiA(date));
   }
 
@@ -748,6 +749,7 @@ class JpaSuiviDAtelierRepositoryIT {
       .tauxHoraire(tauxHoraire)
       .auteur(AUTEUR_DUPONT)
       .origine(OrigineDuPointage.POINTAGE)
+      .remplace(Optional.empty())
       .horodatage(horodatage);
   }
 

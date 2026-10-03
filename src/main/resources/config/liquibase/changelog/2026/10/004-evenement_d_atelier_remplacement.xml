@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <changeSet id="evenement_d_atelier_remplacement" author="glm">
+    <addColumn tableName="evenement_d_atelier">
+      <column name="remplace_evenement_id" type="${uuidType}" />
+    </addColumn>
+    <addForeignKeyConstraint
+      baseTableName="evenement_d_atelier"
+      baseColumnNames="remplace_evenement_id"
+      referencedTableName="evenement_d_atelier"
+      referencedColumnNames="id"
+      constraintName="fk_evenement_remplace"
+      deferrable="true"
+      initiallyDeferred="true"
+    />
+  </changeSet>
+</databaseChangeLog>

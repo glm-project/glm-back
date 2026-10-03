@@ -792,6 +792,11 @@
             "$ref" : "#/components/schemas/RestPosteDAtelier",
             "description" : "Poste de travail, toujours facultatif."
           },
+          "remplace" : {
+            "description" : "Evenement corrige par ce remplacant. Absent pour un pointage, une regularisation ou un historique sans lien explicite.",
+            "format" : "uuid",
+            "type" : "string"
+          },
           "tauxHoraire" : {
             "description" : "Taux horaire de l'operateur, copie a la saisie. Absent si l'operateur n'est pas valorise.",
             "example" : 22.0,

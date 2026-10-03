@@ -4,6 +4,7 @@ import com.glm.glmback.atelier.domain.ActiviteId;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
 import com.glm.glmback.atelier.domain.CoutHoraire;
 import com.glm.glmback.atelier.domain.EvenementDAtelier;
+import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.IntentionDePointage;
 import com.glm.glmback.atelier.domain.NatureDOperation;
 import com.glm.glmback.atelier.domain.TauxHoraire;
@@ -71,7 +72,11 @@ record RestEvenementDAtelier(
     requiredMode = Schema.RequiredMode.REQUIRED
   )
   boolean estUneRegularisation,
-  @Schema(description = "Presente lorsque l'evenement a ete annule. L'evenement reste au journal.") RestAnnulation annulation
+  @Schema(description = "Presente lorsque l'evenement a ete annule. L'evenement reste au journal.") RestAnnulation annulation,
+  @Schema(
+    description = "Evenement corrige par ce remplacant. Absent pour un pointage, une regularisation ou un historique sans lien explicite."
+  )
+  UUID remplace
 ) {
   static RestEvenementDAtelier from(EvenementDAtelier evenement, AnnuaireDAtelier annuaire) {
     return new RestEvenementDAtelier(
@@ -89,7 +94,8 @@ record RestEvenementDAtelier(
       evenement.dateDeSurvenue(),
       evenement.dateDEnregistrement(),
       evenement.estUneRegularisation(),
-      evenement.annulation().map(RestAnnulation::from).orElse(null)
+      evenement.annulation().map(RestAnnulation::from).orElse(null),
+      evenement.remplace().map(EvenementDAtelierId::uuid).orElse(null)
     );
   }
 }

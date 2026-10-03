@@ -232,6 +232,7 @@ public final class SuivisDAtelierService {
       .tauxHoraire(operateurConnu.tauxHoraire())
       .auteur(auteur)
       .origine(origine)
+      .remplace(Optional.empty())
       .horodatage(horodatage);
   }
 

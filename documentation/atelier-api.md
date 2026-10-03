@@ -64,6 +64,10 @@ Chaque événement porte deux dates :
 - `dateDeSurvenue` — l'heure **métier**, celle où le fait a eu lieu ;
 - `dateDEnregistrement` — l'heure de la **saisie**.
 
+Les instants du journal, de la clôture et des activités sont conservés exactement à la nanoseconde, y compris
+lorsqu'un fait précède le suivant d'une seule nanoseconde. La réponse sérialise l'instant en UTC (`Z`) ; le décalage
+d'origine (`+02:00`, par exemple) ne change pas l'instant. Les anciennes dates déjà arrondies restent telles quelles.
+
 Un affichage honnête montre l'heure métier, et signale la saisie différée par l'écart entre les deux (« pointé le
 11/05 à 9 h 15 pour le 10/05 à 17 h »).
 
@@ -409,6 +413,12 @@ en ressort avec deux événements de plus, pas un — l'ancien annulé, le nouve
 pointage ouvrant garde son `activite` : la fin qui visait l'activité la termine toujours. Corriger un début de 8 h à
 12 h, lu à 22 h, rend l'activité en cours jusqu'à son échéance de 1 h, et la fin que le pupitre pointe ensuite en
 visant le pointage d'origine la termine.
+
+Le remplaçant porte aussi `remplace`, l'UUID de l'événement corrigé : ce lien distingue la correction d'une
+annulation suivie d'une régularisation et vaut aussi pour une fin. Corriger un remplaçant crée le lien vers ce
+remplaçant ; l'annuler conserve son lien. Un pointage ou une régularisation rend `remplace: null`. Les anciens
+événements sans lien explicite rendent aussi `null` : aucune proximité de date ou d'auteur ne reconstitue une
+correction certaine.
 
 Déplacer par correction un ouvrant vers un autre opérateur ou poste répond **409** `activite-visee-incoherente` si
 un geste actif vise encore cette activité depuis l'ancienne clé. Corriger ou annuler d'abord ce geste permet ensuite
