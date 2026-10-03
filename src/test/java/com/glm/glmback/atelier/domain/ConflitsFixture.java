@@ -84,4 +84,20 @@ public final class ConflitsFixture {
       .remplace(Optional.empty())
       .horodatage(Horodatage.saisiA(Instant.parse("2043-01-09T08:00:00Z")));
   }
+
+  public static ElementEngage elementLitteralePourcentSoulignementAntislash2043() {
+    return new ElementEngage(
+      new ElementEngageId(UUID.randomUUID()),
+      new NomDElement("LITTERALE_%\\2043"),
+      TypeDElementEngage.ORDRE_DE_FABRICATION
+    );
+  }
+
+  public static ElementEngage elementLitteraleXX2043() {
+    return new ElementEngage(
+      new ElementEngageId(UUID.randomUUID()),
+      new NomDElement("LITTERALEXX2043"),
+      TypeDElementEngage.ORDRE_DE_FABRICATION
+    );
+  }
 }

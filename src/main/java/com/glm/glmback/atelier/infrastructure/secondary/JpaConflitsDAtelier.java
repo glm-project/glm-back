@@ -40,8 +40,8 @@ class JpaConflitsDAtelier implements ConflitsDAtelier {
       join suivi_d_atelier suivi on suivi.id = sequence.suivi_id
       join evenement_d_atelier premier on premier.id = sequence.id
       left join operateur on operateur.id = sequence.operateur_id
-      where lower(coalesce(operateur.prenom || ' ' || operateur.nom, '')) like :operateur
-        and (lower(suivi.element_nom) like :element or cast(suivi.element_id as varchar) like :element)
+      where lower(coalesce(operateur.prenom || ' ' || operateur.nom, '')) like :operateur escape '\\'
+        and (lower(suivi.element_nom) like :element escape '\\' or cast(suivi.element_id as varchar) like :element escape '\\')
     ), page as (
       select * from filtre order by premier_pointage, suivi, ancre limit :taille offset :position
     )
@@ -75,11 +75,15 @@ class JpaConflitsDAtelier implements ConflitsDAtelier {
   private List<Tuple> lignes(ConflitsDAtelierCriteria criteria, Pageable pageable) {
     return entities
       .createNativeQuery(LIGNES, Tuple.class)
-      .setParameter("element", "%" + criteria.element() + "%")
-      .setParameter("operateur", "%" + criteria.operateur() + "%")
+      .setParameter("element", motif(criteria.element()))
+      .setParameter("operateur", motif(criteria.operateur()))
       .setParameter("taille", pageable.size())
       .setParameter("position", pageable.offset())
       .getResultList();
+  }
+
+  private static String motif(String texte) {
+    return "%" + texte.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
   }
 
   private static ConflitEnListe from(Tuple ligne) {

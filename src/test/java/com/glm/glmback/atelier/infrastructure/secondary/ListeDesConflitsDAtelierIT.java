@@ -136,6 +136,34 @@ class ListeDesConflitsDAtelierIT {
     assertThat(suivante.content()).isEmpty();
   }
 
+  @Test
+  @WithTenant("impeccmold")
+  void shouldRechercherPourcentSoulignementEtAntislashCommeDuTexteLitteral() {
+    var premier = debutDu9Janvier2043A8hPar(OPERATEUR_ID_DUPONT);
+    var second = debutDu9Janvier2043A8hPar(OPERATEUR_ID_DUPONT);
+    SuiviDAtelier cherche = suiviPourFiltre2043(elementLitteralePourcentSoulignementAntislash2043())
+      .enregistre(premier)
+      .enregistre(finDe(premier).a(premier.dateDeSurvenue().plusSeconds(3600)))
+      .enregistre(finDe(premier).a(premier.dateDeSurvenue().plusSeconds(7200)));
+    SuiviDAtelier autre = suiviPourFiltre2043(elementLitteraleXX2043())
+      .enregistre(second)
+      .enregistre(finDe(second).a(second.dateDeSurvenue().plusSeconds(3600)))
+      .enregistre(finDe(second).a(second.dateDeSurvenue().plusSeconds(7200)));
+    transactions.executeWithoutResult(transaction -> {
+      suivis.create(cherche);
+      suivis.create(autre);
+    });
+
+    var page = transactions.execute(transaction ->
+      conflits.list(new ConflitsDAtelierCriteria("", "lItTeRaLe_%\\2043"), new Pageable(0, 5))
+    );
+
+    assertThat(page.totalElementsCount()).isEqualTo(1);
+    assertThat(page.content())
+      .extracting(ligne -> ligne.adresse().suivi())
+      .containsExactly(cherche.id());
+  }
+
   private void insere(OperateurConnu operateur) {
     entities
       .createNativeQuery("insert into operateur (id, nom, prenom) values (:id, :nom, :prenom)")
