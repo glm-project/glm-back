@@ -43,7 +43,9 @@ sealed interface RestActeDeResolution {
   ) implements RestActeDeResolution {
     @Override
     public ActeDeResolution toDomain(SuiviDAtelierId suivi, Auteur auteur) {
-      return null;
+      return new ActeDeResolution.Annulation(
+        new AnnulationAEnregistrer(suivi, new EvenementDAtelierId(pointage), auteur, new MotifDAnnulation(motif))
+      );
     }
   }
 

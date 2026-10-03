@@ -5,6 +5,7 @@ import static com.glm.glmback.atelier.application.ResolutionFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
+import com.glm.glmback.atelier.domain.ActeDeResolution;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -43,5 +44,18 @@ class RestActeDeResolutionTest {
     assertThat(json.at("/fait/type").asString()).isEqualTo("FIN");
     assertThat(json.has("auteur")).isFalse();
     assertThat(json.has("suivi")).isFalse();
+  }
+
+  @Test
+  void shouldLireLAnnulationAvecLeSuiviEtLAuteurDeLaRequete() {
+    var preuve = preuveDAnnulationDeTransition(suiviAvecTransitionDeMemeCategorie());
+    var wire = RestActeDeResolution.from(preuve.acte());
+    var acte = wire.toDomain(preuve.adresse().suivi(), GESTIONNAIRE_LEROY_RENOMME.auteur());
+    assertThat(acte).isInstanceOf(ActeDeResolution.Annulation.class);
+    var annulation = ((ActeDeResolution.Annulation) acte).commande();
+    assertThat(annulation.suivi()).isEqualTo(preuve.adresse().suivi());
+    assertThat(annulation.evenement()).isEqualTo(preuve.adresse().pointage());
+    assertThat(annulation.auteur()).isEqualTo(GESTIONNAIRE_LEROY_RENOMME.auteur());
+    assertThat(annulation.motif().value()).isEqualTo("Erreur de saisie");
   }
 }
