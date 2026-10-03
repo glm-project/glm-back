@@ -50,9 +50,11 @@ It reevaluates the proposed result at the current instant and refuses a material
 crossing an activity's expiry. Display labels and the actual technical recording or cancellation
 instant may change. A refused or expired preview requires a new preview and a new command UUID.
 
-Confirmation first looks for its durable receipt in the current tenant after authenticating the
-reference and matching its author, follow-up and command. A matching committed receipt remains
-recoverable after preview expiry. A command reused with another reference is rejected. On first
+Confirmation first looks for its durable receipt in the current tenant and matches the authenticated
+author, follow-up, command and exact opaque reference stored with it. A matching committed receipt
+remains recoverable after preview expiry or key rotation; it needs no renewed referential or preview
+validity check. For a new command, the reference is authenticated and decoded before application.
+A command reused with another reference is rejected. On first
 application, event identity reservation, guarded aggregate update, projections and receipt insertion
 belong to one transaction. A simultaneous confirmation of the same command waits for that transaction
 and returns its receipt. No receipt observed by a read proves only `NON_ATTESTEE`; it never proves
