@@ -57,7 +57,10 @@ sealed interface RestActeDeResolution {
   ) implements RestActeDeResolution {
     @Override
     public ActeDeResolution toDomain(SuiviDAtelierId suivi, Auteur auteur) {
-      return null;
+      return new ActeDeResolution.Correction(
+        new CorrectionAEnregistrer(new EvenementDAtelierId(pointage), new MotifDAnnulation(motif), fait.toDomain(suivi, auteur)),
+        fait.instant()
+      );
     }
   }
 

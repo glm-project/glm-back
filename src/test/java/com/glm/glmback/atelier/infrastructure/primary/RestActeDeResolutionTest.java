@@ -72,4 +72,20 @@ class RestActeDeResolutionTest {
     assertThat(regularisation.commande().suivi()).isEqualTo(preuve.adresse().suivi());
     assertThat(regularisation.commande().poste()).isEmpty();
   }
+
+  @Test
+  void shouldLireLaCorrectionAvecSonLienEtLAuteurDeLaRequete() {
+    var correction = correctionDeLaFinAvecNeufDecimales();
+    var wire = RestActeDeResolution.from(correction);
+    var suivi = correction.commande().remplacement().suivi();
+    var acte = wire.toDomain(suivi, GESTIONNAIRE_LEROY_RENOMME.auteur());
+    assertThat(acte).isInstanceOf(ActeDeResolution.Correction.class);
+    var lu = (ActeDeResolution.Correction) acte;
+    assertThat(lu.instant()).isEqualTo("2026-05-10T19:00:00.123456789+02:00");
+    assertThat(lu.commande().evenement()).isEqualTo(correction.commande().evenement());
+    assertThat(lu.commande().motif()).isEqualTo(correction.commande().motif());
+    assertThat(lu.commande().remplacement().auteur()).isEqualTo(GESTIONNAIRE_LEROY_RENOMME.auteur());
+    assertThat(lu.commande().remplacement().poste()).isEqualTo(correction.commande().remplacement().poste());
+    assertThat(lu.commande().remplacement().activiteVisee()).isEqualTo(correction.commande().remplacement().activiteVisee());
+  }
 }
