@@ -1,6 +1,7 @@
 package com.glm.glmback.atelier.application;
 
 import com.glm.glmback.atelier.domain.EvenementDAtelier;
+import com.glm.glmback.atelier.domain.ConfirmationReutiliseeException;
 import com.glm.glmback.atelier.domain.LectureDossierConflit;
 import com.glm.glmback.atelier.domain.LectureDuSuivi;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
@@ -42,7 +43,11 @@ public class ConfirmerLesActes {
   public ResultatDActe confirmer(SuiviDAtelierId suivi, UUID commande, String reference, ContexteDeResolution contexte) {
     var existant = recus.get(commande);
     if (existant.isPresent()) {
-      return canonique(existant.orElseThrow());
+      var recu = existant.orElseThrow();
+      if (!recu.reference().equals(reference)) {
+        throw new ConfirmationReutiliseeException(commande);
+      }
+      return canonique(recu);
     }
     var preuve = references.read(reference);
     var avant = suivis.getForUpdate(suivi).orElseThrow(() -> new SuiviDAtelierIntrouvableException(suivi));
