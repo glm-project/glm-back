@@ -13,6 +13,7 @@ import com.glm.glmback.atelier.application.PreparationDesActes;
 import com.glm.glmback.atelier.application.RecusDActes;
 import com.glm.glmback.atelier.application.ReferencesDApercu;
 import com.glm.glmback.atelier.domain.ConfirmationReutiliseeException;
+import com.glm.glmback.atelier.domain.ApercuInvalideException;
 import com.glm.glmback.atelier.domain.ElementsEngageables;
 import com.glm.glmback.atelier.domain.Habilitations;
 import com.glm.glmback.atelier.domain.OperateursConnus;
@@ -148,6 +149,21 @@ class ConfirmationsDActesIT {
     ).isExactlyInstanceOf(ConfirmationReutiliseeException.class);
     assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(premier.dossier().lecture().suivi());
     assertThat(inTransaction(() -> suivis.get(autre.id()))).contains(autre);
+  }
+
+  @Test
+  @WithTenant("impeccmold")
+  void shouldRefuserUnePreuvePrepareeParUnAutreSujet() {
+    // GIVEN
+    var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
+    var preuve = preuveDAnnulationDeTransition(suivi);
+    when(references.read("reference-annulation")).thenReturn(preuve);
+    // WHEN THEN
+    assertThatThrownBy(() ->
+      confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_MARTIN_IMPECCMOLD)
+    ).isExactlyInstanceOf(ApercuInvalideException.class);
+    assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(suivi);
+    assertThat(inTransaction(() -> recus.get(preuve.commande()))).isEmpty();
   }
 
   private <T> T inTransaction(Supplier<T> action) {
