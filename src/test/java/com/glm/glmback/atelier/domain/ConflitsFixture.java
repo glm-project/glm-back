@@ -100,4 +100,21 @@ public final class ConflitsFixture {
       TypeDElementEngage.ORDRE_DE_FABRICATION
     );
   }
+
+  public static ConflitEnListe ligneDuPremierConflitDe(SuiviDAtelier suivi) {
+    var sequence = suivi.conflits().getFirst();
+    var premier = suivi
+      .journal()
+      .evenements()
+      .stream()
+      .filter(fait -> fait.id().equals(sequence.pointages().getFirst()))
+      .findFirst()
+      .orElseThrow();
+    return ConflitEnListe.builder()
+      .adresse(new AdresseDossierConflit(suivi.id(), premier.id()))
+      .revision(suivi.revision())
+      .element(suivi.element())
+      .cle(sequence.cle())
+      .repere(new RepereDeSequence(premier.dateDeSurvenue(), sequence.pointages().size()));
+  }
 }

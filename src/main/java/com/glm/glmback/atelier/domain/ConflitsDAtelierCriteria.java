@@ -11,4 +11,15 @@ public record ConflitsDAtelierCriteria(String operateur, String element) {
     operateur = operateur.toLowerCase(Locale.ROOT);
     element = element.toLowerCase(Locale.ROOT);
   }
+
+  public boolean matches(ConflitEnListe ligne, AnnuaireDAtelier annuaire) {
+    String libelleOperateur = annuaire
+      .operateur(ligne.cle().operateur())
+      .map(fiche -> fiche.prenom().value() + " " + fiche.nom().value())
+      .orElse("");
+    return (
+      libelleOperateur.toLowerCase(Locale.ROOT).contains(operateur)
+      && ligne.element().nom().value().toLowerCase(Locale.ROOT).contains(element)
+    );
+  }
 }
