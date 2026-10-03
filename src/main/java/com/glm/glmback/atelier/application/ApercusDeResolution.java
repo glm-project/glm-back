@@ -41,14 +41,16 @@ public class ApercusDeResolution {
   ) {
     var suivi = suivis.get(adresse.suivi()).orElseThrow();
     var maintenant = clock.now();
-    var prepare = preparation.prepare(suivi, acte, Optional.empty(), contexte.gestionnaire().auteur(), maintenant);
+    Optional<EvenementDAtelierId> evenement =
+      acte instanceof ActeDeResolution.Annulation ? Optional.empty() : Optional.of(EvenementDAtelierId.newId());
+    var prepare = preparation.prepare(suivi, acte, evenement, contexte.gestionnaire().auteur(), maintenant);
     var preuve = PreuveDApercu.builder()
       .commande(commande)
       .adresse(adresse)
       .revision(suivi.revision())
       .contexte(contexte)
       .acte(acte)
-      .evenement(Optional.empty())
+      .evenement(evenement)
       .evaluation(maintenant)
       .expireLe(maintenant.plus(validite.validite()))
       .empreinteConsequences(prepare.empreinteConsequences());

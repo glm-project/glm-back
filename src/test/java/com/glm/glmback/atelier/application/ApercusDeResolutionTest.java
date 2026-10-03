@@ -16,6 +16,71 @@ import org.junit.jupiter.api.Test;
 class ApercusDeResolutionTest {
 
   @Test
+  void shouldPreparerLaFinCorrigeeEtConserverSonIdentifiantDansLaPreuve() {
+    var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    var nc = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_12H);
+    var fin = finDe(travail).a(LE_10_MAI_2026_A_17H);
+    var suivi = suiviDAtelierEngage().enregistre(travail).enregistre(nc).enregistre(fin);
+    var repository = mock(SuiviDAtelierRepository.class);
+    when(repository.get(suivi.id())).thenReturn(Optional.of(suivi));
+    var operateurs = mock(OperateursConnus.class);
+    when(operateurs.get(OPERATEUR_ID_DUPONT)).thenReturn(Optional.of(OPERATEUR_CONNU_DUPONT));
+    var postes = mock(PostesConnus.class);
+    when(postes.get(POSTE_ID_FRAISEUSE_1)).thenReturn(Optional.of(POSTE_CONNU_FRAISEUSE_1));
+    var habilitations = mock(Habilitations.class);
+    when(habilitations.estHabilite(OPERATEUR_ID_DUPONT, POSTE_ID_FRAISEUSE_1)).thenReturn(true);
+    var preparation = PreparationDesActes.builder()
+      .repository(repository)
+      .elements(mock(ElementsEngageables.class))
+      .operateurs(operateurs)
+      .postes(postes)
+      .habilitations(habilitations)
+      .empreintes((apres, evaluation) -> "fin-corrigee");
+    var references = mock(ReferencesDApercu.class);
+    when(references.issue(any())).thenReturn("fin-opaque");
+    var service = ApercusDeResolution.builder()
+      .suivis(repository)
+      .preparation(preparation)
+      .references(references)
+      .clock(() -> LE_10_MAI_2026_A_17H)
+      .validite(() -> Duration.ofMinutes(15));
+    var remplacement = RegularisationAEnregistrer.builder()
+      .suivi(suivi.id())
+      .type(TypeDEvenementDAtelier.FIN)
+      .intention(IntentionDePointage.FIN)
+      .activiteVisee(nc.activite())
+      .operateur(OPERATEUR_ID_DUPONT)
+      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
+      .auteur(AUTEUR_LEROY)
+      .dateDeSurvenue(LE_10_MAI_2026_A_17H);
+    var acte = new ActeDeResolution.Correction(
+      new CorrectionAEnregistrer(fin.id(), MOTIF_ERREUR_DE_SAISIE, remplacement),
+      "2026-05-10T17:00:00Z"
+    );
+
+    var apercu = service.apercu(
+      UUID.randomUUID(),
+      new AdresseDossierConflit(suivi.id(), fin.id()),
+      suivi.revision(),
+      acte,
+      CONTEXTE_LEROY_IMPECCMOLD
+    );
+
+    assertThat(apercu.apres().kind()).isEqualTo(EtatDAdresseDossier.ANCRE_ANNULEE);
+    assertThat(apercu.apres().activites())
+      .extracting(IntervalleDActivite::debut)
+      .containsExactly(LE_10_MAI_2026_A_8H, LE_10_MAI_2026_A_12H);
+    assertThat(apercu.apres().activites()).allSatisfy(activite -> assertThat(activite.aResoudre()).isFalse());
+    var id = apercu.reference().preuve().evenement().orElseThrow();
+    assertThat(apercu.apres().lecture().suivi().journal().evenement(id))
+      .get()
+      .satisfies(fait -> assertThat(fait.activiteVisee()).isEqualTo(nc.activite()));
+    assertThat(suivi.journal().evenements()).hasSize(3);
+    verify(repository).get(suivi.id());
+    verifyNoMoreInteractions(repository);
+  }
+
+  @Test
   void shouldPreparerLAnnulationSansEcrireEtAuthentifierLesMemesConsequences() {
     var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     var transition = passageEnTravailDe(travail).a(LE_10_MAI_2026_A_12H);
