@@ -147,3 +147,198 @@ Feature: Resolution reelle des conflits
     And les periodes relues de "Resolution 4403" ont les durees
       | PT4H |
       | PT5H1M |
+
+  Scenario: Resolution reelle de la transition remplacee conserve la reprise
+    Given il est "2044-01-09T07:00:00Z"
+    And l'entreprise a cree l'element de fabrication "Resolution 4404"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | RES4404              |
+    And j'ai engage l'element "Resolution 4404" en atelier
+    And il est "2044-01-09T08:00:00Z"
+    And j'ai pointe sur "Resolution 4404"
+      | id        | 00000000-0000-0000-0000-000000044041 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+    And il est "2044-01-09T12:00:00Z"
+    And j'ai pointe sur "Resolution 4404"
+      | id        | 00000000-0000-0000-0000-000000044042 |
+      | type      | NON_CONFORMITE                       |
+      | intention | TRANSITION                           |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+      | cible     | 00000000-0000-0000-0000-000000044041 |
+    And il est "2044-01-09T14:00:00Z"
+    And j'ai pointe sur "Resolution 4404"
+      | id        | 00000000-0000-0000-0000-000000044043 |
+      | type      | DEBUT                                |
+      | intention | TRANSITION                           |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+      | cible     | 00000000-0000-0000-0000-000000044041 |
+    And il est "2044-01-09T17:00:00Z"
+    And j'ai pointe sur "Resolution 4404"
+      | id        | 00000000-0000-0000-0000-000000044044 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+      | cible     | 00000000-0000-0000-0000-000000044043 |
+    And il est "2044-01-09T18:00:00Z"
+    When je prepare la resolution du conflit de "Resolution 4404" ancre 0
+      | kind      | CORRECTION               |
+      | pointage  | 2                        |
+      | motif     | La reprise termine la NC |
+      | type      | DEBUT                    |
+      | intention | TRANSITION               |
+      | cible     | 1                        |
+      | instant   | 2044-01-09T14:00:00Z     |
+    Then l'apercu donne les activites de resolution
+      | categorie      | etat     | duree |
+      | TRAVAIL        | TERMINEE | PT4H  |
+      | NON_CONFORMITE | TERMINEE | PT2H  |
+      | TRAVAIL        | TERMINEE | PT3H  |
+    And la correction conserve l'identite de l'activite ouverte
+    And l'apercu ne modifie ni les faits ni les projections ni la revision
+    When je confirme cet apercu de resolution
+    Then le recu canonique conserve les memes identites et activites
+    And la liste de ce suivi conserve 0 sequences en conflit
+    And les periodes relues de "Resolution 4404" ont les durees
+      | PT4H |
+      | PT2H |
+      | PT3H |
+
+  Scenario: Resolution reelle de meme categorie conserve les cibles de la transition
+    Given il est "2044-01-10T07:00:00Z"
+    And l'entreprise a cree l'element de fabrication "Resolution 4405"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | RES4405              |
+    And j'ai engage l'element "Resolution 4405" en atelier
+    And il est "2044-01-10T08:00:00Z"
+    And j'ai pointe sur "Resolution 4405"
+      | id        | 00000000-0000-0000-0000-000000044051 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+    And il est "2044-01-10T12:00:00Z"
+    And j'ai pointe sur "Resolution 4405"
+      | id        | 00000000-0000-0000-0000-000000044052 |
+      | type      | DEBUT                                |
+      | intention | TRANSITION                           |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+      | cible     | 00000000-0000-0000-0000-000000044051 |
+    And il est "2044-01-10T17:00:00Z"
+    And j'ai pointe sur "Resolution 4405"
+      | id        | 00000000-0000-0000-0000-000000044053 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+      | cible     | 00000000-0000-0000-0000-000000044052 |
+    And il est "2044-01-10T18:00:00Z"
+    When je prepare la resolution du conflit de "Resolution 4405" ancre 0
+      | kind      | CORRECTION                          |
+      | pointage  | 1                                   |
+      | motif     | Le travail etait une non conformite |
+      | type      | NON_CONFORMITE                      |
+      | intention | TRANSITION                          |
+      | cible     | 0                                   |
+      | instant   | 2044-01-10T12:00:00Z                |
+    Then l'apercu donne les activites de resolution
+      | categorie      | etat     | duree |
+      | TRAVAIL        | TERMINEE | PT4H  |
+      | NON_CONFORMITE | TERMINEE | PT5H  |
+    And la correction conserve l'identite de l'activite ouverte
+    And l'apercu ne modifie ni les faits ni les projections ni la revision
+    When je confirme cet apercu de resolution
+    Then le recu canonique conserve les memes identites et activites
+    And la liste de ce suivi conserve 0 sequences en conflit
+    And les periodes relues de "Resolution 4405" ont les durees
+      | PT4H |
+      | PT5H |
+
+  Scenario: Resolution reelle de la fin avant ouverture sans poste conserve neuf decimales
+    Given il est "2044-01-11T07:00:00Z"
+    And l'entreprise a cree l'element de fabrication "Resolution 4406"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | RES4406              |
+    And j'ai engage l'element "Resolution 4406" en atelier
+    And il est "2044-01-11T08:00:00.123456789Z"
+    And j'ai pointe sur "Resolution 4406"
+      | id        | 00000000-0000-0000-0000-000000044061 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont-resolution                    |
+    And il est "2044-01-11T09:00:00Z"
+    And j'ai pointe sur "Resolution 4406"
+      | id             | 00000000-0000-0000-0000-000000044062 |
+      | type           | FIN                                  |
+      | intention      | FIN                                  |
+      | operateur      | dupont-resolution                    |
+      | cible          | 00000000-0000-0000-0000-000000044061 |
+      | dateDeSurvenue | 2044-01-11T07:00:00Z                 |
+    And il est "2044-01-11T18:00:00Z"
+    When je prepare la resolution du conflit de "Resolution 4406" ancre 0
+      | kind      | CORRECTION                        |
+      | pointage  | 0                                 |
+      | motif     | La fin survient a dix sept heures |
+      | type      | FIN                               |
+      | intention | FIN                               |
+      | cible     | 1                                 |
+      | instant   | 2044-01-11T17:00:00Z              |
+    Then l'apercu donne les activites de resolution
+      | categorie | etat     | duree                |
+      | TRAVAIL   | TERMINEE | PT8H59M59.876543211S |
+    And l'apercu ne modifie ni les faits ni les projections ni la revision
+    When je confirme cet apercu de resolution
+    Then le recu canonique conserve les memes identites et activites
+    And la liste de ce suivi conserve 0 sequences en conflit
+    And les periodes relues de "Resolution 4406" ont les durees
+      | PT8H59M59.876543211S |
+
+  Scenario: Resolution reelle de deux fins distinctes separees de deux secondes
+    Given il est "2044-01-12T07:00:00Z"
+    And l'entreprise a cree l'element de fabrication "Resolution 4407"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | RES4407              |
+    And j'ai engage l'element "Resolution 4407" en atelier
+    And il est "2044-01-12T08:00:00Z"
+    And j'ai pointe sur "Resolution 4407"
+      | id        | 00000000-0000-0000-0000-000000044071 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+    And il est "2044-01-12T17:00:00Z"
+    And j'ai pointe sur "Resolution 4407"
+      | id        | 00000000-0000-0000-0000-000000044072 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+      | cible     | 00000000-0000-0000-0000-000000044071 |
+    And il est "2044-01-12T17:00:02Z"
+    And j'ai pointe sur "Resolution 4407"
+      | id        | 00000000-0000-0000-0000-000000044073 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+      | cible     | 00000000-0000-0000-0000-000000044071 |
+    And il est "2044-01-12T18:00:00Z"
+    When je prepare la resolution du conflit de "Resolution 4407" ancre 0
+      | kind     | ANNULATION                             |
+      | pointage | 2                                      |
+      | motif    | La deuxieme fin est une saisie en trop |
+    Then l'apercu donne les activites de resolution
+      | categorie | etat     | duree |
+      | TRAVAIL   | TERMINEE | PT9H  |
+    And l'apercu ne modifie ni les faits ni les projections ni la revision
+    When je confirme cet apercu de resolution
+    Then le recu canonique conserve les memes identites et activites
+    And la liste de ce suivi conserve 0 sequences en conflit
+    And les periodes relues de "Resolution 4407" ont les durees
+      | PT9H |

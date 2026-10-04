@@ -86,6 +86,23 @@ public class ResolutionDesConflitsSteps {
     assertThatLastResponse().hasElement("$.apres.activites").containingExactly(activites);
   }
 
+  @Then("la correction conserve l'identite de l'activite ouverte")
+  @SuppressWarnings("unchecked")
+  public void identiteConservee() {
+    var original = ((List<Map<String, Object>>) avant.get("journal")).stream()
+      .filter(fait -> fait.get("id").equals(acte.get("pointage")))
+      .findFirst()
+      .orElseThrow();
+    var corriges = (List<Map<String, Object>>) ((Map<String, Object>) apres.get("suivi")).get("journal");
+    var remplacement = corriges
+      .stream()
+      .filter(fait -> original.get("id").equals(fait.get("remplace")))
+      .findFirst()
+      .orElseThrow();
+    assertThat(remplacement.get("activite")).isEqualTo(original.get("activite"));
+    assertThat(remplacement.get("id")).isNotEqualTo(original.get("id"));
+  }
+
   @Then("l'apercu ne modifie ni les faits ni les projections ni la revision")
   public void sansEcriture() {
     rest.get("/api/atelier/suivis/" + suivi);
