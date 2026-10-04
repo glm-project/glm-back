@@ -12,12 +12,18 @@ import com.glm.glmback.atelier.application.EmpreintesDesConsequences;
 import com.glm.glmback.atelier.application.IdentitesDEvenements;
 import com.glm.glmback.atelier.application.RecusDActes;
 import com.glm.glmback.atelier.application.ReferencesDApercu;
+import com.glm.glmback.atelier.application.SuivisDAtelierApplicationService;
+import com.glm.glmback.atelier.domain.ActeDeResolution;
 import com.glm.glmback.atelier.domain.ApercuInvalideException;
 import com.glm.glmback.atelier.domain.ApercuObsoleteException;
+import com.glm.glmback.atelier.domain.ClotureAEnregistrer;
 import com.glm.glmback.atelier.domain.ConfirmationReutiliseeException;
+import com.glm.glmback.atelier.domain.IntentionDePointage;
 import com.glm.glmback.atelier.domain.OperateursConnus;
+import com.glm.glmback.atelier.domain.PointageAEnregistrer;
 import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
+import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.time.domain.Clock;
 import jakarta.persistence.EntityManager;
@@ -30,6 +36,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -44,6 +52,9 @@ class ConfirmationsDActesIT {
 
   @Autowired
   private ConfirmerLesActes confirmations;
+
+  @Autowired
+  private SuivisDAtelierApplicationService atelier;
 
   @Autowired
   private RecusDActes recus;
@@ -329,6 +340,74 @@ class ConfirmationsDActesIT {
     assertThat(java.util.stream.Stream.of(premierRecu, secondRecu).filter(Optional::isPresent)).hasSize(1);
   }
 
+  @ParameterizedTest
+  @EnumSource(EcritureConcurrente.class)
+  @WithTenant("impeccmold")
+  void shouldRefuserLApercuQuandUneEcriturePubliqueGagnePendantLaConfirmation(EcritureConcurrente ecriture) throws Exception {
+    // GIVEN
+    var initial = suiviAvecTransitionDeMemeCategorie();
+    var avant = ecriture == EcritureConcurrente.REOUVERTURE ? initial.cloture(clotureParLeroyA(LE_10_MAI_2026_A_17H)) : initial;
+    var suivi = inTransaction(() -> suivis.create(avant));
+    var preuve = preuveDAnnulationDeTransition(suivi);
+    var confirmationEnCours = new CountDownLatch(1);
+    var ecritureConcurrenteTerminee = new CountDownLatch(1);
+    when(references.read("reference-annulation")).thenAnswer(invocation -> {
+      confirmationEnCours.countDown();
+      assertThat(ecritureConcurrenteTerminee.await(10, TimeUnit.SECONDS)).isTrue();
+      return preuve;
+    });
+    var action = avecContexteDeRequete(() ->
+      catchThrowable(() -> confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD))
+    );
+    try (var executor = Executors.newSingleThreadExecutor()) {
+      var confirmation = executor.submit(action::get);
+      com.glm.glmback.atelier.domain.LectureDuSuivi gagnant;
+      try {
+        assertThat(confirmationEnCours.await(10, TimeUnit.SECONDS)).isTrue();
+        // WHEN
+        gagnant = switch (ecriture) {
+          case POINTAGE -> atelier
+            .pointeDuPupitre(
+              PointageAEnregistrer.pupitreBuilder()
+                .suivi(suivi.id())
+                .type(TypeDEvenementDAtelier.FIN)
+                .intention(IntentionDePointage.FIN)
+                .activiteVisee(suivi.journal().evenements().getFirst().activite())
+                .operateur(OPERATEUR_ID_DUPONT)
+                .poste(Optional.empty())
+                .auteur(AUTEUR_MARTIN)
+                .dateDeSurvenue(Optional.of(LE_10_MAI_2026_A_17H))
+                .evenement(com.glm.glmback.atelier.domain.EvenementDAtelierId.newId())
+            )
+            .agregat();
+          case ANNULATION -> atelier.annule(((ActeDeResolution.Annulation) preuve.acte()).commande());
+          case CLOTURE -> atelier.cloture(new ClotureAEnregistrer(suivi.id(), AUTEUR_MARTIN, Optional.of(LE_10_MAI_2026_A_17H)));
+          case REOUVERTURE -> atelier.annuleLaCloture(suivi.id());
+        };
+      } finally {
+        ecritureConcurrenteTerminee.countDown();
+      }
+      // THEN
+      assertThat(confirmation.get(15, TimeUnit.SECONDS)).isExactlyInstanceOf(ApercuObsoleteException.class);
+      assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(gagnant.suivi());
+      assertThat(gagnant.suivi().revision().value()).isEqualTo(1);
+      var identitesInitiales = suivi.journal().evenements().stream().map(com.glm.glmback.atelier.domain.EvenementDAtelier::id).toList();
+      var identitesCourantes = gagnant
+        .suivi()
+        .journal()
+        .evenements()
+        .stream()
+        .map(com.glm.glmback.atelier.domain.EvenementDAtelier::id)
+        .toList();
+      if (ecriture == EcritureConcurrente.POINTAGE) {
+        assertThat(identitesCourantes).containsAll(identitesInitiales).hasSize(3);
+      } else {
+        assertThat(identitesCourantes).containsExactlyElementsOf(identitesInitiales);
+      }
+    }
+    assertThat(inTransaction(() -> recus.get(preuve.commande()))).isEmpty();
+  }
+
   @Test
   @WithTenant("impeccmold")
   void shouldRetrouverLActeApresUneReponsePerdueEtRelireLeSuiviActuel() {
@@ -597,5 +676,12 @@ class ConfirmationsDActesIT {
 
   private <T> T inTransaction(Supplier<T> action) {
     return transactions.execute(status -> action.get());
+  }
+
+  private enum EcritureConcurrente {
+    POINTAGE,
+    ANNULATION,
+    CLOTURE,
+    REOUVERTURE,
   }
 }
