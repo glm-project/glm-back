@@ -1052,3 +1052,137 @@ Feature: Resolution reelle des conflits
     And les periodes relues de "Resolution 4434" ont les durees
       | PT4H |
       | PT5H |
+
+  Scenario: Resolution reelle refuse les autres droits acteurs et tenants avant confirmation et au rejeu
+    Given il est "2044-01-31T07:00:00Z"
+    And l'entreprise a cree l'element de fabrication "Resolution 4440"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | RES4440              |
+    And j'ai engage l'element "Resolution 4440" en atelier
+    And il est "2044-01-31T08:00:00Z"
+    And j'ai pointe sur "Resolution 4440"
+      | id        | 00000000-0000-0000-0000-000000044401 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+    And il est "2044-01-31T12:00:00Z"
+    And j'ai pointe sur "Resolution 4440"
+      | id        | 00000000-0000-0000-0000-000000044402 |
+      | type      | NON_CONFORMITE                       |
+      | intention | TRANSITION                           |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+      | cible     | 00000000-0000-0000-0000-000000044401 |
+    And il est "2044-01-31T17:00:00Z"
+    And j'ai pointe sur "Resolution 4440"
+      | id        | 00000000-0000-0000-0000-000000044403 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+      | cible     | 00000000-0000-0000-0000-000000044401 |
+    And il est "2044-01-31T18:00:00Z"
+    When je prepare la resolution du conflit de "Resolution 4440" ancre 0
+      | kind      | CORRECTION           |
+      | pointage  | 2                    |
+      | motif     | La fin termine la NC |
+      | type      | FIN                  |
+      | intention | FIN                  |
+      | cible     | 1                    |
+      | instant   | 2044-01-31T17:00:00Z |
+    Then l'apercu donne les activites de resolution
+      | categorie      | etat     | duree |
+      | TRAVAIL        | TERMINEE | PT4H  |
+      | NON_CONFORMITE | TERMINEE | PT5H  |
+    Given I am logged in as "gestionnaire" with role "USER"
+    When je tente un nouvel apercu avec statut 403
+    And je tente la confirmation de cet apercu avec statut 403
+    And je tente la verification de cette commande avec statut 403
+    Given I am logged in as "autre-gestionnaire" with role "GESTIONNAIRE"
+    When je tente la confirmation de cet apercu avec statut 400
+    Given I am logged in as "gestionnaire" with role "GESTIONNAIRE" without tenant
+    When je tente un nouvel apercu avec statut 403
+    And je tente la confirmation de cet apercu avec statut 403
+    And je tente la verification de cette commande avec statut 403
+    Given I am logged in as "gestionnaire" with role "GESTIONNAIRE" for tenant "katilys"
+    When je tente un nouvel apercu avec statut 404
+    And je tente la confirmation de cet apercu avec statut 400
+    And la commande reste non attestee pour cet autre tenant
+    Given I am logged in as "gestionnaire" with role "GESTIONNAIRE"
+    And l'apercu ne modifie ni les faits ni les projections ni la revision
+    When je confirme cet apercu de resolution
+    Then le recu canonique conserve les memes identites et activites
+    And la liste de ce suivi conserve 0 sequences en conflit
+    And les periodes relues de "Resolution 4440" ont les durees
+      | PT4H |
+      | PT5H |
+    Given I am logged in as "gestionnaire" with role "USER"
+    When je tente un nouvel apercu avec statut 403
+    And je tente la confirmation de cet apercu avec statut 403
+    And je tente la verification de cette commande avec statut 403
+    Given I am logged in as "autre-gestionnaire" with role "GESTIONNAIRE"
+    When je tente la confirmation de cet apercu avec statut 409
+    And je tente la verification de cette commande avec statut 409
+    Given I am logged in as "gestionnaire" with role "GESTIONNAIRE" without tenant
+    When je tente un nouvel apercu avec statut 403
+    And je tente la confirmation de cet apercu avec statut 403
+    And je tente la verification de cette commande avec statut 403
+    Given I am logged in as "gestionnaire" with role "GESTIONNAIRE" for tenant "katilys"
+    When je tente un nouvel apercu avec statut 404
+    And je tente la confirmation de cet apercu avec statut 400
+    And la commande reste non attestee pour cet autre tenant
+    Given I am logged in as "gestionnaire" with role "GESTIONNAIRE"
+    Then le recu canonique conserve les memes identites et activites
+    And le suivi garde exactement les faits confirmes et leur revision
+
+  Scenario: Resolution reelle refuse les motifs blancs et le futur minimal sans ecriture
+    Given il est "2044-01-31T07:00:00Z"
+    And l'entreprise a cree l'element de fabrication "Resolution 4441"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | RES4441              |
+    And j'ai engage l'element "Resolution 4441" en atelier
+    And il est "2044-01-31T08:00:00Z"
+    And j'ai pointe sur "Resolution 4441"
+      | id        | 00000000-0000-0000-0000-000000044411 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+    And il est "2044-01-31T12:00:00Z"
+    And j'ai pointe sur "Resolution 4441"
+      | id        | 00000000-0000-0000-0000-000000044412 |
+      | type      | NON_CONFORMITE                       |
+      | intention | TRANSITION                           |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+      | cible     | 00000000-0000-0000-0000-000000044411 |
+    And il est "2044-01-31T17:00:00Z"
+    And j'ai pointe sur "Resolution 4441"
+      | id        | 00000000-0000-0000-0000-000000044413 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+      | cible     | 00000000-0000-0000-0000-000000044411 |
+    And il est "2044-01-31T18:00:00Z"
+    When je prepare la resolution du conflit de "Resolution 4441" ancre 0
+      | kind      | CORRECTION           |
+      | pointage  | 2                    |
+      | motif     | La fin termine la NC |
+      | type      | FIN                  |
+      | intention | FIN                  |
+      | cible     | 1                    |
+      | instant   | 2044-01-31T17:00:00Z |
+    Then l'apercu donne les activites de resolution
+      | categorie      | etat     | duree |
+      | TRAVAIL        | TERMINEE | PT4H  |
+      | NON_CONFORMITE | TERMINEE | PT5H  |
+    And les apercus invalides restent refuses sans ecriture
+    And l'apercu ne modifie ni les faits ni les projections ni la revision
+    When je confirme cet apercu de resolution
+    Then le recu canonique conserve les memes identites et activites
+    And la liste de ce suivi conserve 0 sequences en conflit
+    And les periodes relues de "Resolution 4441" ont les durees
+      | PT4H |
+      | PT5H |

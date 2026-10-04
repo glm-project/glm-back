@@ -358,6 +358,76 @@ public class ResolutionDesConflitsSteps {
     assertThat(CucumberRestTestContext.getElement("$.dossier.activites[0].duree")).isEqualTo("PT13H");
   }
 
+  @When("je tente la confirmation de cet apercu avec statut {int}")
+  public void confirmationRefusee(int statut) {
+    rest.post(
+      "/api/atelier/suivis/" + suivi + "/confirmations-de-resolution",
+      JSON.writeValueAsString(Map.of("commande", commande, "reference", reference))
+    );
+    assertThatLastResponse().hasHttpStatus(statut);
+  }
+
+  @When("je tente la verification de cette commande avec statut {int}")
+  public void verificationRefusee(int statut) {
+    rest.get("/api/atelier/suivis/" + suivi + "/confirmations-de-resolution/" + commande);
+    assertThatLastResponse().hasHttpStatus(statut);
+  }
+
+  @When("je tente un nouvel apercu avec statut {int}")
+  public void apercuRefuse(int statut) {
+    rest.post(
+      "/api/atelier/suivis/" + suivi + "/conflits/" + ancre + "/apercus",
+      JSON.writeValueAsString(Map.of("commande", UUID.randomUUID(), "revision", revision, "acte", acte))
+    );
+    assertThatLastResponse().hasHttpStatus(statut);
+  }
+
+  @Then("la commande reste non attestee pour cet autre tenant")
+  public void nonAttesteeAutreTenant() {
+    rest.get("/api/atelier/suivis/" + suivi + "/confirmations-de-resolution/" + commande);
+    assertThatLastResponse().hasOkStatus().hasElement("$.kind").withValue("NON_ATTESTEE");
+  }
+
+  @Then("le suivi garde exactement les faits confirmes et leur revision")
+  public void faitsConfirmesInchanges() {
+    rest.get("/api/atelier/suivis/" + suivi);
+    assertThat(CucumberRestTestContext.getElement("$")).isEqualTo(apres.get("suivi"));
+    rest.get("/api/atelier/suivis/" + suivi + "/conflits/" + ancre);
+    assertThat(((Number) CucumberRestTestContext.getElement("$.revision")).longValue()).isEqualTo(revision + 1);
+  }
+
+  @Then("les apercus invalides restent refuses sans ecriture")
+  @SuppressWarnings("unchecked")
+  public void apercusInvalides() {
+    for (String variation : List.of(
+      "motif vide",
+      "motif blanc",
+      "futur nanoseconde",
+      "instant invalide",
+      "intention incoherente",
+      "cible absente"
+    )) {
+      var invalide = new HashMap<>(acte);
+      var fait = new HashMap<>((Map<String, Object>) acte.get("fait"));
+      switch (variation) {
+        case "motif vide" -> invalide.put("motif", "");
+        case "motif blanc" -> invalide.put("motif", "   ");
+        case "futur nanoseconde" -> fait.put("instant", "2044-01-31T18:00:00.000000001Z");
+        case "instant invalide" -> fait.put("instant", "2044-01-31");
+        case "intention incoherente" -> fait.put("type", "DEBUT");
+        case "cible absente" -> fait.remove("activiteVisee");
+        default -> throw new IllegalArgumentException(variation);
+      }
+      invalide.put("fait", fait);
+      rest.post(
+        "/api/atelier/suivis/" + suivi + "/conflits/" + ancre + "/apercus",
+        JSON.writeValueAsString(Map.of("commande", UUID.randomUUID(), "revision", revision, "acte", invalide))
+      );
+      assertThatLastResponse().hasHttpStatus(400);
+      sansEcriture();
+    }
+  }
+
   @Then("les quatre lecteurs API expliquent ce conflit")
   @SuppressWarnings("unchecked")
   public void lecteursAvant() {
