@@ -12,6 +12,11 @@ import java.util.List;
 )
 record RestDossierConflit(
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) EtatDAdresseDossier kind,
+  @Schema(
+    requiredMode = Schema.RequiredMode.REQUIRED,
+    description = "Le perimetre concerne reste en conflit dans l interpretation du domaine, meme sans intervalle d activite ou avec une ancre annulee."
+  )
+  boolean enConflit,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestAdresseDossierConflit adresse,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) long revision,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) Instant evaluation,
@@ -31,6 +36,7 @@ record RestDossierConflit(
   static RestDossierConflit from(LectureDossierConflit dossier, AnnuaireDAtelier annuaire) {
     return new RestDossierConflit(
       dossier.kind(),
+      dossier.enConflit(),
       new RestAdresseDossierConflit(dossier.adresse().suivi().uuid(), dossier.adresse().pointage().uuid()),
       dossier.lecture().suivi().revision().value(),
       dossier.lecture().evaluation(),

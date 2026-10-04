@@ -1059,6 +1059,10 @@
             },
             "type" : "array"
           },
+          "enConflit" : {
+            "description" : "Le perimetre concerne reste en conflit dans l interpretation du domaine, meme sans intervalle d activite ou avec une ancre annulee.",
+            "type" : "boolean"
+          },
           "evaluation" : {
             "format" : "date-time",
             "type" : "string"
@@ -1082,7 +1086,7 @@
             "$ref" : "#/components/schemas/RestSuiviDAtelier"
           }
         },
-        "required" : [ "activites", "adresse", "choix", "continuations", "diagnostics", "evaluation", "kind", "revision", "suivi" ],
+        "required" : [ "activites", "adresse", "choix", "continuations", "diagnostics", "enConflit", "evaluation", "kind", "revision", "suivi" ],
         "type" : "object"
       },
       "RestDureeDeSynthese" : {

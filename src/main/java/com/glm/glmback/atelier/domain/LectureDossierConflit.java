@@ -83,6 +83,17 @@ public record LectureDossierConflit(AdresseDossierConflit adresse, LectureDuSuiv
       });
   }
 
+  public boolean enConflit() {
+    return perimetre()
+      .map(perimetre ->
+        lecture
+          .conflits()
+          .stream()
+          .anyMatch(sequence -> sequence.pointages().stream().anyMatch(perimetre.pointages()::contains))
+      )
+      .orElse(false);
+  }
+
   public EtatDAdresseDossier kind() {
     Optional<EvenementDAtelier> pointage = lecture.suivi().journal().evenement(adresse.pointage());
     if (pointage.isEmpty()) {

@@ -26,6 +26,7 @@ class RestDossierConflitTest {
     var apres = avant.apresActe(new LectureDuSuivi(corrige, LE_10_MAI_2026_A_17H));
     var json = JsonMapper.builder().build().valueToTree(RestDossierConflit.from(apres, annuaireDeDupontEtMartin()));
     assertThat(json.path("kind").asString()).isEqualTo("ANCRE_ANNULEE");
+    assertThat(json.path("enConflit").asBoolean()).isTrue();
     assertThat(json.at("/adresse/pointage").asString()).isEqualTo(fin.id().uuid().toString());
     assertThat(json.path("continuations").size()).isEqualTo(1);
     assertThat(json.at("/continuations/0/adresse/pointage").asString()).isEqualTo(travail.id().uuid().toString());
