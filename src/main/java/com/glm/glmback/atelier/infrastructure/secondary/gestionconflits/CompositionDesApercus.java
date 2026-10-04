@@ -28,7 +28,7 @@ class CompositionDesApercus {
 
   @Bean
   EmpreintesDesConsequences empreintesDesConsequences() {
-    return new Sha256EmpreintesDesConsequences(new CryptographieDesReferences());
+    return new Sha256EmpreintesDesConsequences(new EmpreinteSha256());
   }
 
   @Bean
