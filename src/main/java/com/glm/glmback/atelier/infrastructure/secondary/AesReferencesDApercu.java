@@ -9,6 +9,7 @@ import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
+import javax.crypto.AEADBadTagException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -65,8 +66,10 @@ final class AesReferencesDApercu implements ReferencesDApercu {
         Arrays.copyOfRange(contenu, 12, contenu.length)
       );
       return FormatDePreuveDApercu.relit(new String(clair, StandardCharsets.UTF_8));
-    } catch (GeneralSecurityException | RuntimeException e) {
+    } catch (AEADBadTagException | RuntimeException e) {
       throw new ApercuInvalideException();
+    } catch (GeneralSecurityException e) {
+      throw new IllegalStateException("Impossible de dechiffrer l'apercu", e);
     }
   }
 
