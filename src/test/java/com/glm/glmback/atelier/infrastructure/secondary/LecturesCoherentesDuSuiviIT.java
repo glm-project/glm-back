@@ -6,13 +6,16 @@ import static org.assertj.core.api.Assertions.*;
 import com.glm.glmback.IntegrationTest;
 import com.glm.glmback.atelier.application.SuivisDAtelierApplicationService;
 import com.glm.glmback.atelier.domain.Annulation;
+import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import jakarta.persistence.EntityManager;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.hibernate.resource.jdbc.spi.StatementInspector;
 import org.junit.jupiter.api.Test;
@@ -50,25 +53,19 @@ class LecturesCoherentesDuSuiviIT {
     // GIVEN
     var debut = debutSansPosteParDupontA(LE_10_MAI_2026_A_8H);
     var ancien = inTransaction(() -> suivis.create(suiviDAtelierEngage().enregistre(debut)));
-    var authentication = SecurityContextHolder.getContext().getAuthentication();
-    var requete = RequestContextHolder.getRequestAttributes();
     var journalDemandee = new CountDownLatch(1);
     var ecritureTerminee = new CountDownLatch(1);
     try (var executor = Executors.newSingleThreadExecutor()) {
-      var lecture = executor.submit(() -> {
-        var contexte = SecurityContextHolder.createEmptyContext();
-        contexte.setAuthentication(authentication);
-        SecurityContextHolder.setContext(contexte);
-        RequestContextHolder.setRequestAttributes(requete);
-        rendezVous.suspendAvantJournal(journalDemandee, ecritureTerminee);
-        try {
-          return application.get(ancien.id()).suivi();
-        } finally {
-          rendezVous.libere();
-          SecurityContextHolder.clearContext();
-          RequestContextHolder.resetRequestAttributes();
-        }
-      });
+      var lecture = executor.submit(
+        dansContexteCourant(() -> {
+          rendezVous.suspendAvantJournal(journalDemandee, ecritureTerminee);
+          try {
+            return application.get(ancien.id()).suivi();
+          } finally {
+            rendezVous.libere();
+          }
+        })
+      );
       try {
         attend(journalDemandee);
         // WHEN
@@ -94,35 +91,51 @@ class LecturesCoherentesDuSuiviIT {
     // GIVEN
     var debut = debutSansPosteParDupontA(LE_10_MAI_2026_A_8H);
     var ancien = inTransaction(() -> suivis.create(suiviDAtelierEngage().enregistre(debut)));
-    var authentication = SecurityContextHolder.getContext().getAuthentication();
-    var requete = RequestContextHolder.getRequestAttributes();
+    // WHEN / THEN
+    avecParentDejaChargeEtAnnulationClotureCommittees(ancien, nouveau ->
+      assertThat(application.get(ancien.id()).suivi()).isIn(ancien, nouveau)
+    );
+  }
+
+  private void avecParentDejaChargeEtAnnulationClotureCommittees(SuiviDAtelier ancien, Consumer<SuiviDAtelier> lecture) {
     try (var executor = Executors.newSingleThreadExecutor()) {
       inTransaction(() -> {
         entities.find(SuiviDAtelierEntity.class, ancien.id().uuid());
-        var ecriture = executor.submit(() -> {
-          var contexte = SecurityContextHolder.createEmptyContext();
-          contexte.setAuthentication(authentication);
-          SecurityContextHolder.setContext(contexte);
-          RequestContextHolder.setRequestAttributes(requete);
-          try {
-            return inTransaction(() ->
+        var ecriture = executor.submit(
+          dansContexteCourant(() ->
+            inTransaction(() ->
               suivis.update(
                 ancien
-                  .annule(debut.id(), new Annulation(AUTEUR_LEROY, LE_11_MAI_2026_A_9H15, MOTIF_ERREUR_DE_SAISIE))
+                  .annule(
+                    ancien.journal().evenements().getFirst().id(),
+                    new Annulation(AUTEUR_LEROY, LE_11_MAI_2026_A_9H15, MOTIF_ERREUR_DE_SAISIE)
+                  )
                   .cloture(clotureParLeroyA(LE_10_MAI_2026_A_17H))
               )
-            );
-          } finally {
-            SecurityContextHolder.clearContext();
-            RequestContextHolder.resetRequestAttributes();
-          }
-        });
-        var nouveau = attendResultat(ecriture);
-        // WHEN / THEN
-        assertThat(application.get(ancien.id()).suivi()).isIn(ancien, nouveau);
+            )
+          )
+        );
+        lecture.accept(attendResultat(ecriture));
         return null;
       });
     }
+  }
+
+  private static <T> Callable<T> dansContexteCourant(Supplier<T> action) {
+    var authentication = SecurityContextHolder.getContext().getAuthentication();
+    var requete = RequestContextHolder.getRequestAttributes();
+    return () -> {
+      var contexte = SecurityContextHolder.createEmptyContext();
+      contexte.setAuthentication(authentication);
+      SecurityContextHolder.setContext(contexte);
+      RequestContextHolder.setRequestAttributes(requete);
+      try {
+        return action.get();
+      } finally {
+        SecurityContextHolder.clearContext();
+        RequestContextHolder.resetRequestAttributes();
+      }
+    };
   }
 
   private static <T> T attendResultat(Future<T> resultat) {
