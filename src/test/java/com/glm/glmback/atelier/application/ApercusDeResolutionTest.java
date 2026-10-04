@@ -16,6 +16,42 @@ import org.junit.jupiter.api.Test;
 class ApercusDeResolutionTest {
 
   @Test
+  void shouldRefuserUneAdresseAnnuleeMemeALaRevisionCourante() {
+    var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    var transition = passageEnTravailDe(travail).a(LE_10_MAI_2026_A_12H);
+    var suivi = suiviDAtelierEngage().enregistre(travail).enregistre(transition).annule(transition.id(), annulationParLeroy());
+    var repository = mock(SuiviDAtelierRepository.class);
+    when(repository.get(suivi.id())).thenReturn(Optional.of(suivi));
+    var references = mock(ReferencesDApercu.class);
+    var preparation = PreparationDesActes.builder()
+      .repository(repository)
+      .elements(mock(ElementsEngageables.class))
+      .operateurs(mock(OperateursConnus.class))
+      .postes(mock(PostesConnus.class))
+      .habilitations(mock(Habilitations.class))
+      .empreintes((apres, evaluation) -> "consequences");
+    var service = ApercusDeResolution.builder()
+      .suivis(repository)
+      .preparation(preparation)
+      .references(references)
+      .clock(() -> LE_10_MAI_2026_A_17H)
+      .validite(() -> Duration.ofMinutes(15));
+    var acte = new ActeDeResolution.Annulation(
+      new AnnulationAEnregistrer(suivi.id(), transition.id(), AUTEUR_LEROY, MOTIF_ERREUR_DE_SAISIE)
+    );
+    assertThatThrownBy(() ->
+      service.apercu(
+        UUID.randomUUID(),
+        new AdresseDossierConflit(suivi.id(), transition.id()),
+        suivi.revision(),
+        acte,
+        CONTEXTE_LEROY_IMPECCMOLD
+      )
+    ).isExactlyInstanceOf(ApercuObsoleteException.class);
+    verifyNoInteractions(references);
+  }
+
+  @Test
   void shouldRefuserUnSuiviAbsentSansProduireDeReference() {
     var repository = mock(SuiviDAtelierRepository.class);
     var suivi = SuiviDAtelierId.newId();

@@ -50,6 +50,10 @@ public class ApercusDeResolution {
       throw new ApercuObsoleteException();
     }
     var maintenant = clock.now();
+    var avant = new LectureDossierConflit(adresse, new LectureDuSuivi(suivi, maintenant));
+    if (avant.kind() != EtatDAdresseDossier.EN_CONFLIT) {
+      throw new ApercuObsoleteException();
+    }
     Optional<EvenementDAtelierId> evenement =
       acte instanceof ActeDeResolution.Annulation ? Optional.empty() : Optional.of(EvenementDAtelierId.newId());
     var prepare = preparation.prepare(suivi, acte, evenement, contexte.gestionnaire().auteur(), maintenant);
@@ -63,7 +67,6 @@ public class ApercusDeResolution {
       .evaluation(maintenant)
       .expireLe(maintenant.plus(validite.validite()))
       .empreinteConsequences(prepare.empreinteConsequences());
-    var avant = new LectureDossierConflit(adresse, new LectureDuSuivi(suivi, maintenant));
     return new ApercuDeResolution(
       new ReferenceDApercu(preuve, references.issue(preuve)),
       avant,
