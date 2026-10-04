@@ -102,6 +102,31 @@ public record LectureDossierConflit(AdresseDossierConflit adresse, LectureDuSuiv
       .findFirst();
   }
 
+  public List<PropositionDeResolution> choix() {
+    return diagnostics()
+      .stream()
+      .flatMap(diagnostic -> {
+        var geste = lecture.suivi().journal().evenement(diagnostic.pointage()).orElseThrow();
+        if (diagnostic.raison() != RaisonDuConflit.CIBLE_REMPLACEE || geste.intention() != IntentionDePointage.FIN) {
+          return Stream.<PropositionDeResolution>empty();
+        }
+        return diagnostic
+          .cible()
+          .termineePar()
+          .flatMap(lecture.suivi().journal()::evenement)
+          .filter(terminant -> terminant.intention() == IntentionDePointage.TRANSITION)
+          .map(transition ->
+            List.of(
+              new PropositionDeResolution(CodeDeProposition.RATTACHER_FIN_A_ACTIVITE_REMPLACANTE, geste.id(), transition.activite()),
+              new PropositionDeResolution(CodeDeProposition.ANNULER_TRANSITION, transition.id(), Optional.empty())
+            )
+          )
+          .orElse(List.of())
+          .stream();
+      })
+      .toList();
+  }
+
   public List<DiagnosticDeConflit> diagnostics() {
     return sequence()
       .map(conflit ->

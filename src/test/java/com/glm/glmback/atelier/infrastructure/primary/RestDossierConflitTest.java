@@ -89,6 +89,17 @@ class RestDossierConflitTest {
     assertThat(json.at("/sequence/pointages").size()).isEqualTo(3);
     assertThat(json.at("/sequence/datePremierPointage").asString()).isEqualTo("2026-05-10T08:00:00Z");
     assertThat(json.at("/sequence/nombrePointages").asInt()).isEqualTo(3);
+    assertThat(json.path("choix").size()).isEqualTo(2);
+    assertThat(json.at("/choix/0/code").asString()).isEqualTo("RATTACHER_FIN_A_ACTIVITE_REMPLACANTE");
+    assertThat(json.at("/choix/0/kind").asString()).isEqualTo("CORRECTION");
+    assertThat(json.at("/choix/0/pointage").asString()).isEqualTo(fin.id().uuid().toString());
+    assertThat(json.at("/choix/0/fait/activiteVisee").asString()).isEqualTo(nonConformite.activite().orElseThrow().uuid().toString());
+    assertThat(json.at("/choix/0/fait/instant").asString()).isEqualTo("2026-05-10T17:00:00Z");
+    assertThat(json.at("/choix/1/code").asString()).isEqualTo("ANNULER_TRANSITION");
+    assertThat(json.at("/choix/1/kind").asString()).isEqualTo("ANNULATION");
+    assertThat(json.at("/choix/1/pointage").asString()).isEqualTo(nonConformite.id().uuid().toString());
+    assertThat(json.at("/choix/0/motif").isMissingNode()).isTrue();
+    assertThat(json.at("/choix/1/motif").isMissingNode()).isTrue();
   }
 
   @Test

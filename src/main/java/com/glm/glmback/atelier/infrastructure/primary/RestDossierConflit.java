@@ -20,7 +20,8 @@ record RestDossierConflit(
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<RestActiviteDuDossier> activites,
   RestSequenceDuDossier sequence,
   @Schema(description = "Le perimetre conserve des faits et activites concernes, y compris apres resolution ou annulation de l ancre.")
-  RestSequenceDuDossier perimetre
+  RestSequenceDuDossier perimetre,
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<RestChoixDeResolution> choix
 ) {
   static RestDossierConflit from(LectureDossierConflit dossier, AnnuaireDAtelier annuaire) {
     return new RestDossierConflit(
@@ -36,7 +37,12 @@ record RestDossierConflit(
         .map(intervalle -> RestActiviteDuDossier.from(intervalle, annuaire))
         .toList(),
       RestSequenceDuDossier.from(dossier, annuaire),
-      RestSequenceDuDossier.perimetre(dossier, annuaire)
+      RestSequenceDuDossier.perimetre(dossier, annuaire),
+      dossier
+        .choix()
+        .stream()
+        .map(choix -> RestChoixDeResolution.from(choix, dossier))
+        .toList()
     );
   }
 }
