@@ -8,6 +8,7 @@ import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -74,6 +75,12 @@ public class PosteDeTravailSteps {
   @When("je liste les postes de travail de nature {string}")
   public void jeListeLesPostesDeTravailDeNature(String nature) {
     rest.get(BASE_URI + "?nature=" + nature);
+  }
+
+  @Then("la reponse de poste de travail a le cout horaire {string}")
+  public void laReponseDePosteALeCoutHoraire(String valeur) {
+    Object montant = CucumberRestTestContext.getElement("$.coutHoraire");
+    assertThat(new BigDecimal(montant.toString())).isEqualByComparingTo(valeur);
   }
 
   @Then("la reponse de poste de travail contient")

@@ -4,10 +4,12 @@ import com.glm.glmback.operateur.domain.OperateurAModifier;
 import com.glm.glmback.operateur.domain.OperateurId;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -27,12 +29,20 @@ record RestModificationOperateur(
   @Pattern(regexp = "\\s*|\\d{1,6}")
   String identifiant,
 
-  @Schema(description = "Taux horaire de l'operateur, laisse vide pour le retirer.", example = "22.00")
+  @Schema(
+    description = "Taux horaire de l'operateur, laisse vide pour le retirer. Strictement positif, exactement representable en centimes et inferieur a 100000000.",
+    example = "22.00"
+  )
   @DecimalMin(value = "0", inclusive = false)
+  @Digits(integer = 8, fraction = 2)
   BigDecimal tauxHoraire,
 
   @Schema(description = "Identifiants des postes habilites. La liste fournie remplace la precedente.") Set<UUID> postes
 ) {
+  RestModificationOperateur {
+    tauxHoraire = Optional.ofNullable(tauxHoraire).map(BigDecimal::stripTrailingZeros).orElse(null);
+  }
+
   OperateurAModifier toDomain(OperateurId id) {
     return new OperateurAModifier(id, nom, prenom, identifiant, tauxHoraire, RestHabilitations.toDomain(postes));
   }

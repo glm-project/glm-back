@@ -8,6 +8,7 @@ import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -93,6 +94,12 @@ public class OperateurSteps {
   @When("je supprime le poste de travail nomme {string}")
   public void jeSupprimeLePosteDeTravailNomme(String libelle) {
     rest.delete(POSTES_URI + "/" + postesDeclares.get(libelle));
+  }
+
+  @Then("la reponse d'operateur a le taux horaire {string}")
+  public void laReponseDOperateurALeTauxHoraire(String valeur) {
+    Object montant = CucumberRestTestContext.getElement("$.tauxHoraire");
+    assertThat(new BigDecimal(montant.toString())).isEqualByComparingTo(valeur);
   }
 
   @Then("la reponse d'operateur contient")

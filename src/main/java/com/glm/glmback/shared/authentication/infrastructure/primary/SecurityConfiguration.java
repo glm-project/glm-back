@@ -3,13 +3,10 @@ package com.glm.glmback.shared.authentication.infrastructure.primary;
 import static org.springframework.security.config.Customizer.withDefaults;
 
 import com.glm.glmback.shared.authentication.domain.Role;
-import com.glm.glmback.shared.generation.domain.ExcludeFromGeneratedCodeCoverage;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantAuthorizationManager;
-import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
@@ -22,7 +19,6 @@ import org.springframework.security.config.annotation.web.configurers.CsrfConfig
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.FrameOptionsConfig;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
-import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.oidc.user.OidcUserAuthority;
@@ -42,8 +38,6 @@ import org.springframework.web.filter.CorsFilter;
 @EnableWebSecurity
 @EnableMethodSecurity(securedEnabled = true)
 class SecurityConfiguration {
-
-  private static final int TIMEOUT = 2000;
 
   private final ApplicationSecurityProperties applicationSecurityProperties;
   private final CorsFilter corsFilter;
@@ -133,8 +127,7 @@ class SecurityConfiguration {
   }
 
   @Bean
-  @ExcludeFromGeneratedCodeCoverage(reason = "Only called with a valid client registration repository")
-  public JwtDecoder jwtDecoder(ClientRegistrationRepository clientRegistrationRepository, RestTemplateBuilder restTemplateBuilder) {
+  public JwtDecoder jwtDecoder() {
     NimbusJwtDecoder jwtDecoder = JwtDecoders.fromOidcIssuerLocation(issuerUri);
 
     OAuth2TokenValidator<Jwt> audienceValidator = new AudienceValidator(applicationSecurityProperties.getOauth2().getAudience());
@@ -142,12 +135,6 @@ class SecurityConfiguration {
     OAuth2TokenValidator<Jwt> withAudience = new DelegatingOAuth2TokenValidator<>(withIssuer, audienceValidator);
 
     jwtDecoder.setJwtValidator(withAudience);
-    jwtDecoder.setClaimSetConverter(
-      new CustomClaimConverter(
-        clientRegistrationRepository.findByRegistrationId("oidc"),
-        restTemplateBuilder.connectTimeout(Duration.ofMillis(TIMEOUT)).readTimeout(Duration.ofMillis(TIMEOUT)).build()
-      )
-    );
 
     return jwtDecoder;
   }

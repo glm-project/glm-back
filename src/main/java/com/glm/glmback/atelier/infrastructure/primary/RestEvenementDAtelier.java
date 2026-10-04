@@ -9,6 +9,7 @@ import com.glm.glmback.atelier.domain.IntentionDePointage;
 import com.glm.glmback.atelier.domain.NatureDOperation;
 import com.glm.glmback.atelier.domain.TauxHoraire;
 import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
+import com.glm.glmback.shared.authentication.application.HourlyRatesAuthorization;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -58,11 +59,14 @@ record RestEvenementDAtelier(
   @Schema(description = "Poste de travail, toujours facultatif.") RestPosteDeTravail poste,
   @Schema(description = "Nature de l'operation, recopiee du poste a la saisie. Simple axe d'agregation.") String nature,
   @Schema(
-    description = "Cout horaire du poste, copie a la saisie. Absent si le poste n'est pas valorise ou si aucun poste n'est fourni.",
+    description = "Cout horaire du poste, copie a la saisie. Absent si le poste n'est pas valorise ou si aucun poste n'est fourni. Reserve au GESTIONNAIRE, absent pour les autres roles.",
     example = "45.50"
   )
   BigDecimal coutHoraire,
-  @Schema(description = "Taux horaire de l'operateur, copie a la saisie. Absent si l'operateur n'est pas valorise.", example = "22.00")
+  @Schema(
+    description = "Taux horaire de l'operateur, copie a la saisie. Absent si l'operateur n'est pas valorise. Reserve au GESTIONNAIRE, absent pour les autres roles.",
+    example = "22.00"
+  )
   BigDecimal tauxHoraire,
   @Schema(description = "Utilisateur ayant saisi l'evenement.", example = "dupont", requiredMode = Schema.RequiredMode.REQUIRED)
   String auteur,
@@ -99,8 +103,8 @@ record RestEvenementDAtelier(
         .orElse(null),
       RestPosteDeTravail.resolu(annuaire, evenement.poste()),
       evenement.nature().map(NatureDOperation::value).orElse(null),
-      evenement.coutHoraire().map(CoutHoraire::value).orElse(null),
-      evenement.tauxHoraire().map(TauxHoraire::value).orElse(null),
+      HourlyRatesAuthorization.disclose(evenement.coutHoraire().map(CoutHoraire::value)),
+      HourlyRatesAuthorization.disclose(evenement.tauxHoraire().map(TauxHoraire::value)),
       evenement.auteur().value(),
       evenement.dateDeSurvenue(),
       evenement.dateDEnregistrement(),

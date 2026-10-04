@@ -4,9 +4,11 @@ import com.glm.glmback.postedetravail.domain.PosteDeTravailAModifier;
 import com.glm.glmback.postedetravail.domain.PosteDeTravailId;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
+import java.util.Optional;
 
 @Schema(description = "Revision d'un poste de travail.")
 record RestModificationPosteDeTravail(
@@ -20,10 +22,18 @@ record RestModificationPosteDeTravail(
   @Size(max = 50)
   String nature,
 
-  @Schema(description = "Cout horaire du poste, laisse vide pour le retirer.", example = "45.50")
+  @Schema(
+    description = "Cout horaire du poste, laisse vide pour le retirer. Strictement positif, exactement representable en centimes et inferieur a 100000000.",
+    example = "45.50"
+  )
   @DecimalMin(value = "0", inclusive = false)
+  @Digits(integer = 8, fraction = 2)
   BigDecimal coutHoraire
 ) {
+  RestModificationPosteDeTravail {
+    coutHoraire = Optional.ofNullable(coutHoraire).map(BigDecimal::stripTrailingZeros).orElse(null);
+  }
+
   PosteDeTravailAModifier toDomain(PosteDeTravailId id) {
     return new PosteDeTravailAModifier(id, libelle, nature, coutHoraire);
   }

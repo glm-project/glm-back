@@ -46,6 +46,11 @@ résolus.
   autant d'opérateurs sans identifiant que nécessaire.
 - **Le taux horaire est facultatif et strictement positif** quand il est renseigné, sur le patron de l'identifiant : un
   taux à zéro n'a pas de sens métier — s'il est inconnu, le champ reste absent plutôt qu'à zéro.
+  Sa valeur doit être exactement représentable en centimes et inférieure à 100 000 000, pour rester relisible
+  dans le stockage `numeric(10,2)`. Création et révision refusent toute précision perdue, sans arrondi.
+- **Le taux horaire reste réservé au `GESTIONNAIRE`.** Les lectures `USER` gardent les fiches et leurs habilitations
+  sans exposer le tarif, y compris dans les listes ; la politique applicative `HourlyRatesAuthorization`
+  protège aussi les tarifs historiques publiés par atelier.
 - **Tout poste référencé existe.** Invariant inter-contextes : il ne peut pas vivre dans le constructeur, qui ne voit
   que des identifiants. Il est porté par `OperateursService`, qui détient les deux ports.
 - **Rien n'est copié du poste**, à la différence de l'atelier qui copie nom et type à l'engagement. Aucun historique ne

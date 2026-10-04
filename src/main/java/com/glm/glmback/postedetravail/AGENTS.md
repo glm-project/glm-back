@@ -41,6 +41,11 @@ aucune inversion ne compile. `builder()` est public parce que la relecture depui
 - **Le coût horaire est facultatif et strictement positif** quand il est renseigné, sur le patron d'`Identifiant` :
   toutes les entreprises ne valorisent pas encore leurs postes, et un coût à zéro n'a pas de sens métier — s'il est
   inconnu, le champ reste absent plutôt qu'à zéro.
+  Sa valeur doit être exactement représentable en centimes et inférieure à 100 000 000, pour rester relisible
+  dans le stockage `numeric(10,2)`. Création et révision refusent toute précision perdue, sans arrondi.
+- **Le coût horaire reste réservé au `GESTIONNAIRE`.** Les lectures `USER` gardent les postes et leurs natures
+  sans exposer le tarif, y compris dans les listes ; la politique applicative `HourlyRatesAuthorization`
+  protège aussi les tarifs historiques publiés par atelier.
 - **Un poste encore habilité ne se supprime pas** : cela laisserait des opérateurs pointer sur du vide. La règle vit
   dans le domaine, derrière le port `PostesEnUsage` ; la clé étrangère de `operateur_poste` n'est que le filet.
 - **Un poste sur lequel du temps a été pointé ne se supprime plus du tout**, et ce refus-là est définitif : le journal

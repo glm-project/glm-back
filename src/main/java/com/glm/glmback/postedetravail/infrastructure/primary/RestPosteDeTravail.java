@@ -2,6 +2,7 @@ package com.glm.glmback.postedetravail.infrastructure.primary;
 
 import com.glm.glmback.postedetravail.domain.CoutHoraire;
 import com.glm.glmback.postedetravail.domain.PosteDeTravail;
+import com.glm.glmback.shared.authentication.application.HourlyRatesAuthorization;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -16,14 +17,18 @@ record RestPosteDeTravail(
   @Schema(description = "Metier qui s'exerce sur ce poste.", example = "tournage", requiredMode = Schema.RequiredMode.REQUIRED)
   String nature,
 
-  @Schema(description = "Cout horaire du poste, absent si l'entreprise ne le valorise pas.", example = "45.50") BigDecimal coutHoraire
+  @Schema(
+    description = "Cout horaire du poste, absent si l'entreprise ne le valorise pas. Reserve au GESTIONNAIRE, absent pour les autres roles.",
+    example = "45.50"
+  )
+  BigDecimal coutHoraire
 ) {
   static RestPosteDeTravail from(PosteDeTravail poste) {
     return new RestPosteDeTravail(
       poste.id().uuid(),
       poste.libelle().value(),
       poste.nature().value(),
-      poste.coutHoraire().map(CoutHoraire::value).orElse(null)
+      HourlyRatesAuthorization.disclose(poste.coutHoraire().map(CoutHoraire::value))
     );
   }
 }

@@ -849,3 +849,30 @@ Feature: Suivi des elements engages en atelier
     Then le temps effectif contient
       | activite                             | debut                | fin                  | finAutomatique |
       | 00000000-0000-0000-0000-0000000005f2 | 2026-05-12T08:00:00Z | 2026-05-12T10:00:00Z | false          |
+
+  Scenario: Les tarifs historiques sont reserves au gestionnaire meme apres un pointage du pupitre
+    Given il est "2026-05-10T08:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 2981"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | 2981                 |
+    And j'ai engage l'element "OF 2981" en atelier
+    Given I am logged in as "user" with role "USER"
+    When je pointe sur "OF 2981"
+      | type      | DEBUT       |
+      | operateur | dupont      |
+      | poste     | fraiseuse-1 |
+    Then la reponse a le statut http 201
+    And le journal du suivi contient 1 evenements
+    And l'evenement 0 du suivi porte l'operateur "dupont" et le poste "fraiseuse-1"
+    And la reponse ne contient aucun tarif horaire
+    When je rejoue le dernier geste du pupitre
+    Then la reponse a le statut http 200
+    And la reponse ne contient aucun tarif horaire
+    When je consulte "OF 2981"
+    Then la reponse a le statut http 200
+    And la reponse ne contient aucun tarif horaire
+    Given I am logged in as "gestionnaire" with role "GESTIONNAIRE"
+    When je consulte "OF 2981"
+    Then la reponse a le statut http 200
+    And l'evenement 0 du suivi a le cout horaire "45.5"
+    And l'evenement 0 du suivi a le taux horaire "22.5"

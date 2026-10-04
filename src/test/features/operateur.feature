@@ -28,6 +28,15 @@ Feature: Referentiel des operateurs
     And la reponse d'operateur contient
       | tauxHoraire | 22.5 |
 
+  Scenario: Un taux inferieur au centime ne peut pas rendre le referentiel illisible
+    When je declare un operateur
+      | nom         | Precision |
+      | prenom      | Centime   |
+      | tauxHoraire | 0.001     |
+    Then la reponse a le statut http 400
+    When je liste les operateurs
+    Then la reponse a le statut http 200
+
   Scenario: Revision du taux horaire d'un operateur
     Given j'ai declare un operateur
       | nom         | Faucher |
@@ -310,3 +319,74 @@ Feature: Referentiel des operateurs
       | prenom      | Louis   |
       | identifiant | 400     |
     Then la reponse a le statut http 201
+
+  Scenario Outline: Le taux horaire doit etre representable sans arrondi ni depassement
+    When je declare un operateur
+      | nom         | Precision |
+      | prenom      | Refuse    |
+      | tauxHoraire | <taux>    |
+    Then la reponse a le statut http 400
+
+    Examples:
+      | taux      |
+      | 0.001     |
+      | 22.555    |
+      | 100000000 |
+      | 1E+8      |
+
+  Scenario Outline: La revision refuse un taux non representable et conserve le precedent
+    Given j'ai declare un operateur
+      | nom         | Precision       |
+      | prenom      | Revision <taux> |
+      | tauxHoraire | 22.00           |
+    When je revise cet operateur
+      | nom         | Precision       |
+      | prenom      | Revision <taux> |
+      | tauxHoraire | <taux>          |
+    Then la reponse a le statut http 400
+    When je consulte cet operateur
+    Then la reponse a le statut http 200
+    And la reponse d'operateur a le taux horaire "22.00"
+
+    Examples:
+      | taux      |
+      | 0.001     |
+      | 100000000 |
+
+  Scenario Outline: Un taux representable conserve sa valeur a la relecture
+    Given j'ai declare un operateur
+      | nom         | Precision      |
+      | prenom      | Accepte <taux> |
+      | tauxHoraire | <taux>         |
+    When je consulte cet operateur
+    Then la reponse a le statut http 200
+    And la reponse d'operateur a le taux horaire "<attendu>"
+    When je liste les operateurs
+    Then la reponse a le statut http 200
+
+    Examples:
+      | taux        | attendu     |
+      | 0.01        | 0.01        |
+      | 99999999.99 | 99999999.99 |
+      | 22.000      | 22.00       |
+      | 1E+3        | 1000        |
+
+  Scenario: Les tarifs des operateurs sont reserves au gestionnaire
+    Given j'ai declare un operateur
+      | nom         | Confidentiel |
+      | prenom      | Operateur    |
+      | tauxHoraire | 22.00        |
+    Given I am logged in as "user" with role "USER"
+    When je consulte cet operateur
+    Then la reponse a le statut http 200
+    And la reponse d'operateur contient
+      | nom    | Confidentiel |
+      | prenom | Operateur    |
+    And la reponse ne contient aucun tarif horaire
+    When je liste les operateurs
+    Then la reponse a le statut http 200
+    And la reponse ne contient aucun tarif horaire
+    Given I am logged in as "gestionnaire" with role "GESTIONNAIRE"
+    When je consulte cet operateur
+    Then la reponse a le statut http 200
+    And la reponse d'operateur a le taux horaire "22.00"

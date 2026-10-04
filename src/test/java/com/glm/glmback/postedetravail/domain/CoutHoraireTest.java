@@ -4,12 +4,23 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.shared.error.domain.MissingMandatoryValueException;
+import com.glm.glmback.shared.error.domain.NumberValueTooHighException;
 import com.glm.glmback.shared.error.domain.NumberValueTooLowException;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @UnitTest
 class CoutHoraireTest {
+
+  @ParameterizedTest
+  @ValueSource(strings = { "0.001", "45.555", "100000000", "1E+8" })
+  void shouldRefuserUnCoutNonRepresentableEnCentimes(String valeur) {
+    assertThatThrownBy(() -> new CoutHoraire(new BigDecimal(valeur)))
+      .isExactlyInstanceOf(NumberValueTooHighException.class)
+      .hasMessageContaining("cout horaire");
+  }
 
   @Test
   void shouldNotBuildWithoutValue() {
