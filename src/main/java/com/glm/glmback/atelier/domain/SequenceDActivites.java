@@ -246,6 +246,7 @@ final class SequenceDActivites {
     }
     if (
       geste.intention() == IntentionDePointage.TRANSITION
+      && courante.filter(visee::equals).isPresent()
       && Optional.ofNullable(ouvrants.get(visee))
         .filter(ouvrant -> ouvrant.type() == geste.type())
         .isPresent()

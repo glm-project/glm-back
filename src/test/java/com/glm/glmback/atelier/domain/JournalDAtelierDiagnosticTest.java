@@ -89,6 +89,21 @@ class JournalDAtelierDiagnosticTest {
   }
 
   @Test
+  void shouldDesignerLeRemplacementAvantLaCategorieDUneTransitionTardive() {
+    var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    var nonConformite = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_12H);
+    var reprise = passageEnTravailDe(travail).a(java.time.Instant.parse("2026-05-10T14:00:00Z"));
+    var journal = new JournalDAtelier(List.of(travail, nonConformite, reprise));
+
+    assertThat(journal.diagnostics(Optional.empty()))
+      .singleElement()
+      .satisfies(diagnostic -> {
+        assertThat(diagnostic.raison()).isEqualTo(RaisonDuConflit.CIBLE_REMPLACEE);
+        assertThat(diagnostic.cible().termineePar()).contains(nonConformite.id());
+      });
+  }
+
+  @Test
   void shouldDistinguerUneCibleEchueDuTravailQuiLaSuit() {
     var a = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     var b = debutSurFraiseuse1ParDupontA(java.time.Instant.parse("2026-05-10T22:00:00Z"));
