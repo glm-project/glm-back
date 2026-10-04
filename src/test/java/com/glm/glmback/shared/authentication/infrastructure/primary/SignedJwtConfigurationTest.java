@@ -35,6 +35,7 @@ import tools.jackson.databind.json.JsonMapper;
 class SignedJwtConfigurationTest {
 
   private final AtomicInteger userInfoCalls = new AtomicInteger();
+  private final String signingKeys = new JWKSet(SIGNING_KEY.toPublicJWK()).toString();
   private HttpServer identityProvider;
   private String issuer;
   private JwtDecoder decoder;
@@ -133,7 +134,7 @@ class SignedJwtConfigurationTest {
   private void identityResponse(HttpExchange exchange) throws IOException {
     String body;
     switch (exchange.getRequestURI().getPath()) {
-      case "/jwks" -> body = new JWKSet(SIGNING_KEY.toPublicJWK()).toString();
+      case "/jwks" -> body = signingKeys;
       case "/userinfo" -> {
         userInfoCalls.incrementAndGet();
         body = "{}";
