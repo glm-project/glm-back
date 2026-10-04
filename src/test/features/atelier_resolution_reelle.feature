@@ -333,6 +333,10 @@ Feature: Resolution reelle des conflits
       | poste     | fraiseuse-resolution                 |
       | cible     | 00000000-0000-0000-0000-000000044071 |
     And il est "2044-01-12T18:00:00Z"
+    When je rejoue le dernier geste du pupitre
+    Then la reponse a le statut http 200
+    When je consulte "Resolution 4407"
+    Then le journal du suivi contient 3 evenements
     When je prepare la resolution du conflit de "Resolution 4407" ancre 0
       | kind     | ANNULATION                             |
       | pointage | 2                                      |
@@ -381,6 +385,13 @@ Feature: Resolution reelle des conflits
     Then le recu canonique conserve les memes identites et activites
     And la liste de ce suivi conserve 0 sequences en conflit
     And l'apercu ne fixe aucune fin ni duree definitive
+
+    And les API lecteurs gardent le travail en cours sans duree finale
+    Given il est "2044-01-13T20:59:59.999999999Z"
+    Then les API lecteurs gardent le travail en cours sans duree finale
+    Given il est "2044-01-13T21:00:00Z"
+    Then les API lecteurs jugent le travail echu a vingt et une heures
+    And la liste de ce suivi conserve 0 sequences en conflit
 
   Scenario: Resolution reelle de la fin orpheline apres annulation de louvrant
     Given il est "2044-01-14T07:00:00Z"
@@ -941,3 +952,103 @@ Feature: Resolution reelle des conflits
     And les periodes relues de "Resolution 4432" ont les durees
       | PT3H30M |
       | PT5H    |
+
+  Scenario: Resolution reelle preserve une nanoseconde et distingue le rejeu UUID
+    Given il est "2044-01-30T07:00:00Z"
+    And l'entreprise a cree l'element de fabrication "Resolution 4433"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | RES4433              |
+    And j'ai engage l'element "Resolution 4433" en atelier
+    And il est "2044-01-30T08:00:00.123456789Z"
+    And j'ai pointe sur "Resolution 4433"
+      | id        | 00000000-0000-0000-0000-000000044331 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+    And il est "2044-01-30T08:00:00.123456790Z"
+    And j'ai pointe sur "Resolution 4433"
+      | id        | 00000000-0000-0000-0000-000000044332 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+      | cible     | 00000000-0000-0000-0000-000000044331 |
+    And il est "2044-01-30T08:00:00.123456791Z"
+    And j'ai pointe sur "Resolution 4433"
+      | id        | 00000000-0000-0000-0000-000000044333 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+      | cible     | 00000000-0000-0000-0000-000000044331 |
+    And il est "2044-01-30T18:00:00Z"
+    When je rejoue le dernier geste du pupitre
+    Then la reponse a le statut http 200
+    When je consulte "Resolution 4433"
+    Then le journal du suivi contient 3 evenements
+    When je prepare la resolution du conflit de "Resolution 4433" ancre 0
+      | kind     | ANNULATION                              |
+      | pointage | 2                                       |
+      | motif    | La seconde fin distincte est une erreur |
+    Then l'apercu donne les activites de resolution
+      | categorie | etat     | duree          |
+      | TRAVAIL   | TERMINEE | PT0.000000001S |
+    And l'apercu ne modifie ni les faits ni les projections ni la revision
+    When je confirme cet apercu de resolution
+    Then le recu canonique conserve les memes identites et activites
+    And la liste de ce suivi conserve 0 sequences en conflit
+    And les periodes relues de "Resolution 4433" ont les durees
+      | PT0.000000001S |
+    And les API lecteurs conservent la duree nanoseconde dans la semaine 4
+
+  Scenario: Resolution reelle interprete la NC recue apres la fin a son heure metier
+    Given il est "2044-01-29T07:00:00Z"
+    And l'entreprise a cree l'element de fabrication "Resolution 4434"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | RES4434              |
+    And j'ai engage l'element "Resolution 4434" en atelier
+    And il est "2044-01-29T08:00:00Z"
+    And j'ai pointe sur "Resolution 4434"
+      | id        | 00000000-0000-0000-0000-000000044341 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+    And il est "2044-01-29T17:00:00Z"
+    And j'ai pointe sur "Resolution 4434"
+      | id        | 00000000-0000-0000-0000-000000044342 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+      | cible     | 00000000-0000-0000-0000-000000044341 |
+    And il est "2044-01-29T23:00:00Z"
+    And j'ai pointe sur "Resolution 4434"
+      | id             | 00000000-0000-0000-0000-000000044343 |
+      | type           | NON_CONFORMITE                       |
+      | intention      | TRANSITION                           |
+      | operateur      | dupont-resolution                    |
+      | poste          | fraiseuse-resolution                 |
+      | cible          | 00000000-0000-0000-0000-000000044341 |
+      | dateDeSurvenue | 2044-01-29T12:00:00Z                 |
+    And il est "2044-01-29T23:30:00Z"
+    When je prepare la resolution du conflit de "Resolution 4434" ancre 0
+      | kind      | CORRECTION                               |
+      | pointage  | 2                                        |
+      | motif     | La fin cible la NC meme recue hors ordre |
+      | type      | FIN                                      |
+      | intention | FIN                                      |
+      | cible     | 1                                        |
+      | instant   | 2044-01-29T17:00:00Z                     |
+    Then l'apercu donne les activites de resolution
+      | categorie      | etat     | duree |
+      | TRAVAIL        | TERMINEE | PT4H  |
+      | NON_CONFORMITE | TERMINEE | PT5H  |
+    And l'apercu ne modifie ni les faits ni les projections ni la revision
+    When je confirme cet apercu de resolution
+    Then le recu canonique conserve les memes identites et activites
+    And la liste de ce suivi conserve 0 sequences en conflit
+    And les periodes relues de "Resolution 4434" ont les durees
+      | PT4H |
+      | PT5H |

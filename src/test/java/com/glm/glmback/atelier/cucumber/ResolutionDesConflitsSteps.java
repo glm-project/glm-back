@@ -208,6 +208,14 @@ public class ResolutionDesConflitsSteps {
   public void ancreAnnulee() {
     rest.get("/api/atelier/suivis/" + suivi + "/conflits/" + acte.get("pointage"));
     assertThatLastResponse().hasOkStatus().hasElement("$.kind").withValue("ANCRE_ANNULEE");
+    var journalApres = ((Map<?, ?>) apres.get("suivi")).get("journal");
+    rest.post(
+      "/api/atelier/suivis/" + suivi + "/conflits/" + acte.get("pointage") + "/apercus",
+      JSON.writeValueAsString(Map.of("commande", UUID.randomUUID(), "revision", revision + 1, "acte", acte))
+    );
+    assertThatLastResponse().hasHttpStatus(409);
+    rest.get("/api/atelier/suivis/" + suivi);
+    assertThat(CucumberRestTestContext.getElement("$.journal")).isEqualTo(journalApres);
   }
 
   @Then("les faits independants de cet acte restent identiques")
@@ -234,6 +242,120 @@ public class ResolutionDesConflitsSteps {
       .allSatisfy(ligne -> {
         assertThat(((Number) ligne.get("revision")).longValue()).isEqualTo(revision + 1);
       });
+  }
+
+  @Then("les API lecteurs conservent la duree nanoseconde dans la semaine {int}")
+  @SuppressWarnings("unchecked")
+  public void lecteursNanoseconde(int semaine) {
+    var journal = (List<Map<String, Object>>) avant.get("journal");
+    var operateur = (String) journal.getFirst().get("operateurId");
+    var attendue = ((List<Map<String, Object>>) apres.get("activites")).getFirst();
+    rest.get("/api/feuilles-de-temps/" + operateur + "?annee=2044&semaine=" + semaine);
+    assertThatLastResponse().hasOkStatus();
+    var portions = ((List<Map<String, Object>>) CucumberRestTestContext.getElement("$.jours")).stream()
+      .flatMap(jour -> ((List<Map<String, Object>>) jour.get("activites")).stream())
+      .toList();
+    assertThat(portions)
+      .singleElement()
+      .satisfies(portion -> {
+        assertThat(portion.get("debut")).isEqualTo(attendue.get("debut"));
+        assertThat(portion.get("fin")).isEqualTo(attendue.get("fin"));
+        assertThat(((Map<String, Object>) portion.get("activite")).get("id")).isEqualTo(attendue.get("activite"));
+      });
+    rest.get("/api/syntheses-des-heures/" + operateur + "?annee=2044&semaine=" + semaine);
+    assertThatLastResponse().hasOkStatus().hasElement("$.dureeOperationnelleTotale.valeur").withValue("PT0.000000001S");
+    rest.get("/api/couts-de-revient/" + element);
+    assertThatLastResponse().hasOkStatus().hasElement("$.temps.total.valeur").withValue("PT0.000000001S");
+    assertThat(CucumberRestTestContext.getElement("$.cout.total.complete")).isEqualTo(true);
+    assertThat(new java.math.BigDecimal(CucumberRestTestContext.getElement("$.cout.total.valeur").toString())).isZero();
+    rest.get("/api/pupitre/referentiel");
+    assertThatLastResponse().hasOkStatus();
+    var tuile = ((List<Map<String, Object>>) CucumberRestTestContext.getElement("$.suivis")).stream()
+      .filter(ligne -> suivi.equals(ligne.get("id")))
+      .findFirst()
+      .orElseThrow();
+    assertThat((List<?>) tuile.get("activites")).isEmpty();
+    assertThat((List<?>) tuile.get("conflits")).isEmpty();
+  }
+
+  @Then("les API lecteurs gardent le travail en cours sans duree finale")
+  @SuppressWarnings("unchecked")
+  public void lecteursEnCours() {
+    var journal = (List<Map<String, Object>>) avant.get("journal");
+    var operateur = (String) journal.getFirst().get("operateurId");
+    rest.get("/api/pupitre/referentiel");
+    assertThatLastResponse().hasOkStatus();
+    var tuile = ((List<Map<String, Object>>) CucumberRestTestContext.getElement("$.suivis")).stream()
+      .filter(ligne -> suivi.equals(ligne.get("id")))
+      .findFirst()
+      .orElseThrow();
+    assertThat((List<Map<String, Object>>) tuile.get("activites"))
+      .singleElement()
+      .satisfies(activite -> {
+        assertThat(activite.get("ouverture")).isEqualTo(journal.getFirst().get("activite"));
+        assertThat(activite.get("echeance")).isEqualTo("2044-01-13T21:00:00Z");
+      });
+    rest.get("/api/feuilles-de-temps/" + operateur + "?annee=2044&semaine=2");
+    assertThatLastResponse().hasOkStatus();
+    var portions = ((List<Map<String, Object>>) CucumberRestTestContext.getElement("$.jours")).stream()
+      .flatMap(jour -> ((List<Map<String, Object>>) jour.get("activites")).stream())
+      .toList();
+    assertThat(portions)
+      .singleElement()
+      .satisfies(portion -> {
+        assertThat(portion.get("fin")).isNull();
+        assertThat(((Map<String, Object>) portion.get("activite")).get("etat")).isEqualTo("EN_COURS");
+      });
+    rest.get("/api/syntheses-des-heures/" + operateur + "?annee=2044&semaine=2");
+    assertThatLastResponse().hasOkStatus().hasElement("$.dureeOperationnelleTotale.valeur").withValue("PT0S");
+    rest.get("/api/couts-de-revient/" + element);
+    assertThatLastResponse()
+      .hasOkStatus()
+      .hasElement("$.activitesEnCours")
+      .withValue(1)
+      .and()
+      .hasElement("$.temps.total.valeur")
+      .withValue("PT0S");
+  }
+
+  @Then("les API lecteurs jugent le travail echu a vingt et une heures")
+  @SuppressWarnings("unchecked")
+  public void lecteursEchus() {
+    var journal = (List<Map<String, Object>>) avant.get("journal");
+    var operateur = (String) journal.getFirst().get("operateurId");
+    rest.get("/api/pupitre/referentiel");
+    assertThatLastResponse().hasOkStatus();
+    var tuile = ((List<Map<String, Object>>) CucumberRestTestContext.getElement("$.suivis")).stream()
+      .filter(ligne -> suivi.equals(ligne.get("id")))
+      .findFirst()
+      .orElseThrow();
+    assertThat((List<?>) tuile.get("activites")).isEmpty();
+    assertThat((List<?>) tuile.get("conflits")).isEmpty();
+    rest.get("/api/feuilles-de-temps/" + operateur + "?annee=2044&semaine=2");
+    assertThatLastResponse().hasOkStatus();
+    var portions = ((List<Map<String, Object>>) CucumberRestTestContext.getElement("$.jours")).stream()
+      .flatMap(jour -> ((List<Map<String, Object>>) jour.get("activites")).stream())
+      .toList();
+    assertThat(portions)
+      .singleElement()
+      .satisfies(portion -> {
+        assertThat(portion.get("fin")).isEqualTo("2044-01-13T21:00:00Z");
+        assertThat(((Map<String, Object>) portion.get("activite")).get("etat")).isEqualTo("TERMINEE_AUTOMATIQUEMENT");
+      });
+    rest.get("/api/syntheses-des-heures/" + operateur + "?annee=2044&semaine=2");
+    assertThatLastResponse().hasOkStatus().hasElement("$.dureeOperationnelleTotale.valeur").withValue("PT13H");
+    rest.get("/api/couts-de-revient/" + element);
+    assertThatLastResponse()
+      .hasOkStatus()
+      .hasElement("$.activitesEnCours")
+      .withValue(0)
+      .and()
+      .hasElement("$.temps.total.valeur")
+      .withValue("PT13H");
+    rest.get("/api/atelier/suivis/" + suivi + "/confirmations-de-resolution/" + commande);
+    assertThatLastResponse().hasOkStatus().hasElement("$.dossier.activites[0].etat").withValue("ECHUE");
+    assertThat(CucumberRestTestContext.getElement("$.recu")).isEqualTo(recu);
+    assertThat(CucumberRestTestContext.getElement("$.dossier.activites[0].duree")).isEqualTo("PT13H");
   }
 
   @Then("les quatre lecteurs API expliquent ce conflit")
