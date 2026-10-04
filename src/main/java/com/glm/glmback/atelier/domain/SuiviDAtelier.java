@@ -43,16 +43,6 @@ public record SuiviDAtelier(
     valide(engagement, journal, cloture);
   }
 
-  public SuiviDAtelier(
-    SuiviDAtelierId id,
-    ElementEngage element,
-    Engagement engagement,
-    JournalDAtelier journal,
-    Optional<Cloture> cloture
-  ) {
-    this(id, element, engagement, journal, cloture, new RevisionDuSuivi(0));
-  }
-
   private SuiviDAtelier(SuiviDAtelierBuilder builder) {
     this(builder.id, builder.element, builder.engagement, builder.journal, Optional.empty(), builder.revision);
   }

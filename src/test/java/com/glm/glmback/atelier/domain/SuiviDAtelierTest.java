@@ -478,6 +478,6 @@ class SuiviDAtelierTest {
     JournalDAtelier journal,
     Optional<Cloture> cloture
   ) {
-    new SuiviDAtelier(id, element, engagement, journal, cloture);
+    new SuiviDAtelier(id, element, engagement, journal, cloture, new RevisionDuSuivi(0));
   }
 }
