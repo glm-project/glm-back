@@ -130,6 +130,31 @@ class ConfirmationsMateriellesIT {
     assertThat(recu).isEmpty();
   }
 
+  @Test
+  @WithTenant("impeccmold")
+  void shouldDeclarerLApercuObsoleteQuandLHabilitationEstRetireeApresSaPreparation() {
+    // GIVEN
+    var suivi = transactions.execute(status -> suivis.create(MaterielDesActesFixture.suiviAvecTransitionSurFraiseuse()));
+    var commande = UUID.randomUUID();
+    var adresse = new AdresseDossierConflit(suivi.id(), suivi.journal().evenements().getLast().id());
+    var apercu = apercus.apercu(
+      commande,
+      adresse,
+      suivi.revision(),
+      MaterielDesActesFixture.correctionDeTransitionEnFin(suivi),
+      CONTEXTE_LEROY_IMPECCMOLD
+    );
+    when(habilitations.estHabilite(OPERATEUR_ID_DUPONT, POSTE_ID_FRAISEUSE_1)).thenReturn(false);
+    // WHEN THEN
+    assertThatThrownBy(() ->
+      confirmations.confirmer(suivi.id(), commande, apercu.reference().opaque(), CONTEXTE_LEROY_IMPECCMOLD)
+    ).isExactlyInstanceOf(ApercuObsoleteException.class);
+    var relu = transactions.execute(status -> suivis.get(suivi.id()));
+    var recu = transactions.execute(status -> recus.get(commande));
+    assertThat(relu).contains(suivi);
+    assertThat(recu).isEmpty();
+  }
+
   private enum ValeurCopiee {
     TAUX,
     COUT,
