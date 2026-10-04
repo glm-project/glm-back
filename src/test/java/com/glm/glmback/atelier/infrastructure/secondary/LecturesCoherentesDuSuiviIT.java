@@ -8,8 +8,10 @@ import com.glm.glmback.atelier.application.SuivisDAtelierApplicationService;
 import com.glm.glmback.atelier.domain.Annulation;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
+import jakarta.persistence.EntityManager;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import org.hibernate.resource.jdbc.spi.StatementInspector;
@@ -38,6 +40,9 @@ class LecturesCoherentesDuSuiviIT {
 
   @Autowired
   private RendezVousDesLectures rendezVous;
+
+  @Autowired
+  private EntityManager entities;
 
   @Test
   @WithTenant("impeccmold")
@@ -80,6 +85,51 @@ class LecturesCoherentesDuSuiviIT {
       } finally {
         ecritureTerminee.countDown();
       }
+    }
+  }
+
+  @Test
+  @WithTenant("impeccmold")
+  void shouldLireUnSuiviCoherentMalgreLeParentDejaChargeParLAppelant() {
+    // GIVEN
+    var debut = debutSansPosteParDupontA(LE_10_MAI_2026_A_8H);
+    var ancien = inTransaction(() -> suivis.create(suiviDAtelierEngage().enregistre(debut)));
+    var authentication = SecurityContextHolder.getContext().getAuthentication();
+    var requete = RequestContextHolder.getRequestAttributes();
+    try (var executor = Executors.newSingleThreadExecutor()) {
+      inTransaction(() -> {
+        entities.find(SuiviDAtelierEntity.class, ancien.id().uuid());
+        var ecriture = executor.submit(() -> {
+          var contexte = SecurityContextHolder.createEmptyContext();
+          contexte.setAuthentication(authentication);
+          SecurityContextHolder.setContext(contexte);
+          RequestContextHolder.setRequestAttributes(requete);
+          try {
+            return inTransaction(() ->
+              suivis.update(
+                ancien
+                  .annule(debut.id(), new Annulation(AUTEUR_LEROY, LE_11_MAI_2026_A_9H15, MOTIF_ERREUR_DE_SAISIE))
+                  .cloture(clotureParLeroyA(LE_10_MAI_2026_A_17H))
+              )
+            );
+          } finally {
+            SecurityContextHolder.clearContext();
+            RequestContextHolder.resetRequestAttributes();
+          }
+        });
+        var nouveau = attendResultat(ecriture);
+        // WHEN / THEN
+        assertThat(application.get(ancien.id()).suivi()).isIn(ancien, nouveau);
+        return null;
+      });
+    }
+  }
+
+  private static <T> T attendResultat(Future<T> resultat) {
+    try {
+      return resultat.get(10, TimeUnit.SECONDS);
+    } catch (Exception exception) {
+      throw new AssertionError(exception);
     }
   }
 
