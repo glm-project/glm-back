@@ -11,6 +11,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BinaryOperator;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Le cout d'un operateur sur une fenetre de partage, arrondi une seule fois puis reparti en centimes entiers.
@@ -42,17 +44,11 @@ public record RepartitionDeMainDOeuvre(Map<TrancheDActivite, Montant> parts) {
     .thenComparing(part -> part.part().activite().poste().map(PosteDeTravailId::uuid).orElse(null), Comparator.nullsLast(UUID::compareTo))
     .thenComparing(part -> part.part().periode().debut())
     .thenComparing(part -> part.part().periode().fin())
-    .thenComparing(part -> part.part().activite().categorie())
-    .thenComparing(
-      part -> part.part().activite().nature().map(NatureDOperation::value).orElse(null),
-      Comparator.nullsLast(String::compareTo)
-    )
     .thenComparing(part -> part.part().activite().tauxHoraire().orElseThrow().value())
     .thenComparing(
       part -> part.part().activite().coutHoraire().map(CoutHoraire::value).orElse(null),
       Comparator.nullsLast(BigDecimal::compareTo)
-    )
-    .thenComparing(part -> part.part().finAutomatique());
+    );
 
   public RepartitionDeMainDOeuvre {
     Assert.notNull("parts", parts);
@@ -71,14 +67,24 @@ public record RepartitionDeMainDOeuvre(Map<TrancheDActivite, Montant> parts) {
           .reduiteA(fenetre)
           .ifPresent(part -> debuts.merge(part, tranche.periode().debut(), BinaryOperator.minBy(Comparator.naturalOrder())))
       );
-    List<PartExacte> exactes = debuts
+    Map<PartDeMainDOeuvre, List<PartExacte>> groupes = debuts
       .entrySet()
       .stream()
       .map(entree -> PartExacte.de(entree.getKey(), entree.getValue(), diviseur))
+      .collect(Collectors.groupingBy(part -> PartDeMainDOeuvre.de(part.part())));
+    List<PartExacte> exactes = groupes
+      .values()
+      .stream()
+      .map(groupe -> groupe.stream().min(PAR_PRIORITE).orElseThrow())
       .sorted(PAR_PRIORITE)
       .toList();
-
-    return new RepartitionDeMainDOeuvre(Map.copyOf(repartir(exactes)));
+    Map<PartDeMainDOeuvre, Montant> montants = repartir(exactes)
+      .entrySet()
+      .stream()
+      .collect(Collectors.toMap(entree -> PartDeMainDOeuvre.de(entree.getKey()), Map.Entry::getValue));
+    return new RepartitionDeMainDOeuvre(
+      debuts.keySet().stream().collect(Collectors.toUnmodifiableMap(Function.identity(), part -> montants.get(PartDeMainDOeuvre.de(part))))
+    );
   }
 
   private static Map<TrancheDActivite, Montant> repartir(List<PartExacte> exactes) {
@@ -105,6 +111,18 @@ public record RepartitionDeMainDOeuvre(Map<TrancheDActivite, Montant> parts) {
   public Optional<Montant> de(TrancheDActivite part) {
     return Optional.ofNullable(parts.get(part));
   }
+
+  private record PartDeMainDOeuvre(Optional<PosteDeTravailId> poste, Periode periode, TarifsDePart tarifs) {
+    private static PartDeMainDOeuvre de(TrancheDActivite part) {
+      return new PartDeMainDOeuvre(
+        part.activite().poste(),
+        part.periode(),
+        new TarifsDePart(part.activite().tauxHoraire().orElseThrow(), part.activite().coutHoraire())
+      );
+    }
+  }
+
+  private record TarifsDePart(TauxHoraire tauxHoraire, Optional<CoutHoraire> coutHoraire) {}
 
   private record PartExacte(TrancheDActivite part, Instant debutDeLActivite, BigDecimal exact) {
     private static PartExacte de(TrancheDActivite part, Instant debutDeLActivite, Diviseur diviseur) {

@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -97,6 +98,22 @@ class RepartitionDeMainDOeuvreTest {
    * Deux elements sur le meme poste au meme moment ne font qu'une part : chacun la paie entiere, au meme montant.
    */
   @Test
+  void shouldAttribuerLaMemePartDePosteAuxElementsDistincts() {
+    var postePrioritaire = new PosteDeTravailId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
+    var posteCommun = new PosteDeTravailId(UUID.fromString("00000000-0000-0000-0000-000000000002"));
+    var periode = new Periode(A_9H, A_9H.plusSeconds(2700));
+    var a = partATrenteCinqEuros(ELEMENT_ID_OF, posteCommun, periode);
+    var aPrime = partATrenteCinqEuros(ELEMENT_ID_OF_2, posteCommun, periode);
+    var b = partATrenteCinqEuros(ELEMENT_ID_OF, postePrioritaire, periode);
+
+    var repartition = RepartitionDeMainDOeuvre.de(List.of(a, aPrime, b), periode, new Diviseur(2));
+
+    assertThat(repartition.de(a)).contains(euros("13.12"));
+    assertThat(repartition.de(aPrime)).contains(euros("13.12"));
+    assertThat(repartition.de(b)).contains(euros("13.13"));
+  }
+
+  @Test
   void shouldGiveTheSameAmountToIdenticalParts() {
     TrancheDActivite premierElement = sur(Optional.of(POSTE_ID_FRAISEUSE), A_9H, A_9H_ET_10_SECONDES);
     TrancheDActivite secondElement = sur(Optional.of(POSTE_ID_FRAISEUSE), A_9H, A_9H_ET_10_SECONDES);
@@ -112,11 +129,11 @@ class RepartitionDeMainDOeuvreTest {
   }
 
   /**
-   * Deux parts egales en tout, sauf la fin automatique de l'une : l'ordre stable des valeurs les departage, pour que
-   * le meme calcul donne le meme resultat quel que soit l'element lu.
+   * La fin automatique est une anomalie de l'activite, sans nouveau poste ni nouveau tarif : les deux parts
+   * appartiennent au meme partage humain.
    */
   @Test
-  void shouldBreakTiesOnTheValuesOfThePart() {
+  void shouldConserverLaMemePartMalgreUneFinAutomatique() {
     Periode periode = new Periode(A_9H, A_9H_ET_10_SECONDES);
     TrancheDActivite finReelle = new TrancheDActivite(
       activite(Optional.of(POSTE_ID_FRAISEUSE), Optional.of(TAUX_HORAIRE_DE_20_EUROS)),
@@ -132,7 +149,7 @@ class RepartitionDeMainDOeuvreTest {
     RepartitionDeMainDOeuvre repartition = RepartitionDeMainDOeuvre.de(List.of(finAutomatique, finReelle), periode, new Diviseur(1));
 
     assertThat(repartition.de(finReelle)).contains(euros("0.06"));
-    assertThat(repartition.de(finAutomatique)).contains(euros("0.05"));
+    assertThat(repartition.de(finAutomatique)).contains(euros("0.06"));
   }
 
   @Test
@@ -151,6 +168,18 @@ class RepartitionDeMainDOeuvreTest {
     RepartitionDeMainDOeuvre repartition = RepartitionDeMainDOeuvre.de(List.of(avant), new Periode(A_9H, A_10H), new Diviseur(1));
 
     assertThat(repartition.parts()).isEmpty();
+  }
+
+  private static TrancheDActivite partATrenteCinqEuros(ElementId element, PosteDeTravailId poste, Periode periode) {
+    var activite = Activite.builder()
+      .operateur(OPERATEUR_ID_DUPONT)
+      .element(element)
+      .poste(Optional.of(poste))
+      .nature(Optional.of(NATURE_FRAISAGE))
+      .coutHoraire(Optional.of(COUT_HORAIRE_DE_45_EUROS))
+      .tauxHoraire(Optional.of(new TauxHoraire(new BigDecimal("35.00"))))
+      .categorie(CategorieDActivite.TRAVAIL);
+    return new TrancheDActivite(activite, periode);
   }
 
   private static Montant euros(String montant) {
