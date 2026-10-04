@@ -2,15 +2,28 @@ package com.glm.glmback.atelier.infrastructure.secondary;
 
 import static com.glm.glmback.atelier.domain.AtelierFixture.*;
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.atelier.domain.Annulation;
+import java.security.GeneralSecurityException;
 import org.junit.jupiter.api.Test;
 
 @UnitTest
 class Sha256EmpreintesDesConsequencesTest {
 
   private final Sha256EmpreintesDesConsequences empreintes = new Sha256EmpreintesDesConsequences(new CryptographieDesReferences());
+
+  @Test
+  void shouldNePasInventerDEmpreinteSiLeFournisseurEchoue() throws GeneralSecurityException {
+    var cryptographie = mock(CryptographieDesReferences.class);
+    var indisponible = new GeneralSecurityException("fournisseur indisponible");
+    when(cryptographie.empreinte(any())).thenThrow(indisponible);
+    var calcul = new Sha256EmpreintesDesConsequences(cryptographie);
+    assertThatThrownBy(() -> calcul.calcule(suiviDAtelierEngage(), LE_10_MAI_2026_A_17H))
+      .isExactlyInstanceOf(IllegalStateException.class)
+      .hasCause(indisponible);
+  }
 
   @Test
   void shouldIgnorerLaRevisionEtLesMetadonneesDuFaitEnregistre() {
