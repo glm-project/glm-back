@@ -38,7 +38,7 @@ class RecusDActesIT {
       return null;
     });
     // THEN
-    assertThat(inTransaction(() -> recus.get(recu.preuve().commande()))).contains(recu);
+    assertThat(inTransaction(() -> recus.get(recu.proposition().commande()))).contains(recu);
   }
 
   @Test
@@ -58,7 +58,7 @@ class RecusDActesIT {
         return null;
       })
     ).isExactlyInstanceOf(ConfirmationReutiliseeException.class);
-    assertThat(inTransaction(() -> recus.get(recu.preuve().commande()))).contains(recu);
+    assertThat(inTransaction(() -> recus.get(recu.proposition().commande()))).contains(recu);
   }
 
   private <T> T inTransaction(Supplier<T> action) {

@@ -26,29 +26,28 @@ class JpaRecusDActes implements RecusDActes {
 
   @Override
   public void create(RecuDActe recu) {
-    var preuve = recu.preuve();
+    var proposition = recu.proposition();
     int enregistre = entities
       .createNativeQuery(
         """
         insert into recu_d_acte
-          (commande, suivi_id, pointage_id, sujet, emetteur, reference, preuve, revision_de_depart,
+          (commande, suivi_id, pointage_id, sujet, emetteur, proposition, revision_de_depart,
            revision_enregistree, enregistre_le, activites_concernees, evenements_touches)
-          values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           on conflict (commande) do nothing
         """
       )
-      .setParameter(1, preuve.commande())
-      .setParameter(2, preuve.adresse().suivi().uuid())
-      .setParameter(3, preuve.adresse().pointage().uuid())
-      .setParameter(4, preuve.contexte().gestionnaire().sujet())
-      .setParameter(5, preuve.contexte().gestionnaire().emetteur())
-      .setParameter(6, recu.reference())
-      .setParameter(7, FormatDePreuveDApercu.serialise(preuve))
-      .setParameter(8, preuve.revision().value())
-      .setParameter(9, recu.revisionEnregistree().value())
-      .setParameter(10, recu.enregistreLe().toString())
+      .setParameter(1, proposition.commande())
+      .setParameter(2, proposition.adresse().suivi().uuid())
+      .setParameter(3, proposition.adresse().pointage().uuid())
+      .setParameter(4, recu.contexte().gestionnaire().sujet())
+      .setParameter(5, recu.contexte().gestionnaire().emetteur())
+      .setParameter(6, FormatDePropositionConfirmee.serialise(proposition, recu.contexte()))
+      .setParameter(7, proposition.revision().value())
+      .setParameter(8, recu.revisionEnregistree().value())
+      .setParameter(9, recu.enregistreLe().toString())
       .setParameter(
-        11,
+        10,
         recu
           .activitesConcernees()
           .stream()
@@ -57,7 +56,7 @@ class JpaRecusDActes implements RecusDActes {
           .collect(Collectors.joining(","))
       )
       .setParameter(
-        12,
+        11,
         recu
           .evenementsTouches()
           .stream()
@@ -66,7 +65,7 @@ class JpaRecusDActes implements RecusDActes {
       )
       .executeUpdate();
     if (enregistre == 0) {
-      throw new ConfirmationReutiliseeException(preuve.commande());
+      throw new ConfirmationReutiliseeException(proposition.commande());
     }
   }
 
@@ -76,7 +75,7 @@ class JpaRecusDActes implements RecusDActes {
     List<Object[]> lignes = entities
       .createNativeQuery(
         """
-        select preuve, reference, revision_enregistree, enregistre_le, activites_concernees, evenements_touches
+        select proposition, revision_enregistree, enregistre_le, activites_concernees, evenements_touches
         from recu_d_acte where commande = ?
         """
       )
@@ -86,18 +85,19 @@ class JpaRecusDActes implements RecusDActes {
   }
 
   private static RecuDActe recu(Object[] ligne) {
+    var confirmee = FormatDePropositionConfirmee.relit((String) ligne[0]);
     return RecuDActe.builder()
-      .preuve(FormatDePreuveDApercu.relit((String) ligne[0]))
-      .reference((String) ligne[1])
-      .revisionEnregistree(new RevisionDuSuivi(((Number) ligne[2]).longValue()))
-      .enregistreLe(Instant.parse((String) ligne[3]))
+      .proposition(confirmee.proposition())
+      .contexte(confirmee.contexte())
+      .revisionEnregistree(new RevisionDuSuivi(((Number) ligne[1]).longValue()))
+      .enregistreLe(Instant.parse((String) ligne[2]))
       .activitesConcernees(
-        Arrays.stream(((String) ligne[4]).split(","))
+        Arrays.stream(((String) ligne[3]).split(","))
           .filter(id -> !id.isEmpty())
           .map(UUID::fromString)
           .map(ActiviteId::new)
           .collect(Collectors.toSet())
       )
-      .evenementsTouches(Arrays.stream(((String) ligne[5]).split(",")).map(UUID::fromString).map(EvenementDAtelierId::new).toList());
+      .evenementsTouches(Arrays.stream(((String) ligne[4]).split(",")).map(UUID::fromString).map(EvenementDAtelierId::new).toList());
   }
 }

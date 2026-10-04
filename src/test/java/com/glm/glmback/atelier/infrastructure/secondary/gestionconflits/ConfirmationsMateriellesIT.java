@@ -16,10 +16,12 @@ import com.glm.glmback.atelier.domain.OperateursConnus;
 import com.glm.glmback.atelier.domain.PosteDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.PostesConnus;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
+import com.glm.glmback.atelier.domain.gestionconflits.ActeDeResolution;
 import com.glm.glmback.atelier.domain.gestionconflits.AdresseDossierConflit;
 import com.glm.glmback.atelier.domain.gestionconflits.ApercuObsoleteException;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.time.domain.Clock;
+import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Optional;
@@ -50,6 +52,9 @@ class ConfirmationsMateriellesIT {
   @Autowired
   private TransactionTemplate transactions;
 
+  @Autowired
+  private EntityManager entities;
+
   @MockitoBean
   private Clock clock;
 
@@ -76,7 +81,7 @@ class ConfirmationsMateriellesIT {
     // GIVEN
     when(clock.now()).thenReturn(Instant.parse("2026-05-10T20:59:59Z"));
     var suivi = transactions.execute(status -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
-    var acte = preuveDAnnulationDeTransition(suivi);
+    var acte = propositionDAnnulationDeTransition(suivi);
     var commande = UUID.randomUUID();
     var apercu = apercus.apercu(commande, acte.adresse(), suivi.revision(), acte.acte(), CONTEXTE_LEROY_IMPECCMOLD);
     assertThat(apercu.apres().activites())
@@ -85,12 +90,11 @@ class ConfirmationsMateriellesIT {
         assertThat(activite.fin()).isEmpty();
         assertThat(activite.finAutomatique()).isFalse();
       });
-    assertThat(apercu.reference().preuve().expireLe()).isEqualTo(Instant.parse("2026-05-10T21:14:59Z"));
     when(clock.now()).thenReturn(Instant.parse("2026-05-10T21:00:00Z"));
     // WHEN THEN
-    assertThatThrownBy(() ->
-      confirmations.confirmer(suivi.id(), commande, apercu.reference().opaque(), CONTEXTE_LEROY_IMPECCMOLD)
-    ).isExactlyInstanceOf(ApercuObsoleteException.class);
+    assertThatThrownBy(() -> confirmations.confirmer(suivi.id(), apercu.proposition(), CONTEXTE_LEROY_IMPECCMOLD)).isExactlyInstanceOf(
+      ApercuObsoleteException.class
+    );
     var relu = transactions.execute(status -> suivis.get(suivi.id()));
     var recu = transactions.execute(status -> recus.get(commande));
     assertThat(relu).contains(suivi);
@@ -113,9 +117,9 @@ class ConfirmationsMateriellesIT {
       when(postes.get(POSTE_ID_FRAISEUSE_1)).thenReturn(Optional.empty());
     }
     // WHEN THEN
-    assertThatThrownBy(() ->
-      confirmations.confirmer(suivi.id(), commande, apercu.reference().opaque(), CONTEXTE_LEROY_IMPECCMOLD)
-    ).isExactlyInstanceOf(ApercuObsoleteException.class);
+    assertThatThrownBy(() -> confirmations.confirmer(suivi.id(), apercu.proposition(), CONTEXTE_LEROY_IMPECCMOLD)).isExactlyInstanceOf(
+      ApercuObsoleteException.class
+    );
     var relu = transactions.execute(status -> suivis.get(suivi.id()));
     var recu = transactions.execute(status -> recus.get(commande));
     assertThat(relu).contains(suivi);
@@ -154,9 +158,9 @@ class ConfirmationsMateriellesIT {
       );
     }
     // WHEN THEN
-    assertThatThrownBy(() ->
-      confirmations.confirmer(suivi.id(), commande, apercu.reference().opaque(), CONTEXTE_LEROY_IMPECCMOLD)
-    ).isExactlyInstanceOf(ApercuObsoleteException.class);
+    assertThatThrownBy(() -> confirmations.confirmer(suivi.id(), apercu.proposition(), CONTEXTE_LEROY_IMPECCMOLD)).isExactlyInstanceOf(
+      ApercuObsoleteException.class
+    );
     var relu = transactions.execute(status -> suivis.get(suivi.id()));
     var recu = transactions.execute(status -> recus.get(commande));
     assertThat(relu).contains(suivi);
@@ -188,9 +192,9 @@ class ConfirmationsMateriellesIT {
       )
     ).isExactlyInstanceOf(OperateurNonHabiliteException.class);
     // WHEN THEN
-    assertThatThrownBy(() ->
-      confirmations.confirmer(suivi.id(), commande, apercu.reference().opaque(), CONTEXTE_LEROY_IMPECCMOLD)
-    ).isExactlyInstanceOf(ApercuObsoleteException.class);
+    assertThatThrownBy(() -> confirmations.confirmer(suivi.id(), apercu.proposition(), CONTEXTE_LEROY_IMPECCMOLD)).isExactlyInstanceOf(
+      ApercuObsoleteException.class
+    );
     var relu = transactions.execute(status -> suivis.get(suivi.id()));
     var recu = transactions.execute(status -> recus.get(commande));
     assertThat(relu).contains(suivi);
@@ -214,9 +218,7 @@ class ConfirmationsMateriellesIT {
     var indisponible = new IllegalStateException("Referentiel indisponible");
     when(habilitations.estHabilite(OPERATEUR_ID_DUPONT, POSTE_ID_FRAISEUSE_1)).thenThrow(indisponible);
     // WHEN THEN
-    assertThatThrownBy(() ->
-      confirmations.confirmer(suivi.id(), commande, apercu.reference().opaque(), CONTEXTE_LEROY_IMPECCMOLD)
-    ).isSameAs(indisponible);
+    assertThatThrownBy(() -> confirmations.confirmer(suivi.id(), apercu.proposition(), CONTEXTE_LEROY_IMPECCMOLD)).isSameAs(indisponible);
     var relu = transactions.execute(status -> suivis.get(suivi.id()));
     var recu = transactions.execute(status -> recus.get(commande));
     assertThat(relu).contains(suivi);
@@ -237,13 +239,13 @@ class ConfirmationsMateriellesIT {
     var maintenant = LE_10_MAI_2026_A_17H.plusSeconds(1);
     when(clock.now()).thenReturn(maintenant);
     // WHEN
-    var resultat = confirmations.confirmer(suivi.id(), commande, apercu.reference().opaque(), CONTEXTE_LEROY_RENOMME_IMPECCMOLD);
+    var resultat = confirmations.confirmer(suivi.id(), apercu.proposition(), CONTEXTE_LEROY_RENOMME_IMPECCMOLD);
     // THEN
-    assertThat(resultat.recu().preuve().acte()).isEqualTo(acte);
+    assertThat(resultat.recu().proposition().acte()).isEqualTo(acte);
     assertThat(resultat.recu().revisionEnregistree().value()).isEqualTo(1);
     assertThat(resultat.recu().enregistreLe()).isEqualTo(maintenant);
     var journal = resultat.dossier().lecture().suivi().journal();
-    var remplacement = journal.evenement(apercu.reference().preuve().evenement().orElseThrow()).orElseThrow();
+    var remplacement = journal.evenement(apercu.proposition().evenement().orElseThrow()).orElseThrow();
     assertThat(remplacement.auteur()).isEqualTo(AUTEUR_MARTIN);
     assertThat(remplacement.horodatage().dateDEnregistrement()).isEqualTo(maintenant);
     assertThat(remplacement.dateDeSurvenue()).isEqualTo(LE_10_MAI_2026_A_12H);
@@ -256,6 +258,48 @@ class ConfirmationsMateriellesIT {
         assertThat(annulation.auteur()).isEqualTo(AUTEUR_MARTIN);
         assertThat(annulation.date()).isEqualTo(maintenant);
       });
+  }
+
+  @ParameterizedTest
+  @EnumSource(ActeCreateur.class)
+  @WithTenant("impeccmold")
+  void shouldConserverLIdentiteProspectiveSansLaReserverAvantLaConfirmation(ActeCreateur type) {
+    var suivi = transactions.execute(status -> suivis.create(MaterielDesActesFixture.suiviAvecTransitionSurFraiseuse()));
+    var correction = (ActeDeResolution.Correction) MaterielDesActesFixture.correctionDeTransitionEnFin(suivi);
+    var acte =
+      type == ActeCreateur.CORRECTION
+        ? correction
+        : new ActeDeResolution.Regularisation(correction.commande().remplacement(), correction.instant());
+    var adresse = new AdresseDossierConflit(suivi.id(), suivi.journal().evenements().getLast().id());
+    var apercu = apercus.apercu(UUID.randomUUID(), adresse, suivi.revision(), acte, CONTEXTE_LEROY_IMPECCMOLD);
+    var proposition = apercu.proposition();
+    var evenement = proposition.evenement().orElseThrow();
+    var relu = transactions.execute(status -> suivis.get(suivi.id()));
+    var recu = transactions.execute(status -> recus.get(proposition.commande()));
+    assertThat(relu).contains(suivi);
+    assertThat(recu).isEmpty();
+    assertThat(reservations(evenement)).isZero();
+    var resultat = confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD);
+    assertThat(resultat.recu().proposition().evenement()).contains(evenement);
+    assertThat(resultat.dossier().lecture().suivi().journal().evenement(evenement)).isPresent();
+    assertThat(reservations(evenement)).isEqualTo(1);
+    assertThat(confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD).recu()).isEqualTo(resultat.recu());
+  }
+
+  private long reservations(com.glm.glmback.atelier.domain.EvenementDAtelierId evenement) {
+    return transactions.execute(status ->
+      (
+        (Number) entities
+          .createNativeQuery("select count(*) from identite_evenement_atelier where id = ?")
+          .setParameter(1, evenement.uuid())
+          .getSingleResult()
+      ).longValue()
+    );
+  }
+
+  private enum ActeCreateur {
+    CORRECTION,
+    REGULARISATION,
   }
 
   private enum ValeurCopiee {

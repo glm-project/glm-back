@@ -31,7 +31,7 @@ public class ResolutionDesConflitsSteps {
   private String ancre;
   private String element;
   private String commande;
-  private String reference;
+  private Map<String, Object> proposition;
   private long revision;
   private Map<String, Object> avant;
   private Object tempsAvant;
@@ -82,7 +82,13 @@ public class ResolutionDesConflitsSteps {
       JSON.writeValueAsString(Map.of("commande", commande, "revision", revision, "acte", acte))
     );
     assertThatLastResponse().hasOkStatus();
-    reference = (String) CucumberRestTestContext.getElement("$.reference");
+    proposition = new java.util.HashMap<>();
+    for (var champ : java.util.List.of("commande", "adresse", "revision", "acte", "empreinteConsequences", "evenement")) {
+      var valeur = CucumberRestTestContext.getElement("$." + champ);
+      if (valeur != null) {
+        proposition.put(champ, valeur);
+      }
+    }
     apres = (Map<String, Object>) CucumberRestTestContext.getElement("$.apres");
     assertThat(CucumberRestTestContext.getElement("$.acte")).isEqualTo(acte);
   }
@@ -174,10 +180,7 @@ public class ResolutionDesConflitsSteps {
   @When("je confirme cet apercu de resolution")
   @SuppressWarnings("unchecked")
   public void confirme() {
-    rest.post(
-      "/api/atelier/suivis/" + suivi + "/confirmations-de-resolution",
-      JSON.writeValueAsString(Map.of("commande", commande, "reference", reference))
-    );
+    rest.post("/api/atelier/suivis/" + suivi + "/confirmations-de-resolution", JSON.writeValueAsString(proposition));
     assertThatLastResponse().hasOkStatus().hasElement("$.kind").withValue("ENREGISTREE");
     recu = CucumberRestTestContext.getElement("$.recu");
     assertThat(CucumberRestTestContext.getElement("$.recu.acte")).isEqualTo(acte);
@@ -369,10 +372,7 @@ public class ResolutionDesConflitsSteps {
 
   @When("je tente la confirmation de cet apercu avec statut {int}")
   public void confirmationRefusee(int statut) {
-    rest.post(
-      "/api/atelier/suivis/" + suivi + "/confirmations-de-resolution",
-      JSON.writeValueAsString(Map.of("commande", commande, "reference", reference))
-    );
+    rest.post("/api/atelier/suivis/" + suivi + "/confirmations-de-resolution", JSON.writeValueAsString(proposition));
     assertThatLastResponse().hasHttpStatus(statut);
   }
 

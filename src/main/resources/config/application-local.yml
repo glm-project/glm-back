@@ -15,10 +15,3 @@ application:
         schema: impeccmold
       - id: katilys
         schema: katilys
-
-atelier:
-  resolution:
-    apercus:
-      cle-active: locale
-      cles:
-        locale: Z2xtLXByZXZpZXctbG9jYWwtZGV2ZWxvcG1lbnRfX18=

@@ -12,10 +12,11 @@ import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
-import com.glm.glmback.atelier.domain.gestionconflits.ApercuInvalideException;
 import com.glm.glmback.atelier.domain.gestionconflits.ApercuObsoleteException;
 import com.glm.glmback.atelier.domain.gestionconflits.ConfirmationReutiliseeException;
+import com.glm.glmback.atelier.domain.gestionconflits.EtatDAdresseDossier;
 import com.glm.glmback.atelier.domain.gestionconflits.LectureDossierConflit;
+import com.glm.glmback.atelier.domain.gestionconflits.PropositionInvalideException;
 import com.glm.glmback.shared.time.domain.Clock;
 import java.util.Optional;
 import java.util.UUID;
@@ -26,7 +27,6 @@ public class ConfirmerLesActes {
 
   private final SuiviDAtelierRepository suivis;
   private final RecusDActes recus;
-  private final ReferencesDApercu references;
   private final PreparationDesActes preparation;
   private final IdentitesDEvenements identites;
   private final Clock clock;
@@ -34,59 +34,55 @@ public class ConfirmerLesActes {
   ConfirmerLesActes(
     SuiviDAtelierRepository suivis,
     RecusDActes recus,
-    ReferencesDApercu references,
     PreparationDesActes preparation,
     IdentitesDEvenements identites,
     Clock clock
   ) {
     this.suivis = suivis;
     this.recus = recus;
-    this.references = references;
     this.preparation = preparation;
     this.identites = identites;
     this.clock = clock;
   }
 
   public static SuivisBuilder builder() {
-    return suivis ->
-      recus ->
-        references -> preparation -> identites -> clock -> new ConfirmerLesActes(suivis, recus, references, preparation, identites, clock);
+    return suivis -> recus -> preparation -> identites -> clock -> new ConfirmerLesActes(suivis, recus, preparation, identites, clock);
   }
 
   @Secured("ROLE_GESTIONNAIRE")
   @Transactional
-  public ResultatDActe confirmer(SuiviDAtelierId suivi, UUID commande, String reference, ContexteDeResolution contexte) {
+  public ResultatDActe confirmer(SuiviDAtelierId suivi, PropositionAConfirmer proposition, ContexteDeResolution contexte) {
+    if (!proposition.adresse().suivi().equals(suivi)) {
+      throw new PropositionInvalideException();
+    }
+    var commande = proposition.commande();
     var existant = recus.get(commande);
     if (existant.isPresent()) {
-      return rejoue(existant.orElseThrow(), suivi, reference, contexte);
-    }
-    var preuve = references.read(reference);
-    if (!preuve.commande().equals(commande) || !preuve.adresse().suivi().equals(suivi) || !preuve.contexte().correspondA(contexte)) {
-      throw new ApercuInvalideException();
+      return rejoue(existant.orElseThrow(), suivi, proposition, contexte);
     }
     var avant = verrouille(suivi);
     var terminePendantLAttente = recus.get(commande);
     if (terminePendantLAttente.isPresent()) {
-      return rejoue(terminePendantLAttente.orElseThrow(), suivi, reference, contexte);
+      return rejoue(terminePendantLAttente.orElseThrow(), suivi, proposition, contexte);
     }
-    if (!avant.revision().equals(preuve.revision())) {
+    if (!avant.revision().equals(proposition.revision())) {
       throw new ApercuObsoleteException();
     }
     var maintenant = clock.now();
-    if (!maintenant.isBefore(preuve.expireLe())) {
+    var dossierAvant = new LectureDossierConflit(proposition.adresse(), new LectureDuSuivi(avant, maintenant));
+    if (dossierAvant.kind() != EtatDAdresseDossier.EN_CONFLIT) {
       throw new ApercuObsoleteException();
     }
-    var dossierAvant = new LectureDossierConflit(preuve.adresse(), new LectureDuSuivi(avant, maintenant));
     ActePrepare prepare;
     try {
-      prepare = preparation.prepare(avant, preuve.acte(), preuve.evenement(), contexte.gestionnaire().auteur(), maintenant);
+      prepare = preparation.prepare(avant, proposition.acte(), proposition.evenement(), contexte.gestionnaire().auteur(), maintenant);
     } catch (OperateurNonHabiliteException | OperateurDAtelierIntrouvableException | PosteDAtelierIntrouvableException refus) {
       throw new ApercuObsoleteException();
     }
-    if (!prepare.empreinteConsequences().equals(preuve.empreinteConsequences())) {
+    if (!prepare.empreinteConsequences().equals(proposition.empreinteConsequences())) {
       throw new ApercuObsoleteException();
     }
-    preuve
+    proposition
       .evenement()
       .ifPresent(evenement -> {
         if (!identites.reserveHorsPupitre(evenement.uuid())) {
@@ -94,7 +90,7 @@ public class ConfirmerLesActes {
         }
       });
     var enregistre = suivis.update(prepare.apres());
-    preuve
+    proposition
       .evenement()
       .ifPresent(evenement ->
         identites.associe(evenement.uuid(), new AgregatDEvenement(TypeDAgregatDEvenement.SUIVI_D_ATELIER, enregistre.id().uuid()))
@@ -108,8 +104,8 @@ public class ConfirmerLesActes {
       .map(EvenementDAtelier::id)
       .toList();
     var recu = RecuDActe.builder()
-      .preuve(preuve)
-      .reference(reference)
+      .proposition(proposition)
+      .contexte(contexte)
       .revisionEnregistree(enregistre.revision())
       .enregistreLe(maintenant)
       .activitesConcernees(dossier.concernees())
@@ -121,16 +117,16 @@ public class ConfirmerLesActes {
   @Secured("ROLE_GESTIONNAIRE")
   @Transactional
   public Optional<ResultatDActe> verifier(SuiviDAtelierId suivi, UUID commande, ContexteDeResolution contexte) {
-    return recus.get(commande).map(recu -> rejoue(recu, suivi, recu.reference(), contexte));
+    return recus.get(commande).map(recu -> rejoue(recu, suivi, recu.proposition(), contexte));
   }
 
-  private ResultatDActe rejoue(RecuDActe recu, SuiviDAtelierId suivi, String reference, ContexteDeResolution contexte) {
+  private ResultatDActe rejoue(RecuDActe recu, SuiviDAtelierId suivi, PropositionAConfirmer proposition, ContexteDeResolution contexte) {
     if (
-      !recu.preuve().adresse().suivi().equals(suivi)
-      || !recu.reference().equals(reference)
-      || !recu.preuve().contexte().correspondA(contexte)
+      !recu.proposition().adresse().suivi().equals(suivi)
+      || !recu.proposition().memeDemandeQue(proposition)
+      || !recu.contexte().correspondA(contexte)
     ) {
-      throw new ConfirmationReutiliseeException(recu.preuve().commande());
+      throw new ConfirmationReutiliseeException(recu.proposition().commande());
     }
     return canonique(recu);
   }
@@ -140,7 +136,7 @@ public class ConfirmerLesActes {
   }
 
   private ResultatDActe canonique(RecuDActe recu) {
-    var adresse = recu.preuve().adresse();
+    var adresse = recu.proposition().adresse();
     var suivi = verrouille(adresse.suivi());
     return new ResultatDActe(recu, new LectureDossierConflit(adresse, new LectureDuSuivi(suivi, clock.now()), recu.activitesConcernees()));
   }
@@ -150,11 +146,7 @@ public class ConfirmerLesActes {
   }
 
   public interface RecusBuilder {
-    ReferencesBuilder recus(RecusDActes value);
-  }
-
-  public interface ReferencesBuilder {
-    PreparationBuilder references(ReferencesDApercu value);
+    PreparationBuilder recus(RecusDActes value);
   }
 
   public interface PreparationBuilder {

@@ -18,16 +18,16 @@ import java.util.Set;
  * </p>
  */
 public record RecuDActe(
-  PreuveDApercu preuve,
-  String reference,
+  PropositionAConfirmer proposition,
+  ContexteDeResolution contexte,
   RevisionDuSuivi revisionEnregistree,
   Instant enregistreLe,
   Set<ActiviteId> activitesConcernees,
   List<EvenementDAtelierId> evenementsTouches
 ) {
   public RecuDActe {
-    Assert.notNull("preuve", preuve);
-    Assert.notBlank("reference", reference);
+    Assert.notNull("proposition", proposition);
+    Assert.notNull("contexte", contexte);
     Assert.notNull("revision enregistree", revisionEnregistree);
     Assert.notNull("enregistre le", enregistreLe);
     Assert.field("activites concernees", activitesConcernees).notNull().noNullElement();
@@ -36,18 +36,18 @@ public record RecuDActe(
     evenementsTouches = List.copyOf(evenementsTouches);
   }
 
-  public static PreuveBuilder builder() {
-    return preuve ->
-      reference ->
-        revision -> instant -> activites -> evenements -> new RecuDActe(preuve, reference, revision, instant, activites, evenements);
+  public static PropositionBuilder builder() {
+    return proposition ->
+      contexte ->
+        revision -> instant -> activites -> evenements -> new RecuDActe(proposition, contexte, revision, instant, activites, evenements);
   }
 
-  public interface PreuveBuilder {
-    ReferenceBuilder preuve(PreuveDApercu preuve);
+  public interface PropositionBuilder {
+    ContexteBuilder proposition(PropositionAConfirmer proposition);
   }
 
-  public interface ReferenceBuilder {
-    RevisionBuilder reference(String reference);
+  public interface ContexteBuilder {
+    RevisionBuilder contexte(ContexteDeResolution contexte);
   }
 
   public interface RevisionBuilder {

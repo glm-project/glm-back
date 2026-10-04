@@ -19,15 +19,15 @@ record RestRecuDActe(
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<UUID> evenementsTouches
 ) {
   static RestRecuDActe from(RecuDActe recu) {
-    var preuve = recu.preuve();
+    var proposition = recu.proposition();
     return new RestRecuDActe(
-      preuve.commande(),
-      new RestAdresseDossierConflit(preuve.adresse().suivi().uuid(), preuve.adresse().pointage().uuid()),
-      RestActeDeResolution.from(preuve.acte()),
-      preuve.revision().value(),
+      proposition.commande(),
+      new RestAdresseDossierConflit(proposition.adresse().suivi().uuid(), proposition.adresse().pointage().uuid()),
+      RestActeDeResolution.from(proposition.acte()),
+      proposition.revision().value(),
       recu.revisionEnregistree().value(),
       recu.enregistreLe(),
-      preuve.evenement().map(EvenementDAtelierId::uuid).orElse(null),
+      proposition.evenement().map(EvenementDAtelierId::uuid).orElse(null),
       recu.evenementsTouches().stream().map(EvenementDAtelierId::uuid).toList()
     );
   }

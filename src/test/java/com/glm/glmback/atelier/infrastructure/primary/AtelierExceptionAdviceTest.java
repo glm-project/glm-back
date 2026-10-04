@@ -22,9 +22,9 @@ import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierClotureException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
-import com.glm.glmback.atelier.domain.gestionconflits.ApercuInvalideException;
 import com.glm.glmback.atelier.domain.gestionconflits.ApercuObsoleteException;
 import com.glm.glmback.atelier.domain.gestionconflits.ConfirmationReutiliseeException;
+import com.glm.glmback.atelier.domain.gestionconflits.PropositionInvalideException;
 import com.glm.glmback.shared.error.infrastructure.primary.ExceptionAdviceContract;
 import com.glm.glmback.shared.error.infrastructure.primary.PublishedProblem;
 import java.util.stream.Stream;
@@ -40,7 +40,7 @@ class AtelierExceptionAdviceTest extends ExceptionAdviceContract {
   @Override
   protected Stream<PublishedProblem> erreursPubliees() {
     return Stream.of(
-      new PublishedProblem(new ApercuInvalideException(), "urn:glm:erreur:atelier:apercu-invalide", BAD_REQUEST),
+      new PublishedProblem(new PropositionInvalideException(), "urn:glm:erreur:atelier:proposition-invalide", BAD_REQUEST),
       new PublishedProblem(new ApercuObsoleteException(), "urn:glm:erreur:atelier:apercu-obsolete", CONFLICT),
       new PublishedProblem(
         new ConfirmationReutiliseeException(java.util.UUID.randomUUID()),

@@ -5,5 +5,5 @@
 - [0003 — Bootstrap only empty tenant schemas](0003-bootstrap-only-empty-tenant-schemas.md)
 - [0004 — Split the operator cost to the cent](0004-split-the-operator-cost-to-the-cent.md)
 - [0005 — Preserve nanosecond instants in numeric columns](0005-preserve-nanosecond-instants-in-numeric-columns.md)
-- [0006 — Authenticate stateless resolution previews](0006-authenticate-stateless-resolution-previews.md)
+- [0006 — Confirm explicit resolution proposals](0006-confirm-explicit-resolution-proposals.md)
 - [0007 — Read addressed workshop aggregates coherently](0007-read-addressed-workshop-aggregates-coherently.md)

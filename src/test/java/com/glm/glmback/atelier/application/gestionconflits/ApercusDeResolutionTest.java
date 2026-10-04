@@ -25,7 +25,6 @@ import com.glm.glmback.atelier.domain.gestionconflits.ActeDeResolution;
 import com.glm.glmback.atelier.domain.gestionconflits.AdresseDossierConflit;
 import com.glm.glmback.atelier.domain.gestionconflits.ApercuObsoleteException;
 import com.glm.glmback.atelier.domain.gestionconflits.EtatDAdresseDossier;
-import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -48,7 +47,6 @@ class ApercusDeResolutionTest {
     };
     var repository = mock(SuiviDAtelierRepository.class);
     when(repository.get(suivi.id())).thenReturn(Optional.of(suivi));
-    var references = mock(ReferencesDApercu.class);
     var preparation = PreparationDesActes.builder()
       .repository(repository)
       .elements(mock(ElementsEngageables.class))
@@ -59,24 +57,20 @@ class ApercusDeResolutionTest {
     var service = ApercusDeResolution.builder()
       .suivis(repository)
       .preparation(preparation)
-      .references(references)
-      .clock(() -> LE_10_MAI_2026_A_17H)
-      .validite(() -> Duration.ofMinutes(15));
+      .clock(() -> LE_10_MAI_2026_A_17H);
     var acte = new ActeDeResolution.Annulation(
       new AnnulationAEnregistrer(suivi.id(), transition.id(), AUTEUR_LEROY, MOTIF_ERREUR_DE_SAISIE)
     );
     assertThatThrownBy(() ->
       service.apercu(UUID.randomUUID(), new AdresseDossierConflit(suivi.id(), ancre), suivi.revision(), acte, CONTEXTE_LEROY_IMPECCMOLD)
     ).isExactlyInstanceOf(ApercuObsoleteException.class);
-    verifyNoInteractions(references);
   }
 
   @Test
-  void shouldRefuserUnSuiviAbsentSansProduireDeReference() {
+  void shouldRefuserUnSuiviAbsentSansProduireDeProposition() {
     var repository = mock(SuiviDAtelierRepository.class);
     var suivi = SuiviDAtelierId.newId();
     when(repository.get(suivi)).thenReturn(Optional.empty());
-    var references = mock(ReferencesDApercu.class);
     var preparation = PreparationDesActes.builder()
       .repository(repository)
       .elements(mock(ElementsEngageables.class))
@@ -87,15 +81,12 @@ class ApercusDeResolutionTest {
     var service = ApercusDeResolution.builder()
       .suivis(repository)
       .preparation(preparation)
-      .references(references)
-      .clock(() -> LE_10_MAI_2026_A_17H)
-      .validite(() -> Duration.ofMinutes(15));
+      .clock(() -> LE_10_MAI_2026_A_17H);
     var pointage = EvenementDAtelierId.newId();
     var acte = new ActeDeResolution.Annulation(new AnnulationAEnregistrer(suivi, pointage, AUTEUR_LEROY, MOTIF_ERREUR_DE_SAISIE));
     assertThatThrownBy(() ->
       service.apercu(UUID.randomUUID(), new AdresseDossierConflit(suivi, pointage), new RevisionDuSuivi(0), acte, CONTEXTE_LEROY_IMPECCMOLD)
     ).isExactlyInstanceOf(SuiviDAtelierIntrouvableException.class);
-    verifyNoInteractions(references);
   }
 
   @Test
@@ -105,7 +96,6 @@ class ApercusDeResolutionTest {
     var suivi = suiviDAtelierEngage().enregistre(travail).enregistre(transition);
     var repository = mock(SuiviDAtelierRepository.class);
     when(repository.get(suivi.id())).thenReturn(Optional.of(suivi));
-    var references = mock(ReferencesDApercu.class);
     var preparation = PreparationDesActes.builder()
       .repository(repository)
       .elements(mock(ElementsEngageables.class))
@@ -116,9 +106,7 @@ class ApercusDeResolutionTest {
     var service = ApercusDeResolution.builder()
       .suivis(repository)
       .preparation(preparation)
-      .references(references)
-      .clock(() -> LE_10_MAI_2026_A_17H)
-      .validite(() -> Duration.ofMinutes(15));
+      .clock(() -> LE_10_MAI_2026_A_17H);
     var acte = new ActeDeResolution.Annulation(
       new AnnulationAEnregistrer(suivi.id(), transition.id(), AUTEUR_LEROY, MOTIF_ERREUR_DE_SAISIE)
     );
@@ -131,13 +119,12 @@ class ApercusDeResolutionTest {
         CONTEXTE_LEROY_IMPECCMOLD
       )
     ).isExactlyInstanceOf(ApercuObsoleteException.class);
-    verifyNoInteractions(references);
     verify(repository).get(suivi.id());
     verifyNoMoreInteractions(repository);
   }
 
   @Test
-  void shouldPreparerLaFinCorrigeeEtConserverSonIdentifiantDansLaPreuve() {
+  void shouldPreparerLaFinCorrigeeEtConserverSonIdentifiantDansLaProposition() {
     var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     var nc = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_12H);
     var fin = finDe(travail).a(LE_10_MAI_2026_A_17H);
@@ -157,14 +144,10 @@ class ApercusDeResolutionTest {
       .postes(postes)
       .habilitations(habilitations)
       .empreintes((apres, evaluation) -> "fin-corrigee");
-    var references = mock(ReferencesDApercu.class);
-    when(references.issue(any())).thenReturn("fin-opaque");
     var service = ApercusDeResolution.builder()
       .suivis(repository)
       .preparation(preparation)
-      .references(references)
-      .clock(() -> LE_10_MAI_2026_A_17H)
-      .validite(() -> Duration.ofMinutes(15));
+      .clock(() -> LE_10_MAI_2026_A_17H);
     var remplacement = RegularisationAEnregistrer.builder()
       .suivi(suivi.id())
       .type(TypeDEvenementDAtelier.FIN)
@@ -192,7 +175,7 @@ class ApercusDeResolutionTest {
       .extracting(IntervalleDActivite::debut)
       .containsExactly(LE_10_MAI_2026_A_8H, LE_10_MAI_2026_A_12H);
     assertThat(apercu.apres().activites()).allSatisfy(activite -> assertThat(activite.aResoudre()).isFalse());
-    var id = apercu.reference().preuve().evenement().orElseThrow();
+    var id = apercu.proposition().evenement().orElseThrow();
     assertThat(apercu.apres().lecture().suivi().journal().evenement(id))
       .get()
       .satisfies(fait -> assertThat(fait.activiteVisee()).isEqualTo(nc.activite()));
@@ -202,7 +185,7 @@ class ApercusDeResolutionTest {
   }
 
   @Test
-  void shouldPreparerLAnnulationSansEcrireEtAuthentifierLesMemesConsequences() {
+  void shouldPreparerLAnnulationSansEcrireEtRendreLesConsequencesExplicites() {
     var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     var transition = passageEnTravailDe(travail).a(LE_10_MAI_2026_A_12H);
     var suivi = suiviDAtelierEngage().enregistre(travail).enregistre(transition);
@@ -212,8 +195,6 @@ class ApercusDeResolutionTest {
     );
     var repository = mock(SuiviDAtelierRepository.class);
     when(repository.get(suivi.id())).thenReturn(Optional.of(suivi));
-    var references = mock(ReferencesDApercu.class);
-    when(references.issue(any())).thenReturn("reference-opaque");
     var preparation = PreparationDesActes.builder()
       .repository(repository)
       .elements(mock(ElementsEngageables.class))
@@ -225,31 +206,26 @@ class ApercusDeResolutionTest {
     var service = ApercusDeResolution.builder()
       .suivis(repository)
       .preparation(preparation)
-      .references(references)
-      .clock(() -> maintenant)
-      .validite(() -> Duration.ofMinutes(15));
+      .clock(() -> maintenant);
     UUID commande = UUID.randomUUID();
 
     var apercu = service.apercu(commande, adresse, suivi.revision(), acte, CONTEXTE_LEROY_IMPECCMOLD);
 
-    assertThat(apercu).isNotNull();
+    assertThat(apercu.proposition().commande()).isEqualTo(commande);
+    assertThat(apercu.proposition().acte()).isEqualTo(acte);
+    assertThat(apercu.proposition().empreinteConsequences()).isEqualTo("consequences");
     assertThat(apercu.apres().kind()).isEqualTo(EtatDAdresseDossier.ANCRE_ANNULEE);
     assertThat(apercu.apres().activites())
       .singleElement()
       .satisfies(activite -> assertThat(activite.fin()).isEmpty());
-    assertThat(apercu.reference().opaque()).isEqualTo("reference-opaque");
-    assertThat(apercu.reference().preuve().commande()).isEqualTo(commande);
-    assertThat(apercu.reference().preuve().contexte()).isEqualTo(CONTEXTE_LEROY_IMPECCMOLD);
-    assertThat(apercu.reference().preuve().acte()).isEqualTo(acte);
-    assertThat(apercu.reference().preuve().evenement()).isEmpty();
-    assertThat(apercu.reference().preuve().evaluation()).isEqualTo(maintenant);
-    assertThat(apercu.reference().preuve().expireLe()).isEqualTo(maintenant.plusSeconds(900));
-    assertThat(apercu.reference().preuve().empreinteConsequences()).isEqualTo("consequences");
+    assertThat(apercu.proposition().commande()).isEqualTo(commande);
+    assertThat(apercu.proposition().acte()).isEqualTo(acte);
+    assertThat(apercu.proposition().evenement()).isEmpty();
+    assertThat(apercu.proposition().empreinteConsequences()).isEqualTo("consequences");
     assertThat(suivi.journal().evenement(transition.id()))
       .get()
       .satisfies(fait -> assertThat(fait.estAnnule()).isFalse());
     verify(repository).get(suivi.id());
     verifyNoMoreInteractions(repository);
-    verify(references).issue(apercu.reference().preuve());
   }
 }

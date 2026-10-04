@@ -43,6 +43,10 @@ Le parcours de gestion des conflits est regroupé sous `gestionconflits/` dans c
 `domain/gestionconflits`, `application/gestionconflits`, `infrastructure/primary/gestionconflits` et
 `infrastructure/secondary/gestionconflits` portent les dossiers, la liste, les actes de résolution, les aperçus,
 les confirmations et les reçus. Ces sous-packages appartiennent au même bounded context Atelier.
+Les aperçus restent des lectures sans réservation. Les confirmations transportent une proposition explicite
+et comparent les conséquences après verrouillage ; le reçu durable compare la demande indépendamment du
+nom d'affichage et contrôle séparément entreprise, issuer et subject. Avant de modifier ce protocole,
+consulter [l'ADR 0006](../../../../../../../documentation/adr/0006-confirm-explicit-resolution-proposals.md).
 L'agrégat, le journal, leurs transitions, le repository et les types communs d'interprétation, diagnostics compris,
 restent dans les couches d'Atelier ; le parcours les utilise sans déplacer leurs invariants. Ses tests et fixtures
 suivent leurs propriétaires dans les mêmes sous-packages.

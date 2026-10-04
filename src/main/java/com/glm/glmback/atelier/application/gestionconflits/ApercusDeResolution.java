@@ -23,27 +23,16 @@ public class ApercusDeResolution {
 
   private final SuiviDAtelierRepository suivis;
   private final PreparationDesActes preparation;
-  private final ReferencesDApercu references;
   private final Clock clock;
-  private final ValiditeDesApercus validite;
 
-  ApercusDeResolution(
-    SuiviDAtelierRepository suivis,
-    PreparationDesActes preparation,
-    ReferencesDApercu references,
-    Clock clock,
-    ValiditeDesApercus validite
-  ) {
+  ApercusDeResolution(SuiviDAtelierRepository suivis, PreparationDesActes preparation, Clock clock) {
     this.suivis = suivis;
     this.preparation = preparation;
-    this.references = references;
     this.clock = clock;
-    this.validite = validite;
   }
 
   public static SuivisBuilder builder() {
-    return suivis ->
-      preparation -> references -> clock -> validite -> new ApercusDeResolution(suivis, preparation, references, clock, validite);
+    return suivis -> preparation -> clock -> new ApercusDeResolution(suivis, preparation, clock);
   }
 
   @Secured("ROLE_GESTIONNAIRE")
@@ -67,21 +56,14 @@ public class ApercusDeResolution {
     Optional<EvenementDAtelierId> evenement =
       acte instanceof ActeDeResolution.Annulation ? Optional.empty() : Optional.of(EvenementDAtelierId.newId());
     var prepare = preparation.prepare(suivi, acte, evenement, contexte.gestionnaire().auteur(), maintenant);
-    var preuve = PreuveDApercu.builder()
+    var proposition = PropositionAConfirmer.builder()
       .commande(commande)
       .adresse(adresse)
       .revision(suivi.revision())
-      .contexte(contexte)
       .acte(acte)
       .evenement(evenement)
-      .evaluation(maintenant)
-      .expireLe(maintenant.plus(validite.validite()))
       .empreinteConsequences(prepare.empreinteConsequences());
-    return new ApercuDeResolution(
-      new ReferenceDApercu(preuve, references.issue(preuve)),
-      avant,
-      avant.apresActe(new LectureDuSuivi(prepare.apres(), maintenant))
-    );
+    return new ApercuDeResolution(proposition, maintenant, avant, avant.apresActe(new LectureDuSuivi(prepare.apres(), maintenant)));
   }
 
   public interface SuivisBuilder {
@@ -89,18 +71,10 @@ public class ApercusDeResolution {
   }
 
   public interface PreparationBuilder {
-    ReferencesBuilder preparation(PreparationDesActes value);
-  }
-
-  public interface ReferencesBuilder {
-    ClockBuilder references(ReferencesDApercu value);
+    ClockBuilder preparation(PreparationDesActes value);
   }
 
   public interface ClockBuilder {
-    ValiditeBuilder clock(Clock value);
-  }
-
-  public interface ValiditeBuilder {
-    ApercusDeResolution validite(ValiditeDesApercus value);
+    ApercusDeResolution clock(Clock value);
   }
 }

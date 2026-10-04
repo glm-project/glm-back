@@ -1099,15 +1099,13 @@ Feature: Resolution reelle des conflits
     When je tente un nouvel apercu avec statut 403
     And je tente la confirmation de cet apercu avec statut 403
     And je tente la verification de cette commande avec statut 403
-    Given I am logged in as "autre-gestionnaire" with role "GESTIONNAIRE"
-    When je tente la confirmation de cet apercu avec statut 400
     Given I am logged in as "gestionnaire" with role "GESTIONNAIRE" without tenant
     When je tente un nouvel apercu avec statut 403
     And je tente la confirmation de cet apercu avec statut 403
     And je tente la verification de cette commande avec statut 403
     Given I am logged in as "gestionnaire" with role "GESTIONNAIRE" for tenant "katilys"
     When je tente un nouvel apercu avec statut 404
-    And je tente la confirmation de cet apercu avec statut 400
+    And je tente la confirmation de cet apercu avec statut 404
     And la commande reste non attestee pour cet autre tenant
     Given I am logged in as "gestionnaire" with role "GESTIONNAIRE"
     And l'apercu ne modifie ni les faits ni les projections ni la revision
@@ -1130,7 +1128,7 @@ Feature: Resolution reelle des conflits
     And je tente la verification de cette commande avec statut 403
     Given I am logged in as "gestionnaire" with role "GESTIONNAIRE" for tenant "katilys"
     When je tente un nouvel apercu avec statut 404
-    And je tente la confirmation de cet apercu avec statut 400
+    And je tente la confirmation de cet apercu avec statut 404
     And la commande reste non attestee pour cet autre tenant
     Given I am logged in as "gestionnaire" with role "GESTIONNAIRE"
     Then le recu canonique conserve les memes identites et activites
