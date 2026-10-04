@@ -3,13 +3,13 @@ package com.glm.glmback.atelier.infrastructure.primary;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.glm.glmback.atelier.domain.*;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.AssertTrue;
-import java.util.UUID;
-import java.util.Optional;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
+import java.util.Optional;
+import java.util.UUID;
 
 record RestFaitDeResolution(
   @NotNull @Schema(requiredMode = Schema.RequiredMode.REQUIRED) TypeDEvenementDAtelier type,

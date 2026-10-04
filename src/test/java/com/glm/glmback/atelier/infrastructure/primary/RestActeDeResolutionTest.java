@@ -1,7 +1,7 @@
 package com.glm.glmback.atelier.infrastructure.primary;
 
-import static com.glm.glmback.atelier.domain.ActeDeResolutionFixture.*;
 import static com.glm.glmback.atelier.application.ResolutionFixture.*;
+import static com.glm.glmback.atelier.domain.ActeDeResolutionFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;

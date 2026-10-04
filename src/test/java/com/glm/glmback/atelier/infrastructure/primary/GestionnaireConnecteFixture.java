@@ -20,10 +20,14 @@ final class GestionnaireConnecteFixture {
       Instant.parse("2026-05-10T17:00:00Z"),
       Instant.parse("2026-05-10T18:00:00Z"),
       Map.of(
-        "iss", URI.create(EMETTEUR_GLM).toURL(),
-        "sub", SUJET_LEROY,
-        "preferred_username", GESTIONNAIRE_LEROY.auteur().value(),
-        "tenant", TENANT_IMPECCMOLD
+        "iss",
+        URI.create(EMETTEUR_GLM).toURL(),
+        "sub",
+        SUJET_LEROY,
+        "preferred_username",
+        GESTIONNAIRE_LEROY.auteur().value(),
+        "tenant",
+        TENANT_IMPECCMOLD
       )
     );
     return new OAuth2AuthenticationToken(new DefaultOidcUser(List.of(), identite), List.of(), "keycloak");

@@ -5,13 +5,13 @@ import static com.glm.glmback.atelier.domain.AtelierFixture.*;
 import com.glm.glmback.atelier.domain.ActeDeResolution;
 import com.glm.glmback.atelier.domain.AdresseDossierConflit;
 import com.glm.glmback.atelier.domain.AnnulationAEnregistrer;
+import com.glm.glmback.atelier.domain.CorrectionAEnregistrer;
+import com.glm.glmback.atelier.domain.EvenementDAtelierId;
+import com.glm.glmback.atelier.domain.IntentionDePointage;
+import com.glm.glmback.atelier.domain.RegularisationAEnregistrer;
 import com.glm.glmback.atelier.domain.RevisionDuSuivi;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
-import com.glm.glmback.atelier.domain.RegularisationAEnregistrer;
 import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
-import com.glm.glmback.atelier.domain.IntentionDePointage;
-import com.glm.glmback.atelier.domain.EvenementDAtelierId;
-import com.glm.glmback.atelier.domain.CorrectionAEnregistrer;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -118,10 +118,12 @@ public final class ResolutionFixture {
       .adresse(preuve.adresse())
       .revision(preuve.revision())
       .contexte(preuve.contexte())
-      .acte(new ActeDeResolution.Correction(
-        new CorrectionAEnregistrer(preuve.adresse().pointage(), MOTIF_ERREUR_DE_SAISIE, regularisation.commande()),
-        regularisation.instant()
-      ))
+      .acte(
+        new ActeDeResolution.Correction(
+          new CorrectionAEnregistrer(preuve.adresse().pointage(), MOTIF_ERREUR_DE_SAISIE, regularisation.commande()),
+          regularisation.instant()
+        )
+      )
       .evenement(preuve.evenement())
       .evaluation(preuve.evaluation())
       .expireLe(preuve.expireLe())
