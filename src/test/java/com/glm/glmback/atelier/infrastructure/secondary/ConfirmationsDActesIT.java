@@ -657,6 +657,94 @@ class ConfirmationsDActesIT {
     assertThat(projectionsApres).usingRecursiveComparison().isEqualTo(projectionsAvant);
   }
 
+  @Test
+  @WithTenant("impeccmold")
+  void shouldAnnulerToutesLesEcrituresDeLaCommandeReutiliseeSurUnAutreSuiviConcurrent() throws Exception {
+    // GIVEN
+    var premierSuivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
+    var secondSuivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
+    var premiere = preuveDeCorrectionDeTransition(premierSuivi);
+    var seconde = ConcurrenceDesActesFixture.avecCommande(
+      new ConcurrenceDesActesFixture.ChangementDeCommande(preuveDeCorrectionDeTransition(secondSuivi), premiere.commande())
+    );
+    var premiereProjection = inTransaction(() ->
+      entities
+        .createNativeQuery("select * from activite_d_atelier where suivi_id = ? order by id")
+        .setParameter(1, premierSuivi.id().uuid())
+        .getResultList()
+    );
+    var secondeProjection = inTransaction(() ->
+      entities
+        .createNativeQuery("select * from activite_d_atelier where suivi_id = ? order by id")
+        .setParameter(1, secondSuivi.id().uuid())
+        .getResultList()
+    );
+    when(references.read("premiere-reference")).thenReturn(premiere);
+    when(references.read("seconde-reference")).thenReturn(seconde);
+    var preparationsTerminees = new CountDownLatch(2);
+    when(empreintes.calcule(any(), any())).thenAnswer(invocation -> {
+      preparationsTerminees.countDown();
+      assertThat(preparationsTerminees.await(10, TimeUnit.SECONDS))
+        .as("Les deux transactions ont prepare leur acte apres la seconde lecture sans recu")
+        .isTrue();
+      return "consequences-annulation";
+    });
+    var premierActe = avecContexteDeRequete(() ->
+      catchThrowable(() -> confirmations.confirmer(premierSuivi.id(), premiere.commande(), "premiere-reference", CONTEXTE_LEROY_IMPECCMOLD))
+    );
+    var secondActe = avecContexteDeRequete(() ->
+      catchThrowable(() -> confirmations.confirmer(secondSuivi.id(), seconde.commande(), "seconde-reference", CONTEXTE_LEROY_IMPECCMOLD))
+    );
+    // WHEN THEN
+    try (var executor = Executors.newFixedThreadPool(2)) {
+      var premier = executor.submit(premierActe::get);
+      var second = executor.submit(secondActe::get);
+      var issues = java.util.Arrays.asList(premier.get(15, TimeUnit.SECONDS), second.get(15, TimeUnit.SECONDS));
+      assertThat(issues).filteredOn(java.util.Objects::isNull).hasSize(1);
+      assertThat(issues).filteredOn(java.util.Objects::nonNull).singleElement().isExactlyInstanceOf(ConfirmationReutiliseeException.class);
+    }
+    var recu = inTransaction(() -> recus.get(premiere.commande())).orElseThrow();
+    var premierGagne = recu.preuve().adresse().suivi().equals(premierSuivi.id());
+    var perdant = premierGagne ? secondSuivi : premierSuivi;
+    var preuvePerdante = premierGagne ? seconde : premiere;
+    var projectionPerdante = premierGagne ? secondeProjection : premiereProjection;
+    assertThat(inTransaction(() -> suivis.get(perdant.id()))).contains(perdant);
+    assertThat(
+      inTransaction(() ->
+        entities
+          .createNativeQuery("select * from activite_d_atelier where suivi_id = ? order by id")
+          .setParameter(1, perdant.id().uuid())
+          .getResultList()
+      )
+    )
+      .usingRecursiveComparison()
+      .isEqualTo(projectionPerdante);
+    assertThat(
+      inTransaction(() ->
+        (
+          (Number) entities
+            .createNativeQuery("select count(*) from identite_evenement_atelier where id = ?")
+            .setParameter(1, preuvePerdante.evenement().orElseThrow().uuid())
+            .getSingleResult()
+        ).longValue()
+      )
+    ).isZero();
+    assertThat(
+      inTransaction(() ->
+        (
+          (Number) entities
+            .createNativeQuery("select count(*) from identite_evenement_atelier where id = ?")
+            .setParameter(1, recu.preuve().evenement().orElseThrow().uuid())
+            .getSingleResult()
+        ).longValue()
+      )
+    ).isEqualTo(1);
+    var gagnant = inTransaction(() -> suivis.get(recu.preuve().adresse().suivi())).orElseThrow();
+    assertThat(gagnant.revision().value()).isEqualTo(1);
+    assertThat(gagnant.journal().evenements()).hasSize(3);
+    assertThat(recu.revisionEnregistree().value()).isEqualTo(1);
+  }
+
   private static <T> Supplier<T> avecContexteDeRequete(Supplier<T> action) {
     var authentication = SecurityContextHolder.getContext().getAuthentication();
     var requete = RequestContextHolder.getRequestAttributes();
