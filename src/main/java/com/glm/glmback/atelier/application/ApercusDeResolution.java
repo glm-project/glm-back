@@ -45,7 +45,7 @@ public class ApercusDeResolution {
     ActeDeResolution acte,
     ContexteDeResolution contexte
   ) {
-    var suivi = suivis.get(adresse.suivi()).orElseThrow();
+    var suivi = suivis.get(adresse.suivi()).orElseThrow(() -> new SuiviDAtelierIntrouvableException(adresse.suivi()));
     if (!suivi.revision().equals(revision)) {
       throw new ApercuObsoleteException();
     }

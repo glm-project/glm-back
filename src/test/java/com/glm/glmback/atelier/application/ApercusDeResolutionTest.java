@@ -16,6 +16,33 @@ import org.junit.jupiter.api.Test;
 class ApercusDeResolutionTest {
 
   @Test
+  void shouldRefuserUnSuiviAbsentSansProduireDeReference() {
+    var repository = mock(SuiviDAtelierRepository.class);
+    var suivi = SuiviDAtelierId.newId();
+    when(repository.get(suivi)).thenReturn(Optional.empty());
+    var references = mock(ReferencesDApercu.class);
+    var preparation = PreparationDesActes.builder()
+      .repository(repository)
+      .elements(mock(ElementsEngageables.class))
+      .operateurs(mock(OperateursConnus.class))
+      .postes(mock(PostesConnus.class))
+      .habilitations(mock(Habilitations.class))
+      .empreintes((apres, evaluation) -> "consequences");
+    var service = ApercusDeResolution.builder()
+      .suivis(repository)
+      .preparation(preparation)
+      .references(references)
+      .clock(() -> LE_10_MAI_2026_A_17H)
+      .validite(() -> Duration.ofMinutes(15));
+    var pointage = EvenementDAtelierId.newId();
+    var acte = new ActeDeResolution.Annulation(new AnnulationAEnregistrer(suivi, pointage, AUTEUR_LEROY, MOTIF_ERREUR_DE_SAISIE));
+    assertThatThrownBy(() ->
+      service.apercu(UUID.randomUUID(), new AdresseDossierConflit(suivi, pointage), new RevisionDuSuivi(0), acte, CONTEXTE_LEROY_IMPECCMOLD)
+    ).isExactlyInstanceOf(SuiviDAtelierIntrouvableException.class);
+    verifyNoInteractions(references);
+  }
+
+  @Test
   void shouldRefuserUneRevisionPerimeeAvantLaPreparation() {
     var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     var transition = passageEnTravailDe(travail).a(LE_10_MAI_2026_A_12H);
