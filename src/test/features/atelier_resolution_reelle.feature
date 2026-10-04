@@ -53,3 +53,97 @@ Feature: Resolution reelle des conflits
     And les periodes relues de "Resolution 4401" ont les durees
       | PT4H |
       | PT5H |
+
+  Scenario: Resolution reelle par annulation de la transition donne neuf heures
+    Given il est "2044-01-07T07:00:00Z"
+    And l'entreprise a cree l'element de fabrication "Resolution 4402"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | RES4402             |
+    And j'ai engage l'element "Resolution 4402" en atelier
+    And il est "2044-01-07T08:00:00.123456789Z"
+    And j'ai pointe sur "Resolution 4402"
+      | id        | 00000000-0000-0000-0000-000000044021 |
+      | type      | DEBUT                |
+      | intention | OUVERTURE            |
+      | operateur | dupont-resolution    |
+      | poste     | fraiseuse-resolution |
+    And il est "2044-01-07T12:00:00.123456789Z"
+    And j'ai pointe sur "Resolution 4402"
+      | id        | 00000000-0000-0000-0000-000000044022 |
+      | type      | NON_CONFORMITE                       |
+      | intention | TRANSITION                           |
+      | cible     | 00000000-0000-0000-0000-000000044021 |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+    And il est "2044-01-07T17:00:00.123456789Z"
+    And j'ai pointe sur "Resolution 4402"
+      | id        | 00000000-0000-0000-0000-000000044023 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | cible     | 00000000-0000-0000-0000-000000044021 |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+    And il est "2044-01-07T18:00:00Z"
+    When je prepare la resolution du conflit de "Resolution 4402" ancre 0
+      | kind | ANNULATION |
+      | pointage | 1 |
+      | motif | Transition saisie en trop |
+    Then l'apercu donne les activites de resolution
+      | categorie | etat | duree |
+      | TRAVAIL | TERMINEE | PT9H |
+    And l'apercu ne modifie ni les faits ni les projections ni la revision
+    When je confirme cet apercu de resolution
+    Then le recu canonique conserve les memes identites et activites
+    And la liste de ce suivi conserve 0 sequences en conflit
+    And les periodes relues de "Resolution 4402" ont les durees
+      | PT9H |
+
+  Scenario: Resolution reelle avec une fin NC arbitraire a dix sept heures une
+    Given il est "2044-01-08T07:00:00Z"
+    And l'entreprise a cree l'element de fabrication "Resolution 4403"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | RES4403             |
+    And j'ai engage l'element "Resolution 4403" en atelier
+    And il est "2044-01-08T08:00:00.123456789Z"
+    And j'ai pointe sur "Resolution 4403"
+      | id        | 00000000-0000-0000-0000-000000044031 |
+      | type      | DEBUT                |
+      | intention | OUVERTURE            |
+      | operateur | dupont-resolution    |
+      | poste     | fraiseuse-resolution |
+    And il est "2044-01-08T12:00:00.123456789Z"
+    And j'ai pointe sur "Resolution 4403"
+      | id        | 00000000-0000-0000-0000-000000044032 |
+      | type      | NON_CONFORMITE                       |
+      | intention | TRANSITION                           |
+      | cible     | 00000000-0000-0000-0000-000000044031 |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+    And il est "2044-01-08T17:00:00.123456789Z"
+    And j'ai pointe sur "Resolution 4403"
+      | id        | 00000000-0000-0000-0000-000000044033 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | cible     | 00000000-0000-0000-0000-000000044031 |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+    And il est "2044-01-08T18:00:00Z"
+    When je prepare la resolution du conflit de "Resolution 4403" ancre 0
+      | kind | CORRECTION |
+      | pointage | 2 |
+      | motif | La fin de NC est a dix sept heures une |
+      | type | FIN |
+      | intention | FIN |
+      | cible | 1 |
+      | instant | 2044-01-08T19:01:00.123456789+02:00 |
+    Then l'apercu donne les activites de resolution
+      | categorie | etat | duree |
+      | TRAVAIL | TERMINEE | PT4H |
+      | NON_CONFORMITE | TERMINEE | PT5H1M |
+    And l'apercu ne modifie ni les faits ni les projections ni la revision
+    When je confirme cet apercu de resolution
+    Then le recu canonique conserve les memes identites et activites
+    And la liste de ce suivi conserve 0 sequences en conflit
+    And les periodes relues de "Resolution 4403" ont les durees
+      | PT4H |
+      | PT5H1M |
