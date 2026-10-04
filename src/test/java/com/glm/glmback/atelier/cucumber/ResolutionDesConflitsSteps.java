@@ -37,6 +37,8 @@ public class ResolutionDesConflitsSteps {
   private Map<String, Object> apres;
   private Map<String, Object> acte;
   private Object recu;
+  private Map<String, Object> projectionsAvant;
+  private Map<String, Object> projectionsApres;
 
   @When("je prepare la resolution du conflit de {string} ancre {int}")
   @SuppressWarnings("unchecked")
@@ -68,6 +70,7 @@ public class ResolutionDesConflitsSteps {
     }
     atelier.jeConsulteLeTempsEffectifDe(alias);
     tempsAvant = CucumberRestTestContext.getElement("$");
+    projectionsAvant = litProjections();
     rest.get("/api/atelier/suivis/" + suivi + "/conflits/" + journal.get(ancre).get("id"));
     assertThatLastResponse().hasOkStatus().hasElement("$.kind").withValue("EN_CONFLIT");
     revision = ((Number) CucumberRestTestContext.getElement("$.revision")).longValue();
@@ -164,6 +167,7 @@ public class ResolutionDesConflitsSteps {
     assertThat(((Number) CucumberRestTestContext.getElement("$.revision")).longValue()).isEqualTo(revision);
     rest.get("/api/atelier/suivis/" + suivi + "/confirmations-de-resolution/" + commande);
     assertThatLastResponse().hasOkStatus().hasElement("$.kind").withValue("NON_ATTESTEE");
+    assertThat(litProjections()).isEqualTo(projectionsAvant);
   }
 
   @When("je confirme cet apercu de resolution")
@@ -194,6 +198,7 @@ public class ResolutionDesConflitsSteps {
     } else {
       assertThat(nouveaux).containsExactly(CucumberRestTestContext.getElement("$.recu.evenementCree"));
     }
+    projectionsApres = litProjections();
   }
 
   @Then("le recu canonique conserve les memes identites et activites")
@@ -216,6 +221,9 @@ public class ResolutionDesConflitsSteps {
     assertThatLastResponse().hasHttpStatus(409);
     rest.get("/api/atelier/suivis/" + suivi);
     assertThat(CucumberRestTestContext.getElement("$.journal")).isEqualTo(journalApres);
+    assertThat(litProjections()).isEqualTo(projectionsApres);
+    rest.get("/api/atelier/suivis/" + suivi + "/conflits/" + acte.get("pointage"));
+    assertThat(((Number) CucumberRestTestContext.getElement("$.revision")).longValue()).isEqualTo(revision + 1);
   }
 
   @Then("les faits independants de cet acte restent identiques")
@@ -394,6 +402,7 @@ public class ResolutionDesConflitsSteps {
     assertThat(CucumberRestTestContext.getElement("$")).isEqualTo(apres.get("suivi"));
     rest.get("/api/atelier/suivis/" + suivi + "/conflits/" + ancre);
     assertThat(((Number) CucumberRestTestContext.getElement("$.revision")).longValue()).isEqualTo(revision + 1);
+    assertThat(litProjections()).isEqualTo(projectionsApres);
   }
 
   @Then("les apercus invalides restent refuses sans ecriture")
@@ -545,5 +554,14 @@ public class ResolutionDesConflitsSteps {
         )
         .toList()
     ).containsExactlyElementsOf(attendues);
+  }
+
+  private Map<String, Object> litProjections() {
+    rest.get("/api/atelier/conflits?element=" + element);
+    assertThatLastResponse().hasOkStatus();
+    Object liste = CucumberRestTestContext.getElement("$");
+    rest.get("/api/couts-de-revient/" + element);
+    assertThatLastResponse().hasOkStatus();
+    return Map.of("liste", liste, "cout", CucumberRestTestContext.getElement("$"));
   }
 }
