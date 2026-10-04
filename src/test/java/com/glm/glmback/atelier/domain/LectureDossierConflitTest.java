@@ -79,6 +79,36 @@ class LectureDossierConflitTest {
   }
 
   @Test
+  void shouldNePasProposerDeGuidePourUneTransitionVersUneCibleRemplacee() {
+    var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    var premiereTransition = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_12H);
+    var transitionContradictoire = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_17H);
+    var suivi = suiviDAtelierEngage().enregistre(travail).enregistre(premiereTransition).enregistre(transitionContradictoire);
+    var dossier = new LectureDossierConflit(
+      new AdresseDossierConflit(suivi.id(), transitionContradictoire.id()),
+      new LectureDuSuivi(suivi, LE_10_MAI_2026_A_17H)
+    );
+
+    assertThat(dossier.diagnostics()).singleElement().extracting(DiagnosticDeConflit::raison).isEqualTo(RaisonDuConflit.CIBLE_REMPLACEE);
+    assertThat(dossier.choix()).isEmpty();
+  }
+
+  @Test
+  void shouldNePasProposerLAnnulationDUneOuvertureIndependante() {
+    var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    var nc = nonConformiteSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H);
+    var fin = finDe(travail).a(LE_10_MAI_2026_A_17H);
+    var suivi = suiviDAtelierEngage().enregistre(travail).enregistre(nc).enregistre(fin);
+    var dossier = new LectureDossierConflit(
+      new AdresseDossierConflit(suivi.id(), fin.id()),
+      new LectureDuSuivi(suivi, LE_10_MAI_2026_A_17H)
+    );
+
+    assertThat(dossier.diagnostics()).singleElement().extracting(DiagnosticDeConflit::raison).isEqualTo(RaisonDuConflit.CIBLE_REMPLACEE);
+    assertThat(dossier.choix()).isEmpty();
+  }
+
+  @Test
   void shouldLireLaSequenceEtLeDiagnosticDepuisUnPointageActif() {
     EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     EvenementDAtelier nonConformite = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_12H);
@@ -169,5 +199,6 @@ class LectureDossierConflitTest {
         assertThat(activite.fin()).isEmpty();
       });
     assertThat(avant.lecture().suivi().conflits()).hasSize(1);
+    assertThat(avant.choix()).isEmpty();
   }
 }
