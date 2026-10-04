@@ -622,3 +622,24 @@ Feature: Cout de revient d'un element de fabrication
     Then le rapport porte les lignes
       | nature | travail | nonConformite | machine | mainDOeuvre |
       | null   | PT1H    | PT0S          | 0.00    | 10.00       |
+
+  @cout-arrondi-relais
+  Scenario: Un relais sur le meme poste conserve sa fenetre de partage sur deux elements
+    Given le rapport connait l'operateur "relais_arrondi_2045" a "2.00" de l'heure, habilite sur
+      | fraiseuse |
+    And l'entreprise fabrique "OF RELAIS A 2045"
+    And l'entreprise fabrique "OF RELAIS C 2045"
+    And "OF RELAIS A 2045" est mis en atelier a "2045-05-11T07:00:00Z"
+    And "OF RELAIS C 2045" est mis en atelier a "2045-05-11T07:00:00Z"
+    And "relais_arrondi_2045" pointe "DEBUT" sur "OF RELAIS A 2045" au poste "fraiseuse" a "2045-05-11T08:00:00Z"
+    And "relais_arrondi_2045" pointe "FIN" sur "OF RELAIS A 2045" au poste "fraiseuse" a "2045-05-11T08:01:00Z"
+    And "relais_arrondi_2045" pointe "DEBUT" sur "OF RELAIS C 2045" au poste "fraiseuse" a "2045-05-11T08:01:00Z"
+    And "relais_arrondi_2045" pointe "FIN" sur "OF RELAIS C 2045" au poste "fraiseuse" a "2045-05-11T08:02:00Z"
+    When je consulte le cout de revient de "OF RELAIS A 2045" a "2045-05-11T18:00:00Z"
+    Then le rapport porte les lignes
+      | nature   | travail | nonConformite | machine | mainDOeuvre |
+      | Fraisage | PT1M    | PT0S          | 0.75    | 0.04        |
+    When je consulte le cout de revient de "OF RELAIS C 2045" a "2045-05-11T18:00:00Z"
+    Then le rapport porte les lignes
+      | nature   | travail | nonConformite | machine | mainDOeuvre |
+      | Fraisage | PT1M    | PT0S          | 0.75    | 0.03        |

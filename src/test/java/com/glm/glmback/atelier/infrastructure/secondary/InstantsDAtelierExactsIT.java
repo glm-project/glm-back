@@ -97,7 +97,12 @@ class InstantsDAtelierExactsIT {
       assertThat(cout.activites(operateurs, new com.glm.glmback.coutderevient.domain.Periode(debut, fin)))
         .singleElement()
         .satisfies(activite -> assertThat(activite.termineeA(fin).orElseThrow().periode().duree()).isEqualTo(Duration.ofNanos(1)));
-      assertThat(cout.activites(operateurs, new com.glm.glmback.coutderevient.domain.Periode(fin, fin.plusNanos(1)))).isEmpty();
+      assertThat(cout.activites(operateurs, new com.glm.glmback.coutderevient.domain.Periode(fin, fin.plusNanos(1))))
+        .singleElement()
+        .satisfies(activite -> assertThat(activite.plage().fin()).contains(fin));
+      assertThat(
+        cout.activites(operateurs, new com.glm.glmback.coutderevient.domain.Periode(fin.plusNanos(1), fin.plusNanos(2)))
+      ).isEmpty();
     });
   }
 
