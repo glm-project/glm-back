@@ -464,6 +464,44 @@ class ConfirmationsDActesIT {
 
   @Test
   @WithTenant("impeccmold")
+  void shouldGarderLAbsenceDeRecuNonConcluanteApresInsertionAvantCommit() throws Exception {
+    // GIVEN
+    var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
+    var preuve = preuveDAnnulationDeTransition(suivi);
+    when(references.read("reference-annulation")).thenReturn(preuve);
+    var recuInsere = new CountDownLatch(1);
+    var autoriseLeCommit = new CountDownLatch(1);
+    var action = avecContexteDeRequete(() ->
+      transactions.execute(status -> {
+        var resultat = confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD);
+        assertThat(recus.get(preuve.commande())).contains(resultat.recu());
+        recuInsere.countDown();
+        try {
+          assertThat(autoriseLeCommit.await(10, TimeUnit.SECONDS)).isTrue();
+        } catch (InterruptedException interruption) {
+          throw new AssertionError(interruption);
+        }
+        return resultat;
+      })
+    );
+    // WHEN THEN
+    try (var executor = Executors.newSingleThreadExecutor()) {
+      var confirmation = executor.submit(action::get);
+      try {
+        assertThat(recuInsere.await(10, TimeUnit.SECONDS)).isTrue();
+        assertThat(confirmations.verifier(suivi.id(), preuve.commande(), CONTEXTE_LEROY_IMPECCMOLD)).isEmpty();
+      } finally {
+        autoriseLeCommit.countDown();
+      }
+      var resultat = confirmation.get(15, TimeUnit.SECONDS);
+      assertThat(confirmations.verifier(suivi.id(), preuve.commande(), CONTEXTE_LEROY_IMPECCMOLD))
+        .get()
+        .satisfies(atteste -> assertThat(atteste.recu()).isEqualTo(resultat.recu()));
+    }
+  }
+
+  @Test
+  @WithTenant("impeccmold")
   void shouldReserverEtAssocierLIdentiteProspectiveDeLaRegularisation() {
     // GIVEN
     var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
