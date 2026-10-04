@@ -27,6 +27,7 @@ public class ResolutionDesConflitsSteps {
   private AtelierSteps atelier;
 
   private String suivi;
+  private String ancre;
   private String element;
   private String commande;
   private String reference;
@@ -70,6 +71,7 @@ public class ResolutionDesConflitsSteps {
     rest.get("/api/atelier/suivis/" + suivi + "/conflits/" + journal.get(ancre).get("id"));
     assertThatLastResponse().hasOkStatus().hasElement("$.kind").withValue("EN_CONFLIT");
     revision = ((Number) CucumberRestTestContext.getElement("$.revision")).longValue();
+    this.ancre = (String) journal.get(ancre).get("id");
     commande = UUID.randomUUID().toString();
     rest.post(
       "/api/atelier/suivis/" + suivi + "/conflits/" + journal.get(ancre).get("id") + "/apercus",
@@ -158,6 +160,8 @@ public class ResolutionDesConflitsSteps {
     assertThat(CucumberRestTestContext.getElement("$")).isEqualTo(avant);
     rest.get("/api/atelier/suivis/" + suivi + "/temps-effectif");
     assertThat(CucumberRestTestContext.getElement("$")).isEqualTo(tempsAvant);
+    rest.get("/api/atelier/suivis/" + suivi + "/conflits/" + ancre);
+    assertThat(((Number) CucumberRestTestContext.getElement("$.revision")).longValue()).isEqualTo(revision);
     rest.get("/api/atelier/suivis/" + suivi + "/confirmations-de-resolution/" + commande);
     assertThatLastResponse().hasOkStatus().hasElement("$.kind").withValue("NON_ATTESTEE");
   }
@@ -198,6 +202,38 @@ public class ResolutionDesConflitsSteps {
     assertThatLastResponse().hasOkStatus().hasElement("$.kind").withValue("ENREGISTREE");
     assertThat(CucumberRestTestContext.getElement("$.recu")).isEqualTo(recu);
     assertThat(CucumberRestTestContext.getElement("$.dossier.activites")).isEqualTo(apres.get("activites"));
+  }
+
+  @Then("l'ancre corrigee est explicitement annulee")
+  public void ancreAnnulee() {
+    rest.get("/api/atelier/suivis/" + suivi + "/conflits/" + acte.get("pointage"));
+    assertThatLastResponse().hasOkStatus().hasElement("$.kind").withValue("ANCRE_ANNULEE");
+  }
+
+  @Then("les faits independants de cet acte restent identiques")
+  @SuppressWarnings("unchecked")
+  public void faitsIndependants(List<String> rangs) {
+    var originaux = (List<Map<String, Object>>) avant.get("journal");
+    var actuels = (List<Map<String, Object>>) ((Map<String, Object>) apres.get("suivi")).get("journal");
+    for (String rang : rangs) {
+      var original = originaux.get(Integer.parseInt(rang));
+      assertThat(actuels)
+        .filteredOn(fait -> original.get("id").equals(fait.get("id")))
+        .containsExactly(original);
+    }
+  }
+
+  @Then("les lignes restantes portent la revision commune")
+  @SuppressWarnings("unchecked")
+  public void revisionsCommunes() {
+    rest.get("/api/atelier/conflits?element=" + element);
+    assertThatLastResponse().hasOkStatus();
+    var lignes = (List<Map<String, Object>>) CucumberRestTestContext.getElement("$.lignes");
+    assertThat(lignes)
+      .isNotEmpty()
+      .allSatisfy(ligne -> {
+        assertThat(((Number) ligne.get("revision")).longValue()).isEqualTo(revision + 1);
+      });
   }
 
   @Then("les quatre lecteurs API expliquent ce conflit")
