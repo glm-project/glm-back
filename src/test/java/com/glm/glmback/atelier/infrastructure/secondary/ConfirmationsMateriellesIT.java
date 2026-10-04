@@ -12,7 +12,10 @@ import com.glm.glmback.atelier.application.RecusDActes;
 import com.glm.glmback.atelier.domain.AdresseDossierConflit;
 import com.glm.glmback.atelier.domain.ApercuObsoleteException;
 import com.glm.glmback.atelier.domain.Habilitations;
+import com.glm.glmback.atelier.domain.OperateurDAtelierIntrouvableException;
+import com.glm.glmback.atelier.domain.OperateurNonHabiliteException;
 import com.glm.glmback.atelier.domain.OperateursConnus;
+import com.glm.glmback.atelier.domain.PosteDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.PostesConnus;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
@@ -95,6 +98,36 @@ class ConfirmationsMateriellesIT {
   }
 
   @ParameterizedTest
+  @EnumSource(ReferenceRetiree.class)
+  @WithTenant("impeccmold")
+  void shouldDeclarerLApercuObsoleteQuandUneReferenceValideeDisparait(ReferenceRetiree reference) {
+    // GIVEN
+    var suivi = transactions.execute(status -> suivis.create(MaterielDesActesFixture.suiviAvecTransitionSurFraiseuse()));
+    var commande = UUID.randomUUID();
+    var adresse = new AdresseDossierConflit(suivi.id(), suivi.journal().evenements().getLast().id());
+    var acte = MaterielDesActesFixture.correctionDeTransitionEnFin(suivi);
+    var apercu = apercus.apercu(commande, adresse, suivi.revision(), acte, CONTEXTE_LEROY_IMPECCMOLD);
+    if (reference == ReferenceRetiree.OPERATEUR) {
+      when(operateurs.get(OPERATEUR_ID_DUPONT)).thenReturn(Optional.empty());
+    } else {
+      when(postes.get(POSTE_ID_FRAISEUSE_1)).thenReturn(Optional.empty());
+    }
+    // WHEN THEN
+    assertThatThrownBy(() ->
+      confirmations.confirmer(suivi.id(), commande, apercu.reference().opaque(), CONTEXTE_LEROY_IMPECCMOLD)
+    ).isExactlyInstanceOf(ApercuObsoleteException.class);
+    var relu = transactions.execute(status -> suivis.get(suivi.id()));
+    var recu = transactions.execute(status -> recus.get(commande));
+    assertThat(relu).contains(suivi);
+    assertThat(recu).isEmpty();
+    assertThatThrownBy(() ->
+      apercus.apercu(UUID.randomUUID(), adresse, suivi.revision(), acte, CONTEXTE_LEROY_IMPECCMOLD)
+    ).isExactlyInstanceOf(
+      reference == ReferenceRetiree.OPERATEUR ? OperateurDAtelierIntrouvableException.class : PosteDAtelierIntrouvableException.class
+    );
+  }
+
+  @ParameterizedTest
   @EnumSource(ValeurCopiee.class)
   @WithTenant("impeccmold")
   void shouldRefuserLaReferenceReelleSiUneValeurCopieeDuReferentielChange(ValeurCopiee valeur) {
@@ -145,6 +178,15 @@ class ConfirmationsMateriellesIT {
       CONTEXTE_LEROY_IMPECCMOLD
     );
     when(habilitations.estHabilite(OPERATEUR_ID_DUPONT, POSTE_ID_FRAISEUSE_1)).thenReturn(false);
+    assertThatThrownBy(() ->
+      apercus.apercu(
+        UUID.randomUUID(),
+        adresse,
+        suivi.revision(),
+        MaterielDesActesFixture.correctionDeTransitionEnFin(suivi),
+        CONTEXTE_LEROY_IMPECCMOLD
+      )
+    ).isExactlyInstanceOf(OperateurNonHabiliteException.class);
     // WHEN THEN
     assertThatThrownBy(() ->
       confirmations.confirmer(suivi.id(), commande, apercu.reference().opaque(), CONTEXTE_LEROY_IMPECCMOLD)
@@ -159,5 +201,10 @@ class ConfirmationsMateriellesIT {
     TAUX,
     COUT,
     NATURE,
+  }
+
+  private enum ReferenceRetiree {
+    OPERATEUR,
+    POSTE,
   }
 }

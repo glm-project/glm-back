@@ -6,7 +6,9 @@ import com.glm.glmback.atelier.domain.ConfirmationReutiliseeException;
 import com.glm.glmback.atelier.domain.EvenementDAtelier;
 import com.glm.glmback.atelier.domain.LectureDossierConflit;
 import com.glm.glmback.atelier.domain.LectureDuSuivi;
+import com.glm.glmback.atelier.domain.OperateurDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.OperateurNonHabiliteException;
+import com.glm.glmback.atelier.domain.PosteDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
@@ -75,7 +77,7 @@ public class ConfirmerLesActes {
     ActePrepare prepare;
     try {
       prepare = preparation.prepare(avant, preuve.acte(), preuve.evenement(), contexte.gestionnaire().auteur(), maintenant);
-    } catch (OperateurNonHabiliteException refus) {
+    } catch (OperateurNonHabiliteException | OperateurDAtelierIntrouvableException | PosteDAtelierIntrouvableException refus) {
       throw new ApercuObsoleteException();
     }
     if (!prepare.empreinteConsequences().equals(preuve.empreinteConsequences())) {

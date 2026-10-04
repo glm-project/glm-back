@@ -56,6 +56,9 @@ revision, current reference existence, authorisation and values actually copied 
 It reevaluates the proposed result at the current instant and refuses a material change, including
 crossing an activity's expiry. Display labels and the actual technical recording or cancellation
 instant may change. A refused or expired preview requires a new preview and a new command UUID.
+Withdrawing a previously validated operator, workstation or authorisation invalidates that preview.
+Confirmation translates only these known referential refusals to `apercu-obsolete`; preparing a new
+preview retains its business refusals, and technical failures retain their technical result.
 
 Confirmation first looks for its durable receipt in the current tenant and matches the authenticated
 identity (tenant, issuer and subject), follow-up, command and exact opaque reference stored with it. A matching committed receipt
