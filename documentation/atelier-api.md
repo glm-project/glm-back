@@ -196,6 +196,13 @@ identifiants, et se combinent avant `page` et `size`. Les caractères `%`, `_` e
 Le tri suit le premier pointage, puis les identifiants du suivi et de l'ancrage. `total` et les `lignes` proviennent
 d'une même acquisition SQL. `complete: true` caractérise une lecture réussie, même vide ; un échec d'acquisition
 remonte en erreur HTTP. Les explications détaillées appartiennent au dossier de la séquence.
+Le dossier expose les diagnostics produits pendant l'interprétation : `CIBLE_REMPLACEE`,
+`CIBLE_DEJA_TERMINEE`, `GESTE_AVANT_OUVERTURE`, `OUVRANT_ANNULE`, `TRANSITION_MEME_CATEGORIE`,
+`CIBLE_ECHUE_AVEC_AUTRE_ACTIVITE` ou `CONTRADICTION_REGULARISATION`. Chaque diagnostic identifie le
+pointage contradictoire, l'activité visée, son ouvrant connu et le fait qui l'a terminée lorsqu'il existe.
+L'identité d'un ouvrant annulé ou postérieur au geste reste présente ; aucune activité n'est créée pour
+compléter l'explication. Une contradiction de régularisation concerne un geste régularisé ou une cible
+prolongée par une régularisation. Le même passage dans l'interpréteur produit séquences et diagnostics.
 
 Le serveur ne choisit jamais entre deux pointages qui se contredisent, quel que soit leur ordre d'arrivée. Travail A à
 8 h, transition de A vers une non conformité à 12 h, fin de A à 17 h : que la transition arrive avant la fin ou le

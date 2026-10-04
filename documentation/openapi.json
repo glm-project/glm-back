@@ -1021,7 +1021,7 @@
             "type" : "string"
           },
           "raison" : {
-            "enum" : [ "CIBLE_REMPLACEE", "CIBLE_DEJA_TERMINEE" ],
+            "enum" : [ "GESTE_AVANT_OUVERTURE", "OUVRANT_ANNULE", "TRANSITION_MEME_CATEGORIE", "CIBLE_ECHUE_AVEC_AUTRE_ACTIVITE", "CONTRADICTION_REGULARISATION", "CIBLE_REMPLACEE", "CIBLE_DEJA_TERMINEE" ],
             "type" : "string"
           }
         },
