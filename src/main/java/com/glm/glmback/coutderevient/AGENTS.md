@@ -34,8 +34,9 @@ ou de l'opérateur, ni un ancien ouvrant annulé.
 - Le partage humain compte les **postes distincts** des activités terminées de cet opérateur, tous éléments
   confondus. Plusieurs activités sur un même poste comptent un poste ; sans poste est une valeur de poste.
 - Découper aux changements d'occupation. Bâtir la charge sur l'union du travail valorisé et de l'occupation lue
-  pour que chaque tranche valorisée ait un diviseur. Sélectionner l'occupation par recouvrement, sans borne
-  basse fixe sur le début : une régularisation peut dépasser treize heures.
+  pour que chaque tranche valorisée ait un diviseur. Acquérir aussi les activités adjacentes et prolonger
+  la couverture jusqu’aux bornes des activités terminées découvertes : couper une fenêtre change ses centimes.
+  Aucune borne basse fixe sur le début : une régularisation peut dépasser treize heures.
 - Arrondir le coût humain une fois par **fenêtre de partage** (ensemble de postes constant, diviseur connu),
   puis le répartir en centimes entiers : plus forts restes, puis activité commencée la première
   ([ADR 0004](../../../../../../../documentation/adr/0004-split-the-operator-cost-to-the-cent.md)). Arrondir la

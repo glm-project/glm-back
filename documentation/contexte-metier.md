@@ -367,6 +367,8 @@ Le coût de chaque machine court en entier. Le taux humain se partage selon les 
 par les activités terminées d'un même opérateur, tous éléments confondus. Plusieurs activités sur un même
 poste comptent un poste, et sans poste représente un poste. Le découpage aux changements d'occupation
 limite le partage aux chevauchements. La charge couvre l'union du travail valorisé et de l'occupation lue.
+L’acquisition comprend les activités adjacentes et prolonge sa couverture sur les activités terminées
+découvertes, jusqu’à lire la fenêtre entière ; un relais sur un même poste ne coupe pas son arrondi.
 
 Pour A de 08 à 10 h sur fraiseuse, B sur tour ouverte depuis 09 h et 20 €/h humain, A vaut 40 € et B reste
 exclue. Si B se termine à 11 h, le rapport recalculé porte 30 € humain sur chaque activité.
