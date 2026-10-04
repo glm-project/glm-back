@@ -200,6 +200,16 @@ public class ResolutionDesConflitsSteps {
     assertThat(CucumberRestTestContext.getElement("$.dossier.activites")).isEqualTo(apres.get("activites"));
   }
 
+  @Then("la liste des conflits de {string} reste vide")
+  @SuppressWarnings("unchecked")
+  public void temoinHorsListe(String alias) {
+    atelier.jeConsulte(alias);
+    var courant = (Map<String, Object>) CucumberRestTestContext.getElement("$");
+    element = (String) courant.get("element");
+    assertThat((List<?>) courant.get("conflits")).isEmpty();
+    liste(0);
+  }
+
   @Then("la liste de ce suivi conserve {int} sequences en conflit")
   public void liste(int nombre) {
     rest.get("/api/atelier/conflits?element=" + element);

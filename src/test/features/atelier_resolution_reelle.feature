@@ -615,3 +615,108 @@ Feature: Resolution reelle des conflits
       | PT4H |
       | PT2H |
       | PT3H |
+
+  Scenario: Resolution reelle fin correctement ciblee sur NC
+    Given il est "2044-01-20T07:00:00Z"
+    And l'entreprise a cree l'element de fabrication "Resolution 4420"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | RES4420              |
+    And j'ai engage l'element "Resolution 4420" en atelier
+    And il est "2044-01-20T08:00:00Z"
+    And j'ai pointe sur "Resolution 4420"
+      | id        | 00000000-0000-0000-0000-000000044201 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+    And il est "2044-01-20T12:00:00Z"
+    And j'ai pointe sur "Resolution 4420"
+      | id        | 00000000-0000-0000-0000-000000044202 |
+      | type      | NON_CONFORMITE                       |
+      | intention | TRANSITION                           |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+      | cible     | 00000000-0000-0000-0000-000000044201 |
+    And il est "2044-01-20T17:00:00Z"
+    And j'ai pointe sur "Resolution 4420"
+      | id        | 00000000-0000-0000-0000-000000044203 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+      | cible     | 00000000-0000-0000-0000-000000044202 |
+    And il est "2044-01-21T09:00:00Z"
+    Then la liste des conflits de "Resolution 4420" reste vide
+    When je consulte "Resolution 4420"
+    Then le journal du suivi contient 3 evenements
+
+  Scenario: Resolution reelle fin recue le lendemain survenue avant echeance
+    Given il est "2044-01-21T07:00:00Z"
+    And l'entreprise a cree l'element de fabrication "Resolution 4421"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | RES4421              |
+    And j'ai engage l'element "Resolution 4421" en atelier
+    And il est "2044-01-21T08:00:00Z"
+    And j'ai pointe sur "Resolution 4421"
+      | id        | 00000000-0000-0000-0000-000000044211 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+    And il est "2044-01-22T09:00:00Z"
+    And j'ai pointe sur "Resolution 4421"
+      | id        | 00000000-0000-0000-0000-000000044212 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+      | cible     | 00000000-0000-0000-0000-000000044211 |
+      | dateDeSurvenue | 2044-01-21T17:00:00Z |
+    And il est "2044-01-22T09:00:00Z"
+    Then la liste des conflits de "Resolution 4421" reste vide
+    When je consulte "Resolution 4421"
+    Then le journal du suivi contient 2 evenements
+
+  Scenario: Resolution reelle transition depuis une cible seulement echue
+    Given il est "2044-01-22T07:00:00Z"
+    And l'entreprise a cree l'element de fabrication "Resolution 4422"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | RES4422              |
+    And j'ai engage l'element "Resolution 4422" en atelier
+    And il est "2044-01-22T08:00:00Z"
+    And j'ai pointe sur "Resolution 4422"
+      | id        | 00000000-0000-0000-0000-000000044221 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+    And il est "2044-01-22T23:00:00Z"
+    And j'ai pointe sur "Resolution 4422"
+      | id        | 00000000-0000-0000-0000-000000044222 |
+      | type      | NON_CONFORMITE                       |
+      | intention | TRANSITION                           |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+      | cible     | 00000000-0000-0000-0000-000000044221 |
+    And il est "2044-01-23T09:00:00Z"
+    Then la liste des conflits de "Resolution 4422" reste vide
+    When je consulte "Resolution 4422"
+    Then le journal du suivi contient 2 evenements
+
+  Scenario: Resolution reelle fin automatique isolee sans fait synthetique
+    Given il est "2044-01-23T07:00:00Z"
+    And l'entreprise a cree l'element de fabrication "Resolution 4423"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | RES4423              |
+    And j'ai engage l'element "Resolution 4423" en atelier
+    And il est "2044-01-23T08:00:00Z"
+    And j'ai pointe sur "Resolution 4423"
+      | id        | 00000000-0000-0000-0000-000000044231 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont-resolution                    |
+      | poste     | fraiseuse-resolution                 |
+    And il est "2044-01-24T09:00:00Z"
+    Then la liste des conflits de "Resolution 4423" reste vide
+    When je consulte "Resolution 4423"
+    Then le journal du suivi contient 1 evenements
