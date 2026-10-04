@@ -1,13 +1,17 @@
 package com.glm.glmback.atelier.infrastructure.secondary;
 
+import com.glm.glmback.atelier.application.ConfirmerLesActes;
 import com.glm.glmback.atelier.application.EmpreintesDesConsequences;
+import com.glm.glmback.atelier.application.IdentitesDEvenements;
 import com.glm.glmback.atelier.application.PreparationDesActes;
+import com.glm.glmback.atelier.application.RecusDActes;
 import com.glm.glmback.atelier.application.ReferencesDApercu;
 import com.glm.glmback.atelier.domain.ElementsEngageables;
 import com.glm.glmback.atelier.domain.Habilitations;
 import com.glm.glmback.atelier.domain.OperateursConnus;
 import com.glm.glmback.atelier.domain.PostesConnus;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
+import com.glm.glmback.shared.time.domain.Clock;
 import java.security.SecureRandom;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -43,5 +47,23 @@ class CompositionDesApercus {
       .postes(postes)
       .habilitations(habilitations)
       .empreintes(empreintes);
+  }
+
+  @Bean
+  ConfirmerLesActes confirmerLesActes(
+    SuiviDAtelierRepository suivis,
+    RecusDActes recus,
+    ReferencesDApercu references,
+    PreparationDesActes preparation,
+    IdentitesDEvenements identites,
+    Clock clock
+  ) {
+    return ConfirmerLesActes.builder()
+      .suivis(suivis)
+      .recus(recus)
+      .references(references)
+      .preparation(preparation)
+      .identites(identites)
+      .clock(clock);
   }
 }

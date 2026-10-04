@@ -1,23 +1,21 @@
 package com.glm.glmback.atelier.application;
 
-import com.glm.glmback.atelier.domain.ConfirmationReutiliseeException;
 import com.glm.glmback.atelier.domain.ApercuInvalideException;
 import com.glm.glmback.atelier.domain.ApercuObsoleteException;
+import com.glm.glmback.atelier.domain.ConfirmationReutiliseeException;
 import com.glm.glmback.atelier.domain.EvenementDAtelier;
 import com.glm.glmback.atelier.domain.LectureDossierConflit;
 import com.glm.glmback.atelier.domain.LectureDuSuivi;
+import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
-import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.shared.time.domain.Clock;
-import java.util.UUID;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.stereotype.Service;
 
-@Service
 public class ConfirmerLesActes {
 
   private final SuiviDAtelierRepository suivis;
@@ -44,7 +42,9 @@ public class ConfirmerLesActes {
   }
 
   public static SuivisBuilder builder() {
-    return suivis -> recus -> references -> preparation -> identites -> clock -> new ConfirmerLesActes(suivis, recus, references, preparation, identites, clock);
+    return suivis ->
+      recus ->
+        references -> preparation -> identites -> clock -> new ConfirmerLesActes(suivis, recus, references, preparation, identites, clock);
   }
 
   @Secured("ROLE_GESTIONNAIRE")
@@ -55,9 +55,7 @@ public class ConfirmerLesActes {
       return rejoue(existant.orElseThrow(), suivi, reference, contexte);
     }
     var preuve = references.read(reference);
-    if (
-      !preuve.commande().equals(commande) || !preuve.adresse().suivi().equals(suivi) || !preuve.contexte().correspondA(contexte)
-    ) {
+    if (!preuve.commande().equals(commande) || !preuve.adresse().suivi().equals(suivi) || !preuve.contexte().correspondA(contexte)) {
       throw new ApercuInvalideException();
     }
     var avant = verrouille(suivi);
@@ -77,15 +75,19 @@ public class ConfirmerLesActes {
     if (!prepare.empreinteConsequences().equals(preuve.empreinteConsequences())) {
       throw new ApercuObsoleteException();
     }
-    preuve.evenement().ifPresent(evenement -> {
-      if (!identites.reserveHorsPupitre(evenement.uuid())) {
-        throw new ApercuObsoleteException();
-      }
-    });
+    preuve
+      .evenement()
+      .ifPresent(evenement -> {
+        if (!identites.reserveHorsPupitre(evenement.uuid())) {
+          throw new ApercuObsoleteException();
+        }
+      });
     var enregistre = suivis.update(prepare.apres());
-    preuve.evenement().ifPresent(evenement ->
-      identites.associe(evenement.uuid(), new AgregatDEvenement(TypeDAgregatDEvenement.SUIVI_D_ATELIER, enregistre.id().uuid()))
-    );
+    preuve
+      .evenement()
+      .ifPresent(evenement ->
+        identites.associe(evenement.uuid(), new AgregatDEvenement(TypeDAgregatDEvenement.SUIVI_D_ATELIER, enregistre.id().uuid()))
+      );
     var dossier = dossierAvant.apresActe(new LectureDuSuivi(enregistre, maintenant));
     var touches = enregistre
       .journal()
@@ -113,9 +115,9 @@ public class ConfirmerLesActes {
 
   private ResultatDActe rejoue(RecuDActe recu, SuiviDAtelierId suivi, String reference, ContexteDeResolution contexte) {
     if (
-      !recu.preuve().adresse().suivi().equals(suivi) ||
-      !recu.reference().equals(reference) ||
-      !recu.preuve().contexte().correspondA(contexte)
+      !recu.preuve().adresse().suivi().equals(suivi)
+      || !recu.reference().equals(reference)
+      || !recu.preuve().contexte().correspondA(contexte)
     ) {
       throw new ConfirmationReutiliseeException(recu.preuve().commande());
     }
