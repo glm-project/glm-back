@@ -57,6 +57,41 @@ class CoutsDeRevientServiceTest {
     assertThat(service.rapport(ELEMENT_ID_OF).cout().mainDOeuvre().valeur()).contains(new Montant(new BigDecimal("0.02")));
     assertThat(service.rapport(ELEMENT_ID_OF_2).cout().mainDOeuvre().valeur()).contains(new Montant(new BigDecimal("0.03")));
     assertThat(service.rapport(troisieme.element()).cout().mainDOeuvre().valeur()).contains(new Montant(new BigDecimal("0.02")));
+    var sansTaux = Activite.builder()
+      .operateur(OPERATEUR_ID_MARTIN)
+      .element(troisieme.element())
+      .poste(Optional.of(POSTE_ID_TOUR))
+      .nature(Optional.empty())
+      .coutHoraire(Optional.empty())
+      .tauxHoraire(Optional.empty())
+      .categorie(CategorieDActivite.TRAVAIL);
+    atelier.aTravaille(
+      troisieme.element(),
+      ActiviteInterpretee.builder()
+        .id(new ActiviteId(UUID.randomUUID()))
+        .activite(sansTaux)
+        .plage(new Plage(LE_11_MAI_A_8H, Optional.of(LE_11_MAI_A_8H.plusSeconds(30))))
+        .echeance(LE_11_MAI_A_21H)
+        .finAuPlusTard(Optional.empty())
+    );
+    assertThat(service.rapport(troisieme.element()).cout().mainDOeuvre().valeur()).contains(new Montant(new BigDecimal("0.02")));
+  }
+
+  @Test
+  void shouldNePasCompterUneActiviteAResoudreCommeUneActiviteEnCours() {
+    var source = activiteInterpreteeDeFraisage(new Plage(LE_11_MAI_A_8H, Optional.empty()));
+    var incertaine = ActiviteInterpretee.builder()
+      .id(source.id())
+      .activite(source.activite())
+      .plage(source.plage())
+      .echeance(source.echeance())
+      .finAuPlusTard(Optional.of(LE_11_MAI_A_21H));
+    var atelier = new AtelierEnMemoire().connait(ELEMENT_VALORISE_OF).aTravaille(ELEMENT_ID_OF, incertaine);
+
+    var rapport = service(atelier, LE_11_MAI_A_17H).rapport(ELEMENT_ID_OF);
+
+    assertThat(rapport.lecture().activitesEnCours()).isZero();
+    assertThat(rapport.cout().mainDOeuvre().valeur()).isEmpty();
   }
 
   @Test
