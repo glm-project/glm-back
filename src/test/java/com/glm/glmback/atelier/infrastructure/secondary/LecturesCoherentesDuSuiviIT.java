@@ -1,17 +1,17 @@
 package com.glm.glmback.atelier.infrastructure.secondary;
 
+import static com.glm.glmback.atelier.application.gestionconflits.ResolutionFixture.*;
 import static com.glm.glmback.atelier.domain.AtelierFixture.*;
-import static com.glm.glmback.atelier.gestionconflits.application.ResolutionFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.IntegrationTest;
 import com.glm.glmback.atelier.application.SuivisDAtelierApplicationService;
+import com.glm.glmback.atelier.application.gestionconflits.ApercusDeResolution;
+import com.glm.glmback.atelier.application.gestionconflits.ReferencesDApercu;
 import com.glm.glmback.atelier.domain.Annulation;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
-import com.glm.glmback.atelier.gestionconflits.application.ApercusDeResolution;
-import com.glm.glmback.atelier.gestionconflits.application.ReferencesDApercu;
-import com.glm.glmback.atelier.gestionconflits.domain.ApercuObsoleteException;
+import com.glm.glmback.atelier.domain.gestionconflits.ApercuObsoleteException;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import jakarta.persistence.EntityManager;
 import java.util.concurrent.Callable;

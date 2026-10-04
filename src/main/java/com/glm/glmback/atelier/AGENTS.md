@@ -39,11 +39,13 @@ Ne rien ajouter ici qui relève de :
 `SuiviDAtelier` porte un élément engagé et son `JournalDAtelier`. `TempsDAtelierService` lit les intervalles
 interprétés de ses activités ; seuls les faits d'activité, la clôture et l'échéance en fixent les bornes.
 
-Le parcours de gestion des conflits est regroupé dans `gestionconflits/`, avec ses couches `domain`, `application`
-et `infrastructure/primary` et `secondary` : dossiers, liste, actes de résolution, aperçus, confirmations et reçus.
-Ce sous-package appartient au même bounded context Atelier. L'agrégat, le journal, leurs transitions, le repository
-et les types communs d'interprétation, diagnostics compris, restent dans les couches d'Atelier ; le parcours les
-utilise sans déplacer leurs invariants. Ses tests et fixtures suivent leurs propriétaires dans le même sous-package.
+Le parcours de gestion des conflits est regroupé sous `gestionconflits/` dans chaque couche d'Atelier :
+`domain/gestionconflits`, `application/gestionconflits`, `infrastructure/primary/gestionconflits` et
+`infrastructure/secondary/gestionconflits` portent les dossiers, la liste, les actes de résolution, les aperçus,
+les confirmations et les reçus. Ces sous-packages appartiennent au même bounded context Atelier.
+L'agrégat, le journal, leurs transitions, le repository et les types communs d'interprétation, diagnostics compris,
+restent dans les couches d'Atelier ; le parcours les utilise sans déplacer leurs invariants. Ses tests et fixtures
+suivent leurs propriétaires dans les mêmes sous-packages.
 
 ## Invariants à ne pas casser
 

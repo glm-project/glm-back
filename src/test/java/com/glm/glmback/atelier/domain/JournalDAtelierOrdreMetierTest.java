@@ -1,7 +1,7 @@
 package com.glm.glmback.atelier.domain;
 
 import static com.glm.glmback.atelier.domain.AtelierFixture.*;
-import static com.glm.glmback.atelier.gestionconflits.domain.ConflitsFixture.*;
+import static com.glm.glmback.atelier.domain.gestionconflits.ConflitsFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
