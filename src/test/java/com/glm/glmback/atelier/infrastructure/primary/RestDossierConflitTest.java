@@ -16,6 +16,24 @@ import tools.jackson.databind.json.JsonMapper;
 class RestDossierConflitTest {
 
   @Test
+  void shouldProposerLaContinuationSansChangerLAdresseDeLAncreCorrigee() {
+    var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    var nc = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_12H);
+    var fin = finDe(travail).a(LE_10_MAI_2026_A_17H);
+    var suivi = suiviDAtelierEngage().enregistre(travail).enregistre(nc).enregistre(fin);
+    var avant = new LectureDossierConflit(new AdresseDossierConflit(suivi.id(), fin.id()), new LectureDuSuivi(suivi, LE_10_MAI_2026_A_17H));
+    var corrige = suivi.corrige(fin.id(), annulationParLeroy(), finDe(travail).a(LE_10_MAI_2026_A_17H.minusSeconds(3600)));
+    var apres = avant.apresActe(new LectureDuSuivi(corrige, LE_10_MAI_2026_A_17H));
+    var json = JsonMapper.builder().build().valueToTree(RestDossierConflit.from(apres, annuaireDeDupontEtMartin()));
+    assertThat(json.path("kind").asString()).isEqualTo("ANCRE_ANNULEE");
+    assertThat(json.at("/adresse/pointage").asString()).isEqualTo(fin.id().uuid().toString());
+    assertThat(json.path("continuations").size()).isEqualTo(1);
+    assertThat(json.at("/continuations/0/adresse/pointage").asString()).isEqualTo(travail.id().uuid().toString());
+    assertThat(json.at("/continuations/0/datePremierPointage").asString()).isEqualTo("2026-05-10T08:00:00Z");
+    assertThat(json.at("/continuations/0/nombrePointages").asInt()).isEqualTo(3);
+  }
+
+  @Test
   void shouldConserverLAncreDemandeeEtLePerimetreDUneSeuleSequence() {
     var dupont = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     var martin = debutSurFraiseuse1ParMartinA(LE_10_MAI_2026_A_9H);
@@ -38,6 +56,8 @@ class RestDossierConflitTest {
     assertThat(json.at("/sequence/datePremierPointage").asString()).isEqualTo("2026-05-10T09:00:00Z");
     assertThat(json.at("/sequence/nombrePointages").asInt()).isEqualTo(3);
     assertThat(json.at("/sequence/pointages/0").asString()).isEqualTo(martin.id().uuid().toString());
+    assertThat(json.path("continuations").size()).isEqualTo(1);
+    assertThat(json.at("/continuations/0/adresse/pointage").asString()).isEqualTo(dupont.id().uuid().toString());
   }
 
   @Test

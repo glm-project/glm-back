@@ -1046,6 +1046,13 @@
             },
             "type" : "array"
           },
+          "continuations" : {
+            "description" : "Les autres sequences encore en conflit de ce suivi, par ancre active ; aucune redirection implicite.",
+            "items" : {
+              "$ref" : "#/components/schemas/RestConflitEnListe"
+            },
+            "type" : "array"
+          },
           "diagnostics" : {
             "items" : {
               "$ref" : "#/components/schemas/RestDiagnosticDeConflit"
@@ -1075,7 +1082,7 @@
             "$ref" : "#/components/schemas/RestSuiviDAtelier"
           }
         },
-        "required" : [ "activites", "adresse", "choix", "diagnostics", "evaluation", "kind", "revision", "suivi" ],
+        "required" : [ "activites", "adresse", "choix", "continuations", "diagnostics", "evaluation", "kind", "revision", "suivi" ],
         "type" : "object"
       },
       "RestDureeDeSynthese" : {

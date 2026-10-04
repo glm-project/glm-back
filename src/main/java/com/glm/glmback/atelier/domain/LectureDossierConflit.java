@@ -127,6 +127,28 @@ public record LectureDossierConflit(AdresseDossierConflit adresse, LectureDuSuiv
       .toList();
   }
 
+  public List<ConflitEnListe> continuations() {
+    var suivi = lecture.suivi();
+    return lecture
+      .conflits()
+      .stream()
+      .filter(conflit -> !conflit.pointages().contains(adresse.pointage()))
+      .map(conflit ->
+        ConflitEnListe.builder()
+          .adresse(new AdresseDossierConflit(suivi.id(), conflit.pointages().getFirst()))
+          .revision(suivi.revision())
+          .element(suivi.element())
+          .cle(conflit.cle())
+          .repere(
+            new RepereDeSequence(
+              suivi.journal().evenement(conflit.pointages().getFirst()).orElseThrow().dateDeSurvenue(),
+              conflit.pointages().size()
+            )
+          )
+      )
+      .toList();
+  }
+
   public List<DiagnosticDeConflit> diagnostics() {
     return sequence()
       .map(conflit ->
