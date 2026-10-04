@@ -68,7 +68,7 @@ class JpaSuiviDAtelierRepository implements SuiviDAtelierRepository {
 
   @Override
   public Optional<SuiviDAtelier> get(SuiviDAtelierId id) {
-    return suivis.findById(id.uuid()).map(SuiviDAtelierEntity::toDomain);
+    return suivis.findWithJournalById(id.uuid()).map(SuiviDAtelierEntity::toDomain);
   }
 
   @Override

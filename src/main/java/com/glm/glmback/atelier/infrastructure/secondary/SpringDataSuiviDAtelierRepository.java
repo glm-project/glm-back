@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
 
 interface SpringDataSuiviDAtelierRepository
   extends JpaRepository<SuiviDAtelierEntity, UUID>, JpaSpecificationExecutor<SuiviDAtelierEntity>
@@ -21,6 +22,9 @@ interface SpringDataSuiviDAtelierRepository
    */
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   Optional<SuiviDAtelierEntity> findForUpdateById(UUID id);
+
+  @Query("select distinct suivi from SuiviDAtelierEntity suivi left join fetch suivi.journal where suivi.id = :id")
+  Optional<SuiviDAtelierEntity> findWithJournalById(UUID id);
 
   Optional<SuiviDAtelierEntity> findFirstByElementIdAndClotureDateDeSurvenueIsNullOrderByEngagementDateDescIdAsc(UUID elementId);
 }
