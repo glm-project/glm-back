@@ -48,19 +48,16 @@ public final class ResolutionFixture {
 
   public static RecuDActe recuDAnnulation(SuiviDAtelier suivi) {
     var pointage = suivi.journal().evenements().getFirst().id();
-    var preuve = PreuveDApercu.builder()
+    var proposition = PropositionAConfirmer.builder()
       .commande(UUID.randomUUID())
       .adresse(new AdresseDossierConflit(suivi.id(), pointage))
       .revision(suivi.revision())
-      .contexte(CONTEXTE_LEROY_IMPECCMOLD)
       .acte(new ActeDeResolution.Annulation(new AnnulationAEnregistrer(suivi.id(), pointage, AUTEUR_LEROY, MOTIF_ERREUR_DE_SAISIE)))
       .evenement(Optional.empty())
-      .evaluation(LE_10_MAI_2026_A_17H)
-      .expireLe(LE_10_MAI_2026_A_17H.plusSeconds(900))
       .empreinteConsequences("consequences-annulation");
     return RecuDActe.builder()
-      .preuve(preuve)
-      .reference("reference-annulation")
+      .proposition(proposition)
+      .contexte(CONTEXTE_LEROY_IMPECCMOLD)
       .revisionEnregistree(new RevisionDuSuivi(1))
       .enregistreLe(LE_10_MAI_2026_A_17H)
       .activitesConcernees(Set.of())
@@ -72,21 +69,18 @@ public final class ResolutionFixture {
     return suiviDAtelierEngage().enregistre(debut).enregistre(passageEnTravailDe(debut).a(LE_10_MAI_2026_A_12H));
   }
 
-  public static PreuveDApercu preuveDAnnulationDeTransition(SuiviDAtelier suivi) {
+  public static PropositionAConfirmer propositionDAnnulationDeTransition(SuiviDAtelier suivi) {
     var pointage = suivi.journal().evenements().getLast().id();
-    return PreuveDApercu.builder()
+    return PropositionAConfirmer.builder()
       .commande(UUID.randomUUID())
       .adresse(new AdresseDossierConflit(suivi.id(), pointage))
       .revision(suivi.revision())
-      .contexte(CONTEXTE_LEROY_IMPECCMOLD)
       .acte(new ActeDeResolution.Annulation(new AnnulationAEnregistrer(suivi.id(), pointage, AUTEUR_LEROY, MOTIF_ERREUR_DE_SAISIE)))
       .evenement(Optional.empty())
-      .evaluation(LE_10_MAI_2026_A_17H)
-      .expireLe(LE_10_MAI_2026_A_17H.plusSeconds(900))
       .empreinteConsequences("consequences-annulation");
   }
 
-  public static PreuveDApercu preuveDeRegularisationDeFin(SuiviDAtelier suivi) {
+  public static PropositionAConfirmer propositionDeRegularisationDeFin(SuiviDAtelier suivi) {
     var debut = suivi.journal().evenements().getFirst();
     var instant = "2026-05-10T14:00:00.123456789+02:00";
     var commande = RegularisationAEnregistrer.builder()
@@ -98,35 +92,29 @@ public final class ResolutionFixture {
       .poste(Optional.empty())
       .auteur(AUTEUR_LEROY)
       .dateDeSurvenue(Instant.parse(instant));
-    return PreuveDApercu.builder()
+    return PropositionAConfirmer.builder()
       .commande(UUID.randomUUID())
       .adresse(new AdresseDossierConflit(suivi.id(), suivi.journal().evenements().getLast().id()))
       .revision(suivi.revision())
-      .contexte(CONTEXTE_LEROY_IMPECCMOLD)
       .acte(new ActeDeResolution.Regularisation(commande, instant))
       .evenement(Optional.of(EvenementDAtelierId.newId()))
-      .evaluation(LE_10_MAI_2026_A_17H)
-      .expireLe(LE_10_MAI_2026_A_17H.plusSeconds(900))
       .empreinteConsequences("consequences-annulation");
   }
 
-  public static PreuveDApercu preuveDeCorrectionDeTransition(SuiviDAtelier suivi) {
-    var preuve = preuveDeRegularisationDeFin(suivi);
-    var regularisation = (ActeDeResolution.Regularisation) preuve.acte();
-    return PreuveDApercu.builder()
-      .commande(preuve.commande())
-      .adresse(preuve.adresse())
-      .revision(preuve.revision())
-      .contexte(preuve.contexte())
+  public static PropositionAConfirmer propositionDeCorrectionDeTransition(SuiviDAtelier suivi) {
+    var proposition = propositionDeRegularisationDeFin(suivi);
+    var regularisation = (ActeDeResolution.Regularisation) proposition.acte();
+    return PropositionAConfirmer.builder()
+      .commande(proposition.commande())
+      .adresse(proposition.adresse())
+      .revision(proposition.revision())
       .acte(
         new ActeDeResolution.Correction(
-          new CorrectionAEnregistrer(preuve.adresse().pointage(), MOTIF_ERREUR_DE_SAISIE, regularisation.commande()),
+          new CorrectionAEnregistrer(proposition.adresse().pointage(), MOTIF_ERREUR_DE_SAISIE, regularisation.commande()),
           regularisation.instant()
         )
       )
-      .evenement(preuve.evenement())
-      .evaluation(preuve.evaluation())
-      .expireLe(preuve.expireLe())
-      .empreinteConsequences(preuve.empreinteConsequences());
+      .evenement(proposition.evenement())
+      .empreinteConsequences(proposition.empreinteConsequences());
   }
 }

@@ -26,9 +26,10 @@ class ConfirmationDeResolutionResource {
   }
 
   @PostMapping
-  @Operation(summary = "Confirmer une reference d apercu une seule fois et rendre son recu avec le dossier courant")
+  @Operation(summary = "Confirmer une proposition explicite une seule fois et rendre son recu avec le dossier courant")
   RestConfirmationDeResolution confirme(@PathVariable UUID suivi, @Valid @RequestBody RestConfirmationAEnregistrer demande) {
-    var resultat = confirmations.confirmer(new SuiviDAtelierId(suivi), demande.commande(), demande.reference(), GestionnaireConnecte.get());
+    var contexte = GestionnaireConnecte.get();
+    var resultat = confirmations.confirmer(new SuiviDAtelierId(suivi), demande.toDomain(contexte.gestionnaire().auteur()), contexte);
     return RestConfirmationDeResolution.from(resultat, atelier.annuairePour(resultat.dossier().lecture().suivi()));
   }
 

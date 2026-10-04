@@ -706,16 +706,35 @@ Le corps d'aperçu porte `commande` (UUID créé par le client), `revision` et `
 `pointage` visé et `motif` pour l'annulation ; `pointage` visé, `fait` et `motif` pour la correction ;
 `fait` pour la régularisation, sans justificatif obligatoire. Le fait conserve les UUID
 `operateur`/`poste`, `type`, `intention`, `activiteVisee` éventuelle et chaîne exacte `instant` ; auteur et tarifs restent
-des valeurs serveur. L'aperçu rend la commande, l'acte repris, avant/après, évaluation, révision,
-`reference` opaque et `expireLe`. Il ne réserve aucune identité et n'enregistre rien.
+des valeurs serveur. L'aperçu rend `commande`, `adresse` (`suivi` et `pointage`), `revision`, l'acte repris,
+`evaluation`, `avant`, `apres`, `empreinteConsequences` et `evenement` lorsque l'acte crée un fait.
+Il ne réserve aucune identité et n'enregistre rien. Correction et régularisation portent cette identité
+prospective ; l'annulation n'en porte aucune. L'identité de l'événement reste distincte de la commande.
 
-La confirmation reçoit uniquement `commande` et `reference`. Le reçu rend la commande, l'adresse,
-l'acte exact, la révision avant/après, l'instant d'enregistrement, le résultat au dossier d'origine
-et les continuations explicites vers les ancrages actifs des conflits restants. L'enregistrement
-d'un acte laissant un conflit est une réussite. La vérification rend `ENREGISTREE` avec le reçu
-canonique, ou `NON_ATTESTEE` : l'absence momentanée d'un reçu ne permet pas de conclure à un rollback.
+La confirmation transmet `commande`, `adresse`, `revision`, `acte`, `empreinteConsequences` et
+`evenement` éventuel. Atelier verrouille le suivi, contrôle la révision et l'adresse puis reprépare
+l'acte avec les ressources, habilitations et l'instant actuels. Une différence matérielle impose un
+nouvel aperçu, sans écriture. Les changements de libellés ou d'auteur d'affichage ne changent pas
+l'empreinte. Une habilitation retirée ou une ressource disparue invalide l'aperçu ; une panne technique
+garde son résultat technique. Le contrôle transactionnel du suivi ne constitue pas un instantané
+global des référentiels.
 
-La référence autoportante, son intégrité, sa rotation et sa validité sont arrêtées dans
-[l'ADR 0006](adr/0006-authenticate-stateless-resolution-previews.md). Les trois refus de résolution
-(`apercu-invalide`, `apercu-obsolete`, `confirmation-reutilisee`) sont publiés dans
+Le reçu rend la commande, l'adresse, l'acte exact, les révisions avant/après, l'instant d'enregistrement,
+l'événement créé éventuel et les événements touchés. Le dossier courant joint rend le résultat au
+dossier d'origine et les continuations explicites vers les ancrages actifs des conflits restants.
+Un acte laissant un conflit est une réussite. La vérification rend `ENREGISTREE` avec le reçu canonique,
+ou `NON_ATTESTEE` : l'absence momentanée d'un reçu ne permet pas de conclure à un rollback.
+
+Le rejeu identique compare les champs métier et les métadonnées de la proposition enregistrée,
+indépendamment du nom d'affichage, de l'instant du rejeu et des conséquences devenues actuelles.
+L'entreprise, l'issuer et le subject authentifiés sont contrôlés séparément. Le reçu conserve l'auteur
+historique ; il reste lisible après redémarrage sans réévaluer l'acte.
+
+La page conserve la proposition uniquement en mémoire. Une édition retire son aperçu, un rechargement
+abandonne la saisie, mais une confirmation déjà envoyée peut encore aboutir. Après `apercu-obsolete`,
+Gestion conserve la saisie, recharge le dossier et invite à demander explicitement un nouvel aperçu.
+
+La proposition explicite et les reçus sont décrits dans
+[l'ADR 0006](adr/0006-confirm-explicit-resolution-proposals.md). Les refus de résolution
+(`proposition-invalide`, `apercu-obsolete`, `confirmation-reutilisee`) sont publiés dans
 [le catalogue](codes-erreur.md).

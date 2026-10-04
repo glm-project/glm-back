@@ -42,7 +42,7 @@ class ApercuDeResolutionResourceIT {
   @ParameterizedTest
   @ValueSource(booleans = { false, true })
   @WithTenant("apercu_fixture")
-  void shouldAuthentifierLAnnulationAvecTouteAncreActiveDeLaSequence(boolean ancreAlternative) throws Exception {
+  void shouldProposerLAnnulationAvecTouteAncreActiveDeLaSequence(boolean ancreAlternative) throws Exception {
     var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     var transition = passageEnTravailDe(travail).a(LE_10_MAI_2026_A_12H);
     var suivi = suiviDAtelierEngage().enregistre(travail).enregistre(transition);
@@ -63,8 +63,10 @@ class ApercuDeResolutionResourceIT {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.commande").value(commande.toString()))
       .andExpect(jsonPath("$.adresse.pointage").value(ancre.uuid().toString()))
-      .andExpect(jsonPath("$.reference").value(org.hamcrest.Matchers.startsWith("v1.test.")))
-      .andExpect(jsonPath("$.expireLe").value("2026-05-10T13:15:00Z"))
+      .andExpect(jsonPath("$.empreinteConsequences").value(org.hamcrest.Matchers.matchesPattern("[a-f0-9]{64}")))
+      .andExpect(jsonPath("$.evenement").doesNotExist())
+      .andExpect(jsonPath("$.reference").doesNotExist())
+      .andExpect(jsonPath("$.expireLe").doesNotExist())
       .andExpect(jsonPath("$.acte.kind").value("ANNULATION"))
       .andExpect(jsonPath("$.acte.motif").value("saisie incorrecte"))
       .andExpect(jsonPath("$.avant.kind").value("EN_CONFLIT"))

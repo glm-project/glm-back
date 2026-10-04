@@ -7,7 +7,6 @@ import static org.assertj.core.api.Assertions.*;
 import com.glm.glmback.IntegrationTest;
 import com.glm.glmback.atelier.application.SuivisDAtelierApplicationService;
 import com.glm.glmback.atelier.application.gestionconflits.ApercusDeResolution;
-import com.glm.glmback.atelier.application.gestionconflits.ReferencesDApercu;
 import com.glm.glmback.atelier.domain.Annulation;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
@@ -53,9 +52,6 @@ class LecturesCoherentesDuSuiviIT {
 
   @Autowired
   private ApercusDeResolution apercus;
-
-  @Autowired
-  private ReferencesDApercu references;
 
   @Test
   @WithTenant("impeccmold")
@@ -109,18 +105,18 @@ class LecturesCoherentesDuSuiviIT {
 
   @Test
   @WithTenant("impeccmold")
-  void shouldSignerSeulementUneRevisionQuiDecritTousLesFaitsDeLApercu() {
+  void shouldProposerSeulementUneRevisionQuiDecritTousLesFaitsDeLApercu() {
     // GIVEN
     var ancien = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
-    var demande = preuveDAnnulationDeTransition(ancien);
+    var demande = propositionDAnnulationDeTransition(ancien);
     // WHEN / THEN
     avecParentDejaChargeEtAnnulationClotureCommittees(ancien, nouveau ->
       catchThrowableOfType(
         () -> {
-          var apercu = apercus.apercu(demande.commande(), demande.adresse(), demande.revision(), demande.acte(), demande.contexte());
+          var apercu = apercus.apercu(demande.commande(), demande.adresse(), demande.revision(), demande.acte(), CONTEXTE_LEROY_IMPECCMOLD);
           // Un instantane entierement ancien est admissible, une revision perimee aussi peut etre refusee.
           assertThat(apercu.avant().lecture().suivi()).isEqualTo(ancien);
-          assertThat(references.read(apercu.reference().opaque()).revision()).isEqualTo(ancien.revision());
+          assertThat(apercu.proposition().revision()).isEqualTo(ancien.revision());
         },
         ApercuObsoleteException.class
       )

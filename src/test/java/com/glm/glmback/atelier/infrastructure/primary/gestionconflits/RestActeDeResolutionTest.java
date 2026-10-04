@@ -27,18 +27,18 @@ class RestActeDeResolutionTest {
 
   @Test
   void shouldEchoLAnnulationAvecLeMotifEtLePointage() {
-    var preuve = preuveDAnnulationDeTransition(suiviAvecTransitionDeMemeCategorie());
-    var json = JsonMapper.builder().build().valueToTree(RestActeDeResolution.from(preuve.acte()));
+    var proposition = propositionDAnnulationDeTransition(suiviAvecTransitionDeMemeCategorie());
+    var json = JsonMapper.builder().build().valueToTree(RestActeDeResolution.from(proposition.acte()));
     assertThat(json.path("kind").asString()).isEqualTo("ANNULATION");
-    assertThat(json.path("pointage").asString()).isEqualTo(preuve.adresse().pointage().uuid().toString());
+    assertThat(json.path("pointage").asString()).isEqualTo(proposition.adresse().pointage().uuid().toString());
     assertThat(json.path("motif").asString()).isEqualTo("Erreur de saisie");
     assertThat(json.has("auteur")).isFalse();
   }
 
   @Test
   void shouldEchoLaRegularisationAvecLInstantExactEtSansIdentiteDuSuivi() {
-    var preuve = preuveDeRegularisationDeFin(suiviAvecTransitionDeMemeCategorie());
-    var json = JsonMapper.builder().build().valueToTree(RestActeDeResolution.from(preuve.acte()));
+    var proposition = propositionDeRegularisationDeFin(suiviAvecTransitionDeMemeCategorie());
+    var json = JsonMapper.builder().build().valueToTree(RestActeDeResolution.from(proposition.acte()));
     assertThat(json.path("kind").asString()).isEqualTo("REGULARISATION");
     assertThat(json.at("/fait/instant").asString()).isEqualTo("2026-05-10T14:00:00.123456789+02:00");
     assertThat(json.at("/fait/type").asString()).isEqualTo("FIN");
@@ -48,28 +48,30 @@ class RestActeDeResolutionTest {
 
   @Test
   void shouldLireLAnnulationAvecLeSuiviEtLAuteurDeLaRequete() {
-    var preuve = preuveDAnnulationDeTransition(suiviAvecTransitionDeMemeCategorie());
-    var wire = RestActeDeResolution.from(preuve.acte());
-    var acte = wire.toDomain(preuve.adresse().suivi(), GESTIONNAIRE_LEROY_RENOMME.auteur());
+    var proposition = propositionDAnnulationDeTransition(suiviAvecTransitionDeMemeCategorie());
+    var wire = RestActeDeResolution.from(proposition.acte());
+    var acte = wire.toDomain(proposition.adresse().suivi(), GESTIONNAIRE_LEROY_RENOMME.auteur());
+    assertThat(proposition.acte().memeDemandeQue(acte)).isTrue();
     assertThat(acte).isInstanceOf(ActeDeResolution.Annulation.class);
     var annulation = ((ActeDeResolution.Annulation) acte).commande();
-    assertThat(annulation.suivi()).isEqualTo(preuve.adresse().suivi());
-    assertThat(annulation.evenement()).isEqualTo(preuve.adresse().pointage());
+    assertThat(annulation.suivi()).isEqualTo(proposition.adresse().suivi());
+    assertThat(annulation.evenement()).isEqualTo(proposition.adresse().pointage());
     assertThat(annulation.auteur()).isEqualTo(GESTIONNAIRE_LEROY_RENOMME.auteur());
     assertThat(annulation.motif().value()).isEqualTo("Erreur de saisie");
   }
 
   @Test
   void shouldLireLaRegularisationSansPerdreLeDecalageNiLesNeufDecimales() {
-    var preuve = preuveDeRegularisationDeFin(suiviAvecTransitionDeMemeCategorie());
-    var wire = RestActeDeResolution.from(preuve.acte());
-    var acte = wire.toDomain(preuve.adresse().suivi(), GESTIONNAIRE_LEROY_RENOMME.auteur());
+    var proposition = propositionDeRegularisationDeFin(suiviAvecTransitionDeMemeCategorie());
+    var wire = RestActeDeResolution.from(proposition.acte());
+    var acte = wire.toDomain(proposition.adresse().suivi(), GESTIONNAIRE_LEROY_RENOMME.auteur());
+    assertThat(proposition.acte().memeDemandeQue(acte)).isTrue();
     assertThat(acte).isInstanceOf(ActeDeResolution.Regularisation.class);
     var regularisation = (ActeDeResolution.Regularisation) acte;
     assertThat(regularisation.instant()).isEqualTo("2026-05-10T14:00:00.123456789+02:00");
     assertThat(regularisation.commande().dateDeSurvenue()).isEqualTo(java.time.Instant.parse("2026-05-10T12:00:00.123456789Z"));
     assertThat(regularisation.commande().auteur()).isEqualTo(GESTIONNAIRE_LEROY_RENOMME.auteur());
-    assertThat(regularisation.commande().suivi()).isEqualTo(preuve.adresse().suivi());
+    assertThat(regularisation.commande().suivi()).isEqualTo(proposition.adresse().suivi());
     assertThat(regularisation.commande().poste()).isEmpty();
   }
 
@@ -87,5 +89,13 @@ class RestActeDeResolutionTest {
     assertThat(lu.commande().remplacement().auteur()).isEqualTo(GESTIONNAIRE_LEROY_RENOMME.auteur());
     assertThat(lu.commande().remplacement().poste()).isEqualTo(correction.commande().remplacement().poste());
     assertThat(lu.commande().remplacement().activiteVisee()).isEqualTo(correction.commande().remplacement().activiteVisee());
+  }
+
+  @Test
+  void shouldGarderLaMemeCorrectionApresUnChangementDuNomDAuteur() {
+    var proposition = propositionDeCorrectionDeTransition(suiviAvecTransitionDeMemeCategorie());
+    var acte = RestActeDeResolution.from(proposition.acte()).toDomain(proposition.adresse().suivi(), GESTIONNAIRE_LEROY_RENOMME.auteur());
+    assertThat(proposition.acte().memeDemandeQue(acte)).isTrue();
+    assertThat(acte).isNotEqualTo(proposition.acte());
   }
 }

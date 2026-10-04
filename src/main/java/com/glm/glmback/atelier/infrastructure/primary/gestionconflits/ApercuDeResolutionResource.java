@@ -31,9 +31,9 @@ class ApercuDeResolutionResource {
   @PostMapping("/{id}/conflits/{pointage}/apercus")
   @Operation(
     summary = "Previsualiser un acte de resolution",
-    description = "Reserve au gestionnaire. Prepare le meme acte que sa confirmation, sans ecrire ni reserver son identifiant. Une revision perimee est refusee ; la reference authentifiee expire selon la politique serveur."
+    description = "Reserve au gestionnaire. Prepare le meme acte que sa confirmation, sans ecrire ni reserver son identifiant. Une revision perimee est refusee ; la proposition devient obsolete si ses consequences changent."
   )
-  @ApiResponse(responseCode = "200", description = "L'acte exact, avant/apres, l'adresse et la reference opaque de sa commande.")
+  @ApiResponse(responseCode = "200", description = "L'acte exact, avant/apres, l'adresse et les metadonnees explicites de sa commande.")
   @ApiResponse(responseCode = "400", description = "Acte invalide.")
   @ApiResponse(responseCode = "409", description = "Apercu obsolete ou acte refuse.")
   RestApercuDeResolution apercu(@PathVariable UUID id, @PathVariable UUID pointage, @Valid @RequestBody RestDemandeDApercu demande) {

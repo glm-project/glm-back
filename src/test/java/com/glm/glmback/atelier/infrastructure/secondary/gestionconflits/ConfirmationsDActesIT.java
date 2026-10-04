@@ -11,25 +11,30 @@ import com.glm.glmback.atelier.application.IdentitesDEvenements;
 import com.glm.glmback.atelier.application.SuivisDAtelierApplicationService;
 import com.glm.glmback.atelier.application.gestionconflits.ConfirmerLesActes;
 import com.glm.glmback.atelier.application.gestionconflits.EmpreintesDesConsequences;
+import com.glm.glmback.atelier.application.gestionconflits.PreparationDesActes;
+import com.glm.glmback.atelier.application.gestionconflits.PropositionAConfirmer;
 import com.glm.glmback.atelier.application.gestionconflits.RecusDActes;
-import com.glm.glmback.atelier.application.gestionconflits.ReferencesDApercu;
 import com.glm.glmback.atelier.domain.ClotureAEnregistrer;
+import com.glm.glmback.atelier.domain.EvenementDAtelierId;
+import com.glm.glmback.atelier.domain.Habilitations;
 import com.glm.glmback.atelier.domain.IntentionDePointage;
 import com.glm.glmback.atelier.domain.OperateursConnus;
 import com.glm.glmback.atelier.domain.PointageAEnregistrer;
+import com.glm.glmback.atelier.domain.PostesConnus;
 import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
 import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
 import com.glm.glmback.atelier.domain.gestionconflits.ActeDeResolution;
-import com.glm.glmback.atelier.domain.gestionconflits.ApercuInvalideException;
+import com.glm.glmback.atelier.domain.gestionconflits.AdresseDossierConflit;
 import com.glm.glmback.atelier.domain.gestionconflits.ApercuObsoleteException;
 import com.glm.glmback.atelier.domain.gestionconflits.ConfirmationReutiliseeException;
+import com.glm.glmback.atelier.domain.gestionconflits.EtatDAdresseDossier;
+import com.glm.glmback.atelier.domain.gestionconflits.PropositionInvalideException;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.time.domain.Clock;
 import jakarta.persistence.EntityManager;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -44,6 +49,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.context.request.RequestContextHolder;
 
@@ -54,9 +60,12 @@ class ConfirmationsDActesIT {
   private ConfirmerLesActes confirmations;
 
   @Autowired
-  private SuivisDAtelierApplicationService atelier;
+  private PreparationDesActes preparation;
 
   @Autowired
+  private SuivisDAtelierApplicationService atelier;
+
+  @MockitoSpyBean
   private RecusDActes recus;
 
   @Autowired
@@ -72,9 +81,6 @@ class ConfirmationsDActesIT {
   private IdentitesDEvenements identites;
 
   @MockitoBean
-  private ReferencesDApercu references;
-
-  @MockitoBean
   private EmpreintesDesConsequences empreintes;
 
   @MockitoBean
@@ -83,11 +89,20 @@ class ConfirmationsDActesIT {
   @MockitoBean
   private OperateursConnus operateurs;
 
+  @MockitoBean
+  private PostesConnus postes;
+
+  @MockitoBean
+  private Habilitations habilitations;
+
   @BeforeEach
   void evaluation() {
     when(clock.now()).thenReturn(LE_10_MAI_2026_A_17H);
     when(empreintes.calcule(any(), any())).thenReturn("consequences-annulation");
     when(operateurs.get(OPERATEUR_ID_DUPONT)).thenReturn(Optional.of(OPERATEUR_CONNU_DUPONT));
+    when(operateurs.get(OPERATEUR_ID_MARTIN)).thenReturn(Optional.of(OPERATEUR_CONNU_MARTIN));
+    when(postes.get(POSTE_ID_FRAISEUSE_1)).thenReturn(Optional.of(POSTE_CONNU_FRAISEUSE_1));
+    when(habilitations.estHabilite(OPERATEUR_ID_DUPONT, POSTE_ID_FRAISEUSE_1)).thenReturn(true);
   }
 
   @Test
@@ -95,22 +110,21 @@ class ConfirmationsDActesIT {
   void shouldEnregistrerLAnnulationEtSonRecuDansLaMemeTransaction() {
     // GIVEN
     var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
-    var preuve = preuveDAnnulationDeTransition(suivi);
-    when(references.read("reference-annulation")).thenReturn(preuve);
+    var proposition = propositionDAnnulationDeTransition(suivi);
     // WHEN
-    var resultat = confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD);
+    var resultat = confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD);
     // THEN
     assertThat(resultat).isNotNull();
-    assertThat(resultat.recu().preuve()).isEqualTo(preuve);
+    assertThat(resultat.recu().proposition()).isEqualTo(proposition);
     assertThat(resultat.recu().revisionEnregistree().value()).isEqualTo(1);
-    assertThat(resultat.recu().evenementsTouches()).containsExactly(preuve.adresse().pointage());
+    assertThat(resultat.recu().evenementsTouches()).containsExactly(proposition.adresse().pointage());
     assertThat(resultat.dossier().lecture().suivi().conflits()).isEmpty();
-    assertThat(inTransaction(() -> recus.get(preuve.commande()))).contains(resultat.recu());
+    assertThat(inTransaction(() -> recus.get(proposition.commande()))).contains(resultat.recu());
     assertThat(
       inTransaction(() -> suivis.get(suivi.id()))
         .orElseThrow()
         .journal()
-        .evenement(preuve.adresse().pointage())
+        .evenement(proposition.adresse().pointage())
         .orElseThrow()
         .annulation()
     ).isPresent();
@@ -121,11 +135,10 @@ class ConfirmationsDActesIT {
   void shouldRejouerLaMemeConfirmationSansEnregistrerUnSecondActe() {
     // GIVEN
     var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
-    var preuve = preuveDAnnulationDeTransition(suivi);
-    when(references.read("reference-annulation")).thenReturn(preuve);
-    var premier = confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD);
+    var proposition = propositionDAnnulationDeTransition(suivi);
+    var premier = confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD);
     // WHEN
-    var rejeu = confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD);
+    var rejeu = confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD);
     // THEN
     assertThat(rejeu.recu()).isEqualTo(premier.recu());
     assertThat(rejeu.dossier()).isEqualTo(premier.dossier());
@@ -134,17 +147,39 @@ class ConfirmationsDActesIT {
 
   @Test
   @WithTenant("impeccmold")
-  void shouldRefuserUneAutreReferencePourLaMemeCommande() {
+  void shouldRefuserUneAutrePropositionPourLaMemeCommande() {
     // GIVEN
     var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
-    var preuve = preuveDAnnulationDeTransition(suivi);
-    when(references.read("reference-annulation")).thenReturn(preuve);
-    var premier = confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD);
+    var proposition = propositionDAnnulationDeTransition(suivi);
+    var premier = confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD);
     // WHEN THEN
     assertThatThrownBy(() ->
-      confirmations.confirmer(suivi.id(), preuve.commande(), "reference-modifiee", CONTEXTE_LEROY_IMPECCMOLD)
+      confirmations.confirmer(suivi.id(), ConcurrenceDesActesFixture.avecEmpreinte(proposition), CONTEXTE_LEROY_IMPECCMOLD)
     ).isExactlyInstanceOf(ConfirmationReutiliseeException.class);
     assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(premier.dossier().lecture().suivi());
+  }
+
+  @ParameterizedTest
+  @EnumSource(ReprisesDActesFixture.CasDeRejeu.class)
+  @WithTenant("impeccmold")
+  void shouldRefuserLeRejeuDontUnChampMetierDeLActeAChange(ReprisesDActesFixture.CasDeRejeu cas) {
+    // GIVEN
+    var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
+    var originale = cas.originale(suivi);
+    var modifiee = cas.modifiee(new ReprisesDActesFixture.DemandeSurSuivi(originale, suivi));
+    assertThatCode(() -> preparation.prepare(suivi, modifiee.acte(), modifiee.evenement(), AUTEUR_LEROY, LE_10_MAI_2026_A_17H))
+      .as("La demande modifiee est un acte metier valide sur le suivi initial")
+      .doesNotThrowAnyException();
+    var premier = confirmations.confirmer(suivi.id(), originale, CONTEXTE_LEROY_IMPECCMOLD);
+    var suiviConfirme = inTransaction(() -> suivis.get(suivi.id())).orElseThrow();
+    // WHEN THEN
+    assertThatThrownBy(() -> confirmations.confirmer(suivi.id(), modifiee, CONTEXTE_LEROY_IMPECCMOLD)).isExactlyInstanceOf(
+      ConfirmationReutiliseeException.class
+    );
+    var relu = inTransaction(() -> suivis.get(suivi.id())).orElseThrow();
+    assertThat(relu.journal()).isEqualTo(suiviConfirme.journal());
+    assertThat(relu.revision()).isEqualTo(suiviConfirme.revision());
+    assertThat(inTransaction(() -> recus.get(originale.commande()))).contains(premier.recu());
   }
 
   @Test
@@ -152,13 +187,12 @@ class ConfirmationsDActesIT {
   void shouldRefuserUnAutreSujetQuiPorteLeMemeNomDAuteur() {
     // GIVEN
     var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
-    var preuve = preuveDAnnulationDeTransition(suivi);
-    when(references.read("reference-annulation")).thenReturn(preuve);
-    var premier = confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD);
+    var proposition = propositionDAnnulationDeTransition(suivi);
+    var premier = confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD);
     // WHEN THEN
-    assertThatThrownBy(() ->
-      confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_MARTIN_IMPECCMOLD)
-    ).isExactlyInstanceOf(ConfirmationReutiliseeException.class);
+    assertThatThrownBy(() -> confirmations.confirmer(suivi.id(), proposition, CONTEXTE_MARTIN_IMPECCMOLD)).isExactlyInstanceOf(
+      ConfirmationReutiliseeException.class
+    );
     assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(premier.dossier().lecture().suivi());
   }
 
@@ -168,64 +202,33 @@ class ConfirmationsDActesIT {
     // GIVEN
     var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
     var autre = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
-    var preuve = preuveDAnnulationDeTransition(suivi);
-    when(references.read("reference-annulation")).thenReturn(preuve);
-    var premier = confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD);
+    var proposition = propositionDAnnulationDeTransition(suivi);
+    var premier = confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD);
     // WHEN THEN
-    assertThatThrownBy(() ->
-      confirmations.confirmer(autre.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD)
-    ).isExactlyInstanceOf(ConfirmationReutiliseeException.class);
+    assertThatThrownBy(() -> confirmations.confirmer(autre.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD)).isExactlyInstanceOf(
+      PropositionInvalideException.class
+    );
+    assertThatThrownBy(() -> confirmations.verifier(autre.id(), proposition.commande(), CONTEXTE_LEROY_IMPECCMOLD)).isExactlyInstanceOf(
+      ConfirmationReutiliseeException.class
+    );
     assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(premier.dossier().lecture().suivi());
     assertThat(inTransaction(() -> suivis.get(autre.id()))).contains(autre);
   }
 
   @Test
   @WithTenant("impeccmold")
-  void shouldRefuserUnePreuvePrepareeParUnAutreSujet() {
-    // GIVEN
-    var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
-    var preuve = preuveDAnnulationDeTransition(suivi);
-    when(references.read("reference-annulation")).thenReturn(preuve);
-    // WHEN THEN
-    assertThatThrownBy(() ->
-      confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_MARTIN_IMPECCMOLD)
-    ).isExactlyInstanceOf(ApercuInvalideException.class);
-    assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(suivi);
-    assertThat(inTransaction(() -> recus.get(preuve.commande()))).isEmpty();
-  }
-
-  @Test
-  @WithTenant("impeccmold")
-  void shouldRefuserUneCommandeQuiNeCorrespondPasALaPreuve() {
-    // GIVEN
-    var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
-    var preuve = preuveDAnnulationDeTransition(suivi);
-    var autreCommande = UUID.randomUUID();
-    when(references.read("reference-annulation")).thenReturn(preuve);
-    // WHEN THEN
-    assertThatThrownBy(() ->
-      confirmations.confirmer(suivi.id(), autreCommande, "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD)
-    ).isExactlyInstanceOf(ApercuInvalideException.class);
-    assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(suivi);
-    assertThat(inTransaction(() -> recus.get(preuve.commande()))).isEmpty();
-    assertThat(inTransaction(() -> recus.get(autreCommande))).isEmpty();
-  }
-
-  @Test
-  @WithTenant("impeccmold")
-  void shouldRefuserUnePreuveDestineeAUnAutreSuivi() {
+  void shouldRefuserUnePropositionDestineeAUnAutreSuivi() {
     // GIVEN
     var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
     var autre = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
-    var preuve = preuveDAnnulationDeTransition(suivi);
-    when(references.read("reference-annulation")).thenReturn(preuve);
+    var proposition = propositionDAnnulationDeTransition(suivi);
     // WHEN THEN
-    assertThatThrownBy(() ->
-      confirmations.confirmer(autre.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD)
-    ).isExactlyInstanceOf(ApercuInvalideException.class);
+    assertThatThrownBy(() -> confirmations.confirmer(autre.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD)).isExactlyInstanceOf(
+      PropositionInvalideException.class
+    );
     assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(suivi);
     assertThat(inTransaction(() -> suivis.get(autre.id()))).contains(autre);
-    assertThat(inTransaction(() -> recus.get(preuve.commande()))).isEmpty();
+    assertThat(inTransaction(() -> recus.get(proposition.commande()))).isEmpty();
   }
 
   @Test
@@ -233,31 +236,14 @@ class ConfirmationsDActesIT {
   void shouldRefuserUnApercuAnterieurAUneCloture() {
     // GIVEN
     var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
-    var preuve = preuveDAnnulationDeTransition(suivi);
-    when(references.read("reference-annulation")).thenReturn(preuve);
+    var proposition = propositionDAnnulationDeTransition(suivi);
     var cloture = inTransaction(() -> suivis.update(suivi.cloture(clotureParLeroyA(LE_10_MAI_2026_A_17H))));
     // WHEN THEN
-    assertThatThrownBy(() ->
-      confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD)
-    ).isExactlyInstanceOf(ApercuObsoleteException.class);
+    assertThatThrownBy(() -> confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD)).isExactlyInstanceOf(
+      ApercuObsoleteException.class
+    );
     assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(cloture);
-    assertThat(inTransaction(() -> recus.get(preuve.commande()))).isEmpty();
-  }
-
-  @Test
-  @WithTenant("impeccmold")
-  void shouldRefuserUnApercuALInstantDeSonExpiration() {
-    // GIVEN
-    var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
-    var preuve = preuveDAnnulationDeTransition(suivi);
-    when(references.read("reference-annulation")).thenReturn(preuve);
-    when(clock.now()).thenReturn(preuve.expireLe());
-    // WHEN THEN
-    assertThatThrownBy(() ->
-      confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD)
-    ).isExactlyInstanceOf(ApercuObsoleteException.class);
-    assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(suivi);
-    assertThat(inTransaction(() -> recus.get(preuve.commande()))).isEmpty();
+    assertThat(inTransaction(() -> recus.get(proposition.commande()))).isEmpty();
   }
 
   @Test
@@ -265,15 +251,14 @@ class ConfirmationsDActesIT {
   void shouldRefuserDesConsequencesDevenuesDifferentesSansChangementDeRevision() {
     // GIVEN
     var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
-    var preuve = preuveDAnnulationDeTransition(suivi);
-    when(references.read("reference-annulation")).thenReturn(preuve);
+    var proposition = propositionDAnnulationDeTransition(suivi);
     when(empreintes.calcule(any(), any())).thenReturn("consequences-modifiees");
     // WHEN THEN
-    assertThatThrownBy(() ->
-      confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD)
-    ).isExactlyInstanceOf(ApercuObsoleteException.class);
+    assertThatThrownBy(() -> confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD)).isExactlyInstanceOf(
+      ApercuObsoleteException.class
+    );
     assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(suivi);
-    assertThat(inTransaction(() -> recus.get(preuve.commande()))).isEmpty();
+    assertThat(inTransaction(() -> recus.get(proposition.commande()))).isEmpty();
   }
 
   @Test
@@ -281,15 +266,18 @@ class ConfirmationsDActesIT {
   void shouldRejouerDeuxConfirmationsSimultaneesDeLaMemeCommande() throws Exception {
     // GIVEN
     var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
-    var preuve = preuveDAnnulationDeTransition(suivi);
+    var proposition = propositionDAnnulationDeTransition(suivi);
     var lecturesSansRecu = new CountDownLatch(2);
-    when(references.read("reference-annulation")).thenAnswer(invocation -> {
+    doAnswer(invocation -> {
+      var resultat = invocation.callRealMethod();
       lecturesSansRecu.countDown();
       assertThat(lecturesSansRecu.await(10, TimeUnit.SECONDS)).as("Les deux requetes ont lu l absence du recu").isTrue();
-      return preuve;
-    });
+      return resultat;
+    })
+      .when(recus)
+      .get(any());
     var action = avecContexteDeRequete(() ->
-      catchThrowable(() -> confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD))
+      catchThrowable(() -> confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD))
     );
     // WHEN THEN
     try (var executor = Executors.newFixedThreadPool(2)) {
@@ -301,8 +289,8 @@ class ConfirmationsDActesIT {
     var relu = inTransaction(() -> suivis.get(suivi.id())).orElseThrow();
     assertThat(relu.revision().value()).isEqualTo(1);
     assertThat(relu.journal().evenements()).hasSize(2);
-    assertThat(relu.journal().evenement(preuve.adresse().pointage()).orElseThrow().annulation()).isPresent();
-    assertThat(inTransaction(() -> recus.get(preuve.commande()))).isPresent();
+    assertThat(relu.journal().evenement(proposition.adresse().pointage()).orElseThrow().annulation()).isPresent();
+    assertThat(inTransaction(() -> recus.get(proposition.commande()))).isPresent();
   }
 
   @Test
@@ -310,19 +298,22 @@ class ConfirmationsDActesIT {
   void shouldNEnregistrerQuUneDesDeuxCommandesPrepareesSurLaMemeRevision() throws Exception {
     // GIVEN
     var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
-    var premiere = preuveDAnnulationDeTransition(suivi);
-    var seconde = preuveDAnnulationDeTransition(suivi);
+    var premiere = propositionDAnnulationDeTransition(suivi);
+    var seconde = propositionDAnnulationDeTransition(suivi);
     var lecturesSansRecu = new CountDownLatch(2);
-    when(references.read(anyString())).thenAnswer(invocation -> {
+    doAnswer(invocation -> {
+      var resultat = invocation.callRealMethod();
       lecturesSansRecu.countDown();
       assertThat(lecturesSansRecu.await(10, TimeUnit.SECONDS)).as("Les deux commandes ont lu l absence de leur recu").isTrue();
-      return invocation.getArgument(0).equals("premiere-reference") ? premiere : seconde;
-    });
+      return resultat;
+    })
+      .when(recus)
+      .get(any());
     var premierActe = avecContexteDeRequete(() ->
-      catchThrowable(() -> confirmations.confirmer(suivi.id(), premiere.commande(), "premiere-reference", CONTEXTE_LEROY_IMPECCMOLD))
+      catchThrowable(() -> confirmations.confirmer(suivi.id(), premiere, CONTEXTE_LEROY_IMPECCMOLD))
     );
     var secondActe = avecContexteDeRequete(() ->
-      catchThrowable(() -> confirmations.confirmer(suivi.id(), seconde.commande(), "seconde-reference", CONTEXTE_LEROY_IMPECCMOLD))
+      catchThrowable(() -> confirmations.confirmer(suivi.id(), seconde, CONTEXTE_LEROY_IMPECCMOLD))
     );
     // WHEN THEN
     try (var executor = Executors.newFixedThreadPool(2)) {
@@ -348,16 +339,21 @@ class ConfirmationsDActesIT {
     var initial = suiviAvecTransitionDeMemeCategorie();
     var avant = ecriture == EcritureConcurrente.REOUVERTURE ? initial.cloture(clotureParLeroyA(LE_10_MAI_2026_A_17H)) : initial;
     var suivi = inTransaction(() -> suivis.create(avant));
-    var preuve = preuveDAnnulationDeTransition(suivi);
+    var proposition = propositionDAnnulationDeTransition(suivi);
     var confirmationEnCours = new CountDownLatch(1);
     var ecritureConcurrenteTerminee = new CountDownLatch(1);
-    when(references.read("reference-annulation")).thenAnswer(invocation -> {
-      confirmationEnCours.countDown();
-      assertThat(ecritureConcurrenteTerminee.await(10, TimeUnit.SECONDS)).isTrue();
-      return preuve;
-    });
+    doAnswer(invocation -> {
+      var resultat = invocation.callRealMethod();
+      if (confirmationEnCours.getCount() > 0) {
+        confirmationEnCours.countDown();
+        assertThat(ecritureConcurrenteTerminee.await(10, TimeUnit.SECONDS)).isTrue();
+      }
+      return resultat;
+    })
+      .when(recus)
+      .get(any());
     var action = avecContexteDeRequete(() ->
-      catchThrowable(() -> confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD))
+      catchThrowable(() -> confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD))
     );
     try (var executor = Executors.newSingleThreadExecutor()) {
       var confirmation = executor.submit(action::get);
@@ -380,7 +376,7 @@ class ConfirmationsDActesIT {
                 .evenement(com.glm.glmback.atelier.domain.EvenementDAtelierId.newId())
             )
             .agregat();
-          case ANNULATION -> atelier.annule(((ActeDeResolution.Annulation) preuve.acte()).commande());
+          case ANNULATION -> atelier.annule(((ActeDeResolution.Annulation) proposition.acte()).commande());
           case CLOTURE -> atelier.cloture(new ClotureAEnregistrer(suivi.id(), AUTEUR_MARTIN, Optional.of(LE_10_MAI_2026_A_17H)));
           case REOUVERTURE -> atelier.annuleLaCloture(suivi.id());
         };
@@ -405,7 +401,7 @@ class ConfirmationsDActesIT {
         assertThat(identitesCourantes).containsExactlyElementsOf(identitesInitiales);
       }
     }
-    assertThat(inTransaction(() -> recus.get(preuve.commande()))).isEmpty();
+    assertThat(inTransaction(() -> recus.get(proposition.commande()))).isEmpty();
   }
 
   @Test
@@ -413,18 +409,17 @@ class ConfirmationsDActesIT {
   void shouldRetrouverLActeApresUneReponsePerdueEtRelireLeSuiviActuel() {
     // GIVEN
     var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
-    var preuve = preuveDAnnulationDeTransition(suivi);
-    when(references.read("reference-annulation")).thenReturn(preuve);
-    confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD);
+    var proposition = propositionDAnnulationDeTransition(suivi);
+    confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD);
     var avantCloture = inTransaction(() -> suivis.get(suivi.id())).orElseThrow();
     var cloture = inTransaction(() -> suivis.update(avantCloture.cloture(clotureParLeroyA(LE_10_MAI_2026_A_17H))));
     // WHEN
-    var resultat = confirmations.verifier(suivi.id(), preuve.commande(), CONTEXTE_LEROY_IMPECCMOLD);
+    var resultat = confirmations.verifier(suivi.id(), proposition.commande(), CONTEXTE_LEROY_IMPECCMOLD);
     // THEN
     assertThat(resultat)
       .get()
       .satisfies(atteste -> {
-        assertThat(atteste.recu().preuve()).isEqualTo(preuve);
+        assertThat(atteste.recu().proposition()).isEqualTo(proposition);
         assertThat(atteste.recu().revisionEnregistree().value()).isEqualTo(1);
         assertThat(atteste.dossier().lecture().suivi()).isEqualTo(cloture);
         assertThat(atteste.dossier().lecture().suivi().revision().value()).isEqualTo(2);
@@ -437,29 +432,32 @@ class ConfirmationsDActesIT {
   void shouldGarderLAbsenceDeRecuNonConcluantePendantUneConfirmationEnCours() throws Exception {
     // GIVEN
     var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
-    var preuve = preuveDAnnulationDeTransition(suivi);
+    var proposition = propositionDAnnulationDeTransition(suivi);
     var preparationCommencee = new CountDownLatch(1);
     var termineLaPreparation = new CountDownLatch(1);
-    when(references.read("reference-annulation")).thenAnswer(invocation -> {
-      preparationCommencee.countDown();
-      assertThat(termineLaPreparation.await(10, TimeUnit.SECONDS)).isTrue();
-      return preuve;
-    });
-    var action = avecContexteDeRequete(() ->
-      confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD)
-    );
+    doAnswer(invocation -> {
+      var resultat = invocation.callRealMethod();
+      if (preparationCommencee.getCount() > 0) {
+        preparationCommencee.countDown();
+        assertThat(termineLaPreparation.await(10, TimeUnit.SECONDS)).isTrue();
+      }
+      return resultat;
+    })
+      .when(recus)
+      .get(any());
+    var action = avecContexteDeRequete(() -> confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD));
     try (var executor = Executors.newSingleThreadExecutor()) {
       var premiereRequete = executor.submit(action::get);
       try {
         assertThat(preparationCommencee.await(10, TimeUnit.SECONDS)).isTrue();
         // WHEN THEN
-        assertThat(confirmations.verifier(suivi.id(), preuve.commande(), CONTEXTE_LEROY_IMPECCMOLD)).isEmpty();
+        assertThat(confirmations.verifier(suivi.id(), proposition.commande(), CONTEXTE_LEROY_IMPECCMOLD)).isEmpty();
       } finally {
         termineLaPreparation.countDown();
       }
       assertThat(premiereRequete.get(15, TimeUnit.SECONDS)).isNotNull();
     }
-    assertThat(confirmations.verifier(suivi.id(), preuve.commande(), CONTEXTE_LEROY_IMPECCMOLD)).isPresent();
+    assertThat(confirmations.verifier(suivi.id(), proposition.commande(), CONTEXTE_LEROY_IMPECCMOLD)).isPresent();
   }
 
   @Test
@@ -467,14 +465,13 @@ class ConfirmationsDActesIT {
   void shouldGarderLAbsenceDeRecuNonConcluanteApresInsertionAvantCommit() throws Exception {
     // GIVEN
     var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
-    var preuve = preuveDAnnulationDeTransition(suivi);
-    when(references.read("reference-annulation")).thenReturn(preuve);
+    var proposition = propositionDAnnulationDeTransition(suivi);
     var recuInsere = new CountDownLatch(1);
     var autoriseLeCommit = new CountDownLatch(1);
     var action = avecContexteDeRequete(() ->
       transactions.execute(status -> {
-        var resultat = confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD);
-        assertThat(recus.get(preuve.commande())).contains(resultat.recu());
+        var resultat = confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD);
+        assertThat(recus.get(proposition.commande())).contains(resultat.recu());
         recuInsere.countDown();
         try {
           assertThat(autoriseLeCommit.await(10, TimeUnit.SECONDS)).isTrue();
@@ -489,12 +486,12 @@ class ConfirmationsDActesIT {
       var confirmation = executor.submit(action::get);
       try {
         assertThat(recuInsere.await(10, TimeUnit.SECONDS)).isTrue();
-        assertThat(confirmations.verifier(suivi.id(), preuve.commande(), CONTEXTE_LEROY_IMPECCMOLD)).isEmpty();
+        assertThat(confirmations.verifier(suivi.id(), proposition.commande(), CONTEXTE_LEROY_IMPECCMOLD)).isEmpty();
       } finally {
         autoriseLeCommit.countDown();
       }
       var resultat = confirmation.get(15, TimeUnit.SECONDS);
-      assertThat(confirmations.verifier(suivi.id(), preuve.commande(), CONTEXTE_LEROY_IMPECCMOLD))
+      assertThat(confirmations.verifier(suivi.id(), proposition.commande(), CONTEXTE_LEROY_IMPECCMOLD))
         .get()
         .satisfies(atteste -> assertThat(atteste.recu()).isEqualTo(resultat.recu()));
     }
@@ -505,11 +502,10 @@ class ConfirmationsDActesIT {
   void shouldReserverEtAssocierLIdentiteProspectiveDeLaRegularisation() {
     // GIVEN
     var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
-    var preuve = preuveDeRegularisationDeFin(suivi);
-    var evenement = preuve.evenement().orElseThrow();
-    when(references.read("reference-regularisation")).thenReturn(preuve);
+    var proposition = propositionDeRegularisationDeFin(suivi);
+    var evenement = proposition.evenement().orElseThrow();
     // WHEN
-    var resultat = confirmations.confirmer(suivi.id(), preuve.commande(), "reference-regularisation", CONTEXTE_LEROY_IMPECCMOLD);
+    var resultat = confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD);
     // THEN
     assertThat(
       inTransaction(() ->
@@ -534,7 +530,7 @@ class ConfirmationsDActesIT {
       .satisfies(fait ->
         assertThat(fait.horodatage().dateDeSurvenue()).isEqualTo(java.time.Instant.parse("2026-05-10T12:00:00.123456789Z"))
       );
-    assertThat(inTransaction(() -> recus.get(preuve.commande()))).contains(resultat.recu());
+    assertThat(inTransaction(() -> recus.get(proposition.commande()))).contains(resultat.recu());
   }
 
   @Test
@@ -542,37 +538,34 @@ class ConfirmationsDActesIT {
   void shouldRefuserUneCollisionDIdentiteSansRemplacementImplicite() {
     // GIVEN
     var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
-    var preuve = preuveDeRegularisationDeFin(suivi);
-    var evenement = preuve.evenement().orElseThrow();
-    when(references.read("reference-regularisation")).thenReturn(preuve);
+    var proposition = propositionDeRegularisationDeFin(suivi);
+    var evenement = proposition.evenement().orElseThrow();
     assertThat(inTransaction(() -> identites.reserveHorsPupitre(evenement.uuid()))).isTrue();
     // WHEN THEN
-    assertThatThrownBy(() ->
-      confirmations.confirmer(suivi.id(), preuve.commande(), "reference-regularisation", CONTEXTE_LEROY_IMPECCMOLD)
-    ).isExactlyInstanceOf(ApercuObsoleteException.class);
+    assertThatThrownBy(() -> confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD)).isExactlyInstanceOf(
+      ApercuObsoleteException.class
+    );
     assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(suivi);
-    assertThat(inTransaction(() -> recus.get(preuve.commande()))).isEmpty();
+    assertThat(inTransaction(() -> recus.get(proposition.commande()))).isEmpty();
   }
 
   @Test
   @WithTenant("impeccmold")
-  void shouldRejouerAvantLeCodecEtLExpirationSansRevaliderLeMetier() {
+  void shouldRejouerApresUnChangementDeNomSansRevaliderLeMetier() {
     // GIVEN
     var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
-    var preuve = preuveDAnnulationDeTransition(suivi);
-    when(references.read("reference-annulation")).thenReturn(preuve);
-    var premier = confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD);
+    var proposition = propositionDAnnulationDeTransition(suivi);
+    var premier = confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD);
     var courant = inTransaction(() -> suivis.update(premier.dossier().lecture().suivi().cloture(clotureParLeroyA(LE_10_MAI_2026_A_17H))));
-    when(clock.now()).thenReturn(preuve.expireLe().plusSeconds(1));
-    when(references.read(anyString())).thenThrow(new ApercuInvalideException());
+    when(clock.now()).thenReturn(LE_10_MAI_2026_A_17H.plusSeconds(3600));
     when(operateurs.get(any())).thenReturn(Optional.empty());
-    clearInvocations(references, empreintes, operateurs);
+    clearInvocations(empreintes, operateurs);
     // WHEN
-    var rejeu = confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_RENOMME_IMPECCMOLD);
+    var rejeu = confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_RENOMME_IMPECCMOLD);
     // THEN
     assertThat(rejeu.recu()).isEqualTo(premier.recu());
     assertThat(rejeu.dossier().lecture().suivi()).isEqualTo(courant);
-    verifyNoInteractions(references, empreintes, operateurs);
+    verifyNoInteractions(empreintes, operateurs);
   }
 
   @Test
@@ -580,19 +573,18 @@ class ConfirmationsDActesIT {
   void shouldRecontrolerLeRoleSurLeRejeuEtLaVerification() {
     // GIVEN
     var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
-    var preuve = preuveDAnnulationDeTransition(suivi);
-    when(references.read("reference-annulation")).thenReturn(preuve);
-    confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD);
+    var proposition = propositionDAnnulationDeTransition(suivi);
+    confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD);
     var authentication = (JwtAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
     SecurityContextHolder.getContext().setAuthentication(
       new JwtAuthenticationToken(authentication.getToken(), List.of(new SimpleGrantedAuthority("ROLE_USER")))
     );
     try {
       // WHEN THEN
-      assertThatThrownBy(() ->
-        confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD)
-      ).isInstanceOf(AccessDeniedException.class);
-      assertThatThrownBy(() -> confirmations.verifier(suivi.id(), preuve.commande(), CONTEXTE_LEROY_IMPECCMOLD)).isInstanceOf(
+      assertThatThrownBy(() -> confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD)).isInstanceOf(
+        AccessDeniedException.class
+      );
+      assertThatThrownBy(() -> confirmations.verifier(suivi.id(), proposition.commande(), CONTEXTE_LEROY_IMPECCMOLD)).isInstanceOf(
         AccessDeniedException.class
       );
     } finally {
@@ -605,13 +597,12 @@ class ConfirmationsDActesIT {
   void shouldRefuserUnSuiviIntrouvableSansEcrireDeRecu() {
     // GIVEN
     var suivi = suiviAvecTransitionDeMemeCategorie();
-    var preuve = preuveDAnnulationDeTransition(suivi);
-    when(references.read("reference-annulation")).thenReturn(preuve);
+    var proposition = propositionDAnnulationDeTransition(suivi);
     // WHEN THEN
-    assertThatThrownBy(() ->
-      confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD)
-    ).isExactlyInstanceOf(SuiviDAtelierIntrouvableException.class);
-    assertThat(inTransaction(() -> recus.get(preuve.commande()))).isEmpty();
+    assertThatThrownBy(() -> confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD)).isExactlyInstanceOf(
+      SuiviDAtelierIntrouvableException.class
+    );
+    assertThat(inTransaction(() -> recus.get(proposition.commande()))).isEmpty();
   }
 
   @Test
@@ -619,12 +610,11 @@ class ConfirmationsDActesIT {
   void shouldCorrigerEnUnSeulActeAvecLAuteurActuelEtUnRecuExact() {
     // GIVEN
     var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
-    var preuve = preuveDeCorrectionDeTransition(suivi);
-    var remplacement = preuve.evenement().orElseThrow();
-    var original = suivi.journal().evenement(preuve.adresse().pointage()).orElseThrow();
-    when(references.read("reference-correction")).thenReturn(preuve);
+    var proposition = propositionDeCorrectionDeTransition(suivi);
+    var remplacement = proposition.evenement().orElseThrow();
+    var original = suivi.journal().evenement(proposition.adresse().pointage()).orElseThrow();
     // WHEN
-    var resultat = confirmations.confirmer(suivi.id(), preuve.commande(), "reference-correction", CONTEXTE_LEROY_RENOMME_IMPECCMOLD);
+    var resultat = confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_RENOMME_IMPECCMOLD);
     // THEN
     var relu = resultat.dossier().lecture().suivi();
     assertThat(relu.revision().value()).isEqualTo(1);
@@ -648,7 +638,7 @@ class ConfirmationsDActesIT {
         assertThat(fait.dateDeSurvenue()).isEqualTo(java.time.Instant.parse("2026-05-10T12:00:00.123456789Z"));
       });
     assertThat(resultat.recu().evenementsTouches()).containsExactly(original.id(), remplacement);
-    assertThat(inTransaction(() -> recus.get(preuve.commande()))).contains(resultat.recu());
+    assertThat(inTransaction(() -> recus.get(proposition.commande()))).contains(resultat.recu());
   }
 
   @Test
@@ -656,9 +646,8 @@ class ConfirmationsDActesIT {
   void shouldAnnulerEnsembleLesFaitsProjectionsReservationEtRecuSurRollback() {
     // GIVEN
     var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
-    var preuve = preuveDeCorrectionDeTransition(suivi);
-    var evenement = preuve.evenement().orElseThrow();
-    when(references.read("reference-correction")).thenReturn(preuve);
+    var proposition = propositionDeCorrectionDeTransition(suivi);
+    var evenement = proposition.evenement().orElseThrow();
     var projectionsAvant = inTransaction(() ->
       entities
         .createNativeQuery("select * from activite_d_atelier where suivi_id = ? order by id")
@@ -667,15 +656,15 @@ class ConfirmationsDActesIT {
     );
     // WHEN
     transactions.execute(status -> {
-      var resultat = confirmations.confirmer(suivi.id(), preuve.commande(), "reference-correction", CONTEXTE_LEROY_IMPECCMOLD);
+      var resultat = confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD);
       assertThat(resultat.recu().revisionEnregistree().value()).isEqualTo(1);
-      assertThat(recus.get(preuve.commande())).contains(resultat.recu());
+      assertThat(recus.get(proposition.commande())).contains(resultat.recu());
       status.setRollbackOnly();
       return resultat;
     });
     // THEN
     assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(suivi);
-    assertThat(inTransaction(() -> recus.get(preuve.commande()))).isEmpty();
+    assertThat(inTransaction(() -> recus.get(proposition.commande()))).isEmpty();
     assertThat(
       inTransaction(() ->
         (
@@ -701,9 +690,9 @@ class ConfirmationsDActesIT {
     // GIVEN
     var premierSuivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
     var secondSuivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
-    var premiere = preuveDeCorrectionDeTransition(premierSuivi);
+    var premiere = propositionDeCorrectionDeTransition(premierSuivi);
     var seconde = ConcurrenceDesActesFixture.avecCommande(
-      new ConcurrenceDesActesFixture.ChangementDeCommande(preuveDeCorrectionDeTransition(secondSuivi), premiere.commande())
+      new ConcurrenceDesActesFixture.ChangementDeCommande(propositionDeCorrectionDeTransition(secondSuivi), premiere.commande())
     );
     var premiereProjection = inTransaction(() ->
       entities
@@ -717,8 +706,6 @@ class ConfirmationsDActesIT {
         .setParameter(1, secondSuivi.id().uuid())
         .getResultList()
     );
-    when(references.read("premiere-reference")).thenReturn(premiere);
-    when(references.read("seconde-reference")).thenReturn(seconde);
     var preparationsTerminees = new CountDownLatch(2);
     when(empreintes.calcule(any(), any())).thenAnswer(invocation -> {
       preparationsTerminees.countDown();
@@ -728,10 +715,10 @@ class ConfirmationsDActesIT {
       return "consequences-annulation";
     });
     var premierActe = avecContexteDeRequete(() ->
-      catchThrowable(() -> confirmations.confirmer(premierSuivi.id(), premiere.commande(), "premiere-reference", CONTEXTE_LEROY_IMPECCMOLD))
+      catchThrowable(() -> confirmations.confirmer(premierSuivi.id(), premiere, CONTEXTE_LEROY_IMPECCMOLD))
     );
     var secondActe = avecContexteDeRequete(() ->
-      catchThrowable(() -> confirmations.confirmer(secondSuivi.id(), seconde.commande(), "seconde-reference", CONTEXTE_LEROY_IMPECCMOLD))
+      catchThrowable(() -> confirmations.confirmer(secondSuivi.id(), seconde, CONTEXTE_LEROY_IMPECCMOLD))
     );
     // WHEN THEN
     try (var executor = Executors.newFixedThreadPool(2)) {
@@ -742,9 +729,9 @@ class ConfirmationsDActesIT {
       assertThat(issues).filteredOn(java.util.Objects::nonNull).singleElement().isExactlyInstanceOf(ConfirmationReutiliseeException.class);
     }
     var recu = inTransaction(() -> recus.get(premiere.commande())).orElseThrow();
-    var premierGagne = recu.preuve().adresse().suivi().equals(premierSuivi.id());
+    var premierGagne = recu.proposition().adresse().suivi().equals(premierSuivi.id());
     var perdant = premierGagne ? secondSuivi : premierSuivi;
-    var preuvePerdante = premierGagne ? seconde : premiere;
+    var propositionPerdante = premierGagne ? seconde : premiere;
     var projectionPerdante = premierGagne ? secondeProjection : premiereProjection;
     assertThat(inTransaction(() -> suivis.get(perdant.id()))).contains(perdant);
     assertThat(
@@ -762,7 +749,7 @@ class ConfirmationsDActesIT {
         (
           (Number) entities
             .createNativeQuery("select count(*) from identite_evenement_atelier where id = ?")
-            .setParameter(1, preuvePerdante.evenement().orElseThrow().uuid())
+            .setParameter(1, propositionPerdante.evenement().orElseThrow().uuid())
             .getSingleResult()
         ).longValue()
       )
@@ -772,15 +759,42 @@ class ConfirmationsDActesIT {
         (
           (Number) entities
             .createNativeQuery("select count(*) from identite_evenement_atelier where id = ?")
-            .setParameter(1, recu.preuve().evenement().orElseThrow().uuid())
+            .setParameter(1, recu.proposition().evenement().orElseThrow().uuid())
             .getSingleResult()
         ).longValue()
       )
     ).isEqualTo(1);
-    var gagnant = inTransaction(() -> suivis.get(recu.preuve().adresse().suivi())).orElseThrow();
+    var gagnant = inTransaction(() -> suivis.get(recu.proposition().adresse().suivi())).orElseThrow();
     assertThat(gagnant.revision().value()).isEqualTo(1);
     assertThat(gagnant.journal().evenements()).hasSize(3);
     assertThat(recu.revisionEnregistree().value()).isEqualTo(1);
+  }
+
+  @ParameterizedTest
+  @EnumSource(value = EtatDAdresseDossier.class, names = { "ANCRE_ANNULEE", "INTROUVABLE", "HORS_CONFLIT" })
+  @WithTenant("impeccmold")
+  void shouldRefuserUneAdresseObsoleteMemeSiLaRevisionEtLEmpreinteSontCourantes(EtatDAdresseDossier etat) {
+    var conflit = suiviAvecTransitionDeMemeCategorie();
+    var transition = conflit.journal().evenements().getLast();
+    var suivi = inTransaction(() -> suivis.create(conflit.annule(transition.id(), annulationParLeroy())));
+    var base = propositionDAnnulationDeTransition(suivi);
+    var ancre = switch (etat) {
+      case ANCRE_ANNULEE -> transition.id();
+      case INTROUVABLE -> EvenementDAtelierId.newId();
+      default -> suivi.journal().evenements().getFirst().id();
+    };
+    var proposition = PropositionAConfirmer.builder()
+      .commande(base.commande())
+      .adresse(new AdresseDossierConflit(suivi.id(), ancre))
+      .revision(suivi.revision())
+      .acte(base.acte())
+      .evenement(base.evenement())
+      .empreinteConsequences(base.empreinteConsequences());
+    assertThatThrownBy(() -> confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD)).isExactlyInstanceOf(
+      ApercuObsoleteException.class
+    );
+    assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(suivi);
+    assertThat(inTransaction(() -> recus.get(proposition.commande()))).isEmpty();
   }
 
   private static <T> Supplier<T> avecContexteDeRequete(Supplier<T> action) {

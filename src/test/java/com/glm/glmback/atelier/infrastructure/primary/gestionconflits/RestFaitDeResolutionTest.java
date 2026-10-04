@@ -15,8 +15,8 @@ class RestFaitDeResolutionTest {
 
   @Test
   void shouldRefuserUneOuverturePointeeCommeUneFin() {
-    var preuve = preuveDeRegularisationDeFin(suiviAvecTransitionDeMemeCategorie());
-    var fait = ((RestActeDeResolution.Regularisation) RestActeDeResolution.from(preuve.acte())).fait();
+    var proposition = propositionDeRegularisationDeFin(suiviAvecTransitionDeMemeCategorie());
+    var fait = ((RestActeDeResolution.Regularisation) RestActeDeResolution.from(proposition.acte())).fait();
     assertThatBean(fait).isValid();
     var incoherent = new RestFaitDeResolution(
       fait.type(),
@@ -31,16 +31,16 @@ class RestFaitDeResolutionTest {
 
   @Test
   void shouldRefuserUneFinSansActiviteVisee() {
-    var preuve = preuveDeRegularisationDeFin(suiviAvecTransitionDeMemeCategorie());
-    var fait = ((RestActeDeResolution.Regularisation) RestActeDeResolution.from(preuve.acte())).fait();
+    var proposition = propositionDeRegularisationDeFin(suiviAvecTransitionDeMemeCategorie());
+    var fait = ((RestActeDeResolution.Regularisation) RestActeDeResolution.from(proposition.acte())).fait();
     var incoherent = new RestFaitDeResolution(fait.type(), fait.intention(), null, fait.operateur(), fait.poste(), fait.instant());
     assertThatBean(incoherent).hasInvalidProperty("cibleConformeALIntention");
   }
 
   @Test
   void shouldRefuserUnInstantQuiNePeutPasEtreLuSansPasserAuDomaine() {
-    var preuve = preuveDeRegularisationDeFin(suiviAvecTransitionDeMemeCategorie());
-    var fait = ((RestActeDeResolution.Regularisation) RestActeDeResolution.from(preuve.acte())).fait();
+    var proposition = propositionDeRegularisationDeFin(suiviAvecTransitionDeMemeCategorie());
+    var fait = ((RestActeDeResolution.Regularisation) RestActeDeResolution.from(proposition.acte())).fait();
     var incoherent = new RestFaitDeResolution(
       fait.type(),
       fait.intention(),
@@ -56,8 +56,8 @@ class RestFaitDeResolutionTest {
   @NullAndEmptySource
   @ValueSource(strings = { " " })
   void shouldLaisserLInstantManquantASaContrainteObligatoire(String instant) {
-    var preuve = preuveDeRegularisationDeFin(suiviAvecTransitionDeMemeCategorie());
-    var fait = ((RestActeDeResolution.Regularisation) RestActeDeResolution.from(preuve.acte())).fait();
+    var proposition = propositionDeRegularisationDeFin(suiviAvecTransitionDeMemeCategorie());
+    var fait = ((RestActeDeResolution.Regularisation) RestActeDeResolution.from(proposition.acte())).fait();
     var incomplet = new RestFaitDeResolution(fait.type(), fait.intention(), fait.activiteVisee(), fait.operateur(), fait.poste(), instant);
     assertThatBean(incomplet).hasInvalidProperty("instant");
   }

@@ -12,14 +12,14 @@ import org.junit.jupiter.api.Test;
 @UnitTest
 class Sha256EmpreintesDesConsequencesTest {
 
-  private final Sha256EmpreintesDesConsequences empreintes = new Sha256EmpreintesDesConsequences(new CryptographieDesReferences());
+  private final Sha256EmpreintesDesConsequences empreintes = new Sha256EmpreintesDesConsequences(new EmpreinteSha256());
 
   @Test
   void shouldNePasInventerDEmpreinteSiLeFournisseurEchoue() throws GeneralSecurityException {
-    var cryptographie = mock(CryptographieDesReferences.class);
+    var empreinte = mock(EmpreinteSha256.class);
     var indisponible = new GeneralSecurityException("fournisseur indisponible");
-    when(cryptographie.empreinte(any())).thenThrow(indisponible);
-    var calcul = new Sha256EmpreintesDesConsequences(cryptographie);
+    when(empreinte.empreinte(any())).thenThrow(indisponible);
+    var calcul = new Sha256EmpreintesDesConsequences(empreinte);
     assertThatThrownBy(() -> calcul.calcule(suiviDAtelierEngage(), LE_10_MAI_2026_A_17H))
       .isExactlyInstanceOf(IllegalStateException.class)
       .hasCause(indisponible);

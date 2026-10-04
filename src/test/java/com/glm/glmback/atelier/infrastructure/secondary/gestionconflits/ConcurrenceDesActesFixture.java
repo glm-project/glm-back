@@ -1,25 +1,32 @@
 package com.glm.glmback.atelier.infrastructure.secondary.gestionconflits;
 
-import com.glm.glmback.atelier.application.gestionconflits.PreuveDApercu;
+import com.glm.glmback.atelier.application.gestionconflits.PropositionAConfirmer;
 import java.util.UUID;
 
 final class ConcurrenceDesActesFixture {
 
   private ConcurrenceDesActesFixture() {}
 
-  static PreuveDApercu avecCommande(ChangementDeCommande donnees) {
-    var preuve = donnees.preuve();
-    return PreuveDApercu.builder()
+  static PropositionAConfirmer avecCommande(ChangementDeCommande donnees) {
+    var proposition = donnees.proposition();
+    return PropositionAConfirmer.builder()
       .commande(donnees.commande())
-      .adresse(preuve.adresse())
-      .revision(preuve.revision())
-      .contexte(preuve.contexte())
-      .acte(preuve.acte())
-      .evenement(preuve.evenement())
-      .evaluation(preuve.evaluation())
-      .expireLe(preuve.expireLe())
-      .empreinteConsequences(preuve.empreinteConsequences());
+      .adresse(proposition.adresse())
+      .revision(proposition.revision())
+      .acte(proposition.acte())
+      .evenement(proposition.evenement())
+      .empreinteConsequences(proposition.empreinteConsequences());
   }
 
-  record ChangementDeCommande(PreuveDApercu preuve, UUID commande) {}
+  static PropositionAConfirmer avecEmpreinte(PropositionAConfirmer proposition) {
+    return PropositionAConfirmer.builder()
+      .commande(proposition.commande())
+      .adresse(proposition.adresse())
+      .revision(proposition.revision())
+      .acte(proposition.acte())
+      .evenement(proposition.evenement())
+      .empreinteConsequences("consequences-modifiees");
+  }
+
+  record ChangementDeCommande(PropositionAConfirmer proposition, UUID commande) {}
 }

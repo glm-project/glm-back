@@ -22,10 +22,10 @@ final class Sha256EmpreintesDesConsequences implements EmpreintesDesConsequences
     .addMixIn(Horodatage.class, MetadonneesDHorodatage.class)
     .addMixIn(SuiviDAtelier.class, RevisionTechnique.class)
     .build();
-  private final CryptographieDesReferences cryptographie;
+  private final EmpreinteSha256 empreinte;
 
-  Sha256EmpreintesDesConsequences(CryptographieDesReferences cryptographie) {
-    this.cryptographie = cryptographie;
+  Sha256EmpreintesDesConsequences(EmpreinteSha256 empreinte) {
+    this.empreinte = empreinte;
   }
 
   @Override
@@ -39,7 +39,7 @@ final class Sha256EmpreintesDesConsequences implements EmpreintesDesConsequences
         .toList()
     );
     try {
-      return HexFormat.of().formatHex(cryptographie.empreinte(JSON.writeValueAsString(consequences).getBytes(StandardCharsets.UTF_8)));
+      return HexFormat.of().formatHex(empreinte.empreinte(JSON.writeValueAsString(consequences).getBytes(StandardCharsets.UTF_8)));
     } catch (GeneralSecurityException e) {
       throw new IllegalStateException("Impossible de calculer les consequences de l'acte", e);
     }

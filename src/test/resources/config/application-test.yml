@@ -33,10 +33,3 @@ application:
         schema: impeccmold
       - id: katilys
         schema: katilys
-
-atelier:
-  resolution:
-    apercus:
-      cle-active: test
-      cles:
-        test: Z2xtLXByZXZpZXctdGVzdC1zdWl0ZV9fX19fX19fX18=

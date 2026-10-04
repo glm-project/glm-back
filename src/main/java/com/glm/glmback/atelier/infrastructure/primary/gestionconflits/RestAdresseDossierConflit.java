@@ -1,9 +1,10 @@
 package com.glm.glmback.atelier.infrastructure.primary.gestionconflits;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 
 record RestAdresseDossierConflit(
-  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) UUID suivi,
-  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) UUID pointage
+  @NotNull @Schema(requiredMode = Schema.RequiredMode.REQUIRED) UUID suivi,
+  @NotNull @Schema(requiredMode = Schema.RequiredMode.REQUIRED) UUID pointage
 ) {}

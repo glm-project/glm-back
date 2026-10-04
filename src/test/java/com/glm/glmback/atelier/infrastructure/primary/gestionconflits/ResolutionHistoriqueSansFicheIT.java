@@ -112,7 +112,22 @@ class ResolutionHistoriqueSansFicheIT {
       .isEqualTo("operateur introuvable");
     assertThat(get(http, dossierUri).get("revision")).isEqualTo(dossier.get("revision"));
     assertThat(get(http, uri).get("journal")).isEqualTo(journal);
-    var resultat = post(http, uri + "/confirmations-de-resolution", Map.of("commande", commande, "reference", apercu.get("reference")));
+    var resultat = post(
+      http,
+      uri + "/confirmations-de-resolution",
+      Map.of(
+        "commande",
+        commande,
+        "adresse",
+        apercu.get("adresse"),
+        "revision",
+        apercu.get("revision"),
+        "acte",
+        apercu.get("acte"),
+        "empreinteConsequences",
+        apercu.get("empreinteConsequences")
+      )
+    );
     assertThat(resultat.get("kind")).isEqualTo("ENREGISTREE");
     var dossierApres = (Map<String, Object>) resultat.get("dossier");
     assertThat((List<?>) dossierApres.get("activites")).isEmpty();

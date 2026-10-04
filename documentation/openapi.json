@@ -476,7 +476,7 @@
         "type" : "object"
       },
       "RestApercuDeResolution" : {
-        "description" : "L'acte exact et ses consequences autoritaires, sans ecriture. La reference opaque est liee a la commande, l'adresse, la revision et l'identite authentifiee.",
+        "description" : "L'acte exact et ses consequences autoritaires, sans ecriture. La proposition explicite est recalculee a la confirmation.",
         "properties" : {
           "acte" : {
             "$ref" : "#/components/schemas/RestActeDeResolution"
@@ -494,15 +494,15 @@
             "format" : "uuid",
             "type" : "string"
           },
+          "empreinteConsequences" : {
+            "type" : "string"
+          },
           "evaluation" : {
             "format" : "date-time",
             "type" : "string"
           },
-          "expireLe" : {
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "reference" : {
+          "evenement" : {
+            "format" : "uuid",
             "type" : "string"
           },
           "revision" : {
@@ -510,7 +510,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "acte", "adresse", "apres", "avant", "commande", "evaluation", "expireLe", "reference", "revision" ],
+        "required" : [ "acte", "adresse", "apres", "avant", "commande", "empreinteConsequences", "evaluation", "revision" ],
         "type" : "object"
       },
       "RestChoixDeResolution" : {
@@ -566,15 +566,29 @@
       },
       "RestConfirmationAEnregistrer" : {
         "properties" : {
+          "acte" : {
+            "$ref" : "#/components/schemas/RestActeDeResolution"
+          },
+          "adresse" : {
+            "$ref" : "#/components/schemas/RestAdresseDossierConflit"
+          },
           "commande" : {
             "format" : "uuid",
             "type" : "string"
           },
-          "reference" : {
+          "empreinteConsequences" : {
             "type" : "string"
+          },
+          "evenement" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "revision" : {
+            "format" : "int64",
+            "type" : "integer"
           }
         },
-        "required" : [ "commande", "reference" ],
+        "required" : [ "acte", "adresse", "commande", "empreinteConsequences", "revision" ],
         "type" : "object"
       },
       "RestConfirmationDeResolution" : {
@@ -3103,7 +3117,7 @@
     },
     "/api/atelier/suivis/{id}/conflits/{pointage}/apercus" : {
       "post" : {
-        "description" : "Reserve au gestionnaire. Prepare le meme acte que sa confirmation, sans ecrire ni reserver son identifiant. Une revision perimee est refusee ; la reference authentifiee expire selon la politique serveur.",
+        "description" : "Reserve au gestionnaire. Prepare le meme acte que sa confirmation, sans ecrire ni reserver son identifiant. Une revision perimee est refusee ; la proposition devient obsolete si ses consequences changent.",
         "operationId" : "apercu",
         "parameters" : [ {
           "in" : "path",
@@ -3141,7 +3155,7 @@
                 }
               }
             },
-            "description" : "L'acte exact, avant/apres, l'adresse et la reference opaque de sa commande."
+            "description" : "L'acte exact, avant/apres, l'adresse et les metadonnees explicites de sa commande."
           },
           "400" : {
             "content" : {
@@ -3506,7 +3520,7 @@
             "description" : "OK"
           }
         },
-        "summary" : "Confirmer une reference d apercu une seule fois et rendre son recu avec le dossier courant",
+        "summary" : "Confirmer une proposition explicite une seule fois et rendre son recu avec le dossier courant",
         "tags" : [ "confirmation-de-resolution-resource" ]
       }
     },

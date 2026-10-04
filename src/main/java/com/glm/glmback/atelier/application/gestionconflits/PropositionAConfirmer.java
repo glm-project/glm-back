@@ -4,45 +4,52 @@ import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.RevisionDuSuivi;
 import com.glm.glmback.atelier.domain.gestionconflits.ActeDeResolution;
 import com.glm.glmback.atelier.domain.gestionconflits.AdresseDossierConflit;
+import com.glm.glmback.atelier.domain.gestionconflits.PropositionInvalideException;
 import com.glm.glmback.shared.error.domain.Assert;
-import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
-public record PreuveDApercu(
+public record PropositionAConfirmer(
   UUID commande,
   AdresseDossierConflit adresse,
   RevisionDuSuivi revision,
-  ContexteDeResolution contexte,
   ActeDeResolution acte,
   Optional<EvenementDAtelierId> evenement,
-  Instant evaluation,
-  Instant expireLe,
   String empreinteConsequences
 ) {
-  public PreuveDApercu {
+  public PropositionAConfirmer {
     Assert.notNull("commande", commande);
     Assert.notNull("adresse", adresse);
     Assert.notNull("revision", revision);
-    Assert.notNull("contexte", contexte);
     Assert.notNull("acte", acte);
     Assert.notNull("evenement", evenement);
-    Assert.notNull("evaluation", evaluation);
-    Assert.field("expiration", expireLe).afterOrAt(evaluation);
     Assert.notBlank("empreinte des consequences", empreinteConsequences);
+    var suivi = switch (acte) {
+      case ActeDeResolution.Annulation annulation -> annulation.commande().suivi();
+      case ActeDeResolution.Correction correction -> correction.commande().remplacement().suivi();
+      case ActeDeResolution.Regularisation regularisation -> regularisation.commande().suivi();
+    };
+    if (
+      !adresse.suivi().equals(suivi)
+      || (acte instanceof ActeDeResolution.Annulation) == evenement.isPresent()
+      || evenement.map(id -> id.uuid().equals(commande)).orElse(false)
+    ) {
+      throw new PropositionInvalideException();
+    }
   }
 
-  private PreuveDApercu(Builder builder) {
-    this(
-      builder.commande,
-      builder.adresse,
-      builder.revision,
-      builder.contexte,
-      builder.acte,
-      builder.evenement,
-      builder.evaluation,
-      builder.expireLe,
-      builder.empreinte
+  private PropositionAConfirmer(Builder builder) {
+    this(builder.commande, builder.adresse, builder.revision, builder.acte, builder.evenement, builder.empreinte);
+  }
+
+  public boolean memeDemandeQue(PropositionAConfirmer reprise) {
+    return (
+      commande.equals(reprise.commande())
+      && adresse.equals(reprise.adresse())
+      && revision.equals(reprise.revision())
+      && acte.memeDemandeQue(reprise.acte())
+      && evenement.equals(reprise.evenement())
+      && empreinteConsequences.equals(reprise.empreinteConsequences())
     );
   }
 
@@ -51,26 +58,14 @@ public record PreuveDApercu(
   }
 
   private static final class Builder
-    implements
-      CommandeBuilder,
-      AdresseBuilder,
-      RevisionBuilder,
-      ContexteBuilder,
-      ActeBuilder,
-      EvenementBuilder,
-      EvaluationBuilder,
-      ExpirationBuilder,
-      EmpreinteBuilder
+    implements CommandeBuilder, AdresseBuilder, RevisionBuilder, ActeBuilder, EvenementBuilder, EmpreinteBuilder
   {
 
     private UUID commande;
     private AdresseDossierConflit adresse;
     private RevisionDuSuivi revision;
-    private ContexteDeResolution contexte;
     private ActeDeResolution acte;
     private Optional<EvenementDAtelierId> evenement;
-    private Instant evaluation;
-    private Instant expireLe;
     private String empreinte;
 
     @Override
@@ -86,14 +81,8 @@ public record PreuveDApercu(
     }
 
     @Override
-    public ContexteBuilder revision(RevisionDuSuivi value) {
+    public ActeBuilder revision(RevisionDuSuivi value) {
       revision = value;
-      return this;
-    }
-
-    @Override
-    public ActeBuilder contexte(ContexteDeResolution value) {
-      contexte = value;
       return this;
     }
 
@@ -104,27 +93,15 @@ public record PreuveDApercu(
     }
 
     @Override
-    public EvaluationBuilder evenement(Optional<EvenementDAtelierId> value) {
+    public EmpreinteBuilder evenement(Optional<EvenementDAtelierId> value) {
       evenement = value;
       return this;
     }
 
     @Override
-    public ExpirationBuilder evaluation(Instant value) {
-      evaluation = value;
-      return this;
-    }
-
-    @Override
-    public EmpreinteBuilder expireLe(Instant value) {
-      expireLe = value;
-      return this;
-    }
-
-    @Override
-    public PreuveDApercu empreinteConsequences(String value) {
+    public PropositionAConfirmer empreinteConsequences(String value) {
       empreinte = value;
-      return new PreuveDApercu(this);
+      return new PropositionAConfirmer(this);
     }
   }
 
@@ -137,11 +114,7 @@ public record PreuveDApercu(
   }
 
   public interface RevisionBuilder {
-    ContexteBuilder revision(RevisionDuSuivi revision);
-  }
-
-  public interface ContexteBuilder {
-    ActeBuilder contexte(ContexteDeResolution contexte);
+    ActeBuilder revision(RevisionDuSuivi revision);
   }
 
   public interface ActeBuilder {
@@ -149,18 +122,10 @@ public record PreuveDApercu(
   }
 
   public interface EvenementBuilder {
-    EvaluationBuilder evenement(Optional<EvenementDAtelierId> evenement);
-  }
-
-  public interface EvaluationBuilder {
-    ExpirationBuilder evaluation(Instant evaluation);
-  }
-
-  public interface ExpirationBuilder {
-    EmpreinteBuilder expireLe(Instant expireLe);
+    EmpreinteBuilder evenement(Optional<EvenementDAtelierId> evenement);
   }
 
   public interface EmpreinteBuilder {
-    PreuveDApercu empreinteConsequences(String empreinte);
+    PropositionAConfirmer empreinteConsequences(String empreinte);
   }
 }
