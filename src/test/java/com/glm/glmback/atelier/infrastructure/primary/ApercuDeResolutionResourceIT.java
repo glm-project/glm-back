@@ -12,7 +12,8 @@ import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurity
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.time.domain.Clock;
 import java.util.UUID;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
@@ -38,18 +39,20 @@ class ApercuDeResolutionResourceIT {
   @MockitoBean
   private Clock clock;
 
-  @Test
+  @ParameterizedTest
+  @ValueSource(booleans = { false, true })
   @WithTenant("apercu_fixture")
-  void shouldAuthentifierLAnnulationEtRestituerSonPerimetreSansEcriture() throws Exception {
+  void shouldAuthentifierLAnnulationAvecTouteAncreActiveDeLaSequence(boolean ancreAlternative) throws Exception {
     var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     var transition = passageEnTravailDe(travail).a(LE_10_MAI_2026_A_12H);
     var suivi = suiviDAtelierEngage().enregistre(travail).enregistre(transition);
     transactions.executeWithoutResult(status -> suivis.create(suivi));
     when(clock.now()).thenReturn(LE_10_MAI_2026_A_12H.plusSeconds(3600));
     var commande = UUID.randomUUID();
+    var ancre = ancreAlternative ? travail.id() : transition.id();
     rest
       .perform(
-        post("/api/atelier/suivis/{suivi}/conflits/{pointage}/apercus", suivi.id().uuid(), transition.id().uuid())
+        post("/api/atelier/suivis/{suivi}/conflits/{pointage}/apercus", suivi.id().uuid(), ancre.uuid())
           .contentType(MediaType.APPLICATION_JSON)
           .content(
             """
@@ -59,13 +62,13 @@ class ApercuDeResolutionResourceIT {
       )
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.commande").value(commande.toString()))
-      .andExpect(jsonPath("$.adresse.pointage").value(transition.id().uuid().toString()))
+      .andExpect(jsonPath("$.adresse.pointage").value(ancre.uuid().toString()))
       .andExpect(jsonPath("$.reference").value(org.hamcrest.Matchers.startsWith("v1.test.")))
       .andExpect(jsonPath("$.expireLe").value("2026-05-10T13:15:00Z"))
       .andExpect(jsonPath("$.acte.kind").value("ANNULATION"))
       .andExpect(jsonPath("$.acte.motif").value("saisie incorrecte"))
       .andExpect(jsonPath("$.avant.kind").value("EN_CONFLIT"))
-      .andExpect(jsonPath("$.apres.kind").value("ANCRE_ANNULEE"))
+      .andExpect(jsonPath("$.apres.kind").value(ancreAlternative ? "HORS_CONFLIT" : "ANCRE_ANNULEE"))
       .andExpect(jsonPath("$.apres.perimetre.nombrePointages").value(2))
       .andExpect(jsonPath("$.apres.activites[0].etat").value("EN_COURS"))
       .andExpect(jsonPath("$.apres.activites[0].duree").doesNotExist());

@@ -11,15 +11,23 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 @UnitTest
 class ApercusDeResolutionTest {
 
-  @Test
-  void shouldRefuserUneAdresseAnnuleeMemeALaRevisionCourante() {
+  @ParameterizedTest
+  @EnumSource(value = EtatDAdresseDossier.class, names = { "ANCRE_ANNULEE", "INTROUVABLE", "HORS_CONFLIT" })
+  void shouldRefuserUneAdresseObsoleteMemeALaRevisionCourante(EtatDAdresseDossier etat) {
     var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     var transition = passageEnTravailDe(travail).a(LE_10_MAI_2026_A_12H);
     var suivi = suiviDAtelierEngage().enregistre(travail).enregistre(transition).annule(transition.id(), annulationParLeroy());
+    var ancre = switch (etat) {
+      case ANCRE_ANNULEE -> transition.id();
+      case INTROUVABLE -> EvenementDAtelierId.newId();
+      default -> travail.id();
+    };
     var repository = mock(SuiviDAtelierRepository.class);
     when(repository.get(suivi.id())).thenReturn(Optional.of(suivi));
     var references = mock(ReferencesDApercu.class);
@@ -40,13 +48,7 @@ class ApercusDeResolutionTest {
       new AnnulationAEnregistrer(suivi.id(), transition.id(), AUTEUR_LEROY, MOTIF_ERREUR_DE_SAISIE)
     );
     assertThatThrownBy(() ->
-      service.apercu(
-        UUID.randomUUID(),
-        new AdresseDossierConflit(suivi.id(), transition.id()),
-        suivi.revision(),
-        acte,
-        CONTEXTE_LEROY_IMPECCMOLD
-      )
+      service.apercu(UUID.randomUUID(), new AdresseDossierConflit(suivi.id(), ancre), suivi.revision(), acte, CONTEXTE_LEROY_IMPECCMOLD)
     ).isExactlyInstanceOf(ApercuObsoleteException.class);
     verifyNoInteractions(references);
   }
