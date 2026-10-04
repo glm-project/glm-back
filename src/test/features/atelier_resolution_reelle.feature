@@ -2,7 +2,8 @@ Feature: Resolution reelle des conflits
   Background:
     Given I am logged in as "gestionnaire" with role "GESTIONNAIRE"
     And l'entreprise a declare le poste de travail "fraiseuse-resolution" de nature "fraisage" et de cout horaire "45.5"
-    And l'entreprise a declare l'operateur "dupont-resolution" habilite sur "fraiseuse-resolution"
+    And l'entreprise a declare le poste de travail "rectifieuse-resolution" de nature "rectification" et de cout horaire "60"
+    And l'entreprise a declare l'operateur "dupont-resolution" habilite sur "fraiseuse-resolution" et "rectifieuse-resolution" avec un taux horaire de "22"
 
   Scenario: Resolution reelle d'une fin remplacee avec neuf decimales et decalage conserve
     Given il est "2044-01-06T07:00:00Z"
@@ -46,10 +47,12 @@ Feature: Resolution reelle des conflits
       | categorie      | etat     | duree |
       | TRAVAIL        | TERMINEE | PT4H  |
       | NON_CONFORMITE | TERMINEE | PT5H  |
+    And les quatre lecteurs API expliquent ce conflit
     And l'apercu ne modifie ni les faits ni les projections ni la revision
     When je confirme cet apercu de resolution
     Then le recu canonique conserve les memes identites et activites
     And la liste de ce suivi conserve 0 sequences en conflit
+    And les quatre lecteurs API relevent la correction exacte
     And les periodes relues de "Resolution 4401" ont les durees
       | PT4H |
       | PT5H |

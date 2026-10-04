@@ -200,6 +200,94 @@ public class ResolutionDesConflitsSteps {
     assertThat(CucumberRestTestContext.getElement("$.dossier.activites")).isEqualTo(apres.get("activites"));
   }
 
+  @Then("les quatre lecteurs API expliquent ce conflit")
+  @SuppressWarnings("unchecked")
+  public void lecteursAvant() {
+    var journal = (List<Map<String, Object>>) avant.get("journal");
+    var operateur = (String) journal.getFirst().get("operateurId");
+    rest.get("/api/pupitre/referentiel");
+    assertThatLastResponse().hasOkStatus();
+    var tuile = ((List<Map<String, Object>>) CucumberRestTestContext.getElement("$.suivis")).stream()
+      .filter(ligne -> suivi.equals(ligne.get("id")))
+      .findFirst()
+      .orElseThrow();
+    assertThat((List<?>) tuile.get("conflits")).hasSize(1);
+    rest.get("/api/feuilles-de-temps/" + operateur + "?annee=2044&semaine=1");
+    assertThatLastResponse().hasOkStatus();
+    var portions = ((List<Map<String, Object>>) CucumberRestTestContext.getElement("$.jours")).stream()
+      .flatMap(jour -> ((List<Map<String, Object>>) jour.get("activites")).stream())
+      .toList();
+    assertThat(portions)
+      .hasSize(2)
+      .allSatisfy(portion -> {
+        var activite = (Map<String, Object>) portion.get("activite");
+        assertThat(activite.get("etat")).isEqualTo("A_RESOUDRE");
+        assertThat(activite.get("fin")).isNull();
+      });
+    rest.get("/api/syntheses-des-heures/" + operateur + "?annee=2044&semaine=1");
+    assertThatLastResponse().hasOkStatus().hasElement("$.conflits").withElementsCount(1);
+    assertThat(CucumberRestTestContext.getElement("$.dureeOperationnelleTotale.complete")).isEqualTo(false);
+    assertThat(CucumberRestTestContext.getElement("$.dureeOperationnelleTotale.valeur")).isNull();
+    rest.get("/api/couts-de-revient/" + element);
+    assertThatLastResponse().hasOkStatus().hasElement("$.conflits").withElementsCount(1);
+    assertThat(CucumberRestTestContext.getElement("$.temps.total.complete")).isEqualTo(false);
+    assertThat(CucumberRestTestContext.getElement("$.temps.total.valeur")).isNull();
+    assertThat(CucumberRestTestContext.getElement("$.cout.total.complete")).isEqualTo(false);
+    assertThat(CucumberRestTestContext.getElement("$.cout.total.valeur")).isNull();
+  }
+
+  @Then("les quatre lecteurs API relevent la correction exacte")
+  @SuppressWarnings("unchecked")
+  public void lecteursApres() {
+    var journal = (List<Map<String, Object>>) avant.get("journal");
+    var operateur = (String) journal.getFirst().get("operateurId");
+    rest.get("/api/pupitre/referentiel");
+    assertThatLastResponse().hasOkStatus();
+    var tuile = ((List<Map<String, Object>>) CucumberRestTestContext.getElement("$.suivis")).stream()
+      .filter(ligne -> suivi.equals(ligne.get("id")))
+      .findFirst()
+      .orElseThrow();
+    assertThat((List<?>) tuile.get("conflits")).isEmpty();
+    assertThat((List<?>) tuile.get("activites")).isEmpty();
+    rest.get("/api/feuilles-de-temps/" + operateur + "?annee=2044&semaine=1");
+    assertThatLastResponse().hasOkStatus();
+    var portions = ((List<Map<String, Object>>) CucumberRestTestContext.getElement("$.jours")).stream()
+      .flatMap(jour -> ((List<Map<String, Object>>) jour.get("activites")).stream())
+      .toList();
+    var activites = (List<Map<String, Object>>) apres.get("activites");
+    assertThat(portions).hasSize(activites.size());
+    for (int index = 0; index < portions.size(); index++) {
+      var portion = portions.get(index);
+      var interpretation = (Map<String, Object>) portion.get("activite");
+      var attendue = activites.get(index);
+      assertThat(portion.get("element")).isEqualTo(element);
+      assertThat(portion.get("categorie")).isEqualTo(attendue.get("categorie"));
+      assertThat(portion.get("debut")).isEqualTo(attendue.get("debut"));
+      assertThat(portion.get("fin")).isEqualTo(attendue.get("fin"));
+      assertThat(interpretation.get("id")).isEqualTo(attendue.get("activite"));
+      assertThat(interpretation.get("etat")).isEqualTo("TERMINEE");
+    }
+    rest.get("/api/syntheses-des-heures/" + operateur + "?annee=2044&semaine=1");
+    assertThatLastResponse().hasOkStatus().hasElement("$.conflits").withElementsCount(0);
+    assertThat(CucumberRestTestContext.getElement("$.dureeOperationnelleTotale.complete")).isEqualTo(true);
+    assertThat(CucumberRestTestContext.getElement("$.dureeOperationnelleTotale.valeur")).isEqualTo("PT9H");
+    assertThat(CucumberRestTestContext.getElement("$.elements[0].dureeNonConformite.valeur")).isEqualTo("PT5H");
+    rest.get("/api/couts-de-revient/" + element);
+    assertThatLastResponse().hasOkStatus().hasElement("$.conflits").withElementsCount(0);
+    assertThat(CucumberRestTestContext.getElement("$.temps.total.complete")).isEqualTo(true);
+    assertThat(CucumberRestTestContext.getElement("$.temps.total.valeur")).isEqualTo("PT9H");
+    assertThat(CucumberRestTestContext.getElement("$.cout.total.complete")).isEqualTo(true);
+    assertThat(new java.math.BigDecimal(CucumberRestTestContext.getElement("$.cout.machine.valeur").toString())).isEqualByComparingTo(
+      "409.50"
+    );
+    assertThat(new java.math.BigDecimal(CucumberRestTestContext.getElement("$.cout.mainDOeuvre.valeur").toString())).isEqualByComparingTo(
+      "198.00"
+    );
+    assertThat(new java.math.BigDecimal(CucumberRestTestContext.getElement("$.cout.total.valeur").toString())).isEqualByComparingTo(
+      "607.50"
+    );
+  }
+
   @Then("la liste des conflits de {string} reste vide")
   @SuppressWarnings("unchecked")
   public void temoinHorsListe(String alias) {
