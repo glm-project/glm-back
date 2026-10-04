@@ -12,6 +12,7 @@ import java.util.Base64;
 import javax.crypto.AEADBadTagException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import tools.jackson.core.JacksonException;
 
 final class AesReferencesDApercu implements ReferencesDApercu {
 
@@ -54,22 +55,32 @@ final class AesReferencesDApercu implements ReferencesDApercu {
       throw new ApercuInvalideException();
     }
     String entete = parties[0] + "." + parties[1];
+    byte[] contenu;
     try {
-      byte[] contenu = Base64.getUrlDecoder().decode(parties[2]);
-      if (contenu.length < 28) {
-        throw new ApercuInvalideException();
-      }
-      byte[] clair = cryptographie.dechiffre(
+      contenu = Base64.getUrlDecoder().decode(parties[2]);
+    } catch (IllegalArgumentException e) {
+      throw new ApercuInvalideException();
+    }
+    if (contenu.length < 28) {
+      throw new ApercuInvalideException();
+    }
+    byte[] clair;
+    try {
+      clair = cryptographie.dechiffre(
         cle(parties[1]),
         Arrays.copyOfRange(contenu, 0, 12),
         entete.getBytes(StandardCharsets.US_ASCII),
         Arrays.copyOfRange(contenu, 12, contenu.length)
       );
-      return FormatDePreuveDApercu.relit(new String(clair, StandardCharsets.UTF_8));
-    } catch (AEADBadTagException | RuntimeException e) {
+    } catch (AEADBadTagException e) {
       throw new ApercuInvalideException();
     } catch (GeneralSecurityException e) {
       throw new IllegalStateException("Impossible de dechiffrer l'apercu", e);
+    }
+    try {
+      return FormatDePreuveDApercu.relit(new String(clair, StandardCharsets.UTF_8));
+    } catch (JacksonException e) {
+      throw new ApercuInvalideException();
     }
   }
 

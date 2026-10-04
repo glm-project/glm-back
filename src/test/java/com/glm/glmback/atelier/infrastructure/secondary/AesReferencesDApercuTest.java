@@ -10,6 +10,7 @@ import com.glm.glmback.atelier.application.ReferencesDApercu;
 import com.glm.glmback.atelier.domain.ApercuInvalideException;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
+import java.security.ProviderException;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Base64;
@@ -71,6 +72,20 @@ class AesReferencesDApercuTest {
     assertThatThrownBy(() -> lecteur.read(reference))
       .isExactlyInstanceOf(IllegalStateException.class)
       .hasCause(indisponible);
+  }
+
+  @Test
+  void shouldPropagerLaPanneDuFournisseurPendantLaLectureDuneReferenceSaine() throws GeneralSecurityException {
+    var suivi = suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H));
+    var preuve = recuDAnnulation(suivi).preuve();
+    ReferencesDApercu emetteur = new AesReferencesDApercu(configuration, new SecureRandom(), new CryptographieDesReferences());
+    String reference = emetteur.issue(preuve);
+    var cryptographie = mock(CryptographieDesReferences.class);
+    var indisponible = new ProviderException("fournisseur indisponible");
+    when(cryptographie.dechiffre(any(), any(), any(), any())).thenThrow(indisponible);
+    ReferencesDApercu lecteur = new AesReferencesDApercu(configuration, new SecureRandom(), cryptographie);
+
+    assertThatThrownBy(() -> lecteur.read(reference)).isSameAs(indisponible);
   }
 
   @Test
