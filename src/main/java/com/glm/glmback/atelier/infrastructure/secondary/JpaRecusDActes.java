@@ -98,12 +98,6 @@ class JpaRecusDActes implements RecusDActes {
           .map(ActiviteId::new)
           .collect(Collectors.toSet())
       )
-      .evenementsTouches(
-        Arrays.stream(((String) ligne[5]).split(","))
-          .filter(id -> !id.isEmpty())
-          .map(UUID::fromString)
-          .map(EvenementDAtelierId::new)
-          .toList()
-      );
+      .evenementsTouches(Arrays.stream(((String) ligne[5]).split(",")).map(UUID::fromString).map(EvenementDAtelierId::new).toList());
   }
 }

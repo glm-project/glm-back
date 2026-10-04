@@ -8,7 +8,15 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
-/** Preuve durable d'un acte enregistre, independante de la validite ulterieure de l'apercu. */
+/**
+ * Preuve durable d'un acte enregistre, independante de la validite ulterieure de l'apercu.
+ *
+ * <p>
+ * Les evenements touches comprennent les faits modifies et les faits crees : une annulation modifie un fait,
+ * une regularisation en cree un, et une correction modifie l'original et cree son remplacant. Cette liste est donc
+ * toujours non vide pour les trois actes enregistres par {@link ConfirmerLesActes}.
+ * </p>
+ */
 public record RecuDActe(
   PreuveDApercu preuve,
   String reference,
