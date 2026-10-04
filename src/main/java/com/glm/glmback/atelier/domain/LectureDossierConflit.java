@@ -30,15 +30,15 @@ public record LectureDossierConflit(AdresseDossierConflit adresse, LectureDuSuiv
   }
 
   public LectureDossierConflit apresActe(LectureDuSuivi apres) {
-    Set<ActiviteId> avant = lecture.suivi().activites().stream().map(Activite::id).collect(Collectors.toSet());
     Set<ActiviteId> apresActe = Stream.concat(
       concernees.stream(),
       apres
         .suivi()
-        .activites()
+        .journal()
+        .evenements()
         .stream()
-        .map(Activite::id)
-        .filter(activite -> !avant.contains(activite))
+        .filter(fait -> lecture.suivi().journal().evenement(fait.id()).filter(fait::equals).isEmpty())
+        .flatMap(fait -> Stream.concat(fait.activite().stream(), fait.activiteVisee().stream()))
     ).collect(Collectors.toSet());
     return new LectureDossierConflit(adresse, apres, apresActe);
   }

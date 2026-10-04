@@ -10,6 +10,34 @@ import org.junit.jupiter.api.Test;
 class LectureDossierConflitTest {
 
   @Test
+  void shouldInclureUneCiblePreexistanteToucheeHorsDuPerimetreInitial() {
+    var ancien = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    var nc = nonConformiteSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H.plusSeconds(3600));
+    var reprise = passageEnTravailDe(nc).a(LE_10_MAI_2026_A_12H);
+    var fin = finDe(nc).a(LE_10_MAI_2026_A_17H);
+    var suivi = suiviDAtelierEngage()
+      .enregistre(ancien)
+      .enregistre(finDe(ancien).a(LE_10_MAI_2026_A_9H))
+      .enregistre(nc)
+      .enregistre(reprise)
+      .enregistre(fin);
+    var avant = new LectureDossierConflit(new AdresseDossierConflit(suivi.id(), fin.id()), new LectureDuSuivi(suivi, LE_10_MAI_2026_A_17H));
+    assertThat(avant.concernees()).doesNotContain(ancien.activite().orElseThrow());
+    var corrige = suivi.corrige(fin.id(), annulationParLeroy(), finDe(ancien).a(LE_10_MAI_2026_A_17H));
+
+    var apres = avant.apresActe(new LectureDuSuivi(corrige, LE_10_MAI_2026_A_17H));
+
+    assertThat(apres.concernees()).contains(ancien.activite().orElseThrow());
+    assertThat(corrige.activites()).extracting(Activite::id).contains(ancien.activite().orElseThrow());
+    assertThat(apres.activites())
+      .extracting(IntervalleDActivite::activite)
+      .containsExactly(ancien.activite().orElseThrow(), nc.activite().orElseThrow(), reprise.activite().orElseThrow());
+    assertThat(apres.perimetre())
+      .get()
+      .satisfies(perimetre -> assertThat(perimetre.pointages()).contains(ancien.id()));
+  }
+
+  @Test
   void shouldLireLaSequenceEtLeDiagnosticDepuisUnPointageActif() {
     EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     EvenementDAtelier nonConformite = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_12H);
