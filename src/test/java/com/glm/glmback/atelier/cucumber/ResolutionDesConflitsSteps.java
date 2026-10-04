@@ -103,6 +103,55 @@ public class ResolutionDesConflitsSteps {
     assertThat(remplacement.get("id")).isNotEqualTo(original.get("id"));
   }
 
+  @Then("l'apercu ne fixe aucune fin ni duree definitive")
+  @SuppressWarnings("unchecked")
+  public void sansFinDefinitive() {
+    var activites = (List<Map<String, Object>>) apres.get("activites");
+    assertThat(activites)
+      .singleElement()
+      .satisfies(activite -> {
+        assertThat(activite.get("etat")).isEqualTo("EN_COURS");
+        assertThat(activite.get("fin")).isNull();
+        assertThat(activite.get("duree")).isNull();
+      });
+  }
+
+  @Then("l'apercu n'invente aucune activite")
+  public void aucuneActivite() {
+    assertThatLastResponse().hasElement("$.apres.activites").withElementsCount(0);
+  }
+
+  @Then("l'apercu conserve le trou entre {string} et {string}")
+  @SuppressWarnings("unchecked")
+  public void trou(String fin, String debut) {
+    var activites = (List<Map<String, Object>>) apres.get("activites");
+    assertThat(activites.get(0).get("fin")).isEqualTo(fin);
+    assertThat(activites.get(1).get("debut")).isEqualTo(debut);
+  }
+
+  @Then("la lecture ne porte aucune periode pour {string}")
+  public void aucunePeriode(String alias) {
+    atelier.jeConsulteLeTempsEffectifDe(alias);
+    assertThatLastResponse().hasOkStatus().hasElement("$").withElementsCount(0);
+  }
+
+  @Then("l'apercu conserve {int} sequence en conflit")
+  @SuppressWarnings("unchecked")
+  public void conflitRestant(int nombre) {
+    var suiviApres = (Map<String, Object>) apres.get("suivi");
+    assertThat((List<?>) suiviApres.get("conflits")).hasSize(nombre);
+  }
+
+  @Then("la cloture du suivi reste acquise apres cet acte")
+  @SuppressWarnings("unchecked")
+  public void clotureInchangee() {
+    rest.get("/api/atelier/suivis/" + suivi);
+    var suiviActuel = (Map<String, Object>) CucumberRestTestContext.getElement("$");
+    assertThat(suiviActuel.get("etat")).isEqualTo("CLOTURE");
+    assertThat(suiviActuel.get("clotureLe")).isNotNull().isEqualTo(avant.get("clotureLe"));
+    assertThat(suiviActuel.get("cloturePar")).isEqualTo(avant.get("cloturePar"));
+  }
+
   @Then("l'apercu ne modifie ni les faits ni les projections ni la revision")
   public void sansEcriture() {
     rest.get("/api/atelier/suivis/" + suivi);
