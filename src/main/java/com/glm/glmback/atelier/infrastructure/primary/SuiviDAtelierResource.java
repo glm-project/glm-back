@@ -1,12 +1,9 @@
 package com.glm.glmback.atelier.infrastructure.primary;
 
 import com.glm.glmback.atelier.application.SuivisDAtelierApplicationService;
-import com.glm.glmback.atelier.domain.AdresseDossierConflit;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
 import com.glm.glmback.atelier.domain.EtatDAtelier;
-import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.IntervalleDActivite;
-import com.glm.glmback.atelier.domain.LectureDossierConflit;
 import com.glm.glmback.atelier.domain.LectureDuSuivi;
 import com.glm.glmback.atelier.domain.Periode;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
@@ -111,19 +108,6 @@ class SuiviDAtelierResource {
   @ApiResponse(responseCode = "404", description = "Suivi introuvable.")
   RestSuiviDAtelier get(@PathVariable UUID id) {
     return rendu(applicationService.get(new SuiviDAtelierId(id)));
-  }
-
-  @GetMapping("/{id}/conflits/{pointage}")
-  @Operation(
-    summary = "Consulter un dossier de conflit par un pointage",
-    description = "Le journal, la revision et les consequences interpretees du suivi a un instant d'evaluation. L'adresse ne redirige jamais vers une autre sequence : une ancre absente, annulee ou active hors conflit garde son etat et l'historique accessible."
-  )
-  @ApiResponse(responseCode = "200", description = "Le dossier et l'etat de son adresse, pour USER ou GESTIONNAIRE.")
-  @ApiResponse(responseCode = "404", description = "Suivi introuvable dans l'entreprise courante.")
-  RestDossierConflit dossier(@PathVariable UUID id, @PathVariable UUID pointage) {
-    var lecture = applicationService.get(new SuiviDAtelierId(id));
-    var dossier = new LectureDossierConflit(new AdresseDossierConflit(lecture.suivi().id(), new EvenementDAtelierId(pointage)), lecture);
-    return RestDossierConflit.from(dossier, applicationService.annuairePour(lecture.suivi()));
   }
 
   @GetMapping("/{id}/temps-effectif")

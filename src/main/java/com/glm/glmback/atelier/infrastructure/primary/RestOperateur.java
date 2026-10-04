@@ -15,12 +15,12 @@ import java.util.UUID;
   s'affiche corrigee sur tout l'historique.
   """
 )
-record RestOperateur(
+public record RestOperateur(
   @Schema(description = "Identifiant de l'operateur dans le referentiel.", requiredMode = Schema.RequiredMode.REQUIRED) UUID id,
   @Schema(description = "Nom de l'operateur.", example = "Dupont", requiredMode = Schema.RequiredMode.REQUIRED) String nom,
   @Schema(description = "Prenom de l'operateur.", example = "Jean", requiredMode = Schema.RequiredMode.REQUIRED) String prenom
 ) {
-  static RestOperateur resolu(AnnuaireDAtelier annuaire, OperateurId id) {
+  public static RestOperateur resolu(AnnuaireDAtelier annuaire, OperateurId id) {
     return annuaire.operateur(id).map(RestOperateur::from).orElse(null);
   }
 

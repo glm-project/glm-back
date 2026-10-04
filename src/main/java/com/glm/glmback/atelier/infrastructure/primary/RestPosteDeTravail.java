@@ -16,11 +16,11 @@ import java.util.UUID;
   operateur.
   """
 )
-record RestPosteDeTravail(
+public record RestPosteDeTravail(
   @Schema(description = "Identifiant du poste dans le referentiel.", requiredMode = Schema.RequiredMode.REQUIRED) UUID id,
   @Schema(description = "Libelle du poste.", example = "Fraiseuse 1", requiredMode = Schema.RequiredMode.REQUIRED) String libelle
 ) {
-  static RestPosteDeTravail resolu(AnnuaireDAtelier annuaire, Optional<PosteDeTravailId> id) {
+  public static RestPosteDeTravail resolu(AnnuaireDAtelier annuaire, Optional<PosteDeTravailId> id) {
     return id.flatMap(annuaire::poste).map(RestPosteDeTravail::from).orElse(null);
   }
 
