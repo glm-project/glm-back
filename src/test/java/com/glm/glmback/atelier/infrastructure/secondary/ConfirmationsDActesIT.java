@@ -9,35 +9,35 @@ import static org.mockito.Mockito.*;
 import com.glm.glmback.IntegrationTest;
 import com.glm.glmback.atelier.application.ConfirmerLesActes;
 import com.glm.glmback.atelier.application.EmpreintesDesConsequences;
+import com.glm.glmback.atelier.application.IdentitesDEvenements;
 import com.glm.glmback.atelier.application.RecusDActes;
 import com.glm.glmback.atelier.application.ReferencesDApercu;
-import com.glm.glmback.atelier.application.IdentitesDEvenements;
-import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
-import java.util.List;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.access.AccessDeniedException;
-import com.glm.glmback.atelier.domain.ConfirmationReutiliseeException;
 import com.glm.glmback.atelier.domain.ApercuInvalideException;
 import com.glm.glmback.atelier.domain.ApercuObsoleteException;
+import com.glm.glmback.atelier.domain.ConfirmationReutiliseeException;
 import com.glm.glmback.atelier.domain.OperateursConnus;
+import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.time.domain.Clock;
-import java.util.function.Supplier;
+import jakarta.persistence.EntityManager;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.context.request.RequestContextHolder;
-import jakarta.persistence.EntityManager;
-import java.util.Optional;
 
 @IntegrationTest
 class ConfirmationsDActesIT {
@@ -296,6 +296,41 @@ class ConfirmationsDActesIT {
 
   @Test
   @WithTenant("impeccmold")
+  void shouldNEnregistrerQuUneDesDeuxCommandesPrepareesSurLaMemeRevision() throws Exception {
+    // GIVEN
+    var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
+    var premiere = preuveDAnnulationDeTransition(suivi);
+    var seconde = preuveDAnnulationDeTransition(suivi);
+    var lecturesSansRecu = new CountDownLatch(2);
+    when(references.read(anyString())).thenAnswer(invocation -> {
+      lecturesSansRecu.countDown();
+      assertThat(lecturesSansRecu.await(10, TimeUnit.SECONDS)).as("Les deux commandes ont lu l absence de leur recu").isTrue();
+      return invocation.getArgument(0).equals("premiere-reference") ? premiere : seconde;
+    });
+    var premierActe = avecContexteDeRequete(() ->
+      catchThrowable(() -> confirmations.confirmer(suivi.id(), premiere.commande(), "premiere-reference", CONTEXTE_LEROY_IMPECCMOLD))
+    );
+    var secondActe = avecContexteDeRequete(() ->
+      catchThrowable(() -> confirmations.confirmer(suivi.id(), seconde.commande(), "seconde-reference", CONTEXTE_LEROY_IMPECCMOLD))
+    );
+    // WHEN THEN
+    try (var executor = Executors.newFixedThreadPool(2)) {
+      var premier = executor.submit(premierActe::get);
+      var second = executor.submit(secondActe::get);
+      var issues = java.util.Arrays.asList(premier.get(15, TimeUnit.SECONDS), second.get(15, TimeUnit.SECONDS));
+      assertThat(issues).filteredOn(java.util.Objects::isNull).hasSize(1);
+      assertThat(issues).filteredOn(java.util.Objects::nonNull).singleElement().isExactlyInstanceOf(ApercuObsoleteException.class);
+    }
+    var relu = inTransaction(() -> suivis.get(suivi.id())).orElseThrow();
+    assertThat(relu.revision().value()).isEqualTo(1);
+    assertThat(relu.journal().evenements()).hasSize(2);
+    var premierRecu = inTransaction(() -> recus.get(premiere.commande()));
+    var secondRecu = inTransaction(() -> recus.get(seconde.commande()));
+    assertThat(java.util.stream.Stream.of(premierRecu, secondRecu).filter(Optional::isPresent)).hasSize(1);
+  }
+
+  @Test
+  @WithTenant("impeccmold")
   void shouldRetrouverLActeApresUneReponsePerdueEtRelireLeSuiviActuel() {
     // GIVEN
     var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
@@ -359,18 +394,29 @@ class ConfirmationsDActesIT {
     // WHEN
     var resultat = confirmations.confirmer(suivi.id(), preuve.commande(), "reference-regularisation", CONTEXTE_LEROY_IMPECCMOLD);
     // THEN
-    assertThat(inTransaction(() ->
-      ((Number) entities.createNativeQuery("select count(*) from identite_evenement_atelier where id = ?")
-        .setParameter(1, evenement.uuid()).getSingleResult()).longValue()
-    )).isEqualTo(1);
+    assertThat(
+      inTransaction(() ->
+        (
+          (Number) entities
+            .createNativeQuery("select count(*) from identite_evenement_atelier where id = ?")
+            .setParameter(1, evenement.uuid())
+            .getSingleResult()
+        ).longValue()
+      )
+    ).isEqualTo(1);
     Object[] identite = inTransaction(() ->
-      (Object[]) entities.createNativeQuery("select type_agregat, agregat_id from identite_evenement_atelier where id = ?")
-        .setParameter(1, evenement.uuid()).getSingleResult()
+      (Object[]) entities
+        .createNativeQuery("select type_agregat, agregat_id from identite_evenement_atelier where id = ?")
+        .setParameter(1, evenement.uuid())
+        .getSingleResult()
     );
     assertThat(identite).containsExactly("SUIVI_D_ATELIER", suivi.id().uuid());
     assertThat(resultat.recu().evenementsTouches()).containsExactly(evenement);
     assertThat(resultat.dossier().lecture().suivi().journal().evenement(evenement))
-      .get().satisfies(fait -> assertThat(fait.horodatage().dateDeSurvenue()).isEqualTo(java.time.Instant.parse("2026-05-10T12:00:00.123456789Z")));
+      .get()
+      .satisfies(fait ->
+        assertThat(fait.horodatage().dateDeSurvenue()).isEqualTo(java.time.Instant.parse("2026-05-10T12:00:00.123456789Z"))
+      );
     assertThat(inTransaction(() -> recus.get(preuve.commande()))).contains(resultat.recu());
   }
 
@@ -429,8 +475,9 @@ class ConfirmationsDActesIT {
       assertThatThrownBy(() ->
         confirmations.confirmer(suivi.id(), preuve.commande(), "reference-annulation", CONTEXTE_LEROY_IMPECCMOLD)
       ).isInstanceOf(AccessDeniedException.class);
-      assertThatThrownBy(() -> confirmations.verifier(suivi.id(), preuve.commande(), CONTEXTE_LEROY_IMPECCMOLD))
-        .isInstanceOf(AccessDeniedException.class);
+      assertThatThrownBy(() -> confirmations.verifier(suivi.id(), preuve.commande(), CONTEXTE_LEROY_IMPECCMOLD)).isInstanceOf(
+        AccessDeniedException.class
+      );
     } finally {
       SecurityContextHolder.getContext().setAuthentication(authentication);
     }
@@ -466,15 +513,19 @@ class ConfirmationsDActesIT {
     assertThat(relu.revision().value()).isEqualTo(1);
     assertThat(relu.conflits()).isEmpty();
     assertThat(relu.journal().evenement(original.id()))
-      .get().satisfies(fait -> {
-        assertThat(fait.annulation()).get().satisfies(annulation -> {
-          assertThat(annulation.auteur()).isEqualTo(AUTEUR_MARTIN);
-          assertThat(annulation.date()).isEqualTo(LE_10_MAI_2026_A_17H);
-        });
+      .get()
+      .satisfies(fait -> {
+        assertThat(fait.annulation())
+          .get()
+          .satisfies(annulation -> {
+            assertThat(annulation.auteur()).isEqualTo(AUTEUR_MARTIN);
+            assertThat(annulation.date()).isEqualTo(LE_10_MAI_2026_A_17H);
+          });
         assertThat(fait).isEqualTo(original.annule(fait.annulation().orElseThrow()));
       });
     assertThat(relu.journal().evenement(remplacement))
-      .get().satisfies(fait -> {
+      .get()
+      .satisfies(fait -> {
         assertThat(fait.remplace()).contains(original.id());
         assertThat(fait.auteur()).isEqualTo(AUTEUR_MARTIN);
         assertThat(fait.dateDeSurvenue()).isEqualTo(java.time.Instant.parse("2026-05-10T12:00:00.123456789Z"));
@@ -491,8 +542,12 @@ class ConfirmationsDActesIT {
     var preuve = preuveDeCorrectionDeTransition(suivi);
     var evenement = preuve.evenement().orElseThrow();
     when(references.read("reference-correction")).thenReturn(preuve);
-    var projectionsAvant = inTransaction(() -> entities.createNativeQuery("select * from activite_d_atelier where suivi_id = ? order by id")
-      .setParameter(1, suivi.id().uuid()).getResultList());
+    var projectionsAvant = inTransaction(() ->
+      entities
+        .createNativeQuery("select * from activite_d_atelier where suivi_id = ? order by id")
+        .setParameter(1, suivi.id().uuid())
+        .getResultList()
+    );
     // WHEN
     transactions.execute(status -> {
       var resultat = confirmations.confirmer(suivi.id(), preuve.commande(), "reference-correction", CONTEXTE_LEROY_IMPECCMOLD);
@@ -504,12 +559,22 @@ class ConfirmationsDActesIT {
     // THEN
     assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(suivi);
     assertThat(inTransaction(() -> recus.get(preuve.commande()))).isEmpty();
-    assertThat(inTransaction(() ->
-      ((Number) entities.createNativeQuery("select count(*) from identite_evenement_atelier where id = ?")
-        .setParameter(1, evenement.uuid()).getSingleResult()).longValue()
-    )).isZero();
-    var projectionsApres = inTransaction(() -> entities.createNativeQuery("select * from activite_d_atelier where suivi_id = ? order by id")
-      .setParameter(1, suivi.id().uuid()).getResultList());
+    assertThat(
+      inTransaction(() ->
+        (
+          (Number) entities
+            .createNativeQuery("select count(*) from identite_evenement_atelier where id = ?")
+            .setParameter(1, evenement.uuid())
+            .getSingleResult()
+        ).longValue()
+      )
+    ).isZero();
+    var projectionsApres = inTransaction(() ->
+      entities
+        .createNativeQuery("select * from activite_d_atelier where suivi_id = ? order by id")
+        .setParameter(1, suivi.id().uuid())
+        .getResultList()
+    );
     assertThat(projectionsApres).usingRecursiveComparison().isEqualTo(projectionsAvant);
   }
 
@@ -533,5 +598,4 @@ class ConfirmationsDActesIT {
   private <T> T inTransaction(Supplier<T> action) {
     return transactions.execute(status -> action.get());
   }
-
 }
