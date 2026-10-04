@@ -99,7 +99,12 @@ Un poste requalifié plus tard ne requalifie pas les heures déjà passées.
 
 `coutHoraire` et `tauxHoraire` suivent exactement la même règle : copiés sur l'événement au moment du pointage
 (coût du poste, taux de l'opérateur), jamais recalculés à la lecture. Ils sont absents quand la source du référentiel
-n'est pas valorisée, ou quand aucun poste n'est fourni pour `coutHoraire`.
+n'est pas valorisée, ou quand aucun poste n'est fourni pour `coutHoraire`. Seul le `GESTIONNAIRE` les reçoit,
+y compris dans les réponses de pointage et de rejeu ; les lectures `USER` conservent le journal et ses identités,
+avec les champs de tarifs absents. La même confidentialité vaut pour les tarifs courants des référentiels
+opérateur et poste. Les tarifs saisis restent exactement représentables en centimes, strictement positifs
+et inférieurs à 100 000 000 : création et révision refusent toute perte de précision ou dépassement par un 400,
+sans arrondi implicite.
 
 ### L'habilitation est une règle dure
 
@@ -612,7 +617,7 @@ répond 400 avec le code stable `date-de-survenue-future`. Le pupitre peut alors
 
 - **`nature` est vide dès qu'aucun poste n'est pointé**, puisqu'elle vient du poste. Un pointage sans poste n'a pas de
   nature, et c'est le comportement nominal d'une entreprise sans parc machine.
-- **`coutHoraire` et `tauxHoraire` ne sont exposés que sur les événements du journal**, pas sur `temps-effectif`
+- **`coutHoraire` et `tauxHoraire` sont réservés au `GESTIONNAIRE`**, sur les référentiels et les événements du journal, jamais sur `temps-effectif`
   (les intervalles rendus par `GET /api/atelier/suivis/{id}/temps-effectif`) : l'atelier capture ces valeurs, il ne
   les combine jamais. La valorisation vit dans un autre contexte, `GET /api/couts-de-revient/{elementId}`, qui rend
   une ligne par nature d'opération avec le temps passé, le temps de non conformité daté, et le coût séparé en machine

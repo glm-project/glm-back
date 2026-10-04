@@ -940,7 +940,7 @@
             "type" : "string"
           },
           "tauxHoraire" : {
-            "description" : "Taux horaire de l'operateur, destine au cout de revient. Facultatif : toutes les entreprises ne le valorisent pas.",
+            "description" : "Taux horaire de l'operateur, destine au cout de revient. Facultatif : toutes les entreprises ne le valorisent pas. Strictement positif, exactement representable en centimes et inferieur a 100000000.",
             "example" : 22.0,
             "minimum" : 0,
             "type" : "number"
@@ -953,7 +953,7 @@
         "description" : "Declaration d'un poste de travail.",
         "properties" : {
           "coutHoraire" : {
-            "description" : "Cout horaire du poste, destine au cout de revient. Facultatif : toutes les entreprises ne le valorisent pas.",
+            "description" : "Cout horaire du poste, destine au cout de revient. Facultatif : toutes les entreprises ne le valorisent pas. Strictement positif, exactement representable en centimes et inferieur a 100000000.",
             "example" : 45.5,
             "minimum" : 0,
             "type" : "number"
@@ -1310,7 +1310,7 @@
             "type" : "string"
           },
           "coutHoraire" : {
-            "description" : "Cout horaire du poste, copie a la saisie. Absent si le poste n'est pas valorise ou si aucun poste n'est fourni.",
+            "description" : "Cout horaire du poste, copie a la saisie. Absent si le poste n'est pas valorise ou si aucun poste n'est fourni. Reserve au GESTIONNAIRE, absent pour les autres roles.",
             "example" : 45.5,
             "type" : "number"
           },
@@ -1366,7 +1366,7 @@
             "type" : "string"
           },
           "tauxHoraire" : {
-            "description" : "Taux horaire de l'operateur, copie a la saisie. Absent si l'operateur n'est pas valorise.",
+            "description" : "Taux horaire de l'operateur, copie a la saisie. Absent si l'operateur n'est pas valorise. Reserve au GESTIONNAIRE, absent pour les autres roles.",
             "example" : 22.0,
             "type" : "number"
           },
@@ -1634,7 +1634,7 @@
             "type" : "string"
           },
           "tauxHoraire" : {
-            "description" : "Taux horaire de l'operateur, laisse vide pour le retirer.",
+            "description" : "Taux horaire de l'operateur, laisse vide pour le retirer. Strictement positif, exactement representable en centimes et inferieur a 100000000.",
             "example" : 22.0,
             "minimum" : 0,
             "type" : "number"
@@ -1647,7 +1647,7 @@
         "description" : "Revision d'un poste de travail.",
         "properties" : {
           "coutHoraire" : {
-            "description" : "Cout horaire du poste, laisse vide pour le retirer.",
+            "description" : "Cout horaire du poste, laisse vide pour le retirer. Strictement positif, exactement representable en centimes et inferieur a 100000000.",
             "example" : 45.5,
             "minimum" : 0,
             "type" : "number"
@@ -1725,7 +1725,7 @@
             "type" : "string"
           },
           "tauxHoraire" : {
-            "description" : "Taux horaire de l'operateur, absent si l'entreprise ne le valorise pas.",
+            "description" : "Taux horaire de l'operateur, absent si l'entreprise ne le valorise pas. Reserve au GESTIONNAIRE, absent pour les autres roles.",
             "example" : 22.0,
             "type" : "number"
           }
@@ -2218,7 +2218,7 @@
         "description" : "Un poste de travail du referentiel de l'entreprise.",
         "properties" : {
           "coutHoraire" : {
-            "description" : "Cout horaire du poste, absent si l'entreprise ne le valorise pas.",
+            "description" : "Cout horaire du poste, absent si l'entreprise ne le valorise pas. Reserve au GESTIONNAIRE, absent pour les autres roles.",
             "example" : 45.5,
             "type" : "number"
           },

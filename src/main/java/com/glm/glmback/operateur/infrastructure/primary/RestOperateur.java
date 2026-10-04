@@ -4,6 +4,7 @@ import com.glm.glmback.operateur.domain.Identifiant;
 import com.glm.glmback.operateur.domain.NatureDeTravail;
 import com.glm.glmback.operateur.domain.ProfilDOperateur;
 import com.glm.glmback.operateur.domain.TauxHoraire;
+import com.glm.glmback.shared.authentication.application.HourlyRatesAuthorization;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.util.List;
@@ -23,7 +24,10 @@ record RestOperateur(
   )
   String identifiant,
 
-  @Schema(description = "Taux horaire de l'operateur, absent si l'entreprise ne le valorise pas.", example = "22.00")
+  @Schema(
+    description = "Taux horaire de l'operateur, absent si l'entreprise ne le valorise pas. Reserve au GESTIONNAIRE, absent pour les autres roles.",
+    example = "22.00"
+  )
   BigDecimal tauxHoraire,
 
   @Schema(description = "Postes habilites, tries par libelle.", requiredMode = Schema.RequiredMode.REQUIRED) List<RestPosteHabilite> postes,
@@ -41,7 +45,7 @@ record RestOperateur(
       profil.operateur().nom().value(),
       profil.operateur().prenom().value(),
       profil.operateur().identifiant().map(Identifiant::value).orElse(null),
-      profil.operateur().tauxHoraire().map(TauxHoraire::value).orElse(null),
+      HourlyRatesAuthorization.disclose(profil.operateur().tauxHoraire().map(TauxHoraire::value)),
       profil.postes().stream().map(RestPosteHabilite::from).toList(),
       profil.natures().stream().map(NatureDeTravail::value).toList()
     );

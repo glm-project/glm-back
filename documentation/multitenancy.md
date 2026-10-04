@@ -129,8 +129,8 @@ Trois pieges de l'import du realm :
   `tenant` est donc declare dans le composant `org.keycloak.userprofile.UserProfileProvider` du realm ;
   sans cela l'attribut disparait silencieusement et le claim n'apparait jamais dans le token.
 - Le realm, exporte avant Keycloak 24, ne porte pas le client scope `basic` qui emet normalement le
-  claim `sub`. Sans `sub`, `CustomClaimConverter` echoue et **tout** token porteur est rejete en 401 :
-  un mapper `oidc-sub-mapper` a donc ete ajoute au client scope `glmproject`.
+  claim `sub`. Le mapper `oidc-sub-mapper` du client scope `glmproject` conserve cette identite standard
+  dans les access tokens.
 - `KC_DB=dev-file` : le realm n'est reimporte que sur un volume neuf. Apres modification du JSON :
 
 ```bash
@@ -141,6 +141,20 @@ docker compose -f src/main/docker/keycloak.yml up -d
 Le client `web_app` a `directAccessGrantsEnabled: false` : il n'y a pas de grant `password` disponible,
 un token se recupere via le front. Pour un `curl` ponctuel, activer temporairement le direct access
 grant sur le client depuis la console d'administration.
+
+## Validite du jeton pour les appels API
+
+Le serveur lit les claims du JWT signe : identite, roles et entreprise appartiennent au meme jeton.
+Le decoder Nimbus verifie la signature, l'issuer, la validite temporelle et l'audience configuree.
+Il ne charge pas `userinfo` au decodage et ne conserve aucun cache utilisateur ou objet de requete.
+Un nouveau jeton portant un autre role ou tenant prend effet des son premier appel.
+
+La revocation de session ou le retrait d'un role chez Keycloak ne revoque pas immediatement un JWT
+deja emis : l'API le reconnait jusqu'a son expiration, avec la tolerance d'horloge du validateur Spring.
+La duree d'emission se regle dans le realm (`accessTokenLifespan`) ; l'API ne fait pas d'introspection
+par requete. `SignedJwtConfigurationTest` controle la signature, l'expiration, l'issuer et l'audience
+avec de vrais JWT signes, les changements de roles et d'entreprise pour un meme sujet, ainsi que
+l'absence d'appel `userinfo` sur mille requetes distinctes.
 
 ## Tests
 

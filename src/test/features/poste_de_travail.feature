@@ -188,3 +188,76 @@ Feature: Referentiel des postes de travail
       | libelle | Tour 17  |
       | nature  | tournage |
     Then la reponse a le statut http 201
+
+  Scenario Outline: Le cout horaire doit etre representable sans arrondi ni depassement
+    When je declare un poste de travail
+      | libelle     | Tour precision |
+      | nature      | tournage       |
+      | coutHoraire | <cout>         |
+    Then la reponse a le statut http 400
+    When je liste les postes de travail
+    Then la reponse a le statut http 200
+
+    Examples:
+      | cout      |
+      | 0.001     |
+      | 45.555    |
+      | 100000000 |
+      | 1E+8      |
+
+  Scenario Outline: La revision refuse un cout non representable et conserve le precedent
+    Given j'ai declare un poste de travail
+      | libelle     | Tour revision <cout> |
+      | nature      | tournage             |
+      | coutHoraire | 45.50                |
+    When je revise ce poste de travail
+      | libelle     | Tour revision <cout> |
+      | nature      | tournage             |
+      | coutHoraire | <cout>               |
+    Then la reponse a le statut http 400
+    When je consulte ce poste de travail
+    Then la reponse a le statut http 200
+    And la reponse de poste de travail a le cout horaire "45.50"
+
+    Examples:
+      | cout      |
+      | 0.001     |
+      | 100000000 |
+
+  Scenario Outline: Un cout representable conserve sa valeur a la relecture
+    Given j'ai declare un poste de travail
+      | libelle     | Tour centimes <cout> |
+      | nature      | tournage             |
+      | coutHoraire | <cout>               |
+    When je consulte ce poste de travail
+    Then la reponse a le statut http 200
+    And la reponse de poste de travail a le cout horaire "<attendu>"
+    When je liste les postes de travail
+    Then la reponse a le statut http 200
+
+    Examples:
+      | cout        | attendu     |
+      | 0.01        | 0.01        |
+      | 99999999.99 | 99999999.99 |
+      | 45.500      | 45.50       |
+      | 1E+3        | 1000        |
+
+  Scenario: Les tarifs des postes sont reserves au gestionnaire
+    Given j'ai declare un poste de travail
+      | libelle     | Tour confidentiel |
+      | nature      | tournage          |
+      | coutHoraire | 45.50             |
+    Given I am logged in as "user" with role "USER"
+    When je consulte ce poste de travail
+    Then la reponse a le statut http 200
+    And la reponse de poste de travail contient
+      | libelle | Tour confidentiel |
+      | nature  | tournage          |
+    And la reponse ne contient aucun tarif horaire
+    When je liste les postes de travail
+    Then la reponse a le statut http 200
+    And la reponse ne contient aucun tarif horaire
+    Given I am logged in as "gestionnaire" with role "GESTIONNAIRE"
+    When je consulte ce poste de travail
+    Then la reponse a le statut http 200
+    And la reponse de poste de travail a le cout horaire "45.50"

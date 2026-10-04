@@ -74,6 +74,9 @@ suivent leurs propriétaires dans les mêmes sous-packages.
   patron que la nature : jamais relus depuis le référentiel après coup. Ils restent, comme la nature, entièrement
   facultatifs, et ne servent qu'à figer une valeur qui pourrait changer chez le voisin — le calcul lui-même n'entre
   pas dans ce contexte.
+- **Les tarifs du journal restent réservés au `GESTIONNAIRE`.** La politique applicative
+  `HourlyRatesAuthorization` retire coût horaire et taux horaire des projections REST `USER`, en lecture
+  comme dans les réponses de pointage et de rejeu ; la persistance et la valorisation conservent les faits complets.
 - **L'intention d'un pointage est explicite, jamais déduite de son type** (`IntentionDePointage`). Une ouverture crée
   une activité ; une transition remplace l'activité qu'elle vise par une activité distincte de l'autre catégorie ; une
   fin termine l'activité qu'elle vise. Seule une fin se pointe `FIN`, et seules la transition et la fin portent une

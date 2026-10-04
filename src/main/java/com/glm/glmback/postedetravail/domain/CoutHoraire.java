@@ -14,7 +14,8 @@ import java.util.Optional;
  */
 public record CoutHoraire(BigDecimal value) {
   public CoutHoraire {
-    Assert.field("cout horaire", value).notNull().strictlyPositive();
+    Assert.field("cout horaire", value).notNull().strictlyPositive().under(100_000_000);
+    Assert.field("decimales du cout horaire", value.stripTrailingZeros().scale()).max(2);
   }
 
   public static Optional<CoutHoraire> of(BigDecimal value) {
