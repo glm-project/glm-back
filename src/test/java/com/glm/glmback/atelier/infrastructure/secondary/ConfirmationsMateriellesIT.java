@@ -223,6 +223,41 @@ class ConfirmationsMateriellesIT {
     assertThat(recu).isEmpty();
   }
 
+  @Test
+  @WithTenant("impeccmold")
+  void shouldConfirmerMalgreLesLibellesEtMetadonneesTechniquesModifies() {
+    // GIVEN
+    var suivi = transactions.execute(status -> suivis.create(MaterielDesActesFixture.suiviAvecTransitionSurFraiseuse()));
+    var commande = UUID.randomUUID();
+    var adresse = new AdresseDossierConflit(suivi.id(), suivi.journal().evenements().getLast().id());
+    var acte = MaterielDesActesFixture.correctionDeTransitionEnFin(suivi);
+    var apercu = apercus.apercu(commande, adresse, suivi.revision(), acte, CONTEXTE_LEROY_IMPECCMOLD);
+    when(operateurs.get(OPERATEUR_ID_DUPONT)).thenReturn(Optional.of(MaterielDesActesFixture.dupontRenomme()));
+    when(postes.get(POSTE_ID_FRAISEUSE_1)).thenReturn(Optional.of(MaterielDesActesFixture.fraiseuseRenommee()));
+    var maintenant = LE_10_MAI_2026_A_17H.plusSeconds(1);
+    when(clock.now()).thenReturn(maintenant);
+    // WHEN
+    var resultat = confirmations.confirmer(suivi.id(), commande, apercu.reference().opaque(), CONTEXTE_LEROY_RENOMME_IMPECCMOLD);
+    // THEN
+    assertThat(resultat.recu().preuve().acte()).isEqualTo(acte);
+    assertThat(resultat.recu().revisionEnregistree().value()).isEqualTo(1);
+    assertThat(resultat.recu().enregistreLe()).isEqualTo(maintenant);
+    var journal = resultat.dossier().lecture().suivi().journal();
+    var remplacement = journal.evenement(apercu.reference().preuve().evenement().orElseThrow()).orElseThrow();
+    assertThat(remplacement.auteur()).isEqualTo(AUTEUR_MARTIN);
+    assertThat(remplacement.horodatage().dateDEnregistrement()).isEqualTo(maintenant);
+    assertThat(remplacement.dateDeSurvenue()).isEqualTo(LE_10_MAI_2026_A_12H);
+    assertThat(remplacement.nature()).contains(NATURE_FRAISAGE);
+    assertThat(remplacement.coutHoraire()).contains(COUT_HORAIRE_FRAISEUSE_1);
+    assertThat(remplacement.tauxHoraire()).contains(TAUX_HORAIRE_DUPONT);
+    assertThat(journal.evenement(adresse.pointage()).orElseThrow().annulation())
+      .get()
+      .satisfies(annulation -> {
+        assertThat(annulation.auteur()).isEqualTo(AUTEUR_MARTIN);
+        assertThat(annulation.date()).isEqualTo(maintenant);
+      });
+  }
+
   private enum ValeurCopiee {
     TAUX,
     COUT,

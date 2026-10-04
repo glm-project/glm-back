@@ -46,4 +46,16 @@ final class MaterielDesActesFixture {
       .nature(nature)
       .coutHoraire(COUT_HORAIRE_FRAISEUSE_1.value());
   }
+
+  static OperateurConnu dupontRenomme() {
+    return OperateurConnu.builder().id(OPERATEUR_ID_DUPONT).nom(NOM_MARTIN).prenom(PRENOM_PAUL).tauxHoraire(TAUX_HORAIRE_DUPONT.value());
+  }
+
+  static PosteConnu fraiseuseRenommee() {
+    return PosteConnu.builder()
+      .id(POSTE_ID_FRAISEUSE_1)
+      .libelle(new LibelleDePoste("Machine A"))
+      .nature(NATURE_FRAISAGE)
+      .coutHoraire(COUT_HORAIRE_FRAISEUSE_1.value());
+  }
 }
