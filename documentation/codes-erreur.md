@@ -83,6 +83,15 @@ tests sont le seul endroit qui les tient.
 | `saisie-concurrente`                 | 409    | saisie concurrente                 | `SaisieConcurrenteException`              |
 | `identifiant-evenement-reutilise`    | 409    | identifiant d'evenement reutilise  | `IdentifiantDEvenementReutiliseException` |
 | `date-de-survenue-future`            | 400    | date de survenue future            | `DateDeSurvenueFutureException`           |
+| `apercu-invalide`                    | 400    | apercu invalide                    | `ApercuInvalideException`                 |
+| `apercu-obsolete`                    | 409    | apercu obsolete                    | `ApercuObsoleteException`                 |
+| `confirmation-reutilisee`            | 409    | confirmation reutilisee            | `ConfirmationReutiliseeException`         |
+
+`apercu-invalide` refuse une référence illisible ou non authentifiée, ainsi qu’un contexte de
+confirmation différent de celui de l’aperçu. `apercu-obsolete` refuse une adresse non active en
+conflit, une révision dépassée, une expiration ou des conséquences devenues matériellement différentes.
+Ces deux refus demandent un nouvel aperçu. `confirmation-reutilisee` refuse une commande UUID déjà
+engagée avec une autre référence ; le client vérifie d’abord son reçu canonique.
 
 `saisie-concurrente` est le seul code sur lequel **rejouer** l'appel est la bonne réaction : la saisie était valide,
 un autre pointage s'est glissé entre la lecture et l'écriture.

@@ -653,11 +653,9 @@ et les faits actifs `pointages`. Une séquence sans activité à résoudre reste
 sans rendre les montants incomplets. Résoudre les faits par annulation ou correction recalcule les valeurs.
 Cette route ne prend pas de paramètre d'évaluation et ne garantit pas un instantané face aux écritures concurrentes.
 
-## Contrat de résolution manuelle en préparation
+## Résolution manuelle des conflits
 
-Les coutures suivantes sont arrêtées pour la livraison des dossiers de conflit. Cette section décrit
-le contrat à implémenter ; les routes correspondantes ne sont pas encore publiées dans OpenAPI.
-Leur disponibilité sera établie par les scénarios REST et le contrat généré, jamais par ce tableau seul.
+Ces routes sont décrites dans le [contrat OpenAPI généré](openapi.json) et éprouvées par les scénarios REST.
 
 | Capacité               | Route                                                                    | Droit                                 |
 | ---------------------- | ------------------------------------------------------------------------ | ------------------------------------- |
@@ -672,16 +670,21 @@ une adresse. Le résultat porte `EN_CONFLIT`, `INTROUVABLE`, `ANCRE_ANNULEE` ou 
 Un suivi absent du tenant courant répond 404 sans journal. Un suivi accessible conserve son journal
 dans les trois résultats d'adresse sans conflit ; aucun de ces résultats ne redirige implicitement.
 
-Le dossier et son avant/après portent la même `revision` numérique du suivi, son `evaluation`, le
-journal complet, les activités concernées et les conflits restants. La révision commence à zéro à
-l'engagement et progresse à chaque modification effective du journal ou de la clôture, par toutes
+Le dossier et son avant/après portent la `revision` numérique du suivi évalué, son `evaluation`, le
+journal complet, les activités concernées et les conflits restants. `sequence` décrit la séquence
+active contenant l’ancre ; `perimetre` conserve les faits concernés après un acte, même si l’ancre
+est annulée. Le booléen `enConflit` est calculé par le domaine sur ce périmètre : il peut rester vrai
+sans intervalle d’activité, ou être faux avec d’autres conflits indépendants dans `continuations`.
+Les continuations donnent les adresses actives explicites ; elles ne changent jamais l’adresse demandée.
+
+La révision commence à zéro à l'engagement et progresse à chaque modification effective du journal ou de la clôture, par toutes
 les routes, pointages Pupitre compris. Un rejeu strict ou un geste absorbé ne la fait pas progresser.
 La valeur Java est `RevisionDuSuivi`, séparée des identités de faits et du nombre d'événements.
 
 Les faits portent leurs IDs bruts opérateur/poste indépendamment de la résolution des fiches, leur
 activité créée et visée, auteur, survenue, enregistrement, origine, annulation et lien `remplace`.
 Le poste absent est distinct d'une fiche absente pour un poste identifié. Les activités exposent
-`EN_COURS`, `TERMINEE`, `TERMINEE_AUTOMATIQUEMENT` ou `A_RESOUDRE` ; seuls les états terminés
+`EN_COURS`, `TERMINEE`, `ECHUE` ou `A_RESOUDRE` ; seuls les états terminés
 portent une durée définitive ISO 8601. Les neuf décimales d'un instant sont conservées.
 
 Le diagnostic vient de l'interprétation du domaine au moment de la contradiction. Il identifie le
@@ -689,7 +692,9 @@ geste, sa cible, l'ouvrant actif ou annulé, le fait qui a terminé ou remplacé
 structurée. Les premières familles sont cible remplacée, déjà terminée, pas encore ouverte, ouvrant
 annulé, même catégorie, cible échue avec une autre activité en cours et contradiction avec une
 régularisation. Le mapper REST ne rejoue aucun automate. Les propositions portent un code, les faits
-qui les étayent et un acte explicite ; aucune n'est sélectionnée et aucun motif n'est prérempli.
+qui les étayent, le `kind`, le `pointage` et le `fait` proposé quand il s’agit d’une correction ;
+aucune n’est sélectionnée et aucun motif n’est prérempli. Le premier guide de fin visant une cible
+remplacée propose soit de rattacher cette fin à l’activité remplaçante, soit d’annuler la transition.
 
 Le corps d'aperçu porte `commande` (UUID créé par le client), `revision` et `acte`. L'acte porte
 `kind` (`CORRECTION`, `ANNULATION`, `REGULARISATION`) et les champs propres à cette intention :
@@ -706,5 +711,6 @@ d'un acte laissant un conflit est une réussite. La vérification rend `ENREGIST
 canonique, ou `NON_ATTESTEE` : l'absence momentanée d'un reçu ne permet pas de conclure à un rollback.
 
 La référence autoportante, son intégrité, sa rotation et sa validité sont arrêtées dans
-[l'ADR 0006](adr/0006-authenticate-stateless-resolution-previews.md). Les codes de refus seront
-publiés avec leurs handlers et les scénarios REST dans [le catalogue](codes-erreur.md).
+[l'ADR 0006](adr/0006-authenticate-stateless-resolution-previews.md). Les trois refus de résolution
+(`apercu-invalide`, `apercu-obsolete`, `confirmation-reutilisee`) sont publiés dans
+[le catalogue](codes-erreur.md).
