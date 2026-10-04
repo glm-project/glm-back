@@ -80,6 +80,7 @@ class OpenApiConfigurationIT {
           "id",
           "type",
           "intention",
+          "operateurId",
           "auteur",
           "dateDeSurvenue",
           "dateDEnregistrement",
