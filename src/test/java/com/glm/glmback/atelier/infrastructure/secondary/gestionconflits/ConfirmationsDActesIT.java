@@ -11,13 +11,16 @@ import com.glm.glmback.atelier.application.IdentitesDEvenements;
 import com.glm.glmback.atelier.application.SuivisDAtelierApplicationService;
 import com.glm.glmback.atelier.application.gestionconflits.ConfirmerLesActes;
 import com.glm.glmback.atelier.application.gestionconflits.EmpreintesDesConsequences;
+import com.glm.glmback.atelier.application.gestionconflits.PreparationDesActes;
 import com.glm.glmback.atelier.application.gestionconflits.PropositionAConfirmer;
 import com.glm.glmback.atelier.application.gestionconflits.RecusDActes;
 import com.glm.glmback.atelier.domain.ClotureAEnregistrer;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
+import com.glm.glmback.atelier.domain.Habilitations;
 import com.glm.glmback.atelier.domain.IntentionDePointage;
 import com.glm.glmback.atelier.domain.OperateursConnus;
 import com.glm.glmback.atelier.domain.PointageAEnregistrer;
+import com.glm.glmback.atelier.domain.PostesConnus;
 import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
 import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
@@ -57,6 +60,9 @@ class ConfirmationsDActesIT {
   private ConfirmerLesActes confirmations;
 
   @Autowired
+  private PreparationDesActes preparation;
+
+  @Autowired
   private SuivisDAtelierApplicationService atelier;
 
   @MockitoSpyBean
@@ -83,11 +89,20 @@ class ConfirmationsDActesIT {
   @MockitoBean
   private OperateursConnus operateurs;
 
+  @MockitoBean
+  private PostesConnus postes;
+
+  @MockitoBean
+  private Habilitations habilitations;
+
   @BeforeEach
   void evaluation() {
     when(clock.now()).thenReturn(LE_10_MAI_2026_A_17H);
     when(empreintes.calcule(any(), any())).thenReturn("consequences-annulation");
     when(operateurs.get(OPERATEUR_ID_DUPONT)).thenReturn(Optional.of(OPERATEUR_CONNU_DUPONT));
+    when(operateurs.get(OPERATEUR_ID_MARTIN)).thenReturn(Optional.of(OPERATEUR_CONNU_MARTIN));
+    when(postes.get(POSTE_ID_FRAISEUSE_1)).thenReturn(Optional.of(POSTE_CONNU_FRAISEUSE_1));
+    when(habilitations.estHabilite(OPERATEUR_ID_DUPONT, POSTE_ID_FRAISEUSE_1)).thenReturn(true);
   }
 
   @Test
@@ -142,6 +157,29 @@ class ConfirmationsDActesIT {
       confirmations.confirmer(suivi.id(), ConcurrenceDesActesFixture.avecEmpreinte(proposition), CONTEXTE_LEROY_IMPECCMOLD)
     ).isExactlyInstanceOf(ConfirmationReutiliseeException.class);
     assertThat(inTransaction(() -> suivis.get(suivi.id()))).contains(premier.dossier().lecture().suivi());
+  }
+
+  @ParameterizedTest
+  @EnumSource(ReprisesDActesFixture.CasDeRejeu.class)
+  @WithTenant("impeccmold")
+  void shouldRefuserLeRejeuDontUnChampMetierDeLActeAChange(ReprisesDActesFixture.CasDeRejeu cas) {
+    // GIVEN
+    var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
+    var originale = cas.originale(suivi);
+    var modifiee = cas.modifiee(new ReprisesDActesFixture.DemandeSurSuivi(originale, suivi));
+    assertThatCode(() -> preparation.prepare(suivi, modifiee.acte(), modifiee.evenement(), AUTEUR_LEROY, LE_10_MAI_2026_A_17H))
+      .as("La demande modifiee est un acte metier valide sur le suivi initial")
+      .doesNotThrowAnyException();
+    var premier = confirmations.confirmer(suivi.id(), originale, CONTEXTE_LEROY_IMPECCMOLD);
+    var suiviConfirme = inTransaction(() -> suivis.get(suivi.id())).orElseThrow();
+    // WHEN THEN
+    assertThatThrownBy(() -> confirmations.confirmer(suivi.id(), modifiee, CONTEXTE_LEROY_IMPECCMOLD)).isExactlyInstanceOf(
+      ConfirmationReutiliseeException.class
+    );
+    var relu = inTransaction(() -> suivis.get(suivi.id())).orElseThrow();
+    assertThat(relu.journal()).isEqualTo(suiviConfirme.journal());
+    assertThat(relu.revision()).isEqualTo(suiviConfirme.revision());
+    assertThat(inTransaction(() -> recus.get(originale.commande()))).contains(premier.recu());
   }
 
   @Test
