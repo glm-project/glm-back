@@ -8,7 +8,11 @@ import static org.mockito.Mockito.*;
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.atelier.application.ReferencesDApercu;
 import com.glm.glmback.atelier.domain.ApercuInvalideException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.ProviderException;
 import java.security.SecureRandom;
@@ -16,9 +20,14 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.Map;
 import java.util.stream.Stream;
+import javax.crypto.Cipher;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @UnitTest
 class AesReferencesDApercuTest {
@@ -58,20 +67,48 @@ class AesReferencesDApercuTest {
     );
   }
 
-  @Test
-  void shouldSignalerUnePanneTechniqueDeDechiffrementDuneReferenceSaine() throws GeneralSecurityException {
+  @ParameterizedTest
+  @MethodSource("pannesDeDechiffrement")
+  void shouldSignalerUnePanneTechniqueDeDechiffrementDuneReferenceSaine(GeneralSecurityException indisponible)
+    throws GeneralSecurityException {
     var suivi = suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H));
     var preuve = recuDAnnulation(suivi).preuve();
     ReferencesDApercu emetteur = new AesReferencesDApercu(configuration, new SecureRandom(), new CryptographieDesReferences());
     String reference = emetteur.issue(preuve);
     var cryptographie = mock(CryptographieDesReferences.class);
-    var indisponible = new NoSuchAlgorithmException("fournisseur indisponible");
     when(cryptographie.dechiffre(any(), any(), any(), any())).thenThrow(indisponible);
     ReferencesDApercu lecteur = new AesReferencesDApercu(configuration, new SecureRandom(), cryptographie);
 
     assertThatThrownBy(() -> lecteur.read(reference))
       .isExactlyInstanceOf(IllegalStateException.class)
       .hasCause(indisponible);
+  }
+
+  private static Stream<GeneralSecurityException> pannesDeDechiffrement() {
+    return Stream.of(
+      new NoSuchAlgorithmException("algorithme indisponible"),
+      new NoSuchPaddingException("padding indisponible"),
+      new InvalidKeyException("cle refusee par le fournisseur"),
+      new InvalidAlgorithmParameterException("parametres refuses par le fournisseur")
+    );
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = { "{", "{}", "{\"commande\":\"pas-un-uuid\"}" })
+  void shouldRefuserUnContenuAuthentifieQuiNestPasUnePreuve(String contenu) throws GeneralSecurityException {
+    byte[] nonce = new byte[12];
+    var cipher = Cipher.getInstance("AES/GCM/NoPadding");
+    cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(Base64.getDecoder().decode(CLE_LOCALE), "AES"), new GCMParameterSpec(128, nonce));
+    cipher.updateAAD("v1.locale".getBytes(StandardCharsets.US_ASCII));
+    byte[] chiffre = cipher.doFinal(contenu.getBytes(StandardCharsets.UTF_8));
+    String reference =
+      "v1.locale."
+      + Base64.getUrlEncoder()
+        .withoutPadding()
+        .encodeToString(ByteBuffer.allocate(nonce.length + chiffre.length).put(nonce).put(chiffre).array());
+    ReferencesDApercu lecteur = new AesReferencesDApercu(configuration, new SecureRandom(), new CryptographieDesReferences());
+
+    assertThatThrownBy(() -> lecteur.read(reference)).isExactlyInstanceOf(ApercuInvalideException.class);
   }
 
   @Test
