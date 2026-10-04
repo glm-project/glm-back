@@ -677,6 +677,11 @@ est annulée. Le booléen `enConflit` est calculé par le domaine sur ce périm�
 sans intervalle d’activité, ou être faux avec d’autres conflits indépendants dans `continuations`.
 Les continuations donnent les adresses actives explicites ; elles ne changent jamais l’adresse demandée.
 
+Le détail adressé et l’aperçu lisent le journal, la clôture et la révision d’une même version committée du suivi,
+sans verrouiller les rédacteurs. Une écriture concurrente peut rendre cette version ancienne après sa lecture ;
+la confirmation contrôle toujours la révision sous verrou. Cette garantie ne constitue pas un instantané entre
+plusieurs appels ni avec les libellés du référentiel. Voir [l’ADR 0007](adr/0007-read-addressed-workshop-aggregates-coherently.md).
+
 La révision commence à zéro à l'engagement et progresse à chaque modification effective du journal ou de la clôture, par toutes
 les routes, pointages Pupitre compris. Un rejeu strict ou un geste absorbé ne la fait pas progresser.
 La valeur Java est `RevisionDuSuivi`, séparée des identités de faits et du nombre d'événements.

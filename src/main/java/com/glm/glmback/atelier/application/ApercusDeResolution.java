@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -37,7 +38,7 @@ public class ApercusDeResolution {
   }
 
   @Secured("ROLE_GESTIONNAIRE")
-  @Transactional(readOnly = true)
+  @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
   public ApercuDeResolution apercu(
     UUID commande,
     AdresseDossierConflit adresse,

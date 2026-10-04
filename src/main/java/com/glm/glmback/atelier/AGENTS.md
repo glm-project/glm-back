@@ -192,6 +192,11 @@ la garantie que donnait le code partagé — le modifier en même temps que l'un
 
 ### Concurrence
 
+Les lectures adressées et les aperçus acquièrent le parent et son journal dans une même requête, dans leur propre
+contexte JPA en lecture seule : un parent déjà chargé par un appelant peut sinon rester ancien malgré le fetch join.
+Conserver cette frontière de lecture de données committées, décrite dans
+[l’ADR 0007](../../../../../../../documentation/adr/0007-read-addressed-workshop-aggregates-coherently.md).
+
 Toute écriture transporte la `RevisionDuSuivi` lue avec l'agrégat ; l'update compare cette révision sous
 verrou pessimiste puis rend le suivi avec sa nouvelle révision. Garder ce retour pour toute écriture suivante :
 les transitions immuables conservent la révision lue jusqu'à leur persistance. Le journal et la clôture partagent
