@@ -9,13 +9,22 @@ import com.glm.glmback.IntegrationTest;
 import com.glm.glmback.atelier.application.ApercusDeResolution;
 import com.glm.glmback.atelier.application.ConfirmerLesActes;
 import com.glm.glmback.atelier.application.RecusDActes;
+import com.glm.glmback.atelier.domain.AdresseDossierConflit;
 import com.glm.glmback.atelier.domain.ApercuObsoleteException;
+import com.glm.glmback.atelier.domain.Habilitations;
+import com.glm.glmback.atelier.domain.OperateursConnus;
+import com.glm.glmback.atelier.domain.PostesConnus;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.time.domain.Clock;
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -40,6 +49,23 @@ class ConfirmationsMateriellesIT {
 
   @MockitoBean
   private Clock clock;
+
+  @MockitoBean
+  private OperateursConnus operateurs;
+
+  @MockitoBean
+  private PostesConnus postes;
+
+  @MockitoBean
+  private Habilitations habilitations;
+
+  @BeforeEach
+  void referentiel() {
+    when(clock.now()).thenReturn(LE_10_MAI_2026_A_17H);
+    when(operateurs.get(OPERATEUR_ID_DUPONT)).thenReturn(Optional.of(OPERATEUR_CONNU_DUPONT));
+    when(postes.get(POSTE_ID_FRAISEUSE_1)).thenReturn(Optional.of(POSTE_CONNU_FRAISEUSE_1));
+    when(habilitations.estHabilite(OPERATEUR_ID_DUPONT, POSTE_ID_FRAISEUSE_1)).thenReturn(true);
+  }
 
   @Test
   @WithTenant("impeccmold")
@@ -66,5 +92,47 @@ class ConfirmationsMateriellesIT {
     var recu = transactions.execute(status -> recus.get(commande));
     assertThat(relu).contains(suivi);
     assertThat(recu).isEmpty();
+  }
+
+  @ParameterizedTest
+  @EnumSource(ValeurCopiee.class)
+  @WithTenant("impeccmold")
+  void shouldRefuserLaReferenceReelleSiUneValeurCopieeDuReferentielChange(ValeurCopiee valeur) {
+    // GIVEN
+    var suivi = transactions.execute(status -> suivis.create(MaterielDesActesFixture.suiviAvecTransitionSurFraiseuse()));
+    var commande = UUID.randomUUID();
+    var adresse = new AdresseDossierConflit(suivi.id(), suivi.journal().evenements().getLast().id());
+    var apercu = apercus.apercu(
+      commande,
+      adresse,
+      suivi.revision(),
+      MaterielDesActesFixture.correctionDeTransitionEnFin(suivi),
+      CONTEXTE_LEROY_IMPECCMOLD
+    );
+    switch (valeur) {
+      case TAUX -> when(operateurs.get(OPERATEUR_ID_DUPONT)).thenReturn(
+        Optional.of(MaterielDesActesFixture.dupontAvecTaux(new BigDecimal("23.00")))
+      );
+      case COUT -> when(postes.get(POSTE_ID_FRAISEUSE_1)).thenReturn(
+        Optional.of(MaterielDesActesFixture.fraiseuseAvecCout(new BigDecimal("46.50")))
+      );
+      case NATURE -> when(postes.get(POSTE_ID_FRAISEUSE_1)).thenReturn(
+        Optional.of(MaterielDesActesFixture.fraiseuseAvecNature(NATURE_TOURNAGE))
+      );
+    }
+    // WHEN THEN
+    assertThatThrownBy(() ->
+      confirmations.confirmer(suivi.id(), commande, apercu.reference().opaque(), CONTEXTE_LEROY_IMPECCMOLD)
+    ).isExactlyInstanceOf(ApercuObsoleteException.class);
+    var relu = transactions.execute(status -> suivis.get(suivi.id()));
+    var recu = transactions.execute(status -> recus.get(commande));
+    assertThat(relu).contains(suivi);
+    assertThat(recu).isEmpty();
+  }
+
+  private enum ValeurCopiee {
+    TAUX,
+    COUT,
+    NATURE,
   }
 }
