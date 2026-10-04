@@ -48,6 +48,37 @@ class SuivisDAtelierEnMemoireTest {
   }
 
   @Test
+  void shouldRendreLaRevisionEnregistreeApresUneCloture() {
+    // GIVEN
+    SuiviDAtelier suivi = suivis.create(suiviDAtelierEngage());
+    // WHEN
+    SuiviDAtelier clos = suivis.update(suivi.cloture(clotureParLeroyA(LE_10_MAI_2026_A_17H)));
+    // THEN
+    assertThat(clos.revision()).isEqualTo(new RevisionDuSuivi(1));
+    assertThat(suivis.get(suivi.id())).contains(clos);
+  }
+
+  @Test
+  void shouldConserverLaRevisionQuandLeSuiviEstInchange() {
+    // GIVEN
+    SuiviDAtelier suivi = suivis.create(suiviDAtelierEngage());
+    // WHEN
+    SuiviDAtelier inchange = suivis.update(suivi);
+    // THEN
+    assertThat(inchange).isEqualTo(suivi);
+  }
+
+  @Test
+  void shouldRefuserLUpdateDUneRevisionPerimee() {
+    // GIVEN
+    SuiviDAtelier suivi = suivis.create(suiviDAtelierEngage());
+    var clos = suivis.update(suivi.cloture(clotureParLeroyA(LE_10_MAI_2026_A_17H)));
+    // WHEN THEN
+    assertThatThrownBy(() -> suivis.update(suivi)).isExactlyInstanceOf(SaisieConcurrenteException.class);
+    assertThat(suivis.get(suivi.id())).contains(clos);
+  }
+
+  @Test
   void shouldListerLesSuivisDeLaPeriodeDuPlusRecentAuPlusAncien() {
     SuiviDAtelier suivi = suivis.create(suiviDAtelierEngage());
 

@@ -54,9 +54,12 @@ final class SequenceDActivites {
   private final List<EvenementDAtelier> actifs;
   private final Map<ActiviteId, Instant> regularisations;
   private final Map<ActiviteId, Instant> debuts = new HashMap<>();
+  private final Map<ActiviteId, EvenementDAtelier> ouvrants = new HashMap<>();
   private final Map<ActiviteId, Activite> activites = new LinkedHashMap<>();
   private final Set<ActiviteId> expirees = new HashSet<>();
   private final List<Contradiction> contradictions = new ArrayList<>();
+  private final List<DiagnosticDeConflit> diagnostics = new ArrayList<>();
+  private final Map<ActiviteId, EvenementDAtelierId> termineesPar = new HashMap<>();
   private Optional<ActiviteId> courante = Optional.empty();
   private Optional<Instant> cloture = Optional.empty();
 
@@ -77,7 +80,12 @@ final class SequenceDActivites {
         )
       );
     Stream.concat(faits.stream().filter(EvenementDAtelier::estAnnule), actifs.stream()).forEach(fait ->
-      fait.activite().ifPresent(activite -> debuts.put(activite, fait.dateDeSurvenue()))
+      fait
+        .activite()
+        .ifPresent(activite -> {
+          debuts.put(activite, fait.dateDeSurvenue());
+          ouvrants.put(activite, fait);
+        })
     );
   }
 
@@ -94,6 +102,10 @@ final class SequenceDActivites {
    */
   static List<SequenceEnConflit> conflits(List<EvenementDAtelier> faits, Optional<Instant> cloture) {
     return interpretation(faits, cloture).sequencesEnConflit();
+  }
+
+  static List<DiagnosticDeConflit> diagnostics(List<EvenementDAtelier> faits, Optional<Instant> cloture) {
+    return List.copyOf(interpretation(faits, cloture).diagnostics);
   }
 
   private static SequenceDActivites interpretation(List<EvenementDAtelier> faits, Optional<Instant> cloture) {
@@ -132,7 +144,10 @@ final class SequenceDActivites {
    * Une ouverture termine a son heure l'activite en cours sur la cle, s'il y en a une : c'est la relance.
    */
   private void ouvre(EvenementDAtelier ouvrant) {
-    courante.ifPresent(activite -> termine(activite, ouvrant.dateDeSurvenue()));
+    courante.ifPresent(activite -> {
+      termine(activite, ouvrant.dateDeSurvenue());
+      termineesPar.put(activite, ouvrant.id());
+    });
     Activite ouverte = Activite.ouvertePar(ouvrant);
     activites.put(ouverte.id(), ouverte);
     courante = Optional.of(ouverte.id());
@@ -174,6 +189,7 @@ final class SequenceDActivites {
     if (courante.filter(visee::equals).isPresent()) {
       if (peutTerminer(activites.get(visee), fin)) {
         termine(visee, fin.dateDeSurvenue());
+        termineesPar.put(visee, fin.id());
         courante = Optional.empty();
       }
       return;
@@ -206,8 +222,49 @@ final class SequenceDActivites {
   private Contradiction contradiction(EvenementDAtelier geste, ActiviteId visee) {
     Instant heure = geste.dateDeSurvenue();
     Instant debut = debuts.getOrDefault(visee, heure);
+    diagnostics.add(
+      new DiagnosticDeConflit(
+        geste.id(),
+        new CibleDuConflit(
+          visee,
+          Optional.ofNullable(ouvrants.get(visee)).map(EvenementDAtelier::id),
+          Optional.ofNullable(termineesPar.get(visee))
+        ),
+        raison(geste, visee)
+      )
+    );
 
     return debut.isBefore(heure) ? new Contradiction(geste, visee, debut, heure) : new Contradiction(geste, visee, heure, debut);
+  }
+
+  private RaisonDuConflit raison(EvenementDAtelier geste, ActiviteId visee) {
+    if (Optional.ofNullable(ouvrants.get(visee)).filter(EvenementDAtelier::estAnnule).isPresent()) {
+      return RaisonDuConflit.OUVRANT_ANNULE;
+    }
+    if (debuts.getOrDefault(visee, geste.dateDeSurvenue()).isAfter(geste.dateDeSurvenue())) {
+      return RaisonDuConflit.GESTE_AVANT_OUVERTURE;
+    }
+    if (
+      geste.intention() == IntentionDePointage.TRANSITION
+      && courante.filter(visee::equals).isPresent()
+      && Optional.ofNullable(ouvrants.get(visee))
+        .filter(ouvrant -> ouvrant.type() == geste.type())
+        .isPresent()
+    ) {
+      return RaisonDuConflit.TRANSITION_MEME_CATEGORIE;
+    }
+    if (expirees.contains(visee) && courante.isPresent()) {
+      return RaisonDuConflit.CIBLE_ECHUE_AVEC_AUTRE_ACTIVITE;
+    }
+    if (geste.estUneRegularisation() || regularisations.containsKey(visee)) {
+      return RaisonDuConflit.CONTRADICTION_REGULARISATION;
+    }
+    return actifs
+      .stream()
+      .filter(fait -> fait.id().equals(termineesPar.get(visee)))
+      .map(fait -> fait.intention() == IntentionDePointage.FIN ? RaisonDuConflit.CIBLE_DEJA_TERMINEE : RaisonDuConflit.CIBLE_REMPLACEE)
+      .findFirst()
+      .orElse(RaisonDuConflit.CIBLE_REMPLACEE);
   }
 
   /**

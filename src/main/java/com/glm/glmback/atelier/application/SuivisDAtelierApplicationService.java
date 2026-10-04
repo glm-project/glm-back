@@ -35,6 +35,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -161,7 +162,7 @@ public class SuivisDAtelierApplicationService {
   }
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
-  @Transactional(readOnly = true)
+  @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
   public LectureDuSuivi get(SuiviDAtelierId id) {
     return lu(suivisDAtelier.get(id));
   }

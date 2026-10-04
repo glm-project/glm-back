@@ -2,6 +2,7 @@ package com.glm.glmback.coutderevient.domain;
 
 import com.glm.glmback.shared.time.domain.Clock;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -74,7 +75,7 @@ public final class CoutsDeRevientService {
         .annuaire(annuaire(activites));
     }
     Set<OperateurId> operateurs = tranches.stream().map(TrancheDActivite::operateur).collect(Collectors.toSet());
-    List<ActiviteInterpretee> occupation = occupations.activites(operateurs, couverture(tranches));
+    List<ActiviteInterpretee> occupation = occupationDesFenetres(operateurs, tranches, evaluation);
     List<TrancheDActivite> menees = terminees(occupation, evaluation);
     List<ZoneIncertaine> zones = Stream.concat(activites.stream(), occupation.stream())
       .flatMap(activite -> activite.zoneA(evaluation).stream())
@@ -98,6 +99,26 @@ public final class CoutsDeRevientService {
       .lecture(lecture)
       .conflits(dependances)
       .annuaire(annuaire(Stream.concat(activites.stream(), occupation.stream()).toList()));
+  }
+
+  private List<ActiviteInterpretee> occupationDesFenetres(
+    Set<OperateurId> operateurs,
+    List<TrancheDActivite> tranches,
+    Instant evaluation
+  ) {
+    Periode periode = couverture(tranches);
+    while (true) {
+      List<ActiviteInterpretee> occupation = occupations.activites(operateurs, periode);
+      Periode acquise = couverture(Stream.concat(tranches.stream(), terminees(occupation, evaluation).stream()).toList());
+      Periode etendue = new Periode(
+        Collections.min(List.of(periode.debut(), acquise.debut())),
+        Collections.max(List.of(periode.fin(), acquise.fin()))
+      );
+      if (etendue.equals(periode)) {
+        return occupation;
+      }
+      periode = etendue;
+    }
   }
 
   /**

@@ -4,7 +4,9 @@ import com.glm.glmback.coutderevient.domain.CoutHoraire;
 import com.glm.glmback.coutderevient.domain.PointageEnConflit;
 import com.glm.glmback.coutderevient.domain.TauxHoraire;
 import com.glm.glmback.coutderevient.domain.TypeDePointage;
+import com.glm.glmback.shared.time.infrastructure.secondary.ExactInstantConverter;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -38,6 +40,7 @@ class EvenementDAtelierValoriseEntity {
   @Column(length = 20)
   private TypeDePointage type;
 
+  @Convert(converter = ExactInstantConverter.class)
   private Instant dateDeSurvenue;
 
   protected EvenementDAtelierValoriseEntity() {

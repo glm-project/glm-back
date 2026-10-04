@@ -11,11 +11,11 @@ import com.glm.glmback.shared.authentication.application.AuthenticatedUser;
  * regularisation ne se reconnait jamais a l'identite de son auteur.
  * </p>
  */
-final class AuteurConnecte {
+public final class AuteurConnecte {
 
   private AuteurConnecte() {}
 
-  static Auteur get() {
+  public static Auteur get() {
     return new Auteur(AuthenticatedUser.username().get());
   }
 }

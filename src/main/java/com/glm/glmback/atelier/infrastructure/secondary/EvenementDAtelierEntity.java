@@ -15,7 +15,9 @@ import com.glm.glmback.atelier.domain.OrigineDuPointage;
 import com.glm.glmback.atelier.domain.PosteDeTravailId;
 import com.glm.glmback.atelier.domain.TauxHoraire;
 import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
+import com.glm.glmback.shared.time.infrastructure.secondary.ExactInstantConverter;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -74,13 +76,19 @@ class EvenementDAtelierEntity {
   @Column(length = 20)
   private OrigineDuPointage origine;
 
+  @Column(name = "remplace_evenement_id")
+  private UUID remplaceEvenementId;
+
+  @Convert(converter = ExactInstantConverter.class)
   private Instant dateDeSurvenue;
 
   @Column(name = "date_d_enregistrement")
+  @Convert(converter = ExactInstantConverter.class)
   private Instant dateDEnregistrement;
 
   private String annulationAuteur;
 
+  @Convert(converter = ExactInstantConverter.class)
   private Instant annulationDate;
 
   private String annulationMotif;
@@ -103,6 +111,7 @@ class EvenementDAtelierEntity {
     tauxHoraire = evenement.tauxHoraire().map(TauxHoraire::value).orElse(null);
     auteur = evenement.auteur().value();
     origine = evenement.origine();
+    remplaceEvenementId = evenement.remplace().map(EvenementDAtelierId::uuid).orElse(null);
     dateDeSurvenue = evenement.dateDeSurvenue();
     dateDEnregistrement = evenement.dateDEnregistrement();
     reporteLAnnulation(evenement);
@@ -146,6 +155,7 @@ class EvenementDAtelierEntity {
       .tauxHoraire(Optional.ofNullable(tauxHoraire).map(TauxHoraire::new))
       .auteur(new Auteur(auteur))
       .origine(origine)
+      .remplace(Optional.ofNullable(remplaceEvenementId).map(EvenementDAtelierId::new))
       .horodatage(new Horodatage(dateDeSurvenue, dateDEnregistrement));
 
     return annulation().map(evenement::annule).orElse(evenement);

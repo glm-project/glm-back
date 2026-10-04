@@ -10,12 +10,15 @@ import com.glm.glmback.atelier.domain.EvenementDAtelier;
 import com.glm.glmback.atelier.domain.Horodatage;
 import com.glm.glmback.atelier.domain.JournalDAtelier;
 import com.glm.glmback.atelier.domain.NomDElement;
+import com.glm.glmback.atelier.domain.RevisionDuSuivi;
 import com.glm.glmback.atelier.domain.SequenceEnConflit;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.TypeDElementEngage;
+import com.glm.glmback.shared.time.infrastructure.secondary.ExactInstantConverter;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -52,6 +55,8 @@ class SuiviDAtelierEntity {
   @Id
   private UUID id;
 
+  private long revision;
+
   private UUID elementId;
 
   private String elementNom;
@@ -62,13 +67,16 @@ class SuiviDAtelierEntity {
 
   private String engagementAuteur;
 
+  @Convert(converter = ExactInstantConverter.class)
   private Instant engagementDate;
 
   private String clotureAuteur;
 
+  @Convert(converter = ExactInstantConverter.class)
   private Instant clotureDateDeSurvenue;
 
   @Column(name = "cloture_date_d_enregistrement")
+  @Convert(converter = ExactInstantConverter.class)
   private Instant clotureDateDEnregistrement;
 
   @OneToMany(mappedBy = "suivi", cascade = CascadeType.ALL)
@@ -87,6 +95,7 @@ class SuiviDAtelierEntity {
 
   private SuiviDAtelierEntity(SuiviDAtelier suivi) {
     id = suivi.id().uuid();
+    revision = suivi.revision().value();
     elementId = suivi.element().id().uuid();
     elementNom = suivi.element().nom().value();
     elementType = suivi.element().type();
@@ -99,28 +108,15 @@ class SuiviDAtelierEntity {
     return new SuiviDAtelierEntity(suivi);
   }
 
-  /**
-   * Vrai si la ligne porte un evenement que l'agregat entrant ignore.
-   *
-   * <p>
-   * Le journal ne perd jamais un evenement : une annulation le marque, elle ne le retire pas. Un evenement stocke
-   * absent de l'agregat entrant ne peut donc signifier qu'une chose — cet agregat a ete calcule sur un journal deja
-   * perime. C'est le seul controle d'obsolescence necessaire, et il ne coute rien : la collection est deja chargee
-   * pour le rapprochement.
-   * </p>
-   */
-  boolean contientDesEvenementsAbsentsDe(SuiviDAtelier suivi) {
-    Set<UUID> entrants = suivi
-      .journal()
-      .evenements()
-      .stream()
-      .map(evenement -> evenement.id().uuid())
-      .collect(Collectors.toSet());
+  boolean porteUneAutreRevisionQue(SuiviDAtelier suivi) {
+    return revision != suivi.revision().value();
+  }
 
-    return journal
-      .stream()
-      .map(EvenementDAtelierEntity::id)
-      .anyMatch(identifiant -> !entrants.contains(identifiant));
+  void enregistre(SuiviDAtelier suivi) {
+    if (!toDomain().equals(suivi)) {
+      reconcilie(suivi);
+      revision++;
+    }
   }
 
   /**
@@ -154,7 +150,7 @@ class SuiviDAtelierEntity {
   }
 
   SuiviDAtelier toDomain() {
-    SuiviDAtelier suivi = SuiviDAtelier.builder()
+    SuiviDAtelier suivi = SuiviDAtelier.relectureBuilder(new RevisionDuSuivi(revision))
       .id(new SuiviDAtelierId(id))
       .element(new ElementEngage(new ElementEngageId(elementId), new NomDElement(elementNom), elementType))
       .engagement(new Engagement(new Auteur(engagementAuteur), engagementDate))

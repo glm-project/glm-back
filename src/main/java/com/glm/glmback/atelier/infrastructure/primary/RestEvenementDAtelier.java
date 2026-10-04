@@ -4,6 +4,7 @@ import com.glm.glmback.atelier.domain.ActiviteId;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
 import com.glm.glmback.atelier.domain.CoutHoraire;
 import com.glm.glmback.atelier.domain.EvenementDAtelier;
+import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.IntentionDePointage;
 import com.glm.glmback.atelier.domain.NatureDOperation;
 import com.glm.glmback.atelier.domain.TauxHoraire;
@@ -46,8 +47,14 @@ record RestEvenementDAtelier(
   )
   UUID activite,
   @Schema(description = "Activite que vise une transition ou une fin, absente pour une ouverture.") UUID cible,
+  @Schema(
+    description = "Identite brute de l'operateur, conservee meme si la fiche est absente.",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  UUID operateurId,
   @Schema(description = "Operateur dont le temps est affecte, absent si la fiche n'est plus resolue au referentiel.")
   RestOperateur operateur,
+  @Schema(description = "Identite brute du poste, absente uniquement lorsqu'aucun poste n'a ete pointe.") UUID posteId,
   @Schema(description = "Poste de travail, toujours facultatif.") RestPosteDeTravail poste,
   @Schema(description = "Nature de l'operation, recopiee du poste a la saisie. Simple axe d'agregation.") String nature,
   @Schema(
@@ -71,7 +78,11 @@ record RestEvenementDAtelier(
     requiredMode = Schema.RequiredMode.REQUIRED
   )
   boolean estUneRegularisation,
-  @Schema(description = "Presente lorsque l'evenement a ete annule. L'evenement reste au journal.") RestAnnulation annulation
+  @Schema(description = "Presente lorsque l'evenement a ete annule. L'evenement reste au journal.") RestAnnulation annulation,
+  @Schema(
+    description = "Evenement corrige par ce remplacant. Absent pour un pointage, une regularisation ou un historique sans lien explicite."
+  )
+  UUID remplace
 ) {
   static RestEvenementDAtelier from(EvenementDAtelier evenement, AnnuaireDAtelier annuaire) {
     return new RestEvenementDAtelier(
@@ -80,7 +91,12 @@ record RestEvenementDAtelier(
       evenement.intention(),
       evenement.activite().map(ActiviteId::uuid).orElse(null),
       evenement.activiteVisee().map(ActiviteId::uuid).orElse(null),
+      evenement.operateur().uuid(),
       RestOperateur.resolu(annuaire, evenement.operateur()),
+      evenement
+        .poste()
+        .map(poste -> poste.uuid())
+        .orElse(null),
       RestPosteDeTravail.resolu(annuaire, evenement.poste()),
       evenement.nature().map(NatureDOperation::value).orElse(null),
       evenement.coutHoraire().map(CoutHoraire::value).orElse(null),
@@ -89,7 +105,8 @@ record RestEvenementDAtelier(
       evenement.dateDeSurvenue(),
       evenement.dateDEnregistrement(),
       evenement.estUneRegularisation(),
-      evenement.annulation().map(RestAnnulation::from).orElse(null)
+      evenement.annulation().map(RestAnnulation::from).orElse(null),
+      evenement.remplace().map(EvenementDAtelierId::uuid).orElse(null)
     );
   }
 }

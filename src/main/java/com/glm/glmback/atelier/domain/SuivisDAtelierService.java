@@ -138,11 +138,11 @@ public final class SuivisDAtelierService {
   }
 
   public SuiviDAtelier regularise(RegularisationAEnregistrer commande, EvenementDAtelierId evenement) {
-    return repository.update(get(commande.suivi()).enregistre(regularisation(commande, evenement)));
+    return repository.update(prepareRegularisation(get(commande.suivi()), commande, evenement));
   }
 
   public SuiviDAtelier annule(AnnulationAEnregistrer commande) {
-    return repository.update(get(commande.suivi()).annule(commande.evenement(), annulation(commande.auteur(), commande.motif())));
+    return repository.update(prepareAnnulation(get(commande.suivi()), commande));
   }
 
   public SuiviDAtelier corrige(CorrectionAEnregistrer commande) {
@@ -150,14 +150,23 @@ public final class SuivisDAtelierService {
   }
 
   public SuiviDAtelier corrige(CorrectionAEnregistrer commande, EvenementDAtelierId remplacementId) {
-    RegularisationAEnregistrer remplacement = commande.remplacement();
+    return repository.update(prepareCorrection(get(commande.remplacement().suivi()), commande, remplacementId));
+  }
 
-    return repository.update(
-      get(remplacement.suivi()).corrige(
-        commande.evenement(),
-        annulation(remplacement.auteur(), commande.motif()),
-        regularisation(remplacement, remplacementId)
-      )
+  public SuiviDAtelier prepareRegularisation(SuiviDAtelier suivi, RegularisationAEnregistrer commande, EvenementDAtelierId evenement) {
+    return suivi.enregistre(regularisation(commande, evenement));
+  }
+
+  public SuiviDAtelier prepareAnnulation(SuiviDAtelier suivi, AnnulationAEnregistrer commande) {
+    return suivi.annule(commande.evenement(), annulation(commande.auteur(), commande.motif()));
+  }
+
+  public SuiviDAtelier prepareCorrection(SuiviDAtelier suivi, CorrectionAEnregistrer commande, EvenementDAtelierId remplacementId) {
+    RegularisationAEnregistrer remplacement = commande.remplacement();
+    return suivi.corrige(
+      commande.evenement(),
+      annulation(remplacement.auteur(), commande.motif()),
+      regularisation(remplacement, remplacementId)
     );
   }
 
@@ -184,6 +193,8 @@ public final class SuivisDAtelierService {
   }
 
   private EvenementDAtelier regularisation(RegularisationAEnregistrer commande, EvenementDAtelierId evenement) {
+    Instant maintenant = clock.now();
+    refuseDateFuture(Optional.of(commande.dateDeSurvenue()), maintenant);
     return evenement(
       evenement,
       commande.type(),
@@ -193,7 +204,7 @@ public final class SuivisDAtelierService {
       commande.poste(),
       commande.auteur(),
       OrigineDuPointage.REGULARISATION,
-      new Horodatage(commande.dateDeSurvenue(), clock.now())
+      new Horodatage(commande.dateDeSurvenue(), maintenant)
     );
   }
 
@@ -215,6 +226,12 @@ public final class SuivisDAtelierService {
     }
 
     return dateDeSurvenue.filter(date -> date.isBefore(maintenant)).orElse(maintenant);
+  }
+
+  private static void refuseDateFuture(Optional<Instant> dateDeSurvenue, Instant maintenant) {
+    if (dateDeSurvenue.filter(date -> date.isAfter(maintenant)).isPresent()) {
+      throw new DateDeSurvenueFutureException(dateDeSurvenue.orElseThrow());
+    }
   }
 
   private EvenementDAtelier evenement(
@@ -244,6 +261,7 @@ public final class SuivisDAtelierService {
       .tauxHoraire(operateurConnu.tauxHoraire())
       .auteur(auteur)
       .origine(origine)
+      .remplace(Optional.empty())
       .horodatage(horodatage);
   }
 

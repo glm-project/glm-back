@@ -30,7 +30,7 @@ public record AnnuaireDAtelier(Map<OperateurId, OperateurConnu> operateurs, Map<
     postes = Map.copyOf(postes);
   }
 
-  static AnnuaireDAtelier de(List<OperateurConnu> operateurs, List<PosteConnu> postes) {
+  public static AnnuaireDAtelier de(List<OperateurConnu> operateurs, List<PosteConnu> postes) {
     return new AnnuaireDAtelier(
       operateurs.stream().collect(Collectors.toMap(OperateurConnu::id, Function.identity())),
       postes.stream().collect(Collectors.toMap(PosteConnu::id, Function.identity()))

@@ -12,19 +12,19 @@ import java.util.UUID;
  * Un champ absent est laisse a son propre {@code @NotNull} : il ne fait pas, en plus, une combinaison invalide.
  * </p>
  */
-final class CoherenceDuGeste {
+public final class CoherenceDuGeste {
 
-  static final String INTENTION_ADMISE =
+  public static final String INTENTION_ADMISE =
     "une fin se pointe avec l'intention FIN, un debut ou une non conformite avec OUVERTURE ou TRANSITION";
-  static final String CIBLE_CONFORME = "une transition ou une fin porte la cible qu'elle vise, une ouverture n'en porte aucune";
+  public static final String CIBLE_CONFORME = "une transition ou une fin porte la cible qu'elle vise, une ouverture n'en porte aucune";
 
   private CoherenceDuGeste() {}
 
-  static boolean intentionAdmise(TypeDEvenementDAtelier type, IntentionDePointage intention) {
+  public static boolean intentionAdmise(TypeDEvenementDAtelier type, IntentionDePointage intention) {
     return type == null || intention == null || intention.admet(type);
   }
 
-  static boolean cibleConforme(IntentionDePointage intention, UUID cible) {
+  public static boolean cibleConforme(IntentionDePointage intention, UUID cible) {
     return intention == null || intention.viseUneActivite() == (cible != null);
   }
 }

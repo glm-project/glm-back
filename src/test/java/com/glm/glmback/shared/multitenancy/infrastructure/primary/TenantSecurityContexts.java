@@ -26,6 +26,7 @@ public final class TenantSecurityContexts {
   static SecurityContext securityContext(String tenant) {
     Jwt jwt = Jwt.withTokenValue("token")
       .header("alg", JwsAlgorithms.RS256)
+      .issuer("https://identity.glm.example/realms/glm")
       .subject("admin")
       .claim("preferred_username", "admin")
       .claim("groups", ROLES)

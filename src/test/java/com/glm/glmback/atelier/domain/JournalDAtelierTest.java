@@ -492,6 +492,30 @@ class JournalDAtelierTest {
       .satisfies(enPlace -> assertThat(enPlace.activite()).isEqualTo(debut.activite()));
   }
 
+  @Test
+  void shouldRelierUneCorrectionALOrigineDeSonOuvrant() {
+    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier remplacant = debutSurFraiseuse1RegulariseParLeroyA(LE_10_MAI_2026_A_7H30);
+
+    JournalDAtelier corrige = new JournalDAtelier(List.of(debut)).corrige(debut.id(), annulationParLeroy(), remplacant);
+
+    assertThat(corrige.evenement(remplacant.id()).orElseThrow().remplace()).contains(debut.id());
+  }
+
+  @Test
+  void shouldRelierLaCorrectionDUneFinEtConserverSaChaineALAnnulation() {
+    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier fin = finDe(debut).a(LE_10_MAI_2026_A_12H);
+    EvenementDAtelier remplacant = finDe(debut).a(LE_10_MAI_2026_A_12H.plusSeconds(1800));
+    JournalDAtelier journal = new JournalDAtelier(List.of(debut, fin));
+
+    JournalDAtelier corrige = journal.corrige(fin.id(), annulationParLeroy(), remplacant);
+    JournalDAtelier annule = corrige.annule(remplacant.id(), annulationParLeroy());
+
+    assertThat(annule.evenement(remplacant.id()).orElseThrow().remplace()).contains(fin.id());
+    assertThat(annule.evenement(fin.id()).orElseThrow().remplace()).isEmpty();
+  }
+
   /**
    * Apres correction de son ouvrant, un geste visant l'activite se resout sur l'ouvrant actif : le remplacant.
    */
@@ -791,6 +815,7 @@ class JournalDAtelierTest {
       .tauxHoraire(Optional.of(TAUX_HORAIRE_DUPONT))
       .auteur(AUTEUR_DUPONT)
       .origine(OrigineDuPointage.POINTAGE)
+      .remplace(Optional.empty())
       .horodatage(Horodatage.saisiA(date));
   }
 
@@ -808,6 +833,7 @@ class JournalDAtelierTest {
       .tauxHoraire(Optional.of(TAUX_HORAIRE_DUPONT))
       .auteur(AUTEUR_DUPONT)
       .origine(OrigineDuPointage.POINTAGE)
+      .remplace(Optional.empty())
       .horodatage(Horodatage.saisiA(date));
   }
 }

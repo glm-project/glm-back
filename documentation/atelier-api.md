@@ -64,6 +64,10 @@ Chaque événement porte deux dates :
 - `dateDeSurvenue` — l'heure **métier**, celle où le fait a eu lieu ;
 - `dateDEnregistrement` — l'heure de la **saisie**.
 
+Les instants du journal, de la clôture et des activités sont conservés exactement à la nanoseconde, y compris
+lorsqu'un fait précède le suivant d'une seule nanoseconde. La réponse sérialise l'instant en UTC (`Z`) ; le décalage
+d'origine (`+02:00`, par exemple) ne change pas l'instant. Les anciennes dates déjà arrondies restent telles quelles.
+
 Un affichage honnête montre l'heure métier, et signale la saisie différée par l'écart entre les deux (« pointé le
 11/05 à 9 h 15 pour le 10/05 à 17 h »).
 
@@ -183,6 +187,22 @@ régularisation et la correction.
   ci-dessus).
 
 ### Des pointages contradictoires restent en conflit, jusqu'à la décision du gestionnaire
+
+Le gestionnaire et l'opérateur peuvent consulter `GET /api/atelier/conflits`. Cette page lit les projections
+courantes sans charger les journaux : une ligne désigne une séquence par `adresse.suivi` et `adresse.pointage`,
+avec la révision du suivi, les références brutes, les fiches disponibles, le premier instant métier exact et
+le nombre de pointages. `operateur` et `element` cherchent du texte partiel sans casse, y compris dans les
+identifiants, et se combinent avant `page` et `size`. Les caractères `%`, `_` et `\` restent littéraux.
+Le tri suit le premier pointage, puis les identifiants du suivi et de l'ancrage. `total` et les `lignes` proviennent
+d'une même acquisition SQL. `complete: true` caractérise une lecture réussie, même vide ; un échec d'acquisition
+remonte en erreur HTTP. Les explications détaillées appartiennent au dossier de la séquence.
+Le dossier expose les diagnostics produits pendant l'interprétation : `CIBLE_REMPLACEE`,
+`CIBLE_DEJA_TERMINEE`, `GESTE_AVANT_OUVERTURE`, `OUVRANT_ANNULE`, `TRANSITION_MEME_CATEGORIE`,
+`CIBLE_ECHUE_AVEC_AUTRE_ACTIVITE` ou `CONTRADICTION_REGULARISATION`. Chaque diagnostic identifie le
+pointage contradictoire, l'activité visée, son ouvrant connu et le fait qui l'a terminée lorsqu'il existe.
+L'identité d'un ouvrant annulé ou postérieur au geste reste présente ; aucune activité n'est créée pour
+compléter l'explication. Une contradiction de régularisation concerne un geste régularisé ou une cible
+prolongée par une régularisation. Le même passage dans l'interpréteur produit séquences et diagnostics.
 
 Le serveur ne choisit jamais entre deux pointages qui se contredisent, quel que soit leur ordre d'arrivée. Travail A à
 8 h, transition de A vers une non conformité à 12 h, fin de A à 17 h : que la transition arrive avant la fin ou le
@@ -455,6 +475,12 @@ pointage ouvrant garde son `activite` : la fin qui visait l'activité la termine
 12 h, lu à 22 h, rend l'activité en cours jusqu'à son échéance de 1 h, et la fin que le pupitre pointe ensuite en
 visant le pointage d'origine la termine.
 
+Le remplaçant porte aussi `remplace`, l'UUID de l'événement corrigé : ce lien distingue la correction d'une
+annulation suivie d'une régularisation et vaut aussi pour une fin. Corriger un remplaçant crée le lien vers ce
+remplaçant ; l'annuler conserve son lien. Un pointage ou une régularisation rend `remplace: null`. Les anciens
+événements sans lien explicite rendent aussi `null` : aucune proximité de date ou d'auteur ne reconstitue une
+correction certaine.
+
 Déplacer par correction un ouvrant vers un autre opérateur ou poste répond **409** `activite-visee-incoherente` si
 un geste actif vise encore cette activité depuis l'ancienne clé. Corriger ou annuler d'abord ce geste permet ensuite
 de déplacer l'ouvrant.
@@ -626,3 +652,70 @@ un autre élément, avec `element`, `operateur`, `poste` facultatif, les identit
 et les faits actifs `pointages`. Une séquence sans activité à résoudre reste visible pour son élément
 sans rendre les montants incomplets. Résoudre les faits par annulation ou correction recalcule les valeurs.
 Cette route ne prend pas de paramètre d'évaluation et ne garantit pas un instantané face aux écritures concurrentes.
+
+## Résolution manuelle des conflits
+
+Ces routes sont décrites dans le [contrat OpenAPI généré](openapi.json) et éprouvées par les scénarios REST.
+
+| Capacité               | Route                                                                    | Droit                                 |
+| ---------------------- | ------------------------------------------------------------------------ | ------------------------------------- |
+| Liste paginée          | `GET /api/atelier/conflits?operateur=…&element=…&page=0&size=5`          | `USER` ou `GESTIONNAIRE`              |
+| Dossier adressé        | `GET /api/atelier/suivis/{suivi}/conflits/{pointage}`                    | `USER` ou `GESTIONNAIRE`              |
+| Aperçu sans écriture   | `POST /api/atelier/suivis/{suivi}/conflits/{pointage}/apercus`           | `GESTIONNAIRE`                        |
+| Confirmation           | `POST /api/atelier/suivis/{suivi}/confirmations-de-resolution`           | `GESTIONNAIRE`                        |
+| Vérification canonique | `GET /api/atelier/suivis/{suivi}/confirmations-de-resolution/{commande}` | `GESTIONNAIRE`, auteur de la commande |
+
+L'adresse d'un dossier est le couple suivi/pointage ; une identité technique de projection n'est pas
+une adresse. Le résultat porte `EN_CONFLIT`, `INTROUVABLE`, `ANCRE_ANNULEE` ou `HORS_CONFLIT`.
+Un suivi absent du tenant courant répond 404 sans journal. Un suivi accessible conserve son journal
+dans les trois résultats d'adresse sans conflit ; aucun de ces résultats ne redirige implicitement.
+
+Le dossier et son avant/après portent la `revision` numérique du suivi évalué, son `evaluation`, le
+journal complet, les activités concernées et les conflits restants. `sequence` décrit la séquence
+active contenant l’ancre ; `perimetre` conserve les faits concernés après un acte, même si l’ancre
+est annulée. Le booléen `enConflit` est calculé par le domaine sur ce périmètre : il peut rester vrai
+sans intervalle d’activité, ou être faux avec d’autres conflits indépendants dans `continuations`.
+Les continuations donnent les adresses actives explicites ; elles ne changent jamais l’adresse demandée.
+
+Le détail adressé et l’aperçu lisent le journal, la clôture et la révision d’une même version committée du suivi,
+sans verrouiller les rédacteurs. Une écriture concurrente peut rendre cette version ancienne après sa lecture ;
+la confirmation contrôle toujours la révision sous verrou. Cette garantie ne constitue pas un instantané entre
+plusieurs appels ni avec les libellés du référentiel. Voir [l’ADR 0007](adr/0007-read-addressed-workshop-aggregates-coherently.md).
+
+La révision commence à zéro à l'engagement et progresse à chaque modification effective du journal ou de la clôture, par toutes
+les routes, pointages Pupitre compris. Un rejeu strict ou un geste absorbé ne la fait pas progresser.
+La valeur Java est `RevisionDuSuivi`, séparée des identités de faits et du nombre d'événements.
+
+Les faits portent leurs IDs bruts opérateur/poste indépendamment de la résolution des fiches, leur
+activité créée et visée, auteur, survenue, enregistrement, origine, annulation et lien `remplace`.
+Le poste absent est distinct d'une fiche absente pour un poste identifié. Les activités exposent
+`EN_COURS`, `TERMINEE`, `ECHUE` ou `A_RESOUDRE` ; seuls les états terminés
+portent une durée définitive ISO 8601. Les neuf décimales d'un instant sont conservées.
+
+Le diagnostic vient de l'interprétation du domaine au moment de la contradiction. Il identifie le
+geste, sa cible, l'ouvrant actif ou annulé, le fait qui a terminé ou remplacé la cible et une raison
+structurée. Les premières familles sont cible remplacée, déjà terminée, pas encore ouverte, ouvrant
+annulé, même catégorie, cible échue avec une autre activité en cours et contradiction avec une
+régularisation. Le mapper REST ne rejoue aucun automate. Les propositions portent un code, les faits
+qui les étayent, le `kind`, le `pointage` et le `fait` proposé quand il s’agit d’une correction ;
+aucune n’est sélectionnée et aucun motif n’est prérempli. Le premier guide de fin visant une cible
+remplacée propose soit de rattacher cette fin à l’activité remplaçante, soit d’annuler la transition.
+
+Le corps d'aperçu porte `commande` (UUID créé par le client), `revision` et `acte`. L'acte porte
+`kind` (`CORRECTION`, `ANNULATION`, `REGULARISATION`) et les champs propres à cette intention :
+`pointage` visé et `motif` pour l'annulation ; `pointage` visé, `fait` et `motif` pour la correction ;
+`fait` pour la régularisation, sans justificatif obligatoire. Le fait conserve les UUID
+`operateur`/`poste`, `type`, `intention`, `activiteVisee` éventuelle et chaîne exacte `instant` ; auteur et tarifs restent
+des valeurs serveur. L'aperçu rend la commande, l'acte repris, avant/après, évaluation, révision,
+`reference` opaque et `expireLe`. Il ne réserve aucune identité et n'enregistre rien.
+
+La confirmation reçoit uniquement `commande` et `reference`. Le reçu rend la commande, l'adresse,
+l'acte exact, la révision avant/après, l'instant d'enregistrement, le résultat au dossier d'origine
+et les continuations explicites vers les ancrages actifs des conflits restants. L'enregistrement
+d'un acte laissant un conflit est une réussite. La vérification rend `ENREGISTREE` avec le reçu
+canonique, ou `NON_ATTESTEE` : l'absence momentanée d'un reçu ne permet pas de conclure à un rollback.
+
+La référence autoportante, son intégrité, sa rotation et sa validité sont arrêtées dans
+[l'ADR 0006](adr/0006-authenticate-stateless-resolution-previews.md). Les trois refus de résolution
+(`apercu-invalide`, `apercu-obsolete`, `confirmation-reutilisee`) sont publiés dans
+[le catalogue](codes-erreur.md).

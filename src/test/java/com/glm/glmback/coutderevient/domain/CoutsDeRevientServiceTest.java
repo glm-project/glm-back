@@ -7,7 +7,9 @@ import com.glm.glmback.UnitTest;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -15,6 +17,82 @@ import org.junit.jupiter.params.provider.CsvSource;
 /** Les regles du rapport par son service public, depuis les bornes interpretees d'atelier. */
 @UnitTest
 class CoutsDeRevientServiceTest {
+
+  @Test
+  void shouldAcquerirTouteLaFenetreDePartageQuelQueSoitLElementLu() {
+    var troisieme = new ElementValorise(
+      new ElementId(UUID.randomUUID()),
+      new NomDElement("OF-ARRONDI-C"),
+      TypeDElement.ORDRE_DE_FABRICATION
+    );
+    var a = activiteADeuxEuros(ELEMENT_ID_OF, POSTE_ID_FRAISEUSE, new Periode(LE_11_MAI_A_8H, LE_11_MAI_A_8H.plusSeconds(60)));
+    var b = activiteADeuxEuros(ELEMENT_ID_OF_2, POSTE_ID_TOUR, new Periode(LE_11_MAI_A_8H, LE_11_MAI_A_8H.plusSeconds(120)));
+    var c = activiteADeuxEuros(
+      troisieme.element(),
+      POSTE_ID_FRAISEUSE,
+      new Periode(LE_11_MAI_A_8H.plusSeconds(60), LE_11_MAI_A_8H.plusSeconds(120))
+    );
+    var atelier = new AtelierEnMemoire()
+      .connait(ELEMENT_VALORISE_OF)
+      .connait(ELEMENT_VALORISE_OF_2026_000002)
+      .connait(troisieme)
+      .aTravaille(ELEMENT_ID_OF, a)
+      .aTravaille(ELEMENT_ID_OF_2, b)
+      .aTravaille(troisieme.element(), c);
+    OccupationDesOperateurs occupationParRecouvrement = (operateurs, periode) ->
+      List.of(a, b, c)
+        .stream()
+        .filter(activite -> operateurs.contains(activite.activite().operateur()))
+        .filter(activite -> new Periode(activite.plage().debut(), activite.plage().fin().orElseThrow()).intersection(periode).isPresent())
+        .toList();
+    var service = CoutsDeRevientService.builder()
+      .elements(atelier)
+      .travaux(atelier)
+      .occupations(occupationParRecouvrement)
+      .conflits(atelier)
+      .operateursNommes(atelier)
+      .postesNommes(atelier)
+      .clock(() -> LE_11_MAI_A_17H);
+
+    assertThat(service.rapport(ELEMENT_ID_OF).cout().mainDOeuvre().valeur()).contains(new Montant(new BigDecimal("0.02")));
+    assertThat(service.rapport(ELEMENT_ID_OF_2).cout().mainDOeuvre().valeur()).contains(new Montant(new BigDecimal("0.03")));
+    assertThat(service.rapport(troisieme.element()).cout().mainDOeuvre().valeur()).contains(new Montant(new BigDecimal("0.02")));
+    var sansTaux = Activite.builder()
+      .operateur(OPERATEUR_ID_MARTIN)
+      .element(troisieme.element())
+      .poste(Optional.of(POSTE_ID_TOUR))
+      .nature(Optional.empty())
+      .coutHoraire(Optional.empty())
+      .tauxHoraire(Optional.empty())
+      .categorie(CategorieDActivite.TRAVAIL);
+    atelier.aTravaille(
+      troisieme.element(),
+      ActiviteInterpretee.builder()
+        .id(new ActiviteId(UUID.randomUUID()))
+        .activite(sansTaux)
+        .plage(new Plage(LE_11_MAI_A_8H, Optional.of(LE_11_MAI_A_8H.plusSeconds(30))))
+        .echeance(LE_11_MAI_A_21H)
+        .finAuPlusTard(Optional.empty())
+    );
+    assertThat(service.rapport(troisieme.element()).cout().mainDOeuvre().valeur()).contains(new Montant(new BigDecimal("0.02")));
+  }
+
+  @Test
+  void shouldNePasCompterUneActiviteAResoudreCommeUneActiviteEnCours() {
+    var source = activiteInterpreteeDeFraisage(new Plage(LE_11_MAI_A_8H, Optional.empty()));
+    var incertaine = ActiviteInterpretee.builder()
+      .id(source.id())
+      .activite(source.activite())
+      .plage(source.plage())
+      .echeance(source.echeance())
+      .finAuPlusTard(Optional.of(LE_11_MAI_A_21H));
+    var atelier = new AtelierEnMemoire().connait(ELEMENT_VALORISE_OF).aTravaille(ELEMENT_ID_OF, incertaine);
+
+    var rapport = service(atelier, LE_11_MAI_A_17H).rapport(ELEMENT_ID_OF);
+
+    assertThat(rapport.lecture().activitesEnCours()).isZero();
+    assertThat(rapport.cout().mainDOeuvre().valeur()).isEmpty();
+  }
 
   @Test
   void shouldRefuseAnUnknownElement() {
@@ -259,6 +337,23 @@ class CoutsDeRevientServiceTest {
       });
     service.rapport(ELEMENT_ID_OF);
     assertThat(lectures).hasValue(1);
+  }
+
+  private static ActiviteInterpretee activiteADeuxEuros(ElementId element, PosteDeTravailId poste, Periode periode) {
+    var activite = Activite.builder()
+      .operateur(OPERATEUR_ID_DUPONT)
+      .element(element)
+      .poste(Optional.of(poste))
+      .nature(Optional.empty())
+      .coutHoraire(Optional.empty())
+      .tauxHoraire(Optional.of(new TauxHoraire(new BigDecimal("2.00"))))
+      .categorie(CategorieDActivite.TRAVAIL);
+    return ActiviteInterpretee.builder()
+      .id(new ActiviteId(UUID.randomUUID()))
+      .activite(activite)
+      .plage(new Plage(periode.debut(), Optional.of(periode.fin())))
+      .echeance(periode.debut().plusSeconds(46800))
+      .finAuPlusTard(Optional.empty());
   }
 
   private static CoutsDeRevientService service(AtelierEnMemoire atelier, Instant evaluation) {

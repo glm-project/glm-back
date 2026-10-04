@@ -19,7 +19,7 @@ import java.util.UUID;
   lecture. C'est ce qui permet a une saisie rattrapee de compter a l'heure ou elle a reellement eu lieu.
   """
 )
-record RestSuiviDAtelier(
+public record RestSuiviDAtelier(
   @Schema(
     description = "Identifiant du suivi. C'est lui, et non celui de l'element, que portent les URLs.",
     requiredMode = Schema.RequiredMode.REQUIRED
@@ -62,7 +62,7 @@ record RestSuiviDAtelier(
   )
   List<RestSequenceEnConflit> conflits
 ) {
-  static RestSuiviDAtelier from(LectureDuSuivi lecture, AnnuaireDAtelier annuaire) {
+  public static RestSuiviDAtelier from(LectureDuSuivi lecture, AnnuaireDAtelier annuaire) {
     SuiviDAtelier suivi = lecture.suivi();
 
     return new RestSuiviDAtelier(

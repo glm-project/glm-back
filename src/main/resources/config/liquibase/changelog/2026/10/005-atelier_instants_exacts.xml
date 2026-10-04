@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <changeSet id="atelier_instants_exacts" author="glm" dbms="postgresql">
+    <sql>
+      ALTER TABLE suivi_d_atelier ALTER COLUMN engagement_date TYPE NUMERIC(30, 9) USING extract(epoch FROM engagement_date AT TIME
+      ZONE 'UTC');
+      ALTER TABLE suivi_d_atelier ALTER COLUMN cloture_date_de_survenue TYPE NUMERIC(30, 9) USING extract(epoch FROM
+      cloture_date_de_survenue AT TIME ZONE 'UTC');
+      ALTER TABLE suivi_d_atelier ALTER COLUMN cloture_date_d_enregistrement TYPE NUMERIC(30, 9) USING extract(epoch FROM
+      cloture_date_d_enregistrement AT TIME ZONE 'UTC');
+      ALTER TABLE evenement_d_atelier ALTER COLUMN date_de_survenue TYPE NUMERIC(30, 9) USING extract(epoch FROM date_de_survenue AT TIME
+      ZONE 'UTC');
+      ALTER TABLE evenement_d_atelier ALTER COLUMN date_d_enregistrement TYPE NUMERIC(30, 9) USING extract(epoch FROM date_d_enregistrement
+      AT TIME ZONE 'UTC');
+      ALTER TABLE evenement_d_atelier ALTER COLUMN annulation_date TYPE NUMERIC(30, 9) USING extract(epoch FROM annulation_date AT TIME
+      ZONE 'UTC');
+      ALTER TABLE activite_d_atelier ALTER COLUMN debut TYPE NUMERIC(30, 9) USING extract(epoch FROM debut AT TIME ZONE 'UTC');
+      ALTER TABLE activite_d_atelier ALTER COLUMN echeance TYPE NUMERIC(30, 9) USING extract(epoch FROM echeance AT TIME ZONE 'UTC');
+      ALTER TABLE activite_d_atelier ALTER COLUMN fin TYPE NUMERIC(30, 9) USING extract(epoch FROM fin AT TIME ZONE 'UTC');
+      ALTER TABLE activite_d_atelier ALTER COLUMN fin_au_plus_tard TYPE NUMERIC(30, 9) USING extract(epoch FROM fin_au_plus_tard AT TIME
+      ZONE 'UTC');
+    </sql>
+  </changeSet>
+</databaseChangeLog>

@@ -113,6 +113,30 @@ class SupervisionDAtelierResourceIT {
 
   @Test
   @WithTenant("supervision_fixture")
+  void shouldPreserveNanosecondsAndExpireAtTheExactDeadline() throws Exception {
+    Instant debut = Instant.parse("2026-05-10T08:00:00.123456789Z");
+    Instant echeance = debut.plusSeconds(13 * 3600);
+    var suivi = suiviDAtelierEngage().enregistre(debutSansPosteParDupontA(debut));
+    transactions.executeWithoutResult(status -> suivis.create(suivi));
+    when(clock.now()).thenReturn(echeance.minusNanos(1));
+
+    rest
+      .perform(get("/api/atelier/supervision"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.activites[0].debut").value(debut.toString()))
+      .andExpect(jsonPath("$.activites[0].echeance").value(echeance.toString()))
+      .andExpect(jsonPath("$.activites[0].etat").value("EN_COURS"));
+
+    when(clock.now()).thenReturn(echeance);
+    rest
+      .perform(get("/api/atelier/supervision"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.activites[0].etat").value("TERMINEE_AUTOMATIQUEMENT"))
+      .andExpect(jsonPath("$.activites[0].finRetenue").value(echeance.toString()));
+  }
+
+  @Test
+  @WithTenant("supervision_fixture")
   void shouldDescribeANonConformityOnAReferencedMoldAndItsPost() throws Exception {
     var element = new ElementEngage(ELEMENT_OF_2026_000043, NOM_OF_2026_000043, TypeDElementEngage.PRODUIT);
     var suivi = SuiviDAtelier.builder()

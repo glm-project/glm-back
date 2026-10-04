@@ -32,6 +32,29 @@ class EvenementDAtelierTest {
   }
 
   @Test
+  void shouldNotBuildSansPresenceExpliciteDuLienDeRemplacement() {
+    assertThatThrownBy(() ->
+      EvenementDAtelier.builder()
+        .id(ID)
+        .type(TypeDEvenementDAtelier.DEBUT)
+        .intention(IntentionDePointage.OUVERTURE)
+        .activite(Optional.of(ACTIVITE))
+        .activiteVisee(Optional.empty())
+        .operateur(OPERATEUR_ID_DUPONT)
+        .poste(SUR_FRAISEUSE_1)
+        .nature(EN_FRAISAGE)
+        .coutHoraire(COUT_HORAIRE)
+        .tauxHoraire(TAUX_HORAIRE)
+        .auteur(AUTEUR_DUPONT)
+        .origine(OrigineDuPointage.POINTAGE)
+        .remplace(null)
+        .horodatage(HORODATAGE)
+    )
+      .isExactlyInstanceOf(MissingMandatoryValueException.class)
+      .hasMessageContaining("evenement remplace");
+  }
+
+  @Test
   void shouldBuildEvenementNonAnnule() {
     EvenementDAtelier evenement = EvenementDAtelier.builder()
       .id(ID)
@@ -46,6 +69,7 @@ class EvenementDAtelierTest {
       .tauxHoraire(TAUX_HORAIRE)
       .auteur(AUTEUR_DUPONT)
       .origine(OrigineDuPointage.POINTAGE)
+      .remplace(Optional.empty())
       .horodatage(HORODATAGE);
 
     assertThat(evenement.id()).isEqualTo(ID);
@@ -80,6 +104,7 @@ class EvenementDAtelierTest {
       .tauxHoraire(Optional.empty())
       .auteur(AUTEUR_DUPONT)
       .origine(OrigineDuPointage.POINTAGE)
+      .remplace(Optional.empty())
       .horodatage(HORODATAGE);
 
     assertThat(evenement.poste()).isEmpty();
@@ -231,7 +256,7 @@ class EvenementDAtelierTest {
     EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     EvenementDAtelier remplacant = debutSurFraiseuse1RegulariseParLeroyA(LE_10_MAI_2026_A_12H);
 
-    assertThat(remplacant.enRemplacementDe(finDe(debut).a(LE_10_MAI_2026_A_12H))).isEqualTo(remplacant);
+    assertThat(remplacant.enRemplacementDe(finDe(debut).a(LE_10_MAI_2026_A_12H)).activite()).isEqualTo(remplacant.activite());
   }
 
   @Test
@@ -239,7 +264,7 @@ class EvenementDAtelierTest {
     EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     EvenementDAtelier fin = finDe(debut).a(LE_10_MAI_2026_A_12H);
 
-    assertThat(fin.enRemplacementDe(debut)).isEqualTo(fin);
+    assertThat(fin.enRemplacementDe(debut).activite()).isEmpty();
   }
 
   private static Stream<Arguments> gestesIncoherents() {
@@ -285,6 +310,7 @@ class EvenementDAtelierTest {
             AUTEUR_DUPONT,
             OrigineDuPointage.POINTAGE,
             HORODATAGE,
+            Optional.empty(),
             Optional.empty()
           ),
         "cout horaire"
@@ -305,6 +331,7 @@ class EvenementDAtelierTest {
             AUTEUR_DUPONT,
             OrigineDuPointage.POINTAGE,
             HORODATAGE,
+            Optional.empty(),
             Optional.empty()
           ),
         "taux horaire"
@@ -325,6 +352,7 @@ class EvenementDAtelierTest {
             null,
             OrigineDuPointage.POINTAGE,
             HORODATAGE,
+            Optional.empty(),
             Optional.empty()
           ),
         "auteur"
@@ -345,6 +373,7 @@ class EvenementDAtelierTest {
             AUTEUR_DUPONT,
             null,
             HORODATAGE,
+            Optional.empty(),
             Optional.empty()
           ),
         "origine"
@@ -365,6 +394,7 @@ class EvenementDAtelierTest {
             AUTEUR_DUPONT,
             OrigineDuPointage.POINTAGE,
             null,
+            Optional.empty(),
             Optional.empty()
           ),
         "horodatage"
@@ -385,7 +415,8 @@ class EvenementDAtelierTest {
             AUTEUR_DUPONT,
             OrigineDuPointage.POINTAGE,
             HORODATAGE,
-            null
+            null,
+            Optional.empty()
           ),
         "annulation"
       )
@@ -417,6 +448,7 @@ class EvenementDAtelierTest {
       AUTEUR_DUPONT,
       OrigineDuPointage.POINTAGE,
       HORODATAGE,
+      Optional.empty(),
       Optional.empty()
     );
   }
@@ -445,6 +477,7 @@ class EvenementDAtelierTest {
       AUTEUR_DUPONT,
       OrigineDuPointage.POINTAGE,
       HORODATAGE,
+      Optional.empty(),
       Optional.empty()
     );
   }
@@ -463,6 +496,7 @@ class EvenementDAtelierTest {
       .tauxHoraire(TAUX_HORAIRE)
       .auteur(AUTEUR_DUPONT)
       .origine(origine)
+      .remplace(Optional.empty())
       .horodatage(horodatage);
   }
 }

@@ -15,6 +15,9 @@ import com.glm.glmback.atelier.domain.PosteDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierClotureException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
+import com.glm.glmback.atelier.domain.gestionconflits.ApercuInvalideException;
+import com.glm.glmback.atelier.domain.gestionconflits.ApercuObsoleteException;
+import com.glm.glmback.atelier.domain.gestionconflits.ConfirmationReutiliseeException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.ProblemDetail;
@@ -24,6 +27,21 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 @ControllerAdvice
 @Order(Ordered.LOWEST_PRECEDENCE - 20_000)
 class AtelierExceptionAdvice {
+
+  @ExceptionHandler(ApercuInvalideException.class)
+  ProblemDetail handleApercuInvalide(ApercuInvalideException e) {
+    return ErreurDAtelier.APERCU_INVALIDE.problem(e);
+  }
+
+  @ExceptionHandler(ApercuObsoleteException.class)
+  ProblemDetail handleApercuObsolete(ApercuObsoleteException e) {
+    return ErreurDAtelier.APERCU_OBSOLETE.problem(e);
+  }
+
+  @ExceptionHandler(ConfirmationReutiliseeException.class)
+  ProblemDetail handleConfirmationReutilisee(ConfirmationReutiliseeException e) {
+    return ErreurDAtelier.CONFIRMATION_REUTILISEE.problem(e);
+  }
 
   @ExceptionHandler(SuiviDAtelierIntrouvableException.class)
   ProblemDetail handleSuiviDAtelierIntrouvable(SuiviDAtelierIntrouvableException e) {

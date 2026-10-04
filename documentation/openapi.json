@@ -97,6 +97,80 @@
         "required" : [ "content", "currentPage", "pageSize", "totalElementsCount" ],
         "type" : "object"
       },
+      "RestActeAnnulation" : {
+        "properties" : {
+          "kind" : {
+            "enum" : [ "ANNULATION" ],
+            "type" : "string"
+          },
+          "motif" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "pointage" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "required" : [ "kind", "motif", "pointage" ]
+      },
+      "RestActeCorrection" : {
+        "properties" : {
+          "fait" : {
+            "$ref" : "#/components/schemas/RestFaitDeResolution"
+          },
+          "kind" : {
+            "enum" : [ "CORRECTION" ],
+            "type" : "string"
+          },
+          "motif" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "pointage" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "required" : [ "fait", "kind", "motif", "pointage" ]
+      },
+      "RestActeDeResolution" : {
+        "discriminator" : {
+          "mapping" : {
+            "ANNULATION" : "#/components/schemas/RestActeAnnulation",
+            "CORRECTION" : "#/components/schemas/RestActeCorrection",
+            "REGULARISATION" : "#/components/schemas/RestActeRegularisation"
+          },
+          "propertyName" : "kind"
+        },
+        "oneOf" : [ {
+          "$ref" : "#/components/schemas/RestActeAnnulation"
+        }, {
+          "$ref" : "#/components/schemas/RestActeCorrection"
+        }, {
+          "$ref" : "#/components/schemas/RestActeRegularisation"
+        } ],
+        "properties" : {
+          "kind" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "kind" ]
+      },
+      "RestActeRegularisation" : {
+        "properties" : {
+          "fait" : {
+            "$ref" : "#/components/schemas/RestFaitDeResolution"
+          },
+          "kind" : {
+            "enum" : [ "REGULARISATION" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "fait", "kind" ]
+      },
       "RestActiviteCiteeDuCout" : {
         "description" : "Une autre activite du meme operateur, menee de front ou responsable d'un partage inconnu, tous elements confondus.",
         "properties" : {
@@ -198,6 +272,53 @@
           }
         },
         "required" : [ "categorie", "debut", "echeance", "element", "etat", "id", "operateurId" ],
+        "type" : "object"
+      },
+      "RestActiviteDuDossier" : {
+        "properties" : {
+          "activite" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "categorie" : {
+            "enum" : [ "TRAVAIL", "NON_CONFORMITE" ],
+            "type" : "string"
+          },
+          "debut" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "duree" : {
+            "type" : "string"
+          },
+          "etat" : {
+            "enum" : [ "A_RESOUDRE", "EN_COURS", "TERMINEE", "ECHUE" ],
+            "type" : "string"
+          },
+          "evenement" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "fin" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "operateur" : {
+            "$ref" : "#/components/schemas/RestOperateurDAtelier"
+          },
+          "operateurId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "poste" : {
+            "$ref" : "#/components/schemas/RestPosteDAtelier"
+          },
+          "posteId" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "required" : [ "activite", "categorie", "debut", "etat", "evenement", "operateurId" ],
         "type" : "object"
       },
       "RestActiviteDuPupitre" : {
@@ -304,6 +425,20 @@
         "required" : [ "debut", "etat", "id" ],
         "type" : "object"
       },
+      "RestAdresseDossierConflit" : {
+        "properties" : {
+          "pointage" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "suivi" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "required" : [ "pointage", "suivi" ],
+        "type" : "object"
+      },
       "RestAnnulation" : {
         "description" : "L'annulation d'un evenement. L'evenement reste au journal, porteur de cette annulation.",
         "properties" : {
@@ -323,6 +458,7 @@
             "type" : "string"
           }
         },
+        "required" : [ "auteur", "date", "motif" ],
         "type" : "object"
       },
       "RestAnnulationDEvenement" : {
@@ -339,6 +475,84 @@
         "required" : [ "motif" ],
         "type" : "object"
       },
+      "RestApercuDeResolution" : {
+        "description" : "L'acte exact et ses consequences autoritaires, sans ecriture. La reference opaque est liee a la commande, l'adresse, la revision et l'identite authentifiee.",
+        "properties" : {
+          "acte" : {
+            "$ref" : "#/components/schemas/RestActeDeResolution"
+          },
+          "adresse" : {
+            "$ref" : "#/components/schemas/RestAdresseDossierConflit"
+          },
+          "apres" : {
+            "$ref" : "#/components/schemas/RestDossierConflit"
+          },
+          "avant" : {
+            "$ref" : "#/components/schemas/RestDossierConflit"
+          },
+          "commande" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "evaluation" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "expireLe" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "reference" : {
+            "type" : "string"
+          },
+          "revision" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "acte", "adresse", "apres", "avant", "commande", "evaluation", "expireLe", "reference", "revision" ],
+        "type" : "object"
+      },
+      "RestChoixDeResolution" : {
+        "description" : "Une hypothese structuree issue du diagnostic, sans motif et sans selection par defaut.",
+        "properties" : {
+          "code" : {
+            "enum" : [ "RATTACHER_FIN_A_ACTIVITE_REMPLACANTE", "ANNULER_TRANSITION" ],
+            "type" : "string"
+          },
+          "fait" : {
+            "$ref" : "#/components/schemas/RestFaitDeResolution"
+          },
+          "kind" : {
+            "enum" : [ "ANNULATION", "CORRECTION", "REGULARISATION" ],
+            "type" : "string"
+          },
+          "pointage" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "kind", "pointage" ],
+        "type" : "object"
+      },
+      "RestCibleDuConflit" : {
+        "properties" : {
+          "activite" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "ouvrant" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "termineePar" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "required" : [ "activite" ],
+        "type" : "object"
+      },
       "RestCloture" : {
         "description" : "La cloture d'un element engage.\n\nElle ne fige rien pour le gestionnaire : regularisation, annulation et correction restent possibles ensuite, et la\ncloture elle-meme peut etre deplacee ou annulee.\n",
         "properties" : {
@@ -349,6 +563,64 @@
           }
         },
         "type" : "object"
+      },
+      "RestConfirmationAEnregistrer" : {
+        "properties" : {
+          "commande" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "reference" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "commande", "reference" ],
+        "type" : "object"
+      },
+      "RestConfirmationDeResolution" : {
+        "discriminator" : {
+          "mapping" : {
+            "ENREGISTREE" : "#/components/schemas/RestConfirmationEnregistree",
+            "NON_ATTESTEE" : "#/components/schemas/RestConfirmationNonAttestee"
+          },
+          "propertyName" : "kind"
+        },
+        "oneOf" : [ {
+          "$ref" : "#/components/schemas/RestConfirmationEnregistree"
+        }, {
+          "$ref" : "#/components/schemas/RestConfirmationNonAttestee"
+        } ],
+        "properties" : {
+          "kind" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "kind" ]
+      },
+      "RestConfirmationEnregistree" : {
+        "properties" : {
+          "dossier" : {
+            "$ref" : "#/components/schemas/RestDossierConflit"
+          },
+          "kind" : {
+            "enum" : [ "ENREGISTREE" ],
+            "type" : "string"
+          },
+          "recu" : {
+            "$ref" : "#/components/schemas/RestRecuDActe"
+          }
+        },
+        "required" : [ "dossier", "kind", "recu" ]
+      },
+      "RestConfirmationNonAttestee" : {
+        "description" : "Aucun recu visible ; l absence ne prouve pas l echec de la commande.",
+        "properties" : {
+          "kind" : {
+            "enum" : [ "NON_ATTESTEE" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "kind" ]
       },
       "RestConflitDeSynthese" : {
         "description" : "Sequence en conflit de l'operateur, rendue lorsqu'une activite ou un pointage concerne la semaine.",
@@ -451,6 +723,49 @@
           }
         },
         "required" : [ "activites", "operateur", "pointages" ],
+        "type" : "object"
+      },
+      "RestConflitEnListe" : {
+        "description" : "Une sequence en conflit issue des projections courantes, sans journal.",
+        "properties" : {
+          "adresse" : {
+            "$ref" : "#/components/schemas/RestAdresseDossierConflit"
+          },
+          "datePremierPointage" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "designation" : {
+            "type" : "string"
+          },
+          "elementId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "nombrePointages" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "operateur" : {
+            "$ref" : "#/components/schemas/RestOperateurDAtelier"
+          },
+          "operateurId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "poste" : {
+            "$ref" : "#/components/schemas/RestPosteDAtelier"
+          },
+          "posteId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "revision" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "adresse", "datePremierPointage", "designation", "elementId", "nombrePointages", "operateurId", "revision" ],
         "type" : "object"
       },
       "RestCorrection" : {
@@ -647,6 +962,23 @@
         "required" : [ "libelle", "nature" ],
         "type" : "object"
       },
+      "RestDemandeDApercu" : {
+        "properties" : {
+          "acte" : {
+            "$ref" : "#/components/schemas/RestActeDeResolution"
+          },
+          "commande" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "revision" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "acte", "commande", "revision" ],
+        "type" : "object"
+      },
       "RestDescriptionDActiviteDeSupervision" : {
         "properties" : {
           "categorie" : {
@@ -677,6 +1009,84 @@
           }
         },
         "required" : [ "categorie", "debut", "echeance", "element", "id", "operateurId" ],
+        "type" : "object"
+      },
+      "RestDiagnosticDeConflit" : {
+        "properties" : {
+          "cible" : {
+            "$ref" : "#/components/schemas/RestCibleDuConflit"
+          },
+          "pointage" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "raison" : {
+            "enum" : [ "GESTE_AVANT_OUVERTURE", "OUVRANT_ANNULE", "TRANSITION_MEME_CATEGORIE", "CIBLE_ECHUE_AVEC_AUTRE_ACTIVITE", "CONTRADICTION_REGULARISATION", "CIBLE_REMPLACEE", "CIBLE_DEJA_TERMINEE" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "cible", "pointage", "raison" ],
+        "type" : "object"
+      },
+      "RestDossierConflit" : {
+        "description" : "Un dossier ancre dans le journal immutable, avec revision et interpretation a un meme instant. Les activites concernees restent presentes dans le resultat d un acte meme quand l ancre est annulee.",
+        "properties" : {
+          "activites" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RestActiviteDuDossier"
+            },
+            "type" : "array"
+          },
+          "adresse" : {
+            "$ref" : "#/components/schemas/RestAdresseDossierConflit"
+          },
+          "choix" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RestChoixDeResolution"
+            },
+            "type" : "array"
+          },
+          "continuations" : {
+            "description" : "Les autres sequences encore en conflit de ce suivi, par ancre active ; aucune redirection implicite.",
+            "items" : {
+              "$ref" : "#/components/schemas/RestConflitEnListe"
+            },
+            "type" : "array"
+          },
+          "diagnostics" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RestDiagnosticDeConflit"
+            },
+            "type" : "array"
+          },
+          "enConflit" : {
+            "description" : "Le perimetre concerne reste en conflit dans l interpretation du domaine, meme sans intervalle d activite ou avec une ancre annulee.",
+            "type" : "boolean"
+          },
+          "evaluation" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "kind" : {
+            "enum" : [ "EN_CONFLIT", "INTROUVABLE", "ANCRE_ANNULEE", "HORS_CONFLIT" ],
+            "type" : "string"
+          },
+          "perimetre" : {
+            "$ref" : "#/components/schemas/RestSequenceDuDossier",
+            "description" : "Le perimetre conserve des faits et activites concernes, y compris apres resolution ou annulation de l ancre."
+          },
+          "revision" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "sequence" : {
+            "$ref" : "#/components/schemas/RestSequenceDuDossier"
+          },
+          "suivi" : {
+            "$ref" : "#/components/schemas/RestSuiviDAtelier"
+          }
+        },
+        "required" : [ "activites", "adresse", "choix", "continuations", "diagnostics", "enConflit", "evaluation", "kind", "revision", "suivi" ],
         "type" : "object"
       },
       "RestDureeDeSynthese" : {
@@ -922,9 +1332,24 @@
             "$ref" : "#/components/schemas/RestOperateurDAtelier",
             "description" : "Operateur dont le temps est affecte, absent si la fiche n'est plus resolue au referentiel."
           },
+          "operateurId" : {
+            "description" : "Identite brute de l'operateur, conservee meme si la fiche est absente.",
+            "format" : "uuid",
+            "type" : "string"
+          },
           "poste" : {
             "$ref" : "#/components/schemas/RestPosteDAtelier",
             "description" : "Poste de travail, toujours facultatif."
+          },
+          "posteId" : {
+            "description" : "Identite brute du poste, absente uniquement lorsqu'aucun poste n'a ete pointe.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "remplace" : {
+            "description" : "Evenement corrige par ce remplacant. Absent pour un pointage, une regularisation ou un historique sans lien explicite.",
+            "format" : "uuid",
+            "type" : "string"
           },
           "tauxHoraire" : {
             "description" : "Taux horaire de l'operateur, copie a la saisie. Absent si l'operateur n'est pas valorise.",
@@ -937,7 +1362,38 @@
             "type" : "string"
           }
         },
-        "required" : [ "auteur", "dateDEnregistrement", "dateDeSurvenue", "estUneRegularisation", "id", "intention", "type" ],
+        "required" : [ "auteur", "dateDEnregistrement", "dateDeSurvenue", "estUneRegularisation", "id", "intention", "operateurId", "type" ],
+        "type" : "object"
+      },
+      "RestFaitDeResolution" : {
+        "properties" : {
+          "activiteVisee" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "instant" : {
+            "description" : "Instant saisi, conserve avec son decalage et ses decimales.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "intention" : {
+            "enum" : [ "OUVERTURE", "TRANSITION", "FIN" ],
+            "type" : "string"
+          },
+          "operateur" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "poste" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "DEBUT", "NON_CONFORMITE", "FIN" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "instant", "intention", "operateur", "type" ],
         "type" : "object"
       },
       "RestFeuilleDeTemps" : {
@@ -1407,6 +1863,34 @@
         "required" : [ "id", "nom", "postes", "prenom" ],
         "type" : "object"
       },
+      "RestPageDesConflits" : {
+        "description" : "Une page et son total acquis ensemble dans les projections courantes.",
+        "properties" : {
+          "complete" : {
+            "type" : "boolean"
+          },
+          "lignes" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RestConflitEnListe"
+            },
+            "type" : "array"
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "total" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "complete", "lignes", "page", "size", "total" ],
+        "type" : "object"
+      },
       "RestPartDuPointageDuCout" : {
         "description" : "Une part d'un pointage termine : la periode ou l'operateur occupait le meme ensemble de postes.\n\nSa main d'oeuvre vaut taux horaire x duree / diviseur, deja repartie au centime dans la fenetre de partage. Elle est\nincomplete, sans diviseur, quand un pointage a resoudre de l'operateur, sur un autre poste, empeche de la partager.\n",
         "properties" : {
@@ -1799,6 +2283,46 @@
         "required" : [ "id", "libelle", "nature" ],
         "type" : "object"
       },
+      "RestRecuDActe" : {
+        "description" : "Preuve durable d un acte enregistre. Sa revision est historique ; le dossier joint est relu a l instant courant.",
+        "properties" : {
+          "acte" : {
+            "$ref" : "#/components/schemas/RestActeDeResolution"
+          },
+          "adresse" : {
+            "$ref" : "#/components/schemas/RestAdresseDossierConflit"
+          },
+          "commande" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "enregistreLe" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "evenementCree" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "evenementsTouches" : {
+            "items" : {
+              "format" : "uuid",
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "revisionDeDepart" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "revisionEnregistree" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "acte", "adresse", "commande", "enregistreLe", "evenementsTouches", "revisionDeDepart", "revisionEnregistree" ],
+        "type" : "object"
+      },
       "RestReferentielDuPupitre" : {
         "description" : "Tout ce que le pupitre met en cache pour continuer a fonctionner sans reseau, en un seul appel.\n\nOperateurs, habilitations et elements pointables sont relus dans une transaction unique, sans pagination.\nLes activites interpretees par atelier sont lues dans sa projection et leur expiration est jugee a genereLe.\nLes requetes successives ne garantissent pas un instantane face aux ecritures concurrentes.\n",
         "properties" : {
@@ -1860,6 +2384,49 @@
           }
         },
         "required" : [ "dateDeSurvenue", "intention", "operateur", "type" ],
+        "type" : "object"
+      },
+      "RestSequenceDuDossier" : {
+        "description" : "La sequence autoritaire contenant l'ancre demandee, avec sa cle brute et les seuls faits de son perimetre.",
+        "properties" : {
+          "activites" : {
+            "items" : {
+              "format" : "uuid",
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "datePremierPointage" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "nombrePointages" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "operateur" : {
+            "$ref" : "#/components/schemas/RestOperateurDAtelier"
+          },
+          "operateurId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "pointages" : {
+            "items" : {
+              "format" : "uuid",
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "poste" : {
+            "$ref" : "#/components/schemas/RestPosteDAtelier"
+          },
+          "posteId" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "required" : [ "activites", "datePremierPointage", "nombrePointages", "operateurId", "pointages" ],
         "type" : "object"
       },
       "RestSequenceEnConflit" : {
@@ -2212,6 +2779,61 @@
   },
   "openapi" : "3.1.0",
   "paths" : {
+    "/api/atelier/conflits" : {
+      "get" : {
+        "description" : "Une ligne par sequence, y compris pour un suivi cloture ou sans activite deduite.\nLes recherches partielles operateur (nom, prenom ou identifiant) et element (designation ou identifiant)\nsont combinees sans tenir compte de la casse avant pagination. Pourcent, soulignement et antislash sont litteraux.\nLe tri porte sur le premier pointage metier, puis le suivi et l'ancrage de la sequence.\ncomplete vaut true lorsque la lecture a reussi, meme si aucune sequence ne correspond. Une acquisition en echec\nreste une erreur HTTP. Les diagnostics detailles se consultent dans le dossier de la sequence.\n",
+        "operationId" : "list_4",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "operateur",
+          "required" : false,
+          "schema" : {
+            "default" : "",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "element",
+          "required" : false,
+          "schema" : {
+            "default" : "",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestPageDesConflits"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Lister les sequences en conflit",
+        "tags" : [ "Atelier - resolution des conflits" ]
+      }
+    },
     "/api/atelier/suivis" : {
       "get" : {
         "description" : "Le tableau de l'atelier.\n\nTous les filtres sont facultatifs : l'ecran des operateurs veut tous les elements actifs d'un coup, sans notion de\ndate. Le parametre etats accepte plusieurs valeurs (?etats=EN_ATTENTE&etats=EN_COURS) ; absent, il ne filtre rien.\nL'etat se juge a l'instant de la lecture, celui de chaque ligne rendue : un element dont la seule activite a atteint\nson echeance n'est plus EN_COURS. La periode, quand elle est fournie, porte sur la date d'engagement.\n\nChaque ligne conserve l'etat et les activites en cours, mais ne contient pas de journal.\nLe journal complet, annules compris, se consulte via GET /api/atelier/suivis/{id}.\n",
@@ -2430,6 +3052,120 @@
         },
         "summary" : "Cloturer un element, ou deplacer sa cloture",
         "tags" : [ "Atelier - elements engages" ]
+      }
+    },
+    "/api/atelier/suivis/{id}/conflits/{pointage}" : {
+      "get" : {
+        "description" : "Le journal, la revision et les consequences interpretees du suivi a un instant d'evaluation. L'adresse ne redirige jamais vers une autre sequence : une ancre absente, annulee ou active hors conflit garde son etat et l'historique accessible.",
+        "operationId" : "dossier",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "pointage",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestDossierConflit"
+                }
+              }
+            },
+            "description" : "Le dossier et l'etat de son adresse, pour USER ou GESTIONNAIRE."
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestDossierConflit"
+                }
+              }
+            },
+            "description" : "Suivi introuvable dans l'entreprise courante."
+          }
+        },
+        "summary" : "Consulter un dossier de conflit par un pointage",
+        "tags" : [ "Atelier - elements engages" ]
+      }
+    },
+    "/api/atelier/suivis/{id}/conflits/{pointage}/apercus" : {
+      "post" : {
+        "description" : "Reserve au gestionnaire. Prepare le meme acte que sa confirmation, sans ecrire ni reserver son identifiant. Une revision perimee est refusee ; la reference authentifiee expire selon la politique serveur.",
+        "operationId" : "apercu",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "pointage",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RestDemandeDApercu"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestApercuDeResolution"
+                }
+              }
+            },
+            "description" : "L'acte exact, avant/apres, l'adresse et la reference opaque de sa commande."
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestApercuDeResolution"
+                }
+              }
+            },
+            "description" : "Acte invalide."
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestApercuDeResolution"
+                }
+              }
+            },
+            "description" : "Apercu obsolete ou acte refuse."
+          }
+        },
+        "summary" : "Previsualiser un acte de resolution",
+        "tags" : [ "apercu-de-resolution-resource" ]
       }
     },
     "/api/atelier/suivis/{id}/evenements/{evenementId}" : {
@@ -2734,6 +3470,81 @@
         },
         "summary" : "Lire le temps effectivement passe sur un element",
         "tags" : [ "Atelier - elements engages" ]
+      }
+    },
+    "/api/atelier/suivis/{suivi}/confirmations-de-resolution" : {
+      "post" : {
+        "operationId" : "confirme",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "suivi",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RestConfirmationAEnregistrer"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestConfirmationDeResolution"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Confirmer une reference d apercu une seule fois et rendre son recu avec le dossier courant",
+        "tags" : [ "confirmation-de-resolution-resource" ]
+      }
+    },
+    "/api/atelier/suivis/{suivi}/confirmations-de-resolution/{commande}" : {
+      "get" : {
+        "description" : "NON_ATTESTEE indique seulement qu aucun recu n est visible. La commande peut encore etre en cours ; cette reponse ne prouve pas son echec.",
+        "operationId" : "verifie",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "suivi",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "commande",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestConfirmationDeResolution"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Verifier si une confirmation dispose d un recu durable et rendre le dossier courant",
+        "tags" : [ "confirmation-de-resolution-resource" ]
       }
     },
     "/api/atelier/supervision" : {

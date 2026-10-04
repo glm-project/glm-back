@@ -39,6 +39,14 @@ Ne rien ajouter ici qui relève de :
 `SuiviDAtelier` porte un élément engagé et son `JournalDAtelier`. `TempsDAtelierService` lit les intervalles
 interprétés de ses activités ; seuls les faits d'activité, la clôture et l'échéance en fixent les bornes.
 
+Le parcours de gestion des conflits est regroupé sous `gestionconflits/` dans chaque couche d'Atelier :
+`domain/gestionconflits`, `application/gestionconflits`, `infrastructure/primary/gestionconflits` et
+`infrastructure/secondary/gestionconflits` portent les dossiers, la liste, les actes de résolution, les aperçus,
+les confirmations et les reçus. Ces sous-packages appartiennent au même bounded context Atelier.
+L'agrégat, le journal, leurs transitions, le repository et les types communs d'interprétation, diagnostics compris,
+restent dans les couches d'Atelier ; le parcours les utilise sans déplacer leurs invariants. Ses tests et fixtures
+suivent leurs propriétaires dans les mêmes sous-packages.
+
 ## Invariants à ne pas casser
 
 - **Le journal est la source de vérité.** L'agrégat se reconstruit par son repli ; les projections décrites ci-dessous
@@ -192,11 +200,25 @@ la garantie que donnait le code partagé — le modifier en même temps que l'un
 
 ### Concurrence
 
-Deux saisies parties du même état construisent chacune un journal qui ignore le geste de l'autre. `update`
-charge donc l'agrégat sous verrou pessimiste, puis refuse par `SaisieConcurrenteException` (409) toute saisie dont le
-journal ignore un événement déjà stocké ; l'application réessaie les pointages avec le journal complet. Ce contrôle protège la
-conservation des faits, dont l'interprétation peut ensuite révéler un conflit. Un `@Version` n'aurait rien protégé : la collection d'événements est le côté
-inverse de l'association, donc l'insertion d'un événement ne salit pas la ligne parente et n'incrémente aucune version.
+Les lectures adressées et les aperçus acquièrent le parent et son journal dans une même requête, dans leur propre
+contexte JPA en lecture seule : un parent déjà chargé par un appelant peut sinon rester ancien malgré le fetch join.
+Conserver cette frontière de lecture de données committées, décrite dans
+[l’ADR 0007](../../../../../../../documentation/adr/0007-read-addressed-workshop-aggregates-coherently.md).
+
+Toute écriture transporte la `RevisionDuSuivi` lue avec l'agrégat ; l'update compare cette révision sous
+verrou pessimiste puis rend le suivi avec sa nouvelle révision. Garder ce retour pour toute écriture suivante :
+les transitions immuables conservent la révision lue jusqu'à leur persistance. Le journal et la clôture partagent
+la même révision, même si une annulation ou une clôture ne change aucun identifiant de fait.
+
+Après la prise du verrou, rafraîchir la ligne et ses collections : une entité déjà chargée dans le contexte JPA
+peut rester périmée malgré la requête verrouillée. `RevisionDuSuiviIT` synchronise deux transactions pour
+éprouver ce cas. Une saisie périmée est refusée par `SaisieConcurrenteException` (409) ; seuls les pointages
+Pupitre réessaient dans une nouvelle transaction en conservant leur UUID, intention et cible.
+
+Un `@Version` posé seul ne protège pas le journal : sa collection d'événements est le côté inverse de
+l'association, donc l'insertion d'un événement ne salit pas la ligne parente. La révision avance explicitement
+dans la transaction qui réconcilie les faits et leurs projections. Un suivi inchangé garde sa révision ; le rejeu
+strict d'un pointage et une fin absorbée ne modifient aucun fait.
 
 L'`Auteur` d'une saisie vient toujours du jeton (`AuteurConnecte`), jamais du corps de la requête ; l'opérateur, lui,
 reste dans le corps, sous forme d'identifiant. Les deux ne sont pas comparables tant que rien ne relie un utilisateur

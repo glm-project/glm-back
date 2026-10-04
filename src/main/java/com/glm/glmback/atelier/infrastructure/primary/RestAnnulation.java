@@ -6,9 +6,15 @@ import java.time.Instant;
 
 @Schema(description = "L'annulation d'un evenement. L'evenement reste au journal, porteur de cette annulation.")
 record RestAnnulation(
-  @Schema(description = "Utilisateur ayant annule l'evenement.", example = "gestionnaire.impeccmold") String auteur,
-  @Schema(description = "Instant auquel l'annulation a ete saisie.") Instant date,
-  @Schema(description = "Motif saisi par le gestionnaire.", example = "Erreur de saisie") String motif
+  @Schema(
+    description = "Utilisateur ayant annule l'evenement.",
+    example = "gestionnaire.impeccmold",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  String auteur,
+  @Schema(description = "Instant auquel l'annulation a ete saisie.", requiredMode = Schema.RequiredMode.REQUIRED) Instant date,
+  @Schema(description = "Motif saisi par le gestionnaire.", example = "Erreur de saisie", requiredMode = Schema.RequiredMode.REQUIRED)
+  String motif
 ) {
   static RestAnnulation from(Annulation annulation) {
     return new RestAnnulation(annulation.auteur().value(), annulation.date(), annulation.motif().value());

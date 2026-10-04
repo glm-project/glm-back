@@ -6,7 +6,9 @@ import com.glm.glmback.pupitre.domain.CategorieDActivite;
 import com.glm.glmback.pupitre.domain.CleDActivite;
 import com.glm.glmback.pupitre.domain.OperateurId;
 import com.glm.glmback.pupitre.domain.PosteDeTravailId;
+import com.glm.glmback.shared.time.infrastructure.secondary.ExactInstantConverter;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -39,8 +41,13 @@ class ActiviteDuPupitreEntity {
   @Column(length = 20)
   private CategorieDActivite categorie;
 
+  @Convert(converter = ExactInstantConverter.class)
   private Instant debut;
+
+  @Convert(converter = ExactInstantConverter.class)
   private Instant echeance;
+
+  @Convert(converter = ExactInstantConverter.class)
   private Instant fin;
 
   @Column(name = "a_resoudre")
