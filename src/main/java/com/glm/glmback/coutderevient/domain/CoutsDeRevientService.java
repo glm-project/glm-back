@@ -2,6 +2,7 @@ package com.glm.glmback.coutderevient.domain;
 
 import com.glm.glmback.shared.time.domain.Clock;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -110,8 +111,8 @@ public final class CoutsDeRevientService {
       List<ActiviteInterpretee> occupation = occupations.activites(operateurs, periode);
       Periode acquise = couverture(Stream.concat(tranches.stream(), terminees(occupation, evaluation).stream()).toList());
       Periode etendue = new Periode(
-        periode.debut().isBefore(acquise.debut()) ? periode.debut() : acquise.debut(),
-        periode.fin().isAfter(acquise.fin()) ? periode.fin() : acquise.fin()
+        Collections.min(List.of(periode.debut(), acquise.debut())),
+        Collections.max(List.of(periode.fin(), acquise.fin()))
       );
       if (etendue.equals(periode)) {
         return occupation;
