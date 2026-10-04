@@ -98,7 +98,7 @@ class ListeDesConflitsDAtelierIT {
   @WithTenant("impeccmold")
   void shouldCombinerLesRecherchesPartiellesSansCasseAvantLaPagination() {
     var jean = operateurJeanMartinPourcent();
-    var paul = operateurPaulDurand();
+    var paul = operateurPaulDurandConflits2043();
     transactions.executeWithoutResult(transaction -> {
       insere(jean);
       insere(paul);

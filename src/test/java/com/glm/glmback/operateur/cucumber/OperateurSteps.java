@@ -46,6 +46,7 @@ public class OperateurSteps {
   @Given("j'ai declare un operateur")
   public void jaiDeclareUnOperateur(Map<String, String> donnees) {
     rest.post(BASE_URI, JSON.writeValueAsString(corps(donnees)));
+    assertThatLastResponse().hasHttpStatus(201);
     dernierIdDeclare = UUID.fromString((String) CucumberRestTestContext.getElement("$.id"));
   }
 

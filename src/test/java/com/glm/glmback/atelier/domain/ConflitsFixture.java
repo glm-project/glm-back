@@ -26,10 +26,10 @@ public final class ConflitsFixture {
       .tauxHoraire(null);
   }
 
-  public static OperateurConnu operateurPaulDurand() {
+  public static OperateurConnu operateurPaulDurandConflits2043() {
     return OperateurConnu.builder()
       .id(new OperateurId(UUID.randomUUID()))
-      .nom(new Nom("Durand"))
+      .nom(new Nom("Durand_conflits_2043"))
       .prenom(new Prenom("Paul"))
       .tauxHoraire(null);
   }
