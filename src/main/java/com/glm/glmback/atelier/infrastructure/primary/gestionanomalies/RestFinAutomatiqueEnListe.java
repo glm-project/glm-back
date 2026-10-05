@@ -2,15 +2,18 @@ package com.glm.glmback.atelier.infrastructure.primary.gestionanomalies;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
-import com.glm.glmback.atelier.domain.gestionanomalies.ConflitEnListe;
+import com.glm.glmback.atelier.domain.gestionanomalies.FinAutomatiqueEnListe;
 import com.glm.glmback.atelier.infrastructure.primary.RestOperateur;
 import com.glm.glmback.atelier.infrastructure.primary.RestPosteDeTravail;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.UUID;
 
-@Schema(name = "RestConflitEnListe", description = "Une sequence en conflit issue des projections courantes, sans journal.")
-final class RestConflitEnListe implements RestAnomalieEnListe {
+@Schema(
+  name = "RestFinAutomatiqueEnListe",
+  description = "Une activite terminee a son echeance faute de fin reelle, issue des projections courantes, sans journal. L'adresse est celle de l'ouvrant actif ; activite est l'identite d'origine que visent les actes."
+)
+final class RestFinAutomatiqueEnListe implements RestAnomalieEnListe {
 
   @JsonProperty
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
@@ -43,13 +46,17 @@ final class RestConflitEnListe implements RestAnomalieEnListe {
 
   @JsonProperty
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
-  private final Instant datePremierPointage;
+  private final UUID activite;
 
   @JsonProperty
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
-  private final int nombrePointages;
+  private final Instant debut;
 
-  private RestConflitEnListe(ConflitEnListe ligne, AnnuaireDAtelier annuaire) {
+  @JsonProperty
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
+  private final Instant echeance;
+
+  private RestFinAutomatiqueEnListe(FinAutomatiqueEnListe ligne, AnnuaireDAtelier annuaire) {
     adresse = new RestAdresseDossierAnomalie(ligne.adresse().suivi().uuid(), ligne.adresse().pointage().uuid());
     revision = ligne.revision().value();
     elementId = ligne.element().id().uuid();
@@ -62,11 +69,12 @@ final class RestConflitEnListe implements RestAnomalieEnListe {
       .map(id -> id.uuid())
       .orElse(null);
     poste = RestPosteDeTravail.resolu(annuaire, ligne.cle().poste());
-    datePremierPointage = ligne.repere().premierPointage();
-    nombrePointages = ligne.repere().nombrePointages();
+    activite = ligne.activite().uuid();
+    debut = ligne.debut();
+    echeance = ligne.echeance();
   }
 
-  static RestConflitEnListe from(ConflitEnListe ligne, AnnuaireDAtelier annuaire) {
-    return new RestConflitEnListe(ligne, annuaire);
+  static RestFinAutomatiqueEnListe from(FinAutomatiqueEnListe ligne, AnnuaireDAtelier annuaire) {
+    return new RestFinAutomatiqueEnListe(ligne, annuaire);
   }
 }

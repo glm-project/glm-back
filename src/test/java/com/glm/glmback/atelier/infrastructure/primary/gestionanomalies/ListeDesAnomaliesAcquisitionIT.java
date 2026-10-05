@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 import com.glm.glmback.GlmprojectApp;
 import com.glm.glmback.IntegrationTest;
 import com.glm.glmback.atelier.domain.gestionanomalies.ConflitsDAtelier;
+import com.glm.glmback.atelier.domain.gestionanomalies.FinsAutomatiquesDAtelier;
 import com.glm.glmback.cucumber.CucumberSecurityConfiguration;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -30,6 +31,9 @@ class ListeDesAnomaliesAcquisitionIT {
   @MockitoBean
   private ConflitsDAtelier conflits;
 
+  @MockitoBean
+  private FinsAutomatiquesDAtelier finsAutomatiques;
+
   @Test
   void shouldGarderUnEchecDAcquisitionCommeErreurHttp() {
     when(conflits.list(any(), any())).thenThrow(new IllegalStateException("acquisition interrompue"));
@@ -38,6 +42,23 @@ class ListeDesAnomaliesAcquisitionIT {
     rest
       .get()
       .uri("/api/atelier/anomalies?nature=CONFLIT")
+      .header("Authorization", "Bearer " + token)
+      .exchange()
+      .expectStatus()
+      .isEqualTo(500)
+      .expectBody()
+      .jsonPath("$.complete")
+      .doesNotExist();
+  }
+
+  @Test
+  void shouldGarderUnEchecDAcquisitionDesFinsAutomatiquesCommeErreurHttp() {
+    when(finsAutomatiques.list(any(), any(), any())).thenThrow(new IllegalStateException("acquisition interrompue"));
+    String token = Base64.getEncoder().encodeToString("lecteur|ROLE_USER|impeccmold".getBytes(StandardCharsets.UTF_8));
+
+    rest
+      .get()
+      .uri("/api/atelier/anomalies?nature=FIN_AUTOMATIQUE")
       .header("Authorization", "Bearer " + token)
       .exchange()
       .expectStatus()

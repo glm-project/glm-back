@@ -1,5 +1,6 @@
 package com.glm.glmback.atelier.infrastructure.secondary.gestionanomalies;
 
+import com.glm.glmback.atelier.domain.ActiviteId;
 import com.glm.glmback.atelier.domain.CleDActivite;
 import com.glm.glmback.atelier.domain.ElementEngage;
 import com.glm.glmback.atelier.domain.ElementEngageId;
@@ -12,59 +13,62 @@ import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.TypeDElementEngage;
 import com.glm.glmback.atelier.domain.gestionanomalies.AdresseDossierAnomalie;
 import com.glm.glmback.atelier.domain.gestionanomalies.AnomaliesDAtelierCriteria;
-import com.glm.glmback.atelier.domain.gestionanomalies.ConflitEnListe;
-import com.glm.glmback.atelier.domain.gestionanomalies.ConflitsDAtelier;
-import com.glm.glmback.atelier.domain.gestionanomalies.RepereDeSequence;
+import com.glm.glmback.atelier.domain.gestionanomalies.FinAutomatiqueEnListe;
+import com.glm.glmback.atelier.domain.gestionanomalies.FinsAutomatiquesDAtelier;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import com.glm.glmback.shared.time.infrastructure.secondary.ExactInstantConverter;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Tuple;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Repository;
 
+/**
+ * Les fins automatiques se jugent entierement en SQL sur la projection des activites : sans fin reelle, hors des
+ * activites a resoudre, echeance atteinte a l'instant d'evaluation, borne comprise. Aucun journal n'est rejoue.
+ */
 @Repository
-class JpaConflitsDAtelier implements ConflitsDAtelier {
+class JpaFinsAutomatiquesDAtelier implements FinsAutomatiquesDAtelier {
 
   private static final String LIGNES = """
     with filtre as (
-      select sequence.id as ancre, suivi.id as suivi, suivi.revision as revision,
+      select activite.ouverture_id as ouvrant, activite.id as activite, suivi.id as suivi, suivi.revision as revision,
         suivi.element_id as element_id, suivi.element_nom as element_nom, suivi.element_type as element_type,
-        sequence.operateur_id as operateur_id, sequence.poste_id as poste_id,
-        premier.date_de_survenue as premier_pointage,
-        (select count(*) from pointage_en_conflit where sequence_id = sequence.id) as nombre_pointages
-      from sequence_en_conflit sequence
-      join suivi_d_atelier suivi on suivi.id = sequence.suivi_id
-      join evenement_d_atelier premier on premier.id = sequence.id
-      left join operateur on operateur.id = sequence.operateur_id
-      where (lower(coalesce(operateur.prenom || ' ' || operateur.nom, '')) like :operateur escape '\\'
-        or cast(sequence.operateur_id as varchar) like :operateur escape '\\')
+        activite.operateur_id as operateur_id, activite.poste_id as poste_id,
+        activite.debut as debut, activite.echeance as echeance
+      from activite_d_atelier activite
+      join suivi_d_atelier suivi on suivi.id = activite.suivi_id
+      left join operateur on operateur.id = activite.operateur_id
+      where activite.fin is null and not activite.a_resoudre and activite.echeance <= :evaluation
+        and (lower(coalesce(operateur.prenom || ' ' || operateur.nom, '')) like :operateur escape '\\'
+        or cast(activite.operateur_id as varchar) like :operateur escape '\\')
         and (lower(suivi.element_nom) like :element escape '\\' or cast(suivi.element_id as varchar) like :element escape '\\')
     ), page as (
-      select * from filtre order by premier_pointage, suivi, ancre limit :taille offset :position
+      select * from filtre order by debut, suivi, ouvrant limit :taille offset :position
     )
     select compte.total, page.* from (select count(*) as total from filtre) compte
-    left join page on true order by page.premier_pointage, page.suivi, page.ancre
+    left join page on true order by page.debut, page.suivi, page.ouvrant
     """;
 
   private final EntityManager entities;
 
-  JpaConflitsDAtelier(EntityManager entities) {
+  JpaFinsAutomatiquesDAtelier(EntityManager entities) {
     this.entities = entities;
   }
 
   @Override
-  public Page<ConflitEnListe> list(AnomaliesDAtelierCriteria criteria, Pageable pageable) {
-    List<Tuple> lignes = lignes(criteria, pageable);
-    return Page.<ConflitEnListe>builder()
+  public Page<FinAutomatiqueEnListe> list(AnomaliesDAtelierCriteria criteria, Instant evaluation, Pageable pageable) {
+    List<Tuple> lignes = lignes(criteria, evaluation, pageable);
+    return Page.<FinAutomatiqueEnListe>builder()
       .content(
         lignes
           .stream()
-          .filter(ligne -> ligne.get("ancre") != null)
-          .map(JpaConflitsDAtelier::from)
+          .filter(ligne -> ligne.get("ouvrant") != null)
+          .map(JpaFinsAutomatiquesDAtelier::from)
           .toList()
       )
       .currentPage(pageable.page())
@@ -73,9 +77,10 @@ class JpaConflitsDAtelier implements ConflitsDAtelier {
   }
 
   @SuppressWarnings("unchecked")
-  private List<Tuple> lignes(AnomaliesDAtelierCriteria criteria, Pageable pageable) {
+  private List<Tuple> lignes(AnomaliesDAtelierCriteria criteria, Instant evaluation, Pageable pageable) {
     return entities
       .createNativeQuery(LIGNES, Tuple.class)
+      .setParameter("evaluation", new ExactInstantConverter().convertToDatabaseColumn(evaluation))
       .setParameter("element", RechercheLitterale.motif(criteria.element()))
       .setParameter("operateur", RechercheLitterale.motif(criteria.operateur()))
       .setParameter("taille", pageable.size())
@@ -83,12 +88,13 @@ class JpaConflitsDAtelier implements ConflitsDAtelier {
       .getResultList();
   }
 
-  private static ConflitEnListe from(Tuple ligne) {
-    return ConflitEnListe.builder()
+  private static FinAutomatiqueEnListe from(Tuple ligne) {
+    var instants = new ExactInstantConverter();
+    return FinAutomatiqueEnListe.builder()
       .adresse(
         new AdresseDossierAnomalie(
           new SuiviDAtelierId(ligne.get("suivi", UUID.class)),
-          new EvenementDAtelierId(ligne.get("ancre", UUID.class))
+          new EvenementDAtelierId(ligne.get("ouvrant", UUID.class))
         )
       )
       .revision(new RevisionDuSuivi(((Number) ligne.get("revision")).longValue()))
@@ -105,11 +111,8 @@ class JpaConflitsDAtelier implements ConflitsDAtelier {
           Optional.ofNullable(ligne.get("poste_id", UUID.class)).map(PosteDeTravailId::new)
         )
       )
-      .repere(
-        new RepereDeSequence(
-          new ExactInstantConverter().convertToEntityAttribute(ligne.get("premier_pointage", BigDecimal.class)),
-          ((Number) ligne.get("nombre_pointages")).intValue()
-        )
-      );
+      .activite(new ActiviteId(ligne.get("activite", UUID.class)))
+      .debut(instants.convertToEntityAttribute(ligne.get("debut", BigDecimal.class)))
+      .echeance(instants.convertToEntityAttribute(ligne.get("echeance", BigDecimal.class)));
   }
 }
