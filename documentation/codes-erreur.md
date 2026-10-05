@@ -84,12 +84,14 @@ tests sont le seul endroit qui les tient.
 | `identifiant-evenement-reutilise`    | 409    | identifiant d'evenement reutilise  | `IdentifiantDEvenementReutiliseException` |
 | `date-de-survenue-future`            | 400    | date de survenue future            | `DateDeSurvenueFutureException`           |
 | `proposition-invalide`               | 400    | proposition invalide               | `PropositionInvalideException`            |
+| `nature-d-anomalie-invalide`         | 400    | nature d'anomalie invalide         | `NatureDAnomalieInvalideException`        |
 | `apercu-obsolete`                    | 409    | apercu obsolete                    | `ApercuObsoleteException`                 |
 | `confirmation-reutilisee`            | 409    | confirmation reutilisee            | `ConfirmationReutiliseeException`         |
 
 `proposition-invalide` refuse une adresse incohérente avec le suivi de la route ou l'acte, une identité
 prospective absente pour une création, présente pour une annulation ou égale à la commande.
-`apercu-obsolete` refuse une adresse non active en conflit, une révision dépassée ou des conséquences
+`nature-d-anomalie-invalide` refuse un paramètre `nature` absent ou inconnu sur `GET /api/atelier/anomalies`.
+`apercu-obsolete` refuse une adresse qui n'ouvre ni conflit ni fin automatique, une révision dépassée ou des conséquences
 matériellement différentes, échéance métier franchie, habilitation retirée ou ressource disparue comprises.
 Il impose un nouvel aperçu. `confirmation-reutilisee` refuse une commande déjà enregistrée avec une autre
 proposition ou une autre identité authentifiée ; le client vérifie son reçu canonique.

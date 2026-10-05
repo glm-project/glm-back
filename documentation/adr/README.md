@@ -7,3 +7,4 @@
 - [0005 — Preserve nanosecond instants in numeric columns](0005-preserve-nanosecond-instants-in-numeric-columns.md)
 - [0006 — Confirm explicit resolution proposals](0006-confirm-explicit-resolution-proposals.md)
 - [0007 — Read addressed workshop aggregates coherently](0007-read-addressed-workshop-aggregates-coherently.md)
+- [0008 — Extend explicit proposals to automatic ends](0008-extend-explicit-proposals-to-automatic-ends.md)

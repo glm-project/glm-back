@@ -39,14 +39,37 @@ Ne rien ajouter ici qui relève de :
 `SuiviDAtelier` porte un élément engagé et son `JournalDAtelier`. `TempsDAtelierService` lit les intervalles
 interprétés de ses activités ; seuls les faits d'activité, la clôture et l'échéance en fixent les bornes.
 
-Le parcours de gestion des conflits est regroupé sous `gestionconflits/` dans chaque couche d'Atelier :
-`domain/gestionconflits`, `application/gestionconflits`, `infrastructure/primary/gestionconflits` et
-`infrastructure/secondary/gestionconflits` portent les dossiers, la liste, les actes de résolution, les aperçus,
+Le parcours de gestion des anomalies de pointage est regroupé sous `gestionanomalies/` dans chaque couche d'Atelier :
+`domain/gestionanomalies`, `application/gestionanomalies`, `infrastructure/primary/gestionanomalies` et
+`infrastructure/secondary/gestionanomalies` portent les dossiers, la liste, les actes de résolution, les aperçus,
 les confirmations et les reçus. Ces sous-packages appartiennent au même bounded context Atelier.
+
+**Anomalie de pointage** : ce que le gestionnaire doit trancher. Elle porte une nature (`NatureDAnomalie`) :
+`CONFLIT`, une séquence en conflit, et `FIN_AUTOMATIQUE`, une activité terminée à son échéance faute de fin réelle,
+toutes deux listées par `GET /api/atelier/anomalies?nature=…` (réponse `oneOf` discriminée par `nature`). La liste des fins
+automatiques se juge en SQL sur `activite_d_atelier` (sans fin, hors à résoudre, échéance atteinte, borne comprise), sans
+rejouer de journal. `nature` est obligatoire : absente ou
+inconnue, elle sort en 400 `urn:glm:erreur:atelier:nature-d-anomalie-invalide`. L'adresse d'un dossier est le couple
+suivi/pointage, et son état `SANS_ANOMALIE` dit que l'ancre est active et ne porte aucune anomalie. Le vocabulaire de
+l'interprétation ne change pas : « séquence en conflit », `SequenceEnConflit`, `conflits[]` de `RestSuiviDAtelier`,
+`ConflitsDAtelier` et `atelier_conflits.feature` gardent leur nom, parce qu'ils décrivent la contradiction des
+faits, pas le parcours qui la traite. L'ancien sens restreint d'« anomalie » — l'activité terminée automatiquement à
+son échéance — est désormais la nature `FIN_AUTOMATIQUE`, portée par `finAutomatique`. Le coût de revient emploie
+« anomalie » dans un sens voisin mais non identique (`AnomalieDuPointage` : ce qui rend un pointage suspect ou
+incomplet) : seul `FIN_AUTOMATIQUE` y porte le même nom, `CONFLIT` correspond à `A_RESOUDRE` et `PARTAGE_INCONNU`
+n'a pas d'équivalent ici. Aucun type n'est partagé entre les contextes. Les routes `/conflits` sont supprimées, sans
+redirection.
 Les aperçus restent des lectures sans réservation. Les confirmations transportent une proposition explicite
 et comparent les conséquences après verrouillage ; le reçu durable compare la demande indépendamment du
 nom d'affichage et contrôle séparément entreprise, issuer et subject. Avant de modifier ce protocole,
 consulter [l'ADR 0006](../../../../../../../documentation/adr/0006-confirm-explicit-resolution-proposals.md).
+**Dossier** : l'adresse d'une anomalie à traiter. Il couvre une séquence en conflit (`EN_CONFLIT`) ou une fin
+automatique (`FIN_AUTOMATIQUE`) : sans séquence, ses activités concernées sont celle de l'ancre terminée
+automatiquement, et son périmètre ses faits ouvrants et visants, gestes tardifs compris. L'ancre d'une fin automatique
+est l'ouvrant actif ; l'activité visée par un acte reste l'`ActiviteId` d'origine. `finAutomatique` dit qu'une activité
+concernée reste échue, même quand l'ancre est annulée ; la fin n'est jamais stockée. Les propositions guidées
+(`REGULARISER_FIN`, `CORRIGER_FIN_TARDIVE`, `CORRIGER_TRANSITION_TARDIVE`) n'inventent aucune heure :
+[l'ADR 0008](../../../../../../../documentation/adr/0008-extend-explicit-proposals-to-automatic-ends.md).
 L'agrégat, le journal, leurs transitions, le repository et les types communs d'interprétation, diagnostics compris,
 restent dans les couches d'Atelier ; le parcours les utilise sans déplacer leurs invariants. Ses tests et fixtures
 suivent leurs propriétaires dans les mêmes sous-packages.
@@ -115,8 +138,12 @@ suivent leurs propriétaires dans les mêmes sous-packages.
 - **Une activité que rien n'a terminée se termine automatiquement à son échéance** : son début plus 13 heures
   écoulées (`Echeance`), neutres au changement d'heure. Ce délai est la règle de l'atelier, pas une donnée de
   paramétrage : il reste une constante du domaine. Rien n'est écrit ni planifié : `Activite` ne dépend que des faits
-  actifs, et seule sa lecture à un instant d'évaluation (`Activite.a`) la dit en cours, terminée à sa fin réelle, ou
-  terminée automatiquement à l'échéance avec une anomalie, que seule une fin réelle retire. L'instant vient de
+  actifs, et seule sa lecture à un instant d'évaluation la dit en cours, terminée à sa fin réelle, ou
+  terminée automatiquement à l'échéance avec une anomalie, que seule une fin réelle retire. Cette règle a trois
+  lecteurs : le domaine (`Activite.a`), la supervision (`ActiviteDeSupervision.a`) et le SQL de la liste des fins
+  automatiques, qui recopie la comparaison faute de pouvoir appeler `Echeance`. Leur parité est tenue par
+  l'exécution, comme celle des critères de suivi : `ListeDesFinsAutomatiquesDAtelierIT` confronte ce SQL à
+  `Activite.a` et à `AnomaliesDAtelierCriteria.matches`. Toute évolution de la règle les modifie ensemble. L'instant vient de
   l'horloge du service applicatif (`LectureDuSuivi`, `TempsDAtelierService.tempsEffectif`), jamais d'une horloge
   enfouie dans le domaine.
 - **L'interprétation applique l'échéance sans instant de lecture**, sur les seules heures métier
@@ -204,6 +231,8 @@ résolution. Les contextes lecteurs peuvent les lire par leurs propres entités 
 Leur contrepartie : `SuiviDAtelierCriteria.matches` n’est plus appelée par la
 production, qui traduit les mêmes règles en SQL. C'est `PariteDesRepositoriesDAtelierIT` qui rétablit par l'exécution
 la garantie que donnait le code partagé — le modifier en même temps que l'une des deux expressions de la règle.
+`ListeDesFinsAutomatiquesDAtelierIT` joue le même rôle pour la liste des fins automatiques, contre `Activite.a` et
+`AnomaliesDAtelierCriteria.matches`.
 
 ### Concurrence
 

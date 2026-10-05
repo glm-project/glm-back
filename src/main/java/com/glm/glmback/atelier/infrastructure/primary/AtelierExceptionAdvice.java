@@ -15,9 +15,10 @@ import com.glm.glmback.atelier.domain.PosteDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierClotureException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
-import com.glm.glmback.atelier.domain.gestionconflits.ApercuObsoleteException;
-import com.glm.glmback.atelier.domain.gestionconflits.ConfirmationReutiliseeException;
-import com.glm.glmback.atelier.domain.gestionconflits.PropositionInvalideException;
+import com.glm.glmback.atelier.domain.gestionanomalies.ApercuObsoleteException;
+import com.glm.glmback.atelier.domain.gestionanomalies.ConfirmationReutiliseeException;
+import com.glm.glmback.atelier.domain.gestionanomalies.NatureDAnomalieInvalideException;
+import com.glm.glmback.atelier.domain.gestionanomalies.PropositionInvalideException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.ProblemDetail;
@@ -31,6 +32,11 @@ class AtelierExceptionAdvice {
   @ExceptionHandler(PropositionInvalideException.class)
   ProblemDetail handlePropositionInvalide(PropositionInvalideException e) {
     return ErreurDAtelier.PROPOSITION_INVALIDE.problem(e);
+  }
+
+  @ExceptionHandler(NatureDAnomalieInvalideException.class)
+  ProblemDetail handleNatureDAnomalieInvalide(NatureDAnomalieInvalideException e) {
+    return ErreurDAtelier.NATURE_D_ANOMALIE_INVALIDE.problem(e);
   }
 
   @ExceptionHandler(ApercuObsoleteException.class)
