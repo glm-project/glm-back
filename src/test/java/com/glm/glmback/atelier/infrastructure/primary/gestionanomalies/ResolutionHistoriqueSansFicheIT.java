@@ -68,7 +68,7 @@ class ResolutionHistoriqueSansFicheIT {
       })
       .build();
     String uri = "/api/atelier/suivis/" + historique.id().uuid();
-    String dossierUri = uri + "/conflits/" + fin.id().uuid();
+    String dossierUri = uri + "/anomalies/" + fin.id().uuid();
     var dossier = get(http, dossierUri);
     assertThat(dossier.get("kind")).isEqualTo("EN_CONFLIT");
     assertThat((List<?>) dossier.get("activites")).isEmpty();
@@ -85,7 +85,7 @@ class ResolutionHistoriqueSansFicheIT {
       assertThat(fait.get("operateurId")).isEqualTo(fin.operateur().uuid().toString());
       assertThat(fait.get("operateur")).isNull();
     });
-    var liste = get(http, "/api/atelier/conflits?element=" + historique.element().id().uuid());
+    var liste = get(http, "/api/atelier/anomalies?nature=CONFLIT&element=" + historique.element().id().uuid());
     assertThat(((Number) liste.get("total")).longValue()).isEqualTo(1);
     assertThat((List<Map<String, Object>>) liste.get("lignes"))
       .singleElement()
@@ -135,7 +135,9 @@ class ResolutionHistoriqueSansFicheIT {
     var canonique = get(http, uri + "/confirmations-de-resolution/" + commande);
     assertThat(canonique.get("recu")).isEqualTo(resultat.get("recu"));
     assertThat((List<?>) ((Map<String, Object>) canonique.get("dossier")).get("activites")).isEmpty();
-    assertThat(((Number) get(http, "/api/atelier/conflits?element=" + historique.element().id().uuid()).get("total")).longValue()).isZero();
+    assertThat(
+      ((Number) get(http, "/api/atelier/anomalies?nature=CONFLIT&element=" + historique.element().id().uuid()).get("total")).longValue()
+    ).isZero();
     http.get().uri(uri + "/temps-effectif").exchange().expectStatus().isOk().expectBody().json("[]");
   }
 

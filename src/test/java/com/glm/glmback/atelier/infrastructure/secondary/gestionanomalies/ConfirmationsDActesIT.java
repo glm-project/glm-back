@@ -771,7 +771,7 @@ class ConfirmationsDActesIT {
   }
 
   @ParameterizedTest
-  @EnumSource(value = EtatDAdresseDossier.class, names = { "ANCRE_ANNULEE", "INTROUVABLE", "HORS_CONFLIT" })
+  @EnumSource(value = EtatDAdresseDossier.class, names = { "ANCRE_ANNULEE", "INTROUVABLE", "SANS_ANOMALIE" })
   @WithTenant("impeccmold")
   void shouldRefuserUneAdresseObsoleteMemeSiLaRevisionEtLEmpreinteSontCourantes(EtatDAdresseDossier etat) {
     var conflit = suiviAvecTransitionDeMemeCategorie();

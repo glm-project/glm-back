@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/atelier/suivis")
-@Tag(name = "Atelier - elements engages")
+@Tag(name = "Atelier - anomalies de pointage")
 class DossierAnomalieResource {
 
   private final SuivisDAtelierApplicationService applicationService;
@@ -25,16 +25,16 @@ class DossierAnomalieResource {
     this.applicationService = applicationService;
   }
 
-  @GetMapping("/{id}/conflits/{pointage}")
+  @GetMapping("/{id}/anomalies/{pointage}")
   @Operation(
-    summary = "Consulter un dossier de conflit par un pointage",
-    description = "Le journal, la revision et les consequences interpretees du suivi a un instant d'evaluation. L'adresse ne redirige jamais vers une autre sequence : une ancre absente, annulee ou active hors conflit garde son etat et l'historique accessible."
+    summary = "Consulter un dossier d'anomalie par un pointage",
+    description = "Le journal, la revision et les consequences interpretees du suivi a un instant d'evaluation. L'adresse ne redirige jamais vers une autre sequence : une ancre absente, annulee ou active sans anomalie garde son etat et l'historique accessible."
   )
   @ApiResponse(responseCode = "200", description = "Le dossier et l'etat de son adresse, pour USER ou GESTIONNAIRE.")
   @ApiResponse(responseCode = "404", description = "Suivi introuvable dans l'entreprise courante.")
-  RestDossierConflit dossier(@PathVariable UUID id, @PathVariable UUID pointage) {
+  RestDossierAnomalie dossier(@PathVariable UUID id, @PathVariable UUID pointage) {
     var lecture = applicationService.get(new SuiviDAtelierId(id));
     var dossier = new LectureDossierAnomalie(new AdresseDossierAnomalie(lecture.suivi().id(), new EvenementDAtelierId(pointage)), lecture);
-    return RestDossierConflit.from(dossier, applicationService.annuairePour(lecture.suivi()));
+    return RestDossierAnomalie.from(dossier, applicationService.annuairePour(lecture.suivi()));
   }
 }

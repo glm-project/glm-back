@@ -5,8 +5,8 @@ import com.glm.glmback.atelier.domain.gestionanomalies.LectureDesConflits;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 
-@Schema(name = "RestPageDesConflits", description = "Une page et son total acquis ensemble dans les projections courantes.")
-final class RestPageDesConflits {
+@Schema(name = "RestPageDesAnomalies", description = "Une page et son total acquis ensemble dans les projections courantes.")
+final class RestPageDesAnomalies {
 
   @JsonProperty
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
@@ -28,7 +28,7 @@ final class RestPageDesConflits {
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
   private final int size;
 
-  private RestPageDesConflits(LectureDesConflits lecture) {
+  private RestPageDesAnomalies(LectureDesConflits lecture) {
     lignes = lecture
       .page()
       .content()
@@ -41,7 +41,7 @@ final class RestPageDesConflits {
     size = lecture.page().pageSize();
   }
 
-  static RestPageDesConflits from(LectureDesConflits lecture) {
-    return new RestPageDesConflits(lecture);
+  static RestPageDesAnomalies from(LectureDesConflits lecture) {
+    return new RestPageDesAnomalies(lecture);
   }
 }

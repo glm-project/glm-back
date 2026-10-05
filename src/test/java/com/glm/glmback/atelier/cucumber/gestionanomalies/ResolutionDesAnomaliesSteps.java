@@ -72,13 +72,13 @@ public class ResolutionDesAnomaliesSteps {
     atelier.jeConsulteLeTempsEffectifDe(alias);
     tempsAvant = CucumberRestTestContext.getElement("$");
     projectionsAvant = litProjections();
-    rest.get("/api/atelier/suivis/" + suivi + "/conflits/" + journal.get(ancre).get("id"));
+    rest.get("/api/atelier/suivis/" + suivi + "/anomalies/" + journal.get(ancre).get("id"));
     assertThatLastResponse().hasOkStatus().hasElement("$.kind").withValue("EN_CONFLIT");
     revision = ((Number) CucumberRestTestContext.getElement("$.revision")).longValue();
     this.ancre = (String) journal.get(ancre).get("id");
     commande = UUID.randomUUID().toString();
     rest.post(
-      "/api/atelier/suivis/" + suivi + "/conflits/" + journal.get(ancre).get("id") + "/apercus",
+      "/api/atelier/suivis/" + suivi + "/anomalies/" + journal.get(ancre).get("id") + "/apercus",
       JSON.writeValueAsString(Map.of("commande", commande, "revision", revision, "acte", acte))
     );
     assertThatLastResponse().hasOkStatus();
@@ -170,7 +170,7 @@ public class ResolutionDesAnomaliesSteps {
     assertThat(CucumberRestTestContext.getElement("$")).isEqualTo(avant);
     rest.get("/api/atelier/suivis/" + suivi + "/temps-effectif");
     assertThat(CucumberRestTestContext.getElement("$")).isEqualTo(tempsAvant);
-    rest.get("/api/atelier/suivis/" + suivi + "/conflits/" + ancre);
+    rest.get("/api/atelier/suivis/" + suivi + "/anomalies/" + ancre);
     assertThat(((Number) CucumberRestTestContext.getElement("$.revision")).longValue()).isEqualTo(revision);
     rest.get("/api/atelier/suivis/" + suivi + "/confirmations-de-resolution/" + commande);
     assertThatLastResponse().hasOkStatus().hasElement("$.kind").withValue("NON_ATTESTEE");
@@ -215,18 +215,18 @@ public class ResolutionDesAnomaliesSteps {
 
   @Then("l'ancre corrigee est explicitement annulee")
   public void ancreAnnulee() {
-    rest.get("/api/atelier/suivis/" + suivi + "/conflits/" + acte.get("pointage"));
+    rest.get("/api/atelier/suivis/" + suivi + "/anomalies/" + acte.get("pointage"));
     assertThatLastResponse().hasOkStatus().hasElement("$.kind").withValue("ANCRE_ANNULEE");
     var journalApres = ((Map<?, ?>) apres.get("suivi")).get("journal");
     rest.post(
-      "/api/atelier/suivis/" + suivi + "/conflits/" + acte.get("pointage") + "/apercus",
+      "/api/atelier/suivis/" + suivi + "/anomalies/" + acte.get("pointage") + "/apercus",
       JSON.writeValueAsString(Map.of("commande", UUID.randomUUID(), "revision", revision + 1, "acte", acte))
     );
     assertThatLastResponse().hasHttpStatus(409);
     rest.get("/api/atelier/suivis/" + suivi);
     assertThat(CucumberRestTestContext.getElement("$.journal")).isEqualTo(journalApres);
     assertThat(litProjections()).isEqualTo(projectionsApres);
-    rest.get("/api/atelier/suivis/" + suivi + "/conflits/" + acte.get("pointage"));
+    rest.get("/api/atelier/suivis/" + suivi + "/anomalies/" + acte.get("pointage"));
     assertThat(((Number) CucumberRestTestContext.getElement("$.revision")).longValue()).isEqualTo(revision + 1);
   }
 
@@ -246,7 +246,7 @@ public class ResolutionDesAnomaliesSteps {
   @Then("les lignes restantes portent la revision commune")
   @SuppressWarnings("unchecked")
   public void revisionsCommunes() {
-    rest.get("/api/atelier/conflits?element=" + element);
+    rest.get("/api/atelier/anomalies?nature=CONFLIT&element=" + element);
     assertThatLastResponse().hasOkStatus();
     var lignes = (List<Map<String, Object>>) CucumberRestTestContext.getElement("$.lignes");
     assertThat(lignes)
@@ -385,7 +385,7 @@ public class ResolutionDesAnomaliesSteps {
   @When("je tente un nouvel apercu avec statut {int}")
   public void apercuRefuse(int statut) {
     rest.post(
-      "/api/atelier/suivis/" + suivi + "/conflits/" + ancre + "/apercus",
+      "/api/atelier/suivis/" + suivi + "/anomalies/" + ancre + "/apercus",
       JSON.writeValueAsString(Map.of("commande", UUID.randomUUID(), "revision", revision, "acte", acte))
     );
     assertThatLastResponse().hasHttpStatus(statut);
@@ -401,7 +401,7 @@ public class ResolutionDesAnomaliesSteps {
   public void faitsConfirmesInchanges() {
     rest.get("/api/atelier/suivis/" + suivi);
     assertThat(CucumberRestTestContext.getElement("$")).isEqualTo(apres.get("suivi"));
-    rest.get("/api/atelier/suivis/" + suivi + "/conflits/" + ancre);
+    rest.get("/api/atelier/suivis/" + suivi + "/anomalies/" + ancre);
     assertThat(((Number) CucumberRestTestContext.getElement("$.revision")).longValue()).isEqualTo(revision + 1);
     assertThat(litProjections()).isEqualTo(projectionsApres);
   }
@@ -430,7 +430,7 @@ public class ResolutionDesAnomaliesSteps {
       }
       invalide.put("fait", fait);
       rest.post(
-        "/api/atelier/suivis/" + suivi + "/conflits/" + ancre + "/apercus",
+        "/api/atelier/suivis/" + suivi + "/anomalies/" + ancre + "/apercus",
         JSON.writeValueAsString(Map.of("commande", UUID.randomUUID(), "revision", revision, "acte", invalide))
       );
       assertThatLastResponse().hasHttpStatus(400);
@@ -538,7 +538,7 @@ public class ResolutionDesAnomaliesSteps {
 
   @Then("la liste de ce suivi conserve {int} sequences en conflit")
   public void liste(int nombre) {
-    rest.get("/api/atelier/conflits?element=" + element);
+    rest.get("/api/atelier/anomalies?nature=CONFLIT&element=" + element);
     assertThatLastResponse().hasOkStatus().hasElement("$.complete").withValue(true).and().hasElement("$.total").withValue(nombre);
   }
 
@@ -558,7 +558,7 @@ public class ResolutionDesAnomaliesSteps {
   }
 
   private Map<String, Object> litProjections() {
-    rest.get("/api/atelier/conflits?element=" + element);
+    rest.get("/api/atelier/anomalies?nature=CONFLIT&element=" + element);
     assertThatLastResponse().hasOkStatus();
     Object liste = CucumberRestTestContext.getElement("$");
     rest.get("/api/couts-de-revient/" + element);

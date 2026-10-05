@@ -4,5 +4,5 @@ public enum EtatDAdresseDossier {
   EN_CONFLIT,
   INTROUVABLE,
   ANCRE_ANNULEE,
-  HORS_CONFLIT,
+  SANS_ANOMALIE,
 }

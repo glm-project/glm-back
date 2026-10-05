@@ -35,7 +35,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 class ApercusDeResolutionTest {
 
   @ParameterizedTest
-  @EnumSource(value = EtatDAdresseDossier.class, names = { "ANCRE_ANNULEE", "INTROUVABLE", "HORS_CONFLIT" })
+  @EnumSource(value = EtatDAdresseDossier.class, names = { "ANCRE_ANNULEE", "INTROUVABLE", "SANS_ANOMALIE" })
   void shouldRefuserUneAdresseObsoleteMemeALaRevisionCourante(EtatDAdresseDossier etat) {
     var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     var transition = passageEnTravailDe(travail).a(LE_10_MAI_2026_A_12H);

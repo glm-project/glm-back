@@ -37,7 +37,7 @@ class ListeDesAnomaliesAcquisitionIT {
 
     rest
       .get()
-      .uri("/api/atelier/conflits")
+      .uri("/api/atelier/anomalies?nature=CONFLIT")
       .header("Authorization", "Bearer " + token)
       .exchange()
       .expectStatus()

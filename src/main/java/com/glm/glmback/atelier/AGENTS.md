@@ -39,10 +39,21 @@ Ne rien ajouter ici qui relève de :
 `SuiviDAtelier` porte un élément engagé et son `JournalDAtelier`. `TempsDAtelierService` lit les intervalles
 interprétés de ses activités ; seuls les faits d'activité, la clôture et l'échéance en fixent les bornes.
 
-Le parcours de gestion des conflits est regroupé sous `gestionanomalies/` dans chaque couche d'Atelier :
+Le parcours de gestion des anomalies de pointage est regroupé sous `gestionanomalies/` dans chaque couche d'Atelier :
 `domain/gestionanomalies`, `application/gestionanomalies`, `infrastructure/primary/gestionanomalies` et
 `infrastructure/secondary/gestionanomalies` portent les dossiers, la liste, les actes de résolution, les aperçus,
 les confirmations et les reçus. Ces sous-packages appartiennent au même bounded context Atelier.
+
+**Anomalie de pointage** : ce que le gestionnaire doit trancher. Elle porte une nature (`NatureDAnomalie`) :
+`CONFLIT`, une séquence en conflit, seule publiée aujourd'hui par `GET /api/atelier/anomalies?nature=…`, et bientôt
+`FIN_AUTOMATIQUE`, une activité terminée à son échéance faute de fin réelle. `nature` est obligatoire : absente ou
+inconnue, elle sort en 400 `urn:glm:erreur:atelier:nature-d-anomalie-invalide`. L'adresse d'un dossier est le couple
+suivi/pointage, et son état `SANS_ANOMALIE` dit que l'ancre est active et ne porte aucune anomalie. Le vocabulaire de
+l'interprétation ne change pas : « séquence en conflit », `SequenceEnConflit`, `conflits[]` de `RestSuiviDAtelier`,
+`ConflitsDAtelier` et `atelier_conflits.feature` gardent leur nom, parce qu'ils décrivent la contradiction des
+faits, pas le parcours qui la traite. Le coût de revient emploie déjà « anomalie » au sens large
+(`AnomalieDuPointage`) ; aucun type n'est partagé entre les contextes. Les routes `/conflits` sont supprimées, sans
+redirection.
 Les aperçus restent des lectures sans réservation. Les confirmations transportent une proposition explicite
 et comparent les conséquences après verrouillage ; le reçu durable compare la demande indépendamment du
 nom d'affichage et contrôle séparément entreprise, issuer et subject. Avant de modifier ce protocole,

@@ -24,7 +24,7 @@ final class ConfirmationDeResolutionFixture {
   static RestConfirmationAEnregistrer corps(PropositionAConfirmer proposition) {
     return new RestConfirmationAEnregistrer(
       proposition.commande(),
-      new RestAdresseDossierConflit(proposition.adresse().suivi().uuid(), proposition.adresse().pointage().uuid()),
+      new RestAdresseDossierAnomalie(proposition.adresse().suivi().uuid(), proposition.adresse().pointage().uuid()),
       proposition.revision().value(),
       RestActeDeResolution.from(proposition.acte()),
       proposition.empreinteConsequences(),

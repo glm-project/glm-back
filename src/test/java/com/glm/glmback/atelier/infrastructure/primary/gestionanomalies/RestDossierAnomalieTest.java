@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
 @UnitTest
-class RestDossierConflitTest {
+class RestDossierAnomalieTest {
 
   @Test
   void shouldProposerLaContinuationSansChangerLAdresseDeLAncreCorrigee() {
@@ -27,7 +27,7 @@ class RestDossierConflitTest {
     );
     var corrige = suivi.corrige(fin.id(), annulationParLeroy(), finDe(travail).a(LE_10_MAI_2026_A_17H.minusSeconds(3600)));
     var apres = avant.apresActe(new LectureDuSuivi(corrige, LE_10_MAI_2026_A_17H));
-    var json = JsonMapper.builder().build().valueToTree(RestDossierConflit.from(apres, annuaireDeDupontEtMartin()));
+    var json = JsonMapper.builder().build().valueToTree(RestDossierAnomalie.from(apres, annuaireDeDupontEtMartin()));
     assertThat(json.path("kind").asString()).isEqualTo("ANCRE_ANNULEE");
     assertThat(json.path("enConflit").asBoolean()).isTrue();
     assertThat(json.at("/adresse/pointage").asString()).isEqualTo(fin.id().uuid().toString());
@@ -53,7 +53,7 @@ class RestDossierConflitTest {
       new AdresseDossierAnomalie(suivi.id(), transitionMartin.id()),
       new LectureDuSuivi(suivi, LE_10_MAI_2026_A_17H)
     );
-    var json = JsonMapper.builder().build().valueToTree(RestDossierConflit.from(dossier, annuaireDeDupontEtMartin()));
+    var json = JsonMapper.builder().build().valueToTree(RestDossierAnomalie.from(dossier, annuaireDeDupontEtMartin()));
 
     assertThat(json.at("/adresse/pointage").asString()).isEqualTo(transitionMartin.id().uuid().toString());
     assertThat(json.at("/sequence/operateurId").asString()).isEqualTo(OPERATEUR_ID_MARTIN.uuid().toString());
@@ -73,7 +73,7 @@ class RestDossierConflitTest {
     var avant = new LectureDossierAnomalie(new AdresseDossierAnomalie(suivi.id(), transition.id()), new LectureDuSuivi(suivi, evaluation));
     var apres = avant.apresActe(new LectureDuSuivi(suivi.annule(transition.id(), annulationParLeroy()), evaluation));
 
-    var json = JsonMapper.builder().build().valueToTree(RestDossierConflit.from(apres, annuaireDeDupontEtMartin()));
+    var json = JsonMapper.builder().build().valueToTree(RestDossierAnomalie.from(apres, annuaireDeDupontEtMartin()));
 
     assertThat(json.path("kind").asString()).isEqualTo("ANCRE_ANNULEE");
     assertThat(json.at("/activites/0/activite").asString()).isEqualTo(travail.activite().orElseThrow().uuid().toString());
@@ -99,7 +99,7 @@ class RestDossierConflitTest {
       new LectureDuSuivi(suivi, LE_10_MAI_2026_A_17H)
     );
 
-    var json = JsonMapper.builder().build().valueToTree(RestDossierConflit.from(dossier, annuaireDeDupontEtMartin()));
+    var json = JsonMapper.builder().build().valueToTree(RestDossierAnomalie.from(dossier, annuaireDeDupontEtMartin()));
 
     assertThat(json.at("/diagnostics/0/raison").asString()).isEqualTo("CIBLE_REMPLACEE");
     assertThat(json.at("/diagnostics/0/pointage").asString()).isEqualTo(fin.id().uuid().toString());
@@ -137,7 +137,7 @@ class RestDossierConflitTest {
       new LectureDuSuivi(suivi, LE_10_MAI_2026_A_17H)
     );
 
-    var json = JsonMapper.builder().build().valueToTree(RestDossierConflit.from(dossier, annuaireDeDupontEtMartin()));
+    var json = JsonMapper.builder().build().valueToTree(RestDossierAnomalie.from(dossier, annuaireDeDupontEtMartin()));
 
     assertThat(json.path("kind").asString()).isEqualTo("EN_CONFLIT");
     assertThat(json.at("/adresse/suivi").asString()).isEqualTo(suivi.id().uuid().toString());

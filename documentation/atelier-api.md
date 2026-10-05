@@ -193,7 +193,7 @@ régularisation et la correction.
 
 ### Des pointages contradictoires restent en conflit, jusqu'à la décision du gestionnaire
 
-Le gestionnaire et l'opérateur peuvent consulter `GET /api/atelier/conflits`. Cette page lit les projections
+Le gestionnaire et l'opérateur peuvent consulter `GET /api/atelier/anomalies?nature=CONFLIT` (voir [Anomalies de pointage](#anomalies-de-pointage)). Cette page lit les projections
 courantes sans charger les journaux : une ligne désigne une séquence par `adresse.suivi` et `adresse.pointage`,
 avec la révision du suivi, les références brutes, les fiches disponibles, le premier instant métier exact et
 le nombre de pointages. `operateur` et `element` cherchent du texte partiel sans casse, y compris dans les
@@ -658,20 +658,44 @@ et les faits actifs `pointages`. Une séquence sans activité à résoudre reste
 sans rendre les montants incomplets. Résoudre les faits par annulation ou correction recalcule les valeurs.
 Cette route ne prend pas de paramètre d'évaluation et ne garantit pas un instantané face aux écritures concurrentes.
 
-## Résolution manuelle des conflits
+## Anomalies de pointage
 
 Ces routes sont décrites dans le [contrat OpenAPI généré](openapi.json) et éprouvées par les scénarios REST.
 
-| Capacité               | Route                                                                    | Droit                                 |
-| ---------------------- | ------------------------------------------------------------------------ | ------------------------------------- |
-| Liste paginée          | `GET /api/atelier/conflits?operateur=…&element=…&page=0&size=5`          | `USER` ou `GESTIONNAIRE`              |
-| Dossier adressé        | `GET /api/atelier/suivis/{suivi}/conflits/{pointage}`                    | `USER` ou `GESTIONNAIRE`              |
-| Aperçu sans écriture   | `POST /api/atelier/suivis/{suivi}/conflits/{pointage}/apercus`           | `GESTIONNAIRE`                        |
-| Confirmation           | `POST /api/atelier/suivis/{suivi}/confirmations-de-resolution`           | `GESTIONNAIRE`                        |
-| Vérification canonique | `GET /api/atelier/suivis/{suivi}/confirmations-de-resolution/{commande}` | `GESTIONNAIRE`, auteur de la commande |
+| Capacité               | Route                                                                           | Droit                                 |
+| ---------------------- | ------------------------------------------------------------------------------- | ------------------------------------- |
+| Liste paginée          | `GET /api/atelier/anomalies?nature=CONFLIT&operateur=…&element=…&page=0&size=5` | `USER` ou `GESTIONNAIRE`              |
+| Dossier adressé        | `GET /api/atelier/suivis/{suivi}/anomalies/{pointage}`                          | `USER` ou `GESTIONNAIRE`              |
+| Aperçu sans écriture   | `POST /api/atelier/suivis/{suivi}/anomalies/{pointage}/apercus`                 | `GESTIONNAIRE`                        |
+| Confirmation           | `POST /api/atelier/suivis/{suivi}/confirmations-de-resolution`                  | `GESTIONNAIRE`                        |
+| Vérification canonique | `GET /api/atelier/suivis/{suivi}/confirmations-de-resolution/{commande}`        | `GESTIONNAIRE`, auteur de la commande |
+
+Une **anomalie de pointage** est ce que le gestionnaire doit trancher. Elle porte une `nature` ; seule `CONFLIT`
+(une séquence en conflit) existe pour l'instant, `FIN_AUTOMATIQUE` viendra ensuite. Les anciennes routes
+`/api/atelier/conflits` et `/api/atelier/suivis/{suivi}/conflits/{pointage}` sont supprimées : elles répondent 404,
+sans redirection. « Séquence en conflit » et le tableau `conflits[]` des suivis, de la supervision et des coûts
+gardent leur sens et leur nom.
+
+`nature` est un paramètre de requête obligatoire de la liste, avec la seule valeur `CONFLIT` (schéma `NatureDAnomalie`
+dans le contrat). Absent ou inconnu — la casse compte —, il est refusé en 400 par un `ProblemDetail` au code stable
+des erreurs métier, sans ligne de page :
+
+```json
+{
+  "type": "urn:glm:erreur:atelier:nature-d-anomalie-invalide",
+  "title": "nature d'anomalie invalide",
+  "status": 400,
+  "message": "La nature d'anomalie 'INCONNUE' est inconnue. Valeurs possibles : CONFLIT."
+}
+```
+
+Le `message` d'une nature absente est « La nature d'anomalie est obligatoire. Valeurs possibles : CONFLIT. ». Le client
+teste `type`, jamais `message` (voir [les codes d'erreur](codes-erreur.md)). Ce refus ne passe pas par le 400 de Bean
+Validation, qui ne porte pas de `type` et ne traite pas un paramètre de requête manquant.
 
 L'adresse d'un dossier est le couple suivi/pointage ; une identité technique de projection n'est pas
-une adresse. Le résultat porte `EN_CONFLIT`, `INTROUVABLE`, `ANCRE_ANNULEE` ou `HORS_CONFLIT`.
+une adresse. Le résultat porte `EN_CONFLIT`, `INTROUVABLE`, `ANCRE_ANNULEE` ou `SANS_ANOMALIE` (ancre active sans
+anomalie ; ce résultat s'appelait `HORS_CONFLIT`).
 Un suivi absent du tenant courant répond 404 sans journal. Un suivi accessible conserve son journal
 dans les trois résultats d'adresse sans conflit ; aucun de ces résultats ne redirige implicitement.
 
@@ -741,5 +765,5 @@ Gestion conserve la saisie, recharge le dossier et invite à demander explicitem
 
 La proposition explicite et les reçus sont décrits dans
 [l'ADR 0006](adr/0006-confirm-explicit-resolution-proposals.md). Les refus de résolution
-(`proposition-invalide`, `apercu-obsolete`, `confirmation-reutilisee`) sont publiés dans
+(`nature-d-anomalie-invalide`, `proposition-invalide`, `apercu-obsolete`, `confirmation-reutilisee`) sont publiés dans
 [le catalogue](codes-erreur.md).

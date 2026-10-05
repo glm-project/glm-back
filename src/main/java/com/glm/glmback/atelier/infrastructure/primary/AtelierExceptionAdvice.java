@@ -17,6 +17,7 @@ import com.glm.glmback.atelier.domain.SuiviDAtelierClotureException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.gestionanomalies.ApercuObsoleteException;
 import com.glm.glmback.atelier.domain.gestionanomalies.ConfirmationReutiliseeException;
+import com.glm.glmback.atelier.domain.gestionanomalies.NatureDAnomalieInvalideException;
 import com.glm.glmback.atelier.domain.gestionanomalies.PropositionInvalideException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -31,6 +32,11 @@ class AtelierExceptionAdvice {
   @ExceptionHandler(PropositionInvalideException.class)
   ProblemDetail handlePropositionInvalide(PropositionInvalideException e) {
     return ErreurDAtelier.PROPOSITION_INVALIDE.problem(e);
+  }
+
+  @ExceptionHandler(NatureDAnomalieInvalideException.class)
+  ProblemDetail handleNatureDAnomalieInvalide(NatureDAnomalieInvalideException e) {
+    return ErreurDAtelier.NATURE_D_ANOMALIE_INVALIDE.problem(e);
   }
 
   @ExceptionHandler(ApercuObsoleteException.class)

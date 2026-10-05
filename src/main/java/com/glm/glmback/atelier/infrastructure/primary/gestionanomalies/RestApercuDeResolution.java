@@ -11,20 +11,20 @@ import java.util.UUID;
 )
 record RestApercuDeResolution(
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) UUID commande,
-  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestAdresseDossierConflit adresse,
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestAdresseDossierAnomalie adresse,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) long revision,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) Instant evaluation,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String empreinteConsequences,
   UUID evenement,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestActeDeResolution acte,
-  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestDossierConflit avant,
-  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestDossierConflit apres
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestDossierAnomalie avant,
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestDossierAnomalie apres
 ) {
   static RestApercuDeResolution from(ApercuDeResolution apercu, AnnuaireDAtelier avant, AnnuaireDAtelier apres) {
     var proposition = apercu.proposition();
     return new RestApercuDeResolution(
       proposition.commande(),
-      new RestAdresseDossierConflit(proposition.adresse().suivi().uuid(), proposition.adresse().pointage().uuid()),
+      new RestAdresseDossierAnomalie(proposition.adresse().suivi().uuid(), proposition.adresse().pointage().uuid()),
       proposition.revision().value(),
       apercu.evaluation(),
       proposition.empreinteConsequences(),
@@ -33,8 +33,8 @@ record RestApercuDeResolution(
         .map(id -> id.uuid())
         .orElse(null),
       RestActeDeResolution.from(proposition.acte()),
-      RestDossierConflit.from(apercu.avant(), avant),
-      RestDossierConflit.from(apercu.apres(), apres)
+      RestDossierAnomalie.from(apercu.avant(), avant),
+      RestDossierAnomalie.from(apercu.apres(), apres)
     );
   }
 }

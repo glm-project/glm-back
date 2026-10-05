@@ -24,6 +24,7 @@ import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.gestionanomalies.ApercuObsoleteException;
 import com.glm.glmback.atelier.domain.gestionanomalies.ConfirmationReutiliseeException;
+import com.glm.glmback.atelier.domain.gestionanomalies.NatureDAnomalieInvalideException;
 import com.glm.glmback.atelier.domain.gestionanomalies.PropositionInvalideException;
 import com.glm.glmback.shared.error.infrastructure.primary.ExceptionAdviceContract;
 import com.glm.glmback.shared.error.infrastructure.primary.PublishedProblem;
@@ -41,6 +42,11 @@ class AtelierExceptionAdviceTest extends ExceptionAdviceContract {
   protected Stream<PublishedProblem> erreursPubliees() {
     return Stream.of(
       new PublishedProblem(new PropositionInvalideException(), "urn:glm:erreur:atelier:proposition-invalide", BAD_REQUEST),
+      new PublishedProblem(
+        new NatureDAnomalieInvalideException("INCONNUE"),
+        "urn:glm:erreur:atelier:nature-d-anomalie-invalide",
+        BAD_REQUEST
+      ),
       new PublishedProblem(new ApercuObsoleteException(), "urn:glm:erreur:atelier:apercu-obsolete", CONFLICT),
       new PublishedProblem(
         new ConfirmationReutiliseeException(java.util.UUID.randomUUID()),

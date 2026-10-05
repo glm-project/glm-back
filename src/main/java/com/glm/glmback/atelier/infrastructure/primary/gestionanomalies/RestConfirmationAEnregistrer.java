@@ -16,7 +16,7 @@ import java.util.UUID;
 
 record RestConfirmationAEnregistrer(
   @NotNull @Schema(requiredMode = Schema.RequiredMode.REQUIRED) UUID commande,
-  @NotNull @Valid @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestAdresseDossierConflit adresse,
+  @NotNull @Valid @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestAdresseDossierAnomalie adresse,
   @NotNull @PositiveOrZero @Schema(requiredMode = Schema.RequiredMode.REQUIRED) Long revision,
   @NotNull @Valid @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestActeDeResolution acte,
   @NotBlank @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String empreinteConsequences,

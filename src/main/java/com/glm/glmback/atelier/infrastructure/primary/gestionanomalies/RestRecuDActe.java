@@ -10,7 +10,7 @@ import java.util.UUID;
 @Schema(description = "Preuve durable d un acte enregistre. Sa revision est historique ; le dossier joint est relu a l instant courant.")
 record RestRecuDActe(
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) UUID commande,
-  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestAdresseDossierConflit adresse,
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestAdresseDossierAnomalie adresse,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestActeDeResolution acte,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) long revisionDeDepart,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) long revisionEnregistree,
@@ -22,7 +22,7 @@ record RestRecuDActe(
     var proposition = recu.proposition();
     return new RestRecuDActe(
       proposition.commande(),
-      new RestAdresseDossierConflit(proposition.adresse().suivi().uuid(), proposition.adresse().pointage().uuid()),
+      new RestAdresseDossierAnomalie(proposition.adresse().suivi().uuid(), proposition.adresse().pointage().uuid()),
       RestActeDeResolution.from(proposition.acte()),
       proposition.revision().value(),
       recu.revisionEnregistree().value(),

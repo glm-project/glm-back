@@ -425,7 +425,7 @@
         "required" : [ "debut", "etat", "id" ],
         "type" : "object"
       },
-      "RestAdresseDossierConflit" : {
+      "RestAdresseDossierAnomalie" : {
         "properties" : {
           "pointage" : {
             "format" : "uuid",
@@ -482,13 +482,13 @@
             "$ref" : "#/components/schemas/RestActeDeResolution"
           },
           "adresse" : {
-            "$ref" : "#/components/schemas/RestAdresseDossierConflit"
+            "$ref" : "#/components/schemas/RestAdresseDossierAnomalie"
           },
           "apres" : {
-            "$ref" : "#/components/schemas/RestDossierConflit"
+            "$ref" : "#/components/schemas/RestDossierAnomalie"
           },
           "avant" : {
-            "$ref" : "#/components/schemas/RestDossierConflit"
+            "$ref" : "#/components/schemas/RestDossierAnomalie"
           },
           "commande" : {
             "format" : "uuid",
@@ -570,7 +570,7 @@
             "$ref" : "#/components/schemas/RestActeDeResolution"
           },
           "adresse" : {
-            "$ref" : "#/components/schemas/RestAdresseDossierConflit"
+            "$ref" : "#/components/schemas/RestAdresseDossierAnomalie"
           },
           "commande" : {
             "format" : "uuid",
@@ -614,7 +614,7 @@
       "RestConfirmationEnregistree" : {
         "properties" : {
           "dossier" : {
-            "$ref" : "#/components/schemas/RestDossierConflit"
+            "$ref" : "#/components/schemas/RestDossierAnomalie"
           },
           "kind" : {
             "enum" : [ "ENREGISTREE" ],
@@ -743,7 +743,7 @@
         "description" : "Une sequence en conflit issue des projections courantes, sans journal.",
         "properties" : {
           "adresse" : {
-            "$ref" : "#/components/schemas/RestAdresseDossierConflit"
+            "$ref" : "#/components/schemas/RestAdresseDossierAnomalie"
           },
           "datePremierPointage" : {
             "format" : "date-time",
@@ -1042,7 +1042,7 @@
         "required" : [ "cible", "pointage", "raison" ],
         "type" : "object"
       },
-      "RestDossierConflit" : {
+      "RestDossierAnomalie" : {
         "description" : "Un dossier ancre dans le journal immutable, avec revision et interpretation a un meme instant. Les activites concernees restent presentes dans le resultat d un acte meme quand l ancre est annulee.",
         "properties" : {
           "activites" : {
@@ -1052,7 +1052,7 @@
             "type" : "array"
           },
           "adresse" : {
-            "$ref" : "#/components/schemas/RestAdresseDossierConflit"
+            "$ref" : "#/components/schemas/RestAdresseDossierAnomalie"
           },
           "choix" : {
             "items" : {
@@ -1082,7 +1082,7 @@
             "type" : "string"
           },
           "kind" : {
-            "enum" : [ "EN_CONFLIT", "INTROUVABLE", "ANCRE_ANNULEE", "HORS_CONFLIT" ],
+            "enum" : [ "EN_CONFLIT", "INTROUVABLE", "ANCRE_ANNULEE", "SANS_ANOMALIE" ],
             "type" : "string"
           },
           "perimetre" : {
@@ -1877,7 +1877,7 @@
         "required" : [ "id", "nom", "postes", "prenom" ],
         "type" : "object"
       },
-      "RestPageDesConflits" : {
+      "RestPageDesAnomalies" : {
         "description" : "Une page et son total acquis ensemble dans les projections courantes.",
         "properties" : {
           "complete" : {
@@ -2304,7 +2304,7 @@
             "$ref" : "#/components/schemas/RestActeDeResolution"
           },
           "adresse" : {
-            "$ref" : "#/components/schemas/RestAdresseDossierConflit"
+            "$ref" : "#/components/schemas/RestAdresseDossierAnomalie"
           },
           "commande" : {
             "format" : "uuid",
@@ -2793,11 +2793,19 @@
   },
   "openapi" : "3.1.0",
   "paths" : {
-    "/api/atelier/conflits" : {
+    "/api/atelier/anomalies" : {
       "get" : {
-        "description" : "Une ligne par sequence, y compris pour un suivi cloture ou sans activite deduite.\nLes recherches partielles operateur (nom, prenom ou identifiant) et element (designation ou identifiant)\nsont combinees sans tenir compte de la casse avant pagination. Pourcent, soulignement et antislash sont litteraux.\nLe tri porte sur le premier pointage metier, puis le suivi et l'ancrage de la sequence.\ncomplete vaut true lorsque la lecture a reussi, meme si aucune sequence ne correspond. Une acquisition en echec\nreste une erreur HTTP. Les diagnostics detailles se consultent dans le dossier de la sequence.\n",
+        "description" : "nature est obligatoire : absente ou inconnue, elle est refusee en 400 avec le code\nurn:glm:erreur:atelier:nature-d-anomalie-invalide. CONFLIT liste les sequences en conflit.\nUne ligne par sequence, y compris pour un suivi cloture ou sans activite deduite.\nLes recherches partielles operateur (nom, prenom ou identifiant) et element (designation ou identifiant)\nsont combinees sans tenir compte de la casse avant pagination. Pourcent, soulignement et antislash sont litteraux.\nLe tri porte sur le premier pointage metier, puis le suivi et l'ancrage de la sequence.\ncomplete vaut true lorsque la lecture a reussi, meme si aucune sequence ne correspond. Une acquisition en echec\nreste une erreur HTTP. Les diagnostics detailles se consultent dans le dossier de la sequence.\n",
         "operationId" : "list_4",
         "parameters" : [ {
+          "in" : "query",
+          "name" : "nature",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "CONFLIT" ],
+            "type" : "string"
+          }
+        }, {
           "in" : "query",
           "name" : "operateur",
           "required" : false,
@@ -2837,15 +2845,25 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/RestPageDesConflits"
+                  "$ref" : "#/components/schemas/RestPageDesAnomalies"
                 }
               }
             },
-            "description" : "OK"
+            "description" : "Une page d'anomalies de la nature demandee, pour USER ou GESTIONNAIRE."
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestPageDesAnomalies"
+                }
+              }
+            },
+            "description" : "Nature absente ou inconnue : urn:glm:erreur:atelier:nature-d-anomalie-invalide."
           }
         },
-        "summary" : "Lister les sequences en conflit",
-        "tags" : [ "Atelier - resolution des conflits" ]
+        "summary" : "Lister les anomalies de pointage d'une nature",
+        "tags" : [ "Atelier - anomalies de pointage" ]
       }
     },
     "/api/atelier/suivis" : {
@@ -2992,6 +3010,120 @@
         "tags" : [ "Atelier - elements engages" ]
       }
     },
+    "/api/atelier/suivis/{id}/anomalies/{pointage}" : {
+      "get" : {
+        "description" : "Le journal, la revision et les consequences interpretees du suivi a un instant d'evaluation. L'adresse ne redirige jamais vers une autre sequence : une ancre absente, annulee ou active sans anomalie garde son etat et l'historique accessible.",
+        "operationId" : "dossier",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "pointage",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestDossierAnomalie"
+                }
+              }
+            },
+            "description" : "Le dossier et l'etat de son adresse, pour USER ou GESTIONNAIRE."
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestDossierAnomalie"
+                }
+              }
+            },
+            "description" : "Suivi introuvable dans l'entreprise courante."
+          }
+        },
+        "summary" : "Consulter un dossier d'anomalie par un pointage",
+        "tags" : [ "Atelier - anomalies de pointage" ]
+      }
+    },
+    "/api/atelier/suivis/{id}/anomalies/{pointage}/apercus" : {
+      "post" : {
+        "description" : "Reserve au gestionnaire. Prepare le meme acte que sa confirmation, sans ecrire ni reserver son identifiant. Une revision perimee est refusee ; la proposition devient obsolete si ses consequences changent.",
+        "operationId" : "apercu",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "pointage",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RestDemandeDApercu"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestApercuDeResolution"
+                }
+              }
+            },
+            "description" : "L'acte exact, avant/apres, l'adresse et les metadonnees explicites de sa commande."
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestApercuDeResolution"
+                }
+              }
+            },
+            "description" : "Acte invalide."
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestApercuDeResolution"
+                }
+              }
+            },
+            "description" : "Apercu obsolete ou acte refuse."
+          }
+        },
+        "summary" : "Previsualiser un acte de resolution",
+        "tags" : [ "Atelier - anomalies de pointage" ]
+      }
+    },
     "/api/atelier/suivis/{id}/cloture" : {
       "delete" : {
         "description" : "Retire la cloture. L'element redevient pointable.",
@@ -3066,120 +3198,6 @@
         },
         "summary" : "Cloturer un element, ou deplacer sa cloture",
         "tags" : [ "Atelier - elements engages" ]
-      }
-    },
-    "/api/atelier/suivis/{id}/conflits/{pointage}" : {
-      "get" : {
-        "description" : "Le journal, la revision et les consequences interpretees du suivi a un instant d'evaluation. L'adresse ne redirige jamais vers une autre sequence : une ancre absente, annulee ou active hors conflit garde son etat et l'historique accessible.",
-        "operationId" : "dossier",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        }, {
-          "in" : "path",
-          "name" : "pointage",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RestDossierConflit"
-                }
-              }
-            },
-            "description" : "Le dossier et l'etat de son adresse, pour USER ou GESTIONNAIRE."
-          },
-          "404" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RestDossierConflit"
-                }
-              }
-            },
-            "description" : "Suivi introuvable dans l'entreprise courante."
-          }
-        },
-        "summary" : "Consulter un dossier de conflit par un pointage",
-        "tags" : [ "Atelier - elements engages" ]
-      }
-    },
-    "/api/atelier/suivis/{id}/conflits/{pointage}/apercus" : {
-      "post" : {
-        "description" : "Reserve au gestionnaire. Prepare le meme acte que sa confirmation, sans ecrire ni reserver son identifiant. Une revision perimee est refusee ; la proposition devient obsolete si ses consequences changent.",
-        "operationId" : "apercu",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        }, {
-          "in" : "path",
-          "name" : "pointage",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/RestDemandeDApercu"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RestApercuDeResolution"
-                }
-              }
-            },
-            "description" : "L'acte exact, avant/apres, l'adresse et les metadonnees explicites de sa commande."
-          },
-          "400" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RestApercuDeResolution"
-                }
-              }
-            },
-            "description" : "Acte invalide."
-          },
-          "409" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RestApercuDeResolution"
-                }
-              }
-            },
-            "description" : "Apercu obsolete ou acte refuse."
-          }
-        },
-        "summary" : "Previsualiser un acte de resolution",
-        "tags" : [ "apercu-de-resolution-resource" ]
       }
     },
     "/api/atelier/suivis/{id}/evenements/{evenementId}" : {
@@ -3521,7 +3539,7 @@
           }
         },
         "summary" : "Confirmer une proposition explicite une seule fois et rendre son recu avec le dossier courant",
-        "tags" : [ "confirmation-de-resolution-resource" ]
+        "tags" : [ "Atelier - anomalies de pointage" ]
       }
     },
     "/api/atelier/suivis/{suivi}/confirmations-de-resolution/{commande}" : {
@@ -3558,7 +3576,7 @@
           }
         },
         "summary" : "Verifier si une confirmation dispose d un recu durable et rendre le dossier courant",
-        "tags" : [ "confirmation-de-resolution-resource" ]
+        "tags" : [ "Atelier - anomalies de pointage" ]
       }
     },
     "/api/atelier/supervision" : {
@@ -4378,5 +4396,8 @@
   }, {
     "description" : "Le referentiel des personnes qui pointent, et des postes sur lesquels elles sont habilitees.\n\nLes metiers d'un operateur ne se saisissent pas : ils se deduisent des natures de ses postes. Un operateur habilite\nsur le poste de soudure et sur un tour ressort soudeur et tourneur.\n\nEn entree, l'operateur porte des identifiants de postes ; en sortie, il porte les postes resolus et ses natures, pour\nqu'un ecran se serve d'un seul appel.\n",
     "name" : "Operateurs"
+  }, {
+    "description" : "Ce que le gestionnaire doit trancher : une anomalie de pointage porte une nature. Seule CONFLIT, une sequence en conflit, est publiee pour l'instant. Le parcours est le meme pour chaque dossier : consulter, previsualiser, confirmer.",
+    "name" : "Atelier - anomalies de pointage"
   } ]
 }

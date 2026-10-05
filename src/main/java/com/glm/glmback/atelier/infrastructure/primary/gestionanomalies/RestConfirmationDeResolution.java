@@ -24,13 +24,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 )
 sealed interface RestConfirmationDeResolution {
   static RestConfirmationDeResolution from(ResultatDActe resultat, AnnuaireDAtelier annuaire) {
-    return new Enregistree(RestRecuDActe.from(resultat.recu()), RestDossierConflit.from(resultat.dossier(), annuaire));
+    return new Enregistree(RestRecuDActe.from(resultat.recu()), RestDossierAnomalie.from(resultat.dossier(), annuaire));
   }
 
   @Schema(name = "RestConfirmationEnregistree")
   record Enregistree(
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestRecuDActe recu,
-    @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestDossierConflit dossier
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestDossierAnomalie dossier
   ) implements RestConfirmationDeResolution {}
 
   @Schema(name = "RestConfirmationNonAttestee", description = "Aucun recu visible ; l absence ne prouve pas l echec de la commande.")

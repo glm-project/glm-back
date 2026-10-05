@@ -36,7 +36,6 @@ class OpenApiConfigurationIT {
       .andExpect(jsonPath("$.paths['/api/atelier/suivis'].post.tags[0]").value("Atelier - elements engages"))
       .andExpect(jsonPath("$.paths['/api/atelier/journees']").doesNotExist())
       .andExpect(jsonPath("$.paths['/api/atelier/journees/pointages']").doesNotExist())
-      .andExpect(jsonPath("$.paths['/api/atelier/anomalies']").doesNotExist())
       .andExpect(jsonPath("$.components.schemas.RestJourneeDeTravail").doesNotExist())
       .andExpect(jsonPath("$.components.schemas.RestEvenementDePresence").doesNotExist())
       .andExpect(jsonPath("$.components.schemas.RestAnomalieDePresence").doesNotExist())
@@ -46,6 +45,36 @@ class OpenApiConfigurationIT {
       .andExpect(jsonPath("$.components.schemas.RestAmplitudeMaximale").doesNotExist())
       .andExpect(jsonPath("$.paths['/api/atelier/suivis/{id}/temps-effectif'].get.summary").exists())
       .andExpect(jsonPath("$.paths['/api/atelier/suivis/{id}/cloture'].delete.summary").exists());
+  }
+
+  @Test
+  void shouldPublierLesAnomaliesDePointageSousLeurTagEtSansLesAnciennesRoutesDeConflits() throws Exception {
+    rest
+      .perform(get("/v3/api-docs"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.paths['/api/atelier/anomalies'].get.tags[0]").value("Atelier - anomalies de pointage"))
+      .andExpect(jsonPath("$.paths['/api/atelier/anomalies'].get.parameters[?(@.name == 'nature')].required").value(true))
+      .andExpect(jsonPath("$.paths['/api/atelier/anomalies'].get.parameters[?(@.name == 'nature')].schema.enum[0]").value("CONFLIT"))
+      .andExpect(jsonPath("$.paths['/api/atelier/anomalies'].get.parameters[?(@.name == 'nature')].schema.enum[1]").isEmpty())
+      .andExpect(
+        jsonPath("$.paths['/api/atelier/anomalies'].get.responses['200'].content['*/*'].schema['$ref']").value(
+          "#/components/schemas/RestPageDesAnomalies"
+        )
+      )
+      .andExpect(jsonPath("$.paths['/api/atelier/suivis/{id}/anomalies/{pointage}'].get.tags[0]").value("Atelier - anomalies de pointage"))
+      .andExpect(
+        jsonPath("$.paths['/api/atelier/suivis/{id}/anomalies/{pointage}/apercus'].post.tags[0]").value("Atelier - anomalies de pointage")
+      )
+      .andExpect(jsonPath("$.paths['/api/atelier/conflits']").doesNotExist())
+      .andExpect(jsonPath("$.paths['/api/atelier/suivis/{id}/conflits/{pointage}']").doesNotExist())
+      .andExpect(jsonPath("$.paths['/api/atelier/suivis/{id}/conflits/{pointage}/apercus']").doesNotExist())
+      .andExpect(jsonPath("$.components.schemas.RestDossierAnomalie").exists())
+      .andExpect(jsonPath("$.components.schemas.RestAdresseDossierAnomalie").exists())
+      .andExpect(jsonPath("$.components.schemas.RestPageDesAnomalies").exists())
+      .andExpect(jsonPath("$.components.schemas.RestConflitEnListe").exists())
+      .andExpect(jsonPath("$.components.schemas.RestDossierConflit").doesNotExist())
+      .andExpect(jsonPath("$.components.schemas.RestAdresseDossierConflit").doesNotExist())
+      .andExpect(jsonPath("$.components.schemas.RestPageDesConflits").doesNotExist());
   }
 
   @Test
@@ -114,10 +143,9 @@ class OpenApiConfigurationIT {
 
   @Test
   @WithTenant("impeccmold")
-  void shouldNePlusRouterLesJourneesNiLesAnomalies() throws Exception {
+  void shouldNePlusRouterLesJournees() throws Exception {
     rest.perform(get("/api/atelier/journees")).andExpect(status().isNotFound());
     rest.perform(post("/api/atelier/journees/pointages").contentType("application/json").content("{}")).andExpect(status().isNotFound());
-    rest.perform(get("/api/atelier/anomalies")).andExpect(status().isNotFound());
   }
 
   @Test

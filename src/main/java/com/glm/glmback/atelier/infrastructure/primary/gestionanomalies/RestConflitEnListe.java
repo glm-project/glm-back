@@ -14,7 +14,7 @@ final class RestConflitEnListe {
 
   @JsonProperty
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
-  private final RestAdresseDossierConflit adresse;
+  private final RestAdresseDossierAnomalie adresse;
 
   @JsonProperty
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
@@ -50,7 +50,7 @@ final class RestConflitEnListe {
   private final int nombrePointages;
 
   private RestConflitEnListe(ConflitEnListe ligne, AnnuaireDAtelier annuaire) {
-    adresse = new RestAdresseDossierConflit(ligne.adresse().suivi().uuid(), ligne.adresse().pointage().uuid());
+    adresse = new RestAdresseDossierAnomalie(ligne.adresse().suivi().uuid(), ligne.adresse().pointage().uuid());
     revision = ligne.revision().value();
     elementId = ligne.element().id().uuid();
     designation = ligne.element().nom().value();

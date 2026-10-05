@@ -8,6 +8,7 @@ import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.gestionanomalies.AdresseDossierAnomalie;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/atelier/suivis")
+@Tag(name = "Atelier - anomalies de pointage")
 class ApercuDeResolutionResource {
 
   private final ApercusDeResolution apercus;
@@ -28,7 +30,7 @@ class ApercuDeResolutionResource {
     this.suivis = suivis;
   }
 
-  @PostMapping("/{id}/conflits/{pointage}/apercus")
+  @PostMapping("/{id}/anomalies/{pointage}/apercus")
   @Operation(
     summary = "Previsualiser un acte de resolution",
     description = "Reserve au gestionnaire. Prepare le meme acte que sa confirmation, sans ecrire ni reserver son identifiant. Une revision perimee est refusee ; la proposition devient obsolete si ses consequences changent."

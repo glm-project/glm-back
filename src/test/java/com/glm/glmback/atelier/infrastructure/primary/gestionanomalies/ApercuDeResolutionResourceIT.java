@@ -52,7 +52,7 @@ class ApercuDeResolutionResourceIT {
     var ancre = ancreAlternative ? travail.id() : transition.id();
     rest
       .perform(
-        post("/api/atelier/suivis/{suivi}/conflits/{pointage}/apercus", suivi.id().uuid(), ancre.uuid())
+        post("/api/atelier/suivis/{suivi}/anomalies/{pointage}/apercus", suivi.id().uuid(), ancre.uuid())
           .contentType(MediaType.APPLICATION_JSON)
           .content(
             """
@@ -70,7 +70,7 @@ class ApercuDeResolutionResourceIT {
       .andExpect(jsonPath("$.acte.kind").value("ANNULATION"))
       .andExpect(jsonPath("$.acte.motif").value("saisie incorrecte"))
       .andExpect(jsonPath("$.avant.kind").value("EN_CONFLIT"))
-      .andExpect(jsonPath("$.apres.kind").value(ancreAlternative ? "HORS_CONFLIT" : "ANCRE_ANNULEE"))
+      .andExpect(jsonPath("$.apres.kind").value(ancreAlternative ? "SANS_ANOMALIE" : "ANCRE_ANNULEE"))
       .andExpect(jsonPath("$.apres.perimetre.nombrePointages").value(2))
       .andExpect(jsonPath("$.apres.activites[0].etat").value("EN_COURS"))
       .andExpect(jsonPath("$.apres.activites[0].duree").doesNotExist());

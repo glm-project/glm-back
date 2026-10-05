@@ -11,14 +11,14 @@ import java.util.List;
 @Schema(
   description = "Un dossier ancre dans le journal immutable, avec revision et interpretation a un meme instant. Les activites concernees restent presentes dans le resultat d un acte meme quand l ancre est annulee."
 )
-record RestDossierConflit(
+record RestDossierAnomalie(
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) EtatDAdresseDossier kind,
   @Schema(
     requiredMode = Schema.RequiredMode.REQUIRED,
     description = "Le perimetre concerne reste en conflit dans l interpretation du domaine, meme sans intervalle d activite ou avec une ancre annulee."
   )
   boolean enConflit,
-  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestAdresseDossierConflit adresse,
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestAdresseDossierAnomalie adresse,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) long revision,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) Instant evaluation,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestSuiviDAtelier suivi,
@@ -34,11 +34,11 @@ record RestDossierConflit(
   )
   List<RestConflitEnListe> continuations
 ) {
-  static RestDossierConflit from(LectureDossierAnomalie dossier, AnnuaireDAtelier annuaire) {
-    return new RestDossierConflit(
+  static RestDossierAnomalie from(LectureDossierAnomalie dossier, AnnuaireDAtelier annuaire) {
+    return new RestDossierAnomalie(
       dossier.kind(),
       dossier.enConflit(),
-      new RestAdresseDossierConflit(dossier.adresse().suivi().uuid(), dossier.adresse().pointage().uuid()),
+      new RestAdresseDossierAnomalie(dossier.adresse().suivi().uuid(), dossier.adresse().pointage().uuid()),
       dossier.lecture().suivi().revision().value(),
       dossier.lecture().evaluation(),
       RestSuiviDAtelier.from(dossier.lecture(), annuaire),

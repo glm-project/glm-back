@@ -185,7 +185,7 @@ class LectureDossierAnomalieTest {
       new LectureDuSuivi(suivi, LE_10_MAI_2026_A_17H)
     );
 
-    assertThat(dossier.kind().name()).isEqualTo("HORS_CONFLIT");
+    assertThat(dossier.kind().name()).isEqualTo("SANS_ANOMALIE");
     assertThat(dossier.sequence()).isEmpty();
     assertThat(dossier.lecture().suivi().journal().evenements()).containsExactly(travail);
   }

@@ -111,7 +111,7 @@ public record LectureDossierAnomalie(AdresseDossierAnomalie adresse, LectureDuSu
     if (pointage.orElseThrow().estAnnule()) {
       return EtatDAdresseDossier.ANCRE_ANNULEE;
     }
-    return sequence().isPresent() ? EtatDAdresseDossier.EN_CONFLIT : EtatDAdresseDossier.HORS_CONFLIT;
+    return sequence().isPresent() ? EtatDAdresseDossier.EN_CONFLIT : EtatDAdresseDossier.SANS_ANOMALIE;
   }
 
   public Optional<SequenceEnConflit> sequence() {

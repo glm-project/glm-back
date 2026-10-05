@@ -45,7 +45,7 @@ class DossierAnomalieResourceIT {
     when(clock.now()).thenReturn(LE_10_MAI_2026_A_17H);
 
     rest
-      .perform(get("/api/atelier/suivis/{suivi}/conflits/{pointage}", suivi.id().uuid(), fin.id().uuid()))
+      .perform(get("/api/atelier/suivis/{suivi}/anomalies/{pointage}", suivi.id().uuid(), fin.id().uuid()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.kind").value("EN_CONFLIT"))
       .andExpect(jsonPath("$.adresse.suivi").value(suivi.id().uuid().toString()))

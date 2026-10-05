@@ -10,11 +10,14 @@ import com.glm.glmback.IntegrationTest;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import java.time.Instant;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @IntegrationTest
@@ -43,7 +46,8 @@ class ListeDesAnomaliesResourceIT {
 
     rest
       .perform(
-        get("/api/atelier/conflits")
+        get("/api/atelier/anomalies")
+          .param("nature", "CONFLIT")
           .param("element", suivi.element().id().uuid().toString())
           .with(
             jwt()
@@ -73,7 +77,8 @@ class ListeDesAnomaliesResourceIT {
   void shouldDistinguerUneLectureVideCompleteDUneAbsenceDeDroitMetier() throws Exception {
     rest
       .perform(
-        get("/api/atelier/conflits")
+        get("/api/atelier/anomalies")
+          .param("nature", "CONFLIT")
           .param("element", "element-certainement-absent-2043")
           .with(
             jwt()
@@ -88,12 +93,64 @@ class ListeDesAnomaliesResourceIT {
 
     rest
       .perform(
-        get("/api/atelier/conflits").with(
-          jwt()
-            .jwt(token -> token.claim("tenant", "impeccmold"))
-            .authorities(new SimpleGrantedAuthority("ROLE_ADMIN"))
-        )
+        get("/api/atelier/anomalies")
+          .param("nature", "CONFLIT")
+          .with(
+            jwt()
+              .jwt(token -> token.claim("tenant", "impeccmold"))
+              .authorities(new SimpleGrantedAuthority("ROLE_ADMIN"))
+          )
       )
       .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @WithTenant("impeccmold")
+  void shouldRefuserUneNatureAbsenteAvecUnCodeStable() throws Exception {
+    rest
+      .perform(get("/api/atelier/anomalies").with(lecteur()))
+      .andExpect(status().isBadRequest())
+      .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+      .andExpect(jsonPath("$.type").value("urn:glm:erreur:atelier:nature-d-anomalie-invalide"))
+      .andExpect(jsonPath("$.title").value("nature d'anomalie invalide"))
+      .andExpect(jsonPath("$.status").value(400))
+      .andExpect(jsonPath("$.message").value("La nature d'anomalie est obligatoire. Valeurs possibles : CONFLIT."))
+      .andExpect(jsonPath("$.lignes").doesNotExist());
+  }
+
+  @Test
+  @WithTenant("impeccmold")
+  void shouldRefuserUneNatureInconnueAvecUnCodeStable() throws Exception {
+    rest
+      .perform(get("/api/atelier/anomalies").param("nature", "INCONNUE").with(lecteur()))
+      .andExpect(status().isBadRequest())
+      .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+      .andExpect(jsonPath("$.type").value("urn:glm:erreur:atelier:nature-d-anomalie-invalide"))
+      .andExpect(jsonPath("$.status").value(400))
+      .andExpect(jsonPath("$.message").value("La nature d'anomalie 'INCONNUE' est inconnue. Valeurs possibles : CONFLIT."));
+  }
+
+  @Test
+  @WithTenant("impeccmold")
+  void shouldSupprimerSansRedirectionLAncienneRouteDesConflits() throws Exception {
+    rest.perform(get("/api/atelier/conflits").with(lecteur())).andExpect(status().isNotFound());
+    rest
+      .perform(get("/api/atelier/suivis/{suivi}/conflits/{pointage}", UUID.randomUUID(), UUID.randomUUID()).with(lecteur()))
+      .andExpect(status().isNotFound())
+      .andExpect(header().doesNotExist("Location"));
+    rest
+      .perform(
+        post("/api/atelier/suivis/{suivi}/conflits/{pointage}/apercus", UUID.randomUUID(), UUID.randomUUID())
+          .contentType(MediaType.APPLICATION_JSON)
+          .content("{}")
+          .with(lecteur())
+      )
+      .andExpect(status().isNotFound());
+  }
+
+  private static RequestPostProcessor lecteur() {
+    return jwt()
+      .jwt(token -> token.claim("tenant", "impeccmold"))
+      .authorities(new SimpleGrantedAuthority("ROLE_USER"));
   }
 }
