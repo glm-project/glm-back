@@ -53,8 +53,11 @@ inconnue, elle sort en 400 `urn:glm:erreur:atelier:nature-d-anomalie-invalide`. 
 suivi/pointage, et son état `SANS_ANOMALIE` dit que l'ancre est active et ne porte aucune anomalie. Le vocabulaire de
 l'interprétation ne change pas : « séquence en conflit », `SequenceEnConflit`, `conflits[]` de `RestSuiviDAtelier`,
 `ConflitsDAtelier` et `atelier_conflits.feature` gardent leur nom, parce qu'ils décrivent la contradiction des
-faits, pas le parcours qui la traite. Le coût de revient emploie déjà « anomalie » au sens large
-(`AnomalieDuPointage`) ; aucun type n'est partagé entre les contextes. Les routes `/conflits` sont supprimées, sans
+faits, pas le parcours qui la traite. L'ancien sens restreint d'« anomalie » — l'activité terminée automatiquement à
+son échéance — est désormais la nature `FIN_AUTOMATIQUE`, portée par `finAutomatique`. Le coût de revient emploie
+« anomalie » dans un sens voisin mais non identique (`AnomalieDuPointage` : ce qui rend un pointage suspect ou
+incomplet) : seul `FIN_AUTOMATIQUE` y porte le même nom, `CONFLIT` correspond à `A_RESOUDRE` et `PARTAGE_INCONNU`
+n'a pas d'équivalent ici. Aucun type n'est partagé entre les contextes. Les routes `/conflits` sont supprimées, sans
 redirection.
 Les aperçus restent des lectures sans réservation. Les confirmations transportent une proposition explicite
 et comparent les conséquences après verrouillage ; le reçu durable compare la demande indépendamment du
@@ -135,8 +138,12 @@ suivent leurs propriétaires dans les mêmes sous-packages.
 - **Une activité que rien n'a terminée se termine automatiquement à son échéance** : son début plus 13 heures
   écoulées (`Echeance`), neutres au changement d'heure. Ce délai est la règle de l'atelier, pas une donnée de
   paramétrage : il reste une constante du domaine. Rien n'est écrit ni planifié : `Activite` ne dépend que des faits
-  actifs, et seule sa lecture à un instant d'évaluation (`Activite.a`) la dit en cours, terminée à sa fin réelle, ou
-  terminée automatiquement à l'échéance avec une anomalie, que seule une fin réelle retire. L'instant vient de
+  actifs, et seule sa lecture à un instant d'évaluation la dit en cours, terminée à sa fin réelle, ou
+  terminée automatiquement à l'échéance avec une anomalie, que seule une fin réelle retire. Cette règle a trois
+  lecteurs : le domaine (`Activite.a`), la supervision (`ActiviteDeSupervision.a`) et le SQL de la liste des fins
+  automatiques, qui recopie la comparaison faute de pouvoir appeler `Echeance`. Leur parité est tenue par
+  l'exécution, comme celle des critères de suivi : `ListeDesFinsAutomatiquesDAtelierIT` confronte ce SQL à
+  `Activite.a` et à `AnomaliesDAtelierCriteria.matches`. Toute évolution de la règle les modifie ensemble. L'instant vient de
   l'horloge du service applicatif (`LectureDuSuivi`, `TempsDAtelierService.tempsEffectif`), jamais d'une horloge
   enfouie dans le domaine.
 - **L'interprétation applique l'échéance sans instant de lecture**, sur les seules heures métier
@@ -224,6 +231,8 @@ résolution. Les contextes lecteurs peuvent les lire par leurs propres entités 
 Leur contrepartie : `SuiviDAtelierCriteria.matches` n’est plus appelée par la
 production, qui traduit les mêmes règles en SQL. C'est `PariteDesRepositoriesDAtelierIT` qui rétablit par l'exécution
 la garantie que donnait le code partagé — le modifier en même temps que l'une des deux expressions de la règle.
+`ListeDesFinsAutomatiquesDAtelierIT` joue le même rôle pour la liste des fins automatiques, contre `Activite.a` et
+`AnomaliesDAtelierCriteria.matches`.
 
 ### Concurrence
 

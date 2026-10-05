@@ -142,7 +142,7 @@ Ce que les réponses en montrent :
   lecture** : une activité échue en sort d'elle-même, et l'élément passe `INTERROMPU` si plus rien n'y est en cours.
   Chaque activité porte son `ouverture` — l'identité que visera une fin ou une transition — et son `echeance`.
 - `GET …/temps-effectif` rend chaque intervalle avec son `activite` et `finAutomatique` : vrai quand l'activité est
-  terminée automatiquement à son échéance, faute de fin réelle. C'est l'anomalie à signaler ; `fin` vaut alors
+  terminée automatiquement à son échéance, faute de fin réelle. C'est l'anomalie de pointage de nature `FIN_AUTOMATIQUE` à signaler ; `fin` vaut alors
   l'échéance.
 - Deux lectures espacées peuvent différer au voisinage d'une échéance : c'est l'instant de lecture qui tranche.
 
@@ -769,14 +769,16 @@ active sans anomalie ; ce résultat s'appelait `HORS_CONFLIT`). L'ordre de déci
 `FIN_AUTOMATIQUE` vaut pour une ancre active qui ouvre une activité que l'évaluation lit terminée automatiquement,
 sans séquence en conflit.
 Un suivi absent du tenant courant répond 404 sans journal. Un suivi accessible conserve son journal
-dans les trois résultats d'adresse sans conflit ; aucun de ces résultats ne redirige implicitement.
+dans les résultats d'adresse sans conflit ; aucun de ces résultats ne redirige implicitement.
 
 Le dossier et son avant/après portent la `revision` numérique du suivi évalué, son `evaluation`, le
 journal complet, les activités concernées et les conflits restants. `sequence` décrit la séquence
 active contenant l’ancre ; `perimetre` conserve les faits concernés après un acte, même si l’ancre
 est annulée. Le booléen `enConflit` est calculé par le domaine sur ce périmètre : il peut rester vrai
 sans intervalle d’activité, ou être faux avec d’autres conflits indépendants dans `continuations`.
-Les continuations donnent les adresses actives explicites ; elles ne changent jamais l’adresse demandée.
+Les continuations donnent les adresses actives explicites ; elles ne changent jamais l’adresse demandée. Chaque
+élément de `continuations[]` est une ligne de conflit au schéma `RestConflitEnListe`, celui de la liste : il porte donc
+désormais `"nature": "CONFLIT"`, champ requis ajouté au dossier avec la liste des anomalies.
 
 ### Le dossier d'une fin automatique
 
@@ -825,7 +827,9 @@ fin tardive. Le remplaçant d'une correction est une régularisation (`estUneReg
 au-delà de l'échéance.
 
 Le `fait` d'un choix est un `oneOf` : `RestFaitARegulariser` pour `REGULARISER_FIN` (sans `instant`), `RestFaitDeResolution`
-pour une correction (avec `instant`). Le fait d'un acte reçu en entrée exige toujours `instant`. Dossier d'une fin
+pour une correction (avec `instant`). Ce `oneOf` n'est pas discriminé dans le schéma : un fait avec `instant` valide aussi
+`RestFaitARegulariser`. `choix.code` fait foi — `REGULARISER_FIN` porte un fait sans `instant`, `CORRIGER_TRANSITION_TARDIVE`
+et `CORRIGER_FIN_TARDIVE` un fait avec `instant` — et un client ne doit pas deviner l'alternative d'après la forme du fait. Le fait d'un acte reçu en entrée exige toujours `instant`. Dossier d'une fin
 automatique, avec sa régularisation :
 
 ```json

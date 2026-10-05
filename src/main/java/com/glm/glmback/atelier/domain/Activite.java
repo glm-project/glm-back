@@ -81,8 +81,11 @@ public record Activite(EvenementDAtelier ouvrant, Optional<Instant> fin, Optiona
   /**
    * L'activite telle qu'elle se lit a l'instant d'evaluation : a resoudre si une sequence en conflit la concerne ;
    * sinon terminee a sa fin reelle si un fait l'a terminee ; sinon terminee automatiquement a son echeance, avec une
-   * anomalie, des que l'echeance est atteinte ; sinon en cours. C'est le seul endroit ou l'instant de lecture
-   * intervient.
+   * anomalie, des que l'echeance est atteinte ; sinon en cours. C'est ici que le domaine applique l'instant de
+   * lecture. La regle d'echeance a trois lecteurs : le domaine ({@code Activite.a}), la supervision
+   * ({@code ActiviteDeSupervision.a}) et le SQL de la liste des fins automatiques, qui ne peut pas appeler
+   * {@link Echeance} et en recopie la comparaison. Leur parite est tenue par l'execution :
+   * {@code ListeDesFinsAutomatiquesDAtelierIT} confronte ce SQL a {@code Activite.a}, a tout instant d'evaluation.
    */
   public IntervalleDActivite a(Instant evaluation) {
     if (aResoudre()) {

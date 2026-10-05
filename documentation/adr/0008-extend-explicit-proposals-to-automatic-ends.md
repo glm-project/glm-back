@@ -87,6 +87,12 @@ kinds it records are the existing ones. The new codes live only in the dossier a
 - The activity of an anchor that is still running is not part of its dossier: `SANS_ANOMALIE` has no activity.
 - A mixed case (a late end and a late transition) offers the correction of the transition; the result may
   leave the end targeting a terminated activity, which is accepted and shown as a conflict.
+- A guided proposal can therefore lead to a conflict, and the proposals are never simulated. With a restart at
+  21:30 on the same key and a late end at 22:00 that targets the activity due at 21:00, the only proposal is
+  `CORRIGER_FIN_TARDIVE`; the regularised end at 22:00 prolongs the activity past the restart, which ends it at
+  21:30, and the end then targets an activity that is already terminated. The preview shows that `EN_CONFLIT`
+  result, it is accepted (the contradiction is never refused), and the manager may prefer to cancel the late end
+  instead.
 - The scenarios of `atelier_anomalies_fin_automatique.feature` prove the deadline to the nanosecond, the three
   proposals, the accepted contradictions, the closed follow-up, the withdrawn permission, the missing
   workstation, the future instant and the concurrent write.
