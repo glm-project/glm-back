@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 class LectureDossierFinAutomatiqueTest {
 
   private static final Instant LE_10_MAI_2026_A_21H = Instant.parse("2026-05-10T21:00:00Z");
+  private static final Instant LE_10_MAI_2026_A_21H30 = Instant.parse("2026-05-10T21:30:00Z");
   private static final Instant LE_10_MAI_2026_A_22H = Instant.parse("2026-05-10T22:00:00Z");
   private static final Instant LE_10_MAI_2026_A_23H = Instant.parse("2026-05-10T23:00:00Z");
   private static final Instant LE_10_MAI_2026_A_23H30 = Instant.parse("2026-05-10T23:30:00Z");
@@ -172,6 +173,79 @@ class LectureDossierFinAutomatiqueTest {
     assertThat(dossier(suivi, travail, LE_10_MAI_2026_A_23H30).choix()).containsExactly(
       new PropositionDeResolution(CodeDeProposition.CORRIGER_TRANSITION_TARDIVE, nonConformite.id(), travail.activite())
     );
+  }
+
+  @Test
+  void shouldRegulariserLaFinQuandLaFinTardiveEstAnnulee() {
+    var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    var fin = finDe(travail).a(LE_10_MAI_2026_A_23H);
+    var suivi = suiviDAtelierEngage().enregistre(travail).enregistre(fin).annule(fin.id(), annulationParLeroy());
+
+    var dossier = dossier(suivi, travail, LE_10_MAI_2026_A_23H30);
+
+    assertThat(dossier.kind()).isEqualTo(EtatDAdresseDossier.FIN_AUTOMATIQUE);
+    assertThat(dossier.choix()).containsExactly(
+      new PropositionDeResolution(CodeDeProposition.REGULARISER_FIN, travail.id(), travail.activite())
+    );
+  }
+
+  @Test
+  void shouldCorrigerLaFinTardiveQuandLaTransitionTardiveEstAnnulee() {
+    var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    var fin = finDe(travail).a(LE_10_MAI_2026_A_22H);
+    var nonConformite = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_23H);
+    var suivi = suiviDAtelierEngage()
+      .enregistre(travail)
+      .enregistre(fin)
+      .enregistre(nonConformite)
+      .annule(nonConformite.id(), annulationParLeroy());
+
+    assertThat(dossier(suivi, travail, LE_10_MAI_2026_A_23H30).choix()).containsExactly(
+      new PropositionDeResolution(CodeDeProposition.CORRIGER_FIN_TARDIVE, fin.id(), travail.activite())
+    );
+  }
+
+  @Test
+  void shouldMettreEnConflitLaFinTardiveQuandLaTransitionTardiveCorrigeeEnRegularisationLaPrecede() {
+    var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    var nonConformite = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_22H);
+    var fin = finDe(travail).a(LE_10_MAI_2026_A_23H);
+    var suivi = suiviDAtelierEngage().enregistre(travail).enregistre(nonConformite).enregistre(fin);
+    var avant = dossier(suivi, travail, LE_10_MAI_2026_A_23H30);
+
+    var corrige = suivi.corrige(
+      nonConformite.id(),
+      annulationParLeroy(),
+      passageEnNonConformiteRegulariseParLeroyDe(travail).a(LE_10_MAI_2026_A_22H)
+    );
+    var apres = avant.apresActe(new LectureDuSuivi(corrige, LE_10_MAI_2026_A_23H30));
+
+    assertThat(avant.kind()).isEqualTo(EtatDAdresseDossier.FIN_AUTOMATIQUE);
+    assertThat(avant.choix()).containsExactly(
+      new PropositionDeResolution(CodeDeProposition.CORRIGER_TRANSITION_TARDIVE, nonConformite.id(), travail.activite())
+    );
+    assertThat(apres.kind()).isEqualTo(EtatDAdresseDossier.EN_CONFLIT);
+    assertThat(apres.diagnostics())
+      .extracting(diagnostic -> diagnostic.pointage())
+      .contains(fin.id());
+  }
+
+  @Test
+  void shouldMenerLaSeulePropositionGuideeAUnConflitQuandUneRelanceSuitLEcheanceEtPrecedeLaFinTardive() {
+    var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    var relance = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_21H30);
+    var fin = finDe(travail).a(LE_10_MAI_2026_A_22H);
+    var suivi = suiviDAtelierEngage().enregistre(travail).enregistre(relance).enregistre(fin);
+    var avant = dossier(suivi, travail, LE_10_MAI_2026_A_23H30);
+
+    var corrige = suivi.corrige(fin.id(), annulationParLeroy(), finRegulariseeParLeroyDe(travail).a(LE_10_MAI_2026_A_22H));
+    var apres = avant.apresActe(new LectureDuSuivi(corrige, LE_10_MAI_2026_A_23H30));
+
+    assertThat(avant.kind()).isEqualTo(EtatDAdresseDossier.FIN_AUTOMATIQUE);
+    assertThat(avant.choix()).containsExactly(
+      new PropositionDeResolution(CodeDeProposition.CORRIGER_FIN_TARDIVE, fin.id(), travail.activite())
+    );
+    assertThat(apres.kind()).isEqualTo(EtatDAdresseDossier.EN_CONFLIT);
   }
 
   @Test

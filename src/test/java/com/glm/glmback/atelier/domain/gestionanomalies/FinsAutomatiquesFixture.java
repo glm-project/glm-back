@@ -56,6 +56,22 @@ public final class FinsAutomatiquesFixture {
       .tauxHoraire(null);
   }
 
+  public static OperateurConnu operateurBerthe2043() {
+    return OperateurConnu.builder()
+      .id(new OperateurId(UUID.randomUUID()))
+      .nom(new Nom("Parite_%2043"))
+      .prenom(new Prenom("Berthe"))
+      .tauxHoraire(null);
+  }
+
+  public static OperateurConnu operateurCharles2043() {
+    return OperateurConnu.builder()
+      .id(new OperateurId(UUID.randomUUID()))
+      .nom(new Nom("Autre_Parite2043"))
+      .prenom(new Prenom("Charles"))
+      .tauxHoraire(null);
+  }
+
   /** La ligne de la premiere activite du suivi, telle que la liste la lit a son echeance. */
   public static FinAutomatiqueEnListe ligneDeLaFinAutomatiqueDe(SuiviDAtelier suivi) {
     var activite = suivi.activites().getFirst();

@@ -243,6 +243,49 @@ Feature: Dossier d'anomalie d'une fin automatique
     When je consulte "Anomalie 4507"
     Then le suivi n'a aucune sequence en conflit
 
+  Scenario: Une transition tardive se corrige avant la fin tardive qui la suit, et le conflit qui en resulte est accepte
+    Given il est "2044-03-30T06:00:00Z"
+    And l'entreprise a cree l'element de fabrication "Anomalie 4530"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | ANO4530              |
+    And j'ai engage l'element "Anomalie 4530" en atelier
+    And il est "2044-03-30T08:00:00Z"
+    And j'ai pointe sur "Anomalie 4530"
+      | id        | 00000000-0000-0000-0000-000000045301 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont-anomalie                      |
+      | poste     | fraiseuse-anomalie                   |
+    And il est "2044-03-30T22:00:00Z"
+    And j'ai pointe sur "Anomalie 4530"
+      | id        | 00000000-0000-0000-0000-000000045302 |
+      | type      | NON_CONFORMITE                       |
+      | intention | TRANSITION                           |
+      | cible     | 00000000-0000-0000-0000-000000045301 |
+      | operateur | dupont-anomalie                      |
+      | poste     | fraiseuse-anomalie                   |
+    And il est "2044-03-30T23:00:00Z"
+    And j'ai pointe sur "Anomalie 4530"
+      | id        | 00000000-0000-0000-0000-000000045303 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | cible     | 00000000-0000-0000-0000-000000045301 |
+      | operateur | dupont-anomalie                      |
+      | poste     | fraiseuse-anomalie                   |
+    And il est "2044-03-30T23:30:00Z"
+    When je consulte le dossier d'anomalie de "Anomalie 4530" depuis l'evenement 0
+    Then le dossier d'anomalie est a l'etat "FIN_AUTOMATIQUE"
+    And le dossier d'anomalie propose
+      | code                        | kind       | pointage | instant              |
+      | CORRIGER_TRANSITION_TARDIVE | CORRECTION | 1        | 2044-03-30T22:00:00Z |
+    When je previsualise la proposition "CORRIGER_TRANSITION_TARDIVE" du dossier d'anomalie
+    Then l'apercu du dossier d'anomalie est accepte
+    And l'apercu du dossier d'anomalie donne apres l'acte un dossier a l'etat "EN_CONFLIT"
+    When je confirme l'apercu du dossier d'anomalie
+    Then le dossier d'anomalie est a l'etat "EN_CONFLIT"
+    And le dossier d'anomalie est en conflit
+    And le dossier d'anomalie ne signale aucune fin automatique
+
   Scenario Outline: Une fin regularisee avant la relance tardive reste sans conflit, apres elle le conflit est accepte
     Given il est "2044-03-08T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "Anomalie 4508 <rang>"

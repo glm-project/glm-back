@@ -535,6 +535,30 @@ class ConfirmationsDActesIT {
 
   @Test
   @WithTenant("impeccmold")
+  void shouldEnregistrerLaRegularisationDUneFinAutomatiqueEtRejouerSonRecuIdentique() {
+    // GIVEN
+    when(clock.now()).thenReturn(LE_11_MAI_2026_A_3H);
+    var suivi = inTransaction(() -> suivis.create(suiviDAtelierEngage().enregistre(debutSansPosteParDupontA(LE_10_MAI_2026_A_8H))));
+    var proposition = propositionDeRegularisationDeFin(suivi);
+    // WHEN
+    var premier = confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD);
+    var rejeu = confirmations.confirmer(suivi.id(), proposition, CONTEXTE_LEROY_IMPECCMOLD);
+    // THEN
+    assertThat(premier.dossier().kind()).isEqualTo(EtatDAdresseDossier.SANS_ANOMALIE);
+    assertThat(premier.dossier().finAutomatique()).isFalse();
+    assertThat(premier.recu().proposition()).isEqualTo(proposition);
+    assertThat(inTransaction(() -> recus.get(proposition.commande()))).contains(premier.recu());
+    assertThat(rejeu.recu()).isEqualTo(premier.recu());
+    assertThat(
+      inTransaction(() -> suivis.get(suivi.id()))
+        .orElseThrow()
+        .journal()
+        .evenements()
+    ).hasSize(2);
+  }
+
+  @Test
+  @WithTenant("impeccmold")
   void shouldRefuserUneCollisionDIdentiteSansRemplacementImplicite() {
     // GIVEN
     var suivi = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));

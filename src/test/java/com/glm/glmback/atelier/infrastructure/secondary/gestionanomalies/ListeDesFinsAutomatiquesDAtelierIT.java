@@ -6,6 +6,8 @@ import static com.glm.glmback.atelier.domain.gestionanomalies.FinsAutomatiquesFi
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.IntegrationTest;
+import com.glm.glmback.atelier.domain.Activite;
+import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
 import com.glm.glmback.atelier.domain.EvenementDAtelier;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.Horodatage;
@@ -13,6 +15,7 @@ import com.glm.glmback.atelier.domain.OperateurConnu;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
+import com.glm.glmback.atelier.domain.gestionanomalies.AdresseDossierAnomalie;
 import com.glm.glmback.atelier.domain.gestionanomalies.AnomaliesDAtelierCriteria;
 import com.glm.glmback.atelier.domain.gestionanomalies.FinAutomatiqueEnListe;
 import com.glm.glmback.atelier.domain.gestionanomalies.FinsAutomatiquesDAtelier;
@@ -21,7 +24,10 @@ import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +35,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 @IntegrationTest
 class ListeDesFinsAutomatiquesDAtelierIT {
+
+  private static final Instant LE_9_JANVIER_2043_A = Instant.parse("2043-01-09T00:00:00Z");
+  private static final long HEURE = 3600;
 
   @Autowired
   private FinsAutomatiquesDAtelier finsAutomatiques;
@@ -261,8 +270,127 @@ class ListeDesFinsAutomatiquesDAtelierIT {
       .satisfies(ligne -> assertThat(ligne.cle().poste()).isEmpty());
   }
 
+  /**
+   * La population du SQL est celle que la regle du domaine juge terminee automatiquement : {@code Activite.a} pour
+   * l'activite, {@code AnomaliesDAtelierCriteria.matches} pour les recherches. Le jeu couvre chaque facon d'ouvrir ou
+   * de terminer une activite, et chaque instant d'evaluation est pris de part et d'autre d'une echeance, a la
+   * nanoseconde.
+   */
+  @Test
+  @WithTenant("impeccmold")
+  void shouldListerLesMemesActivitesQueLaRegleDuDomaineJugeTermineesAutomatiquement() {
+    var element = elementDeFinAutomatiqueNomme("FINAUTO_PARITE_2043_%A");
+    var berthe = operateurBerthe2043();
+    var charles = operateurCharles2043();
+    transactions.executeWithoutResult(transaction -> {
+      insere(berthe);
+      insere(charles);
+    });
+    var ouverteParTransition = debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE));
+    var transition = passageEnNonConformiteDe(ouverteParTransition).a(LE_9_JANVIER_2043_A.plusSeconds(12 * HEURE));
+    var corrigee = debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE));
+    var aResoudre = debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE));
+    var terminee = debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE));
+    var finTardive = debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE));
+    var clotureeAvant = debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE));
+    var clotureeApres = debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE));
+    var annulee = debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE));
+    var jeu = List.of(
+      suiviEngageLe1erJanvier2025Pour(element).enregistre(debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE))),
+      suiviEngageLe1erJanvier2025Pour(element).enregistre(ouverteParTransition).enregistre(transition),
+      suiviEngageLe1erJanvier2025Pour(element)
+        .enregistre(corrigee)
+        .corrige(corrigee.id(), annulationParLeroy(), debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(9 * HEURE))),
+      suiviEngageLe1erJanvier2025Pour(element)
+        .enregistre(aResoudre)
+        .enregistre(finDe(aResoudre).a(LE_9_JANVIER_2043_A.plusSeconds(9 * HEURE)))
+        .enregistre(finDe(aResoudre).a(LE_9_JANVIER_2043_A.plusSeconds(12 * HEURE))),
+      suiviEngageLe1erJanvier2025Pour(element)
+        .enregistre(terminee)
+        .enregistre(finDe(terminee).a(LE_9_JANVIER_2043_A.plusSeconds(9 * HEURE))),
+      suiviEngageLe1erJanvier2025Pour(element)
+        .enregistre(finTardive)
+        .enregistre(finDe(finTardive).a(LE_9_JANVIER_2043_A.plusSeconds(23 * HEURE))),
+      suiviEngageLe1erJanvier2025Pour(element)
+        .enregistre(clotureeAvant)
+        .cloture(clotureParLeroyA(LE_9_JANVIER_2043_A.plusSeconds(20 * HEURE))),
+      suiviEngageLe1erJanvier2025Pour(element)
+        .enregistre(clotureeApres)
+        .cloture(clotureParLeroyA(LE_9_JANVIER_2043_A.plusSeconds(22 * HEURE))),
+      suiviEngageLe1erJanvier2025Pour(element).enregistre(debutSansPosteParDupontA(LE_9_JANVIER_2043_A.plusSeconds(10 * HEURE))),
+      suiviEngageLe1erJanvier2025Pour(element).enregistre(debutDu9Janvier2043A8hPar(berthe.id())),
+      suiviEngageLe1erJanvier2025Pour(element).enregistre(debutDu9Janvier2043A8hPar(charles.id())),
+      suiviEngageLe1erJanvier2025Pour(element).enregistre(annulee).annule(annulee.id(), annulationParLeroy())
+    );
+    transactions.executeWithoutResult(transaction -> jeu.forEach(suivis::create));
+    var annuaire = new AnnuaireDAtelier(Map.of(berthe.id(), berthe, charles.id(), charles), Map.of());
+    var recherches = List.of(
+      new AnomaliesDAtelierCriteria("", element.id().uuid().toString()),
+      new AnomaliesDAtelierCriteria("", "finauto_parite_2043_%a"),
+      new AnomaliesDAtelierCriteria("bErThE", "FINAUTO_PARITE_2043"),
+      new AnomaliesDAtelierCriteria("CHARLES", "FINAUTO_PARITE_2043"),
+      new AnomaliesDAtelierCriteria("berthe parite_%", "FINAUTO_PARITE_2043"),
+      new AnomaliesDAtelierCriteria("33333333", "FINAUTO_PARITE_2043"),
+      new AnomaliesDAtelierCriteria(berthe.id().uuid().toString().substring(0, 12).toUpperCase(Locale.ROOT), "FINAUTO_PARITE_2043"),
+      new AnomaliesDAtelierCriteria("ABSENT", "FINAUTO_PARITE_2043"),
+      new AnomaliesDAtelierCriteria("", "FINAUTO_PARITE_ABSENT")
+    );
+    var evaluations = List.of(
+      LE_9_JANVIER_2043_A.plusSeconds(7 * HEURE),
+      LE_9_JANVIER_2043_A.plusSeconds(21 * HEURE).minusNanos(1),
+      LE_9_JANVIER_2043_A.plusSeconds(21 * HEURE),
+      LE_9_JANVIER_2043_A.plusSeconds(22 * HEURE),
+      LE_9_JANVIER_2043_A.plusSeconds(23 * HEURE),
+      LE_9_JANVIER_2043_A.plusSeconds(25 * HEURE).minusNanos(1),
+      LE_9_JANVIER_2043_A.plusSeconds(25 * HEURE),
+      LE_9_JANVIER_2043_A.plusSeconds(40 * HEURE)
+    );
+    var ordreCanonique = Comparator.comparing(FinAutomatiqueEnListe::debut)
+      .thenComparing(ligne -> ligne.adresse().suivi().uuid().toString())
+      .thenComparing(ligne -> ligne.adresse().pointage().uuid().toString());
+    for (var evaluation : evaluations) {
+      for (var recherche : recherches) {
+        var attendues = jeu
+          .stream()
+          .flatMap(suivi ->
+            suivi
+              .activites()
+              .stream()
+              .filter(activite -> activite.a(evaluation).finAutomatique())
+              .map(activite -> ligneDe(suivi, activite))
+          )
+          .filter(ligne -> recherche.matches(ligne, annuaire))
+          .sorted(ordreCanonique)
+          .toList();
+        var acquises = lit(recherche, evaluation, new Pageable(0, 50));
+        assertThat(acquises.totalElementsCount()).describedAs("total a %s pour %s", evaluation, recherche).isEqualTo(attendues.size());
+        assertThat(acquises.content()).describedAs("lignes a %s pour %s", evaluation, recherche).containsExactlyElementsOf(attendues);
+      }
+    }
+    var toutes = recherches.getFirst();
+    assertThat(
+      evaluations
+        .stream()
+        .map(evaluation -> lit(toutes, evaluation, new Pageable(0, 50)).totalElementsCount())
+        .toList()
+    )
+      .describedAs("le jeu change de population a chaque echeance")
+      .containsExactly(0L, 0L, 5L, 6L, 7L, 7L, 8L, 8L);
+  }
+
   private Page<FinAutomatiqueEnListe> lit(AnomaliesDAtelierCriteria criteria, Instant evaluation, Pageable pageable) {
     return transactions.execute(transaction -> finsAutomatiques.list(criteria, evaluation, pageable));
+  }
+
+  private static FinAutomatiqueEnListe ligneDe(SuiviDAtelier suivi, Activite activite) {
+    return FinAutomatiqueEnListe.builder()
+      .adresse(new AdresseDossierAnomalie(suivi.id(), activite.ouvrant().id()))
+      .revision(suivi.revision())
+      .element(suivi.element())
+      .cle(activite.cle())
+      .activite(activite.id())
+      .debut(activite.debut())
+      .echeance(activite.echeance().value());
   }
 
   private static EvenementDAtelier ouvrantSurSonPoste(String uuid, Instant debut) {
