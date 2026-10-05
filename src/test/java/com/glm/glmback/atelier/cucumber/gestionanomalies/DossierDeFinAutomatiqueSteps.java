@@ -66,6 +66,11 @@ public class DossierDeFinAutomatiqueSteps {
     lit((String) confirmation.get("evenementCree"));
   }
 
+  @When("je consulte le dossier d'anomalie de l'evenement cree par la confirmation")
+  public void consulteLEvenementCree() {
+    lit((String) confirmation.get("evenementCree"));
+  }
+
   @Then("le dossier d'anomalie est a l'etat {string}")
   public void etat(String etat) {
     assertThat(dossier.get("kind")).isEqualTo(etat);

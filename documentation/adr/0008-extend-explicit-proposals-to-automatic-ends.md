@@ -43,6 +43,14 @@ dossier adds `finAutomatique`, computed on that perimeter like `enConflit`: true
 still terminated automatically, even when the address became `ANCRE_ANNULEE`. A client may therefore say
 "anomaly settled" when neither `enConflit` nor `finAutomatique` is true, whatever the state of the address.
 
+That set is stable before and after an act: it is the activity of the anchor, identified by its original
+`ActiviteId`, which the correction of the opener keeps. Only the dossier of a conflicting sequence widens to the
+activities that the facts of an act add. A late transition that targets the activity also opens another one,
+with its own address, its own row in the list and its own deadline: once the transition is corrected, that
+activity is not part of this dossier, so `finAutomatique` judges the anomaly of the dossier and nothing else. The
+perimeter lists facts: it may still name the activity that such a gesture opens, which `activites` does not
+contain.
+
 The guided proposals follow the late gestures that target the activity:
 
 | Late gestures that target the activity | Proposal                      | Act                                                                                    |

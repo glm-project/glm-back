@@ -55,7 +55,16 @@ public record LectureDossierAnomalie(AdresseDossierAnomalie adresse, LectureDuSu
       .findFirst();
   }
 
+  /**
+   * Le meme dossier, relu apres un acte. Seul le dossier d'une sequence en conflit voit s'elargir ses activites
+   * concernees : les faits que l'acte ajoute les rattachent. Celui d'une fin automatique garde l'activite de son
+   * ancre, identifiee par son {@link ActiviteId} d'origine, que la correction de l'ouvrant conserve : l'activite qu'un
+   * geste tardif corrige ouvre a son tour, elle, a sa propre adresse, et son echeance n'est pas celle de ce dossier.
+   */
   public LectureDossierAnomalie apresActe(LectureDuSuivi apres) {
+    if (sequence().isEmpty()) {
+      return new LectureDossierAnomalie(adresse, apres, concernees);
+    }
     Set<ActiviteId> apresActe = Stream.concat(
       concernees.stream(),
       apres

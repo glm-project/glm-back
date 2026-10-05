@@ -230,7 +230,6 @@ Feature: Dossier d'anomalie d'une fin automatique
       | moment | evenement | etat     | fin                  | duree |
       | avant  | 0         | ECHUE    | 2044-03-07T21:00:00Z | PT13H |
       | apres  | 0         | TERMINEE | 2044-03-07T23:00:00Z | PT15H |
-      | apres  | 1         | EN_COURS |                      |       |
     And l'apercu du dossier d'anomalie donne apres l'acte un dossier qui n'est pas en conflit
     When je confirme l'apercu du dossier d'anomalie
     Then le dossier d'anomalie est a l'etat "SANS_ANOMALIE"
@@ -285,6 +284,48 @@ Feature: Dossier d'anomalie d'une fin automatique
     Then le dossier d'anomalie est a l'etat "EN_CONFLIT"
     And le dossier d'anomalie est en conflit
     And le dossier d'anomalie ne signale aucune fin automatique
+
+  Scenario: Une transition tardive corrigee ne laisse pas l'echeance de l'activite qu'elle ouvre juger l'anomalie traitee
+    Given il est "2044-03-31T06:00:00Z"
+    And l'entreprise a cree l'element de fabrication "Anomalie 4531"
+      | type      | ORDRE_DE_FABRICATION |
+      | reference | ANO4531              |
+    And j'ai engage l'element "Anomalie 4531" en atelier
+    And il est "2044-03-31T08:00:00Z"
+    And j'ai pointe sur "Anomalie 4531"
+      | id        | 00000000-0000-0000-0000-000000045311 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont-anomalie                      |
+      | poste     | fraiseuse-anomalie                   |
+    And il est "2044-03-31T23:00:00Z"
+    And j'ai pointe sur "Anomalie 4531"
+      | id        | 00000000-0000-0000-0000-000000045312 |
+      | type      | NON_CONFORMITE                       |
+      | intention | TRANSITION                           |
+      | cible     | 00000000-0000-0000-0000-000000045311 |
+      | operateur | dupont-anomalie                      |
+      | poste     | fraiseuse-anomalie                   |
+    And il est "2044-04-01T13:00:00Z"
+    When je consulte le dossier d'anomalie de "Anomalie 4531" depuis l'evenement 0
+    Then le dossier d'anomalie est a l'etat "FIN_AUTOMATIQUE"
+    And le dossier d'anomalie donne les activites
+      | evenement | etat  | debut                | fin                  |
+      | 0         | ECHUE | 2044-03-31T08:00:00Z | 2044-03-31T21:00:00Z |
+    When je previsualise la proposition "CORRIGER_TRANSITION_TARDIVE" du dossier d'anomalie
+    Then l'apercu du dossier d'anomalie est accepte
+    When je confirme l'apercu du dossier d'anomalie
+    Then le dossier d'anomalie est a l'etat "SANS_ANOMALIE"
+    And le dossier d'anomalie ne signale aucune fin automatique
+    And le dossier d'anomalie n'est pas en conflit
+    And le dossier d'anomalie donne les activites
+      | evenement | etat     | debut                | fin                  |
+      | 0         | TERMINEE | 2044-03-31T08:00:00Z | 2044-03-31T23:00:00Z |
+    When je consulte le dossier d'anomalie de l'evenement cree par la confirmation
+    Then le dossier d'anomalie est a l'etat "FIN_AUTOMATIQUE"
+    And le dossier d'anomalie donne les activites
+      | evenement | etat  | debut                | fin                  |
+      | 1         | ECHUE | 2044-03-31T23:00:00Z | 2044-04-01T12:00:00Z |
 
   Scenario Outline: Une fin regularisee avant la relance tardive reste sans conflit, apres elle le conflit est accepte
     Given il est "2044-03-08T06:00:00Z"

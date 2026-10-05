@@ -337,6 +337,27 @@ class LectureDossierFinAutomatiqueTest {
     assertThat(dossier(corrige, remplacant, LE_10_MAI_2026_A_23H).kind()).isEqualTo(EtatDAdresseDossier.FIN_AUTOMATIQUE);
   }
 
+  @Test
+  void shouldNeJugerQueLActiviteDeLAncreQuandLaTransitionCorrigeeOuvreUneActiviteDejaEchue() {
+    var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    var nonConformite = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_23H);
+    var suivi = suiviDAtelierEngage().enregistre(travail).enregistre(nonConformite);
+    var avant = dossier(suivi, travail, LE_11_MAI_2026_A_20H);
+
+    var corrige = suivi.corrige(
+      nonConformite.id(),
+      annulationParLeroy(),
+      passageEnNonConformiteRegulariseParLeroyDe(travail).a(LE_10_MAI_2026_A_23H)
+    );
+    var apres = avant.apresActe(new LectureDuSuivi(corrige, LE_11_MAI_2026_A_20H));
+
+    assertThat(avant.concernees()).containsExactly(travail.activite().orElseThrow());
+    assertThat(apres.concernees()).containsExactly(travail.activite().orElseThrow());
+    assertThat(apres.kind()).isEqualTo(EtatDAdresseDossier.SANS_ANOMALIE);
+    assertThat(apres.finAutomatique()).isFalse();
+    assertThat(apres.activites()).singleElement().extracting(IntervalleDActivite::fin).isEqualTo(Optional.of(LE_10_MAI_2026_A_23H));
+  }
+
   private static LectureDossierAnomalie dossier(SuiviDAtelier suivi, EvenementDAtelier ancre, Instant evaluation) {
     return new LectureDossierAnomalie(new AdresseDossierAnomalie(suivi.id(), ancre.id()), new LectureDuSuivi(suivi, evaluation));
   }

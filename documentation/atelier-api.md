@@ -802,6 +802,13 @@ automatiquement, quel que soit l'état de l'adresse. « Anomalie traitée » se 
 rend `finAutomatique` faux ; un début corrigé mais encore échu le laisse vrai, et le remplaçant ouvre son propre
 dossier `FIN_AUTOMATIQUE`).
 
+L'ensemble des activités concernées est stable avant et après un acte : c'est l'activité de l'ancre, identifiée par
+son `ActiviteId` d'origine, que la correction de l'ouvrant conserve. Seul le dossier d'une séquence en conflit
+s'élargit aux activités que les faits d'un acte ajoutent. La transition tardive qu'on corrige ouvre une autre
+activité, avec sa propre adresse et sa propre ligne de liste : même échue à l'évaluation, elle n'entre pas dans ce
+dossier, et `finAutomatique` ne juge que l'anomalie du dossier. `perimetre` liste des faits : `perimetre.activites`
+peut encore nommer l'activité qu'ouvre ce geste, que `activites[]` ne contient pas.
+
 Les propositions guidées suivent les gestes tardifs qui visent l'activité :
 
 | Gestes tardifs qui visent l'activité | Proposition                   | Acte (`kind`)    | Fait proposé                                                            |
