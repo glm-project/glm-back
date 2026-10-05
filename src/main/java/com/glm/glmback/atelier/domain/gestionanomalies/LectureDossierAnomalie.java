@@ -1,5 +1,6 @@
 package com.glm.glmback.atelier.domain.gestionanomalies;
 
+import com.glm.glmback.atelier.domain.Activite;
 import com.glm.glmback.atelier.domain.ActiviteId;
 import com.glm.glmback.atelier.domain.Cloture;
 import com.glm.glmback.atelier.domain.DiagnosticDeConflit;
@@ -10,6 +11,7 @@ import com.glm.glmback.atelier.domain.LectureDuSuivi;
 import com.glm.glmback.atelier.domain.RaisonDuConflit;
 import com.glm.glmback.atelier.domain.SequenceEnConflit;
 import com.glm.glmback.shared.error.domain.Assert;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -34,8 +36,23 @@ public record LectureDossierAnomalie(AdresseDossierAnomalie adresse, LectureDuSu
         .filter(sequence -> sequence.pointages().contains(adresse.pointage()))
         .findFirst()
         .map(sequence -> Set.copyOf(sequence.activites()))
-        .orElse(Set.of())
+        .orElseGet(() ->
+          activiteEchueOuverteParLAncre(adresse, lecture)
+            .map(activite -> Set.of(activite.id()))
+            .orElse(Set.of())
+        )
     );
+  }
+
+  /** L'activite que l'ancre ouvre et qu'aucune fin reelle n'a terminee avant son echeance, a l'instant d'evaluation. */
+  private static Optional<Activite> activiteEchueOuverteParLAncre(AdresseDossierAnomalie adresse, LectureDuSuivi lecture) {
+    return lecture
+      .suivi()
+      .activites()
+      .stream()
+      .filter(activite -> activite.ouvrant().id().equals(adresse.pointage()))
+      .filter(activite -> activite.a(lecture.evaluation()).finAutomatique())
+      .findFirst();
   }
 
   public LectureDossierAnomalie apresActe(LectureDuSuivi apres) {
@@ -111,7 +128,17 @@ public record LectureDossierAnomalie(AdresseDossierAnomalie adresse, LectureDuSu
     if (pointage.orElseThrow().estAnnule()) {
       return EtatDAdresseDossier.ANCRE_ANNULEE;
     }
-    return sequence().isPresent() ? EtatDAdresseDossier.EN_CONFLIT : EtatDAdresseDossier.SANS_ANOMALIE;
+    if (sequence().isPresent()) {
+      return EtatDAdresseDossier.EN_CONFLIT;
+    }
+    return activiteEchueOuverteParLAncre(adresse, lecture).isPresent()
+      ? EtatDAdresseDossier.FIN_AUTOMATIQUE
+      : EtatDAdresseDossier.SANS_ANOMALIE;
+  }
+
+  /** Vrai si une activite concernee reste terminee automatiquement, quel que soit l'etat de l'adresse. */
+  public boolean finAutomatique() {
+    return activites().stream().anyMatch(IntervalleDActivite::finAutomatique);
   }
 
   public Optional<SequenceEnConflit> sequence() {
@@ -123,6 +150,49 @@ public record LectureDossierAnomalie(AdresseDossierAnomalie adresse, LectureDuSu
   }
 
   public List<PropositionDeResolution> choix() {
+    return Stream.concat(choixDeConflit().stream(), choixDeFinAutomatique().stream()).toList();
+  }
+
+  /**
+   * Une seule proposition guide la fin automatique, d'apres les gestes tardifs qui visent l'activite. Une transition
+   * tardive se corrige d'abord : toute fin regularisee la contredirait. Sans transition, une fin tardive se corrige,
+   * la plus tardive seule, car corriger une autre laisserait la suivante viser une activite deja terminee. Sans geste
+   * tardif, la fin se regularise a l'heure que le gestionnaire saisira.
+   */
+  private List<PropositionDeResolution> choixDeFinAutomatique() {
+    if (kind() != EtatDAdresseDossier.FIN_AUTOMATIQUE) {
+      return List.of();
+    }
+    var activite = activiteEchueOuverteParLAncre(adresse, lecture).orElseThrow().id();
+    var gestes = lecture
+      .suivi()
+      .journal()
+      .evenements()
+      .stream()
+      .filter(fait -> !fait.estAnnule() && fait.activiteVisee().filter(activite::equals).isPresent())
+      .toList();
+    return List.of(
+      plusTardif(gestes, IntentionDePointage.TRANSITION)
+        .map(transition ->
+          new PropositionDeResolution(CodeDeProposition.CORRIGER_TRANSITION_TARDIVE, transition.id(), Optional.of(activite))
+        )
+        .or(() ->
+          plusTardif(gestes, IntentionDePointage.FIN).map(fin ->
+            new PropositionDeResolution(CodeDeProposition.CORRIGER_FIN_TARDIVE, fin.id(), Optional.of(activite))
+          )
+        )
+        .orElseGet(() -> new PropositionDeResolution(CodeDeProposition.REGULARISER_FIN, adresse.pointage(), Optional.of(activite)))
+    );
+  }
+
+  private static Optional<EvenementDAtelier> plusTardif(List<EvenementDAtelier> gestes, IntentionDePointage intention) {
+    return gestes
+      .stream()
+      .filter(geste -> geste.intention() == intention)
+      .max(Comparator.comparing(EvenementDAtelier::dateDeSurvenue));
+  }
+
+  private List<PropositionDeResolution> choixDeConflit() {
     return diagnostics()
       .stream()
       .flatMap(diagnostic -> {

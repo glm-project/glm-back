@@ -91,7 +91,7 @@ tests sont le seul endroit qui les tient.
 `proposition-invalide` refuse une adresse incohérente avec le suivi de la route ou l'acte, une identité
 prospective absente pour une création, présente pour une annulation ou égale à la commande.
 `nature-d-anomalie-invalide` refuse un paramètre `nature` absent ou inconnu sur `GET /api/atelier/anomalies`.
-`apercu-obsolete` refuse une adresse non active en conflit, une révision dépassée ou des conséquences
+`apercu-obsolete` refuse une adresse qui n'ouvre ni conflit ni fin automatique, une révision dépassée ou des conséquences
 matériellement différentes, échéance métier franchie, habilitation retirée ou ressource disparue comprises.
 Il impose un nouvel aperçu. `confirmation-reutilisee` refuse une commande déjà enregistrée avec une autre
 proposition ou une autre identité authentifiée ; le client vérifie son reçu canonique.

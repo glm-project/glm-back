@@ -14,7 +14,6 @@ import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
 import com.glm.glmback.atelier.domain.gestionanomalies.ApercuObsoleteException;
 import com.glm.glmback.atelier.domain.gestionanomalies.ConfirmationReutiliseeException;
-import com.glm.glmback.atelier.domain.gestionanomalies.EtatDAdresseDossier;
 import com.glm.glmback.atelier.domain.gestionanomalies.LectureDossierAnomalie;
 import com.glm.glmback.atelier.domain.gestionanomalies.PropositionInvalideException;
 import com.glm.glmback.shared.time.domain.Clock;
@@ -70,7 +69,7 @@ public class ConfirmerLesActes {
     }
     var maintenant = clock.now();
     var dossierAvant = new LectureDossierAnomalie(proposition.adresse(), new LectureDuSuivi(avant, maintenant));
-    if (dossierAvant.kind() != EtatDAdresseDossier.EN_CONFLIT) {
+    if (!dossierAvant.kind().estATraiter()) {
       throw new ApercuObsoleteException();
     }
     ActePrepare prepare;

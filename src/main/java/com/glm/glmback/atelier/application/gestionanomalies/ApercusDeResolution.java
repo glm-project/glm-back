@@ -8,7 +8,6 @@ import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
 import com.glm.glmback.atelier.domain.gestionanomalies.ActeDeResolution;
 import com.glm.glmback.atelier.domain.gestionanomalies.AdresseDossierAnomalie;
 import com.glm.glmback.atelier.domain.gestionanomalies.ApercuObsoleteException;
-import com.glm.glmback.atelier.domain.gestionanomalies.EtatDAdresseDossier;
 import com.glm.glmback.atelier.domain.gestionanomalies.LectureDossierAnomalie;
 import com.glm.glmback.shared.time.domain.Clock;
 import java.util.Optional;
@@ -50,7 +49,7 @@ public class ApercusDeResolution {
     }
     var maintenant = clock.now();
     var avant = new LectureDossierAnomalie(adresse, new LectureDuSuivi(suivi, maintenant));
-    if (avant.kind() != EtatDAdresseDossier.EN_CONFLIT) {
+    if (!avant.kind().estATraiter()) {
       throw new ApercuObsoleteException();
     }
     Optional<EvenementDAtelierId> evenement =

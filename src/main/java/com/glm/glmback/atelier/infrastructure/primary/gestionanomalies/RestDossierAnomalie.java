@@ -18,6 +18,11 @@ record RestDossierAnomalie(
     description = "Le perimetre concerne reste en conflit dans l interpretation du domaine, meme sans intervalle d activite ou avec une ancre annulee."
   )
   boolean enConflit,
+  @Schema(
+    requiredMode = Schema.RequiredMode.REQUIRED,
+    description = "Une activite concernee reste terminee automatiquement a son echeance faute de fin reelle, quel que soit l etat de l adresse : l anomalie n est traitee que si ni enConflit ni finAutomatique ne sont vrais."
+  )
+  boolean finAutomatique,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestAdresseDossierAnomalie adresse,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) long revision,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) Instant evaluation,
@@ -38,6 +43,7 @@ record RestDossierAnomalie(
     return new RestDossierAnomalie(
       dossier.kind(),
       dossier.enConflit(),
+      dossier.finAutomatique(),
       new RestAdresseDossierAnomalie(dossier.adresse().suivi().uuid(), dossier.adresse().pointage().uuid()),
       dossier.lecture().suivi().revision().value(),
       dossier.lecture().evaluation(),

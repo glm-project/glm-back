@@ -60,4 +60,30 @@ class ResolutionOpenApiIT {
       .andExpect(jsonPath("$.components.schemas.RestConfirmationEnregistree.required").value(containsInAnyOrder("kind", "recu", "dossier")))
       .andExpect(jsonPath("$.components.schemas.RestConfirmationNonAttestee.required").value(containsInAnyOrder("kind")));
   }
+
+  @Test
+  void shouldDecrireLeFaitSansInstantDeLaRegularisationSansRelacherLInstantObligatoireDesActes() throws Exception {
+    rest
+      .perform(get("/v3/api-docs"))
+      .andExpect(status().isOk())
+      .andExpect(
+        jsonPath("$.components.schemas.RestChoixDeResolution.properties.fait.oneOf[*].$ref").value(
+          containsInAnyOrder("#/components/schemas/RestFaitDeResolution", "#/components/schemas/RestFaitARegulariser")
+        )
+      )
+      .andExpect(
+        jsonPath("$.components.schemas.RestChoixDeResolution.properties.code.enum").value(
+          hasItems("REGULARISER_FIN", "CORRIGER_FIN_TARDIVE", "CORRIGER_TRANSITION_TARDIVE")
+        )
+      )
+      .andExpect(jsonPath("$.components.schemas.RestFaitARegulariser.properties.instant").doesNotExist())
+      .andExpect(
+        jsonPath("$.components.schemas.RestFaitARegulariser.required").value(
+          containsInAnyOrder("type", "intention", "activiteVisee", "operateur")
+        )
+      )
+      .andExpect(jsonPath("$.components.schemas.RestFaitDeResolution.required").value(hasItem("instant")))
+      .andExpect(jsonPath("$.components.schemas.RestDossierAnomalie.required").value(hasItem("finAutomatique")))
+      .andExpect(jsonPath("$.components.schemas.RestDossierAnomalie.properties.kind.enum").value(hasItem("FIN_AUTOMATIQUE")));
+  }
 }

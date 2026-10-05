@@ -25,6 +25,7 @@ import com.glm.glmback.atelier.domain.gestionanomalies.ActeDeResolution;
 import com.glm.glmback.atelier.domain.gestionanomalies.AdresseDossierAnomalie;
 import com.glm.glmback.atelier.domain.gestionanomalies.ApercuObsoleteException;
 import com.glm.glmback.atelier.domain.gestionanomalies.EtatDAdresseDossier;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,8 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 @UnitTest
 class ApercusDeResolutionTest {
+
+  private static final Instant LE_10_MAI_2026_A_22H = Instant.parse("2026-05-10T22:00:00Z");
 
   @ParameterizedTest
   @EnumSource(value = EtatDAdresseDossier.class, names = { "ANCRE_ANNULEE", "INTROUVABLE", "SANS_ANOMALIE" })
@@ -231,6 +234,60 @@ class ApercusDeResolutionTest {
     assertThat(suivi.journal().evenement(transition.id()))
       .get()
       .satisfies(fait -> assertThat(fait.estAnnule()).isFalse());
+    verify(repository).get(suivi.id());
+    verifyNoMoreInteractions(repository);
+  }
+
+  @Test
+  void shouldPreparerLaRegularisationDUneFinAutomatiqueSansRienEcrire() {
+    var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    var suivi = suiviDAtelierEngage().enregistre(travail);
+    var repository = mock(SuiviDAtelierRepository.class);
+    when(repository.get(suivi.id())).thenReturn(Optional.of(suivi));
+    var operateurs = mock(OperateursConnus.class);
+    when(operateurs.get(OPERATEUR_ID_DUPONT)).thenReturn(Optional.of(OPERATEUR_CONNU_DUPONT));
+    var postes = mock(PostesConnus.class);
+    when(postes.get(POSTE_ID_FRAISEUSE_1)).thenReturn(Optional.of(POSTE_CONNU_FRAISEUSE_1));
+    var habilitations = mock(Habilitations.class);
+    when(habilitations.estHabilite(OPERATEUR_ID_DUPONT, POSTE_ID_FRAISEUSE_1)).thenReturn(true);
+    var preparation = PreparationDesActes.builder()
+      .repository(repository)
+      .elements(mock(ElementsEngageables.class))
+      .operateurs(operateurs)
+      .postes(postes)
+      .habilitations(habilitations)
+      .empreintes((apres, evaluation) -> "fin-regularisee");
+    var service = ApercusDeResolution.builder()
+      .suivis(repository)
+      .preparation(preparation)
+      .clock(() -> LE_10_MAI_2026_A_22H);
+    var fin = RegularisationAEnregistrer.builder()
+      .suivi(suivi.id())
+      .type(TypeDEvenementDAtelier.FIN)
+      .intention(IntentionDePointage.FIN)
+      .activiteVisee(travail.activite())
+      .operateur(OPERATEUR_ID_DUPONT)
+      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
+      .auteur(AUTEUR_LEROY)
+      .dateDeSurvenue(LE_10_MAI_2026_A_17H);
+    var acte = new ActeDeResolution.Regularisation(fin, "2026-05-10T17:00:00Z");
+
+    var apercu = service.apercu(
+      UUID.randomUUID(),
+      new AdresseDossierAnomalie(suivi.id(), travail.id()),
+      suivi.revision(),
+      acte,
+      CONTEXTE_LEROY_IMPECCMOLD
+    );
+
+    assertThat(apercu.avant().kind()).isEqualTo(EtatDAdresseDossier.FIN_AUTOMATIQUE);
+    assertThat(apercu.avant().finAutomatique()).isTrue();
+    assertThat(apercu.apres().kind()).isEqualTo(EtatDAdresseDossier.SANS_ANOMALIE);
+    assertThat(apercu.apres().finAutomatique()).isFalse();
+    assertThat(apercu.apres().activites())
+      .singleElement()
+      .satisfies(activite -> assertThat(activite.fin()).contains(LE_10_MAI_2026_A_17H));
+    assertThat(suivi.journal().evenements()).hasSize(1);
     verify(repository).get(suivi.id());
     verifyNoMoreInteractions(repository);
   }

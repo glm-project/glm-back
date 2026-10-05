@@ -517,11 +517,16 @@
         "description" : "Une hypothese structuree issue du diagnostic, sans motif et sans selection par defaut.",
         "properties" : {
           "code" : {
-            "enum" : [ "RATTACHER_FIN_A_ACTIVITE_REMPLACANTE", "ANNULER_TRANSITION" ],
+            "enum" : [ "RATTACHER_FIN_A_ACTIVITE_REMPLACANTE", "ANNULER_TRANSITION", "REGULARISER_FIN", "CORRIGER_FIN_TARDIVE", "CORRIGER_TRANSITION_TARDIVE" ],
             "type" : "string"
           },
           "fait" : {
-            "$ref" : "#/components/schemas/RestFaitDeResolution"
+            "description" : "Le fait prerempli de l'acte : sans instant pour REGULARISER_FIN, que le gestionnaire date ; avec l'instant du geste tardif pour une correction.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/RestFaitDeResolution"
+            }, {
+              "$ref" : "#/components/schemas/RestFaitARegulariser"
+            } ]
           },
           "kind" : {
             "enum" : [ "ANNULATION", "CORRECTION", "REGULARISATION" ],
@@ -1081,8 +1086,12 @@
             "format" : "date-time",
             "type" : "string"
           },
+          "finAutomatique" : {
+            "description" : "Une activite concernee reste terminee automatiquement a son echeance faute de fin reelle, quel que soit l etat de l adresse : l anomalie n est traitee que si ni enConflit ni finAutomatique ne sont vrais.",
+            "type" : "boolean"
+          },
           "kind" : {
-            "enum" : [ "EN_CONFLIT", "INTROUVABLE", "ANCRE_ANNULEE", "SANS_ANOMALIE" ],
+            "enum" : [ "EN_CONFLIT", "INTROUVABLE", "ANCRE_ANNULEE", "FIN_AUTOMATIQUE", "SANS_ANOMALIE" ],
             "type" : "string"
           },
           "perimetre" : {
@@ -1100,7 +1109,7 @@
             "$ref" : "#/components/schemas/RestSuiviDAtelier"
           }
         },
-        "required" : [ "activites", "adresse", "choix", "continuations", "diagnostics", "enConflit", "evaluation", "kind", "revision", "suivi" ],
+        "required" : [ "activites", "adresse", "choix", "continuations", "diagnostics", "enConflit", "evaluation", "finAutomatique", "kind", "revision", "suivi" ],
         "type" : "object"
       },
       "RestDureeDeSynthese" : {
@@ -1377,6 +1386,34 @@
           }
         },
         "required" : [ "auteur", "dateDEnregistrement", "dateDeSurvenue", "estUneRegularisation", "id", "intention", "operateurId", "type" ],
+        "type" : "object"
+      },
+      "RestFaitARegulariser" : {
+        "description" : "La fin que le gestionnaire regularise sur une activite terminee automatiquement. Aucune heure n'est proposee : il la saisit, et la reprend dans le fait de l'acte REGULARISATION.",
+        "properties" : {
+          "activiteVisee" : {
+            "description" : "L'activite d'origine a terminer, celle de activites[].activite, jamais l'identifiant de l'evenement ouvrant.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "intention" : {
+            "enum" : [ "OUVERTURE", "TRANSITION", "FIN" ],
+            "type" : "string"
+          },
+          "operateur" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "poste" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "DEBUT", "NON_CONFORMITE", "FIN" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "activiteVisee", "intention", "operateur", "type" ],
         "type" : "object"
       },
       "RestFaitDeResolution" : {

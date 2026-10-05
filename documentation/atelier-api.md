@@ -694,8 +694,10 @@ teste `type`, jamais `message` (voir [les codes d'erreur](codes-erreur.md)). Ce 
 Validation, qui ne porte pas de `type` et ne traite pas un paramètre de requête manquant.
 
 L'adresse d'un dossier est le couple suivi/pointage ; une identité technique de projection n'est pas
-une adresse. Le résultat porte `EN_CONFLIT`, `INTROUVABLE`, `ANCRE_ANNULEE` ou `SANS_ANOMALIE` (ancre active sans
-anomalie ; ce résultat s'appelait `HORS_CONFLIT`).
+une adresse. Le résultat porte `EN_CONFLIT`, `INTROUVABLE`, `ANCRE_ANNULEE`, `FIN_AUTOMATIQUE` ou `SANS_ANOMALIE` (ancre
+active sans anomalie ; ce résultat s'appelait `HORS_CONFLIT`). L'ordre de décision est celui de cette phrase :
+`FIN_AUTOMATIQUE` vaut pour une ancre active qui ouvre une activité que l'évaluation lit terminée automatiquement,
+sans séquence en conflit.
 Un suivi absent du tenant courant répond 404 sans journal. Un suivi accessible conserve son journal
 dans les trois résultats d'adresse sans conflit ; aucun de ces résultats ne redirige implicitement.
 
@@ -705,6 +707,101 @@ active contenant l’ancre ; `perimetre` conserve les faits concernés après un
 est annulée. Le booléen `enConflit` est calculé par le domaine sur ce périmètre : il peut rester vrai
 sans intervalle d’activité, ou être faux avec d’autres conflits indépendants dans `continuations`.
 Les continuations donnent les adresses actives explicites ; elles ne changent jamais l’adresse demandée.
+
+### Le dossier d'une fin automatique
+
+Une activité que rien n'a terminée s'arrête à son échéance, treize heures écoulées après son début, borne incluse.
+Ce n'est pas un conflit : le dossier de son ouvrant actif (`activite_d_atelier.ouverture_id`) répond
+`FIN_AUTOMATIQUE`, avec le même protocole d'aperçu, de confirmation et de reçu que les conflits. L'échéance se juge à
+l'instant d'évaluation, à la nanoseconde, et n'est jamais stockée : liste, dossier, aperçu et confirmation la jugent
+chacun au leur. Lue à 20:59:59.999999999 pour un début à 08:00, l'adresse est `SANS_ANOMALIE` ; lue à 21:00:00, elle
+est `FIN_AUTOMATIQUE`.
+
+Deux identifiants restent distincts. L'**adresse** du dossier est l'`EvenementDAtelierId` de l'ouvrant actif ; l'**activité
+visée** par un acte est l'`ActiviteId` d'origine, que rend `activites[].activite`. Le front envoie le second dans
+`activiteVisee` et jamais l'identifiant d'événement.
+
+Ce dossier n'a pas de `sequence` : `perimetre` porte les faits qui ouvrent ou visent l'activité, gestes tardifs
+compris, et `activites` l'activité échue (`etat` `ECHUE`, `fin` à l'échéance, `duree` de treize heures). Une activité
+encore en cours n'entre pas dans le dossier d'une adresse `SANS_ANOMALIE`. `enConflit` reste calculé sur le périmètre :
+il devient vrai si un geste tardif appartient à une autre séquence en conflit.
+
+`finAutomatique` est calculé sur le même périmètre : il est vrai tant qu'une activité concernée reste terminée
+automatiquement, quel que soit l'état de l'adresse. « Anomalie traitée » se lit donc `enConflit` faux **et**
+`finAutomatique` faux, y compris quand l'adresse devient `ANCRE_ANNULEE` (un début corrigé qui repousse l'échéance
+rend `finAutomatique` faux ; un début corrigé mais encore échu le laisse vrai, et le remplaçant ouvre son propre
+dossier `FIN_AUTOMATIQUE`).
+
+Les propositions guidées suivent les gestes tardifs qui visent l'activité :
+
+| Gestes tardifs qui visent l'activité | Proposition                   | Acte (`kind`)    | Fait proposé                                                            |
+| ------------------------------------ | ----------------------------- | ---------------- | ----------------------------------------------------------------------- |
+| aucun                                | `REGULARISER_FIN`             | `REGULARISATION` | FIN de l'activité, opérateur et poste de l'ouvrant, **aucun `instant`** |
+| une transition                       | `CORRIGER_TRANSITION_TARDIVE` | `CORRECTION`     | cette transition, `instant` repris de son pointage                      |
+| une ou plusieurs FIN                 | `CORRIGER_FIN_TARDIVE`        | `CORRECTION`     | la FIN la plus tardive seule, `instant` repris de son pointage          |
+
+Aucune heure n'est inventée : le gestionnaire saisit celle d'une fin régularisée, et une correction reprend l'heure du
+pointage réel qu'elle remplace. `REGULARISER_FIN` n'est jamais proposé quand un geste tardif vise l'activité :
+avec une transition tardive, toute fin régularisée la contredit ; avec plusieurs fins tardives, en corriger une autre
+que la plus tardive laisserait la suivante viser une activité déjà terminée. Une transition tardive l'emporte sur une
+fin tardive. Le remplaçant d'une correction est une régularisation (`estUneRegularisation`) et termine l'activité
+au-delà de l'échéance.
+
+Le `fait` d'un choix est un `oneOf` : `RestFaitARegulariser` pour `REGULARISER_FIN` (sans `instant`), `RestFaitDeResolution`
+pour une correction (avec `instant`). Le fait d'un acte reçu en entrée exige toujours `instant`. Dossier d'une fin
+automatique, avec sa régularisation :
+
+```json
+{
+  "kind": "FIN_AUTOMATIQUE",
+  "enConflit": false,
+  "finAutomatique": true,
+  "adresse": { "suivi": "3e1d8181-…", "pointage": "ab8f8dba-…" },
+  "revision": 0,
+  "evaluation": "2026-05-10T22:00:00Z",
+  "diagnostics": [],
+  "activites": [
+    {
+      "evenement": "ab8f8dba-…",
+      "activite": "ab8f8dba-…",
+      "operateurId": "33333333-…",
+      "posteId": "55555555-…",
+      "categorie": "TRAVAIL",
+      "debut": "2026-05-10T08:00:00Z",
+      "fin": "2026-05-10T21:00:00Z",
+      "etat": "ECHUE",
+      "duree": "PT13H"
+    }
+  ],
+  "perimetre": { "activites": ["ab8f8dba-…"], "pointages": ["ab8f8dba-…"], "nombrePointages": 1, "…": "…" },
+  "choix": [
+    {
+      "code": "REGULARISER_FIN",
+      "kind": "REGULARISATION",
+      "pointage": "ab8f8dba-…",
+      "fait": {
+        "type": "FIN",
+        "intention": "FIN",
+        "activiteVisee": "ab8f8dba-…",
+        "operateur": "33333333-…",
+        "poste": "55555555-…"
+      }
+    }
+  ],
+  "continuations": []
+}
+```
+
+Avec une FIN pointée à 23:00, le choix est `CORRIGER_FIN_TARDIVE` sur le pointage de cette FIN, avec
+`"fait": { "type": "FIN", "intention": "FIN", "activiteVisee": "…", "operateur": "…", "poste": "…", "instant": "2026-05-10T23:00:00Z" }`.
+
+Aperçu et confirmation acceptent les adresses `EN_CONFLIT` et `FIN_AUTOMATIQUE` ; toute autre est `apercu-obsolete`. Les droits
+ne changent pas. Un acte qui laisse ou crée une contradiction (une fin régularisée avant le début, ou après une
+relance) est un résultat accepté : le dossier devient `EN_CONFLIT` et les continuations désignent les ancres actives.
+Sur un suivi clôturé, une fin régularisée avant la clôture est acceptée, après elle `suivi-d-atelier-cloture` (409).
+Une habilitation retirée refuse l'aperçu (`operateur-non-habilite`) et rend un aperçu déjà prêt obsolète à la
+confirmation ; une heure future est refusée (`date-de-survenue-future`). Voir
+[l'ADR 0008](adr/0008-extend-explicit-proposals-to-automatic-ends.md).
 
 Le détail adressé et l’aperçu lisent le journal, la clôture et la révision d’une même version committée du suivi,
 sans verrouiller les rédacteurs. Une écriture concurrente peut rendre cette version ancienne après sa lecture ;

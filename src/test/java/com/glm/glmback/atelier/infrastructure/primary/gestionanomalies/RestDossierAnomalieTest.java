@@ -9,11 +9,15 @@ import com.glm.glmback.atelier.domain.LectureDuSuivi;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.gestionanomalies.AdresseDossierAnomalie;
 import com.glm.glmback.atelier.domain.gestionanomalies.LectureDossierAnomalie;
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
 @UnitTest
 class RestDossierAnomalieTest {
+
+  private static final Instant A_22H = Instant.parse("2026-05-10T22:00:00Z");
+  private static final Instant A_23H = Instant.parse("2026-05-10T23:00:00Z");
 
   @Test
   void shouldProposerLaContinuationSansChangerLAdresseDeLAncreCorrigee() {
@@ -146,5 +150,106 @@ class RestDossierAnomalieTest {
     assertThat(json.path("evaluation").asString()).isEqualTo("2026-05-10T17:00:00Z");
     assertThat(json.at("/suivi/journal").size()).isEqualTo(3);
     assertThat(json.at("/suivi/journal/0/operateurId").asString()).isEqualTo(OPERATEUR_ID_DUPONT.uuid().toString());
+  }
+
+  @Test
+  void shouldPublierLeDossierDUneFinAutomatiqueAvecSaRegularisationSansHeure() {
+    var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    var suivi = suiviDAtelierEngage().enregistre(travail);
+    var dossier = new LectureDossierAnomalie(new AdresseDossierAnomalie(suivi.id(), travail.id()), new LectureDuSuivi(suivi, A_22H));
+
+    var json = JsonMapper.builder().build().valueToTree(RestDossierAnomalie.from(dossier, annuaireDeDupontEtMartin()));
+
+    assertThat(json.path("kind").asString()).isEqualTo("FIN_AUTOMATIQUE");
+    assertThat(json.path("finAutomatique").asBoolean()).isTrue();
+    assertThat(json.path("enConflit").asBoolean()).isFalse();
+    assertThat(json.path("sequence").isNull()).isTrue();
+    assertThat(json.at("/perimetre/pointages/0").asString()).isEqualTo(travail.id().uuid().toString());
+    assertThat(json.at("/activites/0/activite").asString()).isEqualTo(travail.activite().orElseThrow().uuid().toString());
+    assertThat(json.at("/activites/0/etat").asString()).isEqualTo("ECHUE");
+    assertThat(json.at("/activites/0/fin").asString()).isEqualTo("2026-05-10T21:00:00Z");
+    assertThat(json.at("/activites/0/duree").asString()).isEqualTo("PT13H");
+    assertThat(json.path("choix").size()).isEqualTo(1);
+    assertThat(json.at("/choix/0/code").asString()).isEqualTo("REGULARISER_FIN");
+    assertThat(json.at("/choix/0/kind").asString()).isEqualTo("REGULARISATION");
+    assertThat(json.at("/choix/0/pointage").asString()).isEqualTo(travail.id().uuid().toString());
+    assertThat(json.at("/choix/0/fait/type").asString()).isEqualTo("FIN");
+    assertThat(json.at("/choix/0/fait/intention").asString()).isEqualTo("FIN");
+    assertThat(json.at("/choix/0/fait/activiteVisee").asString()).isEqualTo(travail.activite().orElseThrow().uuid().toString());
+    assertThat(json.at("/choix/0/fait/operateur").asString()).isEqualTo(OPERATEUR_ID_DUPONT.uuid().toString());
+    assertThat(json.at("/choix/0/fait/poste").asString()).isEqualTo(POSTE_ID_FRAISEUSE_1.uuid().toString());
+    assertThat(json.at("/choix/0/fait/instant").isMissingNode()).isTrue();
+  }
+
+  @Test
+  void shouldPublierLaRegularisationSansPosteQuandLActiviteNEnAPas() {
+    var travail = debutSansPosteParDupontA(LE_10_MAI_2026_A_8H);
+    var suivi = suiviDAtelierEngage().enregistre(travail);
+    var dossier = new LectureDossierAnomalie(new AdresseDossierAnomalie(suivi.id(), travail.id()), new LectureDuSuivi(suivi, A_22H));
+
+    var json = JsonMapper.builder().build().valueToTree(RestDossierAnomalie.from(dossier, annuaireDeDupontEtMartin()));
+
+    assertThat(json.at("/choix/0/code").asString()).isEqualTo("REGULARISER_FIN");
+    assertThat(json.at("/choix/0/fait/poste").isNull()).isTrue();
+    assertThat(json.at("/activites/0/posteId").isNull()).isTrue();
+  }
+
+  @Test
+  void shouldPublierLaCorrectionDeLaFinTardiveAvecSonHeureReprise() {
+    var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    var fin = finDe(travail).a(A_23H);
+    var suivi = suiviDAtelierEngage().enregistre(travail).enregistre(fin);
+    var dossier = new LectureDossierAnomalie(
+      new AdresseDossierAnomalie(suivi.id(), travail.id()),
+      new LectureDuSuivi(suivi, A_23H.plusSeconds(1800))
+    );
+
+    var json = JsonMapper.builder().build().valueToTree(RestDossierAnomalie.from(dossier, annuaireDeDupontEtMartin()));
+
+    assertThat(json.path("choix").size()).isEqualTo(1);
+    assertThat(json.at("/choix/0/code").asString()).isEqualTo("CORRIGER_FIN_TARDIVE");
+    assertThat(json.at("/choix/0/kind").asString()).isEqualTo("CORRECTION");
+    assertThat(json.at("/choix/0/pointage").asString()).isEqualTo(fin.id().uuid().toString());
+    assertThat(json.at("/choix/0/fait/type").asString()).isEqualTo("FIN");
+    assertThat(json.at("/choix/0/fait/activiteVisee").asString()).isEqualTo(travail.activite().orElseThrow().uuid().toString());
+    assertThat(json.at("/choix/0/fait/instant").asString()).isEqualTo("2026-05-10T23:00:00Z");
+    assertThat(json.at("/perimetre/pointages/1").asString()).isEqualTo(fin.id().uuid().toString());
+  }
+
+  @Test
+  void shouldPublierLaCorrectionDeLaTransitionTardiveAvecSonHeureReprise() {
+    var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    var transition = passageEnNonConformiteDe(travail).a(A_23H);
+    var suivi = suiviDAtelierEngage().enregistre(travail).enregistre(transition);
+    var dossier = new LectureDossierAnomalie(
+      new AdresseDossierAnomalie(suivi.id(), travail.id()),
+      new LectureDuSuivi(suivi, A_23H.plusSeconds(1800))
+    );
+
+    var json = JsonMapper.builder().build().valueToTree(RestDossierAnomalie.from(dossier, annuaireDeDupontEtMartin()));
+
+    assertThat(json.at("/choix/0/code").asString()).isEqualTo("CORRIGER_TRANSITION_TARDIVE");
+    assertThat(json.at("/choix/0/kind").asString()).isEqualTo("CORRECTION");
+    assertThat(json.at("/choix/0/pointage").asString()).isEqualTo(transition.id().uuid().toString());
+    assertThat(json.at("/choix/0/fait/type").asString()).isEqualTo("NON_CONFORMITE");
+    assertThat(json.at("/choix/0/fait/intention").asString()).isEqualTo("TRANSITION");
+    assertThat(json.at("/choix/0/fait/activiteVisee").asString()).isEqualTo(travail.activite().orElseThrow().uuid().toString());
+    assertThat(json.at("/choix/0/fait/instant").asString()).isEqualTo("2026-05-10T23:00:00Z");
+    assertThat(json.at("/choix/1").isMissingNode()).isTrue();
+  }
+
+  @Test
+  void shouldPublierFinAutomatiqueFauxQuandLActiviteNEstPlusEchue() {
+    var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    var suivi = suiviDAtelierEngage().enregistre(travail);
+    var avant = new LectureDossierAnomalie(new AdresseDossierAnomalie(suivi.id(), travail.id()), new LectureDuSuivi(suivi, A_22H));
+    var apres = avant.apresActe(new LectureDuSuivi(suivi.enregistre(finRegulariseeParLeroyDe(travail).a(LE_10_MAI_2026_A_17H)), A_22H));
+
+    var json = JsonMapper.builder().build().valueToTree(RestDossierAnomalie.from(apres, annuaireDeDupontEtMartin()));
+
+    assertThat(json.path("kind").asString()).isEqualTo("SANS_ANOMALIE");
+    assertThat(json.path("finAutomatique").asBoolean()).isFalse();
+    assertThat(json.at("/activites/0/etat").asString()).isEqualTo("TERMINEE");
+    assertThat(json.path("choix").size()).isZero();
   }
 }

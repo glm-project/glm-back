@@ -58,6 +58,13 @@ Les aperçus restent des lectures sans réservation. Les confirmations transport
 et comparent les conséquences après verrouillage ; le reçu durable compare la demande indépendamment du
 nom d'affichage et contrôle séparément entreprise, issuer et subject. Avant de modifier ce protocole,
 consulter [l'ADR 0006](../../../../../../../documentation/adr/0006-confirm-explicit-resolution-proposals.md).
+**Dossier** : l'adresse d'une anomalie à traiter. Il couvre une séquence en conflit (`EN_CONFLIT`) ou une fin
+automatique (`FIN_AUTOMATIQUE`) : sans séquence, ses activités concernées sont celle de l'ancre terminée
+automatiquement, et son périmètre ses faits ouvrants et visants, gestes tardifs compris. L'ancre d'une fin automatique
+est l'ouvrant actif ; l'activité visée par un acte reste l'`ActiviteId` d'origine. `finAutomatique` dit qu'une activité
+concernée reste échue, même quand l'ancre est annulée ; la fin n'est jamais stockée. Les propositions guidées
+(`REGULARISER_FIN`, `CORRIGER_FIN_TARDIVE`, `CORRIGER_TRANSITION_TARDIVE`) n'inventent aucune heure :
+[l'ADR 0008](../../../../../../../documentation/adr/0008-extend-explicit-proposals-to-automatic-ends.md).
 L'agrégat, le journal, leurs transitions, le repository et les types communs d'interprétation, diagnostics compris,
 restent dans les couches d'Atelier ; le parcours les utilise sans déplacer leurs invariants. Ses tests et fixtures
 suivent leurs propriétaires dans les mêmes sous-packages.
