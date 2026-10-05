@@ -33,8 +33,8 @@ public class ListeDesAnomaliesApplicationService {
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
   @Transactional(readOnly = true)
-  public LectureDesConflits list(AnomaliesDAtelierCriteria criteria, Pageable pageable) {
-    return anomalies.list(criteria, pageable);
+  public LectureDesConflits listConflits(AnomaliesDAtelierCriteria criteria, Pageable pageable) {
+    return anomalies.listConflits(criteria, pageable);
   }
 
   /** L'instant d'evaluation est celui de l'horloge, lu une seule fois pour toute la page. */

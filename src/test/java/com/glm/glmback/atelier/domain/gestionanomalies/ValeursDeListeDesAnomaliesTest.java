@@ -105,21 +105,21 @@ class ValeursDeListeDesAnomaliesTest {
   }
 
   @Test
-  void shouldRefuserUneEcheanceAvantLeDebutSansEnCalculerLaDuree() {
+  void shouldAccepterUneEcheanceEgaleAuDebutEtRefuserCelleQuiLePrecede() {
     var adresse = new AdresseDossierAnomalie(SuiviDAtelierId.newId(), EvenementDAtelierId.newId());
     var cle = new CleDActivite(OPERATEUR_ID_DUPONT, Optional.empty());
     var activite = new ActiviteId(UUID.randomUUID());
-    var ligne = FinAutomatiqueEnListe.builder()
-      .adresse(adresse)
-      .revision(new RevisionDuSuivi(3))
-      .element(elementFiltrePourcentA())
-      .cle(cle)
-      .activite(activite)
-      .debut(LE_10_MAI_2026_A_8H)
-      .echeance(LE_10_MAI_2026_A_8H);
 
-    assertThat(ligne.echeance()).isEqualTo(ligne.debut());
-    assertThat(ligne.activite()).isEqualTo(activite);
+    assertThatCode(() ->
+      FinAutomatiqueEnListe.builder()
+        .adresse(adresse)
+        .revision(new RevisionDuSuivi(3))
+        .element(elementFiltrePourcentA())
+        .cle(cle)
+        .activite(activite)
+        .debut(LE_10_MAI_2026_A_8H)
+        .echeance(LE_10_MAI_2026_A_8H)
+    ).doesNotThrowAnyException();
     assertThatThrownBy(() ->
       FinAutomatiqueEnListe.builder()
         .adresse(adresse)

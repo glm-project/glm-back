@@ -41,7 +41,7 @@ class ListeDesAnomaliesServiceTest {
     when(operateurs.parIds(anySet())).thenReturn(List.of(OPERATEUR_CONNU_DUPONT));
     when(postes.parIds(anySet())).thenReturn(List.of());
 
-    var lecture = service.list(criteria, pageable);
+    var lecture = service.listConflits(criteria, pageable);
 
     assertThat(lecture.page()).isEqualTo(page);
     assertThat(lecture.annuaire().operateur(OPERATEUR_ID_DUPONT)).contains(OPERATEUR_CONNU_DUPONT);
@@ -58,7 +58,7 @@ class ListeDesAnomaliesServiceTest {
     var echec = new IllegalStateException("acquisition interrompue");
     when(conflits.list(any(), any())).thenThrow(echec);
 
-    assertThatThrownBy(() -> service.list(new AnomaliesDAtelierCriteria("", ""), new Pageable(0, 5))).isSameAs(echec);
+    assertThatThrownBy(() -> service.listConflits(new AnomaliesDAtelierCriteria("", ""), new Pageable(0, 5))).isSameAs(echec);
     verifyNoInteractions(operateurs, postes, finsAutomatiques);
   }
 

@@ -176,7 +176,7 @@ class LectureDossierAnomalieTest {
   }
 
   @Test
-  void shouldSignalerUnPointageActifHorsConflit() {
+  void shouldRendreSansAnomalieUnPointageActifSansConflitNiFinAutomatique() {
     EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(travail);
 

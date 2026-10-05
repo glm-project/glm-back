@@ -57,7 +57,7 @@ class ListeDesAnomaliesResource {
   ) {
     return switch (NatureDAnomalie.of(nature)) {
       case CONFLIT -> RestPageDesAnomalies.from(
-        anomalies.list(new AnomaliesDAtelierCriteria(operateur, element), new Pageable(page, size))
+        anomalies.listConflits(new AnomaliesDAtelierCriteria(operateur, element), new Pageable(page, size))
       );
       case FIN_AUTOMATIQUE -> RestPageDesAnomalies.from(
         anomalies.listFinsAutomatiques(new AnomaliesDAtelierCriteria(operateur, element), new Pageable(page, size))

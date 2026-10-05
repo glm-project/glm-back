@@ -29,7 +29,7 @@ public final class ListeDesAnomaliesService {
     this.postes = postes;
   }
 
-  public LectureDesConflits list(AnomaliesDAtelierCriteria criteria, Pageable pageable) {
+  public LectureDesConflits listConflits(AnomaliesDAtelierCriteria criteria, Pageable pageable) {
     var page = conflits.list(criteria, pageable);
     return new LectureDesConflits(page, annuaire(page.content().stream().map(ConflitEnListe::cle).toList()));
   }
