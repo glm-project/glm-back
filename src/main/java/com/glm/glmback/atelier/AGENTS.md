@@ -39,9 +39,9 @@ Ne rien ajouter ici qui relève de :
 `SuiviDAtelier` porte un élément engagé et son `JournalDAtelier`. `TempsDAtelierService` lit les intervalles
 interprétés de ses activités ; seuls les faits d'activité, la clôture et l'échéance en fixent les bornes.
 
-Le parcours de gestion des conflits est regroupé sous `gestionconflits/` dans chaque couche d'Atelier :
-`domain/gestionconflits`, `application/gestionconflits`, `infrastructure/primary/gestionconflits` et
-`infrastructure/secondary/gestionconflits` portent les dossiers, la liste, les actes de résolution, les aperçus,
+Le parcours de gestion des conflits est regroupé sous `gestionanomalies/` dans chaque couche d'Atelier :
+`domain/gestionanomalies`, `application/gestionanomalies`, `infrastructure/primary/gestionanomalies` et
+`infrastructure/secondary/gestionanomalies` portent les dossiers, la liste, les actes de résolution, les aperçus,
 les confirmations et les reçus. Ces sous-packages appartiennent au même bounded context Atelier.
 Les aperçus restent des lectures sans réservation. Les confirmations transportent une proposition explicite
 et comparent les conséquences après verrouillage ; le reçu durable compare la demande indépendamment du
