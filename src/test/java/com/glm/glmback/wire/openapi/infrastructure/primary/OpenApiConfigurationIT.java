@@ -55,7 +55,10 @@ class OpenApiConfigurationIT {
       .andExpect(jsonPath("$.paths['/api/atelier/anomalies'].get.tags[0]").value("Atelier - anomalies de pointage"))
       .andExpect(jsonPath("$.paths['/api/atelier/anomalies'].get.parameters[?(@.name == 'nature')].required").value(true))
       .andExpect(jsonPath("$.paths['/api/atelier/anomalies'].get.parameters[?(@.name == 'nature')].schema.enum[0]").value("CONFLIT"))
-      .andExpect(jsonPath("$.paths['/api/atelier/anomalies'].get.parameters[?(@.name == 'nature')].schema.enum[1]").isEmpty())
+      .andExpect(
+        jsonPath("$.paths['/api/atelier/anomalies'].get.parameters[?(@.name == 'nature')].schema.enum[1]").value("FIN_AUTOMATIQUE")
+      )
+      .andExpect(jsonPath("$.paths['/api/atelier/anomalies'].get.parameters[?(@.name == 'nature')].schema.enum[2]").isEmpty())
       .andExpect(
         jsonPath("$.paths['/api/atelier/anomalies'].get.responses['200'].content['*/*'].schema['$ref']").value(
           "#/components/schemas/RestPageDesAnomalies"
@@ -72,6 +75,8 @@ class OpenApiConfigurationIT {
       .andExpect(jsonPath("$.components.schemas.RestAdresseDossierAnomalie").exists())
       .andExpect(jsonPath("$.components.schemas.RestPageDesAnomalies").exists())
       .andExpect(jsonPath("$.components.schemas.RestConflitEnListe").exists())
+      .andExpect(jsonPath("$.components.schemas.RestFinAutomatiqueEnListe").exists())
+      .andExpect(jsonPath("$.components.schemas.RestAnomalieEnListe").exists())
       .andExpect(jsonPath("$.components.schemas.RestDossierConflit").doesNotExist())
       .andExpect(jsonPath("$.components.schemas.RestAdresseDossierConflit").doesNotExist())
       .andExpect(jsonPath("$.components.schemas.RestPageDesConflits").doesNotExist());

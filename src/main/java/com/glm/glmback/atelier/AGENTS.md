@@ -45,8 +45,10 @@ Le parcours de gestion des anomalies de pointage est regroupé sous `gestionanom
 les confirmations et les reçus. Ces sous-packages appartiennent au même bounded context Atelier.
 
 **Anomalie de pointage** : ce que le gestionnaire doit trancher. Elle porte une nature (`NatureDAnomalie`) :
-`CONFLIT`, une séquence en conflit, seule publiée aujourd'hui par `GET /api/atelier/anomalies?nature=…`, et bientôt
-`FIN_AUTOMATIQUE`, une activité terminée à son échéance faute de fin réelle. `nature` est obligatoire : absente ou
+`CONFLIT`, une séquence en conflit, et `FIN_AUTOMATIQUE`, une activité terminée à son échéance faute de fin réelle,
+toutes deux listées par `GET /api/atelier/anomalies?nature=…` (réponse `oneOf` discriminée par `nature`). La liste des fins
+automatiques se juge en SQL sur `activite_d_atelier` (sans fin, hors à résoudre, échéance atteinte, borne comprise), sans
+rejouer de journal. `nature` est obligatoire : absente ou
 inconnue, elle sort en 400 `urn:glm:erreur:atelier:nature-d-anomalie-invalide`. L'adresse d'un dossier est le couple
 suivi/pointage, et son état `SANS_ANOMALIE` dit que l'ancre est active et ne porte aucune anomalie. Le vocabulaire de
 l'interprétation ne change pas : « séquence en conflit », `SequenceEnConflit`, `conflits[]` de `RestSuiviDAtelier`,

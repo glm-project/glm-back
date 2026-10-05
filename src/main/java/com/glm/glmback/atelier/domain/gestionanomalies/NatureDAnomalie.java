@@ -3,9 +3,10 @@ package com.glm.glmback.atelier.domain.gestionanomalies;
 import java.util.Arrays;
 import java.util.List;
 
-/** Ce que le gestionnaire doit trancher : une sequence en conflit, et bientot une fin automatique. */
+/** Ce que le gestionnaire doit trancher : une sequence en conflit, ou une activite terminee a son echeance. */
 public enum NatureDAnomalie {
-  CONFLIT;
+  CONFLIT,
+  FIN_AUTOMATIQUE;
 
   public static NatureDAnomalie of(String valeur) {
     return Arrays.stream(values())

@@ -475,6 +475,26 @@
         "required" : [ "motif" ],
         "type" : "object"
       },
+      "RestAnomalieEnListe" : {
+        "discriminator" : {
+          "mapping" : {
+            "CONFLIT" : "#/components/schemas/RestConflitEnListe",
+            "FIN_AUTOMATIQUE" : "#/components/schemas/RestFinAutomatiqueEnListe"
+          },
+          "propertyName" : "nature"
+        },
+        "oneOf" : [ {
+          "$ref" : "#/components/schemas/RestConflitEnListe"
+        }, {
+          "$ref" : "#/components/schemas/RestFinAutomatiqueEnListe"
+        } ],
+        "properties" : {
+          "nature" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "nature" ]
+      },
       "RestApercuDeResolution" : {
         "description" : "L'acte exact et ses consequences autoritaires, sans ecriture. La proposition explicite est recalculee a la confirmation.",
         "properties" : {
@@ -756,6 +776,10 @@
             "format" : "uuid",
             "type" : "string"
           },
+          "nature" : {
+            "enum" : [ "CONFLIT" ],
+            "type" : "string"
+          },
           "nombrePointages" : {
             "format" : "int32",
             "type" : "integer"
@@ -779,8 +803,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "adresse", "datePremierPointage", "designation", "elementId", "nombrePointages", "operateurId", "revision" ],
-        "type" : "object"
+        "required" : [ "adresse", "datePremierPointage", "designation", "elementId", "nature", "nombrePointages", "operateurId", "revision" ]
       },
       "RestCorrection" : {
         "description" : "La correction d'une saisie fausse : une annulation et une regularisation jouees en un seul acte.\n\nL'evenement d'origine reste au journal, annule, et le remplacant y prend sa place a l'heure corrigee. Le remplacant\nd'un pointage qui ouvrait une activite reprend l'identite de cette activite : les gestes qui la visaient y restent\nrattaches.\n",
@@ -1445,6 +1468,56 @@
         "required" : [ "evaluation" ],
         "type" : "object"
       },
+      "RestFinAutomatiqueEnListe" : {
+        "description" : "Une activite terminee a son echeance faute de fin reelle, issue des projections courantes, sans journal. L'adresse est celle de l'ouvrant actif ; activite est l'identite d'origine que visent les actes.",
+        "properties" : {
+          "activite" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "adresse" : {
+            "$ref" : "#/components/schemas/RestAdresseDossierAnomalie"
+          },
+          "debut" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "designation" : {
+            "type" : "string"
+          },
+          "echeance" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "elementId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "nature" : {
+            "enum" : [ "FIN_AUTOMATIQUE" ],
+            "type" : "string"
+          },
+          "operateur" : {
+            "$ref" : "#/components/schemas/RestOperateurDAtelier"
+          },
+          "operateurId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "poste" : {
+            "$ref" : "#/components/schemas/RestPosteDAtelier"
+          },
+          "posteId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "revision" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "activite", "adresse", "debut", "designation", "echeance", "elementId", "nature", "operateurId", "revision" ]
+      },
       "RestIntervalleDActivite" : {
         "description" : "Du temps passe sur un element, deduit du journal et jamais stocke, tel qu'il se lit a l'instant de la lecture.\n\nC'est l'intervalle de l'activite elle-meme : une fin pointee ou regularisee le termine a son heure. Une activite que rien n'a terminee avant son echeance, son debut plus 13 heures, y est terminee\nautomatiquement a cette echeance, avec une anomalie.\n",
         "properties" : {
@@ -1885,7 +1958,7 @@
           },
           "lignes" : {
             "items" : {
-              "$ref" : "#/components/schemas/RestConflitEnListe"
+              "$ref" : "#/components/schemas/RestAnomalieEnListe"
             },
             "type" : "array"
           },
@@ -2795,14 +2868,14 @@
   "paths" : {
     "/api/atelier/anomalies" : {
       "get" : {
-        "description" : "nature est obligatoire : absente ou inconnue, elle est refusee en 400 avec le code\nurn:glm:erreur:atelier:nature-d-anomalie-invalide. CONFLIT liste les sequences en conflit.\nUne ligne par sequence, y compris pour un suivi cloture ou sans activite deduite.\nLes recherches partielles operateur (nom, prenom ou identifiant) et element (designation ou identifiant)\nsont combinees sans tenir compte de la casse avant pagination. Pourcent, soulignement et antislash sont litteraux.\nLe tri porte sur le premier pointage metier, puis le suivi et l'ancrage de la sequence.\ncomplete vaut true lorsque la lecture a reussi, meme si aucune sequence ne correspond. Une acquisition en echec\nreste une erreur HTTP. Les diagnostics detailles se consultent dans le dossier de la sequence.\n",
+        "description" : "nature est obligatoire : absente ou inconnue, elle est refusee en 400 avec le code\nurn:glm:erreur:atelier:nature-d-anomalie-invalide. La reponse est discriminee par nature : chaque ligne porte\nnature, CONFLIT ou FIN_AUTOMATIQUE, celle demandee.\nCONFLIT liste les sequences en conflit, une ligne par sequence, y compris pour un suivi cloture ou sans activite\ndeduite. Le tri porte sur le premier pointage metier, puis le suivi et l'ancrage de la sequence.\nFIN_AUTOMATIQUE liste les activites sans fin reelle, hors activites a resoudre, dont l'echeance est atteinte a\nl'instant de la lecture, borne comprise. Chaque ligne porte l'adresse du dossier (suivi et pointage ouvrant actif),\nl'activite d'origine, son debut et son echeance, sans duree. Le tri porte sur le debut, puis le suivi et l'ouvrant.\nLes recherches partielles operateur (nom, prenom ou identifiant) et element (designation ou identifiant)\nsont combinees sans tenir compte de la casse avant pagination. Pourcent, soulignement et antislash sont litteraux.\ncomplete vaut true lorsque la lecture a reussi, meme si aucune ligne ne correspond. Une acquisition en echec\nreste une erreur HTTP. Les diagnostics detailles se consultent dans le dossier de l'anomalie.\n",
         "operationId" : "list_4",
         "parameters" : [ {
           "in" : "query",
           "name" : "nature",
           "required" : true,
           "schema" : {
-            "enum" : [ "CONFLIT" ],
+            "enum" : [ "CONFLIT", "FIN_AUTOMATIQUE" ],
             "type" : "string"
           }
         }, {
@@ -4379,6 +4452,9 @@
     "description" : "Le suivi des elements de fabrication mis en atelier.\n\nDeux publics se partagent ces routes. L'operateur (role USER) consulte le tableau des elements actifs et pointe son\ntravail. Le gestionnaire (role GESTIONNAIRE) engage les elements, les cloture et corrige les saisies.\n\nRien de ce qui se deduit n'est stocke : etat, activites en cours, sequences en conflit et temps sont recalcules du\njournal a chaque lecture, a l'instant de cette lecture. Une activite que rien n'a terminee se termine automatiquement\na son echeance, son debut plus 13 heures, sans qu'aucun evenement ne soit ecrit. Des pointages qui se contredisent\nsont conserves en sequence en conflit, que le gestionnaire resout en corrigeant ou en annulant les faits concernes.\n",
     "name" : "Atelier - elements engages"
   }, {
+    "description" : "Ce que le gestionnaire doit trancher : une anomalie de pointage porte une nature. Deux natures : CONFLIT, une sequence en conflit, et FIN_AUTOMATIQUE, une activite terminee a son echeance faute de fin reelle. Le parcours est le meme pour chaque dossier : consulter, previsualiser, confirmer.",
+    "name" : "Atelier - anomalies de pointage"
+  }, {
     "description" : "Le temps passe sur un element de fabrication, valorise par nature d'operation.",
     "name" : "Couts de revient"
   }, {
@@ -4396,8 +4472,5 @@
   }, {
     "description" : "Le referentiel des personnes qui pointent, et des postes sur lesquels elles sont habilitees.\n\nLes metiers d'un operateur ne se saisissent pas : ils se deduisent des natures de ses postes. Un operateur habilite\nsur le poste de soudure et sur un tour ressort soudeur et tourneur.\n\nEn entree, l'operateur porte des identifiants de postes ; en sortie, il porte les postes resolus et ses natures, pour\nqu'un ecran se serve d'un seul appel.\n",
     "name" : "Operateurs"
-  }, {
-    "description" : "Ce que le gestionnaire doit trancher : une anomalie de pointage porte une nature. Seule CONFLIT, une sequence en conflit, est publiee pour l'instant. Le parcours est le meme pour chaque dossier : consulter, previsualiser, confirmer.",
-    "name" : "Atelier - anomalies de pointage"
   } ]
 }

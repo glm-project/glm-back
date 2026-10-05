@@ -665,19 +665,20 @@ Ces routes sont décrites dans le [contrat OpenAPI généré](openapi.json) et �
 | Capacité               | Route                                                                           | Droit                                 |
 | ---------------------- | ------------------------------------------------------------------------------- | ------------------------------------- |
 | Liste paginée          | `GET /api/atelier/anomalies?nature=CONFLIT&operateur=…&element=…&page=0&size=5` | `USER` ou `GESTIONNAIRE`              |
+| Liste des fins auto.   | `GET /api/atelier/anomalies?nature=FIN_AUTOMATIQUE&…`                           | `USER` ou `GESTIONNAIRE`              |
 | Dossier adressé        | `GET /api/atelier/suivis/{suivi}/anomalies/{pointage}`                          | `USER` ou `GESTIONNAIRE`              |
 | Aperçu sans écriture   | `POST /api/atelier/suivis/{suivi}/anomalies/{pointage}/apercus`                 | `GESTIONNAIRE`                        |
 | Confirmation           | `POST /api/atelier/suivis/{suivi}/confirmations-de-resolution`                  | `GESTIONNAIRE`                        |
 | Vérification canonique | `GET /api/atelier/suivis/{suivi}/confirmations-de-resolution/{commande}`        | `GESTIONNAIRE`, auteur de la commande |
 
-Une **anomalie de pointage** est ce que le gestionnaire doit trancher. Elle porte une `nature` ; seule `CONFLIT`
-(une séquence en conflit) existe pour l'instant, `FIN_AUTOMATIQUE` viendra ensuite. Les anciennes routes
+Une **anomalie de pointage** est ce que le gestionnaire doit trancher. Elle porte une `nature` : `CONFLIT`
+(une séquence en conflit) ou `FIN_AUTOMATIQUE` (une activité terminée à son échéance faute de fin réelle). Les anciennes routes
 `/api/atelier/conflits` et `/api/atelier/suivis/{suivi}/conflits/{pointage}` sont supprimées : elles répondent 404,
 sans redirection. « Séquence en conflit » et le tableau `conflits[]` des suivis, de la supervision et des coûts
 gardent leur sens et leur nom.
 
-`nature` est un paramètre de requête obligatoire de la liste, avec la seule valeur `CONFLIT` (schéma `NatureDAnomalie`
-dans le contrat). Absent ou inconnu — la casse compte —, il est refusé en 400 par un `ProblemDetail` au code stable
+`nature` est un paramètre de requête obligatoire de la liste, valant `CONFLIT` ou `FIN_AUTOMATIQUE` (schéma
+`NatureDAnomalie` dans le contrat). Absent ou inconnu — la casse compte —, il est refusé en 400 par un `ProblemDetail` au code stable
 des erreurs métier, sans ligne de page :
 
 ```json
@@ -685,13 +686,80 @@ des erreurs métier, sans ligne de page :
   "type": "urn:glm:erreur:atelier:nature-d-anomalie-invalide",
   "title": "nature d'anomalie invalide",
   "status": 400,
-  "message": "La nature d'anomalie 'INCONNUE' est inconnue. Valeurs possibles : CONFLIT."
+  "message": "La nature d'anomalie 'INCONNUE' est inconnue. Valeurs possibles : CONFLIT, FIN_AUTOMATIQUE."
 }
 ```
 
-Le `message` d'une nature absente est « La nature d'anomalie est obligatoire. Valeurs possibles : CONFLIT. ». Le client
+Le `message` d'une nature absente est « La nature d'anomalie est obligatoire. Valeurs possibles : CONFLIT, FIN_AUTOMATIQUE. ». Le client
 teste `type`, jamais `message` (voir [les codes d'erreur](codes-erreur.md)). Ce refus ne passe pas par le 400 de Bean
 Validation, qui ne porte pas de `type` et ne traite pas un paramètre de requête manquant.
+
+### Liste des anomalies
+
+`GET /api/atelier/anomalies?nature=…` rend une page `RestPageDesAnomalies` : `lignes`, `total`, `complete`, `page`
+(à partir de 0) et `size`. `total` et `lignes` viennent d'une même acquisition SQL sur les projections ; `complete`
+vaut `true` pour toute lecture réussie, même sans ligne. Les droits, la pagination et les filtres sont les mêmes pour
+les deux natures : `operateur` et `element` cherchent du texte partiel sans casse, y compris dans les identifiants, et
+se combinent avant `page` et `size` ; `%`, `_` et `\` restent littéraux.
+
+Chaque ligne est discriminée par sa `nature`, celle demandée : le contrat est une union `oneOf` de
+`RestConflitEnListe` (`nature: CONFLIT`) et de `RestFinAutomatiqueEnListe` (`nature: FIN_AUTOMATIQUE`), que
+`openapi-typescript` rend en union TypeScript discriminée. Côté serveur, les deux lignes restent deux types de domaine
+(`ConflitEnListe`, `FinAutomatiqueEnListe`) ; l'union n'existe que dans la réponse.
+
+| Nature            | Une ligne est…                       | Tri                                 |
+| ----------------- | ------------------------------------ | ----------------------------------- |
+| `CONFLIT`         | une séquence en conflit              | premier pointage, puis suivi, ancre |
+| `FIN_AUTOMATIQUE` | une activité terminée à son échéance | `debut`, puis suivi, puis ouvrant   |
+
+Une **fin automatique** est lue dans `activite_d_atelier`, sans rejouer aucun journal : sans fin réelle (`fin` nulle),
+hors des activités à résoudre, avec une `echeance` inférieure ou égale à l'instant de lecture, borne comprise et à la
+nanoseconde (les instants sont des décimaux exacts, `:evaluation` est converti de la même façon). L'instant de lecture
+est celui de l'horloge du service, lu une seule fois pour toute la page ; la route ne prend pas de paramètre
+d'évaluation. Une fin réelle pointée après l'échéance ne retire pas l'activité de la liste : elle garde sa fin
+automatique tant que le gestionnaire ne l'a pas corrigée. Une activité en cours, à résoudre ou terminée — fin réelle,
+fin régularisée, clôture avant l'échéance — n'y figure pas. Une fin automatique n'est jamais stockée.
+
+Une ligne de fin automatique porte :
+
+- `adresse` : le `suivi` et le `pointage` de l'**ouvrant actif** (`activite_d_atelier.ouverture_id`), qui adresse le
+  dossier ;
+- `activite` : l'identité d'**origine** de l'activité (`ActiviteId`), que visent les actes. Elle diffère de
+  `adresse.pointage` dès qu'une correction a remplacé l'ouvrant : un client ne confond jamais les deux ;
+- `revision` du suivi, `elementId` et `designation`, `operateurId` et `operateur` (fiche, absente si inconnue),
+  `posteId` et `poste` facultatifs ;
+- `debut` et `echeance`, instants exacts à la nanoseconde. Aucune durée n'est calculée ni exposée.
+
+```json
+{
+  "complete": true,
+  "lignes": [
+    {
+      "nature": "FIN_AUTOMATIQUE",
+      "activite": "aaaaaaaa-0000-4000-8000-000000000001",
+      "adresse": {
+        "suivi": "97379b3a-1f98-4f92-97f2-a4b4d66449ac",
+        "pointage": "aaaaaaaa-0000-4000-8000-000000000001"
+      },
+      "debut": "2026-01-12T08:26:00Z",
+      "designation": "OF M24-0655",
+      "echeance": "2026-01-12T21:26:00Z",
+      "elementId": "0abc06ce-a050-4265-91fa-75f73785fa41",
+      "operateur": { "id": "33333333-3333-4333-8333-333333333333", "nom": "Dupont", "prenom": "Jean" },
+      "operateurId": "33333333-3333-4333-8333-333333333333",
+      "poste": { "id": "55555555-5555-4555-8555-555555555555", "libelle": "Fraiseuse 1" },
+      "posteId": "55555555-5555-4555-8555-555555555555",
+      "revision": 0
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "total": 1
+}
+```
+
+Une ligne de conflit garde ses champs (`datePremierPointage`, `nombrePointages`, sans `activite`, `debut` ni
+`echeance`) et porte en plus `"nature": "CONFLIT"`.
 
 L'adresse d'un dossier est le couple suivi/pointage ; une identité technique de projection n'est pas
 une adresse. Le résultat porte `EN_CONFLIT`, `INTROUVABLE`, `ANCRE_ANNULEE` ou `SANS_ANOMALIE` (ancre active sans
