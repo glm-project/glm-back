@@ -1,6 +1,30 @@
 {
   "components" : {
     "schemas" : {
+      "PageRestCategorieDeProduit" : {
+        "properties" : {
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RestCategorieDeProduit"
+            },
+            "type" : "array"
+          },
+          "currentPage" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "pageSize" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElementsCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "content", "currentPage", "pageSize", "totalElementsCount" ],
+        "type" : "object"
+      },
       "PageRestElementDeFabrication" : {
         "properties" : {
           "content" : {
@@ -533,6 +557,18 @@
         "required" : [ "acte", "adresse", "apres", "avant", "commande", "empreinteConsequences", "evaluation", "revision" ],
         "type" : "object"
       },
+      "RestCategorieDeProduit" : {
+        "description" : "Une categorie de produit de l'entreprise.",
+        "properties" : {
+          "code" : {
+            "description" : "Code de la categorie, affiche tel quel et prefixe du nom des produits.",
+            "example" : "MOULE",
+            "type" : "string"
+          }
+        },
+        "required" : [ "code" ],
+        "type" : "object"
+      },
       "RestChoixDeResolution" : {
         "description" : "Une hypothese structuree issue du diagnostic, sans motif et sans selection par defaut.",
         "properties" : {
@@ -913,6 +949,19 @@
           }
         },
         "required" : [ "activitesEnCours", "evaluation" ],
+        "type" : "object"
+      },
+      "RestCreationCategorieDeProduit" : {
+        "description" : "Declaration d'une categorie de produit.",
+        "properties" : {
+          "code" : {
+            "description" : "Code de la categorie, unique dans l'entreprise : de 1 a 10 lettres majuscules, sans accent. Il sert de libelle et de prefixe au nom des produits, et ne pourra plus etre modifie.",
+            "example" : "MOULE",
+            "pattern" : "^[A-Z]{1,10}$",
+            "type" : "string"
+          }
+        },
+        "required" : [ "code" ],
         "type" : "object"
       },
       "RestCreationElementDeFabrication" : {
@@ -1987,6 +2036,22 @@
         "required" : [ "id", "nom", "postes", "prenom" ],
         "type" : "object"
       },
+      "RestOrdreDesCategories" : {
+        "description" : "Ordre d'affichage des categories de produit, de la premiere a la derniere.",
+        "properties" : {
+          "codes" : {
+            "description" : "Codes de toutes les categories de l'entreprise, chacun une fois, dans l'ordre voulu.",
+            "example" : [ "OF", "MOULE" ],
+            "items" : {
+              "pattern" : "^[A-Z]{1,10}$",
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "codes" ],
+        "type" : "object"
+      },
       "RestPageDesAnomalies" : {
         "description" : "Une page et son total acquis ensemble dans les projections courantes.",
         "properties" : {
@@ -2906,7 +2971,7 @@
     "/api/atelier/anomalies" : {
       "get" : {
         "description" : "nature est obligatoire : absente ou inconnue, elle est refusee en 400 avec le code\nurn:glm:erreur:atelier:nature-d-anomalie-invalide. La reponse est discriminee par nature : chaque ligne porte\nnature, CONFLIT ou FIN_AUTOMATIQUE, celle demandee.\nCONFLIT liste les sequences en conflit, une ligne par sequence, y compris pour un suivi cloture ou sans activite\ndeduite. Le tri porte sur le premier pointage metier, puis le suivi et l'ancrage de la sequence.\nFIN_AUTOMATIQUE liste les activites sans fin reelle, hors activites a resoudre, dont l'echeance est atteinte a\nl'instant de la lecture, borne comprise. Chaque ligne porte l'adresse du dossier (suivi et pointage ouvrant actif),\nl'activite d'origine, son debut et son echeance, sans duree. Le tri porte sur le debut, puis le suivi et l'ouvrant.\nLes recherches partielles operateur (nom, prenom ou identifiant) et element (designation ou identifiant)\nsont combinees sans tenir compte de la casse avant pagination. Pourcent, soulignement et antislash sont litteraux.\ncomplete vaut true lorsque la lecture a reussi, meme si aucune ligne ne correspond. Une acquisition en echec\nreste une erreur HTTP. Les diagnostics detailles se consultent dans le dossier de l'anomalie.\n",
-        "operationId" : "list_4",
+        "operationId" : "list_5",
         "parameters" : [ {
           "in" : "query",
           "name" : "nature",
@@ -2979,7 +3044,7 @@
     "/api/atelier/suivis" : {
       "get" : {
         "description" : "Le tableau de l'atelier.\n\nTous les filtres sont facultatifs : l'ecran des operateurs veut tous les elements actifs d'un coup, sans notion de\ndate. Le parametre etats accepte plusieurs valeurs (?etats=EN_ATTENTE&etats=EN_COURS) ; absent, il ne filtre rien.\nL'etat se juge a l'instant de la lecture, celui de chaque ligne rendue : un element dont la seule activite a atteint\nson echeance n'est plus EN_COURS. La periode, quand elle est fournie, porte sur la date d'engagement.\n\nChaque ligne conserve l'etat et les activites en cours, mais ne contient pas de journal.\nLe journal complet, annules compris, se consulte via GET /api/atelier/suivis/{id}.\n",
-        "operationId" : "list_3",
+        "operationId" : "list_4",
         "parameters" : [ {
           "in" : "query",
           "name" : "debut",
@@ -3706,6 +3771,137 @@
         },
         "summary" : "Lire la supervision complete de l'entreprise connectee",
         "tags" : [ "Atelier - supervision" ]
+      }
+    },
+    "/api/categories-de-produit" : {
+      "get" : {
+        "description" : "La page demandee, dans l'ordre d'affichage choisi par l'entreprise.\n",
+        "operationId" : "list_3",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageRestCategorieDeProduit"
+                }
+              }
+            },
+            "description" : "La page demandee, dans l'ordre d'affichage."
+          }
+        },
+        "summary" : "Lister les categories de produit",
+        "tags" : [ "Categories de produit" ]
+      },
+      "post" : {
+        "description" : "La categorie se range en dernier.",
+        "operationId" : "create_3",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RestCreationCategorieDeProduit"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestCategorieDeProduit"
+                }
+              }
+            },
+            "description" : "La categorie est declaree."
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestCategorieDeProduit"
+                }
+              }
+            },
+            "description" : "Une categorie porte deja ce code."
+          }
+        },
+        "summary" : "Declarer une categorie de produit",
+        "tags" : [ "Categories de produit" ]
+      }
+    },
+    "/api/categories-de-produit/ordre" : {
+      "put" : {
+        "description" : "L'ordre est donne en entier : chaque categorie de l'entreprise, une fois et une seule, de la premiere a la\nderniere. C'est celui des boutons de creation, des filtres et des zones du pupitre.\n",
+        "operationId" : "reordonne",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RestOrdreDesCategories"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "L'ordre est enregistre."
+          },
+          "409" : {
+            "description" : "L'ordre omet une categorie, en cite une deux fois ou en cite une inconnue — par exemple declaree ou supprimee entre-temps."
+          }
+        },
+        "summary" : "Reordonner les categories de produit",
+        "tags" : [ "Categories de produit" ]
+      }
+    },
+    "/api/categories-de-produit/{code}" : {
+      "delete" : {
+        "description" : "Refuse tant qu'un produit y est range : son nom porte le code de la categorie.\n",
+        "operationId" : "delete_3",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "code",
+          "required" : true,
+          "schema" : {
+            "pattern" : "^[A-Z]{1,10}$",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "La categorie est supprimee."
+          },
+          "404" : {
+            "description" : "Categorie introuvable."
+          },
+          "409" : {
+            "description" : "Des produits sont ranges dans cette categorie."
+          }
+        },
+        "summary" : "Supprimer une categorie de produit",
+        "tags" : [ "Categories de produit" ]
       }
     },
     "/api/couts-de-revient/{elementId}" : {
@@ -4491,6 +4687,9 @@
   }, {
     "description" : "Ce que le gestionnaire doit trancher : une anomalie de pointage porte une nature. Deux natures : CONFLIT, une sequence en conflit, et FIN_AUTOMATIQUE, une activite terminee a son echeance faute de fin reelle. Le parcours est le meme pour chaque dossier : consulter, previsualiser, confirmer.",
     "name" : "Atelier - anomalies de pointage"
+  }, {
+    "description" : "Les familles dans lesquelles l'entreprise range ce qu'elle fabrique : des moules et des OF chez le client de\nreference, autre chose ailleurs. Une entreprise neuve n'en a aucune.\n\nLe code d'une categorie est a la fois son libelle et le prefixe du nom des produits qui s'y creent\n(MOULE-2026-000001). Il ne se renomme donc jamais.\n\nUne categorie se supprime tant qu'aucun produit n'y est range.\n\nLe gestionnaire declare, reordonne et supprime les categories ; l'operateur (role USER) les consulte.\n",
+    "name" : "Categories de produit"
   }, {
     "description" : "Le temps passe sur un element de fabrication, valorise par nature d'operation.",
     "name" : "Couts de revient"

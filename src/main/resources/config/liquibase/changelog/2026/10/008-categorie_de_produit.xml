@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <changeSet id="categorie_de_produit" author="glm">
+    <comment>
+      Les familles dans lesquelles l'entreprise range ce qu'elle fabrique. Le code est la cle : il sert de
+      libelle et de prefixe au nom des produits, d'ou son motif, celui du prefixe d'un nom d'element, et
+      l'absence de toute colonne de libelle. Une entreprise neuve n'a aucune categorie. Le rang porte
+      l'ordre d'affichage ; il n'est pas unique, pour qu'un reordonnancement puisse se faire ligne a ligne,
+      et le code departage deux rangs egaux.
+    </comment>
+
+    <createTable tableName="categorie_de_produit">
+      <column name="code" type="varchar(10)">
+        <constraints nullable="false" primaryKey="true" />
+      </column>
+
+      <column name="rang" type="int">
+        <constraints nullable="false" />
+      </column>
+    </createTable>
+
+    <createIndex indexName="ix_categorie_de_produit_rang" tableName="categorie_de_produit">
+      <column name="rang" />
+      <column name="code" />
+    </createIndex>
+  </changeSet>
+</databaseChangeLog>

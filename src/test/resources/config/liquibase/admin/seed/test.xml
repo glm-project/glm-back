@@ -50,6 +50,16 @@
       <column name="status" value="ACTIVE" />
     </insert>
     <insert tableName="tenant">
+      <column name="id" value="categories_fixture" />
+      <column name="schema_name" value="categories_fixture" />
+      <column name="status" value="ACTIVE" />
+    </insert>
+    <insert tableName="tenant">
+      <column name="id" value="categories_vierges" />
+      <column name="schema_name" value="categories_vierges" />
+      <column name="status" value="ACTIVE" />
+    </insert>
+    <insert tableName="tenant">
       <column name="id" value="entreprise_suspendue" />
       <column name="schema_name" value="entreprise_suspendue" />
       <column name="status" value="SUSPENDED" />

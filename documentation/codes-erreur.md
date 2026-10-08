@@ -141,6 +141,15 @@ segment de contexte, et lui seul, qui les distingue.
 | `element-de-fabrication-introuvable` | 404    | element de fabrication introuvable | `ElementDeFabricationIntrouvableException` |
 | `reference-deja-utilisee`            | 409    | reference deja utilisee            | `ReferenceDejaUtiliseeException`           |
 
+### `categorie-de-produit` — `urn:glm:erreur:categorie-de-produit:`
+
+| Code                       | Statut | `title`                  | Exception                         |
+| -------------------------- | ------ | ------------------------ | --------------------------------- |
+| `categorie-introuvable`    | 404    | categorie introuvable    | `CategorieIntrouvableException`   |
+| `categorie-deja-existante` | 409    | categorie deja existante | `CategorieDejaExistanteException` |
+| `categorie-utilisee`       | 409    | categorie utilisee       | `CategorieUtiliseeException`      |
+| `ordre-incomplet`          | 409    | ordre incomplet          | `OrdreIncompletException`         |
+
 ### `feuille-de-temps` — `urn:glm:erreur:feuille-de-temps:`
 
 | Code                    | Statut | `title`                    | Exception                   |

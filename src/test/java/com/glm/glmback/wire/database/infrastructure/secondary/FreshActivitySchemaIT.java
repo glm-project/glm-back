@@ -53,6 +53,7 @@ class FreshActivitySchemaIT {
 
   private static final List<String> BUSINESS_TABLES = List.of(
     "activite_d_atelier",
+    "categorie_de_produit",
     "compteur_d_elements_de_fabrication",
     "element_de_fabrication",
     "evenement_d_atelier",
