@@ -12,7 +12,6 @@ import java.util.List;
   Rien n'est stocke : le rapport est recalcule a chaque lecture depuis les activites interpretees par atelier, pour qu'une saisie
   regularisee apres coup compte a l'heure ou le travail a eu lieu.
 
-  Chaque total complet est chiffre ; un total incomplet ne porte aucune somme partielle.
   La main d'oeuvre est arrondie par fenetre de partage puis repartie au centime, la machine une fois par activite ;
   lignes et rapport additionnent ces montants.
   """

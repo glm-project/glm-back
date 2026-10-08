@@ -34,7 +34,7 @@ public class ReleveDesHeuresSteps {
 
   @Then("la synthese du releve compte {string} a l'instant {string}")
   public void compteA(String duree, String evaluation) {
-    assertThat(CucumberRestTestContext.getElement("$.dureeOperationnelleTotale")).isEqualTo(Map.of("complete", true, "valeur", duree));
+    assertThat(CucumberRestTestContext.getElement("$.dureeOperationnelleTotale")).isEqualTo(Map.of("valeur", duree));
     assertThat(CucumberRestTestContext.getElement("$.evaluation")).isEqualTo(evaluation);
   }
 }

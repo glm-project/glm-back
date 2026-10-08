@@ -33,7 +33,8 @@ les portions dont la synthèse additionne les durées. Le journal brut est lu s�
   l'heure du serveur plus deux minutes, incluse. Un dépassement ou un instant fourni vide ou mal formé répond 400, sans rapport.
 - L'échéance est celle projetée par atelier ; le lecteur la compare à `evaluation`. Une activité avec fin réelle
   est `TERMINEE`, même au-delà de l'échéance. Sans fin, elle est `EN_COURS` avant
-  l'échéance puis `TERMINEE_AUTOMATIQUEMENT` à celle-ci, borne incluse.- Seules les portions terminées contribuent aux durées. Une activité en cours reste portée par son élément sur
+  l'échéance puis `TERMINEE_AUTOMATIQUEMENT` à celle-ci, borne incluse.
+- Seules les portions terminées contribuent aux durées. Une activité en cours reste portée par son élément sur
   chacun des jours atteints à l'instant de lecture, même sans pointage dans la semaine, sans durée ajoutée.
 - Les portions sont coupées aux minuits locaux et aux limites de la semaine. Leurs bornes ne déplacent jamais
   celles de l'activité entière. Le fuseau passe par `FuseauHoraireDeLEntreprise`, actuellement `Europe/Paris`.
@@ -41,7 +42,7 @@ les portions dont la synthèse additionne les durées. Le journal brut est lu s�
   deux heures dans le jour et la semaine. La NC est incluse une seule fois dans le total et présentée aussi à part.
   Somme des jours = somme des éléments = durée opérationnelle de la semaine.
 - Le total du jour, de l'élément et de la semaine comprend travail et NC ; la part de NC dépend seulement de la NC.
-  Une activité en cours ne contribue pas à la durée. `complete` reste au contrat, toujours vrai.
+  Une activité en cours ne contribue pas à la durée.
 - `JournalDeLOperateur` rend tous les pointages actifs datés de la semaine, même sans activité interprétable.
   Chaque geste porte son identité, son type, son élément et son poste. Le tri est total : heure métier, la fin avant l'ouverture, identité du pointage. L'heure
   d'enregistrement et l'identité de l'élément ne départagent jamais les gestes simultanés.

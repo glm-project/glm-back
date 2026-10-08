@@ -50,9 +50,9 @@ qui saisit n'est pas forcément celui dont on compte le temps.
 ### Le journal est la seule vérité
 
 Le détail d'atelier reconstruit son agrégat depuis les faits du journal. Atelier réconcilie aussi ses projections
-d'activités et de conflits à chaque écriture ; la feuille, la synthèse, le coût et le référentiel pupitre lisent
-cette interprétation et évaluent l'expiration à leur instant explicite. Une correction recalcule donc les bornes,
-les conflits et leurs conséquences dans les rapports.
+d'activités à chaque écriture ; la feuille, la synthèse, le coût et le référentiel pupitre lisent
+cette interprétation et évaluent l'expiration à leur instant explicite. Une correction recalcule donc les bornes
+et leurs conséquences dans les rapports.
 
 Conséquence directe pour le front : après toute écriture, la réponse contient déjà l'agrégat entièrement recalculé.
 **Ne jamais reconstruire l'état côté client** en appliquant l'événement localement — re-rendre depuis la réponse.
@@ -500,7 +500,7 @@ Déplacer par correction un ouvrant vers un autre opérateur ou poste répond **
 un geste actif vise encore cette activité depuis l'ancienne clé. Corriger ou annuler d'abord ce geste permet ensuite
 de déplacer l'ouvrant.
 
-**Une séquence en conflit se résout par ces mêmes actes**, et disparaît de `conflits` au recalcul dès que les faits
+**Une séquence en conflit se résout par ces mêmes actes**, et disparaît au recalcul dès que les faits
 redeviennent cohérents ; les pointages et corrections restent au journal. Travail A à 8 h, transition vers une non
 conformité à 12 h, fin de A à 17 h :
 
@@ -545,11 +545,10 @@ Les quatre totaux — `jours[].dureeOperationnelle`, `dureeOperationnelleTotale`
 `elements[].dureeNonConformite` — sont des objets :
 
 ```json
-{ "complete": true, "valeur": "PT2H" }
+{ "valeur": "PT2H" }
 ```
 
-`complete` est toujours vrai et `valeur` toujours présente : aucune activité à résoudre ne contribue plus à un total.
-Le champ reste au contrat le temps que le front cesse de le lire. La NC reste comprise dans le total ; sa part
+`valeur` est toujours présente : aucune activité à résoudre ne contribue plus à un total. La NC reste comprise dans le total ; sa part
 séparée ne dépend que des NC. Une activité en cours ne contribue pas à la durée.
 
 Le journal brut `jours[].pointages[]` porte `id`, `type`, `dateDeSurvenue`, `element` et `poste`. Son ordre est l'heure
@@ -618,8 +617,7 @@ La machine coûte l'intervalle terminé entier ; la main d'œuvre se partage par
 les seules activités terminées du même opérateur, tous éléments confondus. Une fin nouvellement reçue peut
 modifier ce partage sur un autre élément. Les tarifs viennent du fait ouvrant actif figé par atelier.
 
-Les champs de durée et de montant des lignes et du rapport sont des objets : `{ "complete": true,
-"valeur": ... }`, y compris zéro. Un taux absent produit zéro, indépendamment du diviseur.
+Les champs de durée et de montant des lignes et du rapport sont des objets `{ "valeur": ... }`, y compris zéro. Un taux absent produit zéro, indépendamment du diviseur.
 
 Une activité que le moteur juge à résoudre n'est lue par aucun calcul : ni le temps, ni les coûts, ni le
 partage humain ne la voient, et le rapport ne rend ni conflit ni pointage contradictoire. Chaque pointage de
@@ -641,7 +639,7 @@ Ces routes sont décrites dans le [contrat OpenAPI généré](openapi.json) et �
 Une **anomalie de pointage** est ce que le gestionnaire doit trancher. Elle porte une `nature` : `CONFLIT`
 (une séquence en conflit) ou `FIN_AUTOMATIQUE` (une activité terminée à son échéance faute de fin réelle). Les anciennes routes
 `/api/atelier/conflits` et `/api/atelier/suivis/{suivi}/conflits/{pointage}` sont supprimées : elles répondent 404,
-sans redirection. Le tableau `conflits[]` des coûts garde son sens et son nom.
+sans redirection.
 
 `nature` est un paramètre de requête obligatoire de la liste, valant `CONFLIT` ou `FIN_AUTOMATIQUE` (schéma
 `NatureDAnomalie` dans le contrat). Absent ou inconnu — la casse compte —, il est refusé en 400 par un `ProblemDetail` au code stable
@@ -820,7 +818,7 @@ La valeur Java est `RevisionDuSuivi`, séparée des identités de faits et du no
 Les faits portent leurs IDs bruts opérateur/poste indépendamment de la résolution des fiches, leur
 activité créée et visée, auteur, survenue, enregistrement, origine, annulation et lien `remplace`.
 Le poste absent est distinct d'une fiche absente pour un poste identifié. Les activités exposent
-`EN_COURS`, `TERMINEE`, `ECHUE` ou `A_RESOUDRE` ; seuls les états terminés
+`EN_COURS`, `TERMINEE` ou `ECHUE` ; seuls les états terminés
 portent une durée définitive ISO 8601. Les neuf décimales d'un instant sont conservées.
 
 Le diagnostic vient de l'interprétation du domaine au moment de la contradiction. Il identifie le

@@ -47,9 +47,9 @@ class CoutsDeRevientServiceTest {
       .postesNommes(atelier)
       .clock(() -> LE_11_MAI_A_17H);
 
-    assertThat(service.rapport(ELEMENT_ID_OF).cout().mainDOeuvre().valeur()).contains(new Montant(new BigDecimal("0.02")));
-    assertThat(service.rapport(ELEMENT_ID_OF_2).cout().mainDOeuvre().valeur()).contains(new Montant(new BigDecimal("0.03")));
-    assertThat(service.rapport(troisieme.element()).cout().mainDOeuvre().valeur()).contains(new Montant(new BigDecimal("0.02")));
+    assertThat(service.rapport(ELEMENT_ID_OF).cout().mainDOeuvre().valeur()).isEqualTo(new Montant(new BigDecimal("0.02")));
+    assertThat(service.rapport(ELEMENT_ID_OF_2).cout().mainDOeuvre().valeur()).isEqualTo(new Montant(new BigDecimal("0.03")));
+    assertThat(service.rapport(troisieme.element()).cout().mainDOeuvre().valeur()).isEqualTo(new Montant(new BigDecimal("0.02")));
     var sansTaux = Activite.builder()
       .operateur(OPERATEUR_ID_MARTIN)
       .element(troisieme.element())
@@ -66,7 +66,7 @@ class CoutsDeRevientServiceTest {
         .plage(new Plage(LE_11_MAI_A_8H, Optional.of(LE_11_MAI_A_8H.plusSeconds(30))))
         .echeance(LE_11_MAI_A_21H)
     );
-    assertThat(service.rapport(troisieme.element()).cout().mainDOeuvre().valeur()).contains(new Montant(new BigDecimal("0.02")));
+    assertThat(service.rapport(troisieme.element()).cout().mainDOeuvre().valeur()).isEqualTo(new Montant(new BigDecimal("0.02")));
   }
 
   @Test
@@ -91,8 +91,8 @@ class CoutsDeRevientServiceTest {
       .aTravaille(ELEMENT_ID_OF, activiteInterpreteeDeFraisage(new Plage(LE_11_MAI_A_8H, Optional.of(LE_11_MAI_A_10H))))
       .aMeneDeFront(activiteInterpreteeDeTournage(new Plage(LE_11_MAI_A_9H, Optional.empty())));
     CoutDeRevient rapport = service(atelier, LE_11_MAI_A_10H).rapport(ELEMENT_ID_OF);
-    assertThat(rapport.cout().mainDOeuvre().valeur().orElseThrow()).isEqualTo(new Montant(new BigDecimal("40.00")));
-    assertThat(rapport.cout().machine().valeur().orElseThrow()).isEqualTo(new Montant(new BigDecimal("90.00")));
+    assertThat(rapport.cout().mainDOeuvre().valeur()).isEqualTo(new Montant(new BigDecimal("40.00")));
+    assertThat(rapport.cout().machine().valeur()).isEqualTo(new Montant(new BigDecimal("90.00")));
   }
 
   @Test
@@ -101,7 +101,7 @@ class CoutsDeRevientServiceTest {
       .connait(ELEMENT_VALORISE_OF)
       .aTravaille(ELEMENT_ID_OF, activiteInterpreteeDeFraisage(new Plage(LE_11_MAI_A_8H, Optional.of(LE_11_MAI_A_10H))))
       .aMeneDeFront(activiteInterpreteeDeTournage(new Plage(LE_11_MAI_A_9H, Optional.of(LE_11_MAI_A_11H))));
-    assertThat(service(atelier, LE_11_MAI_A_11H).rapport(ELEMENT_ID_OF).cout().mainDOeuvre().valeur().orElseThrow()).isEqualTo(
+    assertThat(service(atelier, LE_11_MAI_A_11H).rapport(ELEMENT_ID_OF).cout().mainDOeuvre().valeur()).isEqualTo(
       new Montant(new BigDecimal("30.00"))
     );
   }
@@ -123,7 +123,7 @@ class CoutsDeRevientServiceTest {
       .connait(ELEMENT_VALORISE_OF)
       .aTravaille(ELEMENT_ID_OF, activiteInterpreteeDeFraisage(new Plage(LE_11_MAI_A_8H, Optional.empty())));
     CoutDeRevient rapport = service(atelier, LE_11_MAI_A_21H).rapport(ELEMENT_ID_OF);
-    assertThat(rapport.temps().travail().valeur().orElseThrow()).isEqualTo(Duration.ofHours(13));
+    assertThat(rapport.temps().travail().valeur()).isEqualTo(Duration.ofHours(13));
     assertThat(rapport.cout()).isEqualTo(new Cout(new Montant(new BigDecimal("585.00")), new Montant(new BigDecimal("260.00"))));
     assertThat(service(atelier, LE_12_MAI_A_18H).rapport(ELEMENT_ID_OF).temps()).isEqualTo(rapport.temps());
   }
@@ -133,9 +133,7 @@ class CoutsDeRevientServiceTest {
     AtelierEnMemoire atelier = new AtelierEnMemoire()
       .connait(ELEMENT_VALORISE_OF)
       .aTravaille(ELEMENT_ID_OF, activiteInterpreteeDeFraisage(new Plage(LE_11_MAI_A_8H, Optional.of(LE_11_MAI_A_21H.plusSeconds(7200)))));
-    assertThat(service(atelier, LE_11_MAI_A_17H).rapport(ELEMENT_ID_OF).temps().travail().valeur().orElseThrow()).isEqualTo(
-      Duration.ofHours(15)
-    );
+    assertThat(service(atelier, LE_11_MAI_A_17H).rapport(ELEMENT_ID_OF).temps().travail().valeur()).isEqualTo(Duration.ofHours(15));
   }
 
   @Test
@@ -154,7 +152,7 @@ class CoutsDeRevientServiceTest {
       );
     CoutDeRevient rapport = service(atelier, LE_11_MAI_A_21H).rapport(ELEMENT_ID_OF);
     assertThat(rapport.temps()).isEqualTo(new TempsPasse(Duration.ofHours(4), Duration.ZERO));
-    assertThat(rapport.cout().mainDOeuvre().valeur().orElseThrow()).isEqualTo(new Montant(new BigDecimal("80.00")));
+    assertThat(rapport.cout().mainDOeuvre().valeur()).isEqualTo(new Montant(new BigDecimal("80.00")));
   }
 
   @Test
@@ -169,7 +167,7 @@ class CoutsDeRevientServiceTest {
       .operateursNommes(atelier)
       .postesNommes(atelier)
       .clock(() -> LE_11_MAI_A_17H);
-    assertThat(service.rapport(ELEMENT_ID_OF).cout().mainDOeuvre().valeur()).contains(new Montant(new BigDecimal("40.00")));
+    assertThat(service.rapport(ELEMENT_ID_OF).cout().mainDOeuvre().valeur()).isEqualTo(new Montant(new BigDecimal("40.00")));
   }
 
   /**

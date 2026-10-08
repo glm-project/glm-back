@@ -18,10 +18,6 @@ public record TrancheValorisable(TrancheDActivite tranche, FenetreDePartage fene
     Assert.notNull("fenetre", fenetre);
   }
 
-  public Activite activite() {
-    return tranche.activite();
-  }
-
   public Diviseur diviseur() {
     return fenetre.diviseur();
   }
@@ -46,9 +42,6 @@ public record TrancheValorisable(TrancheDActivite tranche, FenetreDePartage fene
    * diviseur.
    */
   public Montant coutDeMainDOeuvre() {
-    if (activite().tauxHoraire().isEmpty()) {
-      return Montant.ZERO;
-    }
-    return fenetre.repartition().de(tranche).orElseThrow();
+    return fenetre.repartition().de(tranche);
   }
 }

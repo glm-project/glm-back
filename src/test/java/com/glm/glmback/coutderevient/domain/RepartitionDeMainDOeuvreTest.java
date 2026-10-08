@@ -52,9 +52,9 @@ class RepartitionDeMainDOeuvreTest {
       new Diviseur(3)
     );
 
-    assertThat(repartition.de(fraisage)).contains(euros("6.67"));
-    assertThat(repartition.de(tournage)).contains(euros("6.67"));
-    assertThat(repartition.de(sansPoste)).contains(euros("6.66"));
+    assertThat(repartition.de(fraisage)).isEqualTo(euros("6.67"));
+    assertThat(repartition.de(tournage)).isEqualTo(euros("6.67"));
+    assertThat(repartition.de(sansPoste)).isEqualTo(euros("6.66"));
   }
 
   /**
@@ -69,8 +69,8 @@ class RepartitionDeMainDOeuvreTest {
 
     RepartitionDeMainDOeuvre repartition = RepartitionDeMainDOeuvre.de(List.of(fraisage, tournage), fenetre, new Diviseur(2));
 
-    assertThat(repartition.de(tournage.reduiteA(fenetre).orElseThrow())).contains(euros("0.17"));
-    assertThat(repartition.de(fraisage.reduiteA(fenetre).orElseThrow())).contains(euros("0.16"));
+    assertThat(repartition.de(tournage.reduiteA(fenetre).orElseThrow())).isEqualTo(euros("0.17"));
+    assertThat(repartition.de(fraisage.reduiteA(fenetre).orElseThrow())).isEqualTo(euros("0.16"));
   }
 
   /**
@@ -89,9 +89,9 @@ class RepartitionDeMainDOeuvreTest {
       new Diviseur(2)
     );
 
-    assertThat(repartition.de(tournage)).contains(euros("10.00"));
-    assertThat(repartition.de(premierFraisage)).contains(euros("3.33"));
-    assertThat(repartition.de(secondFraisage)).contains(euros("6.67"));
+    assertThat(repartition.de(tournage)).isEqualTo(euros("10.00"));
+    assertThat(repartition.de(premierFraisage)).isEqualTo(euros("3.33"));
+    assertThat(repartition.de(secondFraisage)).isEqualTo(euros("6.67"));
   }
 
   /**
@@ -108,9 +108,9 @@ class RepartitionDeMainDOeuvreTest {
 
     var repartition = RepartitionDeMainDOeuvre.de(List.of(a, aPrime, b), periode, new Diviseur(2));
 
-    assertThat(repartition.de(a)).contains(euros("13.12"));
-    assertThat(repartition.de(aPrime)).contains(euros("13.12"));
-    assertThat(repartition.de(b)).contains(euros("13.13"));
+    assertThat(repartition.de(a)).isEqualTo(euros("13.12"));
+    assertThat(repartition.de(aPrime)).isEqualTo(euros("13.12"));
+    assertThat(repartition.de(b)).isEqualTo(euros("13.13"));
   }
 
   @Test
@@ -125,7 +125,7 @@ class RepartitionDeMainDOeuvreTest {
     );
 
     assertThat(repartition.parts()).hasSize(1);
-    assertThat(repartition.de(secondElement)).contains(euros("0.06"));
+    assertThat(repartition.de(secondElement)).isEqualTo(euros("0.06"));
   }
 
   /**
@@ -148,8 +148,8 @@ class RepartitionDeMainDOeuvreTest {
 
     RepartitionDeMainDOeuvre repartition = RepartitionDeMainDOeuvre.de(List.of(finAutomatique, finReelle), periode, new Diviseur(1));
 
-    assertThat(repartition.de(finReelle)).contains(euros("0.06"));
-    assertThat(repartition.de(finAutomatique)).contains(euros("0.06"));
+    assertThat(repartition.de(finReelle)).isEqualTo(euros("0.06"));
+    assertThat(repartition.de(finAutomatique)).isEqualTo(euros("0.06"));
   }
 
   @Test
@@ -158,7 +158,7 @@ class RepartitionDeMainDOeuvreTest {
 
     RepartitionDeMainDOeuvre repartition = RepartitionDeMainDOeuvre.de(List.of(sansTaux), new Periode(A_9H, A_10H), new Diviseur(1));
 
-    assertThat(repartition.de(sansTaux)).isEmpty();
+    assertThat(repartition.de(sansTaux)).isEqualTo(Montant.ZERO);
   }
 
   @Test

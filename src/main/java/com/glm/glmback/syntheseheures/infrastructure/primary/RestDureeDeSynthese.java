@@ -4,16 +4,11 @@ import com.glm.glmback.syntheseheures.domain.DureeTotale;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Duration;
 
-@Schema(description = "Duree totale certaine.")
+@Schema(description = "Duree totale.")
 record RestDureeDeSynthese(
-  @Schema(description = "Duree certaine.", example = "PT2H", requiredMode = Schema.RequiredMode.REQUIRED) Duration valeur,
-  @Schema(
-    description = "Toujours vrai : aucune activite a resoudre ne contribue plus a un total. Conserve le temps que le front cesse de le lire.",
-    requiredMode = Schema.RequiredMode.REQUIRED
-  )
-  boolean complete
+  @Schema(description = "Duree ISO-8601.", example = "PT2H", requiredMode = Schema.RequiredMode.REQUIRED) Duration valeur
 ) {
   static RestDureeDeSynthese from(DureeTotale duree) {
-    return new RestDureeDeSynthese(duree.valeur(), true);
+    return new RestDureeDeSynthese(duree.valeur());
   }
 }

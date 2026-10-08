@@ -269,31 +269,31 @@ Feature: Cout de revient d'un element de fabrication
     Then le cout porte la fin automatique de "2026-05-11T08:00:00Z" a "2026-05-11T21:00:00Z"
 
   Scenario: Une activite que le moteur juge a resoudre n'entre ni dans le cout ni dans le diviseur
-    Given l'entreprise fabrique "source incertaine"
-    And l'entreprise fabrique "source certaine"
+    # A et N, contradictoires, restent a resoudre sur un troisieme poste : sans filtre, la rectifieuse compterait dans le
+    # diviseur de la fraiseuse (20,00 au lieu de 40,00) et la source incertaine rendrait une ligne.
+    Given le rapport connait le poste "rectifieuse" de nature "Rectification" a "50.00" de l'heure
+    And le rapport connait l'operateur "durand" a "20.00" de l'heure, habilite sur
+      | fraiseuse   |
+      | rectifieuse |
+    And l'entreprise fabrique "source incertaine"
     And l'entreprise fabrique "cible certaine"
     And "source incertaine" est mis en atelier a "2026-05-11T05:00:00Z"
-    And "source certaine" est mis en atelier a "2026-05-11T05:00:00Z"
     And "cible certaine" est mis en atelier a "2026-05-11T05:00:00Z"
-    # A et N, contradictoires, restent a resoudre : le cout ne les lit pas, et le poste certain de P suffit a fixer le
-    # diviseur de l'heure de tournage.
     And pour le cout, "source incertaine" recoit les pointages
-      | alias | type           | intention  | cible | operateur | poste     | survenue             |
-      | A     | DEBUT          | OUVERTURE  |       | dupont    | fraiseuse | 2026-05-11T08:00:00Z |
-      | N     | NON_CONFORMITE | TRANSITION | A     | dupont    | fraiseuse | 2026-05-11T12:00:00Z |
-      | F     | FIN            | FIN        | A     | dupont    | fraiseuse | 2026-05-11T17:00:00Z |
-    And pour le cout, "source certaine" recoit les pointages
-      | alias | type  | intention | cible | operateur | poste     | survenue             |
-      | P     | DEBUT | OUVERTURE |       | dupont    | fraiseuse | 2026-05-11T06:00:00Z |
-      | FP    | FIN   | FIN       | P     | dupont    | fraiseuse | 2026-05-11T21:00:00Z |
+      | alias | type           | intention  | cible | operateur | poste       | survenue             |
+      | A     | DEBUT          | OUVERTURE  |       | durand    | rectifieuse | 2026-05-11T08:00:00Z |
+      | N     | NON_CONFORMITE | TRANSITION | A     | durand    | rectifieuse | 2026-05-11T12:00:00Z |
+      | F     | FIN            | FIN        | A     | durand    | rectifieuse | 2026-05-11T17:00:00Z |
     And pour le cout, "cible certaine" recoit les pointages
-      | alias | type  | intention | cible | operateur | poste | survenue             |
-      | C     | DEBUT | OUVERTURE |       | dupont    | tour  | 2026-05-11T08:00:00Z |
-      | FC    | FIN   | FIN       | C     | dupont    | tour  | 2026-05-11T10:00:00Z |
+      | alias | type  | intention | cible | operateur | poste     | survenue             |
+      | C     | DEBUT | OUVERTURE |       | durand    | fraiseuse | 2026-05-11T08:00:00Z |
+      | FC    | FIN   | FIN       | C     | durand    | fraiseuse | 2026-05-11T10:00:00Z |
     When je consulte le cout de revient de "cible certaine" a "2026-05-12T09:00:00Z"
     Then le rapport porte les lignes
       | nature   | travail | nonConformite | machine | mainDOeuvre |
-      | Tournage | PT2H    | PT0S          | 120.00  | 20.00       |
+      | Fraisage | PT2H    | PT0S          | 90.00   | 40.00       |
+    When je consulte le cout de revient de "source incertaine" a "2026-05-12T09:00:00Z"
+    Then le rapport ne porte aucune ligne
 
   Scenario Outline: La borne effective respecte les faits tardifs, l'echeance et la regularisation
     Given l'entreprise fabrique "fin tardive"
@@ -377,14 +377,14 @@ Feature: Cout de revient d'un element de fabrication
       | B     | DEBUT | OUVERTURE |       | dupont    | fraiseuse | 2026-05-11T08:00:00Z |
       | FB    | FIN   | FIN       | B     | dupont    | fraiseuse | 2026-05-11T10:00:00Z |
     When je consulte le cout de revient de "poste A" a "2026-05-11T11:00:00Z"
-    Then le total du cout "$.cout.mainDOeuvre" est complet avec "40.00"
+    Then le total du cout "$.cout.mainDOeuvre" vaut "40.00"
     Given pour le cout, "sans poste" recoit les pointages
       | alias | type  | intention | cible | operateur | survenue             |
       | S     | DEBUT | OUVERTURE |       | dupont    | 2026-05-11T09:00:00Z |
       | FS    | FIN   | FIN       | S     | dupont    | 2026-05-11T10:00:00Z |
     When je consulte le cout de revient de "poste A" a "2026-05-11T11:00:00Z"
-    Then le total du cout "$.cout.machine" est complet avec "90.00"
-    And le total du cout "$.cout.mainDOeuvre" est complet avec "30.00"
+    Then le total du cout "$.cout.machine" vaut "90.00"
+    And le total du cout "$.cout.mainDOeuvre" vaut "30.00"
     When je consulte le cout de revient de "sans poste" a "2026-05-11T11:00:00Z"
     Then le rapport porte les lignes
       | nature | travail | nonConformite | machine | mainDOeuvre |

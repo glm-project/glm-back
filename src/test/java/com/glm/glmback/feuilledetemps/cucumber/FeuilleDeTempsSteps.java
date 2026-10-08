@@ -250,7 +250,6 @@ public class FeuilleDeTempsSteps {
       case "etat" -> activite.get("etat");
       case "debutActivite" -> activite.get("debut");
       case "finActivite" -> activite.get("fin");
-      case "finAuPlusTard" -> activite.get("finAuPlusTard");
       default -> portion.get(cle);
     };
   }

@@ -48,8 +48,7 @@ Une activité que le moteur d'atelier juge à résoudre n'est lue par aucun calc
 filtrent `a_resoudre = false`, et le rapport ne rend ni conflit ni pointage contradictoire. Le filtre reste jusqu'à
 ce que le moteur disparaisse. Un taux absent donne zéro, indépendant du diviseur. Aucun tarif ne doit être inventé.
 
-Chaque durée et montant rend `complete` et porte `valeur`. Le champ reste au contrat ; aucune valeur n'est plus
-incomplète depuis que les activités à résoudre sont écartées à la lecture.
+Chaque durée et montant porte sa `valeur`, toujours connue.
 
 ## Contrat et vérification
 

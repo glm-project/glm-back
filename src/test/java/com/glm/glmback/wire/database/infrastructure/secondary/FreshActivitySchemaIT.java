@@ -363,7 +363,7 @@ class FreshActivitySchemaIT {
       var cost = application
         .getBean(CoutsDeRevientApplicationService.class)
         .rapport(new com.glm.glmback.coutderevient.domain.ElementId(ELEMENT_OF_2026_000042.uuid()));
-      assertThat(cost.temps().total().valeur()).contains(Duration.ofHours(9));
+      assertThat(cost.temps().total().valeur()).isEqualTo(Duration.ofHours(9));
       assertThat(cost.lignes()).hasSize(1);
       var terminal = application.getBean(ReferentielsDuPupitreApplicationService.class).referentiel();
       assertThat(terminal.operateurs()).hasSize(1);

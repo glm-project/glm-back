@@ -146,7 +146,7 @@
         "type" : "object"
       },
       "RestActiviteCiteeDuCout" : {
-        "description" : "Une autre activite du meme operateur, menee de front ou responsable d'un partage inconnu, tous elements confondus.",
+        "description" : "Une autre activite du meme operateur, menee de front, tous elements confondus.",
         "properties" : {
           "element" : {
             "$ref" : "#/components/schemas/RestElementCiteDuCout",
@@ -292,7 +292,7 @@
         "type" : "object"
       },
       "RestActiviteDuPupitre" : {
-        "description" : "Une activite ouverte sur cet element : qui travaille, sur quel poste, dans quel etat, depuis quand.\n\nUne transition ouvre une activite distincte de l autre categorie. Les activites dont l echeance est atteinte\nne sont pas actionnables et ne figurent pas ici.\n",
+        "description" : "Une activite ouverte sur cet element : qui travaille, sur quel poste, dans quel etat, depuis quand.\n\nLes activites dont l echeance est atteinte ne sont pas actionnables et ne figurent pas ici.\n",
         "properties" : {
           "categorie" : {
             "description" : "TRAVAIL ou NON_CONFORMITE.",
@@ -451,7 +451,7 @@
         "type" : "object"
       },
       "RestCoutDeRevient" : {
-        "description" : "Le cout de revient d'un element de fabrication, une ligne par nature d'operation.\n\nRien n'est stocke : le rapport est recalcule a chaque lecture depuis les activites interpretees par atelier, pour qu'une saisie\nregularisee apres coup compte a l'heure ou le travail a eu lieu.\n\nChaque total complet est chiffre ; un total incomplet ne porte aucune somme partielle.\nLa main d'oeuvre est arrondie par fenetre de partage puis repartie au centime, la machine une fois par activite ;\nlignes et rapport additionnent ces montants.\n",
+        "description" : "Le cout de revient d'un element de fabrication, une ligne par nature d'operation.\n\nRien n'est stocke : le rapport est recalcule a chaque lecture depuis les activites interpretees par atelier, pour qu'une saisie\nregularisee apres coup compte a l'heure ou le travail a eu lieu.\n\nLa main d'oeuvre est arrondie par fenetre de partage puis repartie au centime, la machine une fois par activite ;\nlignes et rapport additionnent ces montants.\n",
         "properties" : {
           "activitesEnCours" : {
             "description" : "Nombre d'activites en cours exclues du temps, des couts et du diviseur.",
@@ -624,35 +624,27 @@
         "type" : "object"
       },
       "RestDureeDeSynthese" : {
-        "description" : "Duree totale certaine.",
+        "description" : "Duree totale.",
         "properties" : {
-          "complete" : {
-            "description" : "Toujours vrai : aucune activite a resoudre ne contribue plus a un total. Conserve le temps que le front cesse de le lire.",
-            "type" : "boolean"
-          },
           "valeur" : {
-            "description" : "Duree certaine.",
+            "description" : "Duree ISO-8601.",
             "example" : "PT2H",
             "type" : "string"
           }
         },
-        "required" : [ "complete", "valeur" ],
+        "required" : [ "valeur" ],
         "type" : "object"
       },
       "RestDureeDuCout" : {
-        "description" : "Total complet chiffre, ou incomplet sans aucun chiffre partiel.",
+        "description" : "Duree totale.",
         "properties" : {
-          "complete" : {
-            "description" : "Vrai si ce total est entierement determine.",
-            "type" : "boolean"
-          },
           "valeur" : {
-            "description" : "Valeur certaine ISO-8601, absente si incomplet.",
+            "description" : "Duree ISO-8601.",
             "example" : "PT2H",
             "type" : "string"
           }
         },
-        "required" : [ "complete" ],
+        "required" : [ "valeur" ],
         "type" : "object"
       },
       "RestDureeMaxDActivite" : {
@@ -819,7 +811,7 @@
         "description" : "Un evenement du journal d'un element engage.\n\nL'horodatage est bitemporel : heure du fait et heure de son enregistrement. Une pause s'y lit par une fin,\npuis une ouverture a la reprise.\n",
         "properties" : {
           "activite" : {
-            "description" : "Identite de l'activite qu'ouvre une ouverture ou une transition, absente pour une fin. C'est l'identifiant du\npointage ouvrant.\n",
+            "description" : "Identite de l'activite qu'ouvre un debut ou une non conformite, absente pour une fin. C'est l'identifiant du\npointage ouvrant.\n",
             "format" : "uuid",
             "type" : "string"
           },
@@ -880,7 +872,7 @@
             "type" : "number"
           },
           "type" : {
-            "description" : "Nature du pointage. La reprise du travail apres une non conformite se pointe DEBUT, en transition.",
+            "description" : "Nature du pointage. La reprise du travail apres une non conformite se pointe DEBUT.",
             "enum" : [ "DEBUT", "NON_CONFORMITE", "FIN" ],
             "type" : "string"
           }
@@ -1156,19 +1148,15 @@
         "type" : "object"
       },
       "RestMontantDuCout" : {
-        "description" : "Total complet chiffre, ou incomplet sans aucun chiffre partiel.",
+        "description" : "Montant total, deja au centime.",
         "properties" : {
-          "complete" : {
-            "description" : "Vrai si ce total est entierement determine.",
-            "type" : "boolean"
-          },
           "valeur" : {
-            "description" : "Valeur certaine, absente si incomplet.",
+            "description" : "Montant.",
             "example" : 90.0,
             "type" : "number"
           }
         },
-        "required" : [ "complete" ],
+        "required" : [ "valeur" ],
         "type" : "object"
       },
       "RestOperateur" : {

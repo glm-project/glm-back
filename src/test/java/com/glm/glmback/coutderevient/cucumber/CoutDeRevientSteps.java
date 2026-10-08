@@ -199,9 +199,8 @@ public class CoutDeRevientSteps {
     assertThat(lignes).allSatisfy(ligne -> assertThat((List<?>) ligne.get("finsAutomatiques")).isEmpty());
   }
 
-  @Then("le total du cout {string} est complet avec {string}")
-  public void complet(String chemin, String valeur) {
-    assertThat(CucumberRestTestContext.getElement(chemin + ".complete")).isEqualTo(true);
+  @Then("le total du cout {string} vaut {string}")
+  public void vaut(String chemin, String valeur) {
     Object lue = CucumberRestTestContext.getElement(chemin + ".valeur");
     assertThat(lue instanceof Number ? montant(lue) : String.valueOf(lue)).isEqualTo(valeur);
   }
@@ -271,8 +270,8 @@ public class CoutDeRevientSteps {
         resume.put("debut", String.valueOf(pointage.get("debut")));
         resume.put("fin", texte(pointage.get("fin")));
         resume.put("anomalies", String.join(",", (List<String>) pointage.get("anomalies")));
-        resume.put("machine", montantOuIncomplet(((Map<String, Object>) pointage.get("cout")).get("machine")));
-        resume.put("mainDOeuvre", montantOuIncomplet(((Map<String, Object>) pointage.get("cout")).get("mainDOeuvre")));
+        resume.put("machine", montant(((Map<String, Object>) pointage.get("cout")).get("machine")));
+        resume.put("mainDOeuvre", montant(((Map<String, Object>) pointage.get("cout")).get("mainDOeuvre")));
         return resume;
       })
       .toList();
@@ -289,7 +288,7 @@ public class CoutDeRevientSteps {
         resume.put("debut", String.valueOf(part.get("debut")));
         resume.put("fin", String.valueOf(part.get("fin")));
         resume.put("diviseur", texte(part.get("diviseur")));
-        resume.put("mainDOeuvre", montantOuIncomplet(part.get("mainDOeuvre")));
+        resume.put("mainDOeuvre", montant(part.get("mainDOeuvre")));
         resume.put("paralleles", activitesCitees(part.get("paralleles")));
         return resume;
       })
@@ -337,11 +336,6 @@ public class CoutDeRevientSteps {
       return "sans poste";
     }
     return String.valueOf(((Map<String, Object>) poste).get("libelle")).replaceAll(" \\d+$", "");
-  }
-
-  @SuppressWarnings("unchecked")
-  private static String montantOuIncomplet(Object total) {
-    return Boolean.TRUE.equals(((Map<String, Object>) total).get("complete")) ? montant(total) : "incomplet";
   }
 
   private static String texte(Object valeur) {

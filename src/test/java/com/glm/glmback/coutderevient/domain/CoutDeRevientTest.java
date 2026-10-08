@@ -77,10 +77,10 @@ class CoutDeRevientTest {
         assertThat(ligne.nature()).contains(NATURE_FRAISAGE);
         assertThat(ligne.temps()).isEqualTo(new TempsPasse(Duration.ofHours(2), Duration.ZERO));
         assertThat(ligne.periode()).isEqualTo(new Plage(LE_11_MAI_A_9H, Optional.of(LE_11_MAI_A_11H)));
-        assertThat(ligne.cout().machine().valeur().orElseThrow()).isEqualTo(new Montant(new BigDecimal("90.00")));
-        assertThat(ligne.cout().mainDOeuvre().valeur().orElseThrow()).isEqualTo(new Montant(new BigDecimal("40.00")));
+        assertThat(ligne.cout().machine().valeur()).isEqualTo(new Montant(new BigDecimal("90.00")));
+        assertThat(ligne.cout().mainDOeuvre().valeur()).isEqualTo(new Montant(new BigDecimal("40.00")));
       });
-    assertThat(rapport.cout().total().valeur().orElseThrow()).isEqualTo(new Montant(new BigDecimal("130.00")));
+    assertThat(rapport.cout().total().valeur()).isEqualTo(new Montant(new BigDecimal("130.00")));
   }
 
   /**
@@ -150,7 +150,7 @@ class CoutDeRevientTest {
     assertThat(rapport.lignes().getFirst().cout()).isEqualTo(
       new Cout(new Montant(new BigDecimal("90.00")), new Montant(new BigDecimal("20.00")))
     );
-    assertThat(rapport.cout().mainDOeuvre().valeur().orElseThrow()).isEqualTo(new Montant(new BigDecimal("40.00")));
+    assertThat(rapport.cout().mainDOeuvre().valeur()).isEqualTo(new Montant(new BigDecimal("40.00")));
   }
 
   /**
@@ -171,7 +171,7 @@ class CoutDeRevientTest {
       .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
       .annuaire(AnnuaireDuCout.VIDE);
 
-    assertThat(rapport.lignes().getFirst().cout().machine().valeur()).contains(new Montant(new BigDecimal("0.26")));
+    assertThat(rapport.lignes().getFirst().cout().machine().valeur()).isEqualTo(new Montant(new BigDecimal("0.26")));
   }
 
   /**
@@ -196,9 +196,9 @@ class CoutDeRevientTest {
       .annuaire(AnnuaireDuCout.VIDE);
 
     assertThat(rapport.lignes())
-      .extracting(ligne -> ligne.cout().mainDOeuvre().valeur().orElseThrow())
+      .extracting(ligne -> ligne.cout().mainDOeuvre().valeur())
       .containsExactly(new Montant(new BigDecimal("2.23")), new Montant(new BigDecimal("2.22")), new Montant(new BigDecimal("2.22")));
-    assertThat(rapport.cout().mainDOeuvre().valeur()).contains(new Montant(new BigDecimal("6.67")));
+    assertThat(rapport.cout().mainDOeuvre().valeur()).isEqualTo(new Montant(new BigDecimal("6.67")));
   }
 
   /**
@@ -220,7 +220,7 @@ class CoutDeRevientTest {
       .annuaire(AnnuaireDuCout.VIDE);
 
     assertThat(rapport.lignes()).extracting(LigneDeCout::nature).containsExactly(Optional.of(NATURE_FRAISAGE), Optional.empty());
-    assertThat(rapport.lignes().getLast().cout().machine().valeur().orElseThrow()).isEqualTo(Montant.ZERO);
+    assertThat(rapport.lignes().getLast().cout().machine().valeur()).isEqualTo(Montant.ZERO);
   }
 
   /**

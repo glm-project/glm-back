@@ -91,14 +91,6 @@ public final class CoutDeRevientFixture {
     .coutHoraire(Optional.of(COUT_HORAIRE_DE_45_EUROS))
     .tauxHoraire(Optional.of(TAUX_HORAIRE_DE_20_EUROS))
     .categorie(CategorieDActivite.NON_CONFORMITE);
-  public static final Activite ACTIVITE_TOURNAGE_SANS_TAUX = Activite.builder()
-    .operateur(OPERATEUR_ID_DUPONT)
-    .element(ELEMENT_ID_OF)
-    .poste(Optional.of(POSTE_ID_TOUR))
-    .nature(Optional.of(NATURE_TOURNAGE))
-    .coutHoraire(Optional.of(COUT_HORAIRE_DE_60_EUROS))
-    .tauxHoraire(Optional.empty())
-    .categorie(CategorieDActivite.TRAVAIL);
 
   public static final Activite ACTIVITE_TOURNAGE_DE_L_OF_2 = Activite.builder()
     .operateur(OPERATEUR_ID_DUPONT)

@@ -24,13 +24,13 @@ import java.util.UUID;
 public record RestEvenementDAtelier(
   @Schema(description = "Identifiant de l'evenement.", requiredMode = Schema.RequiredMode.REQUIRED) UUID id,
   @Schema(
-    description = "Nature du pointage. La reprise du travail apres une non conformite se pointe DEBUT, en transition.",
+    description = "Nature du pointage. La reprise du travail apres une non conformite se pointe DEBUT.",
     requiredMode = Schema.RequiredMode.REQUIRED
   )
   TypeDEvenementDAtelier type,
   @Schema(
     description = """
-    Identite de l'activite qu'ouvre une ouverture ou une transition, absente pour une fin. C'est l'identifiant du
+    Identite de l'activite qu'ouvre un debut ou une non conformite, absente pour une fin. C'est l'identifiant du
     pointage ouvrant.
     """
   )

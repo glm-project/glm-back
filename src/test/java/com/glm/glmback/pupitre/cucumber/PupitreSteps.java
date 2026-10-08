@@ -159,21 +159,7 @@ public class PupitreSteps {
 
   @Given("au pupitre, {string} passe {string} en {string} sous le nom {string} sur {string} au poste {string} a {string}")
   public void passe(String operateur, String cible, String type, String geste, String element, String poste, String instant) {
-    passeRecu(operateur, cible, type, geste, element, poste, instant, instant);
-  }
-
-  @Given("au pupitre, {string} passe {string} en {string} sous le nom {string} sur {string} au poste {string} a {string}, recu a {string}")
-  public void passeRecu(
-    String operateur,
-    String cible,
-    String type,
-    String geste,
-    String element,
-    String poste,
-    String instant,
-    String recu
-  ) {
-    envoie(geste, element, recu, geste(operateur, poste, instant, type, "TRANSITION", gestes.get(cible)));
+    envoie(geste, element, instant, geste(operateur, poste, instant, type, "TRANSITION", gestes.get(cible)));
   }
 
   @Given("au pupitre, {string} termine {string} par {string} sur {string} au poste {string} a {string}")

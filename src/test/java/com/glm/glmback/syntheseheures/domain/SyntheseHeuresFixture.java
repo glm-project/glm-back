@@ -27,8 +27,6 @@ public final class SyntheseHeuresFixture {
   public static final Instant LE_DIMANCHE_10_MAI_2026_A_20H = aParis(10, 20);
   public static final Instant LE_LUNDI_11_MAI_2026_A_7H = aParis(11, 7);
   public static final Instant LE_LUNDI_11_MAI_2026_A_16H = aParis(11, 16);
-  public static final Instant LE_LUNDI_11_MAI_2026_A_20H = aParis(11, 20);
-  public static final Instant LE_LUNDI_11_MAI_2026_A_20H05 = aParis(11, 20).plusSeconds(300);
   public static final Instant LE_MARDI_12_MAI_2026_A_10H = aParis(12, 10);
   public static final Instant LE_MARDI_12_MAI_2026_A_20H = aParis(12, 20);
   public static final Instant LE_DIMANCHE_10_MAI_2026_A_8H = aParis(10, 8);

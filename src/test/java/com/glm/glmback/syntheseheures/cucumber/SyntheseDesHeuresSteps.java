@@ -218,7 +218,7 @@ public class SyntheseDesHeuresSteps {
   public void chaqueJourNePorteAucunPointageEtUneDureeDe(String duree) {
     assertThat(jours()).allSatisfy(jour -> {
       assertThat(pointagesDe(jour)).isEmpty();
-      assertThat(jour.get("dureeOperationnelle")).isEqualTo(Map.of("valeur", duree, "complete", true));
+      assertThat(jour.get("dureeOperationnelle")).isEqualTo(Map.of("valeur", duree));
     });
   }
 
@@ -236,12 +236,12 @@ public class SyntheseDesHeuresSteps {
 
   @Then("le jour {string} a une duree operationnelle de {string}")
   public void leJourAUneDureeOperationnelleDe(String jour, String duree) {
-    assertThat(jourDe(jour).get("dureeOperationnelle")).isEqualTo(Map.of("valeur", duree, "complete", true));
+    assertThat(jourDe(jour).get("dureeOperationnelle")).isEqualTo(Map.of("valeur", duree));
   }
 
   @Then("la duree operationnelle totale de la semaine est {string}")
   public void laDureeOperationnelleTotaleDeLaSemaineEst(String duree) {
-    assertThat(CucumberRestTestContext.getElement("$.dureeOperationnelleTotale")).isEqualTo(Map.of("valeur", duree, "complete", true));
+    assertThat(CucumberRestTestContext.getElement("$.dureeOperationnelleTotale")).isEqualTo(Map.of("valeur", duree));
   }
 
   @Then("le journal du {string} est")
@@ -298,7 +298,7 @@ public class SyntheseDesHeuresSteps {
     return switch (cle) {
       case "element", "id" -> elements.get(valeur);
       case "poste" -> postes.get(valeur);
-      case "duree", "dureeNonConformite" -> Map.of("valeur", valeur, "complete", true);
+      case "duree", "dureeNonConformite" -> Map.of("valeur", valeur);
       default -> valeur;
     };
   }

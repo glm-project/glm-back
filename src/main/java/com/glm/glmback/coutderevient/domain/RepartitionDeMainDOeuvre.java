@@ -104,10 +104,10 @@ public record RepartitionDeMainDOeuvre(Map<TrancheDActivite, Montant> parts) {
   }
 
   /**
-   * Ce que la part donnee recoit, si elle appartient a la fenetre et porte un taux horaire.
+   * Ce que la part donnee recoit ; zero si elle ne porte pas de taux horaire ou n'appartient pas a la fenetre.
    */
-  public Optional<Montant> de(TrancheDActivite part) {
-    return Optional.ofNullable(parts.get(part));
+  public Montant de(TrancheDActivite part) {
+    return parts.getOrDefault(part, Montant.ZERO);
   }
 
   private record PartDeMainDOeuvre(Optional<PosteDeTravailId> poste, Periode periode, TarifsDePart tarifs) {
