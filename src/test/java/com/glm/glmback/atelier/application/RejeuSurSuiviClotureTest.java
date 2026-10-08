@@ -9,9 +9,9 @@ import com.glm.glmback.UnitTest;
 import com.glm.glmback.atelier.domain.ElementsEngageables;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.Habilitations;
-import com.glm.glmback.atelier.domain.IntentionDePointage;
 import com.glm.glmback.atelier.domain.OperateursConnus;
 import com.glm.glmback.atelier.domain.PointageAEnregistrer;
+import com.glm.glmback.atelier.domain.PointagesIgnores;
 import com.glm.glmback.atelier.domain.PostesConnus;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
@@ -31,7 +31,7 @@ class RejeuSurSuiviClotureTest {
     // GIVEN
     SuiviDAtelierRepository suivis = Mockito.mock(SuiviDAtelierRepository.class);
     SuiviDAtelier suivi = suiviDAtelierEngage().cloture(clotureParLeroyA(LE_10_MAI_2026_A_17H));
-    given(suivis.get(suivi.id())).willReturn(Optional.of(suivi));
+    given(suivis.getForUpdate(suivi.id())).willReturn(Optional.of(suivi));
     given(suivis.contientEvenement(any())).willReturn(true);
     SuivisDAtelierApplicationService atelier = serviceDAtelier(suivis);
     // WHEN
@@ -45,8 +45,6 @@ class RejeuSurSuiviClotureTest {
     return PointageAEnregistrer.pupitreBuilder()
       .suivi(suivi.id())
       .type(TypeDEvenementDAtelier.DEBUT)
-      .intention(IntentionDePointage.OUVERTURE)
-      .activiteVisee(Optional.empty())
       .operateur(OPERATEUR_ID_DUPONT)
       .poste(Optional.empty())
       .auteur(AUTEUR_DUPONT)
@@ -61,6 +59,7 @@ class RejeuSurSuiviClotureTest {
       Mockito.mock(OperateursConnus.class),
       Mockito.mock(PostesConnus.class),
       Mockito.mock(Habilitations.class),
+      Mockito.mock(PointagesIgnores.class),
       () -> LE_10_MAI_2026_A_17H,
       new TransactionTemplate(Mockito.mock(PlatformTransactionManager.class))
     );

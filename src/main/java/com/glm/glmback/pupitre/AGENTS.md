@@ -19,7 +19,7 @@ purement lecteur, qui ne possède aucune table, n'écrit rien, et recalcule tout
 
 - **Le pointage lui-même et sa correction** : le pupitre écrit par l'API d'`atelier`, jamais par ici. Ce contexte ne
   propose aucune écriture, et n'en proposera pas — le chemin d'écriture idempotent existe déjà chez `atelier`
-  (identifiants de geste créés au pupitre, rejeu à 200, registre `identite_evenement_atelier`).
+  (identifiants de geste créés au pupitre, rejeu à 200 quand l'identifiant figure déjà dans les événements).
 - **Le référentiel lui-même** : créer, modifier ou supprimer un opérateur, un poste ou un élément appartient à
   `operateur`, `postedetravail` et `elementdefabrication`.
 - **La valorisation** — ni taux horaire d'opérateur, ni coût horaire de poste. Ces montants ne sont même pas mappés

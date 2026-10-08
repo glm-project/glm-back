@@ -125,9 +125,8 @@ l'intérêt de les conserver.
 ### La pause se traduit en faits d'activité
 
 La pause n'existe pas pour le serveur ([ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)).
-Le pupitre envoie une fin par activité actionnable, avec sa cible ; la reprise ouvre une nouvelle activité en
-`DEBUT`, ou en `NON_CONFORMITE` pour celle qui l'était, sur le même poste. La nouvelle ouverture ne vise pas
-l'activité d'avant la pause. La mémoire de reprise est locale au pupitre.
+Le pupitre envoie une `FIN` par activité en cours ; la reprise ouvre une nouvelle activité en `DEBUT`, ou en
+`NON_CONFORMITE` pour celle qui l'était, sur le même poste. La mémoire de reprise est locale au pupitre.
 
 ### Une activité oubliée se termine automatiquement à son échéance
 
@@ -143,50 +142,66 @@ Ce que les réponses en montrent :
   Chaque activité porte son `ouverture` — l'identité que visera une fin ou une transition — et son `echeance`.
 - Deux lectures espacées peuvent différer au voisinage d'une échéance : c'est l'instant de lecture qui tranche.
 
-La même échéance vaut pour les gestes, jugés sur leur heure métier, quel que soit le moment où ils arrivent :
+La même échéance vaut pour les gestes, jugés sur leur heure métier, quel que soit le moment où ils arrivent (voir
+[Un pointage est jugé à sa réception](#un-pointage-est-jugé-à-sa-réception)) :
 
-- un geste pointé **au plus tard à l'échéance** de l'activité qu'il vise la termine à son heure, même reçu le
-  lendemain : la fin pointée à 17 h et publiée après une coupure réseau remplace la fin automatique et retire
-  l'anomalie. Un geste pile à l'échéance l'emporte ;
-- une **fin pointée après l'échéance** est enregistrée (`201`) : l'activité garde ses 13 h et son anomalie,
-  sans conflit ni qualification supplémentaire dans le journal. Ce succès est acquitté comme tout pointage conservé ;
-- une **transition pointée après l'échéance** de sa cible ouvre la nouvelle activité à son heure ; la cible garde sa
-  borne automatique, et rien n'est compté entre les deux. Une relance après l'échéance laisse le même trou ;
+- l'échéance est atteinte quand l'heure du geste est **supérieure ou égale** au début plus 13 h. Une fin pointée
+  **avant** l'échéance termine l'activité à son heure, même reçue le lendemain : la fin pointée à 17 h et publiée après
+  une coupure réseau remplace la fin automatique et retire l'anomalie ;
+- une **fin pointée à l'échéance ou après** est ignorée (`APRES_ECHEANCE`, `409 pointage-ignore`) : l'activité garde ses
+  13 h et son anomalie, et la ligne d'audit le dit. Un geste pile à l'échéance n'emporte plus ;
+- un **début ou une non conformité** pointé à l'échéance ou après est accepté : l'activité échue compte comme terminée,
+  la nouvelle activité s'ouvre à son heure, et rien n'est compté entre les deux ;
 - une **clôture** postérieure à l'échéance ne prolonge rien ;
-- seul le gestionnaire établit une fin réelle au-delà de l'échéance, en **régularisant** la fin ou la transition
+- seul le gestionnaire établit une fin réelle au-delà de l'échéance, en **régularisant** la fin
   (`POST …/regularisations`). Corriger un début déplace l'échéance : l'activité peut redevenir en cours.
 
-### Un pointage dit son intention et vise son activité
+### Un pointage est jugé à sa réception
 
-Le type d'un pointage ne dit pas ce qu'il fait d'une activité : son **intention** le dit, et elle est requise, sans
-valeur par défaut.
+Le pupitre ne pointe que trois choses : `DEBUT`, `NON_CONFORMITE` et `FIN`. Un pointage **ne désigne aucune activité** et ne
+porte ni `intention` ni `cible` : un début ou une non conformité ouvre une activité, une fin ferme celle qui est en cours
+sur la clé. La **clé** est l'opérateur, l'élément (le suivi) et le poste ; il y a au plus une activité en cours par clé,
+et un opérateur qui mène plusieurs éléments ou plusieurs postes a une clé par élément et par poste, jugées à part.
 
-| Geste                          | `type`           | `intention`  | `cible`                                  |
-| ------------------------------ | ---------------- | ------------ | ---------------------------------------- |
-| Ouvrir ou reprendre en travail | `DEBUT`          | `OUVERTURE`  | absente                                  |
-| Ouvrir ou reprendre en NC      | `NON_CONFORMITE` | `OUVERTURE`  | absente                                  |
-| Passer de NC à travail         | `DEBUT`          | `TRANSITION` | l'activité NC remplacée, requise         |
-| Passer de travail à NC         | `NON_CONFORMITE` | `TRANSITION` | l'activité de travail remplacée, requise |
-| Terminer                       | `FIN`            | `FIN`        | l'activité terminée, requise             |
+Le serveur juge chaque pointage à son arrivée, premier arrivé premier servi, dans cet ordre :
 
-Toute autre combinaison répond **400** (Bean Validation, détail dans `errors`). La même forme vaut pour la
-régularisation et la correction.
+1. **les contrôles existants** : corps invalide (400), suivi, opérateur ou poste introuvable (404), opérateur non habilité
+   (409), et un `DEBUT` ou une `NON_CONFORMITE` sur un élément clôturé (409 `suivi-d-atelier-cloture`, seul refus à
+   afficher à l'opérateur) ;
+2. **`ANTERIEUR`** : l'heure du geste est strictement plus ancienne que celle du dernier pointage accepté de la clé
+   (régularisations comprises). Une heure égale passe ;
+3. **l'échéance**, jugée sur l'heure du geste : atteinte quand elle est supérieure ou égale au début plus 13 h. Une
+   activité qui l'a atteinte compte comme terminée ;
+4. **le tableau** :
 
-- **Une activité se désigne par l'identifiant de son pointage ouvrant d'origine.** Le journal le rend dans
-  `activite`, sur l'ouverture et la transition qui ouvrent l'activité ; la transition et la fin portent celle qu'elles
-  visent dans `cible`. Le remplaçant d'une correction d'un ouvrant garde l'`activite` du fait corrigé : les gestes qui
-  la visaient y restent rattachés, et un pupitre continue de viser l'identifiant du geste qu'il a lui-même envoyé.
-- **Un geste ne touche que sa cible.** Une fin termine l'activité qu'elle vise, jamais une autre ; une transition la
-  remplace par une activité distincte, de l'autre catégorie. Une ouverture termine à son heure l'activité en cours
-  sur le même poste : c'est la relance.
-- **La cible est une activité de ce suivi, du même opérateur et du même poste.** Introuvable dans ce suivi, elle répond
-  **404** `activite-visee-introuvable` ; ouverte par un autre opérateur ou sur un autre poste, **409**
-  `activite-visee-incoherente`. Ces deux refus sont définitifs : rejouer le même geste ne changera rien.
-- **Un geste qui contredit le journal n'est jamais refusé** : sa cible est déjà terminée ou remplacée à son heure, son
-  ouvrant est annulé, ou la transition vise une activité de sa propre catégorie. Il est enregistré (`201`), et la
-  séquence est **en conflit** jusqu'à ce que le gestionnaire la résolve (voir ci-dessous). Une transition dont la cible
-  n'est plus en cours ne devient jamais une ouverture. Une cible échue, elle, ne contredit rien (voir l'échéance
-  ci-dessus).
+| État de la clé                                              | `DEBUT`                   | `NON_CONFORMITE`         | `FIN`                                                                                                      |
+| ----------------------------------------------------------- | ------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| Rien en cours (jamais ouverte, terminée, clôturée ou échue) | accepté, ouvre un travail | accepté, ouvre une NC    | ignoré : `APRES_ECHEANCE` si la dernière activité de la clé est échue et sans fin, sinon `AUCUNE_ACTIVITE` |
+| Activité en cours (travail ou NC)                           | ignoré : `DEJA_EN_COURS`  | ignoré : `DEJA_EN_COURS` | accepté, termine l'activité en cours                                                                       |
+
+Les quatre raisons d'un pointage ignoré sont `DEJA_EN_COURS`, `AUCUNE_ACTIVITE`, `APRES_ECHEANCE` et `ANTERIEUR`.
+La clôture ferme les activités : une `FIN` postérieure à la clôture est ignorée (`AUCUNE_ACTIVITE`), et une `FIN`
+survenue avant la clôture mais reçue après elle est acceptée à son heure.
+
+Ce que le pupitre reçoit :
+
+| Statut  | Cas                                                                                                                                                           |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **201** | Pointage accepté : il entre au journal, le corps est le suivi recalculé.                                                                                      |
+| **200** | Renvoi : l'`id` figure déjà dans la table des événements (le journal de n'importe quel élément). Rien n'est écrit, le corps est le suivi de la route.         |
+| **409** | `pointage-ignore` : pointage ignoré, ou renvoi d'un pointage déjà ignoré. Ne s'affiche pas : le pupitre retire l'effet local et se recale sur le référentiel. |
+
+Un pointage ignoré n'entre jamais au journal : il laisse une ligne dans la table d'audit `pointage_ignore_d_atelier`
+(identifiant, opérateur, suivi, poste, type, heure du geste, heure de réception, raison, identifiant du dernier pointage
+accepté comparé), consultée en base, sans endpoint ni écran. **Aucune clé, aucune contrainte** : deux lignes pour un même
+renvoi sont acceptées. L'audit est écrit avant le refus (le refus est levé après la validation de la transaction) et
+un pointage ignoré prend, comme tout pointage, le verrou du suivi.
+
+**Idempotence**, avant toute règle : (1) l'`id` est dans la table des événements → 200 ; (2) sinon il est dans l'audit →
+même refus `pointage-ignore` ; (3) sinon le pointage est jugé. Un `id` ne se réutilise donc jamais avec un autre contenu :
+le premier arrivé fait foi. La régularisation applique le même contrôle global (étape 1).
+
+Pour le gestionnaire, un pointage ignoré ne crée aucune anomalie : il ne traite que la fin automatique.
 
 ### Des pointages contradictoires restent en conflit, jusqu'à la décision du gestionnaire
 
@@ -268,39 +283,37 @@ Le journal complet, **événements annulés compris**, se lit via `GET /api/atel
 utiliser le détail. Côté `glm-front`, générer le contrat depuis la révision backend épinglée avec
 `npm run api:generate`, conformément à son guide API. La limite de pagination de la grille reste un suivi côté front.
 
-Chaque geste d’activité du pupitre porte un `id` UUID créé une fois par le front, et son
-intention. Il peut aussi porter `dateDeSurvenue`, l'heure réelle conservée quand le pupitre a été hors ligne.
+Chaque geste d’activité du pupitre porte un `id` UUID créé une fois par le front, son `type`, l'`operateur` et le `poste`
+(facultatif). Il peut aussi porter `dateDeSurvenue`, l'heure réelle conservée quand le pupitre a été hors ligne. Il ne
+porte ni `intention` ni `cible` : voir [Un pointage est jugé à sa réception](#un-pointage-est-jugé-à-sa-réception).
 
 ```
-POST /api/atelier/suivis/{id}/pointages    { "id": "<uuid A>", "type": "DEBUT", "intention": "OUVERTURE", "operateur": "<uuid>", "poste": "<uuid poste>" }
-POST /api/atelier/suivis/{id}/pointages    { "id": "<uuid B>", "type": "NON_CONFORMITE", "intention": "TRANSITION", "cible": "<uuid A>", "operateur": "<uuid>", "poste": "<uuid poste>" }
-POST /api/atelier/suivis/{id}/pointages    { "id": "<uuid C>", "type": "FIN", "intention": "FIN", "cible": "<uuid B>", "operateur": "<uuid>", "poste": "<uuid poste>" }
+POST /api/atelier/suivis/{id}/pointages    { "id": "<uuid A>", "type": "DEBUT", "operateur": "<uuid>", "poste": "<uuid poste>" }
+POST /api/atelier/suivis/{id}/pointages    { "id": "<uuid B>", "type": "FIN", "operateur": "<uuid>", "poste": "<uuid poste>" }
+POST /api/atelier/suivis/{id}/pointages    { "id": "<uuid C>", "type": "NON_CONFORMITE", "operateur": "<uuid>", "poste": "<uuid poste>" }
 ```
 
 À retenir :
 
-- **Arrêter un élément après sa clôture est absorbé** (`200`) : la clôture l'a déjà arrêté. Une fin survenue avant la
-  clôture, mais reçue après elle, est enregistrée à son heure (`201`). Arrêter une activité échue est enregistré sans
-  effet (`201`). Arrêter deux fois la même activité — le double appui — n'est plus absorbé : la seconde fin est
-  enregistrée (`201`), et la séquence est en conflit. Démarrer ou pointer une non conformité sur un élément clôturé
-  reste refusé (`409 suivi-d-atelier-cloture`) : c'est le seul refus à afficher à l'opérateur, « OF clôturé, vous ne
-  pouvez plus pointer dessus ».
-- **Deux saisies simultanées ne sont plus un refus** : le serveur rejoue lui-même l'écriture devancée.
-- **Une reprise du travail après non conformité se pointe `DEBUT`, en transition** qui vise la non conformité. Il
-  n'existe pas de type « reprise ». Ce qui change, c'est la `categorie` de l'activité ouverte, `TRAVAIL`.
-- **Une ouverture sur une activité déjà en cours la relance** au lieu d'être refusée : la période précédente s'arrête
-  à l'heure du geste si elle précède son échéance ; après, la fin automatique et le trou jusqu’à la nouvelle
-  ouverture sont conservés. Une transition ciblée de même catégorie met la séquence en conflit.
-- **À heure métier égale**, le journal range la fin, puis la transition, puis l'ouverture, et départage enfin par
-  l'identifiant : jamais par l'heure de réception.
+- **Passer du travail à la NC (ou l'inverse) se pointe en deux gestes** à la même heure, la `FIN` d'abord : `FIN` puis
+  `NON_CONFORMITE`, ou `FIN` puis `DEBUT`. Il n'existe ni transition ni type « reprise » ; la `categorie` de l'activité
+  ouverte (`TRAVAIL` ou `NON_CONFORMITE`) est celle du type pointé.
+- **Arrêter un élément après sa clôture est ignoré** (`409 pointage-ignore`, `AUCUNE_ACTIVITE`) : la clôture l'a déjà
+  arrêté. Une fin survenue avant la clôture, mais reçue après elle, est acceptée à son heure (`201`). Démarrer ou pointer une non conformité sur un élément clôturé reste
+  refusé (`409 suivi-d-atelier-cloture`) : c'est le seul refus à afficher à l'opérateur, « OF clôturé, vous ne pouvez
+  plus pointer dessus ».
+- **Deux saisies simultanées ne sont plus un refus** : le serveur juge les pointages d'un suivi l'un après l'autre.
+- **Démarrer pendant une activité en cours est ignoré** (`DEJA_EN_COURS`) : il ne la relance plus ni ne la termine.
+- **À heure métier égale**, le journal range la fin avant l'ouverture, puis départage par l'identifiant : jamais par
+  l'heure de réception.
 - `poste` est **toujours facultatif**, comme la `nature`. Une entreprise sans parc machine les laisse vides et doit
   retrouver un comportement nominal, pas un cas dégradé. Ne jamais rendre le champ obligatoire côté formulaire.
 - Un poste fourni doit être **habilité pour cet opérateur**, sans quoi 409. Filtrer la liste des postes sur la fiche de
   l'opérateur choisi évite d'avoir à traiter ce refus.
 - Un envoi accepté répond **201**. Renvoyer un UUID déjà présent dans la table des événements — le journal de n'importe
   quel élément, quel que soit le contenu renvoyé — répond **200**, sans créer de second événement ; conserver donc
-  l'UUID dans la file offline jusqu'à l'acquittement. Il n'y a plus de refus pour un UUID réutilisé avec un autre
-  contenu. Une date future répond 400.
+  l'UUID dans la file offline jusqu'à l'acquittement. Renvoyer l'UUID d'un pointage ignoré répond de nouveau **409**
+  `pointage-ignore`. Il n'y a plus de refus pour un UUID réutilisé avec un autre contenu. Une date future répond 400.
 
 Les états d'un élément :
 
@@ -568,15 +581,15 @@ sort de plusieurs contextes. Le catalogue complet est dans [documentation/codes-
 Deux statuts du tableau ci-dessous n'en portent pas : le **400** de Bean Validation, qui se lit par son `errors`
 (`Map<champ, message>`), et le **403**, qui vient de la chaîne de filtres sans corps du tout.
 
-| Statut | Cas                                                                                                                                                                                    |
-| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 400    | Corps invalide (Bean Validation), intention et cible comprises — détail par champ dans `errors` — ou date de survenue future.                                                          |
-| 403    | Jeton sans entreprise connue, ou rôle insuffisant.                                                                                                                                     |
-| 404    | Suivi, événement, élément de fabrication ou activité visée introuvable.                                                                                                                |
-| 409    | Élément déjà engagé, élément clôturé, événement déjà annulé, activité visée d'un autre opérateur ou poste, événement antérieur à l'engagement, UUID réutilisé, **saisie concurrente**. |
+| Statut | Cas                                                                                                                                                                    |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 400    | Corps invalide (Bean Validation) — détail par champ dans `errors` — ou date de survenue future.                                                                        |
+| 403    | Jeton sans entreprise connue, ou rôle insuffisant.                                                                                                                     |
+| 404    | Suivi, événement, opérateur, poste, élément de fabrication ou activité visée (régularisation) introuvable.                                                             |
+| 409    | Élément déjà engagé, élément clôturé, **pointage ignoré** (`pointage-ignore`), événement antérieur à l'engagement, refus de la régularisation, **saisie concurrente**. |
 
-Le journal d'un élément ne refuse aucun geste qui le contredit : une fin datée avant le début de sa cible,
-ou un geste qui vise une activité terminée, remplacée ou annulée, reste enregistré ; sa séquence est en conflit.
+Un pointage qui ne s'accorde pas à l'état de sa clé n'est pas une erreur à afficher : le serveur l'ignore (409
+`pointage-ignore`, voir [Un pointage est jugé à sa réception](#un-pointage-est-jugé-à-sa-réception)) et l'audite.
 
 Sur les routes de pointage, la **saisie concurrente** est rejouée par le serveur et ne remonte plus qu'après trois
 échecs. Sur les actes du gestionnaire, elle reste le seul 409 qui ne dit rien de la saisie elle-même : elle était valide, mais quelqu'un a

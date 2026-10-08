@@ -75,7 +75,6 @@ tests sont le seul endroit qui les tient.
 | `poste-de-travail-introuvable`       | 404    | poste de travail introuvable       | `PosteDAtelierIntrouvableException`     |
 | `activite-visee-introuvable`         | 404    | activite visee introuvable         | `ActiviteViseeIntrouvableException`     |
 | `operateur-non-habilite`             | 409    | operateur non habilite             | `OperateurNonHabiliteException`         |
-| `activite-visee-incoherente`         | 409    | activite visee incoherente         | `ActiviteViseeIncoherenteException`     |
 | `element-deja-engage`                | 409    | element deja engage                | `ElementDejaEngageException`            |
 | `suivi-d-atelier-cloture`            | 409    | suivi d'atelier cloture            | `SuiviDAtelierClotureException`         |
 | `evenement-anterieur-a-l-engagement` | 409    | evenement anterieur a l'engagement | `EvenementAvantEngagementException`     |
@@ -84,6 +83,7 @@ tests sont le seul endroit qui les tient.
 | `fin-avant-debut`                    | 409    | fin avant debut                    | `FinAvantDebutException`                |
 | `fin-apres-borne`                    | 409    | fin apres borne                    | `FinApresBorneException`                |
 | `saisie-concurrente`                 | 409    | saisie concurrente                 | `SaisieConcurrenteException`            |
+| `pointage-ignore`                    | 409    | pointage ignore                    | `PointageIgnoreException`               |
 | `date-de-survenue-future`            | 400    | date de survenue future            | `DateDeSurvenueFutureException`         |
 
 `fin-automatique-introuvable` répond à `GET /api/atelier/suivis/{id}/anomalies/{pointage}` quand le pointage n'ouvre
@@ -93,7 +93,7 @@ Les quatre refus de `POST /api/atelier/suivis/{id}/regularisations` propres à l
 `activite-visee-introuvable` (404) et `date-de-survenue-future` (400) : `activite-non-echue` (l'activité n'est pas une
 fin automatique : échéance non atteinte, ou terminée par un pointage), `activite-deja-regularisee` (une régularisation
 vise déjà l'activité), `fin-avant-debut` (l'heure précède le début de l'activité) et `fin-apres-borne` (l'heure dépasse
-le début suivant sur la clé ou la clôture, `borneDeFin` du dossier). Un renvoi du même `id` déjà au journal répond 200 avant toute
+le début suivant sur la clé ou la clôture, `borneDeFin` du dossier). Un renvoi du même `id` déjà dans la table des événements répond 200 avant toute
 règle. Hors ce cas, `activite-non-echue` tant que l'échéance n'est pas atteinte n'est pas définitif : le même geste
 rejoué après l'échéance est accepté. `activite-deja-regularisee`, `fin-avant-debut` et `fin-apres-borne` ne changent
 pas en rejouant (la borne ne bouge qu'avec un nouveau pointage ou une clôture déplacée).
@@ -101,13 +101,18 @@ pas en rejouant (la borne ne bouge qu'avec un nouveau pointage ou une clôture d
 `saisie-concurrente` est le seul code sur lequel **rejouer** l'appel est la bonne réaction : la saisie était valide,
 un autre pointage s'est glissé entre la lecture et l'écriture.
 
-`activite-visee-introuvable` et `activite-visee-incoherente` refusent une transition ou une fin dont la cible n'est
-pas une activité de ce suivi, ou appartient à un autre opérateur ou à un autre poste. Ils sont définitifs : le même
-geste rejoué reçoit le même refus. La régularisation directe n'émet que le premier : son opérateur et son poste sont
-ceux de l'activité visée.
+`pointage-ignore` répond à un pointage (`POST /api/atelier/suivis/{id}/pointages`) que la règle de réception ignore : il
+ne s'accorde pas à l'état de sa clé (opérateur, élément, poste) et part dans la table d'audit, sans entrer au journal.
+Les quatre raisons d'audit (`DEJA_EN_COURS`, `AUCUNE_ACTIVITE`, `APRES_ECHEANCE`, `ANTERIEUR`) ne sortent pas dans la
+réponse. Le refus ne s'affiche pas à l'opérateur : le pupitre retire l'effet local du pointage et se recale sur le
+référentiel. Renvoyer l'identifiant d'un pointage déjà ignoré répond le même refus, sans nouvelle ligne d'audit. Seul
+`suivi-d-atelier-cloture`, pour un démarrage ou une non conformité sur un élément clôturé, est un refus à afficher.
 
-Aucun code ne refuse un geste qui contredit le journal d'un élément : sa cible déjà terminée ou remplacée à son heure,
-une transition vers sa propre catégorie. Le pointage l’enregistre, et sa séquence est en conflit.
+`activite-visee-introuvable` répond à la régularisation directe dont l'activité n'est pas une activité de ce suivi. Il est
+définitif : la même saisie rejouée reçoit le même refus. Les pointages ne désignent plus d'activité.
+
+Aucun code ne refuse un pointage qui contredit le journal d'un élément : la règle de réception l'ignore (`pointage-ignore`)
+et l'audite.
 
 ### `operateur` — `urn:glm:erreur:operateur:`
 
@@ -185,8 +190,8 @@ sans logo : le client relit la version dans `GET /api/parametrage`.
 4. Une ligne dans le catalogue ci-dessus. Celle-là, aucun test ne la réclame : le catalogue est tenu à la main, et
    c'est la seule pièce du contrat qui puisse se démoder en silence.
 
-Les refus définitifs des gestes d’activité sont `activite-visee-introuvable`, `activite-visee-incoherente`, `operateur-introuvable`,
-`poste-de-travail-introuvable`, `suivi-d-atelier-introuvable`,
-`operateur-non-habilite`, `evenement-anterieur-a-l-engagement` et `date-de-survenue-future`. `suivi-d-atelier-cloture` n'y sort
-plus que pour un démarrage ou une non conformité — la seule erreur à afficher à l'opérateur. `saisie-concurrente`
-n'y remonte qu'après trois essais du serveur. Un pointage d'atelier qui contredit le journal n'y est jamais refusé.
+Les refus définitifs des gestes d’activité sont `activite-visee-introuvable` (régularisation), `operateur-introuvable`,
+`poste-de-travail-introuvable`, `suivi-d-atelier-introuvable`, `operateur-non-habilite`,
+`evenement-anterieur-a-l-engagement` et `date-de-survenue-future`. `suivi-d-atelier-cloture` n'y sort plus que pour un
+démarrage ou une non conformité — la seule erreur à afficher à l'opérateur. `pointage-ignore` est un refus définitif
+que le pupitre ne montre jamais. `saisie-concurrente` n'y remonte qu'après trois essais du serveur.

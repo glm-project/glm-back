@@ -391,7 +391,7 @@ class JournalDAtelierTest {
     JournalDAtelier journal = new JournalDAtelier(List.of(surFraiseuse1));
     EvenementDAtelier finSurFraiseuse2 = finSurFraiseuse2Visant(surFraiseuse1, LE_10_MAI_2026_A_12H);
 
-    assertThatThrownBy(() -> journal.exigeLActiviteViseePar(finSurFraiseuse2))
+    assertThatThrownBy(() -> journal.enregistre(finSurFraiseuse2))
       .isExactlyInstanceOf(ActiviteViseeIncoherenteException.class)
       .hasMessageContaining(surFraiseuse1.id().uuid().toString());
   }

@@ -117,6 +117,7 @@ public class CoutDeRevientSteps {
       postes.get(poste)
     );
     ecritures.pointe(suivis.get(element), corps);
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage doit etre accepte").isTrue();
   }
 
   @Given("{string} pointe {string} sur {string} sans poste a {string}")
@@ -124,6 +125,7 @@ public class CoutDeRevientSteps {
     horloge.ilEst(Instant.parse(instant));
     Map<String, Object> corps = Map.of("id", UUID.randomUUID(), "type", type, "operateur", operateurs.get(operateur));
     ecritures.pointe(suivis.get(element), corps);
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage doit etre accepte").isTrue();
   }
 
   @Given("{string} est cloture a {string}")
@@ -141,14 +143,10 @@ public class CoutDeRevientSteps {
       Map<String, Object> corps = new HashMap<>();
       corps.put("id", identite);
       corps.put("type", pointage.get("type"));
-      corps.put("intention", pointage.get("intention"));
       corps.put("operateur", operateurs.get(pointage.get("operateur")));
       corps.put("dateDeSurvenue", survenue);
       if (pointage.containsKey("poste")) {
         corps.put("poste", postes.get(pointage.get("poste")));
-      }
-      if (!java.util.Optional.ofNullable(pointage.get("cible")).orElse("").isEmpty()) {
-        corps.put("cible", pointages.get(pointage.get("cible")));
       }
       if ("REGULARISATION".equals(pointage.get("acte"))) {
         ecritures.regularise(
@@ -158,7 +156,7 @@ public class CoutDeRevientSteps {
       } else {
         ecritures.pointe(suivis.get(element), corps);
       }
-      assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage explicite du cout doit etre accepte").isTrue();
+      EcrituresDuJournalDAtelier.exigeLaReponseAttendue(pointage);
       pointages.put(pointage.get("alias"), identite);
     }
   }

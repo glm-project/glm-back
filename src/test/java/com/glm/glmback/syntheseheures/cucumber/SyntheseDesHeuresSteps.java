@@ -144,14 +144,10 @@ public class SyntheseDesHeuresSteps {
       Map<String, Object> corps = new HashMap<>();
       corps.put("id", dernierPointage);
       corps.put("type", pointage.get("type"));
-      corps.put("intention", pointage.get("intention"));
       corps.put("operateur", operateurs.get(pointage.get("operateur")));
       corps.put("dateDeSurvenue", survenue);
       if (pointage.containsKey("poste")) {
         corps.put("poste", postes.get(pointage.get("poste")));
-      }
-      if (pointage.containsKey("cible")) {
-        corps.put("cible", pointages.get(pointage.get("cible")));
       }
       if ("REGULARISATION".equals(pointage.get("acte"))) {
         ecritures.regularise(
@@ -161,7 +157,7 @@ public class SyntheseDesHeuresSteps {
       } else {
         ecritures.pointe(suivis.get(element), corps);
       }
-      assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage explicite doit etre accepte").isTrue();
+      EcrituresDuJournalDAtelier.exigeLaReponseAttendue(pointage);
       pointages.put(pointage.get("alias"), dernierPointage);
     }
   }

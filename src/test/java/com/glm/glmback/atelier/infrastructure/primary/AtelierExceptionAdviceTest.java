@@ -19,6 +19,7 @@ import com.glm.glmback.atelier.domain.FinAvantDebutException;
 import com.glm.glmback.atelier.domain.IdentifiantDEvenementReutiliseException;
 import com.glm.glmback.atelier.domain.OperateurDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.OperateurNonHabiliteException;
+import com.glm.glmback.atelier.domain.PointageIgnoreException;
 import com.glm.glmback.atelier.domain.PosteDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierClotureException;
@@ -119,6 +120,7 @@ class AtelierExceptionAdviceTest extends ExceptionAdviceContract {
         CONFLICT
       ),
       new PublishedProblem(new SaisieConcurrenteException(SuiviDAtelierId.newId()), "urn:glm:erreur:atelier:saisie-concurrente", CONFLICT),
+      new PublishedProblem(new PointageIgnoreException(EvenementDAtelierId.newId()), "urn:glm:erreur:atelier:pointage-ignore", CONFLICT),
       new PublishedProblem(
         new IdentifiantDEvenementReutiliseException(java.util.UUID.randomUUID()),
         "urn:glm:erreur:atelier:identifiant-evenement-reutilise",

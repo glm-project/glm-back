@@ -72,6 +72,9 @@ suivent leurs propriétaires dans les mêmes sous-packages.
 - **Le journal est la source de vérité.** L'agrégat se reconstruit par son repli ; les projections décrites ci-dessous
   sont réconciliées à chaque écriture. C'est la correction qui l'impose — une saisie rattrapée doit compter à l'heure
   où elle a eu lieu.
+- **La table d'audit des pointages ignorés (`pointage_ignore_d_atelier`) n'a ni clé ni contrainte**, seulement un index
+  sur l'identifiant du geste : deux lignes pour un même renvoi sont acceptées, et rien ne doit empêcher un pointage
+  ignoré de s'écrire.
 - **Horodatage bitemporel** sur chaque événement : date de survenue (métier) et date d'enregistrement (technique).
 - **Une régularisation d'atelier se lit sur l'origine persistée de l'événement** (`OrigineDuPointage`) :
   `REGULARISATION` pour la régularisation et le remplaçant d'une correction, `POINTAGE` pour toute la route des
@@ -165,7 +168,7 @@ suivent leurs propriétaires dans les mêmes sous-packages.
 ## Ports sortants
 
 `SuiviDAtelierRepository`, `ElementsEngageables`, `OperateursConnus`, `PostesConnus`, `Habilitations`,
-`IdentitesDEvenements`, `LecturesDeSupervision`, `Clock`.
+`PointagesIgnores`, `IdentitesDEvenements`, `LecturesDeSupervision`, `Clock`.
 
 `OperateursConnus.get` résout la fiche pour copier le taux horaire au fait ; `parIds` résout les libellés d'une page.
 Le registre `IdentitesDEvenements` réserve durablement les UUID par entreprise, pupitre et hors pupitre compris.

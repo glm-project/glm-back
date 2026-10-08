@@ -9,9 +9,13 @@ import com.glm.glmback.cucumber.EcrituresDuJournalDAtelier;
 import com.glm.glmback.cucumber.EcrituresDuJournalDAtelier.PointageEnvoye;
 import com.glm.glmback.cucumber.rest.CucumberRestClient;
 import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
+import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurityContexts;
+import com.glm.glmback.shared.time.infrastructure.secondary.ExactInstantConverter;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import jakarta.persistence.EntityManager;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -19,7 +23,13 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -54,6 +64,12 @@ public class AtelierSteps {
 
   @Autowired
   private EcrituresDuJournalDAtelier ecritures;
+
+  @Autowired
+  private TransactionTemplate transactions;
+
+  @Autowired
+  private EntityManager entities;
 
   private final Map<String, String> elements = new HashMap<>();
   private Map<String, Object> suiviSansJournal;
@@ -144,14 +160,71 @@ public class AtelierSteps {
     dernierGesteCorps = pointage.corps();
   }
 
+  /**
+   * Un pointage de mise en place doit etre accepte : un pointage que la regle de reception ignorerait changerait en
+   * silence ce que le scenario raconte.
+   */
   @Given("j'ai pointe sur {string}")
   public void jaiPointeSur(String alias, Map<String, String> donnees) {
     jePointeSur(alias, donnees);
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage de mise en place doit etre accepte").isTrue();
   }
 
-  @When("je pointe sur {string} sans intention")
-  public void jePointeSurSansIntention(String alias, Map<String, String> donnees) {
-    ecritures.pointeTelQuel(suivis.get(alias), resoluAvecIdentifiant(donnees));
+  /**
+   * Un pointage que le serveur recoit a l'heure meme du geste : l'operateur pointe sur son poste, et rien n'en est
+   * deduit de plus.
+   */
+  @When("l'operateur {string} pointe {word} sur {string} au poste {string} a {string}")
+  public void pointeAuPoste(String operateur, String type, String alias, String poste, String geste) {
+    pointeAuPosteRecuA(operateur, type, alias, poste, geste, geste);
+  }
+
+  /**
+   * Un pointage hors ligne, recu par le serveur apres l'heure de son geste.
+   */
+  @When("l'operateur {string} pointe {word} sur {string} au poste {string} a {string} et le serveur le recoit a {string}")
+  public void pointeAuPosteRecuA(String operateur, String type, String alias, String poste, String geste, String recu) {
+    horloge.ilEst(Instant.parse(recu));
+    jePointeSur(alias, Map.of("operateur", operateur, "type", type, "poste", poste, "dateDeSurvenue", geste));
+  }
+
+  @Then("le pointage est accepte")
+  public void lePointageEstAccepte() {
+    assertThatLastResponse().hasHttpStatus(201);
+  }
+
+  @Then("le pointage est ignore")
+  public void lePointageEstIgnore() {
+    assertThatLastResponse().hasHttpStatus(409).hasElement("$.type").withValue("urn:glm:erreur:atelier:pointage-ignore");
+  }
+
+  @Then("le pointage est un rejeu")
+  public void lePointageEstUnRejeu() {
+    assertThatLastResponse().hasHttpStatus(200);
+  }
+
+  /**
+   * Relit la table d'audit en base, faute d'endpoint : une ligne par pointage ignore du suivi. Une colonne absente du
+   * tableau n'est pas verifiee ; {@code dernierAccepte} se donne comme un rang du journal (« evenement 2 »), vide quand
+   * aucun pointage n'etait accepte sur la cle. L'ordre des lignes n'est pas une garantie de la table.
+   */
+  @Then("la table d'audit des pointages ignores de {string} contient")
+  public void laTableDAuditContient(String alias, List<Map<String, String>> attendues) {
+    String suivi = suivis.get(alias);
+    List<String> journal = identifiantsDuJournal(suivi);
+    List<Map<String, String>> lues = auditDuSuivi(suivi, journal);
+
+    assertThat(lues).hasSize(attendues.size());
+    for (Map<String, String> attendue : attendues) {
+      assertThat(lues).anySatisfy(lue ->
+        attendue.forEach((colonne, valeur) -> assertThat(lue.get(colonne)).as(colonne).isEqualTo(attendueEn(colonne, valeur)))
+      );
+    }
+  }
+
+  @Then("la table d'audit des pointages ignores de {string} est vide")
+  public void laTableDAuditEstVide(String alias) {
+    assertThat(auditDuSuivi(suivis.get(alias), List.of())).isEmpty();
   }
 
   /**
@@ -427,6 +500,81 @@ public class AtelierSteps {
   @SuppressWarnings("unchecked")
   private static List<String> typesDuJournal() {
     return (List<String>) CucumberRestTestContext.getElement("$.journal[*].type");
+  }
+
+  private List<String> identifiantsDuJournal(String suivi) {
+    return enBase(() ->
+      entities
+        .createNativeQuery(
+          """
+          select cast(id as varchar) from evenement_d_atelier where suivi_id = :suivi
+          order by date_de_survenue, case when type = 'FIN' then 0 else 1 end, id
+          """,
+          String.class
+        )
+        .setParameter("suivi", UUID.fromString(suivi))
+        .getResultList()
+    );
+  }
+
+  @SuppressWarnings("unchecked")
+  private List<Map<String, String>> auditDuSuivi(String suivi, List<String> journal) {
+    ExactInstantConverter instants = new ExactInstantConverter();
+
+    return enBase(() ->
+      (
+        (List<Object[]>) entities
+          .createNativeQuery(
+            """
+            select cast(id as varchar), cast(operateur_id as varchar), cast(poste_id as varchar), type, date_de_survenue,
+                   date_de_reception, raison, cast(dernier_accepte_id as varchar)
+            from pointage_ignore_d_atelier where suivi_id = :suivi
+            """
+          )
+          .setParameter("suivi", UUID.fromString(suivi))
+          .getResultList()
+      ).stream()
+        .map(ligne -> {
+          Map<String, String> lue = new HashMap<>();
+          lue.put("id", (String) ligne[0]);
+          lue.put("operateur", (String) ligne[1]);
+          lue.put("poste", (String) ligne[2]);
+          lue.put("type", (String) ligne[3]);
+          lue.put("dateDeSurvenue", instants.convertToEntityAttribute((BigDecimal) ligne[4]).toString());
+          lue.put("dateDeReception", instants.convertToEntityAttribute((BigDecimal) ligne[5]).toString());
+          lue.put("raison", (String) ligne[6]);
+          lue.put("dernierAccepte", ligne[7] == null ? null : "evenement " + journal.indexOf(ligne[7]));
+          return lue;
+        })
+        .toList()
+    );
+  }
+
+  private String attendueEn(String colonne, String valeur) {
+    if (valeur == null) {
+      return null;
+    }
+
+    return switch (colonne) {
+      case "operateur" -> idDeLOperateur(valeur);
+      case "poste" -> postes.get(valeur);
+      default -> valeur;
+    };
+  }
+
+  /**
+   * Lit la base de l'entreprise des scenarios depuis le fil du scenario : sans endpoint, la table d'audit ne se relit
+   * que par SQL.
+   */
+  private <T> T enBase(Supplier<T> lecture) {
+    TenantSecurityContexts.authenticateOn("impeccmold");
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(new MockHttpServletRequest()));
+    try {
+      return transactions.execute(status -> lecture.get());
+    } finally {
+      RequestContextHolder.resetRequestAttributes();
+      SecurityContextHolder.clearContext();
+    }
   }
 
   private String evenementDAtelier(String alias, int rang) {

@@ -2,7 +2,7 @@ Feature: Liste des fins automatiques parmi les anomalies de pointage
 
   # Une fin automatique n'est jamais stockee : la liste la juge a l'instant de lecture, l'horloge figee du scenario,
   # sur les seules projections. Une activite y figure des que son echeance, son debut plus 13 heures, est atteinte,
-  # borne comprise, tant qu'aucune fin reelle ne l'a terminee et qu'aucun conflit ne la laisse a resoudre.
+  # borne comprise, tant qu'aucune fin reelle ne l'a terminee.
   Background:
     Given I am logged in as "gestionnaire" with role "GESTIONNAIRE"
     And l'entreprise a declare le poste de travail "fraiseuse-liste-fins" de nature "fraisage" et de cout horaire "45.5"
@@ -18,7 +18,6 @@ Feature: Liste des fins automatiques parmi les anomalies de pointage
     And j'ai pointe sur "Liste fins 8101"
       | id        | 00000000-0000-0000-0000-000000081011 |
       | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
       | operateur | dupont-liste-fins                    |
       | poste     | fraiseuse-liste-fins                 |
     And il est "2044-02-01T22:00:00Z"
@@ -40,7 +39,6 @@ Feature: Liste des fins automatiques parmi les anomalies de pointage
     And j'ai pointe sur "Liste fins 8102"
       | id        | 00000000-0000-0000-0000-000000081021 |
       | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
       | operateur | dupont-liste-fins                    |
       | poste     | fraiseuse-liste-fins                 |
     Given il est "2044-02-02T20:59:59.999999999Z"
@@ -52,7 +50,7 @@ Feature: Liste des fins automatiques parmi les anomalies de pointage
     And la ligne de la liste des fins automatiques porte
       | echeance | 2044-02-02T21:00:00Z |
 
-  Scenario: Une activite a resoudre n'est pas une fin automatique
+  Scenario: Une activite terminee par un pointage n'est pas une fin automatique, meme apres un double arret
     Given il est "2044-02-03T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Liste fins 8103"
       | categorie | OF     |
@@ -62,26 +60,22 @@ Feature: Liste des fins automatiques parmi les anomalies de pointage
     And j'ai pointe sur "Liste fins 8103"
       | id        | 00000000-0000-0000-0000-000000081031 |
       | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
       | operateur | dupont-liste-fins                    |
       | poste     | fraiseuse-liste-fins                 |
     And il est "2044-02-03T09:00:00Z"
     And j'ai pointe sur "Liste fins 8103"
       | id        | 00000000-0000-0000-0000-000000081032 |
       | type      | FIN                                  |
-      | intention | FIN                                  |
-      | cible     | 00000000-0000-0000-0000-000000081031 |
       | operateur | dupont-liste-fins                    |
       | poste     | fraiseuse-liste-fins                 |
     And il est "2044-02-03T10:00:00Z"
-    And j'ai pointe sur "Liste fins 8103"
+    When je pointe sur "Liste fins 8103"
       | id        | 00000000-0000-0000-0000-000000081033 |
       | type      | FIN                                  |
-      | intention | FIN                                  |
-      | cible     | 00000000-0000-0000-0000-000000081031 |
       | operateur | dupont-liste-fins                    |
       | poste     | fraiseuse-liste-fins                 |
-    And il est "2044-02-03T22:00:00Z"
+    Then le pointage est ignore
+    Given il est "2044-02-03T22:00:00Z"
     When je consulte "Liste fins 8103"
     Then le suivi a 0 activites en cours
     When je liste les fins automatiques de "Liste fins 8103"
@@ -97,7 +91,6 @@ Feature: Liste des fins automatiques parmi les anomalies de pointage
     And j'ai pointe sur "Liste fins 8104"
       | id        | 00000000-0000-0000-0000-000000081041 |
       | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
       | operateur | dupont-liste-fins                    |
       | poste     | fraiseuse-liste-fins                 |
     And il est "2044-02-04T22:00:00Z"
@@ -109,7 +102,7 @@ Feature: Liste des fins automatiques parmi les anomalies de pointage
     When je liste les fins automatiques de "Liste fins 8104"
     Then la liste des fins automatiques compte 0 ligne
 
-  Scenario: Une fin reelle pointee apres l'echeance laisse l'activite listee
+  Scenario: Une fin pointee apres l'echeance est ignoree et laisse l'activite listee
     Given il est "2044-02-05T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Liste fins 8105"
       | categorie | OF     |
@@ -119,50 +112,20 @@ Feature: Liste des fins automatiques parmi les anomalies de pointage
     And j'ai pointe sur "Liste fins 8105"
       | id        | 00000000-0000-0000-0000-000000081051 |
       | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
       | operateur | dupont-liste-fins                    |
       | poste     | fraiseuse-liste-fins                 |
     And il est "2044-02-05T23:00:00Z"
-    And j'ai pointe sur "Liste fins 8105"
+    When je pointe sur "Liste fins 8105"
       | id        | 00000000-0000-0000-0000-000000081052 |
       | type      | FIN                                  |
-      | intention | FIN                                  |
-      | cible     | 00000000-0000-0000-0000-000000081051 |
       | operateur | dupont-liste-fins                    |
       | poste     | fraiseuse-liste-fins                 |
+    Then le pointage est ignore
     When je liste les fins automatiques de "Liste fins 8105"
     Then la liste des fins automatiques compte 1 ligne
     And la ligne de la liste des fins automatiques porte
       | pointage | 00000000-0000-0000-0000-000000081051 |
       | echeance | 2044-02-05T21:00:00Z                 |
-
-  Scenario: Une activite reouverte avant son echeance ne laisse que la nouvelle fin automatique
-    Given il est "2044-02-06T07:00:00Z"
-    And l'entreprise a cree l'element de fabrication "Liste fins 8106"
-      | categorie | OF     |
-      | reference | LF8106 |
-    And j'ai engage l'element "Liste fins 8106" en atelier
-    And il est "2044-02-06T08:00:00Z"
-    And j'ai pointe sur "Liste fins 8106"
-      | id        | 00000000-0000-0000-0000-000000081061 |
-      | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
-      | operateur | dupont-liste-fins                    |
-      | poste     | fraiseuse-liste-fins                 |
-    And il est "2044-02-06T12:00:00Z"
-    And j'ai pointe sur "Liste fins 8106"
-      | id        | 00000000-0000-0000-0000-000000081062 |
-      | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
-      | operateur | dupont-liste-fins                    |
-      | poste     | fraiseuse-liste-fins                 |
-    And il est "2044-02-07T02:00:00Z"
-    When je liste les fins automatiques de "Liste fins 8106"
-    Then la liste des fins automatiques compte 1 ligne
-    And la ligne de la liste des fins automatiques porte
-      | pointage | 00000000-0000-0000-0000-000000081062 |
-      | debut    | 2044-02-06T12:00:00Z                 |
-      | echeance | 2044-02-07T01:00:00Z                 |
 
   Scenario: L'adresse d'une ligne de la liste ouvre le dossier de la meme fin automatique
     Given il est "2044-02-09T07:00:00Z"

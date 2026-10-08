@@ -16,7 +16,6 @@ import com.glm.glmback.atelier.application.TypeDAgregatDEvenement;
 import com.glm.glmback.atelier.domain.ActiviteId;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.IdentifiantDEvenementReutiliseException;
-import com.glm.glmback.atelier.domain.IntentionDePointage;
 import com.glm.glmback.atelier.domain.LectureDuSuivi;
 import com.glm.glmback.atelier.domain.PointageAEnregistrer;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
@@ -129,8 +128,6 @@ class JpaIdentitesDEvenementsIT {
     return PointageAEnregistrer.pupitreBuilder()
       .suivi(suivi.id())
       .type(TypeDEvenementDAtelier.FIN)
-      .intention(IntentionDePointage.FIN)
-      .activiteVisee(Optional.of(new ActiviteId(suivi.journal().evenements().getFirst().id().uuid())))
       .operateur(OPERATEUR_ID_DUPONT)
       .poste(Optional.empty())
       .auteur(AUTEUR_DUPONT)
@@ -149,7 +146,7 @@ class JpaIdentitesDEvenementsIT {
     assertThat(relu.journal().evenements()).hasSize(2);
     var evenement = relu.journal().evenements().getLast();
     assertThat(evenement.id()).isEqualTo(fin.evenement());
-    assertThat(evenement.activiteVisee()).isEqualTo(fin.activiteVisee());
+    assertThat(evenement.activiteVisee()).contains(new ActiviteId(relu.journal().evenements().getFirst().id().uuid()));
     assertThat(evenement.dateDeSurvenue()).isEqualTo(LE_10_MAI_2026_A_17H);
     assertThat(evenement.dateDEnregistrement()).isEqualTo(initial.agregat().suivi().journal().evenements().getLast().dateDEnregistrement());
     assertThat(rejeu.agregat().suivi()).isEqualTo(relu);

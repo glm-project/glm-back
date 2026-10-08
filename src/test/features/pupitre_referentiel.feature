@@ -59,27 +59,6 @@ Feature: Le referentiel que le pupitre met en cache
       | operateur | poste     | categorie | depuis               |
       | dupont    | fraiseuse | TRAVAIL   | 2026-05-11T09:00:00Z |
 
-  Scenario: Une activite relancee reste unique et repart de la relance
-    Given le pupitre fabrique "OF 4010"
-    And "OF 4010" est engage au pupitre a "2026-05-11T07:00:00Z"
-    And au pupitre, "dupont" pointe "DEBUT" sur "OF 4010" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
-    And au pupitre, "dupont" pointe "DEBUT" sur "OF 4010" au poste "fraiseuse" a "2026-05-11T10:00:00Z"
-    When je lis le referentiel du pupitre a "2026-05-11T11:00:00Z"
-    Then "OF 4010" figure au referentiel du pupitre dans l'etat "EN_COURS"
-    And les activites de "OF 4010" au referentiel du pupitre sont
-      | operateur | poste     | categorie | depuis               |
-      | dupont    | fraiseuse | TRAVAIL   | 2026-05-11T10:00:00Z |
-
-  Scenario: Une non conformite relancee reste unique et repart de la relance
-    Given le pupitre fabrique "OF 4011"
-    And "OF 4011" est engage au pupitre a "2026-05-11T07:00:00Z"
-    And au pupitre, "dupont" pointe "NON_CONFORMITE" sur "OF 4011" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
-    And au pupitre, "dupont" pointe "NON_CONFORMITE" sur "OF 4011" au poste "fraiseuse" a "2026-05-11T10:00:00Z"
-    When je lis le referentiel du pupitre a "2026-05-11T11:00:00Z"
-    Then les activites de "OF 4011" au referentiel du pupitre sont
-      | operateur | poste     | categorie      | depuis               |
-      | dupont    | fraiseuse | NON_CONFORMITE | 2026-05-11T10:00:00Z |
-
   Scenario: Une non conformite pointee apres une fin ouvre une activite de non conformite
     Given le pupitre fabrique "OF 4003"
     And "OF 4003" est engage au pupitre a "2026-05-11T07:00:00Z"
@@ -135,37 +114,19 @@ Feature: Le referentiel que le pupitre met en cache
     When je lis le referentiel du pupitre a "2026-05-19T09:00:00Z"
     Then "OF 4101" ne porte aucune activite au referentiel du pupitre
 
-  Scenario: Deux gestes a la meme heure se rangent sans leur date d'enregistrement
-    # La relance B et la fin de A sont pointees hors ligne a 10:00 et recues dans cet ordre. A heure egale, la fin
-    # passe avant l'ouverture, quel que soit l'ordre de reception : A se termine a 10:00, et B est en cours.
+  Scenario: Une fin et une non conformite a la meme heure laissent la non conformite en cours
+    # Le bouton NC du pupitre envoie deux pointages a la meme heure, la fin d'abord. Recus hors ligne dans cet ordre, la
+    # fin termine A a 10:00 et B, la non conformite, est la seule activite en cours.
     Given le pupitre fabrique "OF 4103"
     And "OF 4103" est engage au pupitre a "2026-05-20T07:00:00Z"
     And au pupitre, "dupont" ouvre "A" en "DEBUT" sur "OF 4103" au poste "fraiseuse" a "2026-05-20T08:00:00Z"
-    And au pupitre, "dupont" ouvre "B" en "DEBUT" sur "OF 4103" au poste "fraiseuse" a "2026-05-20T10:00:00Z", recu a "2026-05-20T10:05:00Z"
-    And au pupitre, "dupont" termine "A" par "F" sur "OF 4103" au poste "fraiseuse" a "2026-05-20T10:00:00Z", recu a "2026-05-20T10:10:00Z"
+    And au pupitre, "dupont" termine par "F" sur "OF 4103" au poste "fraiseuse" a "2026-05-20T10:00:00Z", recu a "2026-05-20T10:05:00Z"
+    And au pupitre, "dupont" ouvre "B" en "NON_CONFORMITE" sur "OF 4103" au poste "fraiseuse" a "2026-05-20T10:00:00Z", recu a "2026-05-20T10:10:00Z"
     When je lis le referentiel du pupitre a "2026-05-20T11:00:00Z"
     Then "OF 4103" figure au referentiel du pupitre dans l'etat "EN_COURS"
     And les activites de "OF 4103" au referentiel du pupitre sont
-      | operateur | poste     | categorie | depuis               | ouverture |
-      | dupont    | fraiseuse | TRAVAIL   | 2026-05-20T10:00:00Z | B         |
-
-  Scenario: Une activite que le moteur juge a resoudre n'est pas exposee, contrairement a une nouvelle ouverture
-    # A est remplacee par la non conformite B a 12:00, puis terminee a 17:00 : le moteur juge A et B a resoudre. Le
-    # referentiel ne les rend pas parmi les activites en cours ; seule une nouvelle ouverture a un sens.
-    Given le pupitre fabrique "OF 4104"
-    And "OF 4104" est engage au pupitre a "2026-05-21T07:00:00Z"
-    And au pupitre, "dupont" ouvre "A" en "DEBUT" sur "OF 4104" au poste "fraiseuse" a "2026-05-21T08:00:00Z"
-    And au pupitre, "dupont" passe "A" en "NON_CONFORMITE" sous le nom "B" sur "OF 4104" au poste "fraiseuse" a "2026-05-21T12:00:00Z"
-    And au pupitre, "dupont" termine "A" par "F" sur "OF 4104" au poste "fraiseuse" a "2026-05-21T17:00:00Z"
-    When je lis le referentiel du pupitre a "2026-05-21T17:30:00Z"
-    Then "OF 4104" figure au referentiel du pupitre dans l'etat "INTERROMPU"
-    And "OF 4104" ne porte aucune activite au referentiel du pupitre
-    Given au pupitre, "dupont" ouvre "C" en "DEBUT" sur "OF 4104" au poste "fraiseuse" a "2026-05-21T18:00:00Z"
-    When je lis le referentiel du pupitre a "2026-05-21T18:30:00Z"
-    Then "OF 4104" figure au referentiel du pupitre dans l'etat "EN_COURS"
-    And les activites de "OF 4104" au referentiel du pupitre sont
-      | operateur | poste     | categorie | depuis               | ouverture |
-      | dupont    | fraiseuse | TRAVAIL   | 2026-05-21T18:00:00Z | C         |
+      | operateur | poste     | categorie      | depuis               | ouverture |
+      | dupont    | fraiseuse | NON_CONFORMITE | 2026-05-20T10:00:00Z | B         |
 
   Scenario: Un element sans reference garde une tuile nominale
     Given le pupitre fabrique "PRD 4011" sans reference

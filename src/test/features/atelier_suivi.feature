@@ -249,112 +249,6 @@ Feature: Suivi des elements engages en atelier
       | poste     | 4b8e2d31-95c0-4f76-a1d3-7e6b0c5a9f42 |
     Then la reponse a le statut http 404
 
-  Scenario: Demarrer une activite deja en cours la relance
-    # D9 : l'operateur qui revient sur un element reste ouvert n'est jamais bloque. Son debut ferme la periode
-    # precedente et en ouvre une nouvelle, sans trou ni recouvrement.
-    Given il est "2026-05-10T08:00:00Z"
-    And l'entreprise a cree l'element de fabrication "OF 2005"
-      | categorie | OF   |
-      | reference | 2005 |
-    And j'ai engage l'element "OF 2005" en atelier
-    And j'ai pointe sur "OF 2005"
-      | type      | DEBUT       |
-      | operateur | dupont      |
-      | poste     | fraiseuse-1 |
-    Given il est "2026-05-10T10:00:00Z"
-    When je pointe sur "OF 2005"
-      | type      | DEBUT       |
-      | operateur | dupont      |
-      | poste     | fraiseuse-1 |
-    Then la reponse a le statut http 201
-    And le suivi a l'etat "EN_COURS"
-    And le suivi a 1 activites en cours
-    And l'activite en cours est de categorie "TRAVAIL"
-    And le journal du suivi contient 2 evenements
-
-  Scenario: Pointer une non conformite deja en cours la relance
-    Given il est "2026-05-10T08:00:00Z"
-    And l'entreprise a cree l'element de fabrication "OF 2090"
-      | categorie | OF   |
-      | reference | 2090 |
-    And j'ai engage l'element "OF 2090" en atelier
-    And j'ai pointe sur "OF 2090"
-      | type      | NON_CONFORMITE |
-      | operateur | dupont         |
-      | poste     | fraiseuse-1    |
-    Given il est "2026-05-10T10:00:00Z"
-    When je pointe sur "OF 2090"
-      | type      | NON_CONFORMITE |
-      | operateur | dupont         |
-      | poste     | fraiseuse-1    |
-    Then la reponse a le statut http 201
-    And le suivi a 1 activites en cours
-    And l'activite en cours est de categorie "NON_CONFORMITE"
-    And le journal du suivi contient 2 evenements
-
-  Scenario: Une relance rejouee par le pupitre ne cree pas un troisieme evenement
-    # La relance est un nouveau geste, sous un nouvel identifiant. Le meme geste rejoue reste absorbe.
-    Given il est "2026-05-10T08:00:00Z"
-    And l'entreprise a cree l'element de fabrication "OF 2091"
-      | categorie | OF   |
-      | reference | 2091 |
-    And j'ai engage l'element "OF 2091" en atelier
-    And j'ai pointe sur "OF 2091"
-      | id        | 00000000-0000-0000-0000-000000000041 |
-      | type      | DEBUT                                |
-      | operateur | dupont                               |
-      | poste     | fraiseuse-1                          |
-    Given il est "2026-05-10T10:00:00Z"
-    When je pointe sur "OF 2091"
-      | id        | 00000000-0000-0000-0000-000000000042 |
-      | type      | DEBUT                                |
-      | operateur | dupont                               |
-      | poste     | fraiseuse-1                          |
-    Then la reponse a le statut http 201
-    When je pointe sur "OF 2091"
-      | id        | 00000000-0000-0000-0000-000000000042 |
-      | type      | DEBUT                                |
-      | operateur | dupont                               |
-      | poste     | fraiseuse-1                          |
-    Then la reponse a le statut http 200
-    And le journal du suivi contient 2 evenements
-    And le suivi a 1 activites en cours
-
-  Scenario: Un debut pointe tardivement au milieu d'une activite deja terminee contredit sa fin
-    # Le debut rattrape a 10 h ouvre une activite, donc remplace a son heure celle de 8 h : la fin de 12 h, qui la vise,
-    # la dirait terminee apres son remplacement. Le pointage est admis, et le moteur laisse les activites a resoudre
-    # plutot que de les lire selon une interpretation choisie par le serveur : aucune n'est en cours.
-    Given il est "2026-05-10T08:00:00Z"
-    And l'entreprise a cree l'element de fabrication "OF 2092"
-      | categorie | OF   |
-      | reference | 2092 |
-    And j'ai engage l'element "OF 2092" en atelier
-    And j'ai pointe sur "OF 2092"
-      | id        | 00000000-0000-0000-0000-000000000261 |
-      | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
-      | operateur | dupont                               |
-      | poste     | fraiseuse-1                          |
-    Given il est "2026-05-10T12:00:00Z"
-    And j'ai pointe sur "OF 2092"
-      | id        | 00000000-0000-0000-0000-000000000262 |
-      | type      | FIN                                  |
-      | intention | FIN                                  |
-      | cible     | 00000000-0000-0000-0000-000000000261 |
-      | operateur | dupont                               |
-      | poste     | fraiseuse-1                          |
-    Given il est "2026-05-11T09:15:00Z"
-    When je pointe sur "OF 2092"
-      | type           | DEBUT                |
-      | intention      | OUVERTURE            |
-      | operateur      | dupont               |
-      | poste          | fraiseuse-1          |
-      | dateDeSurvenue | 2026-05-10T10:00:00Z |
-    Then la reponse a le statut http 201
-    And le journal du suivi contient 3 evenements
-    And le suivi a 0 activites en cours
-    And le suivi a l'etat "INTERROMPU"
-
   Scenario: Cloturer un element, puis le rouvrir
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2006"
@@ -364,7 +258,6 @@ Feature: Suivi des elements engages en atelier
     And j'ai pointe sur "OF 2006"
       | id        | 00000000-0000-0000-0000-000000000291 |
       | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
     Given il est "2026-05-10T18:00:00Z"
@@ -377,17 +270,16 @@ Feature: Suivi des elements engages en atelier
       | operateur | dupont |
     Then la reponse a le statut http 409
     And la reponse porte le code d'erreur "urn:glm:erreur:atelier:suivi-d-atelier-cloture"
-    # L'arreter apres la cloture, en revanche, ne change rien : la cloture l'a deja fait.
+    # L'arreter apres la cloture, en revanche, ne change rien : la cloture l'a deja fait, la fin est ignoree.
     Given il est "2026-05-10T18:30:00Z"
     When je pointe sur "OF 2006"
       | id        | 00000000-0000-0000-0000-000000000292 |
       | type      | FIN                                  |
-      | intention | FIN                                  |
-      | cible     | 00000000-0000-0000-0000-000000000291 |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
-    Then la reponse a le statut http 200
-    And le suivi a l'etat "CLOTURE"
+    Then le pointage est ignore
+    When je consulte "OF 2006"
+    Then le suivi a l'etat "CLOTURE"
     And le journal du suivi contient 1 evenements
     # Rouvert, l'element retrouve l'activite que la cloture terminait : elle court jusqu'a son echeance.
     When je rouvre "OF 2006"
@@ -421,7 +313,6 @@ Feature: Suivi des elements engages en atelier
     And j'ai pointe sur "OF 2022"
       | id        | 00000000-0000-0000-0000-000000002022 |
       | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
     Given il est "2026-05-10T22:00:00Z"

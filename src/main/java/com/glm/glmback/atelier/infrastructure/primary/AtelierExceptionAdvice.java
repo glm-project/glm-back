@@ -13,6 +13,7 @@ import com.glm.glmback.atelier.domain.FinAvantDebutException;
 import com.glm.glmback.atelier.domain.IdentifiantDEvenementReutiliseException;
 import com.glm.glmback.atelier.domain.OperateurDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.OperateurNonHabiliteException;
+import com.glm.glmback.atelier.domain.PointageIgnoreException;
 import com.glm.glmback.atelier.domain.PosteDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierClotureException;
@@ -106,6 +107,11 @@ class AtelierExceptionAdvice {
   @ExceptionHandler(SaisieConcurrenteException.class)
   ProblemDetail handleSaisieConcurrente(SaisieConcurrenteException e) {
     return ErreurDAtelier.SAISIE_CONCURRENTE.problem(e);
+  }
+
+  @ExceptionHandler(PointageIgnoreException.class)
+  ProblemDetail handlePointageIgnore(PointageIgnoreException e) {
+    return ErreurDAtelier.POINTAGE_IGNORE.problem(e);
   }
 
   @ExceptionHandler(IdentifiantDEvenementReutiliseException.class)

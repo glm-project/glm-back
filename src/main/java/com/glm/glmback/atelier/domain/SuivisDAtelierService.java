@@ -41,6 +41,7 @@ public final class SuivisDAtelierService {
   private final OperateursConnus operateurs;
   private final PostesConnus postes;
   private final Habilitations habilitations;
+  private final PointagesIgnores pointagesIgnores;
   private final Clock clock;
 
   private SuivisDAtelierService(
@@ -49,6 +50,7 @@ public final class SuivisDAtelierService {
     OperateursConnus operateurs,
     PostesConnus postes,
     Habilitations habilitations,
+    PointagesIgnores pointagesIgnores,
     Clock clock
   ) {
     this.repository = repository;
@@ -56,6 +58,7 @@ public final class SuivisDAtelierService {
     this.operateurs = operateurs;
     this.postes = postes;
     this.habilitations = habilitations;
+    this.pointagesIgnores = pointagesIgnores;
     this.clock = clock;
   }
 
@@ -63,7 +66,10 @@ public final class SuivisDAtelierService {
     return repository ->
       elements ->
         operateurs ->
-          postes -> habilitations -> clock -> new SuivisDAtelierService(repository, elements, operateurs, postes, habilitations, clock);
+          postes ->
+            habilitations ->
+              pointagesIgnores ->
+                clock -> new SuivisDAtelierService(repository, elements, operateurs, postes, habilitations, pointagesIgnores, clock);
   }
 
   /**
@@ -93,25 +99,31 @@ public final class SuivisDAtelierService {
   }
 
   /**
-   * Un pointage d'atelier n'est jamais refuse a l'operateur parce qu'il contredit le journal : il est conserve, et sa
-   * sequence est en conflit. Demarrer ou pointer une non conformite sur un OF cloture, qui n'est plus pointable, reste
-   * refuse, comme un operateur ou un poste inconnu, et comme un
-   * geste qui vise une activite introuvable dans ce suivi ou d'une autre cle que la sienne.
+   * Juge un pointage de l'operateur selon la regle de reception : les controles existants d'abord (OF cloture,
+   * operateur ou poste introuvable, habilitation), puis le suivi decide s'il est accepte ou ignore.
    *
    * <p>
-   * Une fin survenue avant la cloture de l'OF, mais recue apres elle, est enregistree a son heure. Survenue apres, elle
-   * ne change rien : la cloture a deja termine ce qu'elle terminerait, et le geste est absorbe.
+   * Le suivi est verrouille des l'entree : un pointage ignore ecrit lui aussi son audit, et deux pointages simultanes
+   * du meme suivi se jugent l'un apres l'autre. Un identifiant deja present dans la table des evenements est un renvoi,
+   * et un identifiant deja present dans l'audit est refuse de nouveau sans nouvelle ligne : l'un et l'autre avant
+   * toute regle. Demarrer ou pointer une non conformite sur un OF cloture reste refuse, comme un operateur ou un poste
+   * inconnu ; une fin posterieure a la cloture est ignoree, la cloture ayant termine l'activite.
    * </p>
    *
    * <p>
-   * Un evenement deja present dans la table des evenements, de ce suivi ou d'un autre, est un renvoi : il repond comme
-   * un succes et n'ecrit rien, avant toute regle.
+   * Un pointage ignore n'entre pas au journal : il est ecrit dans l'audit, et le suivi rendu est inchange. Accepte, il
+   * entre au journal comme une ouverture, ou comme la fin de l'activite en cours de sa cle.
    * </p>
    */
   public PointageDAtelierTraite pointe(PointageAEnregistrer commande) {
-    SuiviDAtelier suivi = get(commande.suivi());
+    SuiviDAtelier suivi = repository
+      .getForUpdate(commande.suivi())
+      .orElseThrow(() -> new SuiviDAtelierIntrouvableException(commande.suivi()));
     if (repository.contientEvenement(commande.evenement())) {
-      return new PointageDAtelierTraite(suivi, true);
+      return new PointageDAtelierTraite(suivi, IssueDePointage.REJOUE);
+    }
+    if (pointagesIgnores.contient(commande.evenement())) {
+      return new PointageDAtelierTraite(suivi, IssueDePointage.IGNORE);
     }
     if (suivi.estCloture() && commande.type() != TypeDEvenementDAtelier.FIN) {
       throw new SuiviDAtelierClotureException(suivi.id());
@@ -119,24 +131,26 @@ public final class SuivisDAtelierService {
 
     Instant maintenant = clock.now();
     Horodatage horodatage = new Horodatage(survenue(commande.dateDeSurvenue(), maintenant), maintenant);
-    EvenementDAtelier evenement = evenement(
-      commande.evenement(),
-      commande.type(),
-      commande.intention(),
-      commande.activiteVisee(),
-      commande.operateur(),
-      commande.poste(),
-      commande.auteur(),
-      OrigineDuPointage.POINTAGE,
-      horodatage
-    );
+    Ressources ressources = ressources(commande.operateur(), commande.poste());
 
-    suivi.exigeLActiviteViseePar(evenement);
-    if (suivi.estClotureAvant(evenement)) {
-      return new PointageDAtelierTraite(suivi, true);
-    }
-
-    return new PointageDAtelierTraite(repository.update(suivi.enregistre(evenement)), false);
+    return switch (suivi.juge(new CleDActivite(commande.operateur(), commande.poste()), commande.type(), horodatage.dateDeSurvenue())) {
+      case VerdictDeReception.Ignore ignore -> {
+        pointagesIgnores.enregistre(new PointageIgnore(commande, horodatage, ignore));
+        yield new PointageDAtelierTraite(suivi, IssueDePointage.IGNORE);
+      }
+      case VerdictDeReception.Accepte accepte -> {
+        EvenementDAtelier evenement = evenement(
+          commande.evenement(),
+          commande.type(),
+          accepte.activiteTerminee(),
+          ressources,
+          commande.auteur(),
+          OrigineDuPointage.POINTAGE,
+          horodatage
+        );
+        yield new PointageDAtelierTraite(repository.update(suivi.enregistre(evenement)), IssueDePointage.ACCEPTE);
+      }
+    };
   }
 
   /**
@@ -160,10 +174,8 @@ public final class SuivisDAtelierService {
     EvenementDAtelier fin = evenement(
       commande.evenement(),
       TypeDEvenementDAtelier.FIN,
-      IntentionDePointage.FIN,
       Optional.of(commande.activite()),
-      activite.ouvrant().operateur(),
-      activite.ouvrant().poste(),
+      ressources(activite.ouvrant().operateur(), activite.ouvrant().poste()),
       commande.auteur(),
       OrigineDuPointage.REGULARISATION,
       new Horodatage(commande.dateDeSurvenue(), maintenant)
@@ -210,34 +222,38 @@ public final class SuivisDAtelierService {
     return dateDeSurvenue.filter(date -> date.isBefore(maintenant)).orElse(maintenant);
   }
 
-  private EvenementDAtelier evenement(
+  private static EvenementDAtelier evenement(
     EvenementDAtelierId evenement,
     TypeDEvenementDAtelier type,
-    IntentionDePointage intention,
-    Optional<ActiviteId> activiteVisee,
-    OperateurId operateur,
-    Optional<PosteDeTravailId> poste,
+    Optional<ActiviteId> activiteTerminee,
+    Ressources ressources,
     Auteur auteur,
     OrigineDuPointage origine,
     Horodatage horodatage
   ) {
-    OperateurConnu operateurConnu = operateurConnu(operateur);
-    Optional<PosteConnu> posteConnu = poste.map(id -> posteHabilite(operateur, id));
+    boolean ouvre = type != TypeDEvenementDAtelier.FIN;
 
     return EvenementDAtelier.builder()
       .id(evenement)
       .type(type)
-      .intention(intention)
-      .activite(intention.ouvreUneActivite() ? Optional.of(ActiviteId.ouvertePar(evenement)) : Optional.empty())
-      .activiteVisee(activiteVisee)
-      .operateur(operateur)
-      .poste(poste)
-      .nature(posteConnu.map(PosteConnu::nature))
-      .coutHoraire(posteConnu.flatMap(PosteConnu::coutHoraire))
-      .tauxHoraire(operateurConnu.tauxHoraire())
+      .intention(ouvre ? IntentionDePointage.OUVERTURE : IntentionDePointage.FIN)
+      .activite(ouvre ? Optional.of(ActiviteId.ouvertePar(evenement)) : Optional.empty())
+      .activiteVisee(activiteTerminee)
+      .operateur(ressources.operateur().id())
+      .poste(ressources.poste().map(PosteConnu::id))
+      .nature(ressources.poste().map(PosteConnu::nature))
+      .coutHoraire(ressources.poste().flatMap(PosteConnu::coutHoraire))
+      .tauxHoraire(ressources.operateur().tauxHoraire())
       .auteur(auteur)
       .origine(origine)
       .horodatage(horodatage);
+  }
+
+  /**
+   * L'operateur et le poste d'un geste, une fois etabli qu'ils existent et que l'operateur est habilite sur le poste.
+   */
+  private Ressources ressources(OperateurId operateur, Optional<PosteDeTravailId> poste) {
+    return new Ressources(operateurConnu(operateur), poste.map(id -> posteHabilite(operateur, id)));
   }
 
   private OperateurConnu operateurConnu(OperateurId operateur) {
@@ -262,6 +278,8 @@ public final class SuivisDAtelierService {
     return connu;
   }
 
+  private record Ressources(OperateurConnu operateur, Optional<PosteConnu> poste) {}
+
   public interface SuivisDAtelierServiceRepositoryBuilder {
     SuivisDAtelierServiceElementsBuilder repository(SuiviDAtelierRepository repository);
   }
@@ -279,7 +297,11 @@ public final class SuivisDAtelierService {
   }
 
   public interface SuivisDAtelierServiceHabilitationsBuilder {
-    SuivisDAtelierServiceClockBuilder habilitations(Habilitations habilitations);
+    SuivisDAtelierServicePointagesIgnoresBuilder habilitations(Habilitations habilitations);
+  }
+
+  public interface SuivisDAtelierServicePointagesIgnoresBuilder {
+    SuivisDAtelierServiceClockBuilder pointagesIgnores(PointagesIgnores pointagesIgnores);
   }
 
   public interface SuivisDAtelierServiceClockBuilder {

@@ -21,7 +21,6 @@ Feature: Echeance et fin automatique des activites
     And j'ai pointe sur "OF 5001"
       | id        | 00000000-0000-0000-0000-000000000501 |
       | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
     Given il est "2026-06-01T20:59:00Z"
@@ -45,7 +44,6 @@ Feature: Echeance et fin automatique des activites
     And j'ai pointe sur "OF 5002"
       | id        | 00000000-0000-0000-0000-000000000511 |
       | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
     Given il est "2026-06-02T21:00:00Z"
@@ -76,7 +74,6 @@ Feature: Echeance et fin automatique des activites
     And j'ai pointe sur "OF 5016"
       | id        | 00000000-0000-0000-0000-0000000005f1 |
       | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
     Given il est "2026-06-25T09:00:00Z"
@@ -86,31 +83,7 @@ Feature: Echeance et fin automatique des activites
       | evenement | debut                | fin                  | duree |
       | 0         | 2026-06-24T08:00:00Z | 2026-06-24T21:00:00Z | PT13H |
 
-  Scenario: Une relance avant l'echeance termine l'activite precedente a son heure
-    Given il est "2026-06-04T07:00:00Z"
-    And l'entreprise a cree l'element de fabrication "OF 5003"
-      | categorie | OF   |
-      | reference | 5003 |
-    And j'ai engage l'element "OF 5003" en atelier
-    And il est "2026-06-04T08:00:00Z"
-    And j'ai pointe sur "OF 5003"
-      | id        | 00000000-0000-0000-0000-000000000521 |
-      | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
-      | operateur | dupont                               |
-      | poste     | fraiseuse-1                          |
-    Given il est "2026-06-04T10:00:00Z"
-    And j'ai pointe sur "OF 5003"
-      | id        | 00000000-0000-0000-0000-000000000522 |
-      | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
-      | operateur | dupont                               |
-      | poste     | fraiseuse-1                          |
-    Then les activites en cours sont
-      | categorie | depuis               | ouverture                            | echeance             |
-      | TRAVAIL   | 2026-06-04T10:00:00Z | 00000000-0000-0000-0000-000000000522 | 2026-06-04T23:00:00Z |
-
-  Scenario: Une relance apres l'echeance laisse sa borne automatique a l'activite precedente
+  Scenario: Un demarrage apres l'echeance laisse sa fin automatique a l'activite precedente
     Given il est "2026-06-05T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 5004"
       | categorie | OF   |
@@ -120,21 +93,19 @@ Feature: Echeance et fin automatique des activites
     And j'ai pointe sur "OF 5004"
       | id        | 00000000-0000-0000-0000-000000000531 |
       | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
     Given il est "2026-06-05T23:00:00Z"
     When je pointe sur "OF 5004"
       | id        | 00000000-0000-0000-0000-000000000532 |
       | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
     Then la reponse a le statut http 201
     And les activites en cours sont
       | categorie | depuis               | ouverture                            | echeance             |
       | TRAVAIL   | 2026-06-05T23:00:00Z | 00000000-0000-0000-0000-000000000532 | 2026-06-06T12:00:00Z |
-    # Rien ne couvre 21:00 - 23:00 : la relance ne prolonge pas l'activite echue.
+    # Rien ne couvre 21:00 - 23:00 : le nouveau demarrage ne prolonge pas l'activite echue.
     When je consulte le dossier d'anomalie de "OF 5004" depuis l'evenement 0
     Then la reponse a le statut http 200
     And le dossier d'anomalie donne l'activite
@@ -151,21 +122,17 @@ Feature: Echeance et fin automatique des activites
     And j'ai pointe sur "OF 5005"
       | id        | 00000000-0000-0000-0000-000000000541 |
       | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
     Given il est "2026-06-06T12:00:00Z"
     And j'ai pointe sur "OF 5005"
       | id        | 00000000-0000-0000-0000-000000000543 |
       | type      | FIN                                  |
-      | intention | FIN                                  |
-      | cible     | 00000000-0000-0000-0000-000000000541 |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
     When je pointe sur "OF 5005"
       | id        | 00000000-0000-0000-0000-000000000542 |
       | type      | NON_CONFORMITE                       |
-      | intention | OUVERTURE                            |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
     # Les 4 h de travail sont terminees a 12 h ; la non conformite a sa propre echeance, a 01 h le lendemain.
@@ -184,7 +151,6 @@ Feature: Echeance et fin automatique des activites
     And j'ai pointe sur "OF 5006"
       | id        | 00000000-0000-0000-0000-000000000551 |
       | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
     Given il est "2026-06-08T22:00:00Z"
@@ -198,8 +164,6 @@ Feature: Echeance et fin automatique des activites
     When je pointe sur "OF 5006"
       | id             | 00000000-0000-0000-0000-000000000552 |
       | type           | FIN                                  |
-      | intention      | FIN                                  |
-      | cible          | 00000000-0000-0000-0000-000000000551 |
       | operateur      | dupont                               |
       | poste          | fraiseuse-1                          |
       | dateDeSurvenue | 2026-06-08T17:00:00Z                 |
@@ -207,7 +171,7 @@ Feature: Echeance et fin automatique des activites
     When je consulte le dossier d'anomalie de "OF 5006" depuis l'evenement 0
     Then la reponse a le statut http 404
 
-  Scenario: Une fin pointee a 23 h apres la fin automatique de 21 h est conservee sans effet
+  Scenario: Une fin pointee a 23 h apres la fin automatique de 21 h est ignoree
     Given il est "2026-06-10T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 5007"
       | categorie | OF   |
@@ -217,20 +181,19 @@ Feature: Echeance et fin automatique des activites
     And j'ai pointe sur "OF 5007"
       | id        | 00000000-0000-0000-0000-000000000561 |
       | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
     Given il est "2026-06-10T23:00:00Z"
     When je pointe sur "OF 5007"
       | id        | 00000000-0000-0000-0000-000000000562 |
       | type      | FIN                                  |
-      | intention | FIN                                  |
-      | cible     | 00000000-0000-0000-0000-000000000561 |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
-    # La fin est enregistree, pas absorbee ; elle ne prolonge pas l'activite, qui garde 13 h et son anomalie.
-    Then la reponse a le statut http 201
-    And le journal du suivi contient 2 evenements
+    # La fin est ignoree (APRES_ECHEANCE) : elle n'entre pas au journal et ne prolonge pas l'activite, qui garde 13 h et
+    # son anomalie.
+    Then le pointage est ignore
+    When je consulte "OF 5007"
+    Then le journal du suivi contient 1 evenements
     And le suivi a l'etat "INTERROMPU"
     When je consulte le dossier d'anomalie de "OF 5007" depuis l'evenement 0
     Then la reponse a le statut http 200
@@ -238,7 +201,7 @@ Feature: Echeance et fin automatique des activites
       | evenement | debut                | fin                  | duree |
       | 0         | 2026-06-10T08:00:00Z | 2026-06-10T21:00:00Z | PT13H |
 
-  Scenario: Une fin puis une non conformite pointees a 23 h ouvrent la non conformite a son heure
+  Scenario: Une fin ignoree puis une non conformite pointees a 23 h ouvrent la non conformite a son heure
     Given il est "2026-06-11T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 5008"
       | categorie | OF   |
@@ -248,21 +211,19 @@ Feature: Echeance et fin automatique des activites
     And j'ai pointe sur "OF 5008"
       | id        | 00000000-0000-0000-0000-000000000571 |
       | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
     Given il est "2026-06-11T23:00:00Z"
-    And j'ai pointe sur "OF 5008"
+    # La fin de 23 h est apres l'echeance de 21 h : elle est ignoree (APRES_ECHEANCE), la fin automatique reste a regulariser.
+    When je pointe sur "OF 5008"
       | id        | 00000000-0000-0000-0000-000000000573 |
       | type      | FIN                                  |
-      | intention | FIN                                  |
-      | cible     | 00000000-0000-0000-0000-000000000571 |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
+    Then le pointage est ignore
     When je pointe sur "OF 5008"
       | id        | 00000000-0000-0000-0000-000000000572 |
       | type      | NON_CONFORMITE                       |
-      | intention | OUVERTURE                            |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
     Then la reponse a le statut http 201
@@ -286,7 +247,6 @@ Feature: Echeance et fin automatique des activites
     And j'ai pointe sur "OF 5009"
       | id        | 00000000-0000-0000-0000-000000000581 |
       | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
     Given il est "2026-06-13T09:00:00Z"
@@ -299,7 +259,7 @@ Feature: Echeance et fin automatique des activites
     When je consulte le dossier d'anomalie de "OF 5009" depuis l'evenement 0
     Then la reponse a le statut http 404
 
-  Scenario: Une fin pointee exactement a l'echeance l'emporte sur la fin automatique
+  Scenario: Une fin pointee exactement a l'echeance est ignoree, la fin automatique reste a regulariser
     Given il est "2026-06-17T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 5011"
       | categorie | OF   |
@@ -309,20 +269,22 @@ Feature: Echeance et fin automatique des activites
     And j'ai pointe sur "OF 5011"
       | id        | 00000000-0000-0000-0000-0000000005a1 |
       | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
     Given il est "2026-06-17T21:00:00Z"
     When je pointe sur "OF 5011"
       | id        | 00000000-0000-0000-0000-0000000005a2 |
       | type      | FIN                                  |
-      | intention | FIN                                  |
-      | cible     | 00000000-0000-0000-0000-0000000005a1 |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
-    Then la reponse a le statut http 201
+    # L'echeance est atteinte quand l'heure du geste est superieure ou egale au debut plus 13 h : un geste pile a
+    # l'echeance n'emporte plus sur la fin automatique.
+    Then le pointage est ignore
     When je consulte le dossier d'anomalie de "OF 5011" depuis l'evenement 0
-    Then la reponse a le statut http 404
+    Then la reponse a le statut http 200
+    And le dossier d'anomalie donne l'activite
+      | evenement | debut                | fin                  | duree |
+      | 0         | 2026-06-17T08:00:00Z | 2026-06-17T21:00:00Z | PT13H |
 
   Scenario: Une fin puis une non conformite pointees a 12 h et recues le lendemain sont rejouees a leur heure
     Given il est "2026-06-19T07:00:00Z"
@@ -334,22 +296,18 @@ Feature: Echeance et fin automatique des activites
     And j'ai pointe sur "OF 5013"
       | id        | 00000000-0000-0000-0000-0000000005c1 |
       | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
     Given il est "2026-06-20T09:00:00Z"
     And j'ai pointe sur "OF 5013"
       | id             | 00000000-0000-0000-0000-0000000005c3 |
       | type           | FIN                                  |
-      | intention      | FIN                                  |
-      | cible          | 00000000-0000-0000-0000-0000000005c1 |
       | operateur      | dupont                               |
       | poste          | fraiseuse-1                          |
       | dateDeSurvenue | 2026-06-19T12:00:00Z                 |
     When je pointe sur "OF 5013"
       | id             | 00000000-0000-0000-0000-0000000005c2 |
       | type           | NON_CONFORMITE                       |
-      | intention      | OUVERTURE                            |
       | operateur      | dupont                               |
       | poste          | fraiseuse-1                          |
       | dateDeSurvenue | 2026-06-19T12:00:00Z                 |
@@ -376,7 +334,6 @@ Feature: Echeance et fin automatique des activites
     And j'ai pointe sur "OF 5015"
       | id        | 00000000-0000-0000-0000-0000000005e1 |
       | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
     Given il est "2026-03-29T13:29:59Z"

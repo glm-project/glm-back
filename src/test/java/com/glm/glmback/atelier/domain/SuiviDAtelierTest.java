@@ -171,7 +171,7 @@ class SuiviDAtelierTest {
     SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H));
     EvenementDAtelier finDAilleurs = finDe(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)).a(LE_10_MAI_2026_A_12H);
 
-    assertThatThrownBy(() -> suivi.exigeLActiviteViseePar(finDAilleurs)).isExactlyInstanceOf(ActiviteViseeIntrouvableException.class);
+    assertThatThrownBy(() -> suivi.enregistre(finDAilleurs)).isExactlyInstanceOf(ActiviteViseeIntrouvableException.class);
   }
 
   /**

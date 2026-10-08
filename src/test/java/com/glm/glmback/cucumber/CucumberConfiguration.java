@@ -56,8 +56,8 @@ public class CucumberConfiguration {
     }
 
     @Bean
-    EcrituresDuJournalDAtelier ecrituresDuJournalDAtelier(CucumberRestClient rest, CucumberClock horloge) {
-      return new EcrituresDuJournalDAtelier(rest, horloge);
+    EcrituresDuJournalDAtelier ecrituresDuJournalDAtelier(CucumberRestClient rest) {
+      return new EcrituresDuJournalDAtelier(rest);
     }
 
     /**

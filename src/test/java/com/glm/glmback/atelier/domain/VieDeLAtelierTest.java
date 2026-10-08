@@ -37,6 +37,7 @@ class VieDeLAtelierTest {
 
   private final AtomicReference<Instant> maintenant = new AtomicReference<>(LE_10_MAI_2026_A_7H);
   private final SuivisDAtelierEnMemoire suivis = new SuivisDAtelierEnMemoire();
+  private final PointagesIgnoresEnMemoire pointagesIgnores = new PointagesIgnoresEnMemoire();
   private final RessourcesDAtelierEnMemoire ressources = RessourcesDAtelierEnMemoire.deLAtelier();
   private final SuivisDAtelierService atelier = SuivisDAtelierService.builder()
     .repository(suivis)
@@ -44,6 +45,7 @@ class VieDeLAtelierTest {
     .operateurs(ressources.operateurs())
     .postes(ressources.postes())
     .habilitations(ressources.habilitations())
+    .pointagesIgnores(pointagesIgnores)
     .clock(maintenant::get);
 
   private SuiviDAtelierId premierOrdre;
@@ -175,22 +177,18 @@ class VieDeLAtelierTest {
     return PointageAEnregistrer.builder()
       .suivi(suivi)
       .type(TypeDEvenementDAtelier.DEBUT)
-      .intention(IntentionDePointage.OUVERTURE)
-      .activiteVisee(Optional.empty())
       .operateur(OPERATEUR_ID_DUPONT)
       .poste(Optional.of(poste))
       .auteur(AUTEUR_DUPONT);
   }
 
   /**
-   * La fin de l'activite qu'a ouverte ce debut, sur le meme ordre et le meme poste, telle que le pupitre la pointe.
+   * La fin de l'activite en cours sur le meme ordre et le meme poste que ce debut, telle que le pupitre la pointe.
    */
   private static PointageAEnregistrer fin(PointageAEnregistrer debut) {
     return PointageAEnregistrer.builder()
       .suivi(debut.suivi())
       .type(TypeDEvenementDAtelier.FIN)
-      .intention(IntentionDePointage.FIN)
-      .activiteVisee(Optional.of(ActiviteId.ouvertePar(debut.evenement())))
       .operateur(debut.operateur())
       .poste(debut.poste())
       .auteur(debut.auteur());

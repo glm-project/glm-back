@@ -55,13 +55,6 @@ public record JournalDAtelier(List<EvenementDAtelier> evenements) {
   }
 
   /**
-   * Refuse un geste qui vise une activite absente de ce journal, ou ouverte sur une autre cle que la sienne.
-   */
-  public void exigeLActiviteViseePar(EvenementDAtelier geste) {
-    exigeLActiviteVisee(Stream.concat(evenements.stream(), Stream.of(geste)).toList(), geste);
-  }
-
-  /**
    * Les activites que les faits de chaque cle interpretent, la cloture refermant a son heure celle qui reste en
    * cours.
    */

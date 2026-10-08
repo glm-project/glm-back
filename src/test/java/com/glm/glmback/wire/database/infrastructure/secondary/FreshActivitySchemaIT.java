@@ -5,9 +5,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.GlmprojectApp;
 import com.glm.glmback.atelier.application.SuivisDAtelierApplicationService;
-import com.glm.glmback.atelier.domain.ActiviteId;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
-import com.glm.glmback.atelier.domain.IntentionDePointage;
 import com.glm.glmback.atelier.domain.PointageAEnregistrer;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
@@ -66,6 +64,7 @@ class FreshActivitySchemaIT {
     "operateur_poste",
     "parametrage",
     "pointage_en_conflit",
+    "pointage_ignore_d_atelier",
     "poste_de_travail",
     "sequence_en_conflit",
     "suivi_d_atelier"
@@ -308,8 +307,6 @@ class FreshActivitySchemaIT {
       var opening = PointageAEnregistrer.pupitreBuilder()
         .suivi(followup.id())
         .type(TypeDEvenementDAtelier.DEBUT)
-        .intention(IntentionDePointage.OUVERTURE)
-        .activiteVisee(Optional.empty())
         .operateur(OPERATEUR_ID_DUPONT)
         .poste(Optional.empty())
         .auteur(AUTEUR_DUPONT)
@@ -319,8 +316,6 @@ class FreshActivitySchemaIT {
       var finish = PointageAEnregistrer.pupitreBuilder()
         .suivi(followup.id())
         .type(TypeDEvenementDAtelier.FIN)
-        .intention(IntentionDePointage.FIN)
-        .activiteVisee(Optional.of(new ActiviteId(opening.evenement().uuid())))
         .operateur(OPERATEUR_ID_DUPONT)
         .poste(Optional.empty())
         .auteur(AUTEUR_DUPONT)

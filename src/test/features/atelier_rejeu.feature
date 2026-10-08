@@ -41,14 +41,11 @@ Feature: Rejeu durable des gestes du pupitre
     And j'ai pointe sur "OF reseau"
       | id        | 00000000-0000-0000-0000-000000000301 |
       | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
       | operateur | dupont                               |
     Given il est "2026-05-10T13:00:00Z"
     When je pointe sur "OF reseau"
       | id             | 00000000-0000-0000-0000-000000000302 |
       | type           | FIN                                  |
-      | intention      | FIN                                  |
-      | cible          | 00000000-0000-0000-0000-000000000301 |
       | operateur      | dupont                               |
       | dateDeSurvenue | 2026-05-10T12:00:00Z                 |
     Then la reponse a le statut http 201
@@ -68,33 +65,25 @@ Feature: Rejeu durable des gestes du pupitre
     And j'ai pointe sur "OF cible"
       | id        | 00000000-0000-0000-0000-000000000311 |
       | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
       | operateur | dupont                               |
     Given il est "2026-05-10T09:00:00Z"
     And j'ai pointe sur "OF cible"
       | id        | 00000000-0000-0000-0000-000000000313 |
       | type      | FIN                                  |
-      | intention | FIN                                  |
-      | cible     | 00000000-0000-0000-0000-000000000311 |
       | operateur | dupont                               |
     And j'ai pointe sur "OF cible"
       | id        | 00000000-0000-0000-0000-000000000312 |
       | type      | NON_CONFORMITE                       |
-      | intention | OUVERTURE                            |
       | operateur | dupont                               |
     Given il est "2026-05-10T10:00:00Z"
     When je pointe sur "OF cible"
       | id        | 00000000-0000-0000-0000-000000000312 |
       | type      | NON_CONFORMITE                       |
-      | intention | TRANSITION                           |
-      | cible     | 4d7c2a19-8e03-4b56-9f21-c0a1b2d3e4f5 |
       | operateur | dupont                               |
     Then la reponse a le statut http 200
     When je pointe sur "OF cible"
       | id        | 00000000-0000-0000-0000-000000000312 |
       | type      | NON_CONFORMITE                       |
-      | intention | TRANSITION                           |
-      | cible     | 00000000-0000-0000-0000-000000000311 |
       | operateur | dupont                               |
     Then la reponse a le statut http 200
     When je consulte "OF cible"
@@ -112,13 +101,10 @@ Feature: Rejeu durable des gestes du pupitre
       | id        | 00000000-0000-0000-0000-000000000321 |
       | operateur | dupont                               |
       | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
     Given il est "2026-05-10T12:00:00Z"
     When je pointe sur "OF droits FIN"
-      | operateur | dupont                               |
-      | type      | FIN                                  |
-      | intention | FIN                                  |
-      | cible     | 00000000-0000-0000-0000-000000000321 |
+      | operateur | dupont |
+      | type      | FIN    |
     Then la reponse a le statut http 201
     Given I am logged in as "user" with role "ADMIN"
     When je rejoue le dernier geste du pupitre
@@ -171,30 +157,23 @@ Feature: Rejeu durable des gestes du pupitre
       | id        | 00000000-0000-0000-0000-000000000331 |
       | operateur | dupont                               |
       | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
     Given il est "2026-05-10T13:00:00Z"
     When je pointe sur "OF collision FIN"
       | id             | 00000000-0000-0000-0000-000000000332 |
       | operateur      | dupont                               |
       | type           | FIN                                  |
-      | intention      | FIN                                  |
-      | cible          | 00000000-0000-0000-0000-000000000331 |
       | dateDeSurvenue | 2026-05-10T12:00:00Z                 |
     Then la reponse a le statut http 201
     When je pointe sur "OF collision FIN"
       | id             | 00000000-0000-0000-0000-000000000332 |
       | operateur      | dupont                               |
       | type           | FIN                                  |
-      | intention      | FIN                                  |
-      | cible          | 00000000-0000-0000-0000-000000000331 |
       | dateDeSurvenue | 2026-05-10T12:30:00Z                 |
     Then la reponse a le statut http 200
     When je pointe sur "OF collision FIN"
       | id             | 00000000-0000-0000-0000-000000000332 |
       | operateur      | dupont                               |
       | type           | FIN                                  |
-      | intention      | FIN                                  |
-      | cible          | 00000000-0000-0000-0000-000000000331 |
       | dateDeSurvenue | 2026-05-10T12:00:00Z                 |
     Then la reponse a le statut http 200
     And le journal du suivi contient 2 evenements
@@ -224,4 +203,50 @@ Feature: Rejeu durable des gestes du pupitre
     And le suivi a l'etat "EN_ATTENTE"
     And le journal du suivi contient 0 evenements
     When je consulte "OF source"
+    Then le journal du suivi contient 1 evenements
+
+  Scenario: Un pointage ignore rejoue est refuse de nouveau, sans seconde ligne d'audit
+    # Le pupitre n'a pas recu le refus et renvoie le meme corps : le serveur reconnait l'identifiant dans l'audit.
+    Given l'entreprise a cree l'element de fabrication "OF ignore"
+      | categorie | OF     |
+      | reference | ignore |
+    And j'ai engage l'element "OF ignore" en atelier
+    And il est "2026-05-10T08:00:00Z"
+    And I am logged in as "user" with role "USER"
+    And j'ai pointe sur "OF ignore"
+      | id        | 00000000-0000-0000-0000-000000000351 |
+      | operateur | dupont                               |
+      | type      | DEBUT                                |
+    Given il est "2026-05-10T09:00:00Z"
+    When je pointe sur "OF ignore"
+      | id        | 00000000-0000-0000-0000-000000000352 |
+      | operateur | dupont                               |
+      | type      | DEBUT                                |
+    Then le pointage est ignore
+    Given il est "2026-05-10T10:00:00Z"
+    When je rejoue le dernier geste du pupitre
+    Then le pointage est ignore
+    And la table d'audit des pointages ignores de "OF ignore" contient
+      | id                                   | type  | raison        | dateDeSurvenue       | dateDeReception      | dernierAccepte |
+      | 00000000-0000-0000-0000-000000000352 | DEBUT | DEJA_EN_COURS | 2026-05-10T09:00:00Z | 2026-05-10T09:00:00Z | evenement 0    |
+    When je consulte "OF ignore"
+    Then le journal du suivi contient 1 evenements
+
+  Scenario: Un pointage accepte rejoue repond 200 et ne laisse aucune ligne d'audit
+    Given l'entreprise a cree l'element de fabrication "OF accepte"
+      | categorie | OF      |
+      | reference | accepte |
+    And j'ai engage l'element "OF accepte" en atelier
+    And il est "2026-05-10T08:00:00Z"
+    And I am logged in as "user" with role "USER"
+    When je pointe sur "OF accepte"
+      | id        | 00000000-0000-0000-0000-000000000361 |
+      | operateur | dupont                               |
+      | type      | DEBUT                                |
+    Then le pointage est accepte
+    Given il est "2026-05-10T09:00:00Z"
+    When je rejoue le dernier geste du pupitre
+    Then le pointage est un rejeu
+    And la table d'audit des pointages ignores de "OF accepte" est vide
+    When je consulte "OF accepte"
     Then le journal du suivi contient 1 evenements

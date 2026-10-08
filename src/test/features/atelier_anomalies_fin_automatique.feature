@@ -19,7 +19,6 @@ Feature: Dossier d'une fin automatique
     And j'ai pointe sur "Anomalie 4501"
       | id        | 00000000-0000-0000-0000-000000045011 |
       | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
       | operateur | dupont-anomalie                      |
       | poste     | fraiseuse-anomalie                   |
     And il est "2044-03-01T22:00:00Z"
@@ -39,7 +38,6 @@ Feature: Dossier d'une fin automatique
     And il est "2044-03-02T08:00:00Z"
     And j'ai pointe sur "Anomalie 4502 <rang>"
       | type      | DEBUT              |
-      | intention | OUVERTURE          |
       | operateur | dupont-anomalie    |
       | poste     | fraiseuse-anomalie |
     And il est "<lecture>"

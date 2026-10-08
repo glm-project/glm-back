@@ -1,7 +1,13 @@
 package com.glm.glmback.atelier.domain;
 
+import com.glm.glmback.shared.error.domain.Assert;
+
 /**
- * Le suivi apres un pointage, et si le pointage n'a rien ecrit : un renvoi dont l'identifiant figure deja dans la table
- * des evenements, ou une fin posterieure a la cloture, que la cloture a deja terminee.
+ * Le suivi apres un pointage, et ce qu'est devenu ce pointage.
  */
-public record PointageDAtelierTraite(SuiviDAtelier suivi, boolean sansEcriture) {}
+public record PointageDAtelierTraite(SuiviDAtelier suivi, IssueDePointage issue) {
+  public PointageDAtelierTraite {
+    Assert.notNull("suivi", suivi);
+    Assert.notNull("issue", issue);
+  }
+}

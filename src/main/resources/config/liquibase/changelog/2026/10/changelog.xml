@@ -13,4 +13,5 @@
   <include file="010-element_dans_une_categorie.xml" relativeToChangelogFile="true" />
   <include file="011-parametrage.xml" relativeToChangelogFile="true" />
   <include file="012-parametrage_logo.xml" relativeToChangelogFile="true" />
+  <include file="013-pointage_ignore_d_atelier.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>

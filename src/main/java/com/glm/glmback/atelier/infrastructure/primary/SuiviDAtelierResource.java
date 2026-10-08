@@ -111,39 +111,37 @@ class SuiviDAtelierResource {
   @Operation(
     summary = "Pointer un debut, une non conformite ou une fin",
     description = """
-    Le geste de l'operateur, date a l'instant present.
+    Le geste de l'operateur, date a l'instant present ou a l'heure de son geste (`dateDeSurvenue`, hors ligne). Il ne
+    designe aucune activite : un debut ou une non conformite en ouvre une, une fin ferme celle qui est en cours sur la cle
+    (operateur, element, poste).
 
-    Son intention dit ce qu'il fait d'une activite : OUVERTURE en cree une, TRANSITION remplace l'activite visee par une
-    activite de l'autre categorie, FIN termine l'activite visee. La transition et la fin designent leur cible par
-    l'identifiant du pointage ouvrant de l'activite.
+    Le serveur juge chaque pointage a son arrivee. Apres les controles habituels (operateur, poste, habilitation, element
+    cloture), un pointage plus ancien que le dernier pointage accepte de la cle est ignore (`ANTERIEUR`, a heure egale
+    il passe) ; une activite dont l'echeance est atteinte a l'heure du geste (debut plus 13 heures, borne comprise) compte
+    comme terminee ; puis : rien en cours accepte un debut ou une non conformite et ignore une fin (`APRES_ECHEANCE` si
+    la derniere activite est echue sans fin, sinon `AUCUNE_ACTIVITE`) ; une activite en cours ignore un debut ou une non
+    conformite (`DEJA_EN_COURS`) et accepte une fin. Un pointage ignore n'entre pas au journal : il laisse une ligne
+    d'audit en base, et la reponse est le refus 409 `pointage-ignore`, qui ne s'affiche pas a l'operateur.
 
-    Une pause se pointe par une fin ciblee pour chaque activite en cours, puis une ouverture, en debut ou en non
-    conformite, a la reprise.
+    Une pause se pointe par une fin pour chaque activite en cours, puis un debut ou une non conformite a la reprise.
     """
   )
-  @ApiResponse(
-    responseCode = "201",
-    description = """
-    Le pointage est enregistre, y compris une fin pointee apres l'echeance de sa cible, conservee sans effet.
-    """
-  )
+  @ApiResponse(responseCode = "201", description = "Le pointage est accepte et entre au journal.")
   @ApiResponse(
     responseCode = "200",
     description = """
-    Le geste identique est rejoue, ou une fin posterieure a la cloture de l'element est
-    absorbee.
+    Renvoi : l'identifiant du pointage figure deja dans la table des evenements, quel que soit le suivi qui le porte, et
+    rien n'est ecrit. La reponse rend le suivi de la route.
     """
   )
-  @ApiResponse(
-    responseCode = "400",
-    description = "Le corps est invalide, intention et cible comprises, ou la date de survenue est future."
-  )
-  @ApiResponse(responseCode = "404", description = "Suivi, operateur, poste de travail ou activite visee introuvable.")
+  @ApiResponse(responseCode = "400", description = "Le corps est invalide, ou la date de survenue est future.")
+  @ApiResponse(responseCode = "404", description = "Suivi, operateur ou poste de travail introuvable.")
   @ApiResponse(
     responseCode = "409",
     description = """
-    Demarrer ou pointer une non conformite sur un element cloture (seul refus qu'afficher a l'operateur), operateur non
-    habilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, ou identifiant reutilise.
+    Pointage ignore par la regle de reception (`pointage-ignore`, a ne pas afficher : le pupitre se recale sur le
+    referentiel), y compris un renvoi d'un pointage deja ignore ; demarrer ou pointer une non conformite sur un element
+    cloture (`suivi-d-atelier-cloture`, seul refus a afficher a l'operateur) ; operateur non habilite sur ce poste.
     """
   )
   ResponseEntity<RestSuiviDAtelier> pointe(@PathVariable UUID id, @RequestBody @Valid RestPointage request) {

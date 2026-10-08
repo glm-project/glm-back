@@ -1468,11 +1468,6 @@
       "RestPointage" : {
         "description" : "Un pointage de l'operateur sur un element engage, date a l'instant present.",
         "properties" : {
-          "cible" : {
-            "description" : "L'activite que vise une transition ou une fin, designee par l'identifiant de son pointage ouvrant d'origine : celui\nque porte `activite` au journal. Requise pour une transition ou une fin, absente pour une ouverture. Elle doit etre\nune activite de ce suivi, du meme operateur et du meme poste.\n",
-            "format" : "uuid",
-            "type" : "string"
-          },
           "dateDeSurvenue" : {
             "description" : "Heure metier du geste. Absente, elle vaut l'instant de reception initial. La fournir ne fait pas du pointage une regularisation.",
             "format" : "date-time",
@@ -1481,11 +1476,6 @@
           "id" : {
             "description" : "Identifiant durable du geste, genere par le pupitre.",
             "format" : "uuid",
-            "type" : "string"
-          },
-          "intention" : {
-            "description" : "Ce que le geste fait d'une activite : OUVERTURE en cree une nouvelle, y compris en non conformite ou a la reprise\napres une pause ; TRANSITION remplace l'activite visee par une activite de l'autre categorie ; FIN termine l'activite\nvisee. Seule une fin se pointe FIN. Aucune valeur par defaut.\n",
-            "enum" : [ "OUVERTURE", "TRANSITION", "FIN" ],
             "type" : "string"
           },
           "operateur" : {
@@ -1499,12 +1489,12 @@
             "type" : "string"
           },
           "type" : {
-            "description" : "DEBUT, NON_CONFORMITE ou FIN. La reprise du travail apres une non conformite se pointe DEBUT, en transition.",
+            "description" : "DEBUT, NON_CONFORMITE ou FIN. Un debut ou une non conformite ouvre une activite, une fin ferme celle qui est en cours\nsur la cle (operateur, element, poste) : le geste ne designe aucune activite. Le serveur ignore un pointage qui ne\ns'accorde pas a l'etat de la cle.\n",
             "enum" : [ "DEBUT", "NON_CONFORMITE", "FIN" ],
             "type" : "string"
           }
         },
-        "required" : [ "id", "intention", "operateur", "type" ],
+        "required" : [ "id", "operateur", "type" ],
         "type" : "object"
       },
       "RestPointageDeSyntheseDesHeures" : {
@@ -2397,7 +2387,7 @@
     },
     "/api/atelier/suivis/{id}/pointages" : {
       "post" : {
-        "description" : "Le geste de l'operateur, date a l'instant present.\n\nSon intention dit ce qu'il fait d'une activite : OUVERTURE en cree une, TRANSITION remplace l'activite visee par une\nactivite de l'autre categorie, FIN termine l'activite visee. La transition et la fin designent leur cible par\nl'identifiant du pointage ouvrant de l'activite.\n\nUne pause se pointe par une fin ciblee pour chaque activite en cours, puis une ouverture, en debut ou en non\nconformite, a la reprise.\n",
+        "description" : "Le geste de l'operateur, date a l'instant present ou a l'heure de son geste (`dateDeSurvenue`, hors ligne). Il ne\ndesigne aucune activite : un debut ou une non conformite en ouvre une, une fin ferme celle qui est en cours sur la cle\n(operateur, element, poste).\n\nLe serveur juge chaque pointage a son arrivee. Apres les controles habituels (operateur, poste, habilitation, element\ncloture), un pointage plus ancien que le dernier pointage accepte de la cle est ignore (`ANTERIEUR`, a heure egale\nil passe) ; une activite dont l'echeance est atteinte a l'heure du geste (debut plus 13 heures, borne comprise) compte\ncomme terminee ; puis : rien en cours accepte un debut ou une non conformite et ignore une fin (`APRES_ECHEANCE` si\nla derniere activite est echue sans fin, sinon `AUCUNE_ACTIVITE`) ; une activite en cours ignore un debut ou une non\nconformite (`DEJA_EN_COURS`) et accepte une fin. Un pointage ignore n'entre pas au journal : il laisse une ligne\nd'audit en base, et la reponse est le refus 409 `pointage-ignore`, qui ne s'affiche pas a l'operateur.\n\nUne pause se pointe par une fin pour chaque activite en cours, puis un debut ou une non conformite a la reprise.\n",
         "operationId" : "pointe",
         "parameters" : [ {
           "in" : "path",
@@ -2427,7 +2417,7 @@
                 }
               }
             },
-            "description" : "Le geste identique est rejoue, ou une fin posterieure a la cloture de l'element est\nabsorbee.\n"
+            "description" : "Renvoi : l'identifiant du pointage figure deja dans la table des evenements, quel que soit le suivi qui le porte, et\nrien n'est ecrit. La reponse rend le suivi de la route.\n"
           },
           "201" : {
             "content" : {
@@ -2437,7 +2427,7 @@
                 }
               }
             },
-            "description" : "Le pointage est enregistre, y compris une fin pointee apres l'echeance de sa cible, conservee sans effet.\n"
+            "description" : "Le pointage est accepte et entre au journal."
           },
           "400" : {
             "content" : {
@@ -2447,7 +2437,7 @@
                 }
               }
             },
-            "description" : "Le corps est invalide, intention et cible comprises, ou la date de survenue est future."
+            "description" : "Le corps est invalide, ou la date de survenue est future."
           },
           "404" : {
             "content" : {
@@ -2457,7 +2447,7 @@
                 }
               }
             },
-            "description" : "Suivi, operateur, poste de travail ou activite visee introuvable."
+            "description" : "Suivi, operateur ou poste de travail introuvable."
           },
           "409" : {
             "content" : {
@@ -2467,7 +2457,7 @@
                 }
               }
             },
-            "description" : "Demarrer ou pointer une non conformite sur un element cloture (seul refus qu'afficher a l'operateur), operateur non\nhabilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, ou identifiant reutilise.\n"
+            "description" : "Pointage ignore par la regle de reception (`pointage-ignore`, a ne pas afficher : le pupitre se recale sur le\nreferentiel), y compris un renvoi d'un pointage deja ignore ; demarrer ou pointer une non conformite sur un element\ncloture (`suivi-d-atelier-cloture`, seul refus a afficher a l'operateur) ; operateur non habilite sur ce poste.\n"
           }
         },
         "summary" : "Pointer un debut, une non conformite ou une fin",

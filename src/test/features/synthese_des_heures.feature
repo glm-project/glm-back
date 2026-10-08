@@ -142,18 +142,18 @@ Feature: Synthese des heures hebdomadaire d'un operateur
   Scenario: Un intervalle termine sans arrivee garde toutes ses bornes
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type  | intention | cible | operateur | poste  | survenue             |
-      | A     | DEBUT | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
-      | F     | FIN   | FIN       | A     | martin    | DMU 50 | 2026-05-11T08:00:00Z |
+      | alias | type  | operateur | poste  | survenue             |
+      | A     | DEBUT | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | F     | FIN   | martin    | DMU 50 | 2026-05-11T08:00:00Z |
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT2H"
 
   Scenario: Un poste de nuit termine sans arrivee est coupe entre deux semaines
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-10T17:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type  | intention | cible | operateur | poste  | survenue             |
-      | A     | DEBUT | OUVERTURE |       | martin    | DMU 50 | 2026-05-10T18:00:00Z |
-      | F     | FIN   | FIN       | A     | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | alias | type  | operateur | poste  | survenue             |
+      | A     | DEBUT | martin    | DMU 50 | 2026-05-10T18:00:00Z |
+      | F     | FIN   | martin    | DMU 50 | 2026-05-11T06:00:00Z |
     When je consulte la synthese des heures de "martin" pour la semaine 19 de 2026
     Then la duree operationnelle totale de la semaine est "PT4H"
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
@@ -162,8 +162,8 @@ Feature: Synthese des heures hebdomadaire d'un operateur
   Scenario: Une activite oubliee est terminee automatiquement a treize heures
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type  | intention | operateur | poste  | survenue             |
-      | A     | DEBUT | OUVERTURE | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | alias | type  | operateur | poste  | survenue             |
+      | A     | DEBUT | martin    | DMU 50 | 2026-05-11T06:00:00Z |
     And il est "2026-05-11T19:00:00Z"
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT13H"
@@ -172,8 +172,8 @@ Feature: Synthese des heures hebdomadaire d'un operateur
   Scenario: A vingt heures cinquante-neuf une activite sans poste est encore en cours
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type  | intention | operateur | survenue             |
-      | A     | DEBUT | OUVERTURE | dupont    | 2026-05-11T06:00:00Z |
+      | alias | type  | operateur | survenue             |
+      | A     | DEBUT | dupont    | 2026-05-11T06:00:00Z |
     And il est "2026-05-11T18:59:00Z"
     When je consulte la synthese des heures de "dupont" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT0S"
@@ -181,8 +181,8 @@ Feature: Synthese des heures hebdomadaire d'un operateur
   Scenario: La fin automatique du dimanche se retrouve sans pointage du lundi
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-10T17:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type  | intention | operateur | poste  | survenue             |
-      | A     | DEBUT | OUVERTURE | martin    | DMU 50 | 2026-05-10T20:00:00Z |
+      | alias | type  | operateur | poste  | survenue             |
+      | A     | DEBUT | martin    | DMU 50 | 2026-05-10T20:00:00Z |
     And il est "2026-05-11T10:00:00Z"
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT11H"
@@ -197,39 +197,30 @@ Feature: Synthese des heures hebdomadaire d'un operateur
   Scenario: Une fin du lundi partage une activite du dimanche entre deux semaines
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-10T17:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type  | intention | cible | operateur | poste  | survenue             |
-      | A     | DEBUT | OUVERTURE |       | martin    | DMU 50 | 2026-05-10T20:00:00Z |
-      | F     | FIN   | FIN       | A     | martin    | DMU 50 | 2026-05-11T01:00:00Z |
+      | alias | type  | operateur | poste  | survenue             |
+      | A     | DEBUT | martin    | DMU 50 | 2026-05-10T20:00:00Z |
+      | F     | FIN   | martin    | DMU 50 | 2026-05-11T01:00:00Z |
     When je consulte la synthese des heures de "martin" pour la semaine 19 de 2026
     Then la duree operationnelle totale de la semaine est "PT2H"
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT3H"
 
-  Scenario: Une relance avant echeance termine sa precedente activite
+  Scenario: Un demarrage apres echeance conserve un trou entre les activites
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type  | intention | operateur | poste  | survenue             |
-      | A     | DEBUT | OUVERTURE | martin    | DMU 50 | 2026-05-11T06:00:00Z |
-      | B     | DEBUT | OUVERTURE | martin    | DMU 50 | 2026-05-11T12:00:00Z |
-    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
-    Then la duree operationnelle totale de la semaine est "PT6H"
-
-  Scenario: Une relance apres echeance conserve un trou entre les activites
-    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
-    And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type  | intention | operateur | poste  | survenue             |
-      | A     | DEBUT | OUVERTURE | martin    | DMU 50 | 2026-05-11T06:00:00Z |
-      | B     | DEBUT | OUVERTURE | martin    | DMU 50 | 2026-05-11T21:00:00Z |
+      | alias | type  | operateur | poste  | survenue             |
+      | A     | DEBUT | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | B     | DEBUT | martin    | DMU 50 | 2026-05-11T21:00:00Z |
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT13H"
 
   Scenario: Le passage de travail a NC termine seulement le travail vise
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type           | intention | cible | operateur | poste  | survenue             |
-      | A     | DEBUT          | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
-      | FA    | FIN            | FIN       | A     | martin    | DMU 50 | 2026-05-11T10:00:00Z |
-      | N     | NON_CONFORMITE | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T10:00:00Z |
+      | alias | type           | operateur | poste  | survenue             |
+      | A     | DEBUT          | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | FA    | FIN            | martin    | DMU 50 | 2026-05-11T10:00:00Z |
+      | N     | NON_CONFORMITE | martin    | DMU 50 | 2026-05-11T10:00:00Z |
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT4H"
     And les elements de la synthese sont
@@ -239,28 +230,28 @@ Feature: Synthese des heures hebdomadaire d'un operateur
   Scenario: Une fin a dix-sept heures recue le lendemain remplace la fin automatique
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type  | intention | cible | operateur | poste  | survenue             | reception            |
-      | A     | DEBUT | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z | 2026-05-11T06:00:00Z |
-      | F     | FIN   | FIN       | A     | martin    | DMU 50 | 2026-05-11T15:00:00Z | 2026-05-12T08:00:00Z |
+      | alias | type  | operateur | poste  | survenue             | reception            |
+      | A     | DEBUT | martin    | DMU 50 | 2026-05-11T06:00:00Z | 2026-05-11T06:00:00Z |
+      | F     | FIN   | martin    | DMU 50 | 2026-05-11T15:00:00Z | 2026-05-12T08:00:00Z |
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT9H"
 
-  Scenario: Une fin pointee a vingt-trois heures conserve la borne automatique
+  Scenario: Une fin pointee apres l'echeance est ignoree et l'activite garde la borne automatique
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type  | intention | cible | operateur | poste  | survenue             |
-      | A     | DEBUT | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
-      | F     | FIN   | FIN       | A     | martin    | DMU 50 | 2026-05-11T21:00:00Z |
+      | alias | type  | operateur | poste  | survenue             | reponse |
+      | A     | DEBUT | martin    | DMU 50 | 2026-05-11T06:00:00Z |         |
+      | F     | FIN   | martin    | DMU 50 | 2026-05-11T21:00:00Z | ignore  |
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT13H"
 
-  Scenario: Une fin puis une NC pointees apres echeance ouvrent la NC sans prolonger le travail
+  Scenario: Une fin ignoree puis une NC pointees apres echeance ouvrent la NC sans prolonger le travail
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type           | intention | cible | operateur | poste  | survenue             |
-      | A     | DEBUT          | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
-      | FA    | FIN            | FIN       | A     | martin    | DMU 50 | 2026-05-11T21:00:00Z |
-      | N     | NON_CONFORMITE | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T21:00:00Z |
+      | alias | type           | operateur | poste  | survenue             | reponse |
+      | A     | DEBUT          | martin    | DMU 50 | 2026-05-11T06:00:00Z |         |
+      | FA    | FIN            | martin    | DMU 50 | 2026-05-11T21:00:00Z | ignore  |
+      | N     | NON_CONFORMITE | martin    | DMU 50 | 2026-05-11T21:00:00Z |         |
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT13H"
     And les elements de la synthese sont
@@ -270,19 +261,19 @@ Feature: Synthese des heures hebdomadaire d'un operateur
   Scenario: Une fin regularisee apres echeance prolonge reellement le travail
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type  | intention | cible | operateur | poste  | survenue             | acte           |
-      | A     | DEBUT | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z | POINTAGE       |
-      | F     | FIN   | FIN       | A     | martin    | DMU 50 | 2026-05-11T21:00:00Z | REGULARISATION |
+      | alias | type  | cible | operateur | poste  | survenue             | acte           |
+      | A     | DEBUT |       | martin    | DMU 50 | 2026-05-11T06:00:00Z | POINTAGE       |
+      | F     | FIN   | A     | martin    | DMU 50 | 2026-05-11T21:00:00Z | REGULARISATION |
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT15H"
 
   Scenario: Une fin et une NC recues le lendemain conservent leurs heures metier et la propre echeance de la NC
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type           | intention | cible | operateur | poste  | survenue             | reception            |
-      | A     | DEBUT          | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z | 2026-05-11T06:00:00Z |
-      | FA    | FIN            | FIN       | A     | martin    | DMU 50 | 2026-05-11T10:00:00Z | 2026-05-12T08:00:00Z |
-      | N     | NON_CONFORMITE | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T10:00:00Z | 2026-05-12T08:00:00Z |
+      | alias | type           | operateur | poste  | survenue             | reception            |
+      | A     | DEBUT          | martin    | DMU 50 | 2026-05-11T06:00:00Z | 2026-05-11T06:00:00Z |
+      | FA    | FIN            | martin    | DMU 50 | 2026-05-11T10:00:00Z | 2026-05-12T08:00:00Z |
+      | N     | NON_CONFORMITE | martin    | DMU 50 | 2026-05-11T10:00:00Z | 2026-05-12T08:00:00Z |
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT17H"
     And le jour "2026-05-11" a une duree operationnelle de "PT16H"
@@ -291,20 +282,29 @@ Feature: Synthese des heures hebdomadaire d'un operateur
       | id     | duree | dureeNonConformite |
       | carter | PT17H | PT13H              |
 
-  Scenario: Une fin exactement a echeance recue le lendemain est une fin reelle
+  Scenario: Une fin exactement a echeance recue le lendemain est ignoree, la fin automatique reste
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type  | intention | cible | operateur | poste  | survenue             | reception            |
-      | A     | DEBUT | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z | 2026-05-11T06:00:00Z |
-      | F     | FIN   | FIN       | A     | martin    | DMU 50 | 2026-05-11T19:00:00Z | 2026-05-12T08:00:00Z |
+      | alias | type  | operateur | poste  | survenue             | reception            | reponse |
+      | A     | DEBUT | martin    | DMU 50 | 2026-05-11T06:00:00Z | 2026-05-11T06:00:00Z |         |
+      | F     | FIN   | martin    | DMU 50 | 2026-05-11T19:00:00Z | 2026-05-12T08:00:00Z | ignore  |
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT13H"
+
+  Scenario: Une fin une seconde avant l'echeance, recue le lendemain, est une fin reelle
+    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la synthese des heures recoit sur l'element "carter" les pointages
+      | alias | type  | operateur | poste  | survenue             | reception            |
+      | A     | DEBUT | martin    | DMU 50 | 2026-05-11T06:00:00Z | 2026-05-11T06:00:00Z |
+      | F     | FIN   | martin    | DMU 50 | 2026-05-11T18:59:59Z | 2026-05-12T08:00:00Z |
+    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
+    Then la duree operationnelle totale de la semaine est "PT12H59M59S"
 
   Scenario: Une cloture apres echeance conserve la fin automatique
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type  | intention | operateur | poste  | survenue             |
-      | A     | DEBUT | OUVERTURE | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | alias | type  | operateur | poste  | survenue             |
+      | A     | DEBUT | martin    | DMU 50 | 2026-05-11T06:00:00Z |
     And pour la synthese, l'element "carter" est cloture a "2026-05-11T21:00:00Z"
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT13H"
@@ -312,21 +312,21 @@ Feature: Synthese des heures hebdomadaire d'un operateur
   Scenario: Une fin avant cloture recue apres cloture remplace sa borne
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type  | intention | operateur | poste  | survenue             |
-      | A     | DEBUT | OUVERTURE | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | alias | type  | operateur | poste  | survenue             |
+      | A     | DEBUT | martin    | DMU 50 | 2026-05-11T06:00:00Z |
     And pour la synthese, l'element "carter" est cloture a "2026-05-11T18:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type | intention | cible | operateur | poste  | survenue             | reception            |
-      | F     | FIN  | FIN       | A     | martin    | DMU 50 | 2026-05-11T15:00:00Z | 2026-05-12T08:00:00Z |
+      | alias | type | operateur | poste  | survenue             | reception            |
+      | F     | FIN  | martin    | DMU 50 | 2026-05-11T15:00:00Z | 2026-05-12T08:00:00Z |
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT9H"
 
   Scenario: Une regularisation tres longue recouvre la semaine sans borne basse de debut
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-01T04:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type  | intention | cible | operateur | poste  | survenue             | acte           |
-      | A     | DEBUT | OUVERTURE |       | martin    | DMU 50 | 2026-05-01T06:00:00Z | POINTAGE       |
-      | F     | FIN   | FIN       | A     | martin    | DMU 50 | 2026-05-11T08:00:00Z | REGULARISATION |
+      | alias | type  | cible | operateur | poste  | survenue             | acte           |
+      | A     | DEBUT |       | martin    | DMU 50 | 2026-05-01T06:00:00Z | POINTAGE       |
+      | F     | FIN   | A     | martin    | DMU 50 | 2026-05-11T08:00:00Z | REGULARISATION |
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT10H"
 
@@ -334,13 +334,13 @@ Feature: Synthese des heures hebdomadaire d'un operateur
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And pour la synthese, l'element "bride" est engage en atelier a "2026-05-11T04:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type  | intention | cible | operateur | poste  | survenue             |
-      | A     | DEBUT | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
-      | F     | FIN   | FIN       | A     | martin    | DMU 50 | 2026-05-11T07:00:00Z |
+      | alias | type  | operateur | poste  | survenue             |
+      | A     | DEBUT | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | F     | FIN   | martin    | DMU 50 | 2026-05-11T07:00:00Z |
     And la synthese des heures recoit sur l'element "bride" les pointages
-      | alias | type  | intention | cible | operateur | poste | survenue             |
-      | B     | DEBUT | OUVERTURE |       | martin    | Tour  | 2026-05-11T06:00:00Z |
-      | G     | FIN   | FIN       | B     | martin    | Tour  | 2026-05-11T07:00:00Z |
+      | alias | type  | operateur | poste | survenue             |
+      | B     | DEBUT | martin    | Tour  | 2026-05-11T06:00:00Z |
+      | G     | FIN   | martin    | Tour  | 2026-05-11T07:00:00Z |
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then le jour "2026-05-11" a une duree operationnelle de "PT2H"
     And la duree operationnelle totale de la semaine est "PT2H"
@@ -353,13 +353,13 @@ Feature: Synthese des heures hebdomadaire d'un operateur
   Scenario: Travail puis NC puis travail conservent un seul total et la part de NC
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type           | intention | cible | operateur | poste  | survenue             |
-      | A     | DEBUT          | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
-      | FA    | FIN            | FIN       | A     | martin    | DMU 50 | 2026-05-11T08:00:00Z |
-      | N     | NON_CONFORMITE | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T08:00:00Z |
-      | FN    | FIN            | FIN       | N     | martin    | DMU 50 | 2026-05-11T09:00:00Z |
-      | B     | DEBUT          | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T09:00:00Z |
-      | F     | FIN            | FIN       | B     | martin    | DMU 50 | 2026-05-11T12:00:00Z |
+      | alias | type           | operateur | poste  | survenue             |
+      | A     | DEBUT          | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | FA    | FIN            | martin    | DMU 50 | 2026-05-11T08:00:00Z |
+      | N     | NON_CONFORMITE | martin    | DMU 50 | 2026-05-11T08:00:00Z |
+      | FN    | FIN            | martin    | DMU 50 | 2026-05-11T09:00:00Z |
+      | B     | DEBUT          | martin    | DMU 50 | 2026-05-11T09:00:00Z |
+      | F     | FIN            | martin    | DMU 50 | 2026-05-11T12:00:00Z |
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT6H"
     And les elements de la synthese sont
@@ -369,9 +369,9 @@ Feature: Synthese des heures hebdomadaire d'un operateur
   Scenario: Un jour entier traverse sans pointage propre compte vingt-quatre heures terminees
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-10T17:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type  | intention | cible | operateur | survenue             | acte           |
-      | A     | DEBUT | OUVERTURE |       | dupont    | 2026-05-10T18:00:00Z | POINTAGE       |
-      | F     | FIN   | FIN       | A     | dupont    | 2026-05-13T06:00:00Z | REGULARISATION |
+      | alias | type  | cible | operateur | survenue             | acte           |
+      | A     | DEBUT |       | dupont    | 2026-05-10T18:00:00Z | POINTAGE       |
+      | F     | FIN   | A     | dupont    | 2026-05-13T06:00:00Z | REGULARISATION |
     When je consulte la synthese des heures de "dupont" pour la semaine 20 de 2026
     Then le jour "2026-05-12" a une duree operationnelle de "PT24H"
     And les pointages du "2026-05-12" sont
@@ -383,8 +383,8 @@ Feature: Synthese des heures hebdomadaire d'un operateur
   Scenario: Une activite du dimanche en cours conserve son element sur lundi puis compte trois heures terminees
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-10T17:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type  | intention | operateur | poste  | survenue             |
-      | A     | DEBUT | OUVERTURE | martin    | DMU 50 | 2026-05-10T20:00:00Z |
+      | alias | type  | operateur | poste  | survenue             |
+      | A     | DEBUT | martin    | DMU 50 | 2026-05-10T20:00:00Z |
     And il est "2026-05-10T23:00:00Z"
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT0S"
@@ -394,17 +394,17 @@ Feature: Synthese des heures hebdomadaire d'un operateur
     And les pointages du "2026-05-11" sont
       | type | dateDeSurvenue |
     Given la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type | intention | cible | operateur | poste  | survenue             |
-      | F     | FIN  | FIN       | A     | martin    | DMU 50 | 2026-05-11T01:00:00Z |
+      | alias | type | operateur | poste  | survenue             |
+      | F     | FIN  | martin    | DMU 50 | 2026-05-11T01:00:00Z |
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT3H"
 
   Scenario: La synthese et son journal restent dans leur entreprise et sont lisibles par USER
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type  | intention | cible | operateur | survenue             |
-      | A     | DEBUT | OUVERTURE |       | martin    | 2026-05-11T06:00:00Z |
-      | F     | FIN   | FIN       | A     | martin    | 2026-05-11T08:00:00Z |
+      | alias | type  | operateur | survenue             |
+      | A     | DEBUT | martin    | 2026-05-11T06:00:00Z |
+      | F     | FIN   | martin    | 2026-05-11T08:00:00Z |
     Given I am logged in as "user" with role "USER" for tenant "katilys"
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la reponse a le statut http 404

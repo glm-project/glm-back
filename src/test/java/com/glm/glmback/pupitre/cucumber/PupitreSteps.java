@@ -154,22 +154,17 @@ public class PupitreSteps {
 
   @Given("au pupitre, {string} ouvre {string} en {string} sur {string} au poste {string} a {string}, recu a {string}")
   public void ouvreRecu(String operateur, String geste, String type, String element, String poste, String instant, String recu) {
-    envoie(geste, element, recu, geste(operateur, poste, instant, type, "OUVERTURE", null));
+    envoie(geste, element, recu, geste(operateur, poste, instant, type));
   }
 
-  @Given("au pupitre, {string} passe {string} en {string} sous le nom {string} sur {string} au poste {string} a {string}")
-  public void passe(String operateur, String cible, String type, String geste, String element, String poste, String instant) {
-    envoie(geste, element, instant, geste(operateur, poste, instant, type, "TRANSITION", gestes.get(cible)));
+  @Given("au pupitre, {string} termine par {string} sur {string} au poste {string} a {string}")
+  public void termine(String operateur, String geste, String element, String poste, String instant) {
+    termineRecu(operateur, geste, element, poste, instant, instant);
   }
 
-  @Given("au pupitre, {string} termine {string} par {string} sur {string} au poste {string} a {string}")
-  public void termine(String operateur, String cible, String geste, String element, String poste, String instant) {
-    termineRecu(operateur, cible, geste, element, poste, instant, instant);
-  }
-
-  @Given("au pupitre, {string} termine {string} par {string} sur {string} au poste {string} a {string}, recu a {string}")
-  public void termineRecu(String operateur, String cible, String geste, String element, String poste, String instant, String recu) {
-    envoie(geste, element, recu, geste(operateur, poste, instant, "FIN", "FIN", gestes.get(cible)));
+  @Given("au pupitre, {string} termine par {string} sur {string} au poste {string} a {string}, recu a {string}")
+  public void termineRecu(String operateur, String geste, String element, String poste, String instant, String recu) {
+    envoie(geste, element, recu, geste(operateur, poste, instant, "FIN"));
   }
 
   @Given("{string} est supprime du referentiel")
@@ -281,14 +276,10 @@ public class PupitreSteps {
     assertThat(CucumberRestTestContext.getResponse().orElseThrow()).doesNotContain("tauxHoraire", "coutHoraire");
   }
 
-  private Map<String, Object> geste(String operateur, String poste, String instant, String type, String intention, String cible) {
+  private Map<String, Object> geste(String operateur, String poste, String instant, String type) {
     Map<String, Object> corps = new LinkedHashMap<>();
     corps.put("id", UUID.randomUUID().toString());
     corps.put("type", type);
-    corps.put("intention", intention);
-    if (cible != null) {
-      corps.put("cible", cible);
-    }
     corps.put("operateur", operateurs.get(operateur));
     if (poste != null) {
       corps.put("poste", postes.get(poste));
@@ -308,6 +299,7 @@ public class PupitreSteps {
   private void pointe(String instant, String element, Map<String, Object> corps) {
     horloge.ilEst(Instant.parse(instant));
     ecritures.pointe(suivis.get(element), corps);
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage doit etre accepte").isTrue();
   }
 
   private List<Map<String, String>> resume(String element, Iterable<String> colonnes) {

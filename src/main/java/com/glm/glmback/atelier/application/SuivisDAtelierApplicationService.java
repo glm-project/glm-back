@@ -7,11 +7,14 @@ import com.glm.glmback.atelier.domain.ElementsEngageables;
 import com.glm.glmback.atelier.domain.EngagementAEnregistrer;
 import com.glm.glmback.atelier.domain.EtatDAtelier;
 import com.glm.glmback.atelier.domain.Habilitations;
+import com.glm.glmback.atelier.domain.IssueDePointage;
 import com.glm.glmback.atelier.domain.LectureDuSuivi;
 import com.glm.glmback.atelier.domain.OperateursConnus;
 import com.glm.glmback.atelier.domain.Periode;
 import com.glm.glmback.atelier.domain.PointageAEnregistrer;
 import com.glm.glmback.atelier.domain.PointageDAtelierTraite;
+import com.glm.glmback.atelier.domain.PointageIgnoreException;
+import com.glm.glmback.atelier.domain.PointagesIgnores;
 import com.glm.glmback.atelier.domain.PostesConnus;
 import com.glm.glmback.atelier.domain.RegularisationAEnregistrer;
 import com.glm.glmback.atelier.domain.RegularisationTraitee;
@@ -59,6 +62,7 @@ public class SuivisDAtelierApplicationService {
     OperateursConnus operateurs,
     PostesConnus postes,
     Habilitations habilitations,
+    PointagesIgnores pointagesIgnores,
     Clock clock,
     TransactionTemplate transactions
   ) {
@@ -68,6 +72,7 @@ public class SuivisDAtelierApplicationService {
       .operateurs(operateurs)
       .postes(postes)
       .habilitations(habilitations)
+      .pointagesIgnores(pointagesIgnores)
       .clock(clock);
     this.annuaires = new AnnuaireDAtelierService(operateurs, postes);
     this.transactions = transactions;
@@ -80,11 +85,18 @@ public class SuivisDAtelierApplicationService {
     return lu(suivisDAtelier.engage(commande));
   }
 
+  /**
+   * Le pointage se juge dans sa propre transaction, qui ecrit l'audit d'un pointage ignore. Le refus n'est leve qu'une
+   * fois cette transaction validee : une exception levee dedans l'aurait annulee, audit compris.
+   */
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
   public ResultatDEcriture<LectureDuSuivi> pointeDuPupitre(PointageAEnregistrer commande) {
     PointageDAtelierTraite traite = SaisieConcurrenteRejouee.executer(transactions, () -> suivisDAtelier.pointe(commande));
+    if (traite.issue() == IssueDePointage.IGNORE) {
+      throw new PointageIgnoreException(commande.evenement());
+    }
 
-    return new ResultatDEcriture<>(lu(traite.suivi()), traite.sansEcriture());
+    return new ResultatDEcriture<>(lu(traite.suivi()), traite.issue() == IssueDePointage.REJOUE);
   }
 
   @Secured("ROLE_GESTIONNAIRE")

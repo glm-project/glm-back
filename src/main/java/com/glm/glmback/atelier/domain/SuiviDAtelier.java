@@ -68,11 +68,12 @@ public record SuiviDAtelier(
   }
 
   /**
-   * Refuse un geste qui vise une activite qu'aucun pointage de ce suivi n'a ouverte, ou celle d'un autre operateur ou
-   * d'un autre poste. Le refus precede toute autre decision sur le geste, absorption comprise.
+   * Juge un pointage de la cle donnee, survenu a cette heure, selon la regle de reception : anterieur au dernier
+   * accepte de la cle, echeance de sa derniere activite, puis le tableau. Il est accepte, ou ignore pour l'une des
+   * quatre raisons de {@link RaisonDePointageIgnore} ; le suivi ne change pas.
    */
-  public void exigeLActiviteViseePar(EvenementDAtelier geste) {
-    journal.exigeLActiviteViseePar(geste);
+  public VerdictDeReception juge(CleDActivite cle, TypeDEvenementDAtelier type, Instant survenue) {
+    return RegleDeReception.juge(journal, cloture.map(Cloture::dateDeSurvenue), cle, type, survenue);
   }
 
   /**
@@ -139,14 +140,6 @@ public record SuiviDAtelier(
       .filter(activite -> activite.estEnCoursA(evaluation))
       .map(ActiviteEnCours::new)
       .toList();
-  }
-
-  /**
-   * Vrai si le suivi est cloture avant la survenue de l'evenement : la cloture a deja termine ce que l'evenement
-   * pretendrait terminer.
-   */
-  public boolean estClotureAvant(EvenementDAtelier evenement) {
-    return cloture.filter(fin -> evenement.dateDeSurvenue().isAfter(fin.dateDeSurvenue())).isPresent();
   }
 
   /**

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <changeSet id="pointage_ignore_d_atelier" author="glm">
+    <comment>
+      L'audit des pointages que la regle de reception a ignores : une ligne par pointage ignore, avec son identifiant,
+      l'operateur, le suivi, le poste, le type, l'heure du geste, l'heure de reception, la raison et le dernier pointage
+      accepte auquel il a ete compare. La table n'a ni cle, ni cle etrangere, ni contrainte, pas meme de colonne
+      obligatoire : deux lignes pour un meme renvoi sont acceptees, et un pointage ignore ne doit jamais echouer a
+      s'ecrire. Seul un index sur l'identifiant sert a retrouver un renvoi. Elle se consulte en base, sans endpoint.
+    </comment>
+
+    <createTable tableName="pointage_ignore_d_atelier">
+      <column name="id" type="${uuidType}" />
+      <column name="suivi_id" type="${uuidType}" />
+      <column name="operateur_id" type="${uuidType}" />
+      <column name="poste_id" type="${uuidType}" />
+      <column name="type" type="varchar(20)" />
+      <column name="date_de_survenue" type="NUMERIC(30, 9)" />
+      <column name="date_de_reception" type="NUMERIC(30, 9)" />
+      <column name="raison" type="varchar(20)" />
+      <column name="dernier_accepte_id" type="${uuidType}" />
+    </createTable>
+
+    <createIndex tableName="pointage_ignore_d_atelier" indexName="idx_pointage_ignore_d_atelier_id">
+      <column name="id" />
+    </createIndex>
+  </changeSet>
+</databaseChangeLog>
