@@ -1,7 +1,7 @@
 # Multi-tenant : un schema PostgreSQL par entreprise
 
-Les donnees de chaque entreprise cliente vivent dans leur propre schema PostgreSQL, au sein d'une base
-unique, et chaque entreprise a son propre pool de connexions. L'entreprise de l'utilisateur courant est portee par le token
+Les donnees de chaque entreprise cliente vivent dans leur propre schema PostgreSQL, dans la base principale
+ou dans une base qui lui est dediee, et chaque entreprise a son propre pool de connexions. L'entreprise de l'utilisateur courant est portee par le token
 Keycloak, et la liste des entreprises est la table `tenant` du schema par defaut.
 
 ## Principe de securite
@@ -40,8 +40,11 @@ respecte pas le motif d'une cle) : pool principal et schema par defaut.
 ```
 
 **Un pool par entreprise.** `TenantDataSources` ouvre un `HikariDataSource` par entreprise active, copie
-de la configuration du pool principal (`spring.datasource.hikari.*`), nomme `Hikari-<cle>` et positionne
-sur le schema de l'entreprise. Un pool ne s'ouvre qu'a sa premiere connexion : une entreprise sans
+de la configuration du pool principal (`spring.datasource.*`), nomme `Hikari-<cle>` et positionne sur le
+schema de l'entreprise. Chaque colonne de connexion renseignee dans le registre remplace la valeur
+principale : `jdbc_url` (le pilote est alors deduit de l'URL), `username`, `pool_max_size`, et le mot de
+passe, lu dans la variable d'environnement que **nomme** `secret_ref`. Une variable absente empeche le
+demarrage, avec un message qui nomme l'entreprise et la variable, jamais une valeur. Un pool ne s'ouvre qu'a sa premiere connexion : une entreprise sans
 activite ne tient aucune connexion. Les pools sont fermes a l'arret du contexte. Une entreprise qui epuise
 son pool n'attend que sur le sien ; les autres continuent d'etre servies.
 
@@ -49,18 +52,22 @@ son pool n'attend que sur le sien ; les autres continuent d'etre servies.
 schema (`handlesConnectionSchema` a `false`), Hibernate fait donc `Connection.setSchema` a l'acquisition
 et le restaure a la liberation.
 
-**Le pool principal** (`spring.datasource`) sert le registre, les migrations, les besoins de demarrage
+Une base dediee injoignable au demarrage empeche l'application de demarrer, comme une migration en echec.
+
+**Le pool principal** (`spring.datasource`) sert le registre, les besoins de demarrage
 d'Hibernate et tout acces hors requete. C'est aussi lui que connait `JpaTransactionManager` : sans effet
 tant qu'aucun `JdbcTemplate` ou `DataSourceUtils` n'est utilise dans une transaction JPA, ce qui est le
 cas. Un tel acces partirait sur le pool principal, et non sur celui de l'entreprise.
 
-**Dimensionnement** : le nombre maximal de connexions est la somme des pools — `maximum-pool-size` × (1 +
-nombre d'entreprises actives). Il doit rester sous `max_connections` du serveur PostgreSQL.
+**Dimensionnement** : sur un serveur PostgreSQL donne, le nombre maximal de connexions est la somme des
+pools qui le visent — le pool principal et ceux des entreprises qu'il heberge, chacun de
+`pool_max_size` ou, a defaut, de `maximum-pool-size`. Elle doit rester sous `max_connections`.
 
 ## Migrations
 
 `spring.liquibase.enabled` est volontairement a `false` : l'autoconfiguration migrerait le seul schema
-par defaut. `TenantSchemasInitializer` rejoue `master.xml` **une fois par schema**, avec
+par defaut. `TenantSchemasInitializer` rejoue `master.xml` **une fois par schema**, sur la base de
+l'entreprise — par des connexions hors pool, pour ne pas ouvrir son pool avant sa premiere requete — avec
 `defaultSchema` et `liquibaseSchema` positionnes, chaque schema portant donc son propre
 `databasechangelog`. Un `EntityManagerFactoryDependsOnPostProcessor` declare dans `DatabaseConfiguration`
 garantit que cette initialisation precede l'`EntityManagerFactory`.
@@ -89,15 +96,15 @@ la commande exactes.
 Les entreprises sont les lignes de la table `tenant`, dans le schema par defaut
 (`application.multitenancy.default-schema`, `public`), qui ne porte aucune table metier :
 
-| colonne         | role                                                                                      |
-| --------------- | ----------------------------------------------------------------------------------------- |
-| `id`            | cle, valeur du claim `tenant` Keycloak (`^[a-z][a-z0-9_]{0,62}$`)                         |
-| `schema_name`   | schema des donnees de l'entreprise (meme motif, unique)                                   |
-| `status`        | `ACTIVE`, ou `SUSPENDED` : l'entreprise recoit 403, ses donnees restent                   |
-| `jdbc_url`      | reserve a une base dediee (#89), pas encore lu                                            |
-| `username`      | reserve a une base dediee (#89), pas encore lu                                            |
-| `secret_ref`    | reserve a une base dediee (#89) : le **nom** d'une variable d'env, jamais un mot de passe |
-| `pool_max_size` | taille propre au pool de l'entreprise (#89), pas encore lue                               |
+| colonne         | role                                                                                     |
+| --------------- | ---------------------------------------------------------------------------------------- |
+| `id`            | cle, valeur du claim `tenant` Keycloak (`^[a-z][a-z0-9_]{0,62}$`)                        |
+| `schema_name`   | schema des donnees de l'entreprise (meme motif, unique)                                  |
+| `status`        | `ACTIVE`, ou `SUSPENDED` : l'entreprise recoit 403, ses donnees restent                  |
+| `jdbc_url`      | base dediee de l'entreprise ; `NULL` : base principale                                   |
+| `username`      | role PostgreSQL de l'entreprise ; `NULL` : utilisateur principal                         |
+| `secret_ref`    | **nom** de la variable d'env qui porte le mot de passe ; `NULL` : mot de passe principal |
+| `pool_max_size` | taille du pool de l'entreprise ; `NULL` : `spring.datasource.hikari.maximum-pool-size`   |
 
 Au demarrage, `AdminSchemaInitializer` cree et migre cette table avec son propre changelog
 (`config/liquibase/admin/master.xml`, historique dans le `databasechangelog` du schema par defaut).
@@ -125,21 +132,46 @@ java -jar target/glmproject-0.0.1-SNAPSHOT.jar --spring.profiles.active=local
 
 ## Ajouter une entreprise
 
-1. Inserer sa ligne dans le registre, sur la base principale :
-
-```sql
-INSERT INTO public.tenant (id, schema_name, status) VALUES ('nouvelle_entreprise', 'nouvelle_entreprise', 'ACTIVE');
+```
+  ┌─────────────────────┐   ┌───────────────────────┐   ┌──────────────────────┐   ┌────────────────┐
+  │ 1. Base             │──►│ 2. Ligne `tenant`     │──►│ 3. Keycloak          │──►│ 4. Redemarrage │
+  │ (si base dediee)    │   │ (script SQL)          │   │ users tenant=<id>    │   │                │
+  └─────────────────────┘   └───────────────────────┘   └──────────────────────┘   └────────────────┘
 ```
 
-En developpement, ajouter plutot un changeset au jeu du profil (`seed/local.xml`) : une base locale
-recreee le retrouve.
+1. **Base de donnees**
+   - Entreprise sur la base principale : rien a faire, son schema sera cree au demarrage.
+   - Entreprise sur sa propre base : creer la base et un role PostgreSQL proprietaire, puis declarer son
+     mot de passe dans une variable d'environnement de l'application, par exemple
+     `GLM_TENANT_ACME_DB_PASSWORD`. La variable se declare **avant** la ligne `tenant` : sans ligne, elle
+     n'est pas lue, alors qu'une ligne sans variable empecherait tout redemarrage.
+2. **Declarer l'entreprise** sur la base principale avec `documentation/scripts/ajouter-tenant.sql` :
 
-2. Donner l'attribut `tenant` aux utilisateurs de cette entreprise dans Keycloak (valeur = l'`id`
-   declare ci-dessus).
-3. Redemarrer l'application : le schema neuf passe sa garde et est installe au demarrage.
+```bash
+# base principale
+psql "$DATABASE_URL" -v id=acme -f documentation/scripts/ajouter-tenant.sql
+# base dediee
+psql "$DATABASE_URL" -v id=acme -v jdbc_url=jdbc:postgresql://pg-acme:5432/acme -v username=acme \
+  -v secret_ref=GLM_TENANT_ACME_DB_PASSWORD -v pool_max_size=10 -f documentation/scripts/ajouter-tenant.sql
+```
 
-Suspendre une entreprise : `UPDATE public.tenant SET status = 'SUSPENDED' WHERE id = '...'`, puis
-redemarrer. Son schema et ses donnees ne sont pas touches.
+L'identifiant et le schema (par defaut, l'identifiant) doivent respecter `^[a-z][a-z0-9_]{0,62}$`. En
+developpement, ajouter plutot un changeset au jeu du profil (`seed/local.xml`) : une base locale recreee
+le retrouve.
+
+3. **Keycloak** : donner l'attribut `tenant` (valeur = l'`id`) et les roles (`GESTIONNAIRE`, `USER`) aux
+   utilisateurs de l'entreprise.
+4. **Redemarrer** l'application : pool ouvert, schema neuf cree, garde passee, migrations jouees.
+5. **Verifier** : connexion d'un utilisateur de l'entreprise ; a sa premiere requete, le log
+   `Hikari-<id> - Start completed`.
+
+| Operation               | Comment                                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------------------------------ |
+| Suspendre               | `UPDATE public.tenant SET status = 'SUSPENDED' WHERE id = '...'` + redemarrage → 403, donnees intactes |
+| Reactiver               | `status = 'ACTIVE'` + redemarrage                                                                      |
+| Agrandir son pool       | `pool_max_size = 20` + redemarrage                                                                     |
+| Deplacer vers sa base   | dump/restore du schema, puis `jdbc_url`, `username`, `secret_ref` + redemarrage                        |
+| Changer un mot de passe | variable d'environnement (redemarrage)                                                                 |
 
 ## Utilisateurs de developpement
 
@@ -223,23 +255,25 @@ refus laisse catalogue et historique inchanges, ainsi que les donnees d'un tenan
 Le dernier cas prouve le refus d'adopter des tables metier sans historique. Ces tests ne touchent
 aucune base, aucun volume ni conteneur preexistant.
 
+`DedicatedDatabaseIT` demarre l'application avec une entreprise sur la base principale et une autre sur un
+second PostgreSQL, avec son propre role et un mot de passe passe par la variable que nomme `secret_ref` :
+schema cree et migre sur la seule base dediee, ecritures de chaque entreprise sur sa base, taille de pool
+propre. Sans la variable, l'application ne demarre pas et la base dediee reste intacte.
+
 ## Passage en production : decisions restant a prendre
 
 **Le montage actuel est un choix de phase de conception.** Un seul cluster PostgreSQL, une seule
-base, un pool par entreprise de configuration identique, un registre lu une fois au demarrage, et une migration jouee au demarrage
+base principale et des bases dediees declarees a la main, un pool par entreprise, un registre lu une fois au demarrage, et une migration jouee au demarrage
 de l'application : c'est suffisant pour valider la mecanique d'isolation, ce n'est pas un modele de
 deploiement. Deux axes independants restent a trancher avant une mise en production.
 
 ### Axe 1 — Topologie : ou vivent physiquement les donnees
 
-Aujourd'hui : un schema par entreprise dans une base unique. Demain, possiblement une base ou une
-**instance PostgreSQL par entreprise**.
-
-**Fait (#88)** : l'identifiant de tenant Hibernate est la cle de l'entreprise, et
-`TenantConnectionProvider` (`AbstractDataSourceBasedMultiTenantConnectionProviderImpl`) prend la
-connexion dans le pool de l'entreprise. Il reste a faire viser a ce pool une autre base (`jdbc_url`,
-`username`, `secret_ref`) et a migrer chaque schema par le pool de son entreprise plutot que par le pool
-principal (`TenantSchemasInitializer`) : c'est #89.
+**Fait (#88, #89)** : un schema par entreprise, dans la base principale ou dans une base ou une instance
+PostgreSQL qui lui est dediee. L'identifiant de tenant Hibernate est la cle de l'entreprise,
+`TenantConnectionProvider` (`AbstractDataSourceBasedMultiTenantConnectionProviderImpl`) prend la connexion
+dans le pool de l'entreprise, et `TenantSchemasInitializer` migre chaque schema sur la base de son
+entreprise.
 
 Ce qui ne bouge pas, quelle que soit la topologie : le domaine, les agregats, les repositories, les
 changelogs, `CurrentTenant`, `Tenant`, le port `Tenants`, `TenantAuthorizationManager`, et toute la
@@ -250,7 +284,7 @@ configuration Keycloak. Aucun agregat ne porte d'identifiant d'entreprise, et ri
 
 **Fait (#87)** : la liste des entreprises est la table `tenant` du schema par defaut, et non plus une
 liste de properties. Elle porte deja les colonnes d'une base dediee (`jdbc_url`, `username`, et une
-_reference_ de secret `secret_ref`), lues a partir de #89. Le port `Tenants` n'a pas change ; seul son
+_reference_ de secret `secret_ref`). Le port `Tenants` n'a pas change ; seul son
 adapter est passe de « lit les properties » a « lit la table d'administration ».
 
 Deux consequences restent a anticiper :

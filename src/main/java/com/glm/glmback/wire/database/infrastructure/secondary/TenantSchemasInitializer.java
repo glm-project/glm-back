@@ -1,5 +1,6 @@
 package com.glm.glmback.wire.database.infrastructure.secondary;
 
+import com.glm.glmback.shared.multitenancy.domain.Tenant;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -9,36 +10,38 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+/**
+ * Chaque schema est cree et migre sur la base de son entreprise, qui n'est pas forcement la base principale.
+ * Une base injoignable empeche donc le demarrage.
+ */
 @Component
 class TenantSchemasInitializer implements InitializingBean {
 
-  private final DataSource dataSource;
   private final TenantRegistry tenantRegistry;
+  private final TenantDataSources tenantDataSources;
   private final String changeLog;
 
   TenantSchemasInitializer(
-    DataSource dataSource,
     TenantRegistry tenantRegistry,
+    TenantDataSources tenantDataSources,
     @Value("${spring.liquibase.change-log}") String changeLog
   ) {
-    this.dataSource = dataSource;
     this.tenantRegistry = tenantRegistry;
+    this.tenantDataSources = tenantDataSources;
     this.changeLog = changeLog;
   }
 
   @Override
   public void afterPropertiesSet() throws LiquibaseException, SQLException {
-    for (String schema : tenantRegistry.schemas()) {
-      createSchema(schema);
+    for (Tenant tenant : tenantRegistry.tenants()) {
+      DataSource dataSource = tenantDataSources.unpooled(tenant);
+      String schema = tenantRegistry.schema(tenant);
+      createSchema(dataSource, schema);
       LiquibaseMigration.migrate(dataSource, changeLog, schema);
     }
   }
 
-  /**
-   * Le pool est configure en {@code auto-commit: false} : sans validation explicite, le schema serait
-   * annule au retour de la connexion et Liquibase ne trouverait rien ou migrer.
-   */
-  private void createSchema(String schema) throws SQLException {
+  private static void createSchema(DataSource dataSource, String schema) throws SQLException {
     try (Connection connection = dataSource.getConnection(); Statement statement = connection.createStatement()) {
       connection.setAutoCommit(true);
       statement.execute("CREATE SCHEMA IF NOT EXISTS \"%s\"".formatted(schema));

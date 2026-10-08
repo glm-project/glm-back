@@ -8,7 +8,6 @@ import com.glm.glmback.shared.error.domain.MissingMandatoryValueException;
 import com.glm.glmback.shared.error.domain.StringNotMatchingPatternException;
 import com.glm.glmback.shared.multitenancy.application.NotTenantedUserException;
 import com.glm.glmback.shared.multitenancy.domain.Tenant;
-import com.glm.glmback.wire.database.infrastructure.secondary.TenantRegistry.TenantDeclaration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -56,8 +55,16 @@ class TenantRegistryTest {
   }
 
   @Test
-  void shouldListAllDeclaredSchemas() {
-    assertThat(impeccmoldEtKatilys().schemas()).containsExactlyInAnyOrder("impeccmold", "katilys_schema");
+  void shouldGiveTheDeclarationOfATenant() {
+    assertThat(impeccmoldEtKatilys().declaration(TENANT_KATILYS)).isEqualTo(new TenantDeclaration("katilys", "katilys_schema"));
+  }
+
+  @Test
+  void shouldNotGiveTheDeclarationOfAnUnknownTenant() {
+    TenantRegistry registry = impeccmoldEtKatilys();
+    Tenant inconnu = new Tenant("inconnu");
+
+    assertThatThrownBy(() -> registry.declaration(inconnu)).isExactlyInstanceOf(NotTenantedUserException.class);
   }
 
   @Test
