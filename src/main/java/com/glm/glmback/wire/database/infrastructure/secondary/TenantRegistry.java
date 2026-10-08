@@ -4,6 +4,8 @@ import com.glm.glmback.shared.error.domain.Assert;
 import com.glm.glmback.shared.multitenancy.application.NotTenantedUserException;
 import com.glm.glmback.shared.multitenancy.domain.Tenant;
 import com.glm.glmback.shared.multitenancy.domain.Tenants;
+import com.glm.glmback.wire.database.infrastructure.secondary.TenantDeclaration.DatabaseAccess;
+import com.glm.glmback.wire.database.infrastructure.secondary.TenantDeclaration.PoolSettings;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +24,7 @@ import org.springframework.stereotype.Component;
 @Component
 class TenantRegistry implements Tenants {
 
-  private final Map<Tenant, String> schemas;
+  private final Map<Tenant, TenantDeclaration> declarations;
   private final String defaultSchema;
 
   @Autowired
@@ -32,23 +34,44 @@ class TenantRegistry implements Tenants {
 
   TenantRegistry(String defaultSchema, Collection<TenantDeclaration> tenants) {
     this.defaultSchema = defaultSchema;
-    schemas = tenants.stream().collect(Collectors.toUnmodifiableMap(tenant -> new Tenant(tenant.id()), TenantRegistry::schemaOf));
+    declarations = tenants.stream().collect(Collectors.toUnmodifiableMap(tenant -> new Tenant(tenant.id()), TenantRegistry::validated));
   }
 
   private static List<TenantDeclaration> activeTenants(String adminSchema, DataSource dataSource) {
     return JdbcClient.create(dataSource)
-      .sql("SELECT id, schema_name FROM \"%s\".tenant WHERE status = 'ACTIVE'".formatted(adminSchema))
-      .query((row, index) -> new TenantDeclaration(row.getString("id"), row.getString("schema_name")))
+      .sql(
+        "SELECT id, schema_name, jdbc_url, username, secret_ref, pool_max_size FROM \"%s\".tenant WHERE status = 'ACTIVE'".formatted(
+          adminSchema
+        )
+      )
+      .query((row, index) ->
+        new TenantDeclaration(
+          row.getString("id"),
+          row.getString("schema_name"),
+          new PoolSettings(
+            new DatabaseAccess(
+              Optional.ofNullable(row.getString("jdbc_url")),
+              Optional.ofNullable(row.getString("username")),
+              Optional.ofNullable(row.getString("secret_ref"))
+            ),
+            Optional.ofNullable(row.getObject("pool_max_size", Integer.class))
+          )
+        )
+      )
       .list();
   }
 
   @Override
   public boolean contains(Tenant tenant) {
-    return schemas.containsKey(tenant);
+    return declarations.containsKey(tenant);
   }
 
   String schema(Tenant tenant) {
-    return Optional.ofNullable(schemas.get(tenant)).orElseThrow(NotTenantedUserException::new);
+    return declaration(tenant).schema();
+  }
+
+  TenantDeclaration declaration(Tenant tenant) {
+    return Optional.ofNullable(declarations.get(tenant)).orElseThrow(NotTenantedUserException::new);
   }
 
   /**
@@ -59,12 +82,8 @@ class TenantRegistry implements Tenants {
     return defaultSchema;
   }
 
-  Collection<String> schemas() {
-    return schemas.values();
-  }
-
   Set<Tenant> tenants() {
-    return schemas.keySet();
+    return declarations.keySet();
   }
 
   /** Schema d'un identifiant de tenant Hibernate, tel que le rend {@link CurrentTenantResolver}. */
@@ -76,11 +95,9 @@ class TenantRegistry implements Tenants {
     return schema(new Tenant(tenantIdentifier));
   }
 
-  private static String schemaOf(TenantDeclaration tenant) {
+  private static TenantDeclaration validated(TenantDeclaration tenant) {
     Assert.field("schema of tenant " + tenant.id(), tenant.schema()).notBlank().matches(SchemaNames.PATTERN);
 
-    return tenant.schema();
+    return tenant;
   }
-
-  record TenantDeclaration(String id, String schema) {}
 }
