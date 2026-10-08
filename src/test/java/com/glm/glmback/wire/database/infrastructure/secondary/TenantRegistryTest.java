@@ -67,6 +67,28 @@ class TenantRegistryTest {
   }
 
   @Test
+  void shouldListDeclaredTenants() {
+    assertThat(impeccmoldEtKatilys().tenants()).containsExactlyInAnyOrder(TENANT_IMPECCMOLD, TENANT_KATILYS);
+  }
+
+  @Test
+  void shouldMapTenantIdentifierToItsSchema() {
+    assertThat(impeccmoldEtKatilys().schemaName("katilys")).isEqualTo("katilys_schema");
+  }
+
+  @Test
+  void shouldMapOutOfRequestIdentifierToDefaultSchema() {
+    assertThat(impeccmoldEtKatilys().schemaName(CurrentTenantResolver.OUT_OF_REQUEST)).isEqualTo("public");
+  }
+
+  @Test
+  void shouldNotMapUnknownTenantIdentifier() {
+    TenantRegistry registry = impeccmoldEtKatilys();
+
+    assertThatThrownBy(() -> registry.schemaName("inconnu")).isExactlyInstanceOf(NotTenantedUserException.class);
+  }
+
+  @Test
   void shouldKeepDefaultSchemaOutOfRequest() {
     assertThat(impeccmoldEtKatilys().defaultSchema()).isEqualTo("public");
   }

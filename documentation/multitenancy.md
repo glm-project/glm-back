@@ -1,7 +1,7 @@
 # Multi-tenant : un schema PostgreSQL par entreprise
 
 Les donnees de chaque entreprise cliente vivent dans leur propre schema PostgreSQL, au sein d'une base
-et d'un pool de connexions uniques. L'entreprise de l'utilisateur courant est portee par le token
+unique, et chaque entreprise a son propre pool de connexions. L'entreprise de l'utilisateur courant est portee par le token
 Keycloak, et la liste des entreprises est la table `tenant` du schema par defaut.
 
 ## Principe de securite
@@ -22,15 +22,40 @@ nom de schema effectivement pousse sur la connexion vient toujours du registre.
 | Registre des entreprises (table `tenant`)      | `wire/database/infrastructure/secondary/AdminSchemaInitializer`         |
 | Correspondance tenant vers schema              | `wire/database/infrastructure/secondary/TenantRegistry`                 |
 | Identifiant de tenant Hibernate                | `wire/database/infrastructure/secondary/CurrentTenantResolver`          |
-| Positionnement du schema sur la connexion      | Hibernate, via `MULTI_TENANT_SCHEMA_MAPPER`                             |
+| Pool de connexions de l'entreprise             | `wire/database/infrastructure/secondary/TenantDataSources`              |
+| Choix du pool par Hibernate                    | `wire/database/infrastructure/secondary/TenantConnectionProvider`       |
+| Positionnement du schema sur la connexion      | Hibernate, via `MULTI_TENANT_SCHEMA_MAPPER` (`TenantRegistry`)          |
 | Creation et migration des schemas au demarrage | `wire/database/infrastructure/secondary/TenantSchemasInitializer`       |
 
-L'identifiant de tenant vu par Hibernate **est** le nom du schema : un tenant inconnu echoue donc des
-l'ouverture de session, et non au fond de l'acquisition de connexion.
+L'identifiant de tenant vu par Hibernate est la **cle** de l'entreprise. `CurrentTenantResolver` la
+verifie dans le registre : une entreprise inconnue echoue donc des l'ouverture de session, et non au fond
+de l'acquisition de connexion. Hors requete, il rend un identifiant reserve (`_out_of_request`, qui ne
+respecte pas le motif d'une cle) : pool principal et schema par defaut.
 
-Hibernate 7 sait positionner lui-meme le schema (`Connection.setSchema` a l'acquisition, restauration a
-la liberation) des lors qu'un `TenantSchemaMapper` est configure — aucun `MultiTenantConnectionProvider`
-maison n'est necessaire.
+```
+ jeton {tenant: katilys}
+   └─ CurrentTenantResolver ──► "katilys"
+        ├─ TenantConnectionProvider ──► pool Hikari-katilys        (TenantDataSources)
+        └─ TenantSchemaMapper       ──► setSchema("katilys")       (TenantRegistry)
+```
+
+**Un pool par entreprise.** `TenantDataSources` ouvre un `HikariDataSource` par entreprise active, copie
+de la configuration du pool principal (`spring.datasource.hikari.*`), nomme `Hikari-<cle>` et positionne
+sur le schema de l'entreprise. Un pool ne s'ouvre qu'a sa premiere connexion : une entreprise sans
+activite ne tient aucune connexion. Les pools sont fermes a l'arret du contexte. Une entreprise qui epuise
+son pool n'attend que sur le sien ; les autres continuent d'etre servies.
+
+**Le schema reste pose par Hibernate**, comme avant : le fournisseur de connexions ne declare pas gerer le
+schema (`handlesConnectionSchema` a `false`), Hibernate fait donc `Connection.setSchema` a l'acquisition
+et le restaure a la liberation.
+
+**Le pool principal** (`spring.datasource`) sert le registre, les migrations, les besoins de demarrage
+d'Hibernate et tout acces hors requete. C'est aussi lui que connait `JpaTransactionManager` : sans effet
+tant qu'aucun `JdbcTemplate` ou `DataSourceUtils` n'est utilise dans une transaction JPA, ce qui est le
+cas. Un tel acces partirait sur le pool principal, et non sur celui de l'entreprise.
+
+**Dimensionnement** : le nombre maximal de connexions est la somme des pools — `maximum-pool-size` × (1 +
+nombre d'entreprises actives). Il doit rester sous `max_connections` du serveur PostgreSQL.
 
 ## Migrations
 
@@ -72,7 +97,7 @@ Les entreprises sont les lignes de la table `tenant`, dans le schema par defaut
 | `jdbc_url`      | reserve a une base dediee (#89), pas encore lu                                            |
 | `username`      | reserve a une base dediee (#89), pas encore lu                                            |
 | `secret_ref`    | reserve a une base dediee (#89) : le **nom** d'une variable d'env, jamais un mot de passe |
-| `pool_max_size` | reserve a un pool par entreprise (#88), pas encore lu                                     |
+| `pool_max_size` | taille propre au pool de l'entreprise (#89), pas encore lue                               |
 
 Au demarrage, `AdminSchemaInitializer` cree et migre cette table avec son propre changelog
 (`config/liquibase/admin/master.xml`, historique dans le `databasechangelog` du schema par defaut).
@@ -201,7 +226,7 @@ aucune base, aucun volume ni conteneur preexistant.
 ## Passage en production : decisions restant a prendre
 
 **Le montage actuel est un choix de phase de conception.** Un seul cluster PostgreSQL, une seule
-`DataSource`, un registre lu une fois au demarrage, et une migration jouee au demarrage
+base, un pool par entreprise de configuration identique, un registre lu une fois au demarrage, et une migration jouee au demarrage
 de l'application : c'est suffisant pour valider la mecanique d'isolation, ce n'est pas un modele de
 deploiement. Deux axes independants restent a trancher avant une mise en production.
 
@@ -210,24 +235,11 @@ deploiement. Deux axes independants restent a trancher avant une mise en product
 Aujourd'hui : un schema par entreprise dans une base unique. Demain, possiblement une base ou une
 **instance PostgreSQL par entreprise**.
 
-Ce changement casse un seul choix technique : Hibernate ne peut plus poser le schema lui-meme via
-`TenantSchemaMapper`, qui ne sait faire qu'un `setSchema` sur une connexion deja obtenue d'une
-`DataSource` unique. Il faut alors un `MultiTenantConnectionProvider` — Hibernate le prevoit avec
-`AbstractDataSourceBasedMultiTenantConnectionProviderImpl`, qui rend une `ConnectionProvider`, donc un
-pool, par tenant.
-
-Classes a reprendre, toutes dans `wire/database/infrastructure/secondary` :
-
-| Classe                               | Devenir                                                                |
-| ------------------------------------ | ---------------------------------------------------------------------- |
-| `TenantRegistry`                     | rend un couple (DataSource, schema) au lieu d'un nom de schema         |
-| `MultitenancyHibernateConfiguration` | declare un `MultiTenantConnectionProvider` a la place du schema mapper |
-| `TenantSchemasInitializer`           | boucle sur les DataSources, plus sur les schemas d'une seule           |
-| `CurrentTenantResolver`              | rend l'identifiant de tenant, plus le nom de schema                    |
-
-Attention a cette derniere ligne : **l'identifiant de tenant vu par Hibernate est aujourd'hui le nom du
-schema**, choix delibere pour qu'un tenant inconnu echoue des l'ouverture de session. En multi-instance
-il n'a plus de sens — l'identifiant redevient la cle, et c'est le provider qui resout instance et schema.
+**Fait (#88)** : l'identifiant de tenant Hibernate est la cle de l'entreprise, et
+`TenantConnectionProvider` (`AbstractDataSourceBasedMultiTenantConnectionProviderImpl`) prend la
+connexion dans le pool de l'entreprise. Il reste a faire viser a ce pool une autre base (`jdbc_url`,
+`username`, `secret_ref`) et a migrer chaque schema par le pool de son entreprise plutot que par le pool
+principal (`TenantSchemasInitializer`) : c'est #89.
 
 Ce qui ne bouge pas, quelle que soit la topologie : le domaine, les agregats, les repositories, les
 changelogs, `CurrentTenant`, `Tenant`, le port `Tenants`, `TenantAuthorizationManager`, et toute la
