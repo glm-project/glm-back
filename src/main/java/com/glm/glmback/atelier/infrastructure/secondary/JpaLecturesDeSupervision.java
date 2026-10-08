@@ -89,7 +89,7 @@ class JpaLecturesDeSupervision implements LecturesDeSupervision {
       .createQuery(
         """
         select a.id as id, a.operateurId as operateurId, a.categorie as categorie, a.debut as debut, a.echeance as echeance,
-        s.elementId as elementId, s.elementNom as elementNom, s.elementType as elementType, e.reference as reference,
+        s.elementId as elementId, s.elementNom as elementNom, s.elementCategorie as elementCategorie, e.reference as reference,
           a.posteId as posteId, p.libelle as posteLibelle, a.nature as nature, q.id as sequenceId, a.aResoudre as aResoudre
         from ActiviteDAtelierEntity a join a.suivi s
           left join ElementEngageableEntity e on e.id = s.elementId
@@ -134,7 +134,7 @@ class JpaLecturesDeSupervision implements LecturesDeSupervision {
     ElementEngage element = new ElementEngage(
       new ElementEngageId(row.get("elementId", UUID.class)),
       new NomDElement(row.get("elementNom", String.class)),
-      new CategorieDElement(row.get("elementType", String.class))
+      new CategorieDElement(row.get("elementCategorie", String.class))
     );
     return DescriptionDActiviteDeSupervision.builder()
       .id(new ActiviteId(row.get("id", UUID.class)))

@@ -4,6 +4,7 @@ import static com.glm.glmback.elementdefabrication.domain.ElementsDeFabricationF
 import static org.springframework.http.HttpStatus.*;
 
 import com.glm.glmback.UnitTest;
+import com.glm.glmback.elementdefabrication.domain.CategorieInconnueException;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationId;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationIntrouvableException;
 import com.glm.glmback.elementdefabrication.domain.ReferenceDejaUtiliseeException;
@@ -30,6 +31,11 @@ class ElementDeFabricationExceptionAdviceTest extends ExceptionAdviceContract {
       new PublishedProblem(
         new ReferenceDejaUtiliseeException(reference1015()),
         "urn:glm:erreur:element-de-fabrication:reference-deja-utilisee",
+        CONFLICT
+      ),
+      new PublishedProblem(
+        new CategorieInconnueException(CATEGORIE_MOULE),
+        "urn:glm:erreur:element-de-fabrication:categorie-inconnue",
         CONFLICT
       )
     );

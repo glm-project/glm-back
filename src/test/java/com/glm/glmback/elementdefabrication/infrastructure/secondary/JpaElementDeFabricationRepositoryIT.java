@@ -5,6 +5,7 @@ import static com.glm.glmback.shared.pagination.domain.PaginationFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.IntegrationTest;
+import com.glm.glmback.elementdefabrication.domain.Categorie;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabrication;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationCriteria;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationDejaExistantException;
@@ -13,19 +14,21 @@ import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationIntrouvab
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationRepository;
 import com.glm.glmback.elementdefabrication.domain.Nom;
 import com.glm.glmback.elementdefabrication.domain.Periode;
-import com.glm.glmback.elementdefabrication.domain.Prefixe;
 import com.glm.glmback.elementdefabrication.domain.Reference;
-import com.glm.glmback.elementdefabrication.domain.TypeDElementDeFabrication;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurityContexts;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.pagination.domain.Page;
+import jakarta.persistence.EntityManager;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -34,7 +37,7 @@ class JpaElementDeFabricationRepositoryIT {
 
   private static final String IMPECCMOLD = "impeccmold";
   private static final String KATILYS = "katilys";
-  private static final Prefixe PREFIXE_IT = new Prefixe("IT");
+  private static final Categorie CATEGORIE_IT = new Categorie("IT");
   private static final AtomicLong COMPTEUR = new AtomicLong();
 
   @Autowired
@@ -42,6 +45,27 @@ class JpaElementDeFabricationRepositoryIT {
 
   @Autowired
   private TransactionTemplate transactions;
+
+  @Autowired
+  private EntityManager entityManager;
+
+  /**
+   * La categorie d'un element doit etre declaree dans son entreprise : la cle etrangere le garantit.
+   */
+  @BeforeEach
+  void declarerLaCategorieDeTest() {
+    SecurityContext contexteDuTest = SecurityContextHolder.getContext();
+    for (String entreprise : List.of(IMPECCMOLD, KATILYS)) {
+      TenantSecurityContexts.authenticateOn(entreprise);
+      inTransaction(() ->
+        entityManager
+          .createNativeQuery("INSERT INTO categorie_de_produit (code, rang) VALUES (?, 1) ON CONFLICT (code) DO NOTHING")
+          .setParameter(1, CATEGORIE_IT.value())
+          .executeUpdate()
+      );
+    }
+    SecurityContextHolder.setContext(contexteDuTest);
+  }
 
   @AfterEach
   void cleanup() {
@@ -228,8 +252,8 @@ class JpaElementDeFabricationRepositoryIT {
     ElementDeFabrication chezImpeccMold = elementDeFabricationCreeLe(LE_15_JANVIER_2026);
     ElementDeFabrication chezKatilys = ElementDeFabrication.builder()
       .id(ElementDeFabricationId.newId())
-      .type(TypeDElementDeFabrication.PRODUIT)
-      .nom(Nom.of(PREFIXE_IT, ANNEE_2026, COMPTEUR.incrementAndGet()))
+      .categorie(CATEGORIE_IT)
+      .nom(Nom.of(CATEGORIE_IT, ANNEE_2026, COMPTEUR.incrementAndGet()))
       .reference(chezImpeccMold.reference().orElseThrow().value())
       .description(descriptionCarterEnFonte().value())
       .dateDeCreation(LE_15_JANVIER_2026)
@@ -257,8 +281,8 @@ class JpaElementDeFabricationRepositoryIT {
 
     return ElementDeFabrication.builder()
       .id(id)
-      .type(TypeDElementDeFabrication.PRODUIT)
-      .nom(Nom.of(PREFIXE_IT, ANNEE_2026, numero))
+      .categorie(CATEGORIE_IT)
+      .nom(Nom.of(CATEGORIE_IT, ANNEE_2026, numero))
       .reference(referenceDeTest(numero).value())
       .description(descriptionCarterEnFonte().value())
       .dateDeCreation(dateDeCreation)
@@ -268,8 +292,8 @@ class JpaElementDeFabricationRepositoryIT {
   private static ElementDeFabrication elementDeFabricationSansReference(Instant dateDeCreation) {
     return ElementDeFabrication.builder()
       .id(ElementDeFabricationId.newId())
-      .type(TypeDElementDeFabrication.PRODUIT)
-      .nom(Nom.of(PREFIXE_IT, ANNEE_2026, COMPTEUR.incrementAndGet()))
+      .categorie(CATEGORIE_IT)
+      .nom(Nom.of(CATEGORIE_IT, ANNEE_2026, COMPTEUR.incrementAndGet()))
       .reference(null)
       .description(null)
       .dateDeCreation(dateDeCreation)

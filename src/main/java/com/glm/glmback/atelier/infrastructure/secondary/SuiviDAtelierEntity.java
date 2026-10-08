@@ -60,7 +60,7 @@ class SuiviDAtelierEntity {
   private String elementNom;
 
   @Column(length = 30)
-  private String elementType;
+  private String elementCategorie;
 
   private String engagementAuteur;
 
@@ -95,7 +95,7 @@ class SuiviDAtelierEntity {
     revision = suivi.revision().value();
     elementId = suivi.element().id().uuid();
     elementNom = suivi.element().nom().value();
-    elementType = suivi.element().categorie().value();
+    elementCategorie = suivi.element().categorie().value();
     engagementAuteur = suivi.engagement().auteur().value();
     engagementDate = suivi.engagement().date();
     reconcilie(suivi);
@@ -149,7 +149,7 @@ class SuiviDAtelierEntity {
   SuiviDAtelier toDomain() {
     SuiviDAtelier suivi = SuiviDAtelier.relectureBuilder(new RevisionDuSuivi(revision))
       .id(new SuiviDAtelierId(id))
-      .element(new ElementEngage(new ElementEngageId(elementId), new NomDElement(elementNom), new CategorieDElement(elementType)))
+      .element(new ElementEngage(new ElementEngageId(elementId), new NomDElement(elementNom), new CategorieDElement(elementCategorie)))
       .engagement(new Engagement(new Auteur(engagementAuteur), engagementDate))
       .journal(new JournalDAtelier(journal.stream().map(EvenementDAtelierEntity::toDomain).toList()));
 

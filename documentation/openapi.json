@@ -966,6 +966,12 @@
       },
       "RestCreationElementDeFabrication" : {
         "properties" : {
+          "categorie" : {
+            "description" : "Code de la categorie de produit, declaree par l'entreprise. Obligatoire, sauf pour un client qui envoie encore type.",
+            "example" : "MOULE",
+            "pattern" : "^[A-Z]{1,10}$",
+            "type" : "string"
+          },
           "description" : {
             "maxLength" : 1000,
             "minLength" : 0,
@@ -977,11 +983,13 @@
             "type" : "string"
           },
           "type" : {
+            "deprecated" : true,
+            "description" : "Remplace par categorie. Lu seulement en l'absence de categorie : ORDRE_DE_FABRICATION vaut OF, PRODUIT vaut MOULE.",
             "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
+            "pattern" : "ORDRE_DE_FABRICATION|PRODUIT",
             "type" : "string"
           }
         },
-        "required" : [ "type" ],
         "type" : "object"
       },
       "RestCreationOperateur" : {
@@ -1219,6 +1227,10 @@
       "RestElement" : {
         "description" : "L'element de fabrication dont le cout de revient est lu, relu au referentiel a chaque appel.",
         "properties" : {
+          "categorie" : {
+            "description" : "Categorie de l'element.",
+            "type" : "string"
+          },
           "id" : {
             "description" : "Identifiant de l'element de fabrication.",
             "format" : "uuid",
@@ -1230,7 +1242,9 @@
             "type" : "string"
           },
           "type" : {
-            "description" : "Categorie de l'element.",
+            "deprecated" : true,
+            "description" : "Remplace par categorie : ORDRE_DE_FABRICATION pour la categorie OF, PRODUIT pour toute autre.",
+            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
             "type" : "string"
           }
         },
@@ -1239,6 +1253,10 @@
       "RestElementCiteDuCout" : {
         "description" : "L'element sur lequel portait une activite citee par le detail, nomme a la lecture ; nom et categorie absents s'il est inconnu.",
         "properties" : {
+          "categorie" : {
+            "description" : "Categorie de l'element.",
+            "type" : "string"
+          },
           "id" : {
             "description" : "Identifiant de l'element de fabrication.",
             "format" : "uuid",
@@ -1250,7 +1268,9 @@
             "type" : "string"
           },
           "type" : {
-            "description" : "Categorie de l'element.",
+            "deprecated" : true,
+            "description" : "Remplace par categorie : ORDRE_DE_FABRICATION pour la categorie OF, PRODUIT pour toute autre.",
+            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
             "type" : "string"
           }
         },
@@ -1259,6 +1279,9 @@
       },
       "RestElementDeFabrication" : {
         "properties" : {
+          "categorie" : {
+            "type" : "string"
+          },
           "dateDeCreation" : {
             "format" : "date-time",
             "type" : "string"
@@ -1281,6 +1304,8 @@
             "type" : "string"
           },
           "type" : {
+            "deprecated" : true,
+            "description" : "Remplace par categorie : ORDRE_DE_FABRICATION pour la categorie OF, PRODUIT pour toute autre.",
             "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
             "type" : "string"
           }
@@ -1290,6 +1315,10 @@
       "RestElementDeLaSynthese" : {
         "description" : "Un element sur lequel l'operateur a travaille ou pointe dans la semaine, et le temps qu'il y a passe.\n\nNom et categorie viennent du suivi, copies a l'engagement ; reference et description sont relues au referentiel, et\nabsentes si l'element a ete supprime. Les durees se cumulent par element : une heure passee sur deux elements compte\nsur chacun.\n",
         "properties" : {
+          "categorie" : {
+            "description" : "Categorie de l'element.",
+            "type" : "string"
+          },
           "description" : {
             "description" : "Description de l'element, relue au referentiel.",
             "example" : "Carter de pompe",
@@ -1326,15 +1355,21 @@
             "type" : "string"
           },
           "type" : {
-            "description" : "Categorie de l'element.",
+            "deprecated" : true,
+            "description" : "Remplace par categorie : ORDRE_DE_FABRICATION pour la categorie OF, PRODUIT pour toute autre.",
+            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
             "type" : "string"
           }
         },
-        "required" : [ "duree", "dureeNonConformite", "id", "nom", "postes", "type" ],
+        "required" : [ "categorie", "duree", "dureeNonConformite", "id", "nom", "postes", "type" ],
         "type" : "object"
       },
       "RestElementDeSupervision" : {
         "properties" : {
+          "categorie" : {
+            "description" : "Categorie de l'element, copiee a l'engagement.",
+            "type" : "string"
+          },
           "id" : {
             "format" : "uuid",
             "type" : "string"
@@ -1346,11 +1381,13 @@
             "type" : "string"
           },
           "type" : {
-            "description" : "Categorie de l'element, copiee a l'engagement.",
+            "deprecated" : true,
+            "description" : "Remplace par categorie : ORDRE_DE_FABRICATION pour la categorie OF, PRODUIT pour toute autre.",
+            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
             "type" : "string"
           }
         },
-        "required" : [ "id", "nom", "type" ],
+        "required" : [ "categorie", "id", "nom", "type" ],
         "type" : "object"
       },
       "RestEngagement" : {
@@ -2679,6 +2716,10 @@
             },
             "type" : "array"
           },
+          "categorie" : {
+            "description" : "Categorie de l'element, copiee a l'engagement.",
+            "type" : "string"
+          },
           "clotureLe" : {
             "description" : "Instant metier de la cloture, absent tant que l'element n'est pas cloture.",
             "format" : "date-time",
@@ -2733,11 +2774,13 @@
             "type" : "string"
           },
           "type" : {
-            "description" : "Categorie de l'element, copiee a l'engagement.",
+            "deprecated" : true,
+            "description" : "Remplace par categorie : ORDRE_DE_FABRICATION pour la categorie OF, PRODUIT pour toute autre.",
+            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
             "type" : "string"
           }
         },
-        "required" : [ "activitesEnCours", "conflits", "element", "engageLe", "engagePar", "etat", "id", "journal", "nom", "type" ],
+        "required" : [ "activitesEnCours", "categorie", "conflits", "element", "engageLe", "engagePar", "etat", "id", "journal", "nom", "type" ],
         "type" : "object"
       },
       "RestSuiviDAtelierEnGrille" : {
@@ -2749,6 +2792,10 @@
               "$ref" : "#/components/schemas/RestActiviteEnCours"
             },
             "type" : "array"
+          },
+          "categorie" : {
+            "description" : "Categorie de l'element, copiee a l'engagement.",
+            "type" : "string"
           },
           "clotureLe" : {
             "description" : "Instant metier de la cloture, absent tant que l'element n'est pas cloture.",
@@ -2790,11 +2837,13 @@
             "type" : "string"
           },
           "type" : {
-            "description" : "Categorie de l'element, copiee a l'engagement.",
+            "deprecated" : true,
+            "description" : "Remplace par categorie : ORDRE_DE_FABRICATION pour la categorie OF, PRODUIT pour toute autre.",
+            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
             "type" : "string"
           }
         },
-        "required" : [ "activitesEnCours", "element", "engageLe", "engagePar", "etat", "id", "nom", "type" ],
+        "required" : [ "activitesEnCours", "categorie", "element", "engageLe", "engagePar", "etat", "id", "nom", "type" ],
         "type" : "object"
       },
       "RestSuiviDuPupitre" : {
@@ -2806,6 +2855,10 @@
               "$ref" : "#/components/schemas/RestActiviteDuPupitre"
             },
             "type" : "array"
+          },
+          "categorie" : {
+            "description" : "Categorie de l'element, copiee a l'engagement.",
+            "type" : "string"
           },
           "conflits" : {
             "description" : "Sequences en conflit a resoudre par le gestionnaire.",
@@ -2835,11 +2888,13 @@
             "type" : "string"
           },
           "type" : {
-            "description" : "Categorie de l'element, copiee a l'engagement.",
+            "deprecated" : true,
+            "description" : "Remplace par categorie : ORDRE_DE_FABRICATION pour la categorie OF, PRODUIT pour toute autre.",
+            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
             "type" : "string"
           }
         },
-        "required" : [ "activites", "conflits", "etat", "id", "nom", "type" ],
+        "required" : [ "activites", "categorie", "conflits", "etat", "id", "nom", "type" ],
         "type" : "object"
       },
       "RestSupervisionDAtelier" : {

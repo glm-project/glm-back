@@ -11,8 +11,8 @@ Feature: Liste des fins automatiques parmi les anomalies de pointage
   Scenario: Une fin tardive est listee avec son debut et son echeance
     Given il est "2044-02-01T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Liste fins 8101"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | LF8101               |
+      | categorie | OF     |
+      | reference | LF8101 |
     And j'ai engage l'element "Liste fins 8101" en atelier
     And il est "2044-02-01T08:00:00Z"
     And j'ai pointe sur "Liste fins 8101"
@@ -34,8 +34,8 @@ Feature: Liste des fins automatiques parmi les anomalies de pointage
   Scenario: L'echeance est comprise dans la liste a la nanoseconde pres
     Given il est "2044-02-02T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Liste fins 8102"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | LF8102               |
+      | categorie | OF     |
+      | reference | LF8102 |
     And j'ai engage l'element "Liste fins 8102" en atelier
     And il est "2044-02-02T08:00:00Z"
     And j'ai pointe sur "Liste fins 8102"
@@ -56,8 +56,8 @@ Feature: Liste des fins automatiques parmi les anomalies de pointage
   Scenario: Une activite a resoudre n'est pas une fin automatique
     Given il est "2044-02-03T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Liste fins 8103"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | LF8103               |
+      | categorie | OF     |
+      | reference | LF8103 |
     And j'ai engage l'element "Liste fins 8103" en atelier
     And il est "2044-02-03T08:00:00Z"
     And j'ai pointe sur "Liste fins 8103"
@@ -91,8 +91,8 @@ Feature: Liste des fins automatiques parmi les anomalies de pointage
   Scenario: Une fin regularisee par le gestionnaire sort de la liste
     Given il est "2044-02-04T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Liste fins 8104"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | LF8104               |
+      | categorie | OF     |
+      | reference | LF8104 |
     And j'ai engage l'element "Liste fins 8104" en atelier
     And il est "2044-02-04T08:00:00Z"
     And j'ai pointe sur "Liste fins 8104"
@@ -117,8 +117,8 @@ Feature: Liste des fins automatiques parmi les anomalies de pointage
   Scenario: Une fin reelle pointee apres l'echeance laisse l'activite listee
     Given il est "2044-02-05T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Liste fins 8105"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | LF8105               |
+      | categorie | OF     |
+      | reference | LF8105 |
     And j'ai engage l'element "Liste fins 8105" en atelier
     And il est "2044-02-05T08:00:00Z"
     And j'ai pointe sur "Liste fins 8105"
@@ -144,8 +144,8 @@ Feature: Liste des fins automatiques parmi les anomalies de pointage
   Scenario: Une activite reouverte avant son echeance ne laisse que la nouvelle fin automatique
     Given il est "2044-02-06T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Liste fins 8106"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | LF8106               |
+      | categorie | OF     |
+      | reference | LF8106 |
     And j'ai engage l'element "Liste fins 8106" en atelier
     And il est "2044-02-06T08:00:00Z"
     And j'ai pointe sur "Liste fins 8106"
@@ -175,8 +175,8 @@ Feature: Liste des fins automatiques parmi les anomalies de pointage
   Scenario: L'adresse de la ligne ouvre le dossier de la meme fin automatique apres la correction de l'ouvrant
     Given il est "2044-02-08T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Liste fins 8107"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | LF8107               |
+      | categorie | OF     |
+      | reference | LF8107 |
     And j'ai engage l'element "Liste fins 8107" en atelier
     And il est "2044-02-08T08:00:00Z"
     And j'ai pointe sur "Liste fins 8107"

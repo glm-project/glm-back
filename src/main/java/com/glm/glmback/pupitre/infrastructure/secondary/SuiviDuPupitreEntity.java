@@ -41,7 +41,7 @@ class SuiviDuPupitreEntity {
   private String elementNom;
 
   @Column(length = 30)
-  private String elementType;
+  private String elementCategorie;
 
   @Convert(converter = ExactInstantConverter.class)
   private Instant clotureDateDeSurvenue;
@@ -63,6 +63,6 @@ class SuiviDuPupitreEntity {
       .id(new SuiviDuPupitreId(id))
       .nom(new NomDElement(elementNom))
       .reference(reference)
-      .categorie(elementType);
+      .categorie(elementCategorie);
   }
 }

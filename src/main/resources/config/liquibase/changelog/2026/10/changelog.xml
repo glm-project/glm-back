@@ -11,4 +11,6 @@
   <include file="006-recu_d_acte.xml" relativeToChangelogFile="true" />
   <include file="007-proposition_confirmee.xml" relativeToChangelogFile="true" />
   <include file="008-categorie_de_produit.xml" relativeToChangelogFile="true" />
+  <include file="009-colonnes_de_categorie.xml" relativeToChangelogFile="true" />
+  <include file="010-element_dans_une_categorie.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>

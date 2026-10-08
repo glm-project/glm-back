@@ -10,26 +10,29 @@ public final class ElementsDeFabricationService {
 
   private final ElementDeFabricationRepository repository;
   private final CompteurDElementsDeFabrication compteur;
-  private final PrefixesDElementsDeFabrication prefixes;
+  private final CategoriesDeclarees categories;
   private final Clock clock;
 
   private ElementsDeFabricationService(
     ElementDeFabricationRepository repository,
     CompteurDElementsDeFabrication compteur,
-    PrefixesDElementsDeFabrication prefixes,
+    CategoriesDeclarees categories,
     Clock clock
   ) {
     this.repository = repository;
     this.compteur = compteur;
-    this.prefixes = prefixes;
+    this.categories = categories;
     this.clock = clock;
   }
 
   public static ElementsDeFabricationServiceRepositoryBuilder builder() {
-    return repository -> compteur -> prefixes -> clock -> new ElementsDeFabricationService(repository, compteur, prefixes, clock);
+    return repository -> compteur -> categories -> clock -> new ElementsDeFabricationService(repository, compteur, categories, clock);
   }
 
   public ElementDeFabrication create(ElementDeFabricationToCreate toCreate) {
+    if (!categories.existe(toCreate.categorie())) {
+      throw new CategorieInconnueException(toCreate.categorie());
+    }
     Instant maintenant = clock.now();
     ElementDeFabricationId id = ElementDeFabricationId.newId();
     verifierReferenceLibre(id, toCreate.reference());
@@ -37,8 +40,8 @@ public final class ElementsDeFabricationService {
     return repository.create(
       ElementDeFabrication.builder()
         .id(id)
-        .type(toCreate.type())
-        .nom(nom(toCreate.type(), Annee.of(maintenant)))
+        .categorie(toCreate.categorie())
+        .nom(nom(toCreate.categorie(), Annee.of(maintenant)))
         .reference(toCreate.reference().map(Reference::value).orElse(null))
         .description(toCreate.description().map(Description::value).orElse(null))
         .dateDeCreation(maintenant)
@@ -65,8 +68,11 @@ public final class ElementsDeFabricationService {
     repository.delete(id);
   }
 
-  private Nom nom(TypeDElementDeFabrication type, Annee annee) {
-    return Nom.of(prefixes.prefixe(type), annee, compteur.prochainNumero(type, annee));
+  /**
+   * Le code de la categorie sert de prefixe : la numerotation est propre a chaque categorie et a chaque annee.
+   */
+  private Nom nom(Categorie categorie, Annee annee) {
+    return Nom.of(categorie, annee, compteur.prochainNumero(categorie, annee));
   }
 
   /**
@@ -88,11 +94,11 @@ public final class ElementsDeFabricationService {
   }
 
   public interface ElementsDeFabricationServiceCompteurBuilder {
-    ElementsDeFabricationServicePrefixesBuilder compteur(CompteurDElementsDeFabrication compteur);
+    ElementsDeFabricationServiceCategoriesBuilder compteur(CompteurDElementsDeFabrication compteur);
   }
 
-  public interface ElementsDeFabricationServicePrefixesBuilder {
-    ElementsDeFabricationServiceClockBuilder prefixes(PrefixesDElementsDeFabrication prefixes);
+  public interface ElementsDeFabricationServiceCategoriesBuilder {
+    ElementsDeFabricationServiceClockBuilder categories(CategoriesDeclarees categories);
   }
 
   public interface ElementsDeFabricationServiceClockBuilder {

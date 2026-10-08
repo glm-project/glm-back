@@ -13,8 +13,8 @@ Feature: Dossier d'anomalie d'une fin automatique
   Scenario: Une activite oubliee ouvre un dossier de fin automatique avec une regularisation sans heure
     Given il est "2044-03-01T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "Anomalie 4501"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | ANO4501              |
+      | categorie | OF      |
+      | reference | ANO4501 |
     And j'ai engage l'element "Anomalie 4501" en atelier
     And il est "2044-03-01T08:00:00Z"
     And j'ai pointe sur "Anomalie 4501"
@@ -40,8 +40,8 @@ Feature: Dossier d'anomalie d'une fin automatique
   Scenario Outline: L'echeance se juge a l'instant de lecture, borne incluse, a la nanoseconde
     Given il est "2044-03-02T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "Anomalie 4502 <rang>"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | ANO4502-<rang>       |
+      | categorie | OF             |
+      | reference | ANO4502-<rang> |
     And j'ai engage l'element "Anomalie 4502 <rang>" en atelier
     And il est "2044-03-02T08:00:00Z"
     And j'ai pointe sur "Anomalie 4502 <rang>"
@@ -64,8 +64,8 @@ Feature: Dossier d'anomalie d'une fin automatique
   Scenario: L'apercu d'une fin regularisee a 17 h ne modifie rien et passe l'activite de 13 h a 9 h
     Given il est "2044-03-03T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "Anomalie 4503"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | ANO4503              |
+      | categorie | OF      |
+      | reference | ANO4503 |
     And j'ai engage l'element "Anomalie 4503" en atelier
     And il est "2044-03-03T08:00:00Z"
     And j'ai pointe sur "Anomalie 4503"
@@ -86,8 +86,8 @@ Feature: Dossier d'anomalie d'une fin automatique
   Scenario: La confirmation d'une fin regularisee termine l'activite et sa reprise rend le meme recu
     Given il est "2044-03-04T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "Anomalie 4504"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | ANO4504              |
+      | categorie | OF      |
+      | reference | ANO4504 |
     And j'ai engage l'element "Anomalie 4504" en atelier
     And il est "2044-03-04T08:00:00Z"
     And j'ai pointe sur "Anomalie 4504"
@@ -116,8 +116,8 @@ Feature: Dossier d'anomalie d'une fin automatique
   Scenario: Une fin pointee a 23 h apres l'echeance se corrige a la meme heure et donne 15 h sans anomalie
     Given il est "2044-03-05T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "Anomalie 4505"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | ANO4505              |
+      | categorie | OF      |
+      | reference | ANO4505 |
     And j'ai engage l'element "Anomalie 4505" en atelier
     And il est "2044-03-05T08:00:00Z"
     And j'ai pointe sur "Anomalie 4505"
@@ -156,8 +156,8 @@ Feature: Dossier d'anomalie d'une fin automatique
   Scenario: Deux fins tardives donnent une seule proposition, sur la plus tardive
     Given il est "2044-03-06T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "Anomalie 4506"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | ANO4506              |
+      | categorie | OF      |
+      | reference | ANO4506 |
     And j'ai engage l'element "Anomalie 4506" en atelier
     And il est "2044-03-06T08:00:00Z"
     And j'ai pointe sur "Anomalie 4506"
@@ -200,8 +200,8 @@ Feature: Dossier d'anomalie d'une fin automatique
   Scenario: Une transition vers la non conformite pointee a 23 h se corrige sans proposer de fin regularisee
     Given il est "2044-03-07T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "Anomalie 4507"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | ANO4507              |
+      | categorie | OF      |
+      | reference | ANO4507 |
     And j'ai engage l'element "Anomalie 4507" en atelier
     And il est "2044-03-07T08:00:00Z"
     And j'ai pointe sur "Anomalie 4507"
@@ -245,8 +245,8 @@ Feature: Dossier d'anomalie d'une fin automatique
   Scenario: Une transition tardive se corrige avant la fin tardive qui la suit, et le conflit qui en resulte est accepte
     Given il est "2044-03-30T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "Anomalie 4530"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | ANO4530              |
+      | categorie | OF      |
+      | reference | ANO4530 |
     And j'ai engage l'element "Anomalie 4530" en atelier
     And il est "2044-03-30T08:00:00Z"
     And j'ai pointe sur "Anomalie 4530"
@@ -288,8 +288,8 @@ Feature: Dossier d'anomalie d'une fin automatique
   Scenario: Une transition tardive corrigee ne laisse pas l'echeance de l'activite qu'elle ouvre juger l'anomalie traitee
     Given il est "2044-03-31T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "Anomalie 4531"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | ANO4531              |
+      | categorie | OF      |
+      | reference | ANO4531 |
     And j'ai engage l'element "Anomalie 4531" en atelier
     And il est "2044-03-31T08:00:00Z"
     And j'ai pointe sur "Anomalie 4531"
@@ -330,8 +330,8 @@ Feature: Dossier d'anomalie d'une fin automatique
   Scenario Outline: Une fin regularisee avant la relance tardive reste sans conflit, apres elle le conflit est accepte
     Given il est "2044-03-08T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "Anomalie 4508 <rang>"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | ANO4508-<rang>       |
+      | categorie | OF             |
+      | reference | ANO4508-<rang> |
     And j'ai engage l'element "Anomalie 4508 <rang>" en atelier
     And il est "2044-03-08T08:00:00Z"
     And j'ai pointe sur "Anomalie 4508 <rang>"
@@ -362,8 +362,8 @@ Feature: Dossier d'anomalie d'une fin automatique
   Scenario: Une fin regularisee avant le debut est acceptee et met la sequence en conflit
     Given il est "2044-03-10T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "Anomalie 4510"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | ANO4510              |
+      | categorie | OF      |
+      | reference | ANO4510 |
     And j'ai engage l'element "Anomalie 4510" en atelier
     And il est "2044-03-10T08:00:00Z"
     And j'ai pointe sur "Anomalie 4510"
@@ -385,8 +385,8 @@ Feature: Dossier d'anomalie d'une fin automatique
   Scenario: Corriger le debut pour repousser l'echeance annule l'ancre et garde l'activite en cours dans le perimetre
     Given il est "2044-03-11T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "Anomalie 4511"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | ANO4511              |
+      | categorie | OF      |
+      | reference | ANO4511 |
     And j'ai engage l'element "Anomalie 4511" en atelier
     And il est "2044-03-11T08:00:00Z"
     And j'ai pointe sur "Anomalie 4511"
@@ -424,8 +424,8 @@ Feature: Dossier d'anomalie d'une fin automatique
   Scenario: Un ouvrant corrige mais encore echu ouvre un nouveau dossier de fin automatique
     Given il est "2044-03-12T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "Anomalie 4512"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | ANO4512              |
+      | categorie | OF      |
+      | reference | ANO4512 |
     And j'ai engage l'element "Anomalie 4512" en atelier
     And il est "2044-03-12T08:00:00Z"
     And j'ai pointe sur "Anomalie 4512"
@@ -459,8 +459,8 @@ Feature: Dossier d'anomalie d'une fin automatique
   Scenario Outline: Un suivi cloture accepte une fin regularisee avant sa cloture et refuse celle d'apres
     Given il est "2044-03-13T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "Anomalie 4513 <rang>"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | ANO4513-<rang>       |
+      | categorie | OF             |
+      | reference | ANO4513-<rang> |
     And j'ai engage l'element "Anomalie 4513 <rang>" en atelier
     And il est "2044-03-13T08:00:00Z"
     And j'ai pointe sur "Anomalie 4513 <rang>"
@@ -484,8 +484,8 @@ Feature: Dossier d'anomalie d'une fin automatique
   Scenario: Un suivi cloture refuse a l'apercu une fin posterieure a sa cloture avec son code
     Given il est "2044-03-14T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "Anomalie 4514"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | ANO4514              |
+      | categorie | OF      |
+      | reference | ANO4514 |
     And j'ai engage l'element "Anomalie 4514" en atelier
     And il est "2044-03-14T08:00:00Z"
     And j'ai pointe sur "Anomalie 4514"
@@ -505,8 +505,8 @@ Feature: Dossier d'anomalie d'une fin automatique
   Scenario: Une habilitation retiree depuis le pointage refuse l'apercu
     Given il est "2044-03-15T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "Anomalie 4515"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | ANO4515              |
+      | categorie | OF      |
+      | reference | ANO4515 |
     And j'ai engage l'element "Anomalie 4515" en atelier
     And il est "2044-03-15T08:00:00Z"
     And j'ai pointe sur "Anomalie 4515"
@@ -525,8 +525,8 @@ Feature: Dossier d'anomalie d'une fin automatique
   Scenario: Une habilitation retiree entre l'apercu et la confirmation rend l'apercu obsolete
     Given il est "2044-03-16T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "Anomalie 4516"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | ANO4516              |
+      | categorie | OF      |
+      | reference | ANO4516 |
     And j'ai engage l'element "Anomalie 4516" en atelier
     And il est "2044-03-16T08:00:00Z"
     And j'ai pointe sur "Anomalie 4516"
@@ -547,8 +547,8 @@ Feature: Dossier d'anomalie d'une fin automatique
   Scenario: Une activite sans poste ouvre un dossier, un apercu et une confirmation sans poste
     Given il est "2044-03-17T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "Anomalie 4517"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | ANO4517              |
+      | categorie | OF      |
+      | reference | ANO4517 |
     And j'ai engage l'element "Anomalie 4517" en atelier
     And il est "2044-03-17T08:00:00Z"
     And j'ai pointe sur "Anomalie 4517"
@@ -570,8 +570,8 @@ Feature: Dossier d'anomalie d'une fin automatique
   Scenario: Une fin regularisee a une heure future est refusee sans ecriture
     Given il est "2044-03-18T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "Anomalie 4518"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | ANO4518              |
+      | categorie | OF      |
+      | reference | ANO4518 |
     And j'ai engage l'element "Anomalie 4518" en atelier
     And il est "2044-03-18T08:00:00Z"
     And j'ai pointe sur "Anomalie 4518"
@@ -589,8 +589,8 @@ Feature: Dossier d'anomalie d'une fin automatique
   Scenario: Une ecriture concurrente entre l'apercu et la confirmation rend l'apercu obsolete
     Given il est "2044-03-19T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "Anomalie 4519"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | ANO4519              |
+      | categorie | OF      |
+      | reference | ANO4519 |
     And j'ai engage l'element "Anomalie 4519" en atelier
     And il est "2044-03-19T08:00:00Z"
     And j'ai pointe sur "Anomalie 4519"

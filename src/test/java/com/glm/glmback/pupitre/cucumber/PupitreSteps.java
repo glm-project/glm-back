@@ -2,6 +2,7 @@ package com.glm.glmback.pupitre.cucumber;
 
 import static org.assertj.core.api.Assertions.*;
 
+import com.glm.glmback.cucumber.CategoriesDeProduitDesScenarios;
 import com.glm.glmback.cucumber.CucumberClock;
 import com.glm.glmback.cucumber.EcrituresDuJournalDAtelier;
 import com.glm.glmback.cucumber.EcrituresDuJournalDAtelier.PointageEnvoye;
@@ -104,14 +105,16 @@ public class PupitreSteps {
   @Given("le pupitre fabrique {string}")
   public void lePupitreFabrique(String alias) {
     String reference = PREFIXE + alias + " " + SEQUENCE.incrementAndGet();
-    rest.post(ELEMENTS_URI, JSON.writeValueAsString(Map.of("type", "ORDRE_DE_FABRICATION", "reference", reference)));
+    CategoriesDeProduitDesScenarios.declarer(rest, "OF");
+    rest.post(ELEMENTS_URI, JSON.writeValueAsString(Map.of("categorie", "OF", "reference", reference)));
     elements.put(alias, id());
     references.put(alias, reference);
   }
 
   @Given("le pupitre fabrique {string} sans reference")
   public void lePupitreFabriqueSansReference(String alias) {
-    rest.post(ELEMENTS_URI, JSON.writeValueAsString(Map.of("type", "PRODUIT")));
+    CategoriesDeProduitDesScenarios.declarer(rest, "MOULE");
+    rest.post(ELEMENTS_URI, JSON.writeValueAsString(Map.of("categorie", "MOULE")));
     elements.put(alias, id());
   }
 
@@ -277,6 +280,7 @@ public class PupitreSteps {
   public void porteSaReferenceEtSonNom(String element) {
     assertThat(suivi(element))
       .containsEntry("reference", references.get(element))
+      .containsEntry("categorie", "OF")
       .containsEntry("type", "ORDRE_DE_FABRICATION")
       .containsEntry("nom", nomsDAtelier.get(element));
   }

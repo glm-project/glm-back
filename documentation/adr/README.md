@@ -8,3 +8,4 @@
 - [0006 — Confirm explicit resolution proposals](0006-confirm-explicit-resolution-proposals.md)
 - [0007 — Read addressed workshop aggregates coherently](0007-read-addressed-workshop-aggregates-coherently.md)
 - [0008 — Extend explicit proposals to automatic ends](0008-extend-explicit-proposals-to-automatic-ends.md)
+- [0009 — Evolve the API without breaking its clients](0009-evolve-the-api-without-breaking-its-clients.md)

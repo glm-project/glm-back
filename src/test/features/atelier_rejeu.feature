@@ -7,8 +7,8 @@ Feature: Rejeu durable des gestes du pupitre
 
   Scenario: Un pointage rejoue apres cloture conserve le journal du suivi
     Given l'entreprise a cree l'element de fabrication "OF rejeu"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | rejeu                |
+      | categorie | OF    |
+      | reference | rejeu |
     And j'ai engage l'element "OF rejeu" en atelier
     And il est "2026-05-10T09:00:00Z"
     And I am logged in as "user" with role "USER"
@@ -33,8 +33,8 @@ Feature: Rejeu durable des gestes du pupitre
     # Le pupitre a pointe la fin hors ligne, a 12 h ; la reponse a son premier envoi s'est perdue. Il renvoie le meme
     # corps, meme identifiant, meme heure et meme cible : le serveur le reconnait.
     Given l'entreprise a cree l'element de fabrication "OF reseau"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | reseau               |
+      | categorie | OF     |
+      | reference | reseau |
     And j'ai engage l'element "OF reseau" en atelier
     And il est "2026-05-10T08:00:00Z"
     And I am logged in as "user" with role "USER"
@@ -62,8 +62,8 @@ Feature: Rejeu durable des gestes du pupitre
 
   Scenario: Un identifiant reutilise avec une autre cible ou une autre intention est refuse
     Given l'entreprise a cree l'element de fabrication "OF cible"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | cible                |
+      | categorie | OF    |
+      | reference | cible |
     And j'ai engage l'element "OF cible" en atelier
     And il est "2026-05-10T08:00:00Z"
     And j'ai pointe sur "OF cible"
@@ -100,8 +100,8 @@ Feature: Rejeu durable des gestes du pupitre
 
   Scenario: Une fin ciblee acceptee reste soumise aux droits lors du rejeu
     Given l'entreprise a cree l'element de fabrication "OF droits FIN"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | droits FIN           |
+      | categorie | OF         |
+      | reference | droits FIN |
     And j'ai engage l'element "OF droits FIN" en atelier
     And il est "2026-05-10T08:00:00Z"
     And I am logged in as "user" with role "USER"
@@ -128,8 +128,8 @@ Feature: Rejeu durable des gestes du pupitre
 
   Scenario: Un pointage d'atelier accepte reste soumis aux droits lors du rejeu
     Given l'entreprise a cree l'element de fabrication "OF droits"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | droits               |
+      | categorie | OF     |
+      | reference | droits |
     And j'ai engage l'element "OF droits" en atelier
     And il est "2026-05-10T08:00:00Z"
     And I am logged in as "user" with role "USER"
@@ -147,8 +147,8 @@ Feature: Rejeu durable des gestes du pupitre
 
   Scenario: L'ancien contrat de pointage d'atelier sans UUID est refuse
     Given l'entreprise a cree l'element de fabrication "OF sans UUID"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | sans UUID            |
+      | categorie | OF        |
+      | reference | sans UUID |
     And j'ai engage l'element "OF sans UUID" en atelier
     And il est "2026-05-10T08:00:00Z"
     When je pointe sur "OF sans UUID" sans identifiant de geste
@@ -161,8 +161,8 @@ Feature: Rejeu durable des gestes du pupitre
 
   Scenario: Une collision de date laisse la fin ciblee acceptee intacte
     Given l'entreprise a cree l'element de fabrication "OF collision FIN"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | collision FIN        |
+      | categorie | OF            |
+      | reference | collision FIN |
     And j'ai engage l'element "OF collision FIN" en atelier
     And il est "2026-05-10T08:00:00Z"
     And j'ai pointe sur "OF collision FIN"

@@ -28,7 +28,7 @@ class ElementValorisableEntity {
   @Id
   private UUID id;
 
-  @Column(name = "type", length = 30)
+  @Column(length = 30)
   private String categorie;
 
   private String nom;

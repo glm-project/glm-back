@@ -33,18 +33,18 @@ class NomTest {
   }
 
   @Test
-  void shouldBuildNomFromPrefixeAnneeAndCompteur() {
+  void shouldBuildNomFromCategorieAnneeAndCompteur() {
     assertThat(OF_2026_000001.value()).isEqualTo("OF-2026-000001");
-    assertThat(PRD_2026_000001.value()).isEqualTo("PRD-2026-000001");
+    assertThat(MOULE_2026_000001.value()).isEqualTo("MOULE-2026-000001");
   }
 
   @Test
-  void shouldBuildNomFromAnyPrefixe() {
-    assertThat(Nom.of(new Prefixe("FAB"), ANNEE_2026, 1).value()).isEqualTo("FAB-2026-000001");
+  void shouldBuildNomFromAnyCategorie() {
+    assertThat(Nom.of(new Categorie("FAB"), ANNEE_2026, 1).value()).isEqualTo("FAB-2026-000001");
   }
 
   @Test
   void shouldPadCompteurOverSixDigits() {
-    assertThat(Nom.of(PREFIXE_OF, ANNEE_2026, 123456).value()).isEqualTo("OF-2026-123456");
+    assertThat(Nom.of(CATEGORIE_OF, ANNEE_2026, 123456).value()).isEqualTo("OF-2026-123456");
   }
 }

@@ -94,7 +94,8 @@ class SupervisionDAtelierResourceIT {
       .andExpect(jsonPath("$.activites[0].operateurId").value(OPERATEUR_ID_DUPONT.uuid().toString()))
       .andExpect(jsonPath("$.activites[0].categorie").value("TRAVAIL"))
       .andExpect(jsonPath("$.activites[0].element.id").value(ELEMENT_OF_2026_000042.uuid().toString()))
-      .andExpect(jsonPath("$.activites[0].element.type").value("OF"))
+      .andExpect(jsonPath("$.activites[0].element.categorie").value("OF"))
+      .andExpect(jsonPath("$.activites[0].element.type").value("ORDRE_DE_FABRICATION"))
       .andExpect(jsonPath("$.activites[0].element.nom").value(NOM_OF_2026_000042.value()))
       .andExpect(jsonPath("$.activites[0].element.reference").doesNotExist())
       .andExpect(jsonPath("$.activites[0].poste").doesNotExist())
@@ -141,8 +142,11 @@ class SupervisionDAtelierResourceIT {
     when(clock.now()).thenReturn(LE_10_MAI_2026_A_9H);
     transactions.executeWithoutResult(status -> {
       entities
+        .createNativeQuery("insert into categorie_de_produit (code, rang) values ('MOULE', 1) on conflict (code) do nothing")
+        .executeUpdate();
+      entities
         .createNativeQuery(
-          "insert into element_de_fabrication (id, type, nom, reference, date_de_creation, date_de_modification) values (:id, 'PRODUIT', 'PRD-2026-000043', 'M-43', :date, :date)"
+          "insert into element_de_fabrication (id, categorie, nom, reference, date_de_creation, date_de_modification) values (:id, 'MOULE', 'MOULE-2026-000043', 'M-43', :date, :date)"
         )
         .setParameter("id", element.id().uuid())
         .setParameter("date", LE_10_MAI_2026_A_7H)
@@ -159,7 +163,8 @@ class SupervisionDAtelierResourceIT {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.activites.length()").value(1))
       .andExpect(jsonPath("$.activites[0].categorie").value("NON_CONFORMITE"))
-      .andExpect(jsonPath("$.activites[0].element.type").value("MOULE"))
+      .andExpect(jsonPath("$.activites[0].element.categorie").value("MOULE"))
+      .andExpect(jsonPath("$.activites[0].element.type").value("PRODUIT"))
       .andExpect(jsonPath("$.activites[0].element.nom").value(NOM_OF_2026_000043.value()))
       .andExpect(jsonPath("$.activites[0].element.reference").value("M-43"))
       .andExpect(jsonPath("$.activites[0].poste.id").value(POSTE_ID_FRAISEUSE_1.uuid().toString()))
@@ -203,7 +208,7 @@ class SupervisionDAtelierResourceIT {
       .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].id").value(travail.activite().orElseThrow().uuid().toString()))
       .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].operateurId").value(OPERATEUR_ID_DUPONT.uuid().toString()))
       .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].element.nom").value(NOM_OF_2026_000042.value()))
-      .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].element.type").value("OF"))
+      .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].element.categorie").value("OF"))
       .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].categorie").value("TRAVAIL"))
       .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].debut").value("2026-05-10T08:00:00Z"))
       .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].echeance").value("2026-05-10T21:00:00Z"))
@@ -316,8 +321,11 @@ class SupervisionDAtelierResourceIT {
         .setParameter("poste", POSTE_ID_FRAISEUSE_1.uuid())
         .executeUpdate();
       entities
+        .createNativeQuery("insert into categorie_de_produit (code, rang) values ('OF', 1) on conflict (code) do nothing")
+        .executeUpdate();
+      entities
         .createNativeQuery(
-          "insert into element_de_fabrication (id,type,nom,reference,date_de_creation,date_de_modification) values (:id,'ORDRE_DE_FABRICATION','OF-2026-000042','R-42',:date,:date)"
+          "insert into element_de_fabrication (id,categorie,nom,reference,date_de_creation,date_de_modification) values (:id,'OF','OF-2026-000042','R-42',:date,:date)"
         )
         .setParameter("id", ELEMENT_OF_2026_000042.uuid())
         .setParameter("date", LE_10_MAI_2026_A_7H)

@@ -64,8 +64,14 @@ class ElementsDesCategoriesIT {
     Instant maintenant = Instant.now();
     inTransaction(() ->
       entityManager
+        .createNativeQuery("INSERT INTO categorie_de_produit (code, rang) VALUES (?, 1)")
+        .setParameter(1, categorie)
+        .executeUpdate()
+    );
+    inTransaction(() ->
+      entityManager
         .createNativeQuery(
-          "INSERT INTO element_de_fabrication (id, type, nom, date_de_creation, date_de_modification) VALUES (?, ?, ?, ?, ?)"
+          "INSERT INTO element_de_fabrication (id, categorie, nom, date_de_creation, date_de_modification) VALUES (?, ?, ?, ?, ?)"
         )
         .setParameter(1, UUID.randomUUID())
         .setParameter(2, categorie)

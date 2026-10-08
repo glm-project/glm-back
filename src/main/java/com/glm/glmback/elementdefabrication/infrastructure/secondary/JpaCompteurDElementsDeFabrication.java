@@ -1,8 +1,8 @@
 package com.glm.glmback.elementdefabrication.infrastructure.secondary;
 
 import com.glm.glmback.elementdefabrication.domain.Annee;
+import com.glm.glmback.elementdefabrication.domain.Categorie;
 import com.glm.glmback.elementdefabrication.domain.CompteurDElementsDeFabrication;
-import com.glm.glmback.elementdefabrication.domain.TypeDElementDeFabrication;
 import jakarta.persistence.EntityManager;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -20,8 +20,8 @@ import org.springframework.stereotype.Component;
 class JpaCompteurDElementsDeFabrication implements CompteurDElementsDeFabrication {
 
   private static final String PROCHAIN_NUMERO = """
-    INSERT INTO compteur_d_elements_de_fabrication (type, annee, numero) VALUES (?, ?, 1) \
-    ON CONFLICT (type, annee) DO UPDATE SET numero = compteur_d_elements_de_fabrication.numero + 1 \
+    INSERT INTO compteur_d_elements_de_fabrication (categorie, annee, numero) VALUES (?, ?, 1) \
+    ON CONFLICT (categorie, annee) DO UPDATE SET numero = compteur_d_elements_de_fabrication.numero + 1 \
     RETURNING numero\
     """;
 
@@ -32,13 +32,13 @@ class JpaCompteurDElementsDeFabrication implements CompteurDElementsDeFabricatio
   }
 
   @Override
-  public long prochainNumero(TypeDElementDeFabrication type, Annee annee) {
-    return entityManager.unwrap(Session.class).doReturningWork(connection -> prochainNumero(connection, type, annee));
+  public long prochainNumero(Categorie categorie, Annee annee) {
+    return entityManager.unwrap(Session.class).doReturningWork(connection -> prochainNumero(connection, categorie, annee));
   }
 
-  private static long prochainNumero(Connection connection, TypeDElementDeFabrication type, Annee annee) throws SQLException {
+  private static long prochainNumero(Connection connection, Categorie categorie, Annee annee) throws SQLException {
     try (PreparedStatement statement = connection.prepareStatement(PROCHAIN_NUMERO)) {
-      statement.setString(1, type.name());
+      statement.setString(1, categorie.value());
       statement.setInt(2, annee.value());
 
       try (ResultSet numeros = statement.executeQuery()) {

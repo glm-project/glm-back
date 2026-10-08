@@ -12,6 +12,10 @@ import com.glm.glmback.atelier.domain.PointageAEnregistrer;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
 import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
+import com.glm.glmback.categoriedeproduit.domain.CategorieDeProduit;
+import com.glm.glmback.categoriedeproduit.domain.CategorieDeProduitRepository;
+import com.glm.glmback.categoriedeproduit.domain.CategoriesDeProduitFixture;
+import com.glm.glmback.categoriedeproduit.domain.Rang;
 import com.glm.glmback.coutderevient.application.CoutsDeRevientApplicationService;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationId;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationRepository;
@@ -291,6 +295,10 @@ class FreshActivitySchemaIT {
           .create(
             OperateursFixture.operateurDeRejeuSansPoste(new com.glm.glmback.operateur.domain.OperateurId(OPERATEUR_ID_DUPONT.uuid()))
           );
+        CategorieDeProduitRepository categories = application.getBean(CategorieDeProduitRepository.class);
+        if (categories.get(CategoriesDeProduitFixture.CODE_OF).isEmpty()) {
+          categories.create(new CategorieDeProduit(CategoriesDeProduitFixture.CODE_OF, Rang.premier()));
+        }
         application
           .getBean(ElementDeFabricationRepository.class)
           .create(ElementsDeFabricationFixture.elementDeFabricationOrdre1015(new ElementDeFabricationId(ELEMENT_OF_2026_000042.uuid())));

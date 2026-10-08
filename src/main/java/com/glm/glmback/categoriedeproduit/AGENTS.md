@@ -34,7 +34,8 @@ le code **est** l'identité.
   (`CategorieDeProduitRepository.dernierRang`), pour que l'ordre déjà choisi ne bouge pas.
 - **Une catégorie qui range des produits ne se supprime pas** : leur nom porte son code. La règle vit dans le domaine,
   derrière le port `CategoriesUtilisees` ; son adapter lit `element_de_fabrication` par une entité en lecture seule
-  (patron `ElementEngageableEntity`), sans importer `elementdefabrication`.
+  (patron `ElementEngageableEntity`), sans importer `elementdefabrication`. La clé étrangère
+  `fk_element_de_fabrication_categorie` est le filet.
 - **Un réordonnancement donne l'ordre entier** : chaque catégorie une fois et une seule, sinon
   `OrdreIncompletException` (409). Les rangs sont alors réattribués de 1 à n par la transition
   `CategorieDeProduit.deplace`, qui conserve le code.

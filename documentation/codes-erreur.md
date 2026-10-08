@@ -140,6 +140,7 @@ segment de contexte, et lui seul, qui les distingue.
 | ------------------------------------ | ------ | ---------------------------------- | ------------------------------------------ |
 | `element-de-fabrication-introuvable` | 404    | element de fabrication introuvable | `ElementDeFabricationIntrouvableException` |
 | `reference-deja-utilisee`            | 409    | reference deja utilisee            | `ReferenceDejaUtiliseeException`           |
+| `categorie-inconnue`                 | 409    | categorie inconnue                 | `CategorieInconnueException`               |
 
 ### `categorie-de-produit` — `urn:glm:erreur:categorie-de-produit:`
 

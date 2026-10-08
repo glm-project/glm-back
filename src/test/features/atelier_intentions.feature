@@ -13,8 +13,8 @@ Feature: Intention et activite visee des pointages d'atelier
   Scenario: Travail, non conformite puis travail : chaque transition vise l'activite qu'elle remplace
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2101"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2101                 |
+      | categorie | OF   |
+      | reference | 2101 |
     And j'ai engage l'element "OF 2101" en atelier
     And j'ai pointe sur "OF 2101"
       | id        | 00000000-0000-0000-0000-000000000201 |
@@ -71,8 +71,8 @@ Feature: Intention et activite visee des pointages d'atelier
     # au travail est une transition qui vise la non conformite reprise, pas celle d'avant la pause.
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2102"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2102                 |
+      | categorie | OF   |
+      | reference | 2102 |
     And j'ai engage l'element "OF 2102" en atelier
     And j'ai pointe sur "OF 2102"
       | id        | 00000000-0000-0000-0000-000000000211 |
@@ -125,8 +125,8 @@ Feature: Intention et activite visee des pointages d'atelier
     # est a resoudre, pas en cours a la place de sa cible.
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2103"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2103                 |
+      | categorie | OF   |
+      | reference | 2103 |
     And j'ai engage l'element "OF 2103" en atelier
     And j'ai pointe sur "OF 2103"
       | id        | 00000000-0000-0000-0000-000000000221 |
@@ -163,8 +163,8 @@ Feature: Intention et activite visee des pointages d'atelier
     # en conflit, et B, a resoudre avec A, n'est plus en cours sans jamais avoir ete terminee par la fin de A.
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2104"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2104                 |
+      | categorie | OF   |
+      | reference | 2104 |
     And j'ai engage l'element "OF 2104" en atelier
     And j'ai pointe sur "OF 2104"
       | id        | 00000000-0000-0000-0000-000000000231 |
@@ -199,8 +199,8 @@ Feature: Intention et activite visee des pointages d'atelier
   Scenario: Une fin qui vise une activite introuvable dans ce suivi est refusee
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2105"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2105                 |
+      | categorie | OF   |
+      | reference | 2105 |
     And j'ai engage l'element "OF 2105" en atelier
     When je pointe sur "OF 2105"
       | id        | 00000000-0000-0000-0000-000000000241 |
@@ -217,8 +217,8 @@ Feature: Intention et activite visee des pointages d'atelier
   Scenario: Une fin qui vise l'activite d'un autre poste est refusee
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2106"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2106                 |
+      | categorie | OF   |
+      | reference | 2106 |
     And j'ai engage l'element "OF 2106" en atelier
     And j'ai pointe sur "OF 2106"
       | id        | 00000000-0000-0000-0000-000000000242 |
@@ -243,8 +243,8 @@ Feature: Intention et activite visee des pointages d'atelier
     # Aucune intention par defaut : un debut sans intention ne devient pas une ouverture.
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2107"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2107                 |
+      | categorie | OF   |
+      | reference | 2107 |
     And j'ai engage l'element "OF 2107" en atelier
     When je pointe sur "OF 2107" sans intention
       | type      | DEBUT       |
@@ -283,8 +283,8 @@ Feature: Intention et activite visee des pointages d'atelier
   Scenario: Le debut corrige garde son activite, et la fin qui la visait la termine toujours
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2108"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2108                 |
+      | categorie | OF   |
+      | reference | 2108 |
     And j'ai engage l'element "OF 2108" en atelier
     And j'ai pointe sur "OF 2108"
       | id        | 00000000-0000-0000-0000-000000000251 |
@@ -328,8 +328,8 @@ Feature: Intention et activite visee des pointages d'atelier
   Scenario: Une fin oubliee se regularise sur l'activite qu'elle termine
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2109"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2109                 |
+      | categorie | OF   |
+      | reference | 2109 |
     And j'ai engage l'element "OF 2109" en atelier
     And j'ai pointe sur "OF 2109"
       | id        | 00000000-0000-0000-0000-000000000281 |

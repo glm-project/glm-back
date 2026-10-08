@@ -15,8 +15,8 @@ Feature: Sequences en conflit
   Scenario: Transition A vers NC a 12 h puis fin de A a 17 h : la sequence est en conflit
     Given il est "2026-07-06T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 6001"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 6001                 |
+      | categorie | OF   |
+      | reference | 6001 |
     And j'ai engage l'element "OF 6001" en atelier
     And il est "2026-07-06T08:00:00Z"
     And j'ai pointe sur "OF 6001"
@@ -60,8 +60,8 @@ Feature: Sequences en conflit
   Scenario: La fin de A recue avant la transition rejouee le lendemain donne la meme sequence en conflit
     Given il est "2026-07-08T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 6002"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 6002                 |
+      | categorie | OF   |
+      | reference | 6002 |
     And j'ai engage l'element "OF 6002" en atelier
     And il est "2026-07-08T08:00:00Z"
     And j'ai pointe sur "OF 6002"
@@ -100,8 +100,8 @@ Feature: Sequences en conflit
   Scenario: Un geste visant A apres son remplacement par B ne termine jamais B, et son rejeu rend le meme conflit
     Given il est "2026-07-10T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 6003"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 6003                 |
+      | categorie | OF   |
+      | reference | 6003 |
     And j'ai engage l'element "OF 6003" en atelier
     And il est "2026-07-10T08:00:00Z"
     And j'ai pointe sur "OF 6003"
@@ -148,8 +148,8 @@ Feature: Sequences en conflit
   Scenario: Une nouvelle ouverture apres une sequence en conflit est en cours, hors du conflit
     Given il est "2026-07-13T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 6004"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 6004                 |
+      | categorie | OF   |
+      | reference | 6004 |
     And j'ai engage l'element "OF 6004" en atelier
     And il est "2026-07-13T08:00:00Z"
     And j'ai pointe sur "OF 6004"
@@ -192,8 +192,8 @@ Feature: Sequences en conflit
   Scenario: Une transition vers sa propre categorie est conservee en conflit
     Given il est "2026-07-14T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 6005"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 6005                 |
+      | categorie | OF   |
+      | reference | 6005 |
     And j'ai engage l'element "OF 6005" en atelier
     And il est "2026-07-14T08:00:00Z"
     And j'ai pointe sur "OF 6005"
@@ -219,8 +219,8 @@ Feature: Sequences en conflit
   Scenario: Une transition visant une activite echue pendant qu'une autre est en cours est conservee en conflit
     Given il est "2026-07-15T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 6006"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 6006                 |
+      | categorie | OF   |
+      | reference | 6006 |
     And j'ai engage l'element "OF 6006" en atelier
     And il est "2026-07-15T08:00:00Z"
     And j'ai pointe sur "OF 6006"
@@ -253,8 +253,8 @@ Feature: Sequences en conflit
   Scenario: Une fin qui vise une ouverture annulee est conservee en conflit
     Given il est "2026-07-16T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 6007"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 6007                 |
+      | categorie | OF   |
+      | reference | 6007 |
     And j'ai engage l'element "OF 6007" en atelier
     And il est "2026-07-16T08:00:00Z"
     And j'ai pointe sur "OF 6007"
@@ -284,8 +284,8 @@ Feature: Sequences en conflit
   Scenario: Une fin survenue avant la cloture, recue apres elle, est enregistree a son heure
     Given il est "2026-07-17T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 6008"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 6008                 |
+      | categorie | OF   |
+      | reference | 6008 |
     And j'ai engage l'element "OF 6008" en atelier
     And il est "2026-07-17T08:00:00Z"
     And j'ai pointe sur "OF 6008"
@@ -317,8 +317,8 @@ Feature: Sequences en conflit
   Scenario: Le gestionnaire resout le conflit en annulant la transition erronee
     Given il est "2026-07-20T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 7001"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 7001                 |
+      | categorie | OF   |
+      | reference | 7001 |
     And j'ai engage l'element "OF 7001" en atelier
     And il est "2026-07-20T08:00:00Z"
     And j'ai pointe sur "OF 7001"
@@ -359,8 +359,8 @@ Feature: Sequences en conflit
   Scenario: Le gestionnaire resout le conflit en corrigeant la fin de A en fin de la non conformite
     Given il est "2026-07-22T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 7002"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 7002                 |
+      | categorie | OF   |
+      | reference | 7002 |
     And j'ai engage l'element "OF 7002" en atelier
     And il est "2026-07-22T08:00:00Z"
     And j'ai pointe sur "OF 7002"
@@ -410,8 +410,8 @@ Feature: Sequences en conflit
     # travail repris.
     Given il est "2026-07-24T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 7003"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 7003                 |
+      | categorie | OF   |
+      | reference | 7003 |
     And j'ai engage l'element "OF 7003" en atelier
     And il est "2026-07-24T08:00:00Z"
     And j'ai pointe sur "OF 7003"
@@ -466,8 +466,8 @@ Feature: Sequences en conflit
   Scenario: Un conflit se resout sur un element cloture, dont la cloture reste acquise
     Given il est "2026-07-27T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 7004"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 7004                 |
+      | categorie | OF   |
+      | reference | 7004 |
     And j'ai engage l'element "OF 7004" en atelier
     And il est "2026-07-27T08:00:00Z"
     And j'ai pointe sur "OF 7004"
@@ -511,8 +511,8 @@ Feature: Sequences en conflit
   Scenario: Un debut corrige de 08 h a 12 h, lu a 22 h, garde les gestes qui visent son activite
     Given il est "2026-07-28T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 7005"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 7005                 |
+      | categorie | OF   |
+      | reference | 7005 |
     And j'ai engage l'element "OF 7005" en atelier
     And il est "2026-07-28T08:00:00Z"
     And j'ai pointe sur "OF 7005"

@@ -3,6 +3,7 @@ package com.glm.glmback.categoriedeproduit.cucumber;
 import static com.glm.glmback.cucumber.rest.CucumberRestAssertions.*;
 import static org.assertj.core.api.Assertions.*;
 
+import com.glm.glmback.cucumber.CategoriesDeProduitDesScenarios;
 import com.glm.glmback.cucumber.rest.CucumberRestClient;
 import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
 import io.cucumber.java.en.Given;
@@ -58,6 +59,11 @@ public class CategorieDeProduitSteps {
   @When("je reordonne les categories de produit en {string}")
   public void jeReordonneLesCategoriesDeProduitEn(String codes) {
     reordonne(liste(codes));
+  }
+
+  @Given("la categorie de produit {string} est declaree")
+  public void laCategorieDeProduitEstDeclaree(String code) {
+    CategoriesDeProduitDesScenarios.declarer(rest, code);
   }
 
   @When("je liste les categories de produit")

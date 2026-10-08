@@ -3,12 +3,14 @@ package com.glm.glmback.elementdefabrication.cucumber;
 import static com.glm.glmback.cucumber.rest.CucumberRestAssertions.*;
 import static org.assertj.core.api.Assertions.*;
 
+import com.glm.glmback.cucumber.CategoriesDeProduitDesScenarios;
 import com.glm.glmback.cucumber.rest.CucumberRestClient;
 import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import tools.jackson.databind.ObjectMapper;
@@ -26,12 +28,18 @@ public class ElementDeFabricationSteps {
 
   @When("je cree un element de fabrication")
   public void jeCreeUnElementDeFabrication(Map<String, String> donnees) {
+    Optional.ofNullable(donnees.get("categorie")).ifPresent(categorie -> CategoriesDeProduitDesScenarios.declarer(rest, categorie));
+    rest.post(BASE_URI, JSON.writeValueAsString(donnees));
+  }
+
+  @When("je cree un element de fabrication sans declarer sa categorie")
+  public void jeCreeUnElementDeFabricationSansDeclarerSaCategorie(Map<String, String> donnees) {
     rest.post(BASE_URI, JSON.writeValueAsString(donnees));
   }
 
   @Given("j'ai cree un element de fabrication")
   public void jaiCreeUnElementDeFabrication(Map<String, String> donnees) {
-    rest.post(BASE_URI, JSON.writeValueAsString(donnees));
+    jeCreeUnElementDeFabrication(donnees);
     dernierIdCree = idDeLaDerniereReponse();
   }
 

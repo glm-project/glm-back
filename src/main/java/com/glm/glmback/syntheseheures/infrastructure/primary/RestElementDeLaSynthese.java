@@ -1,5 +1,6 @@
 package com.glm.glmback.syntheseheures.infrastructure.primary;
 
+import com.glm.glmback.shared.elementtype.infrastructure.primary.LegacyElementType;
 import com.glm.glmback.syntheseheures.domain.DescriptionDElement;
 import com.glm.glmback.syntheseheures.domain.ElementDeLaSynthese;
 import com.glm.glmback.syntheseheures.domain.ReferenceDElement;
@@ -19,7 +20,14 @@ import java.util.UUID;
 )
 record RestElementDeLaSynthese(
   @Schema(description = "Identifiant de l'element de fabrication.", requiredMode = Schema.RequiredMode.REQUIRED) UUID id,
-  @Schema(description = "Categorie de l'element.", requiredMode = Schema.RequiredMode.REQUIRED) String type,
+  @Schema(description = "Categorie de l'element.", requiredMode = Schema.RequiredMode.REQUIRED) String categorie,
+  @Schema(
+    description = "Remplace par categorie : ORDRE_DE_FABRICATION pour la categorie OF, PRODUIT pour toute autre.",
+    allowableValues = { LegacyElementType.ORDRE_DE_FABRICATION, LegacyElementType.PRODUIT },
+    deprecated = true,
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  String type,
   @Schema(description = "Nom de l'element.", example = "PRD-2026-000015", requiredMode = Schema.RequiredMode.REQUIRED) String nom,
   @Schema(description = "Reference de l'element, relue au referentiel.", example = "1015") String reference,
   @Schema(description = "Description de l'element, relue au referentiel.", example = "Carter de pompe") String description,
@@ -46,6 +54,7 @@ record RestElementDeLaSynthese(
     return new RestElementDeLaSynthese(
       element.element().id().uuid(),
       element.element().categorie().value(),
+      LegacyElementType.fromCategory(element.element().categorie().value()),
       element.element().nom().value(),
       element.reference().map(ReferenceDElement::value).orElse(null),
       element.description().map(DescriptionDElement::value).orElse(null),

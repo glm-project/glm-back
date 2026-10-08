@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <changeSet id="colonnes_de_categorie" author="glm">
+    <comment>
+      Le type d'un element de fabrication devient sa categorie de produit, que chaque entreprise declare.
+      Les colonnes qui le portent - sur l'element, sur son compteur et sur la copie faite a l'engagement -
+      prennent ce nom ; leur contenu ne change pas ici.
+    </comment>
+    <renameColumn tableName="element_de_fabrication" oldColumnName="type" newColumnName="categorie" />
+    <renameColumn tableName="compteur_d_elements_de_fabrication" oldColumnName="type" newColumnName="categorie" />
+    <renameColumn tableName="suivi_d_atelier" oldColumnName="element_type" newColumnName="element_categorie" />
+  </changeSet>
+</databaseChangeLog>

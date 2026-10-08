@@ -8,7 +8,7 @@ Toutes les données métier sont isolées par entreprise cliente : chaque entrep
 
 ## elementdefabrication
 
-Gère les éléments de fabrication. Un `ElementDeFabrication` porte son `TypeDElementDeFabrication` — ordre de fabrication ou produit — comme une valeur : les deux ne diffèrent aujourd'hui que par ce type, par leur préfixe de nommage et par leur série de numérotation. Le nom est toujours produit par le domaine à la création, par numérotation automatique propre au type et à l'année — l'API ne le fournit jamais.
+Gère les éléments de fabrication. Un `ElementDeFabrication` est rangé dans une `Categorie` que l'entreprise a déclarée dans `categoriedeproduit` — `MOULE` et `OF` chez le client de référence — et la porte comme une valeur : les éléments de deux catégories ne diffèrent que par elle, par leur préfixe de nommage et par leur série de numérotation. Le nom est toujours produit par le domaine à la création, par numérotation automatique propre à la catégorie et à l'année, préfixée du code de la catégorie (`MOULE-2026-000001`) — l'API ne le fournit jamais. Une catégorie non déclarée est refusée (409 `categorie-inconnue`).
 
 « Produit » est un terme volontairement générique : l'application s'adresse à plusieurs entreprises clientes, dont les métiers nomment différemment ce qu'elles fabriquent (des moules, chez le client de référence).
 
@@ -16,15 +16,15 @@ La `Fiche` porte ce que l'utilisateur peut renseigner et réviser. Ses deux cham
 
 La garde d'unicité vit dans `ElementsDeFabricationService`, qui lit le détenteur d'une référence par le port `ElementDeFabricationRepository.idPourReference` et lève `ReferenceDejaUtiliseeException` (409). La contrainte en base est le filet de dernier recours : deux créations strictement concurrentes de la même référence produiraient un 500 plutôt qu'un 409, cas assumé puisque la création est le fait du dirigeant ou de son assistante.
 
-La création et la modification passent par des commandes d'action (`ElementDeFabricationToCreate`, `ElementDeFabricationToUpdate`) construites par l'adapter primaire et orchestrées par `ElementsDeFabricationService`, service de domaine pur qui porte les ports repository, compteur, préfixes et horloge.
+La création et la modification passent par des commandes d'action (`ElementDeFabricationToCreate`, `ElementDeFabricationToUpdate`) construites par l'adapter primaire et orchestrées par `ElementsDeFabricationService`, service de domaine pur qui porte les ports repository, compteur, catégories déclarées et horloge.
 
-Le repository et le compteur sont persistés en PostgreSQL, dans le schéma de l'entreprise courante : la numérotation repart donc de 1 pour chaque entreprise, et deux entreprises peuvent porter le même nom d'élément. Les préfixes restent en dur dans `InMemoryPrefixesDElementsDeFabrication`, donc communs à toutes les entreprises.
+Le repository et le compteur sont persistés en PostgreSQL, dans le schéma de l'entreprise courante : la numérotation repart donc de 1 pour chaque entreprise, et deux entreprises peuvent porter le même nom d'élément. Les catégories, donc les préfixes, sont propres à chaque entreprise : `CategoriesDeclarees` les lit dans son schéma, par une entité en lecture seule de `categorie_de_produit`.
 
 ### Points ouverts
 
 1. **Relation produit ↔ ordre de fabrication.** Le client décrit un enchaînement (« ce moule neuf, une fois testé, s'il y a une opération à faire dessus, ça se transforme en OF ») mais ne demande jamais le lien, et l'imposer exclurait les modifications sur des produits antérieurs à l'application. Le jour où ce lien sera ajouté, il ne concernera que les ordres de fabrication : les deux types cesseront de ne différer que par leur valeur, ce qui rouvrira la question de scinder l'agrégat unique — aujourd'hui justifié précisément parce qu'ils ne diffèrent par aucun champ.
 2. **Suppression.** Le client ne parle jamais de supprimer, seulement de clôturer. Dès que les temps seront saisis, la suppression d'un élément qui en porte devra être interdite : elle empêcherait de relire les faits et leurs coûts.
-3. **Numérotation et préfixes.** Les préfixes sont figés pour toutes les entreprises, ce qui contredit la cible multi-clients. L'année et le reset annuel du format `PRD-2026-000001` n'ont par ailleurs aucune source client, alors que des ordres de fabrication durant plusieurs mois traversent les millésimes.
+3. **Numérotation.** Les préfixes sont désormais les catégories de chaque entreprise. L'année et le reset annuel du format `MOULE-2026-000001` n'ont en revanche aucune source client, alors que des ordres de fabrication durant plusieurs mois traversent les millésimes.
 4. **Critère de lecture.** `ElementDeFabricationCriteria` ne filtre que par période de création et la liste est paginée. Aucun écran décrit par le client ne filtre ainsi ; le seul critère cité est « actifs seulement ». Côté atelier, ce point est traité — la période y est devenue facultative.
 
 ## categoriedeproduit

@@ -1,5 +1,6 @@
 package com.glm.glmback.elementdefabrication.application;
 
+import com.glm.glmback.elementdefabrication.domain.CategoriesDeclarees;
 import com.glm.glmback.elementdefabrication.domain.CompteurDElementsDeFabrication;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabrication;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationId;
@@ -8,7 +9,6 @@ import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationToCreate;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationToUpdate;
 import com.glm.glmback.elementdefabrication.domain.ElementsDeFabricationService;
 import com.glm.glmback.elementdefabrication.domain.Periode;
-import com.glm.glmback.elementdefabrication.domain.PrefixesDElementsDeFabrication;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import com.glm.glmback.shared.time.domain.Clock;
@@ -24,13 +24,13 @@ public class ElementDeFabricationApplicationService {
   public ElementDeFabricationApplicationService(
     ElementDeFabricationRepository repository,
     CompteurDElementsDeFabrication compteur,
-    PrefixesDElementsDeFabrication prefixes,
+    CategoriesDeclarees categories,
     Clock clock
   ) {
     this.elementsDeFabrication = ElementsDeFabricationService.builder()
       .repository(repository)
       .compteur(compteur)
-      .prefixes(prefixes)
+      .categories(categories)
       .clock(clock);
   }
 

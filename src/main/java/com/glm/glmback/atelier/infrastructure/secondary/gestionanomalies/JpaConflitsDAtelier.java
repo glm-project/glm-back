@@ -32,7 +32,7 @@ class JpaConflitsDAtelier implements ConflitsDAtelier {
   private static final String LIGNES = """
     with filtre as (
       select sequence.id as ancre, suivi.id as suivi, suivi.revision as revision,
-        suivi.element_id as element_id, suivi.element_nom as element_nom, suivi.element_type as element_type,
+        suivi.element_id as element_id, suivi.element_nom as element_nom, suivi.element_categorie as element_categorie,
         sequence.operateur_id as operateur_id, sequence.poste_id as poste_id,
         premier.date_de_survenue as premier_pointage,
         (select count(*) from pointage_en_conflit where sequence_id = sequence.id) as nombre_pointages
@@ -96,7 +96,7 @@ class JpaConflitsDAtelier implements ConflitsDAtelier {
         new ElementEngage(
           new ElementEngageId(ligne.get("element_id", UUID.class)),
           new NomDElement(ligne.get("element_nom", String.class)),
-          new CategorieDElement(ligne.get("element_type", String.class))
+          new CategorieDElement(ligne.get("element_categorie", String.class))
         )
       )
       .cle(

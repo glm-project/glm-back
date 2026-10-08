@@ -3,6 +3,7 @@ package com.glm.glmback.atelier.cucumber;
 import static com.glm.glmback.cucumber.rest.CucumberRestAssertions.*;
 import static org.assertj.core.api.Assertions.*;
 
+import com.glm.glmback.cucumber.CategoriesDeProduitDesScenarios;
 import com.glm.glmback.cucumber.CucumberClock;
 import com.glm.glmback.cucumber.EcrituresDuJournalDAtelier;
 import com.glm.glmback.cucumber.EcrituresDuJournalDAtelier.PointageEnvoye;
@@ -116,6 +117,7 @@ public class AtelierSteps {
 
   @Given("l'entreprise a cree l'element de fabrication {string}")
   public void lEntrepriseACreeLElementDeFabrication(String alias, Map<String, String> donnees) {
+    CategoriesDeProduitDesScenarios.declarer(rest, donnees.get("categorie"));
     rest.post(ELEMENTS_URI, JSON.writeValueAsString(donnees));
     elements.put(alias, idDeLaDerniereReponse());
   }

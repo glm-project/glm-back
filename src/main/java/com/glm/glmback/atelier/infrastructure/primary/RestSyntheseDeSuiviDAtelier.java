@@ -6,6 +6,7 @@ import com.glm.glmback.atelier.domain.Cloture;
 import com.glm.glmback.atelier.domain.EtatDAtelier;
 import com.glm.glmback.atelier.domain.LectureDuSuivi;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
+import com.glm.glmback.shared.elementtype.infrastructure.primary.LegacyElementType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.List;
@@ -38,6 +39,15 @@ final class RestSyntheseDeSuiviDAtelier {
 
   @JsonProperty
   @Schema(description = "Categorie de l'element, copiee a l'engagement.", requiredMode = Schema.RequiredMode.REQUIRED)
+  private final String categorie;
+
+  @JsonProperty
+  @Schema(
+    description = "Remplace par categorie : ORDRE_DE_FABRICATION pour la categorie OF, PRODUIT pour toute autre.",
+    allowableValues = { LegacyElementType.ORDRE_DE_FABRICATION, LegacyElementType.PRODUIT },
+    deprecated = true,
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
   private final String type;
 
   @JsonProperty
@@ -82,7 +92,8 @@ final class RestSyntheseDeSuiviDAtelier {
     id = suivi.id().uuid();
     element = suivi.element().id().uuid();
     nom = suivi.element().nom().value();
-    type = suivi.element().categorie().value();
+    categorie = suivi.element().categorie().value();
+    type = LegacyElementType.fromCategory(categorie);
     engagePar = suivi.engagement().auteur().value();
     engageLe = suivi.engagement().date();
     etat = lecture.etat();

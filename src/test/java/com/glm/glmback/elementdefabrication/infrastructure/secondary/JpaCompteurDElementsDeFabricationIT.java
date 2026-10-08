@@ -1,11 +1,12 @@
 package com.glm.glmback.elementdefabrication.infrastructure.secondary;
 
+import static com.glm.glmback.elementdefabrication.domain.ElementsDeFabricationFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.IntegrationTest;
 import com.glm.glmback.elementdefabrication.domain.Annee;
+import com.glm.glmback.elementdefabrication.domain.Categorie;
 import com.glm.glmback.elementdefabrication.domain.CompteurDElementsDeFabrication;
-import com.glm.glmback.elementdefabrication.domain.TypeDElementDeFabrication;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurityContexts;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import java.util.function.Supplier;
@@ -37,33 +38,33 @@ class JpaCompteurDElementsDeFabricationIT {
   @Test
   @WithTenant(IMPECCMOLD)
   void shouldIncrementNumeroOnEachCall() {
-    long premier = prochainNumero(TypeDElementDeFabrication.PRODUIT, ANNEE_2098);
+    long premier = prochainNumero(CATEGORIE_MOULE, ANNEE_2098);
 
-    assertThat(prochainNumero(TypeDElementDeFabrication.PRODUIT, ANNEE_2098)).isEqualTo(premier + 1);
+    assertThat(prochainNumero(CATEGORIE_MOULE, ANNEE_2098)).isEqualTo(premier + 1);
   }
 
   @Test
   @WithTenant(IMPECCMOLD)
   void shouldCountEachTypeSeparately() {
-    prochainNumero(TypeDElementDeFabrication.PRODUIT, ANNEE_2098);
+    prochainNumero(CATEGORIE_MOULE, ANNEE_2098);
 
-    assertThat(prochainNumero(TypeDElementDeFabrication.ORDRE_DE_FABRICATION, ANNEE_2098)).isEqualTo(1);
+    assertThat(prochainNumero(CATEGORIE_OF, ANNEE_2098)).isEqualTo(1);
   }
 
   @Test
   void shouldCountSeparatelyInEachTenant() {
     TenantSecurityContexts.authenticateOn(IMPECCMOLD);
-    long chezImpeccMold = prochainNumero(TypeDElementDeFabrication.PRODUIT, ANNEE_2099);
+    long chezImpeccMold = prochainNumero(CATEGORIE_MOULE, ANNEE_2099);
 
     TenantSecurityContexts.authenticateOn(KATILYS);
-    long chezKatilys = prochainNumero(TypeDElementDeFabrication.PRODUIT, ANNEE_2099);
+    long chezKatilys = prochainNumero(CATEGORIE_MOULE, ANNEE_2099);
 
     assertThat(chezImpeccMold).isEqualTo(1);
     assertThat(chezKatilys).isEqualTo(1);
   }
 
-  private long prochainNumero(TypeDElementDeFabrication type, Annee annee) {
-    return inTransaction(() -> compteur.prochainNumero(type, annee));
+  private long prochainNumero(Categorie categorie, Annee annee) {
+    return inTransaction(() -> compteur.prochainNumero(categorie, annee));
   }
 
   private <T> T inTransaction(Supplier<T> action) {
