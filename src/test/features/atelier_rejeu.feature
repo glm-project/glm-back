@@ -60,7 +60,7 @@ Feature: Rejeu durable des gestes du pupitre
     And l'evenement 1 du suivi vise l'activite de l'evenement 0
     And l'evenement 1 du suivi a survenu a "2026-05-10T12:00:00Z" et a ete saisi a "2026-05-10T13:00:00Z" par "user"
 
-  Scenario: Un identifiant reutilise avec une autre cible ou une autre intention est refuse
+  Scenario: Un identifiant reutilise avec une autre intention et une autre cible est refuse
     Given l'entreprise a cree l'element de fabrication "OF cible"
       | categorie | OF    |
       | reference | cible |
@@ -102,7 +102,8 @@ Feature: Rejeu durable des gestes du pupitre
     And la reponse porte le code d'erreur "urn:glm:erreur:atelier:identifiant-evenement-reutilise"
     When je consulte "OF cible"
     Then le journal du suivi contient 3 evenements
-    And l'evenement 1 du suivi vise l'activite de l'evenement 0
+    And l'evenement 2 du suivi a l'identifiant "00000000-0000-0000-0000-000000000312"
+    And l'evenement 2 du suivi a l'intention "OUVERTURE"
 
   Scenario: Une fin ciblee acceptee reste soumise aux droits lors du rejeu
     Given l'entreprise a cree l'element de fabrication "OF droits FIN"

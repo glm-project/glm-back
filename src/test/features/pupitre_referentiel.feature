@@ -49,7 +49,7 @@ Feature: Le referentiel que le pupitre met en cache
     When je lis le referentiel du pupitre a "2026-05-11T07:45:00Z"
     Then "OF 4001" porte au referentiel du pupitre sa reference et son nom d'atelier
 
-  Scenario: Un debut ouvre une activite datee, que la non conformite ne referme pas
+  Scenario: Un debut ouvre une activite datee, en cours au referentiel
     Given le pupitre fabrique "OF 4002"
     And "OF 4002" est engage au pupitre a "2026-05-11T07:00:00Z"
     And au pupitre, "dupont" pointe "DEBUT" sur "OF 4002" au poste "fraiseuse" a "2026-05-11T09:00:00Z"

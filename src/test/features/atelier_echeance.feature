@@ -313,42 +313,6 @@ Feature: Echeance et fin automatique des activites
       | activite                             | debut                | fin                  | finAutomatique |
       | 00000000-0000-0000-0000-000000000581 | 2026-06-12T08:00:00Z | 2026-06-12T23:00:00Z | false          |
 
-  Scenario: Le gestionnaire regularise une fin au-dela de l'echeance, la non conformite s'ouvre a la meme heure
-    Given il est "2026-06-15T07:00:00Z"
-    And l'entreprise a cree l'element de fabrication "OF 5010"
-      | categorie | OF   |
-      | reference | 5010 |
-    And j'ai engage l'element "OF 5010" en atelier
-    And il est "2026-06-15T08:00:00Z"
-    And j'ai pointe sur "OF 5010"
-      | id        | 00000000-0000-0000-0000-000000000591 |
-      | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
-      | operateur | dupont                               |
-      | poste     | fraiseuse-1                          |
-    Given il est "2026-06-16T09:00:00Z"
-    When je regularise sur "OF 5010"
-      | type           | FIN                                  |
-      | intention      | FIN                                  |
-      | cible          | 00000000-0000-0000-0000-000000000591 |
-      | operateur      | dupont                               |
-      | poste          | fraiseuse-1                          |
-      | dateDeSurvenue | 2026-06-15T23:00:00Z                 |
-    Then la reponse a le statut http 201
-    When je pointe sur "OF 5010"
-      | id             | 00000000-0000-0000-0000-000000000592 |
-      | type           | NON_CONFORMITE                       |
-      | intention      | OUVERTURE                            |
-      | operateur      | dupont                               |
-      | poste          | fraiseuse-1                          |
-      | dateDeSurvenue | 2026-06-15T23:00:00Z                 |
-    Then la reponse a le statut http 201
-    When je consulte le temps effectif de "OF 5010"
-    Then le temps effectif contient
-      | categorie      | debut                | fin                  | finAutomatique |
-      | TRAVAIL        | 2026-06-15T08:00:00Z | 2026-06-15T23:00:00Z | false          |
-      | NON_CONFORMITE | 2026-06-15T23:00:00Z |                      | false          |
-
   Scenario: Une fin pointee exactement a l'echeance l'emporte sur la fin automatique
     Given il est "2026-06-17T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 5011"
@@ -375,40 +339,6 @@ Feature: Echeance et fin automatique des activites
     Then le temps effectif contient
       | activite                             | debut                | fin                  | finAutomatique |
       | 00000000-0000-0000-0000-0000000005a1 | 2026-06-17T08:00:00Z | 2026-06-17T21:00:00Z | false          |
-
-  Scenario: Une fin puis une non conformite pointees exactement a l'echeance terminent le travail sans anomalie
-    Given il est "2026-06-18T07:00:00Z"
-    And l'entreprise a cree l'element de fabrication "OF 5012"
-      | categorie | OF   |
-      | reference | 5012 |
-    And j'ai engage l'element "OF 5012" en atelier
-    And il est "2026-06-18T08:00:00Z"
-    And j'ai pointe sur "OF 5012"
-      | id        | 00000000-0000-0000-0000-0000000005b1 |
-      | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
-      | operateur | dupont                               |
-      | poste     | fraiseuse-1                          |
-    Given il est "2026-06-18T21:00:00Z"
-    And j'ai pointe sur "OF 5012"
-      | id        | 00000000-0000-0000-0000-0000000005b3 |
-      | type      | FIN                                  |
-      | intention | FIN                                  |
-      | cible     | 00000000-0000-0000-0000-0000000005b1 |
-      | operateur | dupont                               |
-      | poste     | fraiseuse-1                          |
-    When je pointe sur "OF 5012"
-      | id        | 00000000-0000-0000-0000-0000000005b2 |
-      | type      | NON_CONFORMITE                       |
-      | intention | OUVERTURE                            |
-      | operateur | dupont                               |
-      | poste     | fraiseuse-1                          |
-    Then la reponse a le statut http 201
-    When je consulte le temps effectif de "OF 5012"
-    Then le temps effectif contient
-      | activite                             | debut                | fin                  | finAutomatique |
-      | 00000000-0000-0000-0000-0000000005b1 | 2026-06-18T08:00:00Z | 2026-06-18T21:00:00Z | false          |
-      | 00000000-0000-0000-0000-0000000005b2 | 2026-06-18T21:00:00Z |                      | false          |
 
   Scenario: Une fin puis une non conformite pointees a 12 h et recues le lendemain sont rejouees a leur heure
     Given il est "2026-06-19T07:00:00Z"

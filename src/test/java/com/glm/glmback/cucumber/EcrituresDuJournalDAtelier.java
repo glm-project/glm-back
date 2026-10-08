@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
@@ -33,7 +32,6 @@ import tools.jackson.databind.json.JsonMapper;
 public class EcrituresDuJournalDAtelier {
 
   private static final String SUIVIS_URI = "/api/atelier/suivis/";
-  private static final Set<Object> OUVRANTS = Set.of("OUVERTURE", "TRANSITION");
   private static final ObjectMapper JSON = JsonMapper.builder().build();
 
   private final CucumberRestClient rest;
@@ -85,7 +83,7 @@ public class EcrituresDuJournalDAtelier {
     List<Map<String, Object>> precedents = precedents(suivi, corps, corrige);
     Optional<Map<String, Object>> dernierOuvrant = precedents
       .stream()
-      .filter(evenement -> OUVRANTS.contains(evenement.get("intention")))
+      .filter(evenement -> "OUVERTURE".equals(evenement.get("intention")))
       .reduce((premier, second) -> second);
 
     if ("FIN".equals(type)) {

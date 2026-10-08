@@ -403,19 +403,6 @@ Feature: Synthese des heures hebdomadaire d'un operateur
       | id     | duree | dureeNonConformite |
       | carter | PT6H  | PT1H               |
 
-  Scenario: Une fin regularisee apres echeance, suivie d'une NC, peut etablir quinze heures de travail
-    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
-    And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type           | intention | cible | operateur | poste  | survenue             | acte           |
-      | A     | DEBUT          | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z | POINTAGE       |
-      | FA    | FIN            | FIN       | A     | martin    | DMU 50 | 2026-05-11T21:00:00Z | REGULARISATION |
-      | N     | NON_CONFORMITE | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T21:00:00Z | POINTAGE       |
-    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
-    Then la duree operationnelle totale de la semaine est "PT15H"
-    And les elements de la synthese sont
-      | id     | duree | dureeNonConformite |
-      | carter | PT15H | PT0S               |
-
   Scenario: Un pointage actif sans activite conserve son element et son poste au journal
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages

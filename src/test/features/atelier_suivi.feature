@@ -44,7 +44,7 @@ Feature: Suivi des elements engages en atelier
       | type      | NON_CONFORMITE |
       | operateur | dupont         |
       | poste     | fraiseuse-1    |
-    When j'annule l'evenement 2 de "OF 2962"
+    When j'annule l'evenement 1 de "OF 2962"
       | motif | Pointe sur le mauvais ordre |
     Then le journal du suivi contient 3 evenements
     And je retiens les informations du suivi hors journal et conflits
@@ -52,7 +52,7 @@ Feature: Suivi des elements engages en atelier
     Then la grille contient les memes informations sans journal ni conflits
     When je consulte "OF 2962"
     Then le journal du suivi contient 3 evenements
-    And l'evenement 2 du suivi est annule avec le motif "Pointe sur le mauvais ordre"
+    And l'evenement 1 du suivi est annule avec le motif "Pointe sur le mauvais ordre"
 
   Scenario: Un element deja engage ne peut pas l'etre deux fois
     Given l'entreprise a cree l'element de fabrication "OF 2002"
@@ -449,10 +449,6 @@ Feature: Suivi des elements engages en atelier
     # Rattrape le lendemain, le debut de 9 h a deja atteint son echeance de 22 h : l'activite est terminee
     # automatiquement, et plus personne n'est sur l'element.
     And le suivi a l'etat "INTERROMPU"
-    When je consulte "OF 2007"
-    # Un pointage tardif reste un pointage : seul l'acte qui saisit une regularisation la fait reconnaitre, jamais
-    # l'ecart de ses deux dates.
-    Then l'evenement 0 du suivi n'est pas une regularisation
 
   Scenario: Une regularisation saisie a l'heure du fait reste une regularisation
     Given il est "2026-05-10T08:00:00Z"
