@@ -36,8 +36,8 @@ Ne rien ajouter ici qui relève de :
 
 ## Agrégat
 
-`SuiviDAtelier` porte un élément engagé et son `JournalDAtelier`. `TempsDAtelierService` lit les intervalles
-interprétés de ses activités ; seuls les faits d'activité, la clôture et l'échéance en fixent les bornes.
+`SuiviDAtelier` porte un élément engagé et son `JournalDAtelier`. Seuls les faits d'activité, la clôture et l'échéance
+fixent les bornes de ses activités.
 
 Le parcours de gestion des anomalies de pointage est regroupé sous `gestionanomalies/` dans chaque couche d'Atelier :
 `domain/gestionanomalies`, `application/gestionanomalies`, `infrastructure/primary/gestionanomalies` et
@@ -50,7 +50,7 @@ automatiques se juge en SQL sur `activite_d_atelier` (sans fin, hors à résoudr
 rejouer de journal. `nature` est obligatoire : absente ou
 inconnue, elle sort en 400 `urn:glm:erreur:atelier:nature-d-anomalie-invalide`. L'adresse d'un dossier est le couple
 suivi/pointage, et son état `SANS_ANOMALIE` dit que l'ancre est active et ne porte aucune anomalie. Le vocabulaire de
-l'interprétation ne change pas : « séquence en conflit », `SequenceEnConflit`, `conflits[]` de `RestSuiviDAtelier`,
+l'interprétation ne change pas : « séquence en conflit », `SequenceEnConflit`,
 `ConflitsDAtelier` et `atelier_conflits.feature` gardent leur nom, parce qu'ils décrivent la contradiction des
 faits, pas le parcours qui la traite. L'ancien sens restreint d'« anomalie » — l'activité terminée automatiquement à
 son échéance — est désormais la nature `FIN_AUTOMATIQUE`, portée par `finAutomatique`. Le coût de revient emploie
@@ -137,7 +137,7 @@ suivent leurs propriétaires dans les mêmes sous-packages.
   automatiques, qui recopie la comparaison faute de pouvoir appeler `Echeance`. Leur parité est tenue par
   l'exécution, comme celle des critères de suivi : `ListeDesFinsAutomatiquesDAtelierIT` confronte ce SQL à
   `Activite.a` et à `AnomaliesDAtelierCriteria.matches`. Toute évolution de la règle les modifie ensemble. L'instant vient de
-  l'horloge du service applicatif (`LectureDuSuivi`, `TempsDAtelierService.tempsEffectif`), jamais d'une horloge
+  l'horloge du service applicatif (`LectureDuSuivi`), jamais d'une horloge
   enfouie dans le domaine.
 - **L'interprétation applique l'échéance sans instant de lecture**, sur les seules heures métier
   (`SequenceDActivites`). Un geste pointé au plus tard à l'échéance de sa cible la termine à son heure, un geste pile à
@@ -174,7 +174,7 @@ L'association au suivi et la cible d'activité sont distinctes ; date absente et
 La supervision utilise `LecturesDeSupervision` pour lire les projections à l'évaluation reçue du service applicatif.
 Avant de modifier cette lecture, consulter son
 [contrat dans atelier-api.md](../../../../../../../documentation/atelier-api.md#la-supervision-de-latelier-en-une-lecture-complète-rôles-user-et-gestionnaire) :
-les anomalies après relance ou clôture et les conflits sans activité restent des données à rendre.
+les anomalies après relance ou clôture restent des données à rendre.
 
 ## État d'avancement
 
@@ -261,7 +261,7 @@ Deux scénarios métier de référence, à lire avant toute modification du mod�
   le verbatim client en javadoc de chaque assertion ;
 - `src/test/features/atelier_suivi.feature` — la même journée rejouée en HTTP, avec `atelier_intentions.feature` pour l'intention et l'activité visée des pointages,
   `atelier_echeance.feature` pour l'échéance et la fin automatique des activités, et `atelier_conflits.feature` pour
-  les séquences en conflit et leur résolution.
+  les activités que le moteur juge à résoudre, que plus aucun lecteur n'expose.
 
 Les scénarios écrits avant l'intention la font déduire du journal par `EcrituresDuJournalDAtelier`, comme le ferait le
 pupitre ; tout nouveau scénario donne son intention et sa cible.

@@ -25,8 +25,7 @@ class SupervisionDAtelierResource {
     return new RestSupervisionDAtelier(
       lecture.evaluation(),
       lecture.operateurs().stream().map(RestOperateurDeSupervision::from).toList(),
-      lecture.activites().stream().map(RestActiviteDeSupervision::from).toList(),
-      lecture.sequencesEnConflit().stream().map(RestSequenceEnConflitDeSupervision::from).toList()
+      lecture.activites().stream().map(RestActiviteDeSupervision::from).toList()
     );
   }
 }

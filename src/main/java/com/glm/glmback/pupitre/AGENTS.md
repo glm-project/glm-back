@@ -9,7 +9,7 @@ Responsabilité, frontières et invariants de ce contexte. Les règles de code c
 **Alimenter le cache local du poste d'atelier, pour qu'il continue à collecter sans réseau.** Un seul acte : rendre,
 en un appel et dans une transaction unique, tout ce que le pupitre doit garder sur disque — les opérateurs
 désignables avec leurs habilitations, les éléments encore pointables avec leurs
-activités en cours et leurs conflits — et l'**instant d'évaluation** `genereLe`. Les requêtes successives sous
+activités en cours — et l'**instant d'évaluation** `genereLe`. Les requêtes successives sous
 `READ COMMITTED` peuvent lire des écritures intervenues pendant cet appel.
 
 C'est une **projection transverse**, comme `feuilledetemps`, `coutderevient` et `syntheseheures` : un contexte
@@ -39,9 +39,6 @@ identité, aucune persistance — l'objet naît et meurt dans l'appel.
 `SuiviDuPupitre` lit les activités interprétables sans fin projetées par atelier. `ActiviteSansFin` transmet
 leur identité stable et leur échéance ; `etatA` et `activitesEnCoursA` évaluent leur expiration à `genereLe`.
 Un événement actif distingue `INTERROMPU` de `EN_ATTENTE` quand aucune activité n’est en cours.
-`SequenceEnConflitDuPupitre` restitue la clé et les identités ordonnées projetées par atelier, y compris
-une séquence sans activité ou sans poste. Les activités du conflit sont exclues des activités en cours ;
-une nouvelle ouverture cohérente peut rester en cours sur le même suivi.
 
 ## Invariants à ne pas casser
 
@@ -69,7 +66,7 @@ une nouvelle ouverture cohérente peut rester en cours sur le même suivi.
   `cloture_date_de_survenue` continue d'écarter les suivis clôturés.
 - **Un opérateur sans activité n'est jamais omis.** La liste rend l'identité, l'identifiant éventuel et les postes
   habilités des opérateurs désignables, indépendamment des pointages.
-- **Les lectures se font par ensembles.** Opérateurs et habilitations, activités, conflits et références se lisent
+- **Les lectures se font par ensembles.** Opérateurs et habilitations, activités et références se lisent
   sans requête par opérateur, suivi ou séquence.
 - **Un élément clôturé est absent**, et `EtatDuSuivi` ne porte donc pas de valeur `CLOTURE` : elle n'aurait aucun
   porteur.
@@ -97,9 +94,9 @@ dans deux classes fait échouer **toute** la suite. `PupitreSteps` porte donc so
 
 Les trois lecteurs rendent tout d'un coup, sans critères ni pagination. Leurs entités propres `@Immutable`
 lisent `operateur`, `operateur_poste`, `poste_de_travail`, `suivi_d_atelier`, `activite_d_atelier`,
-`sequence_en_conflit`, `pointage_en_conflit`, `element_de_fabrication` et `categorie_de_produit`. Les catégories
+`element_de_fabrication` et `categorie_de_produit`. Les catégories
 sont triées par rang puis par code, comme dans `categoriedeproduit` : le domaine ne connaît pas le rang. Une requête scalaire sur
-`evenement_d_atelier` relève les suivis portant au moins un pointage actif, sans rapporter leur journal.
+`evenement_d_atelier` relève les suivis portant au moins un pointage, sans rapporter leur journal.
 
 ## État d'avancement
 

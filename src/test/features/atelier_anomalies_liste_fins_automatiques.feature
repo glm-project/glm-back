@@ -83,7 +83,7 @@ Feature: Liste des fins automatiques parmi les anomalies de pointage
       | poste     | fraiseuse-liste-fins                 |
     And il est "2044-02-03T22:00:00Z"
     When je consulte "Liste fins 8103"
-    Then le suivi porte 1 sequence en conflit
+    Then le suivi a 0 activites en cours
     When je liste les fins automatiques de "Liste fins 8103"
     Then la liste des fins automatiques compte 0 ligne
 

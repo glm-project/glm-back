@@ -57,7 +57,6 @@ Feature: Rejeu durable des gestes du pupitre
     Then la reponse a le statut http 200
     And le journal du suivi contient 2 evenements
     And l'evenement 1 du suivi a l'identifiant "00000000-0000-0000-0000-000000000302"
-    And l'evenement 1 du suivi vise l'activite de l'evenement 0
     And l'evenement 1 du suivi a survenu a "2026-05-10T12:00:00Z" et a ete saisi a "2026-05-10T13:00:00Z" par "user"
 
   Scenario: Un identifiant reutilise avec une autre intention et une autre cible est refuse
@@ -103,7 +102,6 @@ Feature: Rejeu durable des gestes du pupitre
     When je consulte "OF cible"
     Then le journal du suivi contient 3 evenements
     And l'evenement 2 du suivi a l'identifiant "00000000-0000-0000-0000-000000000312"
-    And l'evenement 2 du suivi a l'intention "OUVERTURE"
 
   Scenario: Une fin ciblee acceptee reste soumise aux droits lors du rejeu
     Given l'entreprise a cree l'element de fabrication "OF droits FIN"
@@ -131,7 +129,6 @@ Feature: Rejeu durable des gestes du pupitre
     When je rejoue le dernier geste du pupitre
     Then la reponse a le statut http 200
     And le journal du suivi contient 2 evenements
-    And l'evenement 1 du suivi vise l'activite de l'evenement 0
 
   Scenario: Un pointage d'atelier accepte reste soumis aux droits lors du rejeu
     Given l'entreprise a cree l'element de fabrication "OF droits"
@@ -204,5 +201,4 @@ Feature: Rejeu durable des gestes du pupitre
       | dateDeSurvenue | 2026-05-10T12:00:00Z                 |
     Then la reponse a le statut http 200
     And le journal du suivi contient 2 evenements
-    And l'evenement 1 du suivi vise l'activite de l'evenement 0
     And l'evenement 1 du suivi a survenu a "2026-05-10T12:00:00Z" et a ete saisi a "2026-05-10T13:00:00Z" par "gestionnaire"

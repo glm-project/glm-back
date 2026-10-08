@@ -292,7 +292,7 @@
         "type" : "object"
       },
       "RestActiviteDuPupitre" : {
-        "description" : "Une activite ouverte sur cet element : qui travaille, sur quel poste, dans quel etat, depuis quand.\n\nUne transition ouvre une activite distincte de l autre categorie. Les activites a resoudre et celles dont\nl echeance est atteinte ne sont pas actionnables et ne figurent pas ici.\n",
+        "description" : "Une activite ouverte sur cet element : qui travaille, sur quel poste, dans quel etat, depuis quand.\n\nUne transition ouvre une activite distincte de l autre categorie. Les activites dont l echeance est atteinte\nne sont pas actionnables et ne figurent pas ici.\n",
         "properties" : {
           "categorie" : {
             "description" : "TRAVAIL ou NON_CONFORMITE.",
@@ -507,39 +507,6 @@
         "required" : [ "activites", "element", "operateur", "pointages" ],
         "type" : "object"
       },
-      "RestConflitDuPupitre" : {
-        "description" : "Sequence interpretee en conflit par atelier. Aucune de ses activites n est actionnable ; une nouvelle ouverture reste possible.",
-        "properties" : {
-          "activites" : {
-            "description" : "Identites stables des activites a resoudre, dans l ordre des ouvertures. Peut etre vide.",
-            "items" : {
-              "format" : "uuid",
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "operateur" : {
-            "description" : "Operateur de la sequence.",
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "pointages" : {
-            "description" : "Identites des pointages de la sequence, dans l ordre du journal.",
-            "items" : {
-              "format" : "uuid",
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "poste" : {
-            "description" : "Poste de la sequence, absent si aucun poste n a ete pointe.",
-            "format" : "uuid",
-            "type" : "string"
-          }
-        },
-        "required" : [ "activites", "operateur", "pointages" ],
-        "type" : "object"
-      },
       "RestCout" : {
         "description" : "Un cout, separe en ce que coute la machine et en ce que coute la personne.\n\nLes deux ne s'agregent pas de la meme facon : le cout horaire de chaque poste actif court en entier, alors que le\ntaux horaire de l'operateur est divise par le nombre de postes qu'il occupait simultanement, tous elements\nconfondus. Les afficher separement est ce qui rend la regle lisible.\n",
         "properties" : {
@@ -703,38 +670,6 @@
           }
         },
         "required" : [ "libelle", "nature" ],
-        "type" : "object"
-      },
-      "RestDescriptionDActiviteDeSupervision" : {
-        "properties" : {
-          "categorie" : {
-            "enum" : [ "TRAVAIL", "NON_CONFORMITE" ],
-            "type" : "string"
-          },
-          "debut" : {
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "echeance" : {
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "element" : {
-            "$ref" : "#/components/schemas/RestElementDeSupervision"
-          },
-          "id" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "operateurId" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "poste" : {
-            "$ref" : "#/components/schemas/RestPosteDeSupervision"
-          }
-        },
-        "required" : [ "categorie", "debut", "echeance", "element", "id", "operateurId" ],
         "type" : "object"
       },
       "RestDossierAnomalie" : {
@@ -963,21 +898,16 @@
         "type" : "object"
       },
       "RestEvenementDAtelier" : {
-        "description" : "Un evenement du journal d'un element engage.\n\nL'horodatage est bitemporel : heure du fait et heure de son enregistrement. Une pause s'y lit par une fin\nciblee, puis une ouverture a la reprise.\n",
+        "description" : "Un evenement du journal d'un element engage.\n\nL'horodatage est bitemporel : heure du fait et heure de son enregistrement. Une pause s'y lit par une fin,\npuis une ouverture a la reprise.\n",
         "properties" : {
           "activite" : {
-            "description" : "Identite de l'activite qu'ouvre une ouverture ou une transition, absente pour une fin. C'est l'identifiant du\npointage ouvrant. C'est elle qu'une transition ou une fin vise dans `cible`.\n",
+            "description" : "Identite de l'activite qu'ouvre une ouverture ou une transition, absente pour une fin. C'est l'identifiant du\npointage ouvrant.\n",
             "format" : "uuid",
             "type" : "string"
           },
           "auteur" : {
             "description" : "Utilisateur ayant saisi l'evenement.",
             "example" : "dupont",
-            "type" : "string"
-          },
-          "cible" : {
-            "description" : "Activite que vise une transition ou une fin, absente pour une ouverture.",
-            "format" : "uuid",
             "type" : "string"
           },
           "coutHoraire" : {
@@ -1002,11 +932,6 @@
           "id" : {
             "description" : "Identifiant de l'evenement.",
             "format" : "uuid",
-            "type" : "string"
-          },
-          "intention" : {
-            "description" : "Ce que le pointage fait d'une activite : OUVERTURE, TRANSITION ou FIN.",
-            "enum" : [ "OUVERTURE", "TRANSITION", "FIN" ],
             "type" : "string"
           },
           "nature" : {
@@ -1042,7 +967,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "auteur", "dateDEnregistrement", "dateDeSurvenue", "estUneRegularisation", "id", "intention", "operateurId", "type" ],
+        "required" : [ "auteur", "dateDEnregistrement", "dateDeSurvenue", "estUneRegularisation", "id", "operateurId", "type" ],
         "type" : "object"
       },
       "RestFeuilleDeTemps" : {
@@ -1125,58 +1050,6 @@
           }
         },
         "required" : [ "activite", "adresse", "debut", "designation", "echeance", "elementId", "operateurId", "revision" ],
-        "type" : "object"
-      },
-      "RestIntervalleDActivite" : {
-        "description" : "Du temps passe sur un element, deduit du journal et jamais stocke, tel qu'il se lit a l'instant de la lecture.\n\nC'est l'intervalle de l'activite elle-meme : une fin pointee ou regularisee le termine a son heure. Une activite que rien n'a terminee avant son echeance, son debut plus 13 heures, y est terminee\nautomatiquement a cette echeance, avec une anomalie.\n",
-        "properties" : {
-          "aResoudre" : {
-            "description" : "Vrai si l'activite de l'intervalle est a resoudre : des pointages contradictoires la concernent, dans une sequence\nen conflit. Elle n'est alors ni en cours ni terminee, n'a ni fin ni duree a compter, et son echeance ne la termine\npas. Une correction ou une annulation du gestionnaire la rend de nouveau interpretable, au recalcul.\n",
-            "type" : "boolean"
-          },
-          "activite" : {
-            "description" : "Activite de l'intervalle : l'identifiant de son pointage ouvrant d'origine, celui que vise une fin ou une transition.",
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "categorie" : {
-            "description" : "TRAVAIL ou NON_CONFORMITE.",
-            "enum" : [ "TRAVAIL", "NON_CONFORMITE" ],
-            "type" : "string"
-          },
-          "debut" : {
-            "description" : "Debut de l'intervalle.",
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "evenement" : {
-            "description" : "Evenement qui a ouvert l'intervalle.",
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "fin" : {
-            "description" : "Fin de l'intervalle, absente s'il est encore en cours ou a resoudre. Pour une activite terminee automatiquement, son\necheance.\n",
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "finAutomatique" : {
-            "description" : "Vrai si l'activite de l'intervalle est terminee automatiquement a son echeance, faute de fin reelle : c'est une\nanomalie, qu'une fin pointee au plus tard a l'echeance, ou regularisee, retire au recalcul.\n",
-            "type" : "boolean"
-          },
-          "nature" : {
-            "description" : "Nature de l'operation, facultative.",
-            "type" : "string"
-          },
-          "operateur" : {
-            "$ref" : "#/components/schemas/RestOperateurDAtelier",
-            "description" : "Operateur concerne."
-          },
-          "poste" : {
-            "$ref" : "#/components/schemas/RestPosteDAtelier",
-            "description" : "Poste de travail, facultatif."
-          }
-        },
-        "required" : [ "aResoudre", "activite", "finAutomatique" ],
         "type" : "object"
       },
       "RestJourDeLaSemaine" : {
@@ -2079,65 +1952,11 @@
         "required" : [ "activite", "dateDeSurvenue", "id" ],
         "type" : "object"
       },
-      "RestSequenceEnConflit" : {
-        "description" : "Des pointages d'un meme operateur sur un meme poste qui se contredisent : une fin ou une transition qui vise une\nactivite deja remplacee ou terminee, pas encore ouverte ou annulee, ou une transition vers sa propre categorie.\n\nRien n'est choisi a la place du gestionnaire : les activites de la sequence sont a resoudre, ni en cours ni terminees,\nsans fin ni duree, et l'echeance ne les termine pas. Il la resout en corrigeant ou en annulant les faits concernes ;\nelle disparait au recalcul des que les faits redeviennent coherents. Elle se deduit du journal a chaque lecture et\nn'est jamais stockee.\n",
-        "properties" : {
-          "activites" : {
-            "description" : "Les activites a resoudre, par l'identite de leur pointage ouvrant d'origine, dans l'ordre de leur ouverture : aucune\nfin ni transition ne doit plus les viser. Vide quand le seul geste en conflit vise une ouverture annulee.\n",
-            "items" : {
-              "format" : "uuid",
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "operateur" : {
-            "$ref" : "#/components/schemas/RestOperateurDAtelier",
-            "description" : "Operateur des pointages en conflit, absent si la fiche n'est plus resolue au referentiel."
-          },
-          "pointages" : {
-            "description" : "Les pointages de la sequence, dans l'ordre du journal : les gestes contradictoires et ceux qui ouvrent ou visent ses\nactivites. Un pointage publie dont l'identifiant figure ici est enregistre et conserve en conflit, pas refuse.\n",
-            "items" : {
-              "format" : "uuid",
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "poste" : {
-            "$ref" : "#/components/schemas/RestPosteDAtelier",
-            "description" : "Poste de travail des pointages en conflit, facultatif."
-          }
-        },
-        "required" : [ "activites", "pointages" ],
-        "type" : "object"
-      },
-      "RestSequenceEnConflitDeSupervision" : {
-        "properties" : {
-          "activites" : {
-            "items" : {
-              "$ref" : "#/components/schemas/RestDescriptionDActiviteDeSupervision"
-            },
-            "type" : "array"
-          },
-          "id" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "operateurId" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "poste" : {
-            "$ref" : "#/components/schemas/RestPosteDeSupervision"
-          }
-        },
-        "required" : [ "activites", "id", "operateurId" ],
-        "type" : "object"
-      },
       "RestSuiviDAtelier" : {
         "description" : "Le suivi en atelier d'un element engage.\n\nSon etat, ses activites en cours et son temps ne sont **jamais stockes** : tout est deduit du journal a chaque\nlecture. C'est ce qui permet a une saisie rattrapee de compter a l'heure ou elle a reellement eu lieu.\n",
         "properties" : {
           "activitesEnCours" : {
-            "description" : "Les activites en cours a l'instant de la lecture ; une activite dont l'echeance est atteinte n'y figure plus, ni une\nactivite a resoudre.\n",
+            "description" : "Les activites en cours a l'instant de la lecture ; une activite dont l'echeance est atteinte n'y figure plus.",
             "items" : {
               "$ref" : "#/components/schemas/RestActiviteEnCours"
             },
@@ -2155,13 +1974,6 @@
           "cloturePar" : {
             "description" : "Utilisateur ayant cloture l'element, absent tant qu'il ne l'est pas.",
             "type" : "string"
-          },
-          "conflits" : {
-            "description" : "Les sequences en conflit du journal, vide quand ses faits sont coherents. Elles ne dependent pas de l'instant de la\nlecture, et ne changent pas l'etat, juge sur les seules activites interpretables.\n",
-            "items" : {
-              "$ref" : "#/components/schemas/RestSequenceEnConflit"
-            },
-            "type" : "array"
           },
           "element" : {
             "description" : "Identifiant de l'element de fabrication engage.",
@@ -2205,7 +2017,7 @@
         "type" : "object"
       },
       "RestSuiviDAtelierEnGrille" : {
-        "description" : "Une ligne du tableau d'atelier, sans le journal des evenements ni ses sequences en conflit.\nL'etat et les activites en cours restent deduits du journal a chaque lecture.\nLe journal complet et ses sequences en conflit se consultent via GET /api/atelier/suivis/{id}.\n",
+        "description" : "Une ligne du tableau d'atelier, sans le journal des evenements.\nL'etat et les activites en cours restent deduits du journal a chaque lecture.\nLe journal complet se consulte via GET /api/atelier/suivis/{id}.\n",
         "properties" : {
           "activitesEnCours" : {
             "description" : "Les activites en cours a l'instant de la lecture ; une activite dont l'echeance est atteinte n'y figure plus, ni une\nactivite a resoudre.\n",
@@ -2275,13 +2087,6 @@
             "description" : "Categorie de l'element, copiee a l'engagement.",
             "type" : "string"
           },
-          "conflits" : {
-            "description" : "Sequences en conflit a resoudre par le gestionnaire.",
-            "items" : {
-              "$ref" : "#/components/schemas/RestConflitDuPupitre"
-            },
-            "type" : "array"
-          },
           "etat" : {
             "description" : "EN_ATTENTE, EN_COURS ou INTERROMPU. Juge sur les seules activites interpretables a genereLe.",
             "enum" : [ "EN_ATTENTE", "EN_COURS", "INTERROMPU" ],
@@ -2323,15 +2128,9 @@
               "$ref" : "#/components/schemas/RestOperateurDeSupervision"
             },
             "type" : "array"
-          },
-          "sequencesEnConflit" : {
-            "items" : {
-              "$ref" : "#/components/schemas/RestSequenceEnConflitDeSupervision"
-            },
-            "type" : "array"
           }
         },
-        "required" : [ "activites", "evaluation", "operateurs", "sequencesEnConflit" ],
+        "required" : [ "activites", "evaluation", "operateurs" ],
         "type" : "object"
       },
       "RestSyntheseDesHeures" : {
@@ -2780,7 +2579,7 @@
                 }
               }
             },
-            "description" : "Le geste identique est rejoue, sequence en conflit comprise, ou une fin posterieure a la cloture de l'element est\nabsorbee.\n"
+            "description" : "Le geste identique est rejoue, ou une fin posterieure a la cloture de l'element est\nabsorbee.\n"
           },
           "201" : {
             "content" : {
@@ -2790,7 +2589,7 @@
                 }
               }
             },
-            "description" : "Le pointage est enregistre, y compris une fin pointee apres l'echeance de sa cible, conservee sans effet, et un\ngeste qui contredit le journal, conserve dans une sequence en conflit : son identifiant figure alors dans\nconflits[].pointages.\n"
+            "description" : "Le pointage est enregistre, y compris une fin pointee apres l'echeance de sa cible, conservee sans effet.\n"
           },
           "400" : {
             "content" : {
@@ -2820,7 +2619,7 @@
                 }
               }
             },
-            "description" : "Demarrer ou pointer une non conformite sur un element cloture (seul refus qu'afficher a l'operateur), operateur non\nhabilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, ou identifiant reutilise. Un geste\nqui contredit le journal n'est jamais refuse : il est enregistre, et sa sequence est en conflit.\n"
+            "description" : "Demarrer ou pointer une non conformite sur un element cloture (seul refus qu'afficher a l'operateur), operateur non\nhabilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, ou identifiant reutilise.\n"
           }
         },
         "summary" : "Pointer un debut, une non conformite ou une fin",
@@ -2903,38 +2702,6 @@
           }
         },
         "summary" : "Regulariser la fin d'une activite echue",
-        "tags" : [ "Atelier - elements engages" ]
-      }
-    },
-    "/api/atelier/suivis/{id}/temps-effectif" : {
-      "get" : {
-        "description" : "Les intervalles des activites de l'element, tels que le journal les interprete a l'instant de la lecture.\n\nUn intervalle sans fin est encore en cours a l'instant de la lecture, sauf s'il est a resoudre (aResoudre) : une\nsequence en conflit ne permet d'en affirmer ni la fin ni la duree. Une activite que rien n'a terminee avant son\necheance, son debut plus 13 heures, y est terminee automatiquement, a cette echeance, et signalee par\nfinAutomatique.\n",
-        "operationId" : "tempsEffectif",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "404" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "items" : {
-                    "$ref" : "#/components/schemas/RestIntervalleDActivite"
-                  },
-                  "type" : "array"
-                }
-              }
-            },
-            "description" : "Suivi introuvable."
-          }
-        },
-        "summary" : "Lire le temps effectivement passe sur un element",
         "tags" : [ "Atelier - elements engages" ]
       }
     },
@@ -3930,7 +3697,7 @@
     },
     "/api/pupitre/referentiel" : {
       "get" : {
-        "description" : "Rend en une seule reponse les operateurs designables avec leurs habilitations, les\nelements sur lesquels on peut encore pointer avec leurs activites en cours et leurs conflits, et les codes\ndes categories de produit dans l'ordre choisi par le gestionnaire, qui range les tuiles. C'est la lecture que le pupitre\nrejoue a chaque synchronisation pour rafraichir son cache local.\n\nLa reponse entiere evite l'assemblage de pages. La lecture se fait dans une transaction unique sous\nREAD COMMITTED : une ecriture concurrente peut changer les faits entre les requetes successives.\nL'instant commun genereLe assure la meme decision d'expiration, sans garantir un instantane commun.\n\nLes operateurs restent designables sans activite, avec leur identite, leur identifiant et leurs habilitations. Les activites a resoudre\nsont exclues des activites en cours et leurs identites sont rendues dans les conflits. Une ouverture coherente\npeut etre en cours a cote d'un conflit. L'expiration des activites se juge a genereLe, echeance incluse.\n\n`genereLe` date l'evaluation. Elle change a chaque appel, y compris quand rien n'a bouge : elle\ndit quand le serveur a produit la reponse, pas quand le referentiel a change pour la derniere fois.\n\nCe que la reponse ne porte pas, et n'a pas a porter : aucun montant — ni taux horaire d'operateur, ni cout\nhoraire de poste —, aucun journal d'evenements, aucun element cloture.\n",
+        "description" : "Rend en une seule reponse les operateurs designables avec leurs habilitations, les\nelements sur lesquels on peut encore pointer avec leurs activites en cours, et les codes\ndes categories de produit dans l'ordre choisi par le gestionnaire, qui range les tuiles. C'est la lecture que le pupitre\nrejoue a chaque synchronisation pour rafraichir son cache local.\n\nLa reponse entiere evite l'assemblage de pages. La lecture se fait dans une transaction unique sous\nREAD COMMITTED : une ecriture concurrente peut changer les faits entre les requetes successives.\nL'instant commun genereLe assure la meme decision d'expiration, sans garantir un instantane commun.\n\nLes operateurs restent designables sans activite, avec leur identite, leur identifiant et leurs habilitations. L'expiration des activites se juge a genereLe, echeance incluse.\n\n`genereLe` date l'evaluation. Elle change a chaque appel, y compris quand rien n'a bouge : elle\ndit quand le serveur a produit la reponse, pas quand le referentiel a change pour la derniere fois.\n\nCe que la reponse ne porte pas, et n'a pas a porter : aucun montant — ni taux horaire d'operateur, ni cout\nhoraire de poste —, aucun journal d'evenements, aucun element cloture.\n",
         "operationId" : "referentiel",
         "responses" : {
           "200" : {
@@ -4044,9 +3811,6 @@
   }, {
     "description" : "Le temps passe sur un element de fabrication, valorise par nature d'operation.",
     "name" : "Couts de revient"
-  }, {
-    "description" : "Le suivi des elements de fabrication mis en atelier.\n\nDeux publics se partagent ces routes. L'operateur (role USER) consulte le tableau des elements actifs et pointe son\ntravail. Le gestionnaire (role GESTIONNAIRE) engage les elements, les cloture et rattrape les saisies oubliees.\n\nRien de ce qui se deduit n'est stocke : etat, activites en cours, sequences en conflit et temps sont recalcules du\njournal a chaque lecture, a l'instant de cette lecture. Une activite que rien n'a terminee se termine automatiquement\na son echeance, son debut plus 13 heures, sans qu'aucun evenement ne soit ecrit. Des pointages qui se contredisent\nsont conserves en sequence en conflit.\n",
-    "name" : "Atelier - elements engages"
   }, {
     "description" : "Le referentiel de ce sur quoi les operateurs pointent : une machine, un etabli, un four, une salle.\n\nChaque poste porte la nature du travail qui s'y fait. C'est de la que vient le metier exerce a un instant donne :\nl'operateur qui demarre sur le poste de soudure soude, celui qui demarre sur un tour tourne. Rien de tout cela n'est\ndeclare sur la personne.\n\nLe gestionnaire declare et revise les postes ; l'operateur (role USER) les consulte.\n",
     "name" : "Postes de travail"

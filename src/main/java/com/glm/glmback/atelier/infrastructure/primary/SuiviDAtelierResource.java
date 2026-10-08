@@ -3,7 +3,6 @@ package com.glm.glmback.atelier.infrastructure.primary;
 import com.glm.glmback.atelier.application.SuivisDAtelierApplicationService;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
 import com.glm.glmback.atelier.domain.EtatDAtelier;
-import com.glm.glmback.atelier.domain.IntervalleDActivite;
 import com.glm.glmback.atelier.domain.LectureDuSuivi;
 import com.glm.glmback.atelier.domain.Periode;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
@@ -15,7 +14,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -42,10 +40,9 @@ import org.springframework.web.bind.annotation.RestController;
   Deux publics se partagent ces routes. L'operateur (role USER) consulte le tableau des elements actifs et pointe son
   travail. Le gestionnaire (role GESTIONNAIRE) engage les elements, les cloture et rattrape les saisies oubliees.
 
-  Rien de ce qui se deduit n'est stocke : etat, activites en cours, sequences en conflit et temps sont recalcules du
-  journal a chaque lecture, a l'instant de cette lecture. Une activite que rien n'a terminee se termine automatiquement
-  a son echeance, son debut plus 13 heures, sans qu'aucun evenement ne soit ecrit. Des pointages qui se contredisent
-  sont conserves en sequence en conflit.
+  Rien de ce qui se deduit n'est stocke : etat et activites en cours sont recalcules du journal a chaque lecture, a
+  l'instant de cette lecture. Une activite que rien n'a terminee se termine automatiquement a son echeance, son debut
+  plus 13 heures, sans qu'aucun evenement ne soit ecrit.
   """
 )
 class SuiviDAtelierResource {
@@ -110,29 +107,6 @@ class SuiviDAtelierResource {
     return rendu(applicationService.get(new SuiviDAtelierId(id)));
   }
 
-  @GetMapping("/{id}/temps-effectif")
-  @Operation(
-    summary = "Lire le temps effectivement passe sur un element",
-    description = """
-    Les intervalles des activites de l'element, tels que le journal les interprete a l'instant de la lecture.
-
-    Un intervalle sans fin est encore en cours a l'instant de la lecture, sauf s'il est a resoudre (aResoudre) : une
-    sequence en conflit ne permet d'en affirmer ni la fin ni la duree. Une activite que rien n'a terminee avant son
-    echeance, son debut plus 13 heures, y est terminee automatiquement, a cette echeance, et signalee par
-    finAutomatique.
-    """
-  )
-  @ApiResponse(responseCode = "404", description = "Suivi introuvable.")
-  List<RestIntervalleDActivite> tempsEffectif(@PathVariable UUID id) {
-    List<IntervalleDActivite> intervalles = applicationService.tempsEffectif(new SuiviDAtelierId(id));
-    AnnuaireDAtelier annuaire = applicationService.annuairePourIntervalles(intervalles);
-
-    return intervalles
-      .stream()
-      .map(intervalle -> RestIntervalleDActivite.from(intervalle, annuaire))
-      .toList();
-  }
-
   @PostMapping("/{id}/pointages")
   @Operation(
     summary = "Pointer un debut, une non conformite ou une fin",
@@ -150,15 +124,13 @@ class SuiviDAtelierResource {
   @ApiResponse(
     responseCode = "201",
     description = """
-    Le pointage est enregistre, y compris une fin pointee apres l'echeance de sa cible, conservee sans effet, et un
-    geste qui contredit le journal, conserve dans une sequence en conflit : son identifiant figure alors dans
-    conflits[].pointages.
+    Le pointage est enregistre, y compris une fin pointee apres l'echeance de sa cible, conservee sans effet.
     """
   )
   @ApiResponse(
     responseCode = "200",
     description = """
-    Le geste identique est rejoue, sequence en conflit comprise, ou une fin posterieure a la cloture de l'element est
+    Le geste identique est rejoue, ou une fin posterieure a la cloture de l'element est
     absorbee.
     """
   )
@@ -171,8 +143,7 @@ class SuiviDAtelierResource {
     responseCode = "409",
     description = """
     Demarrer ou pointer une non conformite sur un element cloture (seul refus qu'afficher a l'operateur), operateur non
-    habilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, ou identifiant reutilise. Un geste
-    qui contredit le journal n'est jamais refuse : il est enregistre, et sa sequence est en conflit.
+    habilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, ou identifiant reutilise.
     """
   )
   ResponseEntity<RestSuiviDAtelier> pointe(@PathVariable UUID id, @RequestBody @Valid RestPointage request) {

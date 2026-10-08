@@ -141,9 +141,6 @@ Ce que les réponses en montrent :
 - `activitesEnCours[]`, du détail comme de la grille, ne contient que les activités **en cours à l'instant de la
   lecture** : une activité échue en sort d'elle-même, et l'élément passe `INTERROMPU` si plus rien n'y est en cours.
   Chaque activité porte son `ouverture` — l'identité que visera une fin ou une transition — et son `echeance`.
-- `GET …/temps-effectif` rend chaque intervalle avec son `activite` et `finAutomatique` : vrai quand l'activité est
-  terminée automatiquement à son échéance, faute de fin réelle. C'est l'anomalie de pointage de nature `FIN_AUTOMATIQUE` à signaler ; `fin` vaut alors
-  l'échéance.
 - Deux lectures espacées peuvent différer au voisinage d'une échéance : c'est l'instant de lecture qui tranche.
 
 La même échéance vaut pour les gestes, jugés sur leur heure métier, quel que soit le moment où ils arrivent :
@@ -224,15 +221,9 @@ seulement échue, ou pointé pile à son échéance.
 
 Ce que les réponses en montrent :
 
-- `conflits[]`, dans `RestSuiviDAtelier` — le détail et la réponse de chaque écriture —, une entrée par séquence :
-  `operateur` et `poste` résolus, `activites`, les identités des activités **à résoudre** dans l'ordre de leur
-  ouverture, et `pointages`, les identifiants des faits de la séquence dans l'ordre du journal. Tableau vide quand le
-  journal est cohérent. La grille (`GET /api/atelier/suivis`) ne le porte pas : il se lit sur le détail.
 - Une activité à résoudre n'est **ni en cours ni terminée** : absente d'`activitesEnCours`, sans fin, sans durée, et
   son échéance ne la termine pas. L'`etat` du suivi se juge sur les seules activités interprétables : une nouvelle
   ouverture après le conflit est en cours, et l'élément avec elle.
-- `GET …/temps-effectif` rend son intervalle avec `aResoudre: true`, sans `fin` : aucune durée n'est à présenter comme
-  définitive, et elle ne vaut pas zéro. `finAutomatique` y est toujours faux.
 - Hors de la séquence, les activités du même poste gardent leur lecture : ce qui précède la contradiction, et
   l'ouverture pointée après elle.
 
@@ -242,10 +233,8 @@ Le journal demeure la source de vérité. La plage possible d'une activité à r
 tard : échéance ou régularisation recevable plus tardive, limitée par la clôture qui ne la prolonge jamais.
 Cette borne vient des faits et la projection est réécrite à chaque correction, annulation, résolution ou clôture.
 
-**Pour le pupitre, un pointage conservé en conflit est un succès.** Il est acquitté `201` — `200` au rejeu, sans second
-fait — et son identifiant figure dans `conflits[].pointages` : c'est ce qui le distingue d'un refus (`4xx`), et il ne
-doit pas être republié. Sur un poste dont une séquence est en conflit, seule une nouvelle **ouverture** a un sens : ne
-viser par une fin ou une transition aucune activité listée dans `conflits[].activites`.
+**Pour le pupitre, un pointage conservé en conflit est un succès** : il est acquitté `201` — `200` au rejeu, sans
+second fait —, et il ne doit pas être republié. Aucune réponse ne rend plus la séquence en conflit.
 
 **Pour le gestionnaire, le conflit se résout par les actes existants**, correction et annulation, et disparaît au
 recalcul dès que les faits redeviennent cohérents ; l'historique garde pointages et corrections (voir l'écran
@@ -269,7 +258,7 @@ rien. `debut`/`fin` ne servent qu'au back-office, et **une borne seule est ignor
 Le filtre `etats` juge l'état à l'instant de la lecture, le même que celui de chaque ligne rendue : un élément dont la
 seule activité a atteint son échéance sort de `etats=EN_COURS` et entre dans `etats=INTERROMPU`, sans aucune écriture.
 
-La liste rend une page de **`RestSuiviDAtelierEnGrille`**, sans propriétés `journal` ni `conflits` (ni tableau vide, ni
+La liste rend une page de **`RestSuiviDAtelierEnGrille`**, sans propriété `journal` (ni tableau vide, ni
 valeur `null`). Tous les autres champs sont conservés : `id`, `element`, `nom`, `categorie`, `engagePar`, `engageLe`,
 `etat`, `cloturePar`, `clotureLe` et `activitesEnCours`. L'état et les activités restent calculés par le serveur depuis
 le journal ; ce changement allège la réponse HTTP et le cache du pupitre, pas la relecture en base.
@@ -332,13 +321,13 @@ aussi —, seule sa `categorie` change. Pour signaler visuellement une non confo
 GET /api/atelier/supervision
 ```
 
-La réponse rend `evaluation`, `operateurs`, `activites` et `sequencesEnConflit`, sans pagination. `evaluation` est
+La réponse rend `evaluation`, `operateurs`, `activites`, sans pagination. `evaluation` est
 l'instant relevé une seule fois sur l'horloge du serveur ; il gouverne toutes les expirations de cette lecture.
 Chaque acquisition relit les référentiels et les projections, sans cache ni données de démonstration.
 
 `operateurs` contient le référentiel complet, même les personnes sans activité ou sans métier : `id`, `nom`,
 `prenom` et `metiers`. Les métiers sont les natures distinctes des postes actuellement habilités. Aucun taux
-horaire ni coût n'est rendu. Les activités et les séquences gardent leur `operateurId`, même lorsque sa fiche ne
+horaire ni coût n'est rendu. Les activités gardent leur `operateurId`, même lorsque sa fiche ne
 figure pas dans cette collection : le consommateur peut alors constater que la lecture est inexploitable.
 
 `activites` contient les activités interprétables encore sans fin réelle. Chacune porte son `id`, identité stable
@@ -354,14 +343,7 @@ commence le lendemain. Une fin recevable ou régularisée retire l'anomalie ; un
 repousser l'échéance et rendre la même activité en cours. Les activités terminées réellement sortent de cette
 collection.
 
-`sequencesEnConflit` se lit séparément. Chaque séquence porte un `id` déterministe issu du premier pointage de sa
-projection, `operateurId`, le `poste` facultatif et les descriptions complètes de ses `activites` à résoudre,
-dans leur ordre projeté. Ces descriptions portent les mêmes identité, élément, poste, catégorie, début et échéance
-que les activités interprétables, sans état ni fin retenue. Une séquence sans activité reste rendue avec une liste
-vide ; elle peut coexister avec une activité indépendante du même opérateur. L'échéance et la clôture ne résolvent
-aucun conflit. La correction ou l'annulation retire la séquence dès que la projection redevient cohérente.
-
-La lecture consomme `activite_d_atelier` et `sequence_en_conflit`, sans rejouer les journaux. Elle utilise une
+La lecture consomme `activite_d_atelier`, sans rejouer les journaux. Elle utilise une
 transaction unique en `READ COMMITTED` : l'évaluation est commune, mais les requêtes peuvent observer une écriture
 concurrente entre les collections. Elle ne promet donc pas un instantané de la base. La lecture répétable exige
 un autre patron d'acquisition de connexion, comme expliqué dans le
@@ -382,7 +364,6 @@ Un pupitre hors ligne ne reconstitue plus son cache en paginant `GET /api/operat
 leurs postes habilités, les éléments encore pointables avec leurs activités en cours, et les codes des catégories
 de produit dans l'ordre choisi par le gestionnaire (`PUT /api/categories-de-produit/ordre`) : le pupitre range ses
 tuiles par catégorie, dans cet ordre, et la liste est vide tant que l'entreprise n'en a déclaré aucune.
-Les séquences en conflit sont également rendues sur chaque suivi.
 
 ```json
 {
@@ -412,8 +393,7 @@ Les séquences en conflit sont également rendues sur chaque suivi.
           "ouverture": "…",
           "echeance": "2026-09-14T21:02:00Z"
         }
-      ],
-      "conflits": []
+      ]
     }
   ],
   "categories": ["MOULE", "OF"]
@@ -450,11 +430,6 @@ Les séquences en conflit sont également rendues sur chaque suivi.
 - **`nom` et `reference` ne suivent pas la même règle.** `nom` est celui copié à l'engagement, figé ; `reference`
   est celle du référentiel, relue à chaque appel. Un élément supprimé du référentiel garde sa tuile et perd sa seule
   référence.
-
-Chaque suivi du référentiel porte aussi `conflits[]` : `operateur`, `poste` facultatif, `activites[]`
-(identités stables, éventuellement aucune) et `pointages[]` (identités des faits dans l’ordre métier).
-Les activités en conflit ne figurent jamais dans `activites[]` du suivi. Une ouverture cohérente peut y être
-en cours alors que le conflit reste rendu ; le gestionnaire le résout par les actes décrits ci-dessous.
 
 L'écriture, elle, ne change pas : ce sont toujours les `POST` de l'écran d'atelier ci-dessus, avec l'UUID de geste
 créé par le pupitre et la `dateDeSurvenue` conservée hors ligne.
@@ -538,24 +513,6 @@ séquence telle que les faits la laissent. Une régularisation, une correction o
 parce qu'elle crée ou laisse une contradiction ; les refus qui ne tiennent pas à une contradiction demeurent — cible
 introuvable ou d'un autre poste, habilitation, événement antérieur à l'engagement ou postérieur à la clôture,
 événement déjà annulé.
-
-### Lire le temps passé
-
-```
-GET /api/atelier/suivis/{id}/temps-effectif
-```
-
-Rend les intervalles des activités de l’élément, bornés par les faits d’activité, la clôture et leur échéance.
-La pause de midi, pointée par un `FIN` ciblé puis une ouverture `DEBUT`, en produit deux. Un
-intervalle sans `fin` est encore en cours — c'est un affichage « depuis 8 h 00 », pas une donnée manquante — sauf s'il
-est à résoudre.
-
-Chaque intervalle porte son `activite`, l'identité de l'activité dont il vient. `finAutomatique: true` signale une
-activité terminée automatiquement à son échéance, faute de fin réelle : `fin` vaut l'échéance, 13 h après le début. Un
-`DEBUT` à 8 h que l'opérateur n'arrête jamais donne ainsi un intervalle terminé à 21 h, avec cette anomalie, que la fin
-régularisée par le gestionnaire remplace. `aResoudre: true` signale une activité d'une séquence en conflit : rendue
-telle quelle, sans `fin`, elle n'a aucune durée à compter tant que le gestionnaire n'a pas tranché.
-Cette route relève l'instant sur l'horloge du serveur ; elle ne prend pas de paramètre `evaluation`.
 
 ### Évaluer le relevé des heures
 
@@ -652,8 +609,7 @@ répond 400 avec le code stable `date-de-survenue-future`. Le pupitre peut alors
 
 - **`nature` est vide dès qu'aucun poste n'est pointé**, puisqu'elle vient du poste. Un pointage sans poste n'a pas de
   nature, et c'est le comportement nominal d'une entreprise sans parc machine.
-- **`coutHoraire` et `tauxHoraire` sont réservés au `GESTIONNAIRE`**, sur les référentiels et les événements du journal, jamais sur `temps-effectif`
-  (les intervalles rendus par `GET /api/atelier/suivis/{id}/temps-effectif`) : l'atelier capture ces valeurs, il ne
+- **`coutHoraire` et `tauxHoraire` sont réservés au `GESTIONNAIRE`**, sur les référentiels et les événements du journal, jamais combinés : l'atelier capture ces valeurs, il ne
   les combine jamais. La valorisation vit dans un autre contexte, `GET /api/couts-de-revient/{elementId}`, qui rend
   une ligne par nature d'opération avec le temps passé, le temps de non conformité daté, et le coût séparé en machine
   et main d'œuvre. Deux différences à connaître avant de brancher un écran dessus : il s'appelle avec l'identifiant
@@ -706,8 +662,7 @@ Ces routes sont décrites dans le [contrat OpenAPI généré](openapi.json) et �
 Une **anomalie de pointage** est ce que le gestionnaire doit trancher. Elle porte une `nature` : `CONFLIT`
 (une séquence en conflit) ou `FIN_AUTOMATIQUE` (une activité terminée à son échéance faute de fin réelle). Les anciennes routes
 `/api/atelier/conflits` et `/api/atelier/suivis/{suivi}/conflits/{pointage}` sont supprimées : elles répondent 404,
-sans redirection. « Séquence en conflit » et le tableau `conflits[]` des suivis, de la supervision et des coûts
-gardent leur sens et leur nom.
+sans redirection. Le tableau `conflits[]` des coûts garde son sens et son nom.
 
 `nature` est un paramètre de requête obligatoire de la liste, valant `CONFLIT` ou `FIN_AUTOMATIQUE` (schéma
 `NatureDAnomalie` dans le contrat). Absent ou inconnu — la casse compte —, il est refusé en 400 par un `ProblemDetail` au code stable

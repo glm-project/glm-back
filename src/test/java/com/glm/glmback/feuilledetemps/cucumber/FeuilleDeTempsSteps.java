@@ -152,12 +152,6 @@ public class FeuilleDeTempsSteps {
     }
   }
 
-  @Then("le suivi de la feuille de temps de {string} ne porte aucun conflit")
-  public void nePorteAucunConflit(String element) {
-    rest.get(SUIVIS_URI + "/" + suivis.get(element));
-    assertThat((List<?>) CucumberRestTestContext.getElement("$.conflits")).isEmpty();
-  }
-
   @Given("l'element {string} est cloture a {string}")
   public void lElementEstClotureA(String element, String instant) {
     horloge.ilEst(Instant.parse(instant));

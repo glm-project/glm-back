@@ -26,8 +26,4 @@ public record LectureDuSuivi(SuiviDAtelier suivi, Instant evaluation) {
   public List<ActiviteEnCours> activitesEnCours() {
     return suivi.activitesEnCours(evaluation);
   }
-
-  public List<SequenceEnConflit> conflits() {
-    return suivi.conflits();
-  }
 }

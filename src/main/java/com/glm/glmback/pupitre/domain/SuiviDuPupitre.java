@@ -21,7 +21,6 @@ public record SuiviDuPupitre(
   Optional<ReferenceDElement> reference,
   CategorieDElement categorie,
   List<ActiviteSansFin> activites,
-  List<SequenceEnConflitDuPupitre> conflits,
   boolean dejaPointe
 ) {
   public SuiviDuPupitre {
@@ -31,8 +30,6 @@ public record SuiviDuPupitre(
     Assert.notNull("categorie de l'element", categorie);
     Assert.field("activites", activites).notNull().noNullElement();
     activites = List.copyOf(activites);
-    Assert.field("conflits", conflits).notNull().noNullElement();
-    conflits = List.copyOf(conflits);
   }
 
   /**
@@ -45,17 +42,8 @@ public record SuiviDuPupitre(
         reference ->
           categorie ->
             activites ->
-              conflits ->
-                dejaPointe ->
-                  new SuiviDuPupitre(
-                    id,
-                    nom,
-                    ReferenceDElement.of(reference),
-                    new CategorieDElement(categorie),
-                    activites,
-                    conflits,
-                    dejaPointe
-                  );
+              dejaPointe ->
+                new SuiviDuPupitre(id, nom, ReferenceDElement.of(reference), new CategorieDElement(categorie), activites, dejaPointe);
   }
 
   /**
@@ -99,11 +87,7 @@ public record SuiviDuPupitre(
   }
 
   public interface SuiviDuPupitreActivitesBuilder {
-    SuiviDuPupitreConflitsBuilder activites(List<ActiviteSansFin> activites);
-  }
-
-  public interface SuiviDuPupitreConflitsBuilder {
-    SuiviDuPupitreDejaPointeBuilder conflits(List<SequenceEnConflitDuPupitre> conflits);
+    SuiviDuPupitreDejaPointeBuilder activites(List<ActiviteSansFin> activites);
   }
 
   public interface SuiviDuPupitreDejaPointeBuilder {

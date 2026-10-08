@@ -358,13 +358,12 @@ Feature: Feuille de temps hebdomadaire d'un operateur
       | debut                | fin                  | idActivite | etat     |
       | 2026-05-11T06:00:00Z | 2026-05-11T15:00:00Z | A          | TERMINEE |
 
-  Scenario: Une fin pointee a vingt-trois heures conserve la borne automatique sans conflit
+  Scenario: Une fin pointee a vingt-trois heures conserve la borne automatique
     Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la feuille de temps recoit sur l'element "carter" les pointages
       | alias | type  | intention | cible | operateur | poste  | survenue             |
       | A     | DEBUT | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
       | F     | FIN   | FIN       | A     | martin    | DMU 50 | 2026-05-11T21:00:00Z |
-    Then le suivi de la feuille de temps de "carter" ne porte aucun conflit
     When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
     Then les activites du "2026-05-11" sont
       | debut                | fin                  | idActivite | etat                     |
@@ -377,7 +376,6 @@ Feature: Feuille de temps hebdomadaire d'un operateur
       | A     | DEBUT          | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
       | FA    | FIN            | FIN       | A     | martin    | DMU 50 | 2026-05-11T21:00:00Z |
       | N     | NON_CONFORMITE | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T21:00:00Z |
-    Then le suivi de la feuille de temps de "carter" ne porte aucun conflit
     When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
     Then les activites du "2026-05-11" sont
       | categorie      | debut                | fin                  | idActivite | etat                     |

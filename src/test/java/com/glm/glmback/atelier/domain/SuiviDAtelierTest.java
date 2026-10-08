@@ -157,7 +157,7 @@ class SuiviDAtelierTest {
       .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H))
       .enregistre(finDe(premiere).a(LE_10_MAI_2026_A_12H));
 
-    assertThat(suivi.intervalles(LE_11_MAI_2026_A_9H15))
+    assertThat(intervalles(suivi, LE_11_MAI_2026_A_9H15))
       .hasSize(2)
       .allSatisfy(intervalle -> {
         assertThat(intervalle.aResoudre()).isTrue();
@@ -272,7 +272,7 @@ class SuiviDAtelierTest {
 
     assertThat(suivi.etat(A_20H59)).isEqualTo(EtatDAtelier.EN_COURS);
     assertThat(suivi.activitesEnCours(A_20H59)).extracting(ActiviteEnCours::depuis).containsExactly(LE_10_MAI_2026_A_8H);
-    assertThat(suivi.intervalles(A_20H59)).singleElement().matches(IntervalleDActivite::estOuvert);
+    assertThat(intervalles(suivi, A_20H59)).singleElement().matches(IntervalleDActivite::estOuvert);
   }
 
   /**
@@ -286,7 +286,7 @@ class SuiviDAtelierTest {
     for (Instant lecture : List.of(A_21H, LE_11_MAI_2026_A_9H15)) {
       assertThat(suivi.etat(lecture)).describedAs("lecture %s", lecture).isEqualTo(EtatDAtelier.INTERROMPU);
       assertThat(suivi.activitesEnCours(lecture)).describedAs("lecture %s", lecture).isEmpty();
-      assertThat(suivi.intervalles(lecture))
+      assertThat(intervalles(suivi, lecture))
         .describedAs("lecture %s", lecture)
         .singleElement()
         .satisfies(intervalle -> {
@@ -305,13 +305,13 @@ class SuiviDAtelierTest {
     EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(travail).enregistre(passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_12H));
 
-    assertThat(suivi.intervalles(A_21H))
+    assertThat(intervalles(suivi, A_21H))
       .extracting(IntervalleDActivite::categorie, IntervalleDActivite::fin, IntervalleDActivite::finAutomatique)
       .containsExactly(
         tuple(CategorieDActivite.TRAVAIL, Optional.of(LE_10_MAI_2026_A_12H), false),
         tuple(CategorieDActivite.NON_CONFORMITE, Optional.empty(), false)
       );
-    assertThat(suivi.intervalles(LE_11_MAI_2026_A_1H).getLast().fin()).contains(LE_11_MAI_2026_A_1H);
+    assertThat(intervalles(suivi, LE_11_MAI_2026_A_1H).getLast().fin()).contains(LE_11_MAI_2026_A_1H);
   }
 
   /**
@@ -325,7 +325,7 @@ class SuiviDAtelierTest {
 
     SuiviDAtelier rejoue = suivi.enregistre(passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_12H));
 
-    assertThat(rejoue.intervalles(LE_11_MAI_2026_A_9H15))
+    assertThat(intervalles(rejoue, LE_11_MAI_2026_A_9H15))
       .extracting(IntervalleDActivite::debut, IntervalleDActivite::fin, IntervalleDActivite::finAutomatique)
       .containsExactly(
         tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H), false),
@@ -357,5 +357,13 @@ class SuiviDAtelierTest {
     Optional<Cloture> cloture
   ) {
     new SuiviDAtelier(id, element, engagement, journal, cloture, new RevisionDuSuivi(0));
+  }
+
+  private static List<IntervalleDActivite> intervalles(SuiviDAtelier suivi, Instant evaluation) {
+    return suivi
+      .activites()
+      .stream()
+      .map(activite -> activite.a(evaluation))
+      .toList();
   }
 }

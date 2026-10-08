@@ -45,21 +45,10 @@ public record RestSuiviDAtelier(
   @Schema(description = "Le journal complet, du plus ancien au plus recent.", requiredMode = Schema.RequiredMode.REQUIRED)
   List<RestEvenementDAtelier> journal,
   @Schema(
-    description = """
-    Les activites en cours a l'instant de la lecture ; une activite dont l'echeance est atteinte n'y figure plus, ni une
-    activite a resoudre.
-    """,
+    description = "Les activites en cours a l'instant de la lecture ; une activite dont l'echeance est atteinte n'y figure plus.",
     requiredMode = Schema.RequiredMode.REQUIRED
   )
-  List<RestActiviteEnCours> activitesEnCours,
-  @Schema(
-    description = """
-    Les sequences en conflit du journal, vide quand ses faits sont coherents. Elles ne dependent pas de l'instant de la
-    lecture, et ne changent pas l'etat, juge sur les seules activites interpretables.
-    """,
-    requiredMode = Schema.RequiredMode.REQUIRED
-  )
-  List<RestSequenceEnConflit> conflits
+  List<RestActiviteEnCours> activitesEnCours
 ) {
   public static RestSuiviDAtelier from(LectureDuSuivi lecture, AnnuaireDAtelier annuaire) {
     SuiviDAtelier suivi = lecture.suivi();
@@ -87,11 +76,6 @@ public record RestSuiviDAtelier(
         .activitesEnCours()
         .stream()
         .map(activite -> RestActiviteEnCours.from(activite, annuaire))
-        .toList(),
-      lecture
-        .conflits()
-        .stream()
-        .map(sequence -> RestSequenceEnConflit.from(sequence, annuaire))
         .toList()
     );
   }

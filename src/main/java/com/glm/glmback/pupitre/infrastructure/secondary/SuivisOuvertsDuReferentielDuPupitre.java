@@ -1,8 +1,6 @@
 package com.glm.glmback.pupitre.infrastructure.secondary;
 
-import com.glm.glmback.pupitre.domain.ActiviteId;
 import com.glm.glmback.pupitre.domain.ActiviteSansFin;
-import com.glm.glmback.pupitre.domain.SequenceEnConflitDuPupitre;
 import com.glm.glmback.pupitre.domain.SuiviDuPupitre;
 import com.glm.glmback.pupitre.domain.SuivisOuvertsDuPupitre;
 import java.util.LinkedHashMap;
@@ -18,9 +16,8 @@ import org.springframework.stereotype.Repository;
  * jamais importer leur code.
  *
  * <p>
- * Les suivis non clotures, leurs activites interpretables sans fin, l existence de pointages actifs et les
- * references de leurs elements se lisent par ensembles, jamais une requete par element. Les evenements annules sont ecartes des le SQL — les rapporter pour les filtrer
- * ensuite ferait porter au domaine une correction qui ne le regarde pas.
+ * Les suivis non clotures, leurs activites interpretables sans fin, l existence de pointages et les
+ * references de leurs elements se lisent par ensembles, jamais une requete par element.
  * </p>
  */
 @Repository
@@ -54,7 +51,6 @@ class SuivisOuvertsDuReferentielDuPupitre implements SuivisOuvertsDuPupitre {
           Collectors.mapping(ActiviteDuPupitreEntity::toDomain, Collectors.toList())
         )
       );
-    Map<UUID, List<SequenceEnConflitDuPupitre>> conflits = conflits(identites);
     Set<UUID> pointes = suivis.suivisPointes(identites);
     Map<UUID, String> references = references(ouverts);
 
@@ -64,33 +60,9 @@ class SuivisOuvertsDuReferentielDuPupitre implements SuivisOuvertsDuPupitre {
         suivi
           .toDomain(references.get(suivi.elementId()))
           .activites(sansFin.getOrDefault(suivi.id(), List.of()))
-          .conflits(conflits.getOrDefault(suivi.id(), List.of()))
           .dejaPointe(pointes.contains(suivi.id()))
       )
       .toList();
-  }
-
-  private Map<UUID, List<SequenceEnConflitDuPupitre>> conflits(Set<UUID> identites) {
-    Map<UUID, List<ActiviteId>> parSequence = activites
-      .enConflitDesSuivis(identites)
-      .stream()
-      .collect(
-        Collectors.groupingBy(
-          ActiviteDuPupitreEntity::sequenceId,
-          LinkedHashMap::new,
-          Collectors.mapping(ActiviteDuPupitreEntity::identite, Collectors.toList())
-        )
-      );
-    return suivis
-      .conflitsDesSuivis(identites)
-      .stream()
-      .collect(
-        Collectors.groupingBy(
-          SequenceEnConflitDuPupitreEntity::suiviId,
-          LinkedHashMap::new,
-          Collectors.mapping(sequence -> sequence.toDomain(parSequence.getOrDefault(sequence.id(), List.of())), Collectors.toList())
-        )
-      );
   }
 
   /**

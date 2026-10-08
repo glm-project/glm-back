@@ -4,7 +4,6 @@ import com.glm.glmback.atelier.domain.ActiviteId;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
 import com.glm.glmback.atelier.domain.CoutHoraire;
 import com.glm.glmback.atelier.domain.EvenementDAtelier;
-import com.glm.glmback.atelier.domain.IntentionDePointage;
 import com.glm.glmback.atelier.domain.NatureDOperation;
 import com.glm.glmback.atelier.domain.TauxHoraire;
 import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
@@ -18,8 +17,8 @@ import java.util.UUID;
   description = """
   Un evenement du journal d'un element engage.
 
-  L'horodatage est bitemporel : heure du fait et heure de son enregistrement. Une pause s'y lit par une fin
-  ciblee, puis une ouverture a la reprise.
+  L'horodatage est bitemporel : heure du fait et heure de son enregistrement. Une pause s'y lit par une fin,
+  puis une ouverture a la reprise.
   """
 )
 public record RestEvenementDAtelier(
@@ -30,18 +29,12 @@ public record RestEvenementDAtelier(
   )
   TypeDEvenementDAtelier type,
   @Schema(
-    description = "Ce que le pointage fait d'une activite : OUVERTURE, TRANSITION ou FIN.",
-    requiredMode = Schema.RequiredMode.REQUIRED
-  )
-  IntentionDePointage intention,
-  @Schema(
     description = """
     Identite de l'activite qu'ouvre une ouverture ou une transition, absente pour une fin. C'est l'identifiant du
-    pointage ouvrant. C'est elle qu'une transition ou une fin vise dans `cible`.
+    pointage ouvrant.
     """
   )
   UUID activite,
-  @Schema(description = "Activite que vise une transition ou une fin, absente pour une ouverture.") UUID cible,
   @Schema(
     description = "Identite brute de l'operateur, conservee meme si la fiche est absente.",
     requiredMode = Schema.RequiredMode.REQUIRED
@@ -81,9 +74,7 @@ public record RestEvenementDAtelier(
     return new RestEvenementDAtelier(
       evenement.id().uuid(),
       evenement.type(),
-      evenement.intention(),
       evenement.activite().map(ActiviteId::uuid).orElse(null),
-      evenement.activiteVisee().map(ActiviteId::uuid).orElse(null),
       evenement.operateur().uuid(),
       RestOperateur.resolu(annuaire, evenement.operateur()),
       evenement

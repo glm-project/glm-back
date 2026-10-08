@@ -50,21 +50,7 @@ Feature: Intention et activite visee des pointages d'atelier
       | poste     | fraiseuse-1                          |
     Then la reponse a le statut http 201
     And le suivi a l'etat "INTERROMPU"
-    And l'evenement 0 du suivi a l'intention "OUVERTURE"
-    And l'evenement 0 du suivi ouvre sa propre activite sans en viser aucune
-    And l'evenement 1 du suivi a l'intention "TRANSITION"
-    And l'evenement 1 du suivi vise l'activite de l'evenement 0
-    And l'evenement 2 du suivi vise l'activite de l'evenement 1
-    And l'evenement 3 du suivi a l'intention "FIN"
-    And l'evenement 3 du suivi vise l'activite de l'evenement 2
     And l'evenement 3 du suivi n'ouvre aucune activite
-    # Trois activites distinctes et contigues : aucun trou, aucun recouvrement.
-    When je consulte le temps effectif de "OF 2101"
-    Then le temps effectif contient
-      | categorie      | debut                | fin                  |
-      | TRAVAIL        | 2026-05-10T08:00:00Z | 2026-05-10T10:00:00Z |
-      | NON_CONFORMITE | 2026-05-10T10:00:00Z | 2026-05-10T12:00:00Z |
-      | TRAVAIL        | 2026-05-10T12:00:00Z | 2026-05-10T14:00:00Z |
 
   Scenario: Reprise en non conformite apres une pause, puis transition ciblee vers le travail
     # La pause arrete la non conformite par une fin ; la reprise en rouvre une par une ouverture, sans cible. Le retour
@@ -105,8 +91,6 @@ Feature: Intention et activite visee des pointages d'atelier
       | poste     | fraiseuse-1                          |
     Then la reponse a le statut http 201
     And l'activite en cours est de categorie "NON_CONFORMITE" depuis "2026-05-10T11:00:00Z"
-    And l'evenement 3 du suivi a l'intention "OUVERTURE"
-    And l'evenement 3 du suivi ouvre sa propre activite sans en viser aucune
     Given il est "2026-05-10T12:00:00Z"
     When je pointe sur "OF 2102"
       | id        | 00000000-0000-0000-0000-000000000215 |
@@ -117,12 +101,10 @@ Feature: Intention et activite visee des pointages d'atelier
       | poste     | fraiseuse-1                          |
     Then la reponse a le statut http 201
     And l'activite en cours est de categorie "TRAVAIL" depuis "2026-05-10T12:00:00Z"
-    And l'evenement 4 du suivi a l'intention "TRANSITION"
-    And l'evenement 4 du suivi vise l'activite de l'evenement 3
 
   Scenario: Une transition dont la cible est terminee ne devient jamais une ouverture
-    # Le geste contradictoire est conserve, jamais refuse : la sequence est en conflit, et la non conformite qu'il ouvre
-    # est a resoudre, pas en cours a la place de sa cible.
+    # Le geste contradictoire est conserve, jamais refuse : la non conformite qu'il ouvre est a resoudre, pas en cours a
+    # la place de sa cible.
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2103"
       | categorie | OF   |
@@ -154,13 +136,10 @@ Feature: Intention et activite visee des pointages d'atelier
     And le journal du suivi contient 3 evenements
     And le suivi a 0 activites en cours
     And le suivi a l'etat "INTERROMPU"
-    And le suivi porte une seule sequence en conflit, de "dupont" sur "fraiseuse-1"
-      | activites | 00000000-0000-0000-0000-000000000221, 00000000-0000-0000-0000-000000000223                                       |
-      | pointages | 00000000-0000-0000-0000-000000000221, 00000000-0000-0000-0000-000000000222, 00000000-0000-0000-0000-000000000223 |
 
   Scenario: Une fin qui vise une activite remplacee ne termine jamais sa remplacante
-    # A a 8 h, relance B a 10 h, puis une fin qui vise encore A. Le geste contradictoire est conserve : la sequence est
-    # en conflit, et B, a resoudre avec A, n'est plus en cours sans jamais avoir ete terminee par la fin de A.
+    # A a 8 h, relance B a 10 h, puis une fin qui vise encore A. Le geste contradictoire est conserve : B, a resoudre
+    # avec A, n'est plus en cours sans jamais avoir ete terminee par la fin de A.
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2104"
       | categorie | OF   |
@@ -192,9 +171,6 @@ Feature: Intention et activite visee des pointages d'atelier
     Then le suivi a 0 activites en cours
     And le suivi a l'etat "INTERROMPU"
     And le journal du suivi contient 3 evenements
-    And le suivi porte une seule sequence en conflit, de "dupont" sur "fraiseuse-1"
-      | activites | 00000000-0000-0000-0000-000000000231, 00000000-0000-0000-0000-000000000232                                       |
-      | pointages | 00000000-0000-0000-0000-000000000231, 00000000-0000-0000-0000-000000000232, 00000000-0000-0000-0000-000000000233 |
 
   Scenario: Une fin qui vise une activite introuvable dans ce suivi est refusee
     Given il est "2026-05-10T08:00:00Z"
@@ -294,5 +270,4 @@ Feature: Intention et activite visee des pointages d'atelier
       | dateDeSurvenue | 2026-05-10T17:00:00Z                 |
     Then la reponse a le statut http 201
     And le suivi a l'etat "INTERROMPU"
-    And l'evenement 1 du suivi vise l'activite de l'evenement 0
     And l'evenement 1 du suivi est une regularisation de "dupont" saisie par "gestionnaire"

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -80,7 +81,7 @@ class PointageDAtelierJamaisRefuseTest {
     PointageDAtelierTraite fin = atelier.pointe(finRejoueeA(debut, LE_10_MAI_2026_A_17H));
 
     assertThat(fin.absorbe()).isFalse();
-    assertThat(fin.suivi().intervalles(LE_11_MAI_2026_A_9H15))
+    assertThat(intervalles(fin.suivi(), LE_11_MAI_2026_A_9H15))
       .singleElement()
       .satisfies(intervalle -> {
         assertThat(intervalle.fin()).contains(LE_10_MAI_2026_A_17H);
@@ -279,5 +280,13 @@ class PointageDAtelierJamaisRefuseTest {
     public Optional<ElementEngage> get(ElementEngageId id) {
       return id.equals(ELEMENT_OF_2026_000042) ? Optional.of(elementEngageOf2026000042()) : Optional.empty();
     }
+  }
+
+  private static List<IntervalleDActivite> intervalles(SuiviDAtelier suivi, Instant evaluation) {
+    return suivi
+      .activites()
+      .stream()
+      .map(activite -> activite.a(evaluation))
+      .toList();
   }
 }

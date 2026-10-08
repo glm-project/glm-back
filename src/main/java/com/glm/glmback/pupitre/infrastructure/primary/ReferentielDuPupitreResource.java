@@ -24,7 +24,7 @@ class ReferentielDuPupitreResource {
     summary = "Lire tout le referentiel du pupitre en un appel",
     description = """
     Rend en une seule reponse les operateurs designables avec leurs habilitations, les
-    elements sur lesquels on peut encore pointer avec leurs activites en cours et leurs conflits, et les codes
+    elements sur lesquels on peut encore pointer avec leurs activites en cours, et les codes
     des categories de produit dans l'ordre choisi par le gestionnaire, qui range les tuiles. C'est la lecture que le pupitre
     rejoue a chaque synchronisation pour rafraichir son cache local.
 
@@ -32,9 +32,7 @@ class ReferentielDuPupitreResource {
     READ COMMITTED : une ecriture concurrente peut changer les faits entre les requetes successives.
     L'instant commun genereLe assure la meme decision d'expiration, sans garantir un instantane commun.
 
-    Les operateurs restent designables sans activite, avec leur identite, leur identifiant et leurs habilitations. Les activites a resoudre
-    sont exclues des activites en cours et leurs identites sont rendues dans les conflits. Une ouverture coherente
-    peut etre en cours a cote d'un conflit. L'expiration des activites se juge a genereLe, echeance incluse.
+    Les operateurs restent designables sans activite, avec leur identite, leur identifiant et leurs habilitations. L'expiration des activites se juge a genereLe, echeance incluse.
 
     `genereLe` date l'evaluation. Elle change a chaque appel, y compris quand rien n'a bouge : elle
     dit quand le serveur a produit la reponse, pas quand le referentiel a change pour la derniere fois.

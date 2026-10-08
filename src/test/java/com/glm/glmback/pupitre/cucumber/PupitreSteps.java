@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.*;
 import com.glm.glmback.cucumber.CategoriesDeProduitDesScenarios;
 import com.glm.glmback.cucumber.CucumberClock;
 import com.glm.glmback.cucumber.EcrituresDuJournalDAtelier;
-import com.glm.glmback.cucumber.EcrituresDuJournalDAtelier.PointageEnvoye;
 import com.glm.glmback.cucumber.rest.CucumberRestClient;
 import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
 import io.cucumber.java.en.Given;
@@ -73,7 +72,6 @@ public class PupitreSteps {
   private final Map<String, String> nomsDAtelier = new HashMap<>();
   private final Map<String, String> suivis = new HashMap<>();
   private final Map<String, String> gestes = new HashMap<>();
-  private final Map<String, PointageEnvoye> envois = new HashMap<>();
 
   @Given("le pupitre connait le poste {string}")
   public void lePupitreConnaitLePoste(String alias) {
@@ -188,15 +186,6 @@ public class PupitreSteps {
     envoie(geste, element, recu, geste(operateur, poste, instant, "FIN", "FIN", gestes.get(cible)));
   }
 
-  /**
-   * Le meme geste, a l'identique : ce qu'un pupitre renvoie apres une coupure ou au redemarrage.
-   */
-  @When("au pupitre, le geste {string} est rejoue a {string}")
-  public void leGesteEstRejoue(String geste, String instant) {
-    horloge.ilEst(Instant.parse(instant));
-    rest.post(envois.get(geste).uri(), envois.get(geste).corps());
-  }
-
   @Given("{string} est supprime du referentiel")
   public void estSupprimeDuReferentiel(String element) {
     rest.delete(ELEMENTS_URI + "/" + elements.get(element));
@@ -306,43 +295,6 @@ public class PupitreSteps {
     assertThat(CucumberRestTestContext.getResponse().orElseThrow()).doesNotContain("tauxHoraire", "coutHoraire");
   }
 
-  @Then("les conflits de {string} au referentiel du pupitre sont")
-  public void lesConflitsSont(String element, List<Map<String, String>> attendus) {
-    assertThat(suivi(element)).containsKey("conflits");
-    List<Map<String, String>> resumes = conflits(element)
-      .stream()
-      .map(conflit -> {
-        Map<String, String> ligne = new LinkedHashMap<>();
-        ligne.put("operateur", alias(operateurs, String.valueOf(conflit.get("operateur"))));
-        ligne.put("poste", alias(postes, String.valueOf(conflit.get("poste"))));
-        ligne.put("activites", identitesNommees(conflit.get("activites")));
-        ligne.put("pointages", identitesNommees(conflit.get("pointages")));
-        return ligne;
-      })
-      .toList();
-    List<Map<String, String>> normalises = attendus
-      .stream()
-      .map(attendu -> {
-        Map<String, String> ligne = new LinkedHashMap<>(attendu);
-        ligne.replaceAll((colonne, valeur) -> valeur == null ? "" : valeur);
-        return ligne;
-      })
-      .toList();
-    assertThat(resumes).isEqualTo(normalises);
-  }
-
-  @SuppressWarnings("unchecked")
-  private String identitesNommees(Object identites) {
-    return ((List<String>) identites).stream()
-      .map(identite -> alias(gestes, identite))
-      .collect(java.util.stream.Collectors.joining(","));
-  }
-
-  @SuppressWarnings("unchecked")
-  private List<Map<String, Object>> conflits(String element) {
-    return (List<Map<String, Object>>) suivi(element).get("conflits");
-  }
-
   private Map<String, Object> geste(String operateur, String poste, String instant, String type, String intention, String cible) {
     Map<String, Object> corps = new LinkedHashMap<>();
     corps.put("id", UUID.randomUUID().toString());
@@ -362,7 +314,7 @@ public class PupitreSteps {
 
   private void envoie(String geste, String element, String recu, Map<String, Object> corps) {
     horloge.ilEst(Instant.parse(recu));
-    envois.put(geste, ecritures.pointe(suivis.get(element), corps));
+    ecritures.pointe(suivis.get(element), corps);
     assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("pointage de %s", geste).isTrue();
     gestes.put(geste, String.valueOf(corps.get("id")));
   }

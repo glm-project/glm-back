@@ -41,7 +41,7 @@ class OpenApiConfigurationIT {
       .andExpect(jsonPath("$.components.schemas.RestAnomalieDePresence").doesNotExist())
       .andExpect(jsonPath("$.paths['/api/parametrage/amplitude-maximale']").doesNotExist())
       .andExpect(jsonPath("$.components.schemas.RestAmplitudeMaximale").doesNotExist())
-      .andExpect(jsonPath("$.paths['/api/atelier/suivis/{id}/temps-effectif'].get.summary").exists())
+      .andExpect(jsonPath("$.paths['/api/atelier/suivis/{id}/temps-effectif']").doesNotExist())
       .andExpect(jsonPath("$.paths['/api/atelier/suivis/{id}/cloture'].delete.summary").exists());
   }
 
@@ -92,11 +92,9 @@ class OpenApiConfigurationIT {
           "engageLe",
           "etat",
           "journal",
-          "activitesEnCours",
-          "conflits"
+          "activitesEnCours"
         )
       )
-      .andExpect(requiredFields("RestSequenceEnConflit", "activites", "pointages"))
       .andExpect(
         requiredFields(
           "RestSuiviDAtelierEnGrille",
@@ -111,13 +109,11 @@ class OpenApiConfigurationIT {
         )
       )
       .andExpect(requiredFields("RestActiviteEnCours", "categorie", "depuis", "ouverture", "echeance"))
-      .andExpect(requiredFields("RestIntervalleDActivite", "activite", "finAutomatique", "aResoudre"))
       .andExpect(
         requiredFields(
           "RestEvenementDAtelier",
           "id",
           "type",
-          "intention",
           "operateurId",
           "auteur",
           "dateDeSurvenue",

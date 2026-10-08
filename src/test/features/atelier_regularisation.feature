@@ -26,15 +26,10 @@ Feature: Regularisation directe de la fin d'une activite echue
       | dateDeSurvenue | 2044-05-01T17:00:00Z |
     Then la reponse a le statut http 201
     And le journal du suivi contient 2 evenements
-    And l'evenement 1 du suivi vise l'activite de l'evenement 0
     And l'evenement 1 du suivi n'ouvre aucune activite
     And l'evenement 1 du suivi porte l'operateur "dupont-regul" et le poste "fraiseuse-regul"
     And l'evenement 1 du suivi est une regularisation de "dupont-regul" saisie par "gestionnaire"
     And l'evenement 1 du suivi a survenu a "2044-05-01T17:00:00Z" et a ete saisi a "2044-05-01T22:00:00Z" par "gestionnaire"
-    When je consulte le temps effectif de "Regul 9001"
-    Then le temps effectif contient
-      | debut                | fin                  | finAutomatique |
-      | 2044-05-01T08:00:00Z | 2044-05-01T17:00:00Z | false          |
     When je consulte le dossier d'anomalie de "Regul 9001" depuis l'evenement 0
     Then la reponse a le statut http 404
     And la reponse porte le code d'erreur "urn:glm:erreur:atelier:fin-automatique-introuvable"

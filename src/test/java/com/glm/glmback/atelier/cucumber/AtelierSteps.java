@@ -13,7 +13,6 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -213,11 +212,6 @@ public class AtelierSteps {
     rest.get(SUIVIS_URI + "/" + id);
   }
 
-  @When("je consulte le temps effectif de {string}")
-  public void jeConsulteLeTempsEffectifDe(String alias) {
-    rest.get(SUIVIS_URI + "/" + suivis.get(alias) + "/temps-effectif");
-  }
-
   @When("je tente de supprimer le poste de travail declare {string}")
   public void jeTenteDeSupprimerLePosteDeTravailDeclare(String alias) {
     rest.delete(POSTES_URI + "/" + postes.get(alias));
@@ -313,59 +307,6 @@ public class AtelierSteps {
     assertThatLastResponse().hasElement("$.activitesEnCours").containingExactly(attendues);
   }
 
-  @Then("le suivi porte {int} sequence(s) en conflit")
-  public void leSuiviPorteSequencesEnConflit(int nombre) {
-    assertThatLastResponse().hasElement("$.conflits").withElementsCount(nombre);
-  }
-
-  @Then("le suivi n'a aucune sequence en conflit")
-  public void leSuiviNAAucuneSequenceEnConflit() {
-    assertThatLastResponse().hasElement("$.conflits").withElementsCount(0);
-  }
-
-  /**
-   * Les activites et les pointages de l'unique sequence en conflit du suivi, dans l'ordre ou il les rend : ses
-   * activites dans l'ordre de leur ouverture, ses pointages dans celui du journal.
-   */
-  @Then("le suivi porte une seule sequence en conflit, de {string} sur {string}")
-  public void leSuiviPorteUneSeuleSequenceEnConflit(String operateur, String poste, Map<String, String> sequence) {
-    assertThatLastResponse()
-      .hasElement("$.conflits")
-      .withElementsCount(1)
-      .and()
-      .hasElement("$.conflits[0].operateur.id")
-      .withValue(idDeLOperateur(operateur))
-      .and()
-      .hasElement("$.conflits[0].poste.id")
-      .withValue(postes.get(poste))
-      .and()
-      .hasElement("$.conflits[0].activites")
-      .withValues(identifiants(sequence.get("activites")))
-      .and()
-      .hasElement("$.conflits[0].pointages")
-      .withValues(identifiants(sequence.get("pointages")));
-  }
-
-  @Then("l'evenement {int} du suivi a l'intention {string}")
-  public void lEvenementDuSuiviALIntention(int rang, String intention) {
-    assertThatLastResponse().hasElement("$.journal[" + rang + "].intention").withValue(intention);
-  }
-
-  @Then("l'evenement {int} du suivi ouvre sa propre activite sans en viser aucune")
-  public void lEvenementDuSuiviOuvreSaPropreActivite(int rang) {
-    assertThat(elementDeLaDerniereReponse("$.journal[" + rang + "].activite")).isEqualTo(
-      elementDeLaDerniereReponse("$.journal[" + rang + "].id")
-    );
-    assertThat(CucumberRestTestContext.getElement("$.journal[" + rang + "].cible")).isNull();
-  }
-
-  @Then("l'evenement {int} du suivi vise l'activite de l'evenement {int}")
-  public void lEvenementDuSuiviViseLActiviteDe(int rang, int ouvrant) {
-    assertThat(elementDeLaDerniereReponse("$.journal[" + rang + "].cible"))
-      .isNotNull()
-      .isEqualTo(elementDeLaDerniereReponse("$.journal[" + ouvrant + "].activite"));
-  }
-
   @Then("l'evenement {int} du suivi n'ouvre aucune activite")
   public void lEvenementDuSuiviNOuvreAucuneActivite(int rang) {
     assertThat(CucumberRestTestContext.getElement("$.journal[" + rang + "].activite")).isNull();
@@ -414,37 +355,20 @@ public class AtelierSteps {
     assertThatLastResponse().hasElement("$.journal[" + rang + "].tauxHoraire").withValue(tauxHoraire);
   }
 
-  @Then("le temps effectif contient")
-  public void leTempsEffectifContient(List<Map<String, String>> attendus) {
-    assertThatLastResponse().hasResponse().containingExactly(attendus);
-  }
-
-  @Then("le temps effectif ne contient aucun intervalle ferme")
-  public void leTempsEffectifNeContientAucunIntervalleFerme() {
-    assertThat(CucumberRestTestContext.countEntries("$[?(@.fin)]")).isZero();
-  }
-
-  @Then("le temps effectif ne contient aucun intervalle ouvert")
-  public void leTempsEffectifNeContientAucunIntervalleOuvert() {
-    assertThat(CucumberRestTestContext.countEntries("$[?(!@.fin)]")).isZero();
-  }
-
-  @Then("je retiens les informations du suivi hors journal et conflits")
+  @Then("je retiens les informations du suivi hors journal")
   @SuppressWarnings("unchecked")
-  public void jeRetiensLesInformationsDuSuiviHorsJournalEtConflits() {
+  public void jeRetiensLesInformationsDuSuiviHorsJournal() {
     suiviSansJournal = new HashMap<>((Map<String, Object>) CucumberRestTestContext.getElement("$"));
     suiviSansJournal.remove("journal");
-    suiviSansJournal.remove("conflits");
   }
 
-  @Then("la grille contient les memes informations sans journal ni conflits")
-  public void laGrilleContientLesMemesInformationsSansJournalNiConflits() {
+  @Then("la grille contient les memes informations sans journal")
+  public void laGrilleContientLesMemesInformationsSansJournal() {
     assertThatLastResponse()
       .hasOkStatus()
       .hasElement("$.content[?(@.id == '" + suiviSansJournal.get("id") + "')]")
       .withValue(List.of(suiviSansJournal));
     assertThatLastResponse().hasElement("$.content[*].journal").withElementsCount(0);
-    assertThatLastResponse().hasElement("$.content[*].conflits").withElementsCount(0);
   }
 
   @Then("la liste des elements engages contient {int} elements")
@@ -538,13 +462,6 @@ public class AtelierSteps {
     corps.put("activite", elementDeLaDerniereReponse("$.journal[" + ouvrant + "].activite"));
 
     return corps;
-  }
-
-  /**
-   * Une liste d'identifiants separes par des virgules ; une cellule vide n'en porte aucun.
-   */
-  private static List<String> identifiants(String liste) {
-    return liste == null ? List.of() : Arrays.stream(liste.split(",")).map(String::trim).toList();
   }
 
   private String idDeLOperateur(String alias) {

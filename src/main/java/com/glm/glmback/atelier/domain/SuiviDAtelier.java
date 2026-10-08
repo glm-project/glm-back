@@ -17,13 +17,8 @@ import java.util.stream.Stream;
  *
  * <p>
  * Ses activites ne dependent que du journal. Tout ce qui depend de l'heure a laquelle on lit — l'etat, les activites
- * en cours, les intervalles — se lit a un instant d'evaluation explicite, que l'appelant fournit : une activite que
+ * en cours — se lit a un instant d'evaluation explicite, que l'appelant fournit : une activite que
  * rien n'a terminee y est terminee automatiquement des que son echeance est atteinte.
- * </p>
- *
- * <p>
- * Ses intervalles sont le temps effectif de l'element, que rend {@link TempsDAtelierService} : chaque activite est
- * bornee par ses faits et son echeance.
  * </p>
  */
 public record SuiviDAtelier(
@@ -143,13 +138,6 @@ public record SuiviDAtelier(
 
   public List<SequenceEnConflit> conflits() {
     return journal.conflits(cloture.map(Cloture::dateDeSurvenue));
-  }
-
-  public List<IntervalleDActivite> intervalles(Instant evaluation) {
-    return activites()
-      .stream()
-      .map(activite -> activite.a(evaluation))
-      .toList();
   }
 
   public List<ActiviteEnCours> activitesEnCours(Instant evaluation) {

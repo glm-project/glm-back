@@ -9,7 +9,6 @@ import com.glm.glmback.atelier.domain.Echeance;
 import com.glm.glmback.atelier.domain.ElementDeSupervision;
 import com.glm.glmback.atelier.domain.ElementEngage;
 import com.glm.glmback.atelier.domain.ElementEngageId;
-import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.LectureDeSupervision;
 import com.glm.glmback.atelier.domain.LecturesDeSupervision;
 import com.glm.glmback.atelier.domain.LibelleDePoste;
@@ -22,7 +21,6 @@ import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.PosteDeSupervision;
 import com.glm.glmback.atelier.domain.PosteDeTravailId;
 import com.glm.glmback.atelier.domain.Prenom;
-import com.glm.glmback.atelier.domain.SequenceEnConflitDeSupervision;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Tuple;
 import java.time.Instant;
@@ -52,12 +50,10 @@ class JpaLecturesDeSupervision implements LecturesDeSupervision {
       .activites(
         activites
           .stream()
-          .filter(row -> !row.get("aResoudre", Boolean.class))
           .map(this::toDescription)
           .map(description -> ActiviteDeSupervision.a(description, evaluation))
           .toList()
-      )
-      .sequencesEnConflit(readSequences(activites));
+      );
   }
 
   private List<OperateurDeSupervision> readOperateurs() {
@@ -90,44 +86,15 @@ class JpaLecturesDeSupervision implements LecturesDeSupervision {
         """
         select a.id as id, a.operateurId as operateurId, a.categorie as categorie, a.debut as debut, a.echeance as echeance,
         s.elementId as elementId, s.elementNom as elementNom, s.elementCategorie as elementCategorie, e.reference as reference,
-          a.posteId as posteId, p.libelle as posteLibelle, a.nature as nature, q.id as sequenceId, a.aResoudre as aResoudre
+          a.posteId as posteId, p.libelle as posteLibelle, a.nature as nature
         from ActiviteDAtelierEntity a join a.suivi s
           left join ElementEngageableEntity e on e.id = s.elementId
           left join PosteConnuEntity p on p.id = a.posteId
-          left join a.sequence q
-        where a.fin is null order by a.ordreDansSequence nulls last, a.debut, a.id
+        where a.fin is null and a.aResoudre = false order by a.debut, a.id
         """,
         Tuple.class
       )
       .getResultList();
-  }
-
-  private List<SequenceEnConflitDeSupervision> readSequences(List<Tuple> activites) {
-    Map<UUID, List<DescriptionDActiviteDeSupervision>> descriptionsEnConflit = activites
-      .stream()
-      .filter(row -> row.get("aResoudre", Boolean.class))
-      .collect(
-        Collectors.groupingBy(row -> row.get("sequenceId", UUID.class), Collectors.mapping(this::toDescription, Collectors.toList()))
-      );
-    List<Tuple> sequences = entities
-      .createQuery(
-        """
-        select q.id as id, q.operateurId as operateurId, q.posteId as posteId, p.libelle as posteLibelle, p.nature as nature
-        from SequenceEnConflitDAtelierEntity q left join PosteConnuEntity p on p.id = q.posteId order by q.id
-        """,
-        Tuple.class
-      )
-      .getResultList();
-    return sequences
-      .stream()
-      .map(row ->
-        SequenceEnConflitDeSupervision.builder()
-          .id(new EvenementDAtelierId(row.get("id", UUID.class)))
-          .operateur(new OperateurId(row.get("operateurId", UUID.class)))
-          .poste(toPoste(row))
-          .activites(descriptionsEnConflit.getOrDefault(row.get("id", UUID.class), List.of()))
-      )
-      .toList();
   }
 
   private DescriptionDActiviteDeSupervision toDescription(Tuple row) {

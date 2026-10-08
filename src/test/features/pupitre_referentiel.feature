@@ -149,9 +149,9 @@ Feature: Le referentiel que le pupitre met en cache
       | operateur | poste     | categorie | depuis               | ouverture |
       | dupont    | fraiseuse | TRAVAIL   | 2026-05-20T10:00:00Z | B         |
 
-  Scenario: Une sequence en conflit ne laisse aucune activite en cours, contrairement a une nouvelle ouverture
-    # A est remplacee par la non conformite B a 12:00, puis terminee a 17:00 : A et B sont a resoudre. Le pupitre ne
-    # deduit aucune activite courante d'une sequence en conflit ; seule une nouvelle ouverture a un sens.
+  Scenario: Une activite que le moteur juge a resoudre n'est pas exposee, contrairement a une nouvelle ouverture
+    # A est remplacee par la non conformite B a 12:00, puis terminee a 17:00 : le moteur juge A et B a resoudre. Le
+    # referentiel ne les rend pas parmi les activites en cours ; seule une nouvelle ouverture a un sens.
     Given le pupitre fabrique "OF 4104"
     And "OF 4104" est engage au pupitre a "2026-05-21T07:00:00Z"
     And au pupitre, "dupont" ouvre "A" en "DEBUT" sur "OF 4104" au poste "fraiseuse" a "2026-05-21T08:00:00Z"
@@ -166,37 +166,6 @@ Feature: Le referentiel que le pupitre met en cache
     And les activites de "OF 4104" au referentiel du pupitre sont
       | operateur | poste     | categorie | depuis               | ouverture |
       | dupont    | fraiseuse | TRAVAIL   | 2026-05-21T18:00:00Z | C         |
-
-  Scenario: Les conflits du referentiel persistent apres rejeu et nouvelle lecture
-    Given le pupitre fabrique "OF 4201"
-    And "OF 4201" est engage au pupitre a "2026-05-22T07:00:00Z"
-    And au pupitre, "dupont" ouvre "A" en "DEBUT" sur "OF 4201" au poste "fraiseuse" a "2026-05-22T08:00:00Z"
-    And au pupitre, "dupont" passe "A" en "NON_CONFORMITE" sous le nom "B" sur "OF 4201" au poste "fraiseuse" a "2026-05-22T12:00:00Z", recu a "2026-05-22T18:05:00Z"
-    And au pupitre, "dupont" termine "A" par "F" sur "OF 4201" au poste "fraiseuse" a "2026-05-22T17:00:00Z", recu a "2026-05-22T18:10:00Z"
-    When je lis le referentiel du pupitre a "2026-05-22T18:30:00Z"
-    Then les conflits de "OF 4201" au referentiel du pupitre sont
-      | operateur | poste     | activites | pointages |
-      | dupont    | fraiseuse | A,B       | A,B,F     |
-    And "OF 4201" ne porte aucune activite au referentiel du pupitre
-
-    When au pupitre, le geste "F" est rejoue a "2026-05-22T18:35:00Z"
-    Then la reponse a le statut http 200
-    When je lis le referentiel du pupitre a "2026-05-22T18:40:00Z"
-    Then les conflits de "OF 4201" au referentiel du pupitre sont
-      | operateur | poste     | activites | pointages |
-      | dupont    | fraiseuse | A,B       | A,B,F     |
-
-  Scenario: Une transition recue apres la fin donne le meme conflit au referentiel
-    Given le pupitre fabrique "OF 4202"
-    And "OF 4202" est engage au pupitre a "2026-05-23T07:00:00Z"
-    And au pupitre, "dupont" ouvre "A" en "DEBUT" sur "OF 4202" au poste "fraiseuse" a "2026-05-23T08:00:00Z"
-    And au pupitre, "dupont" termine "A" par "F" sur "OF 4202" au poste "fraiseuse" a "2026-05-23T17:00:00Z", recu a "2026-05-23T18:05:00Z"
-    And au pupitre, "dupont" passe "A" en "NON_CONFORMITE" sous le nom "B" sur "OF 4202" au poste "fraiseuse" a "2026-05-23T12:00:00Z", recu a "2026-05-23T18:10:00Z"
-    When je lis le referentiel du pupitre a "2026-05-23T18:30:00Z"
-    Then les conflits de "OF 4202" au referentiel du pupitre sont
-      | operateur | poste     | activites | pointages |
-      | dupont    | fraiseuse | A,B       | A,B,F     |
-    And "OF 4202" ne porte aucune activite au referentiel du pupitre
 
   Scenario: Un element sans reference garde une tuile nominale
     Given le pupitre fabrique "PRD 4011" sans reference

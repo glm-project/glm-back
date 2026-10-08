@@ -166,12 +166,6 @@ public class SyntheseDesHeuresSteps {
     }
   }
 
-  @Then("le suivi de la synthese des heures de {string} ne porte aucun conflit")
-  public void nePorteAucunConflit(String element) {
-    rest.get(SUIVIS_URI + "/" + suivis.get(element));
-    assertThat((List<?>) CucumberRestTestContext.getElement("$.conflits")).isEmpty();
-  }
-
   @Given("pour la synthese, l'element {string} est cloture a {string}")
   public void pourLaSyntheseLElementEstClotureA(String element, String instant) {
     horloge.ilEst(Instant.parse(instant));

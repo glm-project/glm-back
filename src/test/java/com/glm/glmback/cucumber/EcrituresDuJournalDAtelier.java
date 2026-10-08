@@ -97,7 +97,7 @@ public class EcrituresDuJournalDAtelier {
     List<Map<String, Object>> precedents = precedents(suivi, corps);
     Optional<Map<String, Object>> dernierOuvrant = precedents
       .stream()
-      .filter(evenement -> "OUVERTURE".equals(evenement.get("intention")))
+      .filter(evenement -> evenement.get("activite") != null)
       .reduce((premier, second) -> second);
 
     if ("FIN".equals(type)) {

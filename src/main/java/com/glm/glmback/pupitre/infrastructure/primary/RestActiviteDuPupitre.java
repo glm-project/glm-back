@@ -12,8 +12,8 @@ import java.util.UUID;
   description = """
   Une activite ouverte sur cet element : qui travaille, sur quel poste, dans quel etat, depuis quand.
 
-  Une transition ouvre une activite distincte de l autre categorie. Les activites a resoudre et celles dont
-  l echeance est atteinte ne sont pas actionnables et ne figurent pas ici.
+  Une transition ouvre une activite distincte de l autre categorie. Les activites dont l echeance est atteinte
+  ne sont pas actionnables et ne figurent pas ici.
   """
 )
 record RestActiviteDuPupitre(

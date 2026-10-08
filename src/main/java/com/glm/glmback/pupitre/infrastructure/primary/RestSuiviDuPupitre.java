@@ -37,9 +37,7 @@ record RestSuiviDuPupitre(
   )
   EtatDuSuivi etat,
   @Schema(description = "Les activites ouvertes a cet instant.", requiredMode = Schema.RequiredMode.REQUIRED)
-  List<RestActiviteDuPupitre> activites,
-  @Schema(description = "Sequences en conflit a resoudre par le gestionnaire.", requiredMode = Schema.RequiredMode.REQUIRED)
-  List<RestConflitDuPupitre> conflits
+  List<RestActiviteDuPupitre> activites
 ) {
   static RestSuiviDuPupitre from(SuiviDuPupitre suivi, Instant evaluation) {
     return new RestSuiviDuPupitre(
@@ -48,8 +46,7 @@ record RestSuiviDuPupitre(
       suivi.reference().map(ReferenceDElement::value).orElse(null),
       suivi.categorie().value(),
       suivi.etatA(evaluation),
-      suivi.activitesEnCoursA(evaluation).stream().map(RestActiviteDuPupitre::from).toList(),
-      suivi.conflits().stream().map(RestConflitDuPupitre::from).toList()
+      suivi.activitesEnCoursA(evaluation).stream().map(RestActiviteDuPupitre::from).toList()
     );
   }
 }

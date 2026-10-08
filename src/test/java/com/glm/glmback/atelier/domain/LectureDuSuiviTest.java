@@ -42,18 +42,4 @@ class LectureDuSuiviTest {
     assertThat(apres.etat()).isEqualTo(EtatDAtelier.INTERROMPU);
     assertThat(apres.activitesEnCours()).isEmpty();
   }
-
-  /**
-   * Les sequences en conflit ne dependent pas de l'instant de lecture : ce sont celles du suivi.
-   */
-  @Test
-  void shouldLireLesSequencesEnConflitDuSuivi() {
-    EvenementDAtelier premiere = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    SuiviDAtelier suivi = suiviDAtelierEngage()
-      .enregistre(premiere)
-      .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H))
-      .enregistre(finDe(premiere).a(LE_10_MAI_2026_A_12H));
-
-    assertThat(new LectureDuSuivi(suivi, LE_10_MAI_2026_A_17H).conflits()).hasSize(1).isEqualTo(suivi.conflits());
-  }
 }

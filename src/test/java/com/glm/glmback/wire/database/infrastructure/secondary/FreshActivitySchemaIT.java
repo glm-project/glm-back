@@ -336,7 +336,7 @@ class FreshActivitySchemaIT {
     onTenant(tenant, () -> {
       var atelier = application.getBean(SuivisDAtelierApplicationService.class);
       assertThat(atelier.get(followup).suivi().journal().evenements()).hasSize(2);
-      assertThat(atelier.tempsEffectif(followup)).hasSize(1);
+      assertThat(atelier.get(followup).suivi().activites()).hasSize(1);
       var sheet = application
         .getBean(FeuillesDeTempsApplicationService.class)
         .historique(

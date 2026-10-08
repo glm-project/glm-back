@@ -245,13 +245,12 @@ Feature: Synthese des heures hebdomadaire d'un operateur
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT9H"
 
-  Scenario: Une fin pointee a vingt-trois heures conserve la borne automatique sans conflit
+  Scenario: Une fin pointee a vingt-trois heures conserve la borne automatique
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
       | alias | type  | intention | cible | operateur | poste  | survenue             |
       | A     | DEBUT | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
       | F     | FIN   | FIN       | A     | martin    | DMU 50 | 2026-05-11T21:00:00Z |
-    Then le suivi de la synthese des heures de "carter" ne porte aucun conflit
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT13H"
     And la synthese porte les conflits
@@ -268,7 +267,6 @@ Feature: Synthese des heures hebdomadaire d'un operateur
       | A     | DEBUT          | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
       | FA    | FIN            | FIN       | A     | martin    | DMU 50 | 2026-05-11T21:00:00Z |
       | N     | NON_CONFORMITE | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T21:00:00Z |
-    Then le suivi de la synthese des heures de "carter" ne porte aucun conflit
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT13H"
     And les elements de la synthese sont

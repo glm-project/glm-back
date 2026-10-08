@@ -47,9 +47,9 @@ Feature: Suivi des elements engages en atelier
     Then le journal du suivi contient 3 evenements
     # La non conformite est en cours : la comparaison porte sur une activite, pas sur deux listes vides.
     And le suivi a l'etat "EN_COURS"
-    And je retiens les informations du suivi hors journal et conflits
+    And je retiens les informations du suivi hors journal
     When je liste les elements engages entre "2026-07-02T00:00:00Z" et "2026-07-03T00:00:00Z"
-    Then la grille contient les memes informations sans journal ni conflits
+    Then la grille contient les memes informations sans journal
     When je consulte "OF 2962"
     Then le journal du suivi contient 3 evenements
 
@@ -322,8 +322,8 @@ Feature: Suivi des elements engages en atelier
 
   Scenario: Un debut pointe tardivement au milieu d'une activite deja terminee contredit sa fin
     # Le debut rattrape a 10 h ouvre une activite, donc remplace a son heure celle de 8 h : la fin de 12 h, qui la vise,
-    # la dirait terminee apres son remplacement. Le pointage est admis, et la sequence est en conflit plutot que d'etre
-    # lue selon une interpretation choisie par le serveur.
+    # la dirait terminee apres son remplacement. Le pointage est admis, et le moteur laisse les activites a resoudre
+    # plutot que de les lire selon une interpretation choisie par le serveur : aucune n'est en cours.
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2092"
       | categorie | OF   |
@@ -354,44 +354,6 @@ Feature: Suivi des elements engages en atelier
     And le journal du suivi contient 3 evenements
     And le suivi a 0 activites en cours
     And le suivi a l'etat "INTERROMPU"
-
-  Scenario: Arreter deux fois la meme activite met la sequence en conflit
-    # Le double appui sur « arreter » n'est jamais refuse, mais il n'est plus absorbe : les deux fins visent la meme
-    # activite, et la seconde la dit en cours apres que la premiere l'a terminee. Conservee, elle laisse l'activite a
-    # resoudre.
-    Given il est "2026-05-10T08:00:00Z"
-    And l'entreprise a cree l'element de fabrication "OF 2093"
-      | categorie | OF   |
-      | reference | 2093 |
-    And j'ai engage l'element "OF 2093" en atelier
-    And j'ai pointe sur "OF 2093"
-      | id        | 00000000-0000-0000-0000-000000000271 |
-      | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
-      | operateur | dupont                               |
-      | poste     | fraiseuse-1                          |
-    Given il est "2026-05-10T10:00:00Z"
-    And j'ai pointe sur "OF 2093"
-      | id        | 00000000-0000-0000-0000-000000000272 |
-      | type      | FIN                                  |
-      | intention | FIN                                  |
-      | cible     | 00000000-0000-0000-0000-000000000271 |
-      | operateur | dupont                               |
-      | poste     | fraiseuse-1                          |
-    Given il est "2026-05-10T10:00:02Z"
-    When je pointe sur "OF 2093"
-      | id        | 00000000-0000-0000-0000-000000000273 |
-      | type      | FIN                                  |
-      | intention | FIN                                  |
-      | cible     | 00000000-0000-0000-0000-000000000271 |
-      | operateur | dupont                               |
-      | poste     | fraiseuse-1                          |
-    Then la reponse a le statut http 201
-    And le journal du suivi contient 3 evenements
-    And le suivi a l'etat "INTERROMPU"
-    And le suivi porte une seule sequence en conflit, de "dupont" sur "fraiseuse-1"
-      | activites | 00000000-0000-0000-0000-000000000271                                                                             |
-      | pointages | 00000000-0000-0000-0000-000000000271, 00000000-0000-0000-0000-000000000272, 00000000-0000-0000-0000-000000000273 |
 
   Scenario: Cloturer un element, puis le rouvrir
     Given il est "2026-05-10T08:00:00Z"
@@ -649,19 +611,15 @@ Feature: Suivi des elements engages en atelier
     # L'OF 42 n'a recu aucun pointage apres sa relance a 13 h : sa pause le scinde a midi, et rien ne le borne a
     # 17 h. Il se termine automatiquement a son echeance, 13 heures apres son debut, avec une anomalie.
     Given il est "2026-05-11T09:15:00Z"
-    When je consulte le temps effectif de "OF 42"
+    When je consulte le dossier d'anomalie de "OF 42" depuis l'evenement 2
     Then la reponse a le statut http 200
-    And le temps effectif contient
-      | poste.libelle | debut                | fin                  | finAutomatique |
-      | fraiseuse-1   | 2026-05-10T08:00:00Z | 2026-05-10T12:00:00Z | false          |
-      | fraiseuse-1   | 2026-05-10T13:00:00Z | 2026-05-11T02:00:00Z | true           |
+    And le dossier d'anomalie donne l'activite
+      | evenement | debut                | fin                  | duree |
+      | 2         | 2026-05-10T13:00:00Z | 2026-05-11T02:00:00Z | PT13H |
 
     # L'OF 43 s'arrete a sa propre fin.
-    When je consulte le temps effectif de "OF 43"
-    And le temps effectif contient
-      | poste.libelle | debut                | fin                  |
-      | fraiseuse-2   | 2026-05-10T09:00:00Z | 2026-05-10T12:00:00Z |
-      | fraiseuse-2   | 2026-05-10T13:00:00Z | 2026-05-10T16:00:00Z |
+    When je consulte "OF 43"
+    Then le suivi a 0 activites en cours
 
     # Le journal de chaque ordre porte la pause de midi : la fin et le debut que le pupitre y a pointes.
     When je consulte "OF 42"
@@ -679,11 +637,8 @@ Feature: Suivi des elements engages en atelier
     # Le gestionnaire regularise la fin oubliee de l'OF 42 : la fin reelle remplace la fin automatique.
     When je regularise sur "OF 42" en visant l'activite de l'evenement 2
       | dateDeSurvenue | 2026-05-10T17:00:00Z |
-    And je consulte le temps effectif de "OF 42"
-    Then le temps effectif contient
-      | poste.libelle | debut                | fin                  | finAutomatique |
-      | fraiseuse-1   | 2026-05-10T08:00:00Z | 2026-05-10T12:00:00Z | false          |
-      | fraiseuse-1   | 2026-05-10T13:00:00Z | 2026-05-10T17:00:00Z | false          |
+    And je consulte le dossier d'anomalie de "OF 42" depuis l'evenement 2
+    Then la reponse a le statut http 404
 
   Scenario: Un ordre reste en cours la veille est relance le lendemain
     # Dupont oublie d'arreter l'OF 44 ; sa relance du lendemain ouvre une nouvelle activite apres l'echeance.
@@ -723,13 +678,12 @@ Feature: Suivi des elements engages en atelier
       | poste     | fraiseuse-1 |
 
     # L'activite oubliee lundi s'est terminee automatiquement a son echeance, a 02:00 : la relance de mardi ne la
-    # prolonge pas, et rien n'est compte de 02:00 a 07:05.
-    When je consulte le temps effectif de "OF 44"
-    Then le temps effectif contient
-      | poste.libelle | debut                | fin                  | finAutomatique |
-      | fraiseuse-1   | 2026-05-10T08:00:00Z | 2026-05-10T12:00:00Z | false          |
-      | fraiseuse-1   | 2026-05-10T13:00:00Z | 2026-05-11T02:00:00Z | true           |
-      | fraiseuse-1   | 2026-05-11T07:05:00Z | 2026-05-11T10:00:00Z | false          |
+    # prolonge pas.
+    When je consulte le dossier d'anomalie de "OF 44" depuis l'evenement 2
+    Then la reponse a le statut http 200
+    And le dossier d'anomalie donne l'activite
+      | evenement | debut                | fin                  | duree |
+      | 2         | 2026-05-10T13:00:00Z | 2026-05-11T02:00:00Z | PT13H |
 
   Scenario: Un travail sans fin reste en cours avant son echeance
     Given il est "2026-05-10T07:00:00Z"
@@ -743,38 +697,9 @@ Feature: Suivi des elements engages en atelier
       | operateur | dupont      |
       | poste     | fraiseuse-1 |
     Given il est "2026-05-10T19:00:00Z"
-    When je consulte le temps effectif de "OF 49"
-    Then le temps effectif contient
-      | poste.libelle | debut                | finAutomatique |
-      | fraiseuse-1   | 2026-05-10T08:00:00Z | false          |
-    And le temps effectif ne contient aucun intervalle ferme
-
-  Scenario: Releve d'un intervalle 08:00-10:00, sans prise de poste
-    # L'activite compte de son debut pointe a sa fin pointee.
-    Given il est "2026-05-12T07:00:00Z"
-    And l'entreprise a cree l'element de fabrication "OF 50"
-      | categorie | OF   |
-      | reference | 2050 |
-    And j'ai engage l'element "OF 50" en atelier
-    Given il est "2026-05-12T08:00:00Z"
-    And j'ai pointe sur "OF 50"
-      | id        | 00000000-0000-0000-0000-0000000005f2 |
-      | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
-      | operateur | dupont                               |
-      | poste     | fraiseuse-1                          |
-    Given il est "2026-05-12T10:00:00Z"
-    And j'ai pointe sur "OF 50"
-      | id        | 00000000-0000-0000-0000-0000000005f3 |
-      | type      | FIN                                  |
-      | intention | FIN                                  |
-      | cible     | 00000000-0000-0000-0000-0000000005f2 |
-      | operateur | dupont                               |
-      | poste     | fraiseuse-1                          |
-    When je consulte le temps effectif de "OF 50"
-    Then le temps effectif contient
-      | activite                             | debut                | fin                  | finAutomatique |
-      | 00000000-0000-0000-0000-0000000005f2 | 2026-05-12T08:00:00Z | 2026-05-12T10:00:00Z | false          |
+    When je consulte "OF 49"
+    Then le suivi a l'etat "EN_COURS"
+    And le suivi a 1 activites en cours
 
   Scenario: Les tarifs historiques sont reserves au gestionnaire meme apres un pointage du pupitre
     Given il est "2026-05-10T08:00:00Z"

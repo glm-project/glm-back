@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -44,7 +45,6 @@ class VieDeLAtelierTest {
     .postes(ressources.postes())
     .habilitations(ressources.habilitations())
     .clock(maintenant::get);
-  private final TempsDAtelierService temps = new TempsDAtelierService(suivis);
 
   private SuiviDAtelierId premierOrdre;
   private SuiviDAtelierId secondOrdre;
@@ -87,7 +87,7 @@ class VieDeLAtelierTest {
    */
   @Test
   void shouldScinderLePremierOrdreASaPauseEtLeTerminerAutomatiquementASonEcheance() {
-    assertThat(temps.tempsEffectif(premierOrdre, maintenant.get()))
+    assertThat(intervallesDe(premierOrdre))
       .extracting(IntervalleDActivite::poste, IntervalleDActivite::debut, IntervalleDActivite::fin, IntervalleDActivite::finAutomatique)
       .containsExactly(
         tuple(Optional.of(POSTE_ID_FRAISEUSE_1), LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H), false),
@@ -101,7 +101,7 @@ class VieDeLAtelierTest {
    */
   @Test
   void shouldArreterLeSecondOrdreASaPropreFin() {
-    assertThat(temps.tempsEffectif(secondOrdre, maintenant.get()))
+    assertThat(intervallesDe(secondOrdre))
       .extracting(IntervalleDActivite::poste, IntervalleDActivite::debut, IntervalleDActivite::fin)
       .containsExactly(
         tuple(Optional.of(POSTE_ID_FRAISEUSE_2), LE_10_MAI_2026_A_9H, Optional.of(LE_10_MAI_2026_A_12H)),
@@ -124,7 +124,7 @@ class VieDeLAtelierTest {
         .dateDeSurvenue(LE_10_MAI_2026_A_17H)
     );
 
-    assertThat(temps.tempsEffectif(premierOrdre, maintenant.get()))
+    assertThat(intervallesDe(premierOrdre))
       .last()
       .satisfies(intervalle -> {
         assertThat(intervalle.fin()).contains(LE_10_MAI_2026_A_17H);
@@ -209,5 +209,15 @@ class VieDeLAtelierTest {
     public Optional<ElementEngage> get(ElementEngageId id) {
       return Optional.ofNullable(ELEMENTS.get(id));
     }
+  }
+
+  private List<IntervalleDActivite> intervallesDe(SuiviDAtelierId id) {
+    return suivis
+      .get(id)
+      .orElseThrow()
+      .activites()
+      .stream()
+      .map(activite -> activite.a(maintenant.get()))
+      .toList();
   }
 }

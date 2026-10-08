@@ -42,16 +42,6 @@ public final class AnnuaireDAtelierService {
     );
   }
 
-  public AnnuaireDAtelier pourIntervalles(Collection<IntervalleDActivite> intervalles) {
-    return resout(
-      intervalles.stream().map(IntervalleDActivite::operateur).collect(Collectors.toSet()),
-      intervalles
-        .stream()
-        .flatMap(intervalle -> intervalle.poste().stream())
-        .collect(Collectors.toSet())
-    );
-  }
-
   private AnnuaireDAtelier resout(Set<OperateurId> operateursAResoudre, Set<PosteDeTravailId> postesAResoudre) {
     return AnnuaireDAtelier.de(operateurs.parIds(operateursAResoudre), postes.parIds(postesAResoudre));
   }
