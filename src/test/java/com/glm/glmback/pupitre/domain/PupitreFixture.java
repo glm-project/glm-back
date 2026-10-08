@@ -7,6 +7,9 @@ import java.util.UUID;
 
 public final class PupitreFixture {
 
+  public static final CategorieDElement CATEGORIE_OF = new CategorieDElement("OF");
+  public static final CategorieDElement CATEGORIE_MOULE = new CategorieDElement("MOULE");
+
   public static final Instant LE_10_MAI_2026_A_7H = Instant.parse("2026-05-10T07:00:00Z");
   public static final Instant LE_10_MAI_2026_A_8H = Instant.parse("2026-05-10T08:00:00Z");
   public static final Instant LE_10_MAI_2026_A_9H = Instant.parse("2026-05-10T09:00:00Z");
@@ -82,7 +85,7 @@ public final class PupitreFixture {
       .id(SUIVI_ID_OF_42)
       .nom(NOM_OF_42)
       .reference(REFERENCE_M_1187.value())
-      .type(TypeDElementEngage.ORDRE_DE_FABRICATION)
+      .categorie(CATEGORIE_OF.value())
       .activites(List.of())
       .conflits(List.of())
       .dejaPointe(false);
@@ -96,7 +99,7 @@ public final class PupitreFixture {
       .id(SUIVI_ID_OF_42)
       .nom(NOM_OF_42)
       .reference(REFERENCE_M_1187.value())
-      .type(TypeDElementEngage.ORDRE_DE_FABRICATION)
+      .categorie(CATEGORIE_OF.value())
       .activites(activites)
       .conflits(List.of())
       .dejaPointe(true);

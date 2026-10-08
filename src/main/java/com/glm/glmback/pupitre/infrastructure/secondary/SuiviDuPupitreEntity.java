@@ -3,13 +3,10 @@ package com.glm.glmback.pupitre.infrastructure.secondary;
 import com.glm.glmback.pupitre.domain.NomDElement;
 import com.glm.glmback.pupitre.domain.SuiviDuPupitre;
 import com.glm.glmback.pupitre.domain.SuiviDuPupitreId;
-import com.glm.glmback.pupitre.domain.TypeDElementEngage;
 import com.glm.glmback.shared.time.infrastructure.secondary.ExactInstantConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
@@ -43,9 +40,8 @@ class SuiviDuPupitreEntity {
 
   private String elementNom;
 
-  @Enumerated(EnumType.STRING)
   @Column(length = 30)
-  private TypeDElementEngage elementType;
+  private String elementType;
 
   @Convert(converter = ExactInstantConverter.class)
   private Instant clotureDateDeSurvenue;
@@ -63,6 +59,10 @@ class SuiviDuPupitreEntity {
   }
 
   SuiviDuPupitre.SuiviDuPupitreActivitesBuilder toDomain(String reference) {
-    return SuiviDuPupitre.builder().id(new SuiviDuPupitreId(id)).nom(new NomDElement(elementNom)).reference(reference).type(elementType);
+    return SuiviDuPupitre.builder()
+      .id(new SuiviDuPupitreId(id))
+      .nom(new NomDElement(elementNom))
+      .reference(reference)
+      .categorie(elementType);
   }
 }

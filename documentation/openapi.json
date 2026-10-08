@@ -2837,8 +2837,7 @@
             "type" : "string"
           },
           "type" : {
-            "description" : "ORDRE_DE_FABRICATION ou PRODUIT, copie a l'engagement.",
-            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
+            "description" : "Categorie de l'element, copiee a l'engagement.",
             "type" : "string"
           }
         },

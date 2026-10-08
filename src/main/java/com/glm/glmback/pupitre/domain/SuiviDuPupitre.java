@@ -19,7 +19,7 @@ public record SuiviDuPupitre(
   SuiviDuPupitreId id,
   NomDElement nom,
   Optional<ReferenceDElement> reference,
-  TypeDElementEngage type,
+  CategorieDElement categorie,
   List<ActiviteSansFin> activites,
   List<SequenceEnConflitDuPupitre> conflits,
   boolean dejaPointe
@@ -28,7 +28,7 @@ public record SuiviDuPupitre(
     Assert.notNull("id du suivi", id);
     Assert.notNull("nom de l'element", nom);
     Assert.notNull("reference de l'element", reference);
-    Assert.notNull("type de l'element", type);
+    Assert.notNull("categorie de l'element", categorie);
     Assert.field("activites", activites).notNull().noNullElement();
     activites = List.copyOf(activites);
     Assert.field("conflits", conflits).notNull().noNullElement();
@@ -43,9 +43,19 @@ public record SuiviDuPupitre(
     return id ->
       nom ->
         reference ->
-          type ->
+          categorie ->
             activites ->
-              conflits -> dejaPointe -> new SuiviDuPupitre(id, nom, ReferenceDElement.of(reference), type, activites, conflits, dejaPointe);
+              conflits ->
+                dejaPointe ->
+                  new SuiviDuPupitre(
+                    id,
+                    nom,
+                    ReferenceDElement.of(reference),
+                    new CategorieDElement(categorie),
+                    activites,
+                    conflits,
+                    dejaPointe
+                  );
   }
 
   /**
@@ -81,11 +91,11 @@ public record SuiviDuPupitre(
   }
 
   public interface SuiviDuPupitreReferenceBuilder {
-    SuiviDuPupitreTypeBuilder reference(String reference);
+    SuiviDuPupitreCategorieBuilder reference(String reference);
   }
 
-  public interface SuiviDuPupitreTypeBuilder {
-    SuiviDuPupitreActivitesBuilder type(TypeDElementEngage type);
+  public interface SuiviDuPupitreCategorieBuilder {
+    SuiviDuPupitreActivitesBuilder categorie(String categorie);
   }
 
   public interface SuiviDuPupitreActivitesBuilder {
