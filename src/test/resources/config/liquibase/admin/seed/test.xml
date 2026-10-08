@@ -30,21 +30,6 @@
       <column name="status" value="ACTIVE" />
     </insert>
     <insert tableName="tenant">
-      <column name="id" value="confirmations_fixture" />
-      <column name="schema_name" value="confirmations_fixture" />
-      <column name="status" value="ACTIVE" />
-    </insert>
-    <insert tableName="tenant">
-      <column name="id" value="historique_resolution" />
-      <column name="schema_name" value="historique_resolution" />
-      <column name="status" value="ACTIVE" />
-    </insert>
-    <insert tableName="tenant">
-      <column name="id" value="apercu_fixture" />
-      <column name="schema_name" value="apercu_fixture" />
-      <column name="status" value="ACTIVE" />
-    </insert>
-    <insert tableName="tenant">
       <column name="id" value="dossier_fixture" />
       <column name="schema_name" value="dossier_fixture" />
       <column name="status" value="ACTIVE" />
