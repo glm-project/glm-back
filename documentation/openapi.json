@@ -967,7 +967,7 @@
       "RestCreationElementDeFabrication" : {
         "properties" : {
           "categorie" : {
-            "description" : "Code de la categorie de produit, declaree par l'entreprise. Obligatoire, sauf pour un client qui envoie encore type.",
+            "description" : "Code de la categorie de produit, declaree par l'entreprise.",
             "example" : "MOULE",
             "pattern" : "^[A-Z]{1,10}$",
             "type" : "string"
@@ -981,15 +981,9 @@
             "maxLength" : 100,
             "minLength" : 0,
             "type" : "string"
-          },
-          "type" : {
-            "deprecated" : true,
-            "description" : "Remplace par categorie. Lu seulement en l'absence de categorie : ORDRE_DE_FABRICATION vaut OF, PRODUIT vaut MOULE.",
-            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
-            "pattern" : "ORDRE_DE_FABRICATION|PRODUIT",
-            "type" : "string"
           }
         },
+        "required" : [ "categorie" ],
         "type" : "object"
       },
       "RestCreationOperateur" : {

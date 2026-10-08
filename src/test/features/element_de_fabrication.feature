@@ -68,17 +68,6 @@ Feature: Gestion des elements de fabrication
     Then la reponse a le statut http 201
     And la reponse d'element de fabrication a un nom commencant par "PIECE-"
 
-  Scenario: Un client qui envoie encore le type d'element cree dans la categorie correspondante
-    Given la categorie de produit "OF" est declaree
-    When je cree un element de fabrication sans declarer sa categorie
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 1031                 |
-    Then la reponse a le statut http 201
-    And la reponse d'element de fabrication contient
-      | categorie | OF                   |
-      | type      | ORDRE_DE_FABRICATION |
-    And la reponse d'element de fabrication a un nom commencant par "OF-"
-
   Scenario: Le type d'element, deprecie, se deduit de la categorie
     When je cree un element de fabrication
       | categorie | PIECE |
@@ -87,19 +76,9 @@ Feature: Gestion des elements de fabrication
       | categorie | PIECE   |
       | type      | PRODUIT |
 
-  Scenario: La categorie l'emporte sur le type d'element
-    Given la categorie de produit "MOULE" est declaree
+  Scenario: Creation refusee a un client qui n'envoie que l'ancien type d'element
     When je cree un element de fabrication sans declarer sa categorie
-      | categorie | MOULE                |
-      | type      | ORDRE_DE_FABRICATION |
-    Then la reponse a le statut http 201
-    And la reponse d'element de fabrication contient
-      | categorie | MOULE   |
-      | type      | PRODUIT |
-
-  Scenario: Creation refusee pour un type d'element inconnu
-    When je cree un element de fabrication sans declarer sa categorie
-      | type | ARTICLE |
+      | type | ORDRE_DE_FABRICATION |
     Then la reponse a le statut http 400
 
   Scenario: Creation refusee si la categorie est absente
