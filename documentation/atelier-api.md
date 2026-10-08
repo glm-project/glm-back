@@ -379,7 +379,9 @@ GET /api/pupitre/referentiel
 
 Un pupitre hors ligne ne reconstitue plus son cache en paginant `GET /api/operateurs` puis
 `GET /api/atelier/suivis`. Cette route rend **tout d'un coup** : les opérateurs désignables avec leur identifiant et
-leurs postes habilités, et les éléments encore pointables avec leurs activités en cours.
+leurs postes habilités, les éléments encore pointables avec leurs activités en cours, et les codes des catégories
+de produit dans l'ordre choisi par le gestionnaire (`PUT /api/categories-de-produit/ordre`) : le pupitre range ses
+tuiles par catégorie, dans cet ordre, et la liste est vide tant que l'entreprise n'en a déclaré aucune.
 Les séquences en conflit sont également rendues sur chaque suivi.
 
 ```json
@@ -414,7 +416,8 @@ Les séquences en conflit sont également rendues sur chaque suivi.
       ],
       "conflits": []
     }
-  ]
+  ],
+  "categories": ["MOULE", "OF"]
 }
 ```
 

@@ -15,22 +15,29 @@ public final class ReferentielsDuPupitreService {
 
   private final OperateursDuPupitre operateurs;
   private final SuivisOuvertsDuPupitre suivis;
+  private final CategoriesDuPupitre categories;
   private final Clock clock;
 
-  private ReferentielsDuPupitreService(OperateursDuPupitre operateurs, SuivisOuvertsDuPupitre suivis, Clock clock) {
+  private ReferentielsDuPupitreService(
+    OperateursDuPupitre operateurs,
+    SuivisOuvertsDuPupitre suivis,
+    CategoriesDuPupitre categories,
+    Clock clock
+  ) {
     this.operateurs = operateurs;
     this.suivis = suivis;
+    this.categories = categories;
     this.clock = clock;
   }
 
   public static ReferentielsDuPupitreServiceOperateursBuilder builder() {
-    return operateurs -> suivis -> clock -> new ReferentielsDuPupitreService(operateurs, suivis, clock);
+    return operateurs -> suivis -> categories -> clock -> new ReferentielsDuPupitreService(operateurs, suivis, categories, clock);
   }
 
   public ReferentielDuPupitre referentiel() {
     Instant maintenant = clock.now();
 
-    return new ReferentielDuPupitre(maintenant, operateurs.tous(), suivis.tous());
+    return new ReferentielDuPupitre(maintenant, operateurs.tous(), suivis.tous(), categories.toutes());
   }
 
   public interface ReferentielsDuPupitreServiceOperateursBuilder {
@@ -38,7 +45,11 @@ public final class ReferentielsDuPupitreService {
   }
 
   public interface ReferentielsDuPupitreServiceSuivisBuilder {
-    ReferentielsDuPupitreServiceClockBuilder suivis(SuivisOuvertsDuPupitre suivis);
+    ReferentielsDuPupitreServiceCategoriesBuilder suivis(SuivisOuvertsDuPupitre suivis);
+  }
+
+  public interface ReferentielsDuPupitreServiceCategoriesBuilder {
+    ReferentielsDuPupitreServiceClockBuilder categories(CategoriesDuPupitre categories);
   }
 
   public interface ReferentielsDuPupitreServiceClockBuilder {

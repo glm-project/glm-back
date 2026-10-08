@@ -18,6 +18,7 @@ class ReferentielsDuPupitreServiceTest {
     ReferentielsDuPupitreService service = ReferentielsDuPupitreService.builder()
       .operateurs(() -> List.of(OPERATEUR_DUPONT))
       .suivis(() -> List.of(suiviOf42Vierge()))
+      .categories(() -> List.of(CATEGORIE_OF, CATEGORIE_MOULE))
       .clock(() -> LE_10_MAI_2026_A_9H);
 
     ReferentielDuPupitre referentiel = service.referentiel();
@@ -25,6 +26,7 @@ class ReferentielsDuPupitreServiceTest {
     assertThat(referentiel.genereLe()).isEqualTo(LE_10_MAI_2026_A_9H);
     assertThat(referentiel.operateurs()).containsExactly(OPERATEUR_DUPONT);
     assertThat(referentiel.suivis()).containsExactly(suiviOf42Vierge());
+    assertThat(referentiel.categories()).containsExactly(CATEGORIE_OF, CATEGORIE_MOULE);
   }
 
   @Test
@@ -32,11 +34,13 @@ class ReferentielsDuPupitreServiceTest {
     ReferentielsDuPupitreService service = ReferentielsDuPupitreService.builder()
       .operateurs(List::of)
       .suivis(List::of)
+      .categories(List::of)
       .clock(() -> LE_10_MAI_2026_A_7H);
 
     ReferentielDuPupitre referentiel = service.referentiel();
 
     assertThat(referentiel.operateurs()).isEmpty();
     assertThat(referentiel.suivis()).isEmpty();
+    assertThat(referentiel.categories()).isEmpty();
   }
 }
