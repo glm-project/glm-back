@@ -42,10 +42,8 @@ class CurrentTenantResolverTest {
   }
 
   @Test
-  void shouldResolveDefaultSchemaOutOfRequest() {
-    when(tenantRegistry.defaultSchema()).thenReturn("public");
-
-    assertThat(resolver.resolveCurrentTenantIdentifier()).isEqualTo("public");
+  void shouldResolveOutOfRequestIdentifierOutOfRequest() {
+    assertThat(resolver.resolveCurrentTenantIdentifier()).isEqualTo(CurrentTenantResolver.OUT_OF_REQUEST);
   }
 
   @Test
@@ -56,12 +54,20 @@ class CurrentTenantResolverTest {
   }
 
   @Test
-  void shouldResolveSchemaOfAuthenticatedTenant() {
+  void shouldResolveKeyOfAuthenticatedTenant() {
     inRequest();
     authenticateOn(TENANT_IMPECCMOLD.value());
-    when(tenantRegistry.schema(TENANT_IMPECCMOLD)).thenReturn("impeccmold");
+    when(tenantRegistry.contains(TENANT_IMPECCMOLD)).thenReturn(true);
 
     assertThat(resolver.resolveCurrentTenantIdentifier()).isEqualTo("impeccmold");
+  }
+
+  @Test
+  void shouldNotResolveAuthenticatedTenantUnknownFromTheRegistry() {
+    inRequest();
+    authenticateOn("inconnue");
+
+    assertThatThrownBy(resolver::resolveCurrentTenantIdentifier).isExactlyInstanceOf(NotTenantedUserException.class);
   }
 
   private void inRequest() {

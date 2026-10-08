@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,6 +61,19 @@ class TenantRegistry implements Tenants {
 
   Collection<String> schemas() {
     return schemas.values();
+  }
+
+  Set<Tenant> tenants() {
+    return schemas.keySet();
+  }
+
+  /** Schema d'un identifiant de tenant Hibernate, tel que le rend {@link CurrentTenantResolver}. */
+  String schemaName(String tenantIdentifier) {
+    if (CurrentTenantResolver.OUT_OF_REQUEST.equals(tenantIdentifier)) {
+      return defaultSchema;
+    }
+
+    return schema(new Tenant(tenantIdentifier));
   }
 
   private static String schemaOf(TenantDeclaration tenant) {
