@@ -5,10 +5,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import javax.sql.DataSource;
 import liquibase.exception.LiquibaseException;
-import liquibase.integration.spring.SpringLiquibase;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -28,7 +26,7 @@ class TenantSchemasInitializer implements InitializingBean {
   public void afterPropertiesSet() throws LiquibaseException, SQLException {
     for (String schema : tenantSchemas.schemas()) {
       createSchema(schema);
-      migrate(schema);
+      LiquibaseMigration.migrate(dataSource, changeLog, schema);
     }
   }
 
@@ -41,15 +39,5 @@ class TenantSchemasInitializer implements InitializingBean {
       connection.setAutoCommit(true);
       statement.execute("CREATE SCHEMA IF NOT EXISTS \"%s\"".formatted(schema));
     }
-  }
-
-  private void migrate(String schema) throws LiquibaseException {
-    SpringLiquibase liquibase = new SpringLiquibase();
-    liquibase.setDataSource(dataSource);
-    liquibase.setResourceLoader(new DefaultResourceLoader());
-    liquibase.setChangeLog(changeLog);
-    liquibase.setDefaultSchema(schema);
-    liquibase.setLiquibaseSchema(schema);
-    liquibase.afterPropertiesSet();
   }
 }

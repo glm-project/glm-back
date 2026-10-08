@@ -10,6 +10,7 @@ springdoc:
     enabled: true
 application:
   multitenancy:
+    seed-change-log: classpath:config/liquibase/admin/seed/local.xml
     tenants:
       - id: impeccmold
         schema: impeccmold

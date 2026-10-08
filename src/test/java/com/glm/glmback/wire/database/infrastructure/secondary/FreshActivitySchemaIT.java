@@ -97,7 +97,8 @@ class FreshActivitySchemaIT {
         assertThat(snapshot(database, "alpha")).isEqualTo(alpha);
         assertThat(snapshot(database, "beta")).isEqualTo(beta);
       }
-      assertThat(query(database, "SELECT tablename FROM pg_tables WHERE schemaname = 'public'")).isEmpty();
+      assertThat(tables(database, "public")).containsExactly("databasechangelog", "databasechangeloglock", "tenant");
+      assertThat(query(database, "SELECT id FROM tenant")).isEmpty();
     }
   }
 
@@ -187,7 +188,8 @@ class FreshActivitySchemaIT {
         "--spring.datasource.url=" + database.getJdbcUrl(),
         "--spring.datasource.username=" + database.getUsername(),
         "--spring.datasource.password=" + database.getPassword(),
-        "--spring.datasource.driver-class-name=org.postgresql.Driver"
+        "--spring.datasource.driver-class-name=org.postgresql.Driver",
+        "--application.multitenancy.seed-change-log="
       )
     );
     for (int index = 0; index < tenants.length; index++) {

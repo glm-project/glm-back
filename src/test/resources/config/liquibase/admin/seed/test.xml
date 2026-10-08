@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <changeSet id="tenants_de_test" author="glm">
+    <comment>
+      Entreprises connues des tests. Les fixtures dediees a une classe de test ont leur propre schema, et donc des
+      donnees qu'aucune autre classe ne voit.
+    </comment>
+    <insert tableName="tenant">
+      <column name="id" value="impeccmold" />
+      <column name="schema_name" value="impeccmold" />
+      <column name="status" value="ACTIVE" />
+    </insert>
+    <insert tableName="tenant">
+      <column name="id" value="katilys" />
+      <column name="schema_name" value="katilys" />
+      <column name="status" value="ACTIVE" />
+    </insert>
+    <insert tableName="tenant">
+      <column name="id" value="supervision_fixture" />
+      <column name="schema_name" value="supervision_fixture" />
+      <column name="status" value="ACTIVE" />
+    </insert>
+    <insert tableName="tenant">
+      <column name="id" value="supervision_voisine" />
+      <column name="schema_name" value="supervision_voisine" />
+      <column name="status" value="ACTIVE" />
+    </insert>
+    <insert tableName="tenant">
+      <column name="id" value="confirmations_fixture" />
+      <column name="schema_name" value="confirmations_fixture" />
+      <column name="status" value="ACTIVE" />
+    </insert>
+    <insert tableName="tenant">
+      <column name="id" value="historique_resolution" />
+      <column name="schema_name" value="historique_resolution" />
+      <column name="status" value="ACTIVE" />
+    </insert>
+    <insert tableName="tenant">
+      <column name="id" value="apercu_fixture" />
+      <column name="schema_name" value="apercu_fixture" />
+      <column name="status" value="ACTIVE" />
+    </insert>
+    <insert tableName="tenant">
+      <column name="id" value="dossier_fixture" />
+      <column name="schema_name" value="dossier_fixture" />
+      <column name="status" value="ACTIVE" />
+    </insert>
+  </changeSet>
+</databaseChangeLog>

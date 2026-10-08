@@ -12,6 +12,7 @@ class MultitenancyProperties {
 
   private final List<TenantProperties> tenants = new ArrayList<>();
   private String defaultSchema = "public";
+  private String seedChangeLog;
 
   public String getDefaultSchema() {
     return defaultSchema;
@@ -19,6 +20,14 @@ class MultitenancyProperties {
 
   public void setDefaultSchema(String defaultSchema) {
     this.defaultSchema = defaultSchema;
+  }
+
+  public String getSeedChangeLog() {
+    return seedChangeLog;
+  }
+
+  public void setSeedChangeLog(String seedChangeLog) {
+    this.seedChangeLog = seedChangeLog;
   }
 
   public List<TenantProperties> getTenants() {
