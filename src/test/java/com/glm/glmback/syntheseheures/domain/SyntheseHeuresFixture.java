@@ -12,6 +12,9 @@ import java.util.UUID;
  */
 public final class SyntheseHeuresFixture {
 
+  public static final CategorieDElement CATEGORIE_OF = new CategorieDElement("OF");
+  public static final CategorieDElement CATEGORIE_MOULE = new CategorieDElement("MOULE");
+
   public static final ZoneId ZONE_PARIS = ZoneId.of("Europe/Paris");
   public static final SemaineCalendaire SEMAINE_20_DE_2026 = new SemaineCalendaire(2026, 20);
 
@@ -56,12 +59,8 @@ public final class SyntheseHeuresFixture {
 
   public static final NomDElement NOM_PRD_2026_000015 = new NomDElement("PRD-2026-000015");
   public static final NomDElement NOM_OF_2026_000007 = new NomDElement("OF-2026-000007");
-  public static final ElementEngage ELEMENT_ENGAGE_CARTER = new ElementEngage(ELEMENT_ID_CARTER, NOM_PRD_2026_000015, TypeDElement.PRODUIT);
-  public static final ElementEngage ELEMENT_ENGAGE_BRIDE = new ElementEngage(
-    ELEMENT_ID_BRIDE,
-    NOM_OF_2026_000007,
-    TypeDElement.ORDRE_DE_FABRICATION
-  );
+  public static final ElementEngage ELEMENT_ENGAGE_CARTER = new ElementEngage(ELEMENT_ID_CARTER, NOM_PRD_2026_000015, CATEGORIE_MOULE);
+  public static final ElementEngage ELEMENT_ENGAGE_BRIDE = new ElementEngage(ELEMENT_ID_BRIDE, NOM_OF_2026_000007, CATEGORIE_OF);
   public static final ReferenceDElement REFERENCE_1015 = new ReferenceDElement("1015");
   public static final DescriptionDElement DESCRIPTION_CARTER_DE_POMPE = new DescriptionDElement("Carter de pompe");
   public static final FicheDElement FICHE_DU_CARTER = new FicheDElement(

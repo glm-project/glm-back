@@ -3,7 +3,6 @@ package com.glm.glmback.syntheseheures.infrastructure.primary;
 import com.glm.glmback.syntheseheures.domain.DescriptionDElement;
 import com.glm.glmback.syntheseheures.domain.ElementDeLaSynthese;
 import com.glm.glmback.syntheseheures.domain.ReferenceDElement;
-import com.glm.glmback.syntheseheures.domain.TypeDElement;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 import java.util.UUID;
@@ -13,14 +12,14 @@ import java.util.UUID;
   description = """
   Un element sur lequel l'operateur a travaille ou pointe dans la semaine, et le temps qu'il y a passe.
 
-  Nom et type viennent du suivi, copies a l'engagement ; reference et description sont relues au referentiel, et
+  Nom et categorie viennent du suivi, copies a l'engagement ; reference et description sont relues au referentiel, et
   absentes si l'element a ete supprime. Les durees se cumulent par element : une heure passee sur deux elements compte
   sur chacun.
   """
 )
 record RestElementDeLaSynthese(
   @Schema(description = "Identifiant de l'element de fabrication.", requiredMode = Schema.RequiredMode.REQUIRED) UUID id,
-  @Schema(description = "Type de l'element.", requiredMode = Schema.RequiredMode.REQUIRED) TypeDElement type,
+  @Schema(description = "Categorie de l'element.", requiredMode = Schema.RequiredMode.REQUIRED) String type,
   @Schema(description = "Nom de l'element.", example = "PRD-2026-000015", requiredMode = Schema.RequiredMode.REQUIRED) String nom,
   @Schema(description = "Reference de l'element, relue au referentiel.", example = "1015") String reference,
   @Schema(description = "Description de l'element, relue au referentiel.", example = "Carter de pompe") String description,
@@ -46,7 +45,7 @@ record RestElementDeLaSynthese(
   static RestElementDeLaSynthese from(ElementDeLaSynthese element) {
     return new RestElementDeLaSynthese(
       element.element().id().uuid(),
-      element.element().type(),
+      element.element().categorie().value(),
       element.element().nom().value(),
       element.reference().map(ReferenceDElement::value).orElse(null),
       element.description().map(DescriptionDElement::value).orElse(null),

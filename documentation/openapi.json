@@ -1288,7 +1288,7 @@
         "type" : "object"
       },
       "RestElementDeLaSynthese" : {
-        "description" : "Un element sur lequel l'operateur a travaille ou pointe dans la semaine, et le temps qu'il y a passe.\n\nNom et type viennent du suivi, copies a l'engagement ; reference et description sont relues au referentiel, et\nabsentes si l'element a ete supprime. Les durees se cumulent par element : une heure passee sur deux elements compte\nsur chacun.\n",
+        "description" : "Un element sur lequel l'operateur a travaille ou pointe dans la semaine, et le temps qu'il y a passe.\n\nNom et categorie viennent du suivi, copies a l'engagement ; reference et description sont relues au referentiel, et\nabsentes si l'element a ete supprime. Les durees se cumulent par element : une heure passee sur deux elements compte\nsur chacun.\n",
         "properties" : {
           "description" : {
             "description" : "Description de l'element, relue au referentiel.",
@@ -1326,8 +1326,7 @@
             "type" : "string"
           },
           "type" : {
-            "description" : "Type de l'element.",
-            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
+            "description" : "Categorie de l'element.",
             "type" : "string"
           }
         },

@@ -58,7 +58,7 @@ les portions dont la synthèse additionne les durées. Le journal brut est lu s�
   Chaque geste porte son identité, son intention et sa cible éventuelle. Le tri est total : heure métier, rang `FIN < TRANSITION < OUVERTURE`, identité du pointage. L'heure
   d'enregistrement et l'identité de l'élément ne départagent jamais les gestes simultanés.
 - Tout élément portant une portion d'activité ou un pointage dans la semaine est rendu, par première apparition
-  puis nom. Un réengagement après clôture conserve un seul élément. Nom et type viennent du suivi ; référence,
+  puis nom. Un réengagement après clôture conserve un seul élément. Nom et catégorie viennent du suivi ; référence,
   description et libellé du poste sont relus au référentiel. La fiche peut être absente.
 - Les couples poste/nature suivent leur première apparition, activité et pointage confondus. Tout poste nommé
   au journal retrouve son libellé dans l'élément. L'absence de poste ou de nature est un cas nominal.
