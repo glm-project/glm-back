@@ -75,6 +75,7 @@ application:
     oauth2:
       audience: account,api://default
   multitenancy:
-    # Aucune entreprise par defaut : impeccmold et katilys sont un jeu de developpement,
-    # declare dans les profils local et test. Voir documentation/multitenancy.md.
-    tenants: []
+    # Les entreprises sont les lignes de la table tenant du schema par defaut. Aucun jeu n'y est depose
+    # par defaut : impeccmold et katilys sont un jeu de developpement, apporte par les seuls profils local
+    # et test via seed-change-log. Voir documentation/multitenancy.md.
+    default-schema: public

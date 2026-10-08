@@ -21,9 +21,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.support.TransactionTemplate;
 
-@IntegrationTest(
-  properties = { "application.multitenancy.tenants[0].id=apercu_fixture", "application.multitenancy.tenants[0].schema=apercu_fixture" }
-)
+@IntegrationTest
 @AutoConfigureMockMvc
 class ApercuDeResolutionResourceIT {
 

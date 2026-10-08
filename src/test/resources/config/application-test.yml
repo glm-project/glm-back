@@ -29,8 +29,3 @@ springdoc:
 application:
   multitenancy:
     seed-change-log: classpath:config/liquibase/admin/seed/test.xml
-    tenants:
-      - id: impeccmold
-        schema: impeccmold
-      - id: katilys
-        schema: katilys

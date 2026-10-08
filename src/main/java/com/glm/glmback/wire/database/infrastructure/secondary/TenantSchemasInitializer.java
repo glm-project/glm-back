@@ -13,18 +13,22 @@ import org.springframework.stereotype.Component;
 class TenantSchemasInitializer implements InitializingBean {
 
   private final DataSource dataSource;
-  private final TenantSchemas tenantSchemas;
+  private final TenantRegistry tenantRegistry;
   private final String changeLog;
 
-  TenantSchemasInitializer(DataSource dataSource, TenantSchemas tenantSchemas, @Value("${spring.liquibase.change-log}") String changeLog) {
+  TenantSchemasInitializer(
+    DataSource dataSource,
+    TenantRegistry tenantRegistry,
+    @Value("${spring.liquibase.change-log}") String changeLog
+  ) {
     this.dataSource = dataSource;
-    this.tenantSchemas = tenantSchemas;
+    this.tenantRegistry = tenantRegistry;
     this.changeLog = changeLog;
   }
 
   @Override
   public void afterPropertiesSet() throws LiquibaseException, SQLException {
-    for (String schema : tenantSchemas.schemas()) {
+    for (String schema : tenantRegistry.schemas()) {
       createSchema(schema);
       LiquibaseMigration.migrate(dataSource, changeLog, schema);
     }

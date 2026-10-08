@@ -98,7 +98,7 @@ class FreshActivitySchemaIT {
         assertThat(snapshot(database, "beta")).isEqualTo(beta);
       }
       assertThat(tables(database, "public")).containsExactly("databasechangelog", "databasechangeloglock", "tenant");
-      assertThat(query(database, "SELECT id FROM tenant")).isEmpty();
+      assertThat(query(database, "SELECT id FROM tenant")).containsExactlyInAnyOrder("alpha", "beta", "gamma");
     }
   }
 
@@ -181,7 +181,8 @@ class FreshActivitySchemaIT {
     }
   }
 
-  private static ConfigurableApplicationContext start(PostgreSQLContainer database, String... tenants) {
+  private static ConfigurableApplicationContext start(PostgreSQLContainer database, String... tenants) throws Exception {
+    declare(database, tenants);
     List<String> arguments = new ArrayList<>(
       List.of(
         "--server.port=0",
@@ -192,13 +193,27 @@ class FreshActivitySchemaIT {
         "--application.multitenancy.seed-change-log="
       )
     );
-    for (int index = 0; index < tenants.length; index++) {
-      arguments.add("--application.multitenancy.tenants[" + index + "].id=" + tenants[index]);
-      arguments.add("--application.multitenancy.tenants[" + index + "].schema=" + tenants[index]);
-    }
     SpringApplication application = new SpringApplication(GlmprojectApp.class, TestSecurityConfiguration.class);
     application.setAdditionalProfiles("test");
     return application.run(arguments.toArray(String[]::new));
+  }
+
+  /** The registry is the only source of tenants: each one is declared there before the application starts. */
+  private static void declare(PostgreSQLContainer database, String... tenants) throws Exception {
+    LiquibaseMigration.migrate(
+      new DriverManagerDataSource(database.getJdbcUrl(), database.getUsername(), database.getPassword()),
+      "classpath:config/liquibase/admin/master.xml",
+      "public"
+    );
+    for (String tenant : tenants) {
+      execute(
+        database,
+        "INSERT INTO public.tenant (id, schema_name, status) VALUES ('%s', '%s', 'ACTIVE') ON CONFLICT (id) DO NOTHING".formatted(
+          tenant,
+          tenant
+        )
+      );
+    }
   }
 
   private static void assertRealJpa(ConfigurableApplicationContext application) {

@@ -49,5 +49,10 @@
       <column name="schema_name" value="dossier_fixture" />
       <column name="status" value="ACTIVE" />
     </insert>
+    <insert tableName="tenant">
+      <column name="id" value="entreprise_suspendue" />
+      <column name="schema_name" value="entreprise_suspendue" />
+      <column name="status" value="SUSPENDED" />
+    </insert>
   </changeSet>
 </databaseChangeLog>

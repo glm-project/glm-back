@@ -1,5 +1,6 @@
 package com.glm.glmback.wire.database.infrastructure.secondary;
 
+import com.glm.glmback.shared.error.domain.Assert;
 import javax.sql.DataSource;
 import liquibase.exception.LiquibaseException;
 import org.apache.commons.lang3.StringUtils;
@@ -17,20 +18,26 @@ class AdminSchemaInitializer implements InitializingBean {
   private static final String CHANGE_LOG = "classpath:config/liquibase/admin/master.xml";
 
   private final DataSource dataSource;
-  private final TenantSchemas tenantSchemas;
+  private final String schema;
   private final String seedChangeLog;
 
-  AdminSchemaInitializer(DataSource dataSource, TenantSchemas tenantSchemas, MultitenancyProperties properties) {
+  AdminSchemaInitializer(DataSource dataSource, MultitenancyProperties properties) {
+    Assert.field("default-schema", properties.getDefaultSchema()).notBlank().matches(SchemaNames.PATTERN);
+
     this.dataSource = dataSource;
-    this.tenantSchemas = tenantSchemas;
+    this.schema = properties.getDefaultSchema();
     this.seedChangeLog = properties.getSeedChangeLog();
   }
 
   @Override
   public void afterPropertiesSet() throws LiquibaseException {
-    LiquibaseMigration.migrate(dataSource, CHANGE_LOG, tenantSchemas.defaultSchema());
+    LiquibaseMigration.migrate(dataSource, CHANGE_LOG, schema);
     if (StringUtils.isNotBlank(seedChangeLog)) {
-      LiquibaseMigration.migrate(dataSource, seedChangeLog, tenantSchemas.defaultSchema());
+      LiquibaseMigration.migrate(dataSource, seedChangeLog, schema);
     }
+  }
+
+  String schema() {
+    return schema;
   }
 }

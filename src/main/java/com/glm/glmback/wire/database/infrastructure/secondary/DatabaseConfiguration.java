@@ -13,6 +13,6 @@ class DatabaseConfiguration {
 
   @Bean
   static EntityManagerFactoryDependsOnPostProcessor tenantSchemasDependsOnPostProcessor() {
-    return new EntityManagerFactoryDependsOnPostProcessor(AdminSchemaInitializer.class, TenantSchemasInitializer.class);
+    return new EntityManagerFactoryDependsOnPostProcessor(TenantSchemasInitializer.class);
   }
 }

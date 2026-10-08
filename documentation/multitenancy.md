@@ -2,15 +2,14 @@
 
 Les donnees de chaque entreprise cliente vivent dans leur propre schema PostgreSQL, au sein d'une base
 et d'un pool de connexions uniques. L'entreprise de l'utilisateur courant est portee par le token
-Keycloak.
+Keycloak, et la liste des entreprises est la table `tenant` du schema par defaut.
 
 ## Principe de securite
 
 **Le token ne fournit jamais un nom de schema, seulement une cle.** Le claim `tenant` est recherche
-dans la table de correspondance issue de `application.multitenancy.tenants` ; une cle absente de cette
-configuration ne produit aucun schema, elle produit un 403. Un token forge ne peut donc pas designer un
-schema arbitraire, et le nom de schema effectivement pousse sur la connexion vient toujours du fichier
-de configuration.
+parmi les lignes actives du registre `tenant` ; une cle absente du registre, ou suspendue, ne produit
+aucun schema, elle produit un 403. Un token forge ne peut donc pas designer un schema arbitraire, et le
+nom de schema effectivement pousse sur la connexion vient toujours du registre.
 
 ## Chaine complete
 
@@ -20,7 +19,8 @@ de configuration.
 | Mapper `tenant` vers le claim d'access token   | client scope `glmproject` du realm                                      |
 | Lecture du claim                               | `shared/multitenancy/application/CurrentTenant`                         |
 | Autorisation `/api/**`                         | `shared/multitenancy/infrastructure/primary/TenantAuthorizationManager` |
-| Correspondance tenant vers schema              | `wire/database/infrastructure/secondary/TenantSchemas`                  |
+| Registre des entreprises (table `tenant`)      | `wire/database/infrastructure/secondary/AdminSchemaInitializer`         |
+| Correspondance tenant vers schema              | `wire/database/infrastructure/secondary/TenantRegistry`                 |
 | Identifiant de tenant Hibernate                | `wire/database/infrastructure/secondary/CurrentTenantResolver`          |
 | Positionnement du schema sur la connexion      | Hibernate, via `MULTI_TENANT_SCHEMA_MAPPER`                             |
 | Creation et migration des schemas au demarrage | `wire/database/infrastructure/secondary/TenantSchemasInitializer`       |
@@ -61,17 +61,34 @@ la commande exactes.
 
 ## Ou sont declarees les entreprises
 
-Le **mecanisme** est du code de production : la liaison `application.multitenancy`, la resolution du
-schema, l'initialisation Liquibase. Le **jeu d'entreprises** `impeccmold` / `katilys`, lui, est une
-donnee de developpement — il n'a rien a faire dans l'artefact livre.
+Les entreprises sont les lignes de la table `tenant`, dans le schema par defaut
+(`application.multitenancy.default-schema`, `public`), qui ne porte aucune table metier :
 
-D'ou la repartition :
+| colonne         | role                                                                                      |
+| --------------- | ----------------------------------------------------------------------------------------- |
+| `id`            | cle, valeur du claim `tenant` Keycloak (`^[a-z][a-z0-9_]{0,62}$`)                         |
+| `schema_name`   | schema des donnees de l'entreprise (meme motif, unique)                                   |
+| `status`        | `ACTIVE`, ou `SUSPENDED` : l'entreprise recoit 403, ses donnees restent                   |
+| `jdbc_url`      | reserve a une base dediee (#89), pas encore lu                                            |
+| `username`      | reserve a une base dediee (#89), pas encore lu                                            |
+| `secret_ref`    | reserve a une base dediee (#89) : le **nom** d'une variable d'env, jamais un mot de passe |
+| `pool_max_size` | reserve a un pool par entreprise (#88), pas encore lu                                     |
 
-| Fichier                                           | Contenu                                      |
-| ------------------------------------------------- | -------------------------------------------- |
-| `src/main/resources/config/application.yml`       | `tenants: []` — aucune entreprise par defaut |
-| `src/main/resources/config/application-local.yml` | impeccmold et katilys, pour le dev           |
-| `src/test/resources/config/application-test.yml`  | impeccmold et katilys, pour les tests        |
+Au demarrage, `AdminSchemaInitializer` cree et migre cette table avec son propre changelog
+(`config/liquibase/admin/master.xml`, historique dans le `databasechangelog` du schema par defaut).
+`TenantRegistry` lit ensuite les lignes `ACTIVE`, une fois : une entreprise ajoutee ou suspendue n'est
+prise en compte qu'au **redemarrage** suivant. Enfin `TenantSchemasInitializer` cree et migre le schema
+de chacune.
+
+Le **mecanisme** est du code de production. Le **jeu d'entreprises** `impeccmold` / `katilys`, lui, est
+une donnee de developpement — il n'a rien a faire dans l'artefact livre. Il est depose dans la table par
+un changelog distinct, que seul son profil declare via `application.multitenancy.seed-change-log` :
+
+| Profil  | `seed-change-log`                                                                                                                                         |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| aucun   | absent — registre vide                                                                                                                                    |
+| `local` | `config/liquibase/admin/seed/local.xml` (src/main) : impeccmold et katilys                                                                                |
+| `test`  | `config/liquibase/admin/seed/test.xml` (src/test) : impeccmold, katilys, les entreprises propres a certaines classes de test, et une entreprise suspendue |
 
 Consequence : **lancer l'application sans profil ne cree aucun schema**, et tout appel a `/api/**`
 repond 403 faute de tenant connu. C'est le comportement voulu — un artefact de production ne
@@ -81,27 +98,23 @@ s'auto-provisionne pas des entreprises de demonstration. Pour un lancement local
 java -jar target/glmproject-0.0.1-SNAPSHOT.jar --spring.profiles.active=local
 ```
 
-La liste est dupliquee entre les profils `local` et `test` : les profils Spring ne s'heritent pas entre
-`src/main` et `src/test`, et ces deux jeux ont vocation a diverger le jour ou un test aura besoin d'une
-entreprise supplementaire.
-
 ## Ajouter une entreprise
 
-1. Declarer le tenant dans le profil concerne (`application-local.yml` en developpement) :
+1. Inserer sa ligne dans le registre, sur la base principale :
 
-```yaml
-application:
-  multitenancy:
-    tenants:
-      - id: nouvelle_entreprise
-        schema: nouvelle_entreprise
+```sql
+INSERT INTO public.tenant (id, schema_name, status) VALUES ('nouvelle_entreprise', 'nouvelle_entreprise', 'ACTIVE');
 ```
 
-L'identifiant et le schema doivent respecter `^[a-z][a-z0-9_]{0,62}$`.
+En developpement, ajouter plutot un changeset au jeu du profil (`seed/local.xml`) : une base locale
+recreee le retrouve.
 
 2. Donner l'attribut `tenant` aux utilisateurs de cette entreprise dans Keycloak (valeur = l'`id`
    declare ci-dessus).
 3. Redemarrer l'application : le schema neuf passe sa garde et est installe au demarrage.
+
+Suspendre une entreprise : `UPDATE public.tenant SET status = 'SUSPENDED' WHERE id = '...'`, puis
+redemarrer. Son schema et ses donnees ne sont pas touches.
 
 ## Utilisateurs de developpement
 
@@ -169,12 +182,16 @@ l'absence d'appel `userinfo` sur mille requetes distinctes.
 - Un test d'integration ne peut pas etre `@Transactional` : le listener transactionnel s'execute avant
   celui qui installe le contexte de securite, la session s'ouvrirait donc sans tenant. Passer par le
   `TransactionTemplate` **dans** le corps du test.
+- Une classe de test qui veut des donnees que personne d'autre ne voit utilise une entreprise qui lui est
+  propre (`supervision_fixture`, `dossier_fixture`, ...) : elle se declare dans `seed/test.xml`, jamais
+  dans les properties de la classe.
 - Cote Cucumber, le token factice a la forme `base64("<username>|<roles>|<tenant>")` ; le step a deux
   arguments retombe sur `impeccmold`.
 
 `FreshActivitySchemaIT` possede trois PostgreSQL Testcontainers neufs et non reutilises, distincts de
 la datasource des autres IT. Il demarre la vraie application, son initialiseur et ses mappings JPA
-avec `ddl-auto=none` : deux entreprises, redemarrage sans modification, puis une troisieme neuve. Les
+avec `ddl-auto=none`, sans jeu de test : chaque entreprise y est inseree dans le registre avant le
+demarrage. Deux entreprises, redemarrage sans modification, puis une troisieme neuve. Les
 catalogues, contraintes, index, journaux, projections et lecteurs reels sont controles par tenant.
 Un autre conteneur installe un prefixe historique valide depuis une fixture de test controlee ; son
 refus laisse catalogue et historique inchanges, ainsi que les donnees d'un tenant voisin deja neuf.
@@ -184,7 +201,7 @@ aucune base, aucun volume ni conteneur preexistant.
 ## Passage en production : decisions restant a prendre
 
 **Le montage actuel est un choix de phase de conception.** Un seul cluster PostgreSQL, une seule
-`DataSource`, une liste de tenants statique dans les profils de developpement, et une migration jouee au demarrage
+`DataSource`, un registre lu une fois au demarrage, et une migration jouee au demarrage
 de l'application : c'est suffisant pour valider la mecanique d'isolation, ce n'est pas un modele de
 deploiement. Deux axes independants restent a trancher avant une mise en production.
 
@@ -203,7 +220,7 @@ Classes a reprendre, toutes dans `wire/database/infrastructure/secondary` :
 
 | Classe                               | Devenir                                                                |
 | ------------------------------------ | ---------------------------------------------------------------------- |
-| `TenantSchemas`                      | rend un couple (DataSource, schema) au lieu d'un nom de schema         |
+| `TenantRegistry`                     | rend un couple (DataSource, schema) au lieu d'un nom de schema         |
 | `MultitenancyHibernateConfiguration` | declare un `MultiTenantConnectionProvider` a la place du schema mapper |
 | `TenantSchemasInitializer`           | boucle sur les DataSources, plus sur les schemas d'une seule           |
 | `CurrentTenantResolver`              | rend l'identifiant de tenant, plus le nom de schema                    |
@@ -219,22 +236,17 @@ configuration Keycloak. Aucun agregat ne porte d'identifiant d'entreprise, et ri
 
 ### Axe 2 — Provisioning : d'ou vient la liste des entreprises
 
-Les profils `local` et `test` ne tiennent plus des qu'il y a plusieurs instances, parce que la liste
-porte alors des **identifiants de connexion**, qui n'ont rien a faire dans un fichier versionne. La base
-`application.yml` declare deja `tenants: []` : c'est l'adapter du port `Tenants` qui changera de source,
-pas le format des properties.
+**Fait (#87)** : la liste des entreprises est la table `tenant` du schema par defaut, et non plus une
+liste de properties. Elle porte deja les colonnes d'une base dediee (`jdbc_url`, `username`, et une
+_reference_ de secret `secret_ref`), lues a partir de #89. Le port `Tenants` n'a pas change ; seul son
+adapter est passe de « lit les properties » a « lit la table d'administration ».
 
-La forme habituelle est un plan de controle : une table `tenant` dans une base d'administration (hote,
-port, base, schema, et une _reference_ de secret), plus un gestionnaire de secrets pour les mots de
-passe. Le port `Tenants` ne change pas ; seul son adapter passe de « lit les properties » a « lit la
-table d'administration ».
-
-Deux consequences a anticiper :
+Deux consequences restent a anticiper :
 
 - **Un tenant ajoute a chaud** suppose de construire les `DataSource` paresseusement et de rafraichir le
   registre sans redemarrer. Le dimensionnement devient reel : N entreprises multipliees par la taille de
   pool, ca se compte.
-- **`TenantSchemas` melange aujourd'hui deux responsabilites** qu'il faudra separer : quelles entreprises
+- **`TenantRegistry` melange encore deux responsabilites** qu'il faudra separer : quelles entreprises
   existent (registre) et ou vivent leurs donnees (topologie). En production elles viennent de sources
   differentes et changent a des rythmes differents.
 

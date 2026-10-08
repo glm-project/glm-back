@@ -24,11 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.json.JsonMapper;
 
-@IntegrationTest(
-  properties = {
-    "application.multitenancy.tenants[0].id=confirmations_fixture", "application.multitenancy.tenants[0].schema=confirmations_fixture",
-  }
-)
+@IntegrationTest
 @AutoConfigureMockMvc
 class ConfirmationDeResolutionResourceIT {
 
