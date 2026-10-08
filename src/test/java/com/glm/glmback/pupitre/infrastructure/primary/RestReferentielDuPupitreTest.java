@@ -10,6 +10,7 @@ import com.glm.glmback.pupitre.domain.EtatDuSuivi;
 import com.glm.glmback.pupitre.domain.OperateurDuPupitre;
 import com.glm.glmback.pupitre.domain.ReferentielDuPupitre;
 import com.glm.glmback.pupitre.domain.SuiviDuPupitre;
+import com.glm.glmback.shared.activityduration.domain.MaximumActivityDuration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -23,7 +24,8 @@ class RestReferentielDuPupitreTest {
         LE_10_MAI_2026_A_8H,
         List.of(OPERATEUR_DUPONT),
         List.of(suiviOf42Vierge()),
-        List.of(CATEGORIE_MOULE, CATEGORIE_OF)
+        List.of(CATEGORIE_MOULE, CATEGORIE_OF),
+        MaximumActivityDuration.standard()
       )
     );
 
@@ -31,6 +33,7 @@ class RestReferentielDuPupitreTest {
     assertThat(referentiel.operateurs()).hasSize(1);
     assertThat(referentiel.suivis()).hasSize(1);
     assertThat(referentiel.categories()).containsExactly("MOULE", "OF");
+    assertThat(referentiel.dureeMaximaleDActivite()).isEqualTo("PT13H");
   }
 
   @Test

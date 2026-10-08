@@ -1,5 +1,6 @@
 package com.glm.glmback.pupitre.domain;
 
+import com.glm.glmback.shared.activityduration.domain.MaximumActivityDuration;
 import com.glm.glmback.shared.time.domain.Clock;
 import java.time.Instant;
 
@@ -37,7 +38,7 @@ public final class ReferentielsDuPupitreService {
   public ReferentielDuPupitre referentiel() {
     Instant maintenant = clock.now();
 
-    return new ReferentielDuPupitre(maintenant, operateurs.tous(), suivis.tous(), categories.toutes());
+    return new ReferentielDuPupitre(maintenant, operateurs.tous(), suivis.tous(), categories.toutes(), MaximumActivityDuration.standard());
   }
 
   public interface ReferentielsDuPupitreServiceOperateursBuilder {

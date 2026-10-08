@@ -169,6 +169,14 @@ Feature: Le referentiel que le pupitre met en cache
     When je lis le referentiel du pupitre a "2026-05-11T07:00:00Z"
     Then la reponse a le statut http 200
 
+  Scenario: Le referentiel du pupitre donne la duree maximale d'une activite
+    # L'echeance de chaque activite est son debut plus cette duree : le pupitre hors ligne la lit ici plutot que de la
+    # coder, et le serveur n'en a qu'une source, qu'il partage avec sa regle de reception.
+    Given I am logged in as "pupitre-atelier-1" with role "USER"
+    When je lis le referentiel du pupitre a "2026-05-11T07:00:00Z"
+    Then la reponse a le statut http 200
+    And le referentiel du pupitre porte la duree maximale d'activite "PT13H"
+
   Scenario: Un jeton sans entreprise n'atteint pas le referentiel
     Given I am logged in as "pupitre-atelier-1" with role "USER" without tenant
     When je lis le referentiel du pupitre a "2026-05-11T07:00:00Z"

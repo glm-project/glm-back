@@ -30,8 +30,9 @@ purement lecteur, qui ne possède aucune table, n'écrit rien, et recalcule tout
 
 ## Agrégat de lecture
 
-`ReferentielDuPupitre` : un `genereLe`, une liste d'`OperateurDuPupitre`, une liste de `SuiviDuPupitre` et la liste
-ordonnée des `CategorieDElement` de l'entreprise, qui range les tuiles. Aucune
+`ReferentielDuPupitre` : un `genereLe`, une liste d'`OperateurDuPupitre`, une liste de `SuiviDuPupitre`, la liste
+ordonnée des `CategorieDElement` de l'entreprise, qui range les tuiles, et la durée maximale d'une activité
+(`dureeMaximaleDActivite`, du noyau partagé `shared/activityduration` que lit aussi l'échéance d'atelier). Aucune
 identité, aucune persistance — l'objet naît et meurt dans l'appel.
 
 `ReferentielsDuPupitreService` assemble les opérateurs, les suivis et les catégories, et les date par le port `Clock`.

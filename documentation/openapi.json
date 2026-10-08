@@ -1752,6 +1752,11 @@
             },
             "type" : "array"
           },
+          "dureeMaximaleDActivite" : {
+            "description" : "La duree maximale d'une activite, au format ISO 8601 : l'echeance de chaque activite est son debut plus cette duree.\nUne activite que rien n'a terminee a cette echeance se termine automatiquement ; le pupitre hors ligne la lit ici\nplutot que de la coder.\n",
+            "example" : "PT13H",
+            "type" : "string"
+          },
           "genereLe" : {
             "description" : "Instant ou le serveur a produit la reponse et evalue l'expiration. Il ne garantit pas un instantane commun face aux ecritures concurrentes.",
             "format" : "date-time",
@@ -1772,7 +1777,7 @@
             "type" : "array"
           }
         },
-        "required" : [ "categories", "genereLe", "operateurs", "suivis" ],
+        "required" : [ "categories", "dureeMaximaleDActivite", "genereLe", "operateurs", "suivis" ],
         "type" : "object"
       },
       "RestRegularisation" : {

@@ -133,7 +133,8 @@ suivent leurs propriétaires dans les mêmes sous-packages.
   appliquée, la clôture restant acquise ; survenue après, elle est absorbée, une fois sa cible contrôlée.
 - **Une activité que rien n'a terminée se termine automatiquement à son échéance** : son début plus 13 heures
   écoulées (`Echeance`), neutres au changement d'heure. Ce délai est la règle de l'atelier, pas une donnée de
-  paramétrage : il reste une constante du domaine. Rien n'est écrit ni planifié : `Activite` ne dépend que des faits
+  paramétrage : il vient du noyau partagé `shared/activityduration` (`MaximumActivityDuration`), que lit aussi le
+  référentiel du pupitre. Rien n'est écrit ni planifié : `Activite` ne dépend que des faits
   actifs, et seule sa lecture à un instant d'évaluation la dit en cours, terminée à sa fin réelle, ou
   terminée automatiquement à l'échéance avec une anomalie, que seule une fin réelle retire. Cette règle a trois
   lecteurs : le domaine (`Activite.a`), la supervision (`ActiviteDeSupervision.a`) et le SQL de la liste des fins

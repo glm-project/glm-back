@@ -409,7 +409,8 @@ tuiles par catégorie, dans cet ordre, et la liste est vide tant que l'entrepris
       ]
     }
   ],
-  "categories": ["MOULE", "OF"]
+  "categories": ["MOULE", "OF"],
+  "dureeMaximaleDActivite": "PT13H"
 }
 ```
 
@@ -435,6 +436,9 @@ tuiles par catégorie, dans cet ordre, et la liste est vide tant que l'entrepris
   par une fin ou une transition, conservée après correction ; `echeance` permet l'expiration hors ligne, à cet
   instant inclus, sans fabriquer de fin. `etat` vaut `EN_COURS` s'il reste une activité interprétable en cours,
   sinon `INTERROMPU` s'il existe un pointage actif, sinon `EN_ATTENTE`.
+- **`dureeMaximaleDActivite` est la durée maximale d'une activité** (`"PT13H"`, ISO 8601) : l'échéance de chaque activité
+  est son début plus cette durée. Le pupitre la lit ici au lieu de coder 13 h ; le serveur n'en a qu'une source,
+  qu'il partage avec sa règle de réception.
 - **Aucun montant.** Ni `tauxHoraire` d'opérateur, ni `coutHoraire` de poste : un écran d'atelier partagé n'a pas à
   les recevoir, et `GET /api/couts-de-revient/{elementId}` reste réservé au `GESTIONNAIRE`.
 - **Aucun élément clôturé, aucun journal.** `etat` ne vaut donc jamais `CLOTURE` ici. Le journal complet, événements

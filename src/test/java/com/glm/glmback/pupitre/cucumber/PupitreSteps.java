@@ -189,6 +189,11 @@ public class PupitreSteps {
     assertThat(CucumberRestTestContext.getElement("$.genereLe")).isEqualTo(instant);
   }
 
+  @Then("le referentiel du pupitre porte la duree maximale d'activite {string}")
+  public void lReferentielPorteLaDureeMaximale(String duree) {
+    assertThat(CucumberRestTestContext.getElement("$.dureeMaximaleDActivite")).isEqualTo(duree);
+  }
+
   @Then("les categories du referentiel du pupitre commencent par {string}")
   public void lesCategoriesCommencentPar(String code) {
     assertThat(categories()).startsWith(code);
