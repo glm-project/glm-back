@@ -5,6 +5,8 @@ import static com.glm.glmback.shared.pagination.domain.PaginationFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
+import com.glm.glmback.shared.pagination.domain.Page;
+import com.glm.glmback.shared.pagination.domain.Pageable;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,7 +54,34 @@ class CategoriesDeProduitServiceTest {
     repository.create(categorieDeProduitOf());
     repository.create(categorieDeProduitMoule());
 
-    assertThat(categories.list(firstPageOfTen()).content()).containsExactly(categorieDeProduitMoule(), categorieDeProduitOf());
+    assertThat(categories.list(firstPageOfTen()).content())
+      .extracting(CategorieDeProduitListee::categorie)
+      .containsExactly(categorieDeProduitMoule(), categorieDeProduitOf());
+  }
+
+  @Test
+  void shouldTellWhichListedCategoriesHoldProduits() {
+    repository.create(categorieDeProduitMoule());
+    repository.create(categorieDeProduitOf());
+    elements.range(CODE_MOULE);
+
+    assertThat(categories.list(firstPageOfTen()).content()).containsExactly(
+      new CategorieDeProduitListee(categorieDeProduitMoule(), true),
+      new CategorieDeProduitListee(categorieDeProduitOf(), false)
+    );
+  }
+
+  @Test
+  void shouldKeepPaginationOfListedCategories() {
+    repository.create(categorieDeProduitMoule());
+    repository.create(categorieDeProduitOf());
+
+    Page<CategorieDeProduitListee> page = categories.list(new Pageable(1, 1));
+
+    assertThat(page.content()).containsExactly(new CategorieDeProduitListee(categorieDeProduitOf(), false));
+    assertThat(page.currentPage()).isEqualTo(1);
+    assertThat(page.pageSize()).isEqualTo(1);
+    assertThat(page.totalElementsCount()).isEqualTo(2);
   }
 
   @Test
@@ -97,10 +126,9 @@ class CategoriesDeProduitServiceTest {
 
     categories.reordonne(List.of(CODE_OF, CODE_MOULE));
 
-    assertThat(categories.list(firstPageOfTen()).content()).containsExactly(
-      categorieDeProduitOfEnTete(),
-      categorieDeProduitMouleEnSecond()
-    );
+    assertThat(categories.list(firstPageOfTen()).content())
+      .extracting(CategorieDeProduitListee::categorie)
+      .containsExactly(categorieDeProduitOfEnTete(), categorieDeProduitMouleEnSecond());
   }
 
   @Test

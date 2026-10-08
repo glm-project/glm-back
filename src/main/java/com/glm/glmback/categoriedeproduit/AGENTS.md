@@ -35,7 +35,9 @@ le code **est** l'identité.
 - **Une catégorie qui range des produits ne se supprime pas** : leur nom porte son code. La règle vit dans le domaine,
   derrière le port `CategoriesUtilisees` ; son adapter lit `element_de_fabrication` par une entité en lecture seule
   (patron `ElementEngageableEntity`), sans importer `elementdefabrication`. La clé étrangère
-  `fk_element_de_fabrication_categorie` est le filet.
+  `fk_element_de_fabrication_categorie` est le filet. La liste dit aussi, pour chaque catégorie, si des produits y sont
+  rangés (`CategorieDeProduitListee`), pour que l'écran ne propose pas une suppression vouée au refus : les usages
+  d'une page se lisent en une requête (`CategoriesUtilisees.utiliseesParmi`).
 - **Un réordonnancement donne l'ordre entier** : chaque catégorie une fois et une seule, sinon
   `OrdreIncompletException` (409). Les rangs sont alors réattribués de 1 à n par la transition
   `CategorieDeProduit.deplace`, qui conserve le code.

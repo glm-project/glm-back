@@ -49,7 +49,8 @@ class CategorieDeProduitResource {
   @Operation(
     summary = "Lister les categories de produit",
     description = """
-    La page demandee, dans l'ordre d'affichage choisi par l'entreprise.
+    La page demandee, dans l'ordre d'affichage choisi par l'entreprise. Chaque categorie dit si des produits y sont
+    ranges : l'ecran ne propose alors pas de la supprimer.
     """
   )
   @ApiResponse(responseCode = "200", description = "La page demandee, dans l'ordre d'affichage.")
@@ -59,11 +60,11 @@ class CategorieDeProduitResource {
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
-  @Operation(summary = "Declarer une categorie de produit", description = "La categorie se range en dernier.")
+  @Operation(summary = "Declarer une categorie de produit", description = "La categorie se range en dernier, sans produit.")
   @ApiResponse(responseCode = "201", description = "La categorie est declaree.")
   @ApiResponse(responseCode = "409", description = "Une categorie porte deja ce code.")
   RestCategorieDeProduit create(@RequestBody @Valid RestCreationCategorieDeProduit request) {
-    return RestCategorieDeProduit.from(applicationService.create(request.toDomain()));
+    return RestCategorieDeProduit.declaree(applicationService.create(request.toDomain()));
   }
 
   @PutMapping("/ordre")
