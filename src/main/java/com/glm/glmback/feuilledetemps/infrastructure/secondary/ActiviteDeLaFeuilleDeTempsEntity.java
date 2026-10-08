@@ -58,9 +58,8 @@ class ActiviteDeLaFeuilleDeTempsEntity {
   @Convert(converter = ExactInstantConverter.class)
   private Instant fin;
 
-  @Column(name = "fin_au_plus_tard")
-  @Convert(converter = ExactInstantConverter.class)
-  private Instant finAuPlusTard;
+  @Column(name = "a_resoudre")
+  private boolean aResoudre;
 
   protected ActiviteDeLaFeuilleDeTempsEntity() {
     // Constructeur requis par JPA.
@@ -78,7 +77,6 @@ class ActiviteDeLaFeuilleDeTempsEntity {
         )
       )
       .plage(new Plage(debut, Optional.ofNullable(fin)))
-      .echeance(echeance)
-      .finAuPlusTard(Optional.ofNullable(finAuPlusTard));
+      .echeance(echeance);
   }
 }

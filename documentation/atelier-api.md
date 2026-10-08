@@ -524,7 +524,7 @@ GET /api/syntheses-des-heures/{operateurId}?annee=2026&semaine=20&evaluation=202
 Les deux lectures acceptent un instant ISO-8601 facultatif et rendent l'instant effectivement utilisé dans
 `evaluation`. Chaque lecture relève l'heure du serveur une seule fois : elle fournit l'instant par défaut et
 vérifie la borne future. Cet instant d'évaluation gouverne l'expiration et les jours atteints par les activités
-en cours et par les plages possibles à résoudre. Passer le même instant à la feuille et à la synthèse assure la même
+en cours. Passer le même instant à la feuille et à la synthèse assure la même
 décision d'expiration. Une écriture entre les appels peut changer les faits lus ; l'instant commun ne garantit
 pas un instantané commun.
 
@@ -539,20 +539,7 @@ ou `TERMINEE_AUTOMATIQUEMENT` porte une fin ; `EN_COURS` rend une indication san
 sans durée comptabilisée. La synthèse compte seulement les portions terminées, réelles ou automatiques.
 Les portions sont coupées aux minuits du fuseau de l'entreprise ; ces coupes préservent les bornes entières.
 
-### Lire les jours possibles d'un conflit
-
-La feuille rend une activité `A_RESOUDRE` sur chaque jour de sa plage possible, jusqu'à `evaluation` ou sa
-`activite.finAuPlusTard`, la première borne atteinte. Cette fin possible est exclusive, issue des faits d'atelier
-et conservée entière sur chaque portion. `fin` et `activite.fin` restent absents ; aucune durée n'est fabriquée.
-L'identité de l'activité reste celle de l'ouverture originale, même après correction du pointage ouvrant.
-Une régularisation peut porter cette plage au-delà de 13 h ou d'une semaine ; une clôture la limite sans la prolonger.
-
-### Totaux et conflits dans la synthèse
-
-La synthèse rend `conflits[]`, dont chaque entrée porte `element`, `poste` facultatif, `activites[]` (identités
-stables) et `pointages[]` (identités des gestes dans l'ordre métier). Une séquence est rendue si une activité ou
-un pointage de cette séquence figure dans la semaine. Elle reste visible sans activité ni poste ; aucune borne
-basse arbitraire sur le début ne supprime un conflit commencé avant la semaine.
+### Totaux dans la synthèse
 
 Les quatre totaux — `jours[].dureeOperationnelle`, `dureeOperationnelleTotale`, `elements[].duree` et
 `elements[].dureeNonConformite` — sont des objets :
@@ -561,16 +548,14 @@ Les quatre totaux — `jours[].dureeOperationnelle`, `dureeOperationnelleTotale`
 { "complete": true, "valeur": "PT2H" }
 ```
 
-Un total dépendant d'une activité à résoudre porte seulement `{ "complete": false }` : `valeur` est absente,
-jamais une somme partielle ni zéro. La NC reste comprise dans le total ; sa part séparée ne dépend que des NC.
-Un conflit de travail laisse donc une NC certaine chiffrée. Les jours et éléments indépendants restent complets.
-Une activité en cours ne contribue pas à la durée et n'incomplète aucun total. Un conflit sans activité à résoudre
-laisse les totaux complets. Les corrections et annulations recalculent les valeurs et retirent le conflit résolu.
+`complete` est toujours vrai et `valeur` toujours présente : aucune activité à résoudre ne contribue plus à un total.
+Le champ reste au contrat le temps que le front cesse de le lire. La NC reste comprise dans le total ; sa part
+séparée ne dépend que des NC. Une activité en cours ne contribue pas à la durée.
 
-Le journal brut `jours[].pointages[]` porte aussi `id`, `intention` et `cible` facultative. Son ordre est l'heure
-métier, puis `FIN < TRANSITION < OUVERTURE`, puis l'identité ; il ne suit jamais l'ordre de réception.
+Le journal brut `jours[].pointages[]` porte `id`, `type`, `dateDeSurvenue`, `element` et `poste`. Son ordre est l'heure
+métier, puis la fin avant l'ouverture, puis l'identité ; il ne suit jamais l'ordre de réception.
 Une FIN ordinaire après l'échéance seule conserve les 13 h complètes et l'anomalie automatique dans la feuille,
-sans conflit ni nouvelle qualification « sans effet » dans le journal.
+sans nouvelle qualification « sans effet » dans le journal.
 
 ## 4. Erreurs
 

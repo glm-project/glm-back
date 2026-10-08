@@ -13,7 +13,8 @@ interface SpringDataActivitesDeLaFeuilleDeTempsRepository extends JpaRepository<
     join fetch activite.suivi
     where activite.operateurId = :operateur
       and activite.debut < :finExclusive
-      and coalesce(activite.fin, activite.finAuPlusTard, activite.echeance) > :debut
+      and activite.aResoudre = false
+      and coalesce(activite.fin, activite.echeance) > :debut
     order by activite.debut, activite.id
     """
   )

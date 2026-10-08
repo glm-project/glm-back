@@ -23,7 +23,7 @@ class JournalDeLaSynthese implements JournalDeLOperateur {
   @Override
   public List<JournalDElement> dans(OperateurId operateur, Instant debut, Instant finExclusive) {
     var parSuivi = pointages
-      .findByOperateurIdAndAnnulationDateIsNullAndDateDeSurvenueGreaterThanEqualAndDateDeSurvenueLessThanOrderByDateDeSurvenueAscIdAsc(
+      .findByOperateurIdAndDateDeSurvenueGreaterThanEqualAndDateDeSurvenueLessThanOrderByDateDeSurvenueAscIdAsc(
         operateur.uuid(),
         debut,
         finExclusive

@@ -359,8 +359,7 @@ class FreshActivitySchemaIT {
           new com.glm.glmback.syntheseheures.domain.SemaineCalendaire(2026, 19),
           Optional.of(LE_11_MAI_2026_A_9H15)
         );
-      assertThat(hours.dureeOperationnelleTotale().valeur()).contains(Duration.ofHours(9));
-      assertThat(hours.conflits()).isEmpty();
+      assertThat(hours.dureeOperationnelleTotale().valeur()).isEqualTo(Duration.ofHours(9));
       var cost = application
         .getBean(CoutsDeRevientApplicationService.class)
         .rapport(new com.glm.glmback.coutderevient.domain.ElementId(ELEMENT_OF_2026_000042.uuid()));

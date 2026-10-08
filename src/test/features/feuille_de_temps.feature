@@ -479,7 +479,7 @@ Feature: Feuille de temps hebdomadaire d'un operateur
       | debut                | fin                  | idActivite | etat     | debutActivite        | finActivite          |
       | 2026-05-10T22:00:00Z | 2026-05-11T01:00:00Z | A          | TERMINEE | 2026-05-10T20:00:00Z | 2026-05-11T01:00:00Z |
 
-  Scenario Outline: Une fin visee sur le travail deja transforme conserve les activites a resoudre
+  Scenario Outline: Une fin visee sur le travail deja transforme laisse les activites a resoudre hors de la feuille
     Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la feuille de temps recoit sur l'element "carter" les pointages
       | alias       | type            | intention            | cible | operateur | survenue             | reception            |
@@ -488,10 +488,7 @@ Feature: Feuille de temps hebdomadaire d'un operateur
       | <troisieme> | <typeTroisieme> | <intentionTroisieme> | A     | martin    | <survenueTroisieme>  | 2026-05-11T15:01:00Z |
     And il est "2026-05-11T20:00:00Z"
     When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
-    Then les activites du "2026-05-11" sont
-      | idActivite | categorie      | etat       | debut                | fin | debutActivite        | finActivite |
-      | A          | TRAVAIL        | A_RESOUDRE | 2026-05-11T06:00:00Z |     | 2026-05-11T06:00:00Z |             |
-      | N          | NON_CONFORMITE | A_RESOUDRE | 2026-05-11T10:00:00Z |     | 2026-05-11T10:00:00Z |             |
+    Then la feuille de temps ne porte aucune activite
 
     Examples:
       | second | typeSecond     | intentionSecond | survenueSecond       | troisieme | typeTroisieme  | intentionTroisieme | survenueTroisieme    |
@@ -513,20 +510,3 @@ Feature: Feuille de temps hebdomadaire d'un operateur
     And les activites du "2026-05-11" sont
       | idActivite | element | etat     | debut                | fin                  |
       | A          | carter  | TERMINEE | 2026-05-11T06:00:00Z | 2026-05-11T08:00:00Z |
-
-  Scenario: Un conflit du dimanche figure aussi lundi sans pointage local
-    Given l'element "carter" est engage en atelier a "2026-05-10T18:00:00Z"
-    And la feuille de temps recoit sur l'element "carter" les pointages
-      | alias | type           | intention  | cible | operateur | survenue             |
-      | A     | DEBUT          | OUVERTURE  |       | martin    | 2026-05-10T20:00:00Z |
-      | N     | NON_CONFORMITE | TRANSITION | A     | martin    | 2026-05-10T21:00:00Z |
-      | F     | FIN            | FIN        | A     | martin    | 2026-05-10T21:30:00Z |
-    And il est "2026-05-11T11:00:00Z"
-    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
-    Then les activites a resoudre du "2026-05-11" sont
-      | idActivite | categorie      | etat       | debut                | fin | debutActivite        | finActivite | finAuPlusTard        |
-      | A          | TRAVAIL        | A_RESOUDRE | 2026-05-10T22:00:00Z |     | 2026-05-10T20:00:00Z |             | 2026-05-11T09:00:00Z |
-      | N          | NON_CONFORMITE | A_RESOUDRE | 2026-05-10T22:00:00Z |     | 2026-05-10T21:00:00Z |             | 2026-05-11T10:00:00Z |
-    And le "2026-05-12" ne porte aucune activite
-    When je lis la synthese du releve avec l'instant rendu par la feuille
-    Then la synthese du releve conserve les jours a resoudre de la feuille

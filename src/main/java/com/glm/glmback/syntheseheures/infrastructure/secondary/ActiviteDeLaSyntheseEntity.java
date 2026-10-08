@@ -58,25 +58,11 @@ class ActiviteDeLaSyntheseEntity {
   @Convert(converter = ExactInstantConverter.class)
   private Instant fin;
 
-  @Column(name = "fin_au_plus_tard")
-  @Convert(converter = ExactInstantConverter.class)
-  private Instant finAuPlusTard;
-
-  @Column(name = "sequence_id")
-  private UUID sequenceId;
-
-  private Integer ordreDansSequence;
+  @Column(name = "a_resoudre")
+  private boolean aResoudre;
 
   protected ActiviteDeLaSyntheseEntity() {
     // Constructeur requis par JPA.
-  }
-
-  UUID sequenceId() {
-    return sequenceId;
-  }
-
-  ActiviteId identite() {
-    return new ActiviteId(id);
   }
 
   ActiviteDElement toDomain() {
@@ -94,7 +80,6 @@ class ActiviteDeLaSyntheseEntity {
         )
         .plage(new Plage(debut, Optional.ofNullable(fin)))
         .echeance(echeance)
-        .finAuPlusTard(Optional.ofNullable(finAuPlusTard))
     );
   }
 }

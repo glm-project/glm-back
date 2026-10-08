@@ -19,7 +19,7 @@ record RestSyntheseDesHeures(
   @Schema(description = "Numero de la semaine ISO.", example = "20") int semaine,
   @Schema(description = "Les sept jours du lundi au dimanche, vides compris.") List<RestJourDeSynthese> jours,
   @Schema(
-    description = "Total de travail et NC des sept jours. Incomplet sans valeur si une activite a resoudre y contribue ; une activite en cours ne compte rien.",
+    description = "Total de travail et NC des sept jours ; une activite en cours ne compte rien.",
     requiredMode = Schema.RequiredMode.REQUIRED
   )
   RestDureeDeSynthese dureeOperationnelleTotale,
@@ -27,12 +27,7 @@ record RestSyntheseDesHeures(
     description = "Elements portant une activite ou un pointage dans la semaine, par premiere apparition puis nom. Un element reengage reste un seul element.",
     requiredMode = Schema.RequiredMode.REQUIRED
   )
-  List<RestElementDeLaSynthese> elements,
-  @Schema(
-    description = "Conflits concernant une activite ou un pointage rendu dans cette semaine.",
-    requiredMode = Schema.RequiredMode.REQUIRED
-  )
-  List<RestConflitDeSynthese> conflits
+  List<RestElementDeLaSynthese> elements
 ) {
   static RestSyntheseDesHeures from(SyntheseDesHeures synthese) {
     return new RestSyntheseDesHeures(
@@ -42,8 +37,7 @@ record RestSyntheseDesHeures(
       synthese.semaine().numero(),
       synthese.jours().stream().map(RestJourDeSynthese::from).toList(),
       RestDureeDeSynthese.from(synthese.dureeOperationnelleTotale()),
-      synthese.elements().stream().map(RestElementDeLaSynthese::from).toList(),
-      synthese.conflits().stream().map(RestConflitDeSynthese::from).toList()
+      synthese.elements().stream().map(RestElementDeLaSynthese::from).toList()
     );
   }
 }

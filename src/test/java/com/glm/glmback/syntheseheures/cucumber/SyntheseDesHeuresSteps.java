@@ -244,64 +244,9 @@ public class SyntheseDesHeuresSteps {
     assertThat(CucumberRestTestContext.getElement("$.dureeOperationnelleTotale")).isEqualTo(Map.of("valeur", duree, "complete", true));
   }
 
-  @Then("la synthese laisse incomplet sans chiffre le total {string}")
-  public void totalIncompletSansChiffre(String chemin) {
-    assertThat(CucumberRestTestContext.getElement(chemin)).isEqualTo(Map.of("complete", false));
-  }
-
-  @Then("le jour {string} de la synthese est incomplet sans chiffre")
-  public void jourIncompletSansChiffre(String jour) {
-    assertThat(jourDe(jour).get("dureeOperationnelle")).isEqualTo(Map.of("complete", false));
-  }
-
-  @Then("l'element {string} de la synthese est incomplet sans chiffre pour {string}")
-  public void elementIncompletSansChiffre(String element, String mesure) {
-    assertThat(elementDeLaSynthese(element).get(mesure)).isEqualTo(Map.of("complete", false));
-  }
-
   @Then("le journal du {string} est")
   public void leJournalDuEst(String jour, List<Map<String, String>> attendus) {
     compare(pointagesDu(jour), attendus);
-  }
-
-  @Then("la synthese restitue les identites et cibles du journal du {string}")
-  public void identitesEtCiblesDuJournal(String jour, List<Map<String, String>> attendus) {
-    List<Map<String, Object>> lus = pointagesDu(jour);
-    assertThat(lus).hasSameSizeAs(attendus);
-    for (int rang = 0; rang < attendus.size(); rang++) {
-      Map<String, String> attendu = attendus.get(rang);
-      assertThat(lus.get(rang).get("id")).isEqualTo(pointages.get(attendu.get("alias")));
-      assertThat(lus.get(rang).get("intention")).isEqualTo(attendu.get("intention"));
-      assertThat(lus.get(rang).get("cible")).isEqualTo(pointages.get(attendu.get("cible")));
-    }
-  }
-
-  @Then("l'element {string} de la synthese porte les totaux")
-  public void porteLesTotaux(String element, List<Map<String, String>> attendus) {
-    Map<String, Object> lu = elementDeLaSynthese(element);
-    for (Map<String, String> attendu : attendus) {
-      boolean complete = Boolean.parseBoolean(attendu.get("complete"));
-      Map<String, Object> total = complete ? Map.of("complete", true, "valeur", attendu.get("valeur")) : Map.of("complete", false);
-      assertThat(lu.get(attendu.get("mesure"))).isEqualTo(total);
-    }
-  }
-
-  @Then("la synthese porte les conflits")
-  @SuppressWarnings("unchecked")
-  public void porteLesConflits(List<Map<String, String>> attendus) {
-    List<Map<String, Object>> lus = (List<Map<String, Object>>) CucumberRestTestContext.getElement("$.conflits");
-    assertThat(lus).hasSameSizeAs(attendus);
-    for (int rang = 0; rang < attendus.size(); rang++) {
-      Map<String, String> attendu = attendus.get(rang);
-      assertThat(lus.get(rang).get("element")).isEqualTo(elements.get(attendu.get("element")));
-      assertThat(lus.get(rang).get("poste")).isEqualTo(postes.get(attendu.get("poste")));
-      assertThat(lus.get(rang).get("activites")).isEqualTo(identitesAttendues(attendu.get("activites")));
-      assertThat(lus.get(rang).get("pointages")).isEqualTo(identitesAttendues(attendu.get("pointages")));
-    }
-  }
-
-  private List<String> identitesAttendues(String aliases) {
-    return aliases == null || aliases.isEmpty() ? List.of() : java.util.Arrays.stream(aliases.split(",")).map(pointages::get).toList();
   }
 
   /**

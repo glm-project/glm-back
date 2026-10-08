@@ -2,7 +2,6 @@ package com.glm.glmback.syntheseheures.application;
 
 import com.glm.glmback.shared.time.domain.Clock;
 import com.glm.glmback.syntheseheures.domain.ActivitesDeLOperateur;
-import com.glm.glmback.syntheseheures.domain.ConflitsDeLOperateur;
 import com.glm.glmback.syntheseheures.domain.ElementsDeFabrication;
 import com.glm.glmback.syntheseheures.domain.FuseauHoraireDeLEntreprise;
 import com.glm.glmback.syntheseheures.domain.JournalDeLOperateur;
@@ -31,7 +30,6 @@ public class SynthesesDesHeuresApplicationService {
     FuseauHoraireDeLEntreprise fuseau,
     ActivitesDeLOperateur activites,
     JournalDeLOperateur journal,
-    ConflitsDeLOperateur conflits,
     ElementsDeFabrication elements,
     PostesDeTravail postes,
     Clock clock
@@ -41,7 +39,6 @@ public class SynthesesDesHeuresApplicationService {
       .fuseau(fuseau)
       .activites(activites)
       .journal(journal)
-      .conflits(conflits)
       .elements(elements)
       .postes(postes)
       .clock(clock);

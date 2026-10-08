@@ -23,16 +23,9 @@ record RestElementDeLaSynthese(
   @Schema(description = "Nom de l'element.", example = "PRD-2026-000015", requiredMode = Schema.RequiredMode.REQUIRED) String nom,
   @Schema(description = "Reference de l'element, relue au referentiel.", example = "1015") String reference,
   @Schema(description = "Description de l'element, relue au referentiel.", example = "Carter de pompe") String description,
-  @Schema(
-    description = "Total sur l'element dans la semaine, NC comprise. Incomplet sans valeur si une activite a resoudre y contribue.",
-    requiredMode = Schema.RequiredMode.REQUIRED
-  )
+  @Schema(description = "Total sur l'element dans la semaine, NC comprise.", requiredMode = Schema.RequiredMode.REQUIRED)
   RestDureeDeSynthese duree,
-  @Schema(
-    description = "Part de NC. Incomplete sans valeur si une NC a resoudre y contribue ; une contradiction de travail ne masque pas une NC certaine.",
-    requiredMode = Schema.RequiredMode.REQUIRED
-  )
-  RestDureeDeSynthese dureeNonConformite,
+  @Schema(description = "Part de NC.", requiredMode = Schema.RequiredMode.REQUIRED) RestDureeDeSynthese dureeNonConformite,
   @Schema(
     description = """
     Un couple par poste et nature distincts, dans l'ordre de premiere apparition, tire du travail comme des pointages :

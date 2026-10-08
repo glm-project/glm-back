@@ -5,26 +5,22 @@ import java.time.Instant;
 import java.util.Optional;
 
 /** Les faits projetes par atelier ; seule l'expiration depend de l'instant de lecture. */
-public record ActiviteInterpretee(ActiviteId id, Activite activite, Plage plage, Instant echeance, Optional<Instant> finAuPlusTard) {
+public record ActiviteInterpretee(ActiviteId id, Activite activite, Plage plage, Instant echeance) {
   public ActiviteInterpretee {
     Assert.notNull("id de l'activite", id);
     Assert.notNull("activite", activite);
     Assert.notNull("plage", plage);
     Assert.notNull("echeance", echeance);
-    Assert.notNull("fin au plus tard", finAuPlusTard);
   }
 
   public static IdentiteBuilder builder() {
-    return id -> activite -> plage -> echeance -> finAuPlusTard -> new ActiviteInterpretee(id, activite, plage, echeance, finAuPlusTard);
+    return id -> activite -> plage -> echeance -> new ActiviteInterpretee(id, activite, plage, echeance);
   }
 
   public IntervalleDActivite a(Instant evaluation) {
     EtatDActivite etat;
     Plage lue = plage;
-    if (finAuPlusTard.isPresent()) {
-      etat = EtatDActivite.A_RESOUDRE;
-      lue = new Plage(plage.debut(), Optional.empty());
-    } else if (plage.fin().isPresent()) {
+    if (plage.fin().isPresent()) {
       etat = EtatDActivite.TERMINEE;
     } else if (!evaluation.isBefore(echeance)) {
       etat = EtatDActivite.TERMINEE_AUTOMATIQUEMENT;
@@ -32,7 +28,7 @@ public record ActiviteInterpretee(ActiviteId id, Activite activite, Plage plage,
     } else {
       etat = EtatDActivite.EN_COURS;
     }
-    return new IntervalleDActivite(activite, lue, ActiviteLue.builder().id(id).etat(etat).plage(lue).finAuPlusTard(finAuPlusTard));
+    return new IntervalleDActivite(activite, lue, ActiviteLue.builder().id(id).etat(etat).plage(lue));
   }
 
   public interface IdentiteBuilder {
@@ -48,10 +44,6 @@ public record ActiviteInterpretee(ActiviteId id, Activite activite, Plage plage,
   }
 
   public interface EcheanceBuilder {
-    FinAuPlusTardBuilder echeance(Instant echeance);
-  }
-
-  public interface FinAuPlusTardBuilder {
-    ActiviteInterpretee finAuPlusTard(Optional<Instant> finAuPlusTard);
+    ActiviteInterpretee echeance(Instant echeance);
   }
 }

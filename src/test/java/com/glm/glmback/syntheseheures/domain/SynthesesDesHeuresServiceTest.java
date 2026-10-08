@@ -76,7 +76,6 @@ class SynthesesDesHeuresServiceTest {
         bornesJournal.set(List.of(debut, fin));
         return List.of();
       })
-      .conflits(operateur -> List.of())
       .elements(REFERENTIEL_DES_ELEMENTS)
       .postes(REFERENTIEL_DES_POSTES)
       .clock(() -> {
@@ -97,7 +96,6 @@ class SynthesesDesHeuresServiceTest {
       .fuseau(() -> ZONE_PARIS)
       .activites((operateur, debut, fin) -> List.of(new ActiviteDElement(ELEMENT_ENGAGE_CARTER, travailOuvertA(LE_LUNDI_11_MAI_2026_A_8H))))
       .journal((operateur, debut, fin) -> List.of())
-      .conflits(operateur -> List.of())
       .elements(REFERENTIEL_DES_ELEMENTS)
       .postes(REFERENTIEL_DES_POSTES)
       .clock(() -> lectures.getAndIncrement() == 0 ? Instant.parse("2026-05-11T18:59:59Z") : Instant.parse("2026-05-11T19:00:00Z"));
@@ -120,7 +118,6 @@ class SynthesesDesHeuresServiceTest {
         List.of(new ActiviteDElement(ELEMENT_ENGAGE_CARTER, travailOuvertA(Instant.parse("2026-05-10T20:00:00Z"))))
       )
       .journal((operateur, debut, fin) -> List.of())
-      .conflits(operateur -> List.of())
       .elements(REFERENTIEL_DES_ELEMENTS)
       .postes(REFERENTIEL_DES_POSTES)
       .clock(() -> lectures.getAndIncrement() == 0 ? Instant.parse("2026-05-11T09:00:05Z") : LE_MARDI_12_MAI_2026_A_10H);
@@ -192,8 +189,7 @@ class SynthesesDesHeuresServiceTest {
       .id(ACTIVITE_ID_DU_CARTER)
       .activite(activiteDeTravailDuCarterSurLaDmu50())
       .plage(new Plage(LE_DIMANCHE_10_MAI_2026_A_20H, Optional.of(LE_LUNDI_11_MAI_2026_A_8H)))
-      .echeance(LE_LUNDI_11_MAI_2026_A_8H.plusSeconds(3600))
-      .finAuPlusTard(Optional.empty());
+      .echeance(LE_LUNDI_11_MAI_2026_A_8H.plusSeconds(3600));
     SynthesesDesHeuresService service = service(
       List.of(new ActiviteDElement(ELEMENT_ENGAGE_CARTER, nuit)),
       List.of(),
@@ -213,8 +209,7 @@ class SynthesesDesHeuresServiceTest {
       .id(ACTIVITE_ID_DU_CARTER)
       .activite(activiteDeTravailDuCarterSurLaDmu50())
       .plage(new Plage(LE_DIMANCHE_10_MAI_2026_A_20H, Optional.of(LE_MERCREDI_13_MAI_2026_A_8H)))
-      .echeance(LE_LUNDI_11_MAI_2026_A_8H.plusSeconds(3600))
-      .finAuPlusTard(Optional.empty());
+      .echeance(LE_LUNDI_11_MAI_2026_A_8H.plusSeconds(3600));
     SyntheseDesHeures synthese = synthese(List.of(new ActiviteDElement(ELEMENT_ENGAGE_CARTER, longue)), List.of());
     assertThat(jourDe(synthese, MARDI_12_MAI_2026).dureeOperationnelle()).isEqualTo(DureeTotale.de(Duration.ofHours(24)));
     assertThat(jourDe(synthese, MARDI_12_MAI_2026).pointages()).isEmpty();
@@ -228,14 +223,12 @@ class SynthesesDesHeuresServiceTest {
       .id(ACTIVITE_ID_DU_CARTER)
       .activite(activiteDeTravailDuCarterSurLaDmu50())
       .plage(heure)
-      .echeance(LE_LUNDI_11_MAI_2026_A_23H)
-      .finAuPlusTard(Optional.empty());
+      .echeance(LE_LUNDI_11_MAI_2026_A_23H);
     ActiviteInterpretee bride = ActiviteInterpretee.builder()
       .id(ACTIVITE_ID_DE_LA_BRIDE)
       .activite(activiteDeTravailDeLaBrideSurLaDmu50())
       .plage(heure)
-      .echeance(LE_LUNDI_11_MAI_2026_A_23H)
-      .finAuPlusTard(Optional.empty());
+      .echeance(LE_LUNDI_11_MAI_2026_A_23H);
     SyntheseDesHeures synthese = synthese(
       List.of(new ActiviteDElement(ELEMENT_ENGAGE_CARTER, carter), new ActiviteDElement(ELEMENT_ENGAGE_BRIDE, bride)),
       List.of()
@@ -255,8 +248,7 @@ class SynthesesDesHeuresServiceTest {
       .id(ACTIVITE_ID_DE_LA_BRIDE)
       .activite(activiteDeNonConformiteDuCarterSurLaDmu50())
       .plage(new Plage(LE_LUNDI_11_MAI_2026_A_10H, Optional.of(LE_LUNDI_11_MAI_2026_A_11H)))
-      .echeance(LE_LUNDI_11_MAI_2026_A_23H)
-      .finAuPlusTard(Optional.empty());
+      .echeance(LE_LUNDI_11_MAI_2026_A_23H);
     SyntheseDesHeures synthese = synthese(
       List.of(new ActiviteDElement(ELEMENT_ENGAGE_CARTER, travailDuCarterDe8HA10H()), new ActiviteDElement(ELEMENT_ENGAGE_CARTER, nc)),
       List.of()
@@ -286,8 +278,6 @@ class SynthesesDesHeuresServiceTest {
   void shouldGarderLeJournalEtLElementSansActiviteInterpretable() {
     PointageDElement fin = new PointageDElement(
       POINTAGE_ID_1,
-      IntentionDePointage.OUVERTURE,
-      Optional.empty(),
       TypeDEvenementDAtelier.FIN,
       ELEMENT_ID_BRIDE,
       Optional.of(POSTE_ID_TOUR),
@@ -307,20 +297,16 @@ class SynthesesDesHeuresServiceTest {
   }
 
   @Test
-  void shouldTrierLesPointagesParIntentionPuisIdentiteAHeureEgale() {
+  void shouldTrierLesPointagesLaFinAvantLOuverturePuisParIdentiteAHeureEgale() {
     PointageDElement ouverture = PointageDElement.builder()
       .id(POINTAGE_ID_1)
-      .intention(IntentionDePointage.OUVERTURE)
-      .cible(Optional.empty())
       .type(TypeDEvenementDAtelier.DEBUT)
       .element(ELEMENT_ID_CARTER)
       .poste(Optional.empty())
       .nature(Optional.empty())
       .dateDeSurvenue(LE_LUNDI_11_MAI_2026_A_8H);
-    PointageDElement transition = PointageDElement.builder()
+    PointageDElement reprise = PointageDElement.builder()
       .id(POINTAGE_ID_3)
-      .intention(IntentionDePointage.TRANSITION)
-      .cible(Optional.empty())
       .type(TypeDEvenementDAtelier.NON_CONFORMITE)
       .element(ELEMENT_ID_CARTER)
       .poste(Optional.empty())
@@ -328,8 +314,6 @@ class SynthesesDesHeuresServiceTest {
       .dateDeSurvenue(LE_LUNDI_11_MAI_2026_A_8H);
     PointageDElement fin = PointageDElement.builder()
       .id(POINTAGE_ID_2)
-      .intention(IntentionDePointage.FIN)
-      .cible(Optional.empty())
       .type(TypeDEvenementDAtelier.FIN)
       .element(ELEMENT_ID_BRIDE)
       .poste(Optional.empty())
@@ -338,19 +322,17 @@ class SynthesesDesHeuresServiceTest {
     SyntheseDesHeures synthese = synthese(
       List.of(),
       List.of(
-        new JournalDElement(ELEMENT_ENGAGE_CARTER, List.of(ouverture, transition)),
+        new JournalDElement(ELEMENT_ENGAGE_CARTER, List.of(ouverture, reprise)),
         new JournalDElement(ELEMENT_ENGAGE_BRIDE, List.of(fin))
       )
     );
-    assertThat(jourDe(synthese, LUNDI_11_MAI_2026).pointages()).containsExactly(fin, transition, ouverture);
+    assertThat(jourDe(synthese, LUNDI_11_MAI_2026).pointages()).containsExactly(fin, ouverture, reprise);
   }
 
   @Test
-  void shouldDepartagerParIdentiteDeuxGestesDeMemeIntentionSansDependreDeLElement() {
+  void shouldDepartagerParIdentiteDeuxGestesDeMemeRangSansDependreDeLElement() {
     PointageDElement premier = PointageDElement.builder()
       .id(POINTAGE_ID_1)
-      .intention(IntentionDePointage.OUVERTURE)
-      .cible(Optional.empty())
       .type(TypeDEvenementDAtelier.DEBUT)
       .element(ELEMENT_ID_BRIDE)
       .poste(Optional.empty())
@@ -358,8 +340,6 @@ class SynthesesDesHeuresServiceTest {
       .dateDeSurvenue(LE_LUNDI_11_MAI_2026_A_8H);
     PointageDElement second = PointageDElement.builder()
       .id(POINTAGE_ID_2)
-      .intention(IntentionDePointage.OUVERTURE)
-      .cible(Optional.empty())
       .type(TypeDEvenementDAtelier.DEBUT)
       .element(ELEMENT_ID_CARTER)
       .poste(Optional.empty())
@@ -377,8 +357,7 @@ class SynthesesDesHeuresServiceTest {
       .id(ACTIVITE_ID_DU_CARTER)
       .activite(activiteDeTravailDuCarterSurLaDmu50())
       .plage(new Plage(debut, Optional.empty()))
-      .echeance(debut.plusSeconds(13 * 3600))
-      .finAuPlusTard(Optional.empty());
+      .echeance(debut.plusSeconds(13 * 3600));
   }
 
   private static SyntheseDesHeures synthese(List<ActiviteDElement> activites, List<JournalDElement> journal) {
@@ -391,7 +370,6 @@ class SynthesesDesHeuresServiceTest {
       .fuseau(() -> ZONE_PARIS)
       .activites((operateur, debut, fin) -> activites)
       .journal((operateur, debut, fin) -> journal)
-      .conflits(operateur -> List.of())
       .elements(REFERENTIEL_DES_ELEMENTS)
       .postes(REFERENTIEL_DES_POSTES)
       .clock(() -> evaluation);

@@ -166,7 +166,7 @@
         "type" : "object"
       },
       "RestActiviteDeLaFeuilleDeTemps" : {
-        "description" : "Une periode de travail de l'operateur sur un element, ramenee au jour qui la porte.\n\nLe champ activite porte l'identite, les bornes entieres et l'etat explicite. Une activite en cours ou a resoudre\nn'a pas de fin ; une fin automatique porte l'echeance et signale son anomalie.\n",
+        "description" : "Une periode de travail de l'operateur sur un element, ramenee au jour qui la porte.\n\nLe champ activite porte l'identite, les bornes entieres et l'etat explicite. Une activite en cours n'a pas de fin ;\nune fin automatique porte l'echeance et signale son anomalie.\n",
         "properties" : {
           "activite" : {
             "$ref" : "#/components/schemas/RestActiviteInterpreteeDeLaFeuilleDeTemps",
@@ -373,16 +373,11 @@
           },
           "etat" : {
             "description" : "TERMINEE_AUTOMATIQUEMENT signale l'anomalie de fin automatique.",
-            "enum" : [ "TERMINEE", "TERMINEE_AUTOMATIQUEMENT", "EN_COURS", "A_RESOUDRE" ],
+            "enum" : [ "TERMINEE", "TERMINEE_AUTOMATIQUEMENT", "EN_COURS" ],
             "type" : "string"
           },
           "fin" : {
             "description" : "Fin de l'activite entiere, seulement si elle est terminee ou terminee automatiquement.",
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "finAuPlusTard" : {
-            "description" : "Borne possible issue des faits, seulement pour une activite a resoudre ; ce n'est pas une fin reelle.",
             "format" : "date-time",
             "type" : "string"
           },
@@ -435,38 +430,6 @@
             "type" : "string"
           }
         },
-        "type" : "object"
-      },
-      "RestConflitDeSynthese" : {
-        "description" : "Sequence en conflit de l'operateur, rendue lorsqu'une activite ou un pointage concerne la semaine.",
-        "properties" : {
-          "activites" : {
-            "description" : "Identites stables des activites, dans l'ordre de la sequence ; peut etre vide.",
-            "items" : {
-              "format" : "uuid",
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "element" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "pointages" : {
-            "description" : "Identites des pointages en ordre metier, meme sans activite interpretable.",
-            "items" : {
-              "format" : "uuid",
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "poste" : {
-            "description" : "Poste lorsqu'il est connu, absent sinon.",
-            "format" : "uuid",
-            "type" : "string"
-          }
-        },
-        "required" : [ "activites", "element", "pointages" ],
         "type" : "object"
       },
       "RestCout" : {
@@ -661,19 +624,19 @@
         "type" : "object"
       },
       "RestDureeDeSynthese" : {
-        "description" : "Total complet chiffre, ou incomplet sans valeur, jamais une somme partielle ni zero par defaut.",
+        "description" : "Duree totale certaine.",
         "properties" : {
           "complete" : {
-            "description" : "Vrai si aucune activite a resoudre ne contribue a ce total.",
+            "description" : "Toujours vrai : aucune activite a resoudre ne contribue plus a un total. Conserve le temps que le front cesse de le lire.",
             "type" : "boolean"
           },
           "valeur" : {
-            "description" : "Duree certaine, absente si le total est incomplet.",
+            "description" : "Duree certaine.",
             "example" : "PT2H",
             "type" : "string"
           }
         },
-        "required" : [ "complete" ],
+        "required" : [ "complete", "valeur" ],
         "type" : "object"
       },
       "RestDureeDuCout" : {
@@ -788,11 +751,11 @@
           },
           "duree" : {
             "$ref" : "#/components/schemas/RestDureeDeSynthese",
-            "description" : "Total sur l'element dans la semaine, NC comprise. Incomplet sans valeur si une activite a resoudre y contribue."
+            "description" : "Total sur l'element dans la semaine, NC comprise."
           },
           "dureeNonConformite" : {
             "$ref" : "#/components/schemas/RestDureeDeSynthese",
-            "description" : "Part de NC. Incomplete sans valeur si une NC a resoudre y contribue ; une contradiction de travail ne masque pas une NC certaine."
+            "description" : "Part de NC."
           },
           "id" : {
             "description" : "Identifiant de l'element de fabrication.",
@@ -1032,7 +995,7 @@
         "properties" : {
           "dureeOperationnelle" : {
             "$ref" : "#/components/schemas/RestDureeDeSynthese",
-            "description" : "Total de travail et NC du jour, y compris automatiquement. Incomplet sans valeur si une activite a resoudre y contribue ; une activite en cours ne compte rien."
+            "description" : "Total de travail et NC du jour, y compris automatiquement ; une activite en cours ne compte rien."
           },
           "jour" : {
             "description" : "Date dans le fuseau de l'entreprise.",
@@ -1559,11 +1522,6 @@
       "RestPointageDeSyntheseDesHeures" : {
         "description" : "Un pointage du journal brut du jour, tel qu'il figure dans le releve : un geste sur un element.\n",
         "properties" : {
-          "cible" : {
-            "description" : "Identite stable de l'activite visee par une fin ou une transition.",
-            "format" : "uuid",
-            "type" : "string"
-          },
           "dateDeSurvenue" : {
             "description" : "Heure metier a laquelle le pointage a eu lieu.",
             "format" : "date-time",
@@ -1579,11 +1537,6 @@
             "format" : "uuid",
             "type" : "string"
           },
-          "intention" : {
-            "description" : "Intention explicite du geste.",
-            "enum" : [ "OUVERTURE", "TRANSITION", "FIN" ],
-            "type" : "string"
-          },
           "poste" : {
             "description" : "Le poste pointe, present pour un pointage d'element quand il a ete pointe.",
             "format" : "uuid",
@@ -1595,7 +1548,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "dateDeSurvenue", "element", "id", "intention", "type" ],
+        "required" : [ "dateDeSurvenue", "element", "id", "type" ],
         "type" : "object"
       },
       "RestPointageDuCout" : {
@@ -2056,16 +2009,9 @@
             "format" : "int32",
             "type" : "integer"
           },
-          "conflits" : {
-            "description" : "Conflits concernant une activite ou un pointage rendu dans cette semaine.",
-            "items" : {
-              "$ref" : "#/components/schemas/RestConflitDeSynthese"
-            },
-            "type" : "array"
-          },
           "dureeOperationnelleTotale" : {
             "$ref" : "#/components/schemas/RestDureeDeSynthese",
-            "description" : "Total de travail et NC des sept jours. Incomplet sans valeur si une activite a resoudre y contribue ; une activite en cours ne compte rien."
+            "description" : "Total de travail et NC des sept jours ; une activite en cours ne compte rien."
           },
           "elements" : {
             "description" : "Elements portant une activite ou un pointage dans la semaine, par premiere apparition puis nom. Un element reengage reste un seul element.",
@@ -2097,7 +2043,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "conflits", "dureeOperationnelleTotale", "elements", "evaluation" ],
+        "required" : [ "dureeOperationnelleTotale", "elements", "evaluation" ],
         "type" : "object"
       },
       "RestTempsPasse" : {
@@ -2980,7 +2926,7 @@
     },
     "/api/feuilles-de-temps/{operateurId}" : {
       "get" : {
-        "description" : "Rend les sept jours de la semaine ISO demandee, chacun portant les portions d'activite qui lui reviennent\ndans le fuseau horaire de l'entreprise.\n\nLe travail est lu dans la projection des activites interpretees par atelier, selectionnee par recouvrement :\nune activite commencee avant la semaine reste visible. Chaque portion\nporte l'identite stable, l'etat et les bornes entieres de l'activite, en plus de ses bornes coupees a minuit et a\nla semaine. Une fin reelle est conservee ; sans elle, l'activite est terminee automatiquement a son echeance des\nqu'elle est atteinte. Cet etat signale l'anomalie. Une activite en cours ou a resoudre n'a pas de fin.\nUne activite en cours rend une indication sans fin sur chaque jour atteint a l'instant de lecture, dans la\nsemaine. Son debut entier permet de lire « en cours depuis dimanche » sur lundi, sans fin fabriquee a minuit.\n\nLa semaine est toujours explicite : aucune semaine courante implicite. L'annee est celle des semaines ISO, qui\ndiffere de l'annee civile a ses bornes — la semaine 1 de 2026 commence le 29 decembre 2025.\n\nL'instant evaluation facultatif decide de l'expiration et des jours atteints par les activites en cours.\nSans parametre, l'heure du serveur est relevee une seule fois. La reponse rend l'instant effectivement utilise.\nUn instant passe est accepte ; la limite future est l'heure du serveur plus deux minutes, incluse.\nAu-dela, ou si l'instant fourni est vide ou mal forme, la lecture est refusee en 400, sans rapport.\nPasser le meme instant a la feuille et a la synthese assure la meme decision d'expiration ; les faits connus\nrestent lus, meme posterieurs a cet instant. Ce contrat ne garantit ni lecture historique ni transaction commune.\n",
+        "description" : "Rend les sept jours de la semaine ISO demandee, chacun portant les portions d'activite qui lui reviennent\ndans le fuseau horaire de l'entreprise.\n\nLe travail est lu dans la projection des activites interpretees par atelier, selectionnee par recouvrement :\nune activite commencee avant la semaine reste visible. Chaque portion\nporte l'identite stable, l'etat et les bornes entieres de l'activite, en plus de ses bornes coupees a minuit et a\nla semaine. Une fin reelle est conservee ; sans elle, l'activite est terminee automatiquement a son echeance des\nqu'elle est atteinte. Cet etat signale l'anomalie. Une activite en cours n'a pas de fin.\nUne activite en cours rend une indication sans fin sur chaque jour atteint a l'instant de lecture, dans la\nsemaine. Son debut entier permet de lire « en cours depuis dimanche » sur lundi, sans fin fabriquee a minuit.\n\nLa semaine est toujours explicite : aucune semaine courante implicite. L'annee est celle des semaines ISO, qui\ndiffere de l'annee civile a ses bornes — la semaine 1 de 2026 commence le 29 decembre 2025.\n\nL'instant evaluation facultatif decide de l'expiration et des jours atteints par les activites en cours.\nSans parametre, l'heure du serveur est relevee une seule fois. La reponse rend l'instant effectivement utilise.\nUn instant passe est accepte ; la limite future est l'heure du serveur plus deux minutes, incluse.\nAu-dela, ou si l'instant fourni est vide ou mal forme, la lecture est refusee en 400, sans rapport.\nPasser le meme instant a la feuille et a la synthese assure la meme decision d'expiration ; les faits connus\nrestent lus, meme posterieurs a cet instant. Ce contrat ne garantit ni lecture historique ni transaction commune.\n",
         "operationId" : "get_4",
         "parameters" : [ {
           "description" : "Identifiant de l'operateur dans le referentiel.",
@@ -3631,7 +3577,7 @@
     },
     "/api/syntheses-des-heures/{operateurId}" : {
       "get" : {
-        "description" : "Rend les sept jours de la semaine ISO demandee, vides compris, le journal brut de l'operateur et les durees\nde ses activites terminees, y compris automatiquement. Une activite en cours ne produit aucune duree.\nLes activites interpretees par atelier sont selectionnees par recouvrement de la semaine, puis coupees aux\nminuits locaux. Une heure sur deux elements compte sur chacun. Les elements portant une activite ou un pointage\ndans la semaine sont rendus par premiere apparition puis nom, avec leur fiche et leurs postes relus au referentiel.\nTous les pointages actifs de la semaine sont conserves, meme sans activite interpretable. Leur tri porte sur\nl'heure metier, puis l'intention (fin, transition, ouverture), puis l'identite, jamais l'heure d'enregistrement.\nLa semaine est explicite et l'annee est celle des semaines ISO ; aucun montant n'est calcule.\nL'instant evaluation facultatif decide de l'expiration et des jours atteints par les activites en cours.\nSans parametre, l'heure du serveur est relevee une seule fois. La reponse rend l'instant effectivement utilise.\nUn instant passe est accepte. La borne future est l'heure du serveur plus deux minutes, incluse.\nPasser le meme instant a la feuille et a la synthese assure la meme decision d'expiration ; les faits connus\nrestent lus, meme posterieurs a cet instant. Ce contrat ne garantit ni lecture historique ni transaction commune.\n",
+        "description" : "Rend les sept jours de la semaine ISO demandee, vides compris, le journal brut de l'operateur et les durees\nde ses activites terminees, y compris automatiquement. Une activite en cours ne produit aucune duree.\nLes activites interpretees par atelier sont selectionnees par recouvrement de la semaine, puis coupees aux\nminuits locaux. Une heure sur deux elements compte sur chacun. Les elements portant une activite ou un pointage\ndans la semaine sont rendus par premiere apparition puis nom, avec leur fiche et leurs postes relus au referentiel.\nTous les pointages actifs de la semaine sont conserves, meme sans activite interpretable. Leur tri porte sur\nl'heure metier, puis la fin avant l'ouverture, puis l'identite, jamais l'heure d'enregistrement.\nLa semaine est explicite et l'annee est celle des semaines ISO ; aucun montant n'est calcule.\nL'instant evaluation facultatif decide de l'expiration et des jours atteints par les activites en cours.\nSans parametre, l'heure du serveur est relevee une seule fois. La reponse rend l'instant effectivement utilise.\nUn instant passe est accepte. La borne future est l'heure du serveur plus deux minutes, incluse.\nPasser le meme instant a la feuille et a la synthese assure la meme decision d'expiration ; les faits connus\nrestent lus, meme posterieurs a cet instant. Ce contrat ne garantit ni lecture historique ni transaction commune.\n",
         "operationId" : "get_3",
         "parameters" : [ {
           "description" : "Identifiant de l'operateur dans le referentiel.",

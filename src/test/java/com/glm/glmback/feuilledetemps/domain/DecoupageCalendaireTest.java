@@ -242,8 +242,7 @@ class DecoupageCalendaireTest {
       .id(FeuilleDeTempsFixture.ACTIVITE_ID_DU_CARTER)
       .activite(FeuilleDeTempsFixture.activiteDeTravailDuCarterSurLaDmu50())
       .plage(new Plage(Instant.parse(debut), Optional.empty()))
-      .echeance(Instant.parse(fin))
-      .finAuPlusTard(Optional.empty());
+      .echeance(Instant.parse(fin));
     IntervalleDActivite intervalle = travail.a(Instant.parse(fin));
     DecoupageCalendaire calendrier = new DecoupageCalendaire(new SemaineCalendaire(2026, semaine), PARIS);
 

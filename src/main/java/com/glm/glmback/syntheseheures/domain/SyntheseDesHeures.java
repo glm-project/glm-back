@@ -17,8 +17,7 @@ public record SyntheseDesHeures(
   SemaineCalendaire semaine,
   Instant evaluation,
   List<JourDeSynthese> jours,
-  List<ElementDeLaSynthese> elements,
-  List<SequenceEnConflit> conflits
+  List<ElementDeLaSynthese> elements
 ) {
   public SyntheseDesHeures {
     Assert.notNull("operateur", operateur);
@@ -26,13 +25,11 @@ public record SyntheseDesHeures(
     Assert.notNull("evaluation", evaluation);
     Assert.field("jours", jours).notNull().noNullElement();
     Assert.field("elements", elements).notNull().noNullElement();
-    Assert.field("conflits", conflits).notNull().noNullElement();
   }
 
   static SyntheseDesHeuresOperateurBuilder builder() {
     return operateur ->
-      semaine ->
-        evaluation -> jours -> elements -> conflits -> new SyntheseDesHeures(operateur, semaine, evaluation, jours, elements, conflits);
+      semaine -> evaluation -> jours -> elements -> new SyntheseDesHeures(operateur, semaine, evaluation, jours, elements);
   }
 
   public DureeTotale dureeOperationnelleTotale() {
@@ -56,10 +53,6 @@ public record SyntheseDesHeures(
   }
 
   interface SyntheseDesHeuresElementsBuilder {
-    SyntheseDesHeuresConflitsBuilder elements(List<ElementDeLaSynthese> elements);
-  }
-
-  interface SyntheseDesHeuresConflitsBuilder {
-    SyntheseDesHeures conflits(List<SequenceEnConflit> conflits);
+    SyntheseDesHeures elements(List<ElementDeLaSynthese> elements);
   }
 }

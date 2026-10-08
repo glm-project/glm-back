@@ -11,7 +11,7 @@ record RestJourDeSynthese(
   @Schema(description = "Tous les pointages actifs de l'operateur dates de ce jour, meme sans activite interpretable.")
   List<RestPointage> pointages,
   @Schema(
-    description = "Total de travail et NC du jour, y compris automatiquement. Incomplet sans valeur si une activite a resoudre y contribue ; une activite en cours ne compte rien.",
+    description = "Total de travail et NC du jour, y compris automatiquement ; une activite en cours ne compte rien.",
     requiredMode = Schema.RequiredMode.REQUIRED
   )
   RestDureeDeSynthese dureeOperationnelle

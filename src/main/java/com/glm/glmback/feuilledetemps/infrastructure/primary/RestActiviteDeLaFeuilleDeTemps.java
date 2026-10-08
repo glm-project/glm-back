@@ -13,8 +13,8 @@ import java.util.UUID;
   description = """
   Une periode de travail de l'operateur sur un element, ramenee au jour qui la porte.
 
-  Le champ activite porte l'identite, les bornes entieres et l'etat explicite. Une activite en cours ou a resoudre
-  n'a pas de fin ; une fin automatique porte l'echeance et signale son anomalie.
+  Le champ activite porte l'identite, les bornes entieres et l'etat explicite. Une activite en cours n'a pas de fin ;
+  une fin automatique porte l'echeance et signale son anomalie.
   """
 )
 record RestActiviteDeLaFeuilleDeTemps(

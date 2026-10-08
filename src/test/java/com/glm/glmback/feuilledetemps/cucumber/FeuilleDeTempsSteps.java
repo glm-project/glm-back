@@ -228,20 +228,6 @@ public class FeuilleDeTempsSteps {
     }
   }
 
-  @Then("les activites a resoudre du {string} sont")
-  public void lesActivitesAResoudreDuSont(String jour, List<Map<String, String>> attendues) {
-    List<Map<String, Object>> activites = activitesDu(jour);
-    assertThat(activites).hasSameSizeAs(attendues);
-    for (Map<String, String> attendue : attendues) {
-      Map<String, Object> lue = activites
-        .stream()
-        .filter(activite -> pointages.get(attendue.get("idActivite")).equals(valeurLue(activite, "idActivite")))
-        .findFirst()
-        .orElseThrow();
-      attendue.forEach((cle, valeur) -> assertThat(valeurLue(lue, cle)).as(cle).isEqualTo(attendu(cle, valeur)));
-    }
-  }
-
   @Then("le {string} ne porte aucune activite")
   public void neporteAucuneActivite(String jour) {
     assertThat(activitesDu(jour)).isEmpty();
