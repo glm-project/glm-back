@@ -53,7 +53,6 @@ public class FeuilleDeTempsSteps {
   private final Map<String, String> elements = new HashMap<>();
   private final Map<String, String> suivis = new HashMap<>();
   private final Map<String, String> pointages = new HashMap<>();
-  private final Map<String, Map<String, Object>> corpsDesPointages = new HashMap<>();
   private String dernierPointage;
 
   @Given("la feuille de temps suit l'operateur {string}")
@@ -151,7 +150,6 @@ public class FeuilleDeTempsSteps {
         dernierPointage = identiteDuPointageActif(survenue, pointage.get("type"), pointage.get("intention"));
       }
       pointages.put(pointage.get("alias"), dernierPointage);
-      corpsDesPointages.put(pointage.get("alias"), corps);
     }
   }
 

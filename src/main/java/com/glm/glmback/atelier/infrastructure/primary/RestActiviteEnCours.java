@@ -23,7 +23,7 @@ record RestActiviteEnCours(
   @Schema(
     description = """
     Identite de l'activite : l'identifiant de son pointage ouvrant d'origine. C'est elle qu'une fin ou une transition
-    vise dans `cible`, y compris apres la correction de ce pointage.
+    vise dans `cible`.
     """,
     requiredMode = Schema.RequiredMode.REQUIRED
   )

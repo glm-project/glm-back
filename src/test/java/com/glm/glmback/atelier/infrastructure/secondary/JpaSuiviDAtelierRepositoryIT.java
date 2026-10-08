@@ -512,6 +512,32 @@ class JpaSuiviDAtelierRepositoryIT {
     assertThat(inTransaction(() -> suivis.get(encoreEnConflit.id()))).contains(encoreEnConflit);
   }
 
+  /**
+   * Une fin tardive, datee avant l'ouvrant qu'elle vise, devient le premier pointage de la sequence : l'identite de la
+   * sequence change, et la ligne projetee sous l'ancienne identite doit disparaitre.
+   */
+  @Test
+  @WithTenant(IMPECCMOLD)
+  void shouldReancrerLaProjectionDuConflitSurUneFinTardiveAvantLOuvrant() {
+    Instant engagement = Instant.parse("2041-03-15T07:00:00Z");
+    EvenementDAtelier ouvrant = debutSurFraiseuse1A(engagement.plusSeconds(3 * 3600));
+    SuiviDAtelier enConflit = suiviEngageA(engagement)
+      .enregistre(ouvrant)
+      .enregistre(finDe(ouvrant).a(engagement.plusSeconds(5 * 3600)))
+      .enregistre(finDe(ouvrant).a(engagement.plusSeconds(6 * 3600)));
+    inTransaction(() -> suivis.create(enConflit));
+    assertThat(enConflit.conflits().getFirst().pointages().getFirst()).isEqualTo(ouvrant.id());
+
+    EvenementDAtelier finTardive = finDe(ouvrant).a(engagement.plusSeconds(2 * 3600));
+    SuiviDAtelier reancreAEnregistrer = enConflit.enregistre(finTardive);
+    SuiviDAtelier reancre = inTransaction(() -> suivis.update(reancreAEnregistrer));
+
+    assertThat(reancre.conflits())
+      .singleElement()
+      .satisfies(sequence -> assertThat(sequence.pointages().getFirst()).isEqualTo(finTardive.id()));
+    assertThat(conflitsProjetes(reancre.id())).isEqualTo(reancre.conflits());
+  }
+
   private List<SequenceEnConflit> conflitsProjetes(SuiviDAtelierId suivi) {
     return inTransaction(() ->
       lignes("select id, operateur_id, poste_id from sequence_en_conflit where suivi_id = :suivi order by id", suivi.uuid())

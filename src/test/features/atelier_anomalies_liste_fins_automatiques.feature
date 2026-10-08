@@ -167,3 +167,19 @@ Feature: Liste des fins automatiques parmi les anomalies de pointage
       | pointage | 00000000-0000-0000-0000-000000081062 |
       | debut    | 2044-02-06T12:00:00Z                 |
       | echeance | 2044-02-07T01:00:00Z                 |
+
+  Scenario: L'adresse d'une ligne de la liste ouvre le dossier de la meme fin automatique
+    Given il est "2044-02-09T07:00:00Z"
+    And l'entreprise a cree l'element de fabrication "Liste fins 8109"
+      | categorie | OF     |
+      | reference | LF8109 |
+    And j'ai engage l'element "Liste fins 8109" en atelier
+    And il est "2044-02-09T08:00:00Z"
+    And j'ai pointe sur "Liste fins 8109"
+      | type      | DEBUT                |
+      | operateur | dupont-liste-fins    |
+      | poste     | fraiseuse-liste-fins |
+    And il est "2044-02-09T22:00:00Z"
+    When je liste les fins automatiques de "Liste fins 8109"
+    Then la liste des fins automatiques compte 1 ligne
+    And l'adresse de la premiere ligne de la liste des fins automatiques ouvre le dossier de la meme activite

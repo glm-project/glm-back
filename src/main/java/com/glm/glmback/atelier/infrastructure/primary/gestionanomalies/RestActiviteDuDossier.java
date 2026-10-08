@@ -20,8 +20,8 @@ record RestActiviteDuDossier(
   RestPosteDeTravail poste,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) CategorieDActivite categorie,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) Instant debut,
-  Instant fin,
-  String duree
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) Instant fin,
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String duree
 ) {
   static RestActiviteDuDossier from(IntervalleDActivite intervalle, AnnuaireDAtelier annuaire) {
     return new RestActiviteDuDossier(

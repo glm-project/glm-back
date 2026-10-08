@@ -42,7 +42,7 @@ public record RestSuiviDAtelier(
   EtatDAtelier etat,
   @Schema(description = "Utilisateur ayant cloture l'element, absent tant qu'il ne l'est pas.") String cloturePar,
   @Schema(description = "Instant metier de la cloture, absent tant que l'element n'est pas cloture.") Instant clotureLe,
-  @Schema(description = "Le journal complet, annules compris, du plus ancien au plus recent.", requiredMode = Schema.RequiredMode.REQUIRED)
+  @Schema(description = "Le journal complet, du plus ancien au plus recent.", requiredMode = Schema.RequiredMode.REQUIRED)
   List<RestEvenementDAtelier> journal,
   @Schema(
     description = """

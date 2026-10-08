@@ -502,3 +502,17 @@ Feature: Cout de revient d'un element de fabrication
     Then le rapport porte les lignes
       | nature   | travail | nonConformite | machine | mainDOeuvre |
       | Fraisage | PT1M    | PT0S          | 0.75    | 0.03        |
+
+  Scenario: Le tarif capture a la saisie reste fige apres une revision des tarifs
+    Given l'entreprise fabrique "tarif fige"
+    And "tarif fige" est mis en atelier a "2026-05-11T05:00:00Z"
+    And pour le cout, "tarif fige" recoit les pointages
+      | alias | type  | intention | cible | operateur | poste     | survenue             |
+      | A     | DEBUT | OUVERTURE |       | dupont    | fraiseuse | 2026-05-11T08:00:00Z |
+      | F     | FIN   | FIN       | A     | dupont    | fraiseuse | 2026-05-11T10:00:00Z |
+    And pour le cout, le poste "fraiseuse" est revise a "100.00" de l'heure et l'operateur "dupont" a "50.00" a "2026-05-11T11:00:00Z"
+    When je consulte le cout de revient de "tarif fige" a "2026-05-11T12:00:00Z"
+    Then le rapport porte les lignes
+      | nature   | travail | nonConformite | machine | mainDOeuvre |
+      | Fraisage | PT2H    | PT0S          | 90.00   | 40.00       |
+    And le cout ne porte aucun conflit

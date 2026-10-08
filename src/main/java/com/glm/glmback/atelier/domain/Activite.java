@@ -9,8 +9,7 @@ import java.util.Optional;
  * aujourd'hui, sa fin reelle quand un fait l'a terminee, et si une sequence en conflit la laisse a resoudre.
  *
  * <p>
- * Son identite est celle de son pointage ouvrant d'origine ; l'ouvrant, lui, est le fait actif qui la porte, le
- * remplacant d'une correction le cas echeant. Son operateur, son poste, sa nature, sa categorie et son debut sont
+ * Son identite est celle de son pointage ouvrant d'origine ; l'ouvrant, lui, est le fait qui la porte. Son operateur, son poste, sa nature, sa categorie et son debut sont
  * ceux de cet ouvrant.
  * </p>
  *
@@ -22,8 +21,7 @@ import java.util.Optional;
  *
  * <p>
  * Une activite a resoudre n'a pas de fin : des pointages contradictoires la concernent, et le systeme ne choisit
- * aucune de leurs lectures. Elle n'est ni en cours ni terminee, et son echeance ne la termine pas : seule une
- * correction ou une annulation du gestionnaire la rend de nouveau interpretable.
+ * aucune de leurs lectures. Elle n'est ni en cours ni terminee, et son echeance ne la termine pas.
  * </p>
  */
 public record Activite(EvenementDAtelier ouvrant, Optional<Instant> fin, Optional<Instant> finAuPlusTard) {

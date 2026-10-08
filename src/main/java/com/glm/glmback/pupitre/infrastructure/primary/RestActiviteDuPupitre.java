@@ -22,7 +22,7 @@ record RestActiviteDuPupitre(
   @Schema(description = "TRAVAIL ou NON_CONFORMITE.", requiredMode = Schema.RequiredMode.REQUIRED) CategorieDActivite categorie,
   @Schema(description = "Instant depuis lequel cette activite dure.", requiredMode = Schema.RequiredMode.REQUIRED) Instant depuis,
   @Schema(
-    description = "Identite stable de l activite, conservee apres correction de son ouvrant.",
+    description = "Identite stable de l activite : l identifiant de son pointage ouvrant.",
     requiredMode = Schema.RequiredMode.REQUIRED
   )
   UUID ouverture,

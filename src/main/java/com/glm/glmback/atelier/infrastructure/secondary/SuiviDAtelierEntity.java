@@ -33,7 +33,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -157,17 +156,11 @@ class SuiviDAtelierEntity {
   }
 
   /**
-   * Reecrit la projection des activites, rapprochee elle aussi par identifiant : une activite que l'interpretation ne
-   * donne plus disparait, une activite connue recoit ses valeurs courantes, une nouvelle est inseree. Supprimer puis
-   * reinserer la meme identite dans un seul flush violerait la cle primaire, Hibernate ordonnant les insertions avant
-   * les suppressions.
+   * Reecrit la projection des activites, rapprochee elle aussi par identifiant : le journal ne perd jamais un evenement, donc
+   * aucune activite ne disparait ; une activite connue recoit ses valeurs courantes, une nouvelle est inseree.
    */
   private void projette(List<Activite> interpretees, List<SequenceEnConflit> sequences) {
     Map<UUID, RattachementAuConflit> rattachements = projetteLesConflits(sequences);
-    Map<UUID, Activite> parIdentite = interpretees
-      .stream()
-      .collect(Collectors.toMap(activite -> activite.id().uuid(), Function.identity()));
-    activites.removeIf(Predicate.not(projetee -> parIdentite.containsKey(projetee.id())));
     Map<UUID, ActiviteDAtelierEntity> projetees = activites
       .stream()
       .collect(Collectors.toMap(ActiviteDAtelierEntity::id, Function.identity()));
@@ -194,7 +187,7 @@ class SuiviDAtelierEntity {
       .stream()
       .map(sequence -> sequence.pointages().getFirst().uuid())
       .collect(Collectors.toSet());
-    conflits.removeIf(Predicate.not(projete -> identites.contains(projete.id())));
+    conflits.removeIf(projete -> !identites.contains(projete.id()));
     Map<UUID, SequenceEnConflitDAtelierEntity> connus = conflits
       .stream()
       .collect(Collectors.toMap(SequenceEnConflitDAtelierEntity::id, Function.identity()));

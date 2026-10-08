@@ -357,14 +357,6 @@ public class AtelierSteps {
     assertThat(CucumberRestTestContext.getElement("$.journal[" + rang + "].activite")).isNull();
   }
 
-  @Then("l'evenement {int} du suivi ouvre l'activite de l'evenement {int} sous son propre identifiant")
-  public void lEvenementDuSuiviOuvreLActiviteDe(int rang, int corrige) {
-    assertThat(elementDeLaDerniereReponse("$.journal[" + rang + "].activite"))
-      .isNotNull()
-      .isEqualTo(elementDeLaDerniereReponse("$.journal[" + corrige + "].activite"))
-      .isNotEqualTo(elementDeLaDerniereReponse("$.journal[" + rang + "].id"));
-  }
-
   @Then("l'evenement {int} du suivi est une regularisation de {string} saisie par {string}")
   public void lEvenementDuSuiviEstUneRegularisation(int rang, String operateur, String saisiPar) {
     assertThatLastResponse()

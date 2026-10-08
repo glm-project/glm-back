@@ -50,7 +50,6 @@ public class SyntheseDesHeuresSteps {
 
   private final Map<String, String> operateurs = new HashMap<>();
   private final Map<String, String> pointages = new HashMap<>();
-  private final Map<String, Map<String, Object>> corpsDesPointages = new HashMap<>();
   private final Map<String, String> postes = new HashMap<>();
   private final Map<String, String> elements = new HashMap<>();
   private final Map<String, String> suivis = new HashMap<>();
@@ -165,7 +164,6 @@ public class SyntheseDesHeuresSteps {
         dernierPointage = identiteDuPointageActif(survenue, pointage.get("type"), pointage.get("intention"));
       }
       pointages.put(pointage.get("alias"), dernierPointage);
-      corpsDesPointages.put(pointage.get("alias"), corps);
     }
   }
 

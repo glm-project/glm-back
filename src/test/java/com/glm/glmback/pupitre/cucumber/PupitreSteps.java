@@ -27,8 +27,8 @@ import tools.jackson.databind.json.JsonMapper;
  * Le referentiel du pupitre vu du client HTTP, du pointage a sa relecture.
  *
  * <p>
- * Tout passe par les API : les referentiels pour declarer poste et operateur, l'atelier pour engager, pointer,
- * annuler et cloturer, le pupitre pour relire. C'est ce qui fait de ce scenario la garantie que les deux contextes
+ * Tout passe par les API : les referentiels pour declarer poste et operateur, l'atelier pour engager, pointer
+ * et cloturer, le pupitre pour relire. C'est ce qui fait de ce scenario la garantie que les deux contextes
  * lisent bien les memes tables — aucun import Java ne relie {@code pupitre} a {@code atelier}.
  * </p>
  *
@@ -73,9 +73,7 @@ public class PupitreSteps {
   private final Map<String, String> nomsDAtelier = new HashMap<>();
   private final Map<String, String> suivis = new HashMap<>();
   private final Map<String, String> gestes = new HashMap<>();
-  private final Map<String, Map<String, Object>> corpsDesGestes = new HashMap<>();
   private final Map<String, PointageEnvoye> envois = new HashMap<>();
-  private String dernierEvenement;
 
   @Given("le pupitre connait le poste {string}")
   public void lePupitreConnaitLePoste(String alias) {
@@ -308,29 +306,6 @@ public class PupitreSteps {
     assertThat(CucumberRestTestContext.getResponse().orElseThrow()).doesNotContain("tauxHoraire", "coutHoraire");
   }
 
-  @Given("au pupitre, {string} ouvre {string} en {string} sur {string} sans poste a {string}")
-  public void ouvreSansPoste(String operateur, String geste, String type, String element, String instant) {
-    ouvreRecu(operateur, geste, type, element, null, instant, instant);
-  }
-
-  @Given("au pupitre, {string} termine {string} par {string} sur {string} sans poste a {string}")
-  public void termineSansPoste(String operateur, String cible, String geste, String element, String instant) {
-    termineRecu(operateur, cible, geste, element, null, instant, instant);
-  }
-
-  @Then("{string} ne porte aucun conflit au referentiel du pupitre")
-  public void nePorteAucunConflit(String element) {
-    assertThat(suivi(element)).containsKey("conflits");
-    assertThat(conflits(element)).isEmpty();
-  }
-
-  @Then("le conflit de {string} au referentiel du pupitre ne porte aucun poste")
-  public void leConflitNePorteAucunPoste(String element) {
-    assertThat(conflits(element))
-      .singleElement()
-      .satisfies(conflit -> assertThat(conflit).doesNotContainKey("poste"));
-  }
-
   @Then("les conflits de {string} au referentiel du pupitre sont")
   public void lesConflitsSont(String element, List<Map<String, String>> attendus) {
     assertThat(suivi(element)).containsKey("conflits");
@@ -390,14 +365,11 @@ public class PupitreSteps {
     envois.put(geste, ecritures.pointe(suivis.get(element), corps));
     assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("pointage de %s", geste).isTrue();
     gestes.put(geste, String.valueOf(corps.get("id")));
-    corpsDesGestes.put(geste, corps);
   }
 
   private void pointe(String instant, String element, Map<String, Object> corps) {
     horloge.ilEst(Instant.parse(instant));
     ecritures.pointe(suivis.get(element), corps);
-    List<Map<String, Object>> journal = lus("$.journal");
-    dernierEvenement = String.valueOf(journal.getLast().get("id"));
   }
 
   private List<Map<String, String>> resume(String element, Iterable<String> colonnes) {

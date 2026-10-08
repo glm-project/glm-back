@@ -49,4 +49,14 @@ public class ListeDesFinsAutomatiquesSteps {
     );
     attendu.forEach((champ, valeur) -> assertThat(CucumberRestTestContext.getElement(champs.get(champ))).isEqualTo(valeur));
   }
+
+  @Then("l'adresse de la premiere ligne de la liste des fins automatiques ouvre le dossier de la meme activite")
+  public void adresseOuvreLeDossier() {
+    var suivi = (String) CucumberRestTestContext.getElement("$.content[0].adresse.suivi");
+    var pointage = (String) CucumberRestTestContext.getElement("$.content[0].adresse.pointage");
+    var activite = CucumberRestTestContext.getElement("$.content[0].activite");
+    rest.get("/api/atelier/suivis/" + suivi + "/anomalies/" + pointage);
+    assertThatLastResponse().hasOkStatus();
+    assertThat(CucumberRestTestContext.getElement("$.activite.activite")).isEqualTo(activite);
+  }
 }

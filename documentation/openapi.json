@@ -288,7 +288,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "activite", "categorie", "debut", "evenement", "operateurId" ],
+        "required" : [ "activite", "categorie", "debut", "duree", "evenement", "fin", "operateurId" ],
         "type" : "object"
       },
       "RestActiviteDuPupitre" : {
@@ -315,7 +315,7 @@
             "type" : "string"
           },
           "ouverture" : {
-            "description" : "Identite stable de l activite, conservee apres correction de son ouvrant.",
+            "description" : "Identite stable de l activite : l identifiant de son pointage ouvrant.",
             "format" : "uuid",
             "type" : "string"
           },
@@ -351,7 +351,7 @@
             "description" : "Operateur en activite, absent si la fiche n'est plus resolue au referentiel."
           },
           "ouverture" : {
-            "description" : "Identite de l'activite : l'identifiant de son pointage ouvrant d'origine. C'est elle qu'une fin ou une transition\nvise dans `cible`, y compris apres la correction de ce pointage.\n",
+            "description" : "Identite de l'activite : l'identifiant de son pointage ouvrant d'origine. C'est elle qu'une fin ou une transition\nvise dans `cible`.\n",
             "format" : "uuid",
             "type" : "string"
           },
@@ -427,7 +427,7 @@
         "type" : "object"
       },
       "RestCloture" : {
-        "description" : "La cloture d'un element engage.\n\nElle ne fige rien pour le gestionnaire : regularisation, annulation et correction restent possibles ensuite, et la\ncloture elle-meme peut etre deplacee ou annulee.\n",
+        "description" : "La cloture d'un element engage.\n\nElle ne fige rien pour le gestionnaire : la regularisation reste possible ensuite, et la cloture elle-meme peut etre\ndeplacee ou annulee.\n",
         "properties" : {
           "dateDeSurvenue" : {
             "description" : "Heure metier de la cloture. Absente, elle vaut l'instant present.",
@@ -2199,7 +2199,7 @@
             "type" : "string"
           },
           "journal" : {
-            "description" : "Le journal complet, annules compris, du plus ancien au plus recent.",
+            "description" : "Le journal complet, du plus ancien au plus recent.",
             "items" : {
               "$ref" : "#/components/schemas/RestEvenementDAtelier"
             },
@@ -2215,7 +2215,7 @@
         "type" : "object"
       },
       "RestSuiviDAtelierEnGrille" : {
-        "description" : "Une ligne du tableau d'atelier, sans le journal des evenements ni ses sequences en conflit.\nL'etat et les activites en cours restent deduits du journal a chaque lecture.\nLe journal complet, annules compris, et ses sequences en conflit se consultent via GET /api/atelier/suivis/{id}.\n",
+        "description" : "Une ligne du tableau d'atelier, sans le journal des evenements ni ses sequences en conflit.\nL'etat et les activites en cours restent deduits du journal a chaque lecture.\nLe journal complet et ses sequences en conflit se consultent via GET /api/atelier/suivis/{id}.\n",
         "properties" : {
           "activitesEnCours" : {
             "description" : "Les activites en cours a l'instant de la lecture ; une activite dont l'echeance est atteinte n'y figure plus, ni une\nactivite a resoudre.\n",

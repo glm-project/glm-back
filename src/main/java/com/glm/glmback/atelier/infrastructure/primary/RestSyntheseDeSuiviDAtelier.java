@@ -16,7 +16,7 @@ import java.util.UUID;
   description = """
   Une ligne du tableau d'atelier, sans le journal des evenements ni ses sequences en conflit.
   L'etat et les activites en cours restent deduits du journal a chaque lecture.
-  Le journal complet, annules compris, et ses sequences en conflit se consultent via GET /api/atelier/suivis/{id}.
+  Le journal complet et ses sequences en conflit se consultent via GET /api/atelier/suivis/{id}.
   """
 )
 final class RestSyntheseDeSuiviDAtelier {

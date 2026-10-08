@@ -60,7 +60,6 @@ public class CoutDeRevientSteps {
   private final Map<String, String> elements = new HashMap<>();
   private final Map<String, String> suivis = new HashMap<>();
   private final Map<String, String> pointages = new HashMap<>();
-  private final Map<String, Map<String, Object>> corpsDesPointages = new HashMap<>();
 
   @Given("le rapport connait le poste {string} de nature {string} a {string} de l'heure")
   public void leRapportConnaitLePoste(String alias, String nature, String coutHoraire) {
@@ -162,7 +161,6 @@ public class CoutDeRevientSteps {
         identite = identiteDuPointageActif(survenue, pointage.get("type"), pointage.get("intention"));
       }
       pointages.put(pointage.get("alias"), identite);
-      corpsDesPointages.put(pointage.get("alias"), corps);
     }
   }
 

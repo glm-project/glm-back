@@ -100,8 +100,8 @@ class ActiviteDAtelierEntity {
   }
 
   /**
-   * Reporte l'interpretation courante de l'activite : un debut corrige deplace son echeance, un geste lui donne une fin
-   * reelle, le remplacant d'une correction en devient l'ouverture, et une contradiction la laisse a resoudre.
+   * Reporte l'interpretation courante de l'activite : un geste lui donne une fin reelle, et une contradiction la laisse a
+   * resoudre.
    */
   void reporte(Activite activite) {
     ouvertureId = activite.ouvrant().id().uuid();
