@@ -32,7 +32,6 @@ record RestDossierAnomalie(
   RestSequenceDuDossier sequence,
   @Schema(description = "Le perimetre conserve des faits et activites concernes, y compris apres resolution ou annulation de l ancre.")
   RestSequenceDuDossier perimetre,
-  @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<RestChoixDeResolution> choix,
   @Schema(
     requiredMode = Schema.RequiredMode.REQUIRED,
     description = "Les autres sequences encore en conflit de ce suivi, par ancre active ; aucune redirection implicite."
@@ -56,11 +55,6 @@ record RestDossierAnomalie(
         .toList(),
       RestSequenceDuDossier.from(dossier, annuaire),
       RestSequenceDuDossier.perimetre(dossier, annuaire),
-      dossier
-        .choix()
-        .stream()
-        .map(choix -> RestChoixDeResolution.from(choix, dossier))
-        .toList(),
       dossier
         .continuations()
         .stream()

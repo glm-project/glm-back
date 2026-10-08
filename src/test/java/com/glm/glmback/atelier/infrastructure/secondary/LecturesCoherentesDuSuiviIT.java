@@ -1,16 +1,13 @@
 package com.glm.glmback.atelier.infrastructure.secondary;
 
-import static com.glm.glmback.atelier.application.gestionanomalies.ResolutionFixture.*;
 import static com.glm.glmback.atelier.domain.AtelierFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.IntegrationTest;
 import com.glm.glmback.atelier.application.SuivisDAtelierApplicationService;
-import com.glm.glmback.atelier.application.gestionanomalies.ApercusDeResolution;
 import com.glm.glmback.atelier.domain.Annulation;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
-import com.glm.glmback.atelier.domain.gestionanomalies.ApercuObsoleteException;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import jakarta.persistence.EntityManager;
 import java.util.concurrent.Callable;
@@ -49,9 +46,6 @@ class LecturesCoherentesDuSuiviIT {
 
   @Autowired
   private EntityManager entities;
-
-  @Autowired
-  private ApercusDeResolution apercus;
 
   @Test
   @WithTenant("impeccmold")
@@ -100,26 +94,6 @@ class LecturesCoherentesDuSuiviIT {
     // WHEN / THEN
     avecParentDejaChargeEtAnnulationClotureCommittees(ancien, nouveau ->
       assertThat(application.get(ancien.id()).suivi()).isIn(ancien, nouveau)
-    );
-  }
-
-  @Test
-  @WithTenant("impeccmold")
-  void shouldProposerSeulementUneRevisionQuiDecritTousLesFaitsDeLApercu() {
-    // GIVEN
-    var ancien = inTransaction(() -> suivis.create(suiviAvecTransitionDeMemeCategorie()));
-    var demande = propositionDAnnulationDeTransition(ancien);
-    // WHEN / THEN
-    avecParentDejaChargeEtAnnulationClotureCommittees(ancien, nouveau ->
-      catchThrowableOfType(
-        () -> {
-          var apercu = apercus.apercu(demande.commande(), demande.adresse(), demande.revision(), demande.acte(), CONTEXTE_LEROY_IMPECCMOLD);
-          // Un instantane entierement ancien est admissible, une revision perimee aussi peut etre refusee.
-          assertThat(apercu.avant().lecture().suivi()).isEqualTo(ancien);
-          assertThat(apercu.proposition().revision()).isEqualTo(ancien.revision());
-        },
-        ApercuObsoleteException.class
-      )
     );
   }
 

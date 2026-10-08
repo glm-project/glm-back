@@ -4,10 +4,7 @@ import com.glm.glmback.shared.error.infrastructure.primary.ProblemCode;
 import org.springframework.http.HttpStatus;
 
 enum ErreurDAtelier implements ProblemCode {
-  PROPOSITION_INVALIDE(HttpStatus.BAD_REQUEST, "proposition invalide"),
   NATURE_D_ANOMALIE_INVALIDE(HttpStatus.BAD_REQUEST, "nature d'anomalie invalide"),
-  APERCU_OBSOLETE(HttpStatus.CONFLICT, "apercu obsolete"),
-  CONFIRMATION_REUTILISEE(HttpStatus.CONFLICT, "confirmation reutilisee"),
   SUIVI_D_ATELIER_INTROUVABLE(HttpStatus.NOT_FOUND, "suivi d'atelier introuvable"),
   EVENEMENT_D_ATELIER_INTROUVABLE(HttpStatus.NOT_FOUND, "evenement d'atelier introuvable"),
   ELEMENT_DE_FABRICATION_INTROUVABLE(HttpStatus.NOT_FOUND, "element de fabrication introuvable"),

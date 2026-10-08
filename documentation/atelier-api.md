@@ -665,14 +665,11 @@ Cette route ne prend pas de paramètre d'évaluation et ne garantit pas un insta
 
 Ces routes sont décrites dans le [contrat OpenAPI généré](openapi.json) et éprouvées par les scénarios REST.
 
-| Capacité               | Route                                                                           | Droit                                 |
-| ---------------------- | ------------------------------------------------------------------------------- | ------------------------------------- |
-| Liste paginée          | `GET /api/atelier/anomalies?nature=CONFLIT&operateur=…&element=…&page=0&size=5` | `USER` ou `GESTIONNAIRE`              |
-| Liste des fins auto.   | `GET /api/atelier/anomalies?nature=FIN_AUTOMATIQUE&…`                           | `USER` ou `GESTIONNAIRE`              |
-| Dossier adressé        | `GET /api/atelier/suivis/{suivi}/anomalies/{pointage}`                          | `USER` ou `GESTIONNAIRE`              |
-| Aperçu sans écriture   | `POST /api/atelier/suivis/{suivi}/anomalies/{pointage}/apercus`                 | `GESTIONNAIRE`                        |
-| Confirmation           | `POST /api/atelier/suivis/{suivi}/confirmations-de-resolution`                  | `GESTIONNAIRE`                        |
-| Vérification canonique | `GET /api/atelier/suivis/{suivi}/confirmations-de-resolution/{commande}`        | `GESTIONNAIRE`, auteur de la commande |
+| Capacité             | Route                                                                           | Droit                    |
+| -------------------- | ------------------------------------------------------------------------------- | ------------------------ |
+| Liste paginée        | `GET /api/atelier/anomalies?nature=CONFLIT&operateur=…&element=…&page=0&size=5` | `USER` ou `GESTIONNAIRE` |
+| Liste des fins auto. | `GET /api/atelier/anomalies?nature=FIN_AUTOMATIQUE&…`                           | `USER` ou `GESTIONNAIRE` |
+| Dossier adressé      | `GET /api/atelier/suivis/{suivi}/anomalies/{pointage}`                          | `USER` ou `GESTIONNAIRE` |
 
 Une **anomalie de pointage** est ce que le gestionnaire doit trancher. Elle porte une `nature` : `CONFLIT`
 (une séquence en conflit) ou `FIN_AUTOMATIQUE` (une activité terminée à son échéance faute de fin réelle). Les anciennes routes
@@ -787,9 +784,8 @@ désormais `"nature": "CONFLIT"`, champ requis ajouté au dossier avec la liste 
 
 Une activité que rien n'a terminée s'arrête à son échéance, treize heures écoulées après son début, borne incluse.
 Ce n'est pas un conflit : le dossier de son ouvrant actif (`activite_d_atelier.ouverture_id`) répond
-`FIN_AUTOMATIQUE`, avec le même protocole d'aperçu, de confirmation et de reçu que les conflits. L'échéance se juge à
-l'instant d'évaluation, à la nanoseconde, et n'est jamais stockée : liste, dossier, aperçu et confirmation la jugent
-chacun au leur. Lue à 20:59:59.999999999 pour un début à 08:00, l'adresse est `SANS_ANOMALIE` ; lue à 21:00:00, elle
+`FIN_AUTOMATIQUE`. L'échéance se juge à l'instant d'évaluation, à la nanoseconde, et n'est jamais stockée : liste et
+dossier la jugent chacun au leur. Lue à 20:59:59.999999999 pour un début à 08:00, l'adresse est `SANS_ANOMALIE` ; lue à 21:00:00, elle
 est `FIN_AUTOMATIQUE`.
 
 Deux identifiants restent distincts. L'**adresse** du dossier est l'`EvenementDAtelierId` de l'ouvrant actif ; l'**activité
@@ -814,26 +810,7 @@ activité, avec sa propre adresse et sa propre ligne de liste : même échue à 
 dossier, et `finAutomatique` ne juge que l'anomalie du dossier. `perimetre` liste des faits : `perimetre.activites`
 peut encore nommer l'activité qu'ouvre ce geste, que `activites[]` ne contient pas.
 
-Les propositions guidées suivent les gestes tardifs qui visent l'activité :
-
-| Gestes tardifs qui visent l'activité | Proposition                   | Acte (`kind`)    | Fait proposé                                                            |
-| ------------------------------------ | ----------------------------- | ---------------- | ----------------------------------------------------------------------- |
-| aucun                                | `REGULARISER_FIN`             | `REGULARISATION` | FIN de l'activité, opérateur et poste de l'ouvrant, **aucun `instant`** |
-| une transition                       | `CORRIGER_TRANSITION_TARDIVE` | `CORRECTION`     | cette transition, `instant` repris de son pointage                      |
-| une ou plusieurs FIN                 | `CORRIGER_FIN_TARDIVE`        | `CORRECTION`     | la FIN la plus tardive seule, `instant` repris de son pointage          |
-
-Aucune heure n'est inventée : le gestionnaire saisit celle d'une fin régularisée, et une correction reprend l'heure du
-pointage réel qu'elle remplace. `REGULARISER_FIN` n'est jamais proposé quand un geste tardif vise l'activité :
-avec une transition tardive, toute fin régularisée la contredit ; avec plusieurs fins tardives, en corriger une autre
-que la plus tardive laisserait la suivante viser une activité déjà terminée. Une transition tardive l'emporte sur une
-fin tardive. Le remplaçant d'une correction est une régularisation (`estUneRegularisation`) et termine l'activité
-au-delà de l'échéance.
-
-Le `fait` d'un choix est un `oneOf` : `RestFaitARegulariser` pour `REGULARISER_FIN` (sans `instant`), `RestFaitDeResolution`
-pour une correction (avec `instant`). Ce `oneOf` n'est pas discriminé dans le schéma : un fait avec `instant` valide aussi
-`RestFaitARegulariser`. `choix.code` fait foi — `REGULARISER_FIN` porte un fait sans `instant`, `CORRIGER_TRANSITION_TARDIVE`
-et `CORRIGER_FIN_TARDIVE` un fait avec `instant` — et un client ne doit pas deviner l'alternative d'après la forme du fait. Le fait d'un acte reçu en entrée exige toujours `instant`. Dossier d'une fin
-automatique, avec sa régularisation :
+Dossier d'une fin automatique :
 
 ```json
 {
@@ -858,38 +835,13 @@ automatique, avec sa régularisation :
     }
   ],
   "perimetre": { "activites": ["ab8f8dba-…"], "pointages": ["ab8f8dba-…"], "nombrePointages": 1, "…": "…" },
-  "choix": [
-    {
-      "code": "REGULARISER_FIN",
-      "kind": "REGULARISATION",
-      "pointage": "ab8f8dba-…",
-      "fait": {
-        "type": "FIN",
-        "intention": "FIN",
-        "activiteVisee": "ab8f8dba-…",
-        "operateur": "33333333-…",
-        "poste": "55555555-…"
-      }
-    }
-  ],
   "continuations": []
 }
 ```
 
-Avec une FIN pointée à 23:00, le choix est `CORRIGER_FIN_TARDIVE` sur le pointage de cette FIN, avec
-`"fait": { "type": "FIN", "intention": "FIN", "activiteVisee": "…", "operateur": "…", "poste": "…", "instant": "2026-05-10T23:00:00Z" }`.
-
-Aperçu et confirmation acceptent les adresses `EN_CONFLIT` et `FIN_AUTOMATIQUE` ; toute autre est `apercu-obsolete`. Les droits
-ne changent pas. Un acte qui laisse ou crée une contradiction (une fin régularisée avant le début, ou après une
-relance) est un résultat accepté : le dossier devient `EN_CONFLIT` et les continuations désignent les ancres actives.
-Sur un suivi clôturé, une fin régularisée avant la clôture est acceptée, après elle `suivi-d-atelier-cloture` (409).
-Une habilitation retirée refuse l'aperçu (`operateur-non-habilite`) et rend un aperçu déjà prêt obsolète à la
-confirmation ; une heure future est refusée (`date-de-survenue-future`). Voir
-[l'ADR 0008](adr/0008-extend-explicit-proposals-to-automatic-ends.md).
-
-Le détail adressé et l’aperçu lisent le journal, la clôture et la révision d’une même version committée du suivi,
+Le détail adressé lit le journal, la clôture et la révision d’une même version committée du suivi,
 sans verrouiller les rédacteurs. Une écriture concurrente peut rendre cette version ancienne après sa lecture ;
-la confirmation contrôle toujours la révision sous verrou. Cette garantie ne constitue pas un instantané entre
+l'écriture contrôle toujours la révision sous verrou. Cette garantie ne constitue pas un instantané entre
 plusieurs appels ni avec les libellés du référentiel. Voir [l’ADR 0007](adr/0007-read-addressed-workshop-aggregates-coherently.md).
 
 La révision commence à zéro à l'engagement et progresse à chaque modification effective du journal ou de la clôture, par toutes
@@ -906,45 +858,4 @@ Le diagnostic vient de l'interprétation du domaine au moment de la contradictio
 geste, sa cible, l'ouvrant actif ou annulé, le fait qui a terminé ou remplacé la cible et une raison
 structurée. Les premières familles sont cible remplacée, déjà terminée, pas encore ouverte, ouvrant
 annulé, même catégorie, cible échue avec une autre activité en cours et contradiction avec une
-régularisation. Le mapper REST ne rejoue aucun automate. Les propositions portent un code, les faits
-qui les étayent, le `kind`, le `pointage` et le `fait` proposé quand il s’agit d’une correction ;
-aucune n’est sélectionnée et aucun motif n’est prérempli. Le premier guide de fin visant une cible
-remplacée propose soit de rattacher cette fin à l’activité remplaçante, soit d’annuler la transition.
-
-Le corps d'aperçu porte `commande` (UUID créé par le client), `revision` et `acte`. L'acte porte
-`kind` (`CORRECTION`, `ANNULATION`, `REGULARISATION`) et les champs propres à cette intention :
-`pointage` visé et `motif` pour l'annulation ; `pointage` visé, `fait` et `motif` pour la correction ;
-`fait` pour la régularisation, sans justificatif obligatoire. Le fait conserve les UUID
-`operateur`/`poste`, `type`, `intention`, `activiteVisee` éventuelle et chaîne exacte `instant` ; auteur et tarifs restent
-des valeurs serveur. L'aperçu rend `commande`, `adresse` (`suivi` et `pointage`), `revision`, l'acte repris,
-`evaluation`, `avant`, `apres`, `empreinteConsequences` et `evenement` lorsque l'acte crée un fait.
-Il ne réserve aucune identité et n'enregistre rien. Correction et régularisation portent cette identité
-prospective ; l'annulation n'en porte aucune. L'identité de l'événement reste distincte de la commande.
-
-La confirmation transmet `commande`, `adresse`, `revision`, `acte`, `empreinteConsequences` et
-`evenement` éventuel. Atelier verrouille le suivi, contrôle la révision et l'adresse puis reprépare
-l'acte avec les ressources, habilitations et l'instant actuels. Une différence matérielle impose un
-nouvel aperçu, sans écriture. Les changements de libellés ou d'auteur d'affichage ne changent pas
-l'empreinte. Une habilitation retirée ou une ressource disparue invalide l'aperçu ; une panne technique
-garde son résultat technique. Le contrôle transactionnel du suivi ne constitue pas un instantané
-global des référentiels.
-
-Le reçu rend la commande, l'adresse, l'acte exact, les révisions avant/après, l'instant d'enregistrement,
-l'événement créé éventuel et les événements touchés. Le dossier courant joint rend le résultat au
-dossier d'origine et les continuations explicites vers les ancrages actifs des conflits restants.
-Un acte laissant un conflit est une réussite. La vérification rend `ENREGISTREE` avec le reçu canonique,
-ou `NON_ATTESTEE` : l'absence momentanée d'un reçu ne permet pas de conclure à un rollback.
-
-Le rejeu identique compare les champs métier et les métadonnées de la proposition enregistrée,
-indépendamment du nom d'affichage, de l'instant du rejeu et des conséquences devenues actuelles.
-L'entreprise, l'issuer et le subject authentifiés sont contrôlés séparément. Le reçu conserve l'auteur
-historique ; il reste lisible après redémarrage sans réévaluer l'acte.
-
-La page conserve la proposition uniquement en mémoire. Une édition retire son aperçu, un rechargement
-abandonne la saisie, mais une confirmation déjà envoyée peut encore aboutir. Après `apercu-obsolete`,
-Gestion conserve la saisie, recharge le dossier et invite à demander explicitement un nouvel aperçu.
-
-La proposition explicite et les reçus sont décrits dans
-[l'ADR 0006](adr/0006-confirm-explicit-resolution-proposals.md). Les refus de résolution
-(`nature-d-anomalie-invalide`, `proposition-invalide`, `apercu-obsolete`, `confirmation-reutilisee`) sont publiés dans
-[le catalogue](codes-erreur.md).
+régularisation. Le mapper REST ne rejoue aucun automate.

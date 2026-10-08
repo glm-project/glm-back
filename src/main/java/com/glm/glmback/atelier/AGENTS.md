@@ -41,8 +41,7 @@ interprétés de ses activités ; seuls les faits d'activité, la clôture et l'
 
 Le parcours de gestion des anomalies de pointage est regroupé sous `gestionanomalies/` dans chaque couche d'Atelier :
 `domain/gestionanomalies`, `application/gestionanomalies`, `infrastructure/primary/gestionanomalies` et
-`infrastructure/secondary/gestionanomalies` portent les dossiers, la liste, les actes de résolution, les aperçus,
-les confirmations et les reçus. Ces sous-packages appartiennent au même bounded context Atelier.
+`infrastructure/secondary/gestionanomalies` portent les dossiers et la liste. Ces sous-packages appartiennent au même bounded context Atelier.
 
 **Anomalie de pointage** : ce que le gestionnaire doit trancher. Elle porte une nature (`NatureDAnomalie`) :
 `CONFLIT`, une séquence en conflit, et `FIN_AUTOMATIQUE`, une activité terminée à son échéance faute de fin réelle,
@@ -59,17 +58,11 @@ son échéance — est désormais la nature `FIN_AUTOMATIQUE`, portée par `finA
 incomplet) : seul `FIN_AUTOMATIQUE` y porte le même nom, `CONFLIT` correspond à `A_RESOUDRE` et `PARTAGE_INCONNU`
 n'a pas d'équivalent ici. Aucun type n'est partagé entre les contextes. Les routes `/conflits` sont supprimées, sans
 redirection.
-Les aperçus restent des lectures sans réservation. Les confirmations transportent une proposition explicite
-et comparent les conséquences après verrouillage ; le reçu durable compare la demande indépendamment du
-nom d'affichage et contrôle séparément entreprise, issuer et subject. Avant de modifier ce protocole,
-consulter [l'ADR 0006](../../../../../../../documentation/adr/0006-confirm-explicit-resolution-proposals.md).
 **Dossier** : l'adresse d'une anomalie à traiter. Il couvre une séquence en conflit (`EN_CONFLIT`) ou une fin
 automatique (`FIN_AUTOMATIQUE`) : sans séquence, ses activités concernées sont celle de l'ancre terminée
 automatiquement, et son périmètre ses faits ouvrants et visants, gestes tardifs compris. L'ancre d'une fin automatique
 est l'ouvrant actif ; l'activité visée par un acte reste l'`ActiviteId` d'origine. `finAutomatique` dit qu'une activité
-concernée reste échue, même quand l'ancre est annulée ; la fin n'est jamais stockée. Les propositions guidées
-(`REGULARISER_FIN`, `CORRIGER_FIN_TARDIVE`, `CORRIGER_TRANSITION_TARDIVE`) n'inventent aucune heure :
-[l'ADR 0008](../../../../../../../documentation/adr/0008-extend-explicit-proposals-to-automatic-ends.md).
+concernée reste échue, même quand l'ancre est annulée ; la fin n'est jamais stockée.
 L'agrégat, le journal, leurs transitions, le repository et les types communs d'interprétation, diagnostics compris,
 restent dans les couches d'Atelier ; le parcours les utilise sans déplacer leurs invariants. Ses tests et fixtures
 suivent leurs propriétaires dans les mêmes sous-packages.
@@ -237,7 +230,7 @@ la garantie que donnait le code partagé — le modifier en même temps que l'un
 
 ### Concurrence
 
-Les lectures adressées et les aperçus acquièrent le parent et son journal dans une même requête, dans leur propre
+Les lectures adressées acquièrent le parent et son journal dans une même requête, dans leur propre
 contexte JPA en lecture seule : un parent déjà chargé par un appelant peut sinon rester ancien malgré le fetch join.
 Conserver cette frontière de lecture de données committées, décrite dans
 [l’ADR 0007](../../../../../../../documentation/adr/0007-read-addressed-workshop-aggregates-coherently.md).

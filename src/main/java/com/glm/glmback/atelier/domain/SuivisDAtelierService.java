@@ -153,15 +153,15 @@ public final class SuivisDAtelierService {
     return repository.update(prepareCorrection(get(commande.remplacement().suivi()), commande, remplacementId));
   }
 
-  public SuiviDAtelier prepareRegularisation(SuiviDAtelier suivi, RegularisationAEnregistrer commande, EvenementDAtelierId evenement) {
+  private SuiviDAtelier prepareRegularisation(SuiviDAtelier suivi, RegularisationAEnregistrer commande, EvenementDAtelierId evenement) {
     return suivi.enregistre(regularisation(commande, evenement));
   }
 
-  public SuiviDAtelier prepareAnnulation(SuiviDAtelier suivi, AnnulationAEnregistrer commande) {
+  private SuiviDAtelier prepareAnnulation(SuiviDAtelier suivi, AnnulationAEnregistrer commande) {
     return suivi.annule(commande.evenement(), annulation(commande.auteur(), commande.motif()));
   }
 
-  public SuiviDAtelier prepareCorrection(SuiviDAtelier suivi, CorrectionAEnregistrer commande, EvenementDAtelierId remplacementId) {
+  private SuiviDAtelier prepareCorrection(SuiviDAtelier suivi, CorrectionAEnregistrer commande, EvenementDAtelierId remplacementId) {
     RegularisationAEnregistrer remplacement = commande.remplacement();
     return suivi.corrige(
       commande.evenement(),

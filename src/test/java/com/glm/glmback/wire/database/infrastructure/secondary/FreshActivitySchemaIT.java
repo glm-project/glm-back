@@ -67,7 +67,6 @@ class FreshActivitySchemaIT {
     "parametrage",
     "pointage_en_conflit",
     "poste_de_travail",
-    "recu_d_acte",
     "sequence_en_conflit",
     "suivi_d_atelier"
   );

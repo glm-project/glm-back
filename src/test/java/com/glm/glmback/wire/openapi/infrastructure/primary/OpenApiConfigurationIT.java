@@ -63,9 +63,9 @@ class OpenApiConfigurationIT {
         )
       )
       .andExpect(jsonPath("$.paths['/api/atelier/suivis/{id}/anomalies/{pointage}'].get.tags[0]").value("Atelier - anomalies de pointage"))
-      .andExpect(
-        jsonPath("$.paths['/api/atelier/suivis/{id}/anomalies/{pointage}/apercus'].post.tags[0]").value("Atelier - anomalies de pointage")
-      )
+      .andExpect(jsonPath("$.paths['/api/atelier/suivis/{id}/anomalies/{pointage}/apercus']").doesNotExist())
+      .andExpect(jsonPath("$.paths['/api/atelier/suivis/{suivi}/confirmations-de-resolution']").doesNotExist())
+      .andExpect(jsonPath("$.paths['/api/atelier/suivis/{suivi}/confirmations-de-resolution/{commande}']").doesNotExist())
       .andExpect(jsonPath("$.paths['/api/atelier/conflits']").doesNotExist())
       .andExpect(jsonPath("$.paths['/api/atelier/suivis/{id}/conflits/{pointage}']").doesNotExist())
       .andExpect(jsonPath("$.paths['/api/atelier/suivis/{id}/conflits/{pointage}/apercus']").doesNotExist())

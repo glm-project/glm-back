@@ -11,8 +11,8 @@ import org.springframework.stereotype.Component;
 /**
  * Jackson's subtype hierarchy makes swagger-core add a parent allOf to each alternative of a oneOf union.
  * These alternatives describe standalone JSON bodies: retaining the parent would recursively require the union.
- * Preserve their generated properties and constraints, with the literal discriminator emitted by Jackson: kind for
- * the acts and confirmations, nature for the lines of the anomalies list.
+ * Preserve their generated properties and constraints, with the literal discriminator emitted by Jackson: nature for
+ * the lines of the anomalies list.
  */
 @Component
 final class ResolutionOpenApiCustomizer implements OpenApiCustomizer {
@@ -20,16 +20,6 @@ final class ResolutionOpenApiCustomizer implements OpenApiCustomizer {
   private record Variante(String discriminant, String valeur) {}
 
   private static final Map<String, Variante> VARIANTES = Map.of(
-    "RestActeAnnulation",
-    new Variante("kind", "ANNULATION"),
-    "RestActeCorrection",
-    new Variante("kind", "CORRECTION"),
-    "RestActeRegularisation",
-    new Variante("kind", "REGULARISATION"),
-    "RestConfirmationEnregistree",
-    new Variante("kind", "ENREGISTREE"),
-    "RestConfirmationNonAttestee",
-    new Variante("kind", "NON_ATTESTEE"),
     "RestConflitEnListe",
     new Variante("nature", "CONFLIT"),
     "RestFinAutomatiqueEnListe",
