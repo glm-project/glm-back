@@ -142,7 +142,7 @@ class SupervisionDAtelierResourceIT {
     transactions.executeWithoutResult(status -> {
       entities
         .createNativeQuery(
-          "insert into element_de_fabrication (id, type, nom, reference, date_de_creation, date_de_modification) values (:id, 'PRODUIT', 'PRD-2026-000043', 'M-43', :date, :date)"
+          "insert into element_de_fabrication (id, categorie, nom, reference, date_de_creation, date_de_modification) values (:id, 'PRODUIT', 'PRD-2026-000043', 'M-43', :date, :date)"
         )
         .setParameter("id", element.id().uuid())
         .setParameter("date", LE_10_MAI_2026_A_7H)
@@ -317,7 +317,7 @@ class SupervisionDAtelierResourceIT {
         .executeUpdate();
       entities
         .createNativeQuery(
-          "insert into element_de_fabrication (id,type,nom,reference,date_de_creation,date_de_modification) values (:id,'ORDRE_DE_FABRICATION','OF-2026-000042','R-42',:date,:date)"
+          "insert into element_de_fabrication (id,categorie,nom,reference,date_de_creation,date_de_modification) values (:id,'ORDRE_DE_FABRICATION','OF-2026-000042','R-42',:date,:date)"
         )
         .setParameter("id", ELEMENT_OF_2026_000042.uuid())
         .setParameter("date", LE_10_MAI_2026_A_7H)

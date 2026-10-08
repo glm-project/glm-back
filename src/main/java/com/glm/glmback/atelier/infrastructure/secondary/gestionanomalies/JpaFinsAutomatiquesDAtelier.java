@@ -37,7 +37,7 @@ class JpaFinsAutomatiquesDAtelier implements FinsAutomatiquesDAtelier {
   private static final String LIGNES = """
     with filtre as (
       select activite.ouverture_id as ouvrant, activite.id as activite, suivi.id as suivi, suivi.revision as revision,
-        suivi.element_id as element_id, suivi.element_nom as element_nom, suivi.element_type as element_type,
+        suivi.element_id as element_id, suivi.element_nom as element_nom, suivi.element_categorie as element_categorie,
         activite.operateur_id as operateur_id, activite.poste_id as poste_id,
         activite.debut as debut, activite.echeance as echeance
       from activite_d_atelier activite
@@ -102,7 +102,7 @@ class JpaFinsAutomatiquesDAtelier implements FinsAutomatiquesDAtelier {
         new ElementEngage(
           new ElementEngageId(ligne.get("element_id", UUID.class)),
           new NomDElement(ligne.get("element_nom", String.class)),
-          new CategorieDElement(ligne.get("element_type", String.class))
+          new CategorieDElement(ligne.get("element_categorie", String.class))
         )
       )
       .cle(

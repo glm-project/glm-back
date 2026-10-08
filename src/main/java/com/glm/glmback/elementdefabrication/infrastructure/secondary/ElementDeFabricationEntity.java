@@ -23,7 +23,7 @@ class ElementDeFabricationEntity {
   private UUID id;
 
   @Enumerated(EnumType.STRING)
-  @Column(length = 30)
+  @Column(name = "categorie", length = 30)
   private TypeDElementDeFabrication type;
 
   private String nom;

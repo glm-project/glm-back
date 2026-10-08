@@ -20,8 +20,8 @@ import org.springframework.stereotype.Component;
 class JpaCompteurDElementsDeFabrication implements CompteurDElementsDeFabrication {
 
   private static final String PROCHAIN_NUMERO = """
-    INSERT INTO compteur_d_elements_de_fabrication (type, annee, numero) VALUES (?, ?, 1) \
-    ON CONFLICT (type, annee) DO UPDATE SET numero = compteur_d_elements_de_fabrication.numero + 1 \
+    INSERT INTO compteur_d_elements_de_fabrication (categorie, annee, numero) VALUES (?, ?, 1) \
+    ON CONFLICT (categorie, annee) DO UPDATE SET numero = compteur_d_elements_de_fabrication.numero + 1 \
     RETURNING numero\
     """;
 

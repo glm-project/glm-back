@@ -32,7 +32,7 @@ class SuiviDeLaSyntheseEntity {
   private String elementNom;
 
   @Column(length = 30)
-  private String elementType;
+  private String elementCategorie;
 
   protected SuiviDeLaSyntheseEntity() {
     // Constructeur requis par JPA.
@@ -43,6 +43,6 @@ class SuiviDeLaSyntheseEntity {
   }
 
   ElementEngage element() {
-    return new ElementEngage(new ElementId(elementId), new NomDElement(elementNom), new CategorieDElement(elementType));
+    return new ElementEngage(new ElementId(elementId), new NomDElement(elementNom), new CategorieDElement(elementCategorie));
   }
 }

@@ -13,7 +13,7 @@ import org.hibernate.annotations.Immutable;
 
 /**
  * Vue en lecture seule de la table des elements de fabrication, reduite a ce que le releve relit a chaque appel : la
- * reference et la description. Le nom et le type viennent du suivi, qui les a copies a l'engagement.
+ * reference et la description. Le nom et la categorie viennent du suivi, qui les a copies a l'engagement.
  */
 @Entity
 @Immutable
