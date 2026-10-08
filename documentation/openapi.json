@@ -469,44 +469,6 @@
         "required" : [ "activites", "element", "pointages" ],
         "type" : "object"
       },
-      "RestConflitDuCout" : {
-        "description" : "Sequence en conflit de l'element ou responsable d'un partage humain incomplet sur un autre element.",
-        "properties" : {
-          "activites" : {
-            "description" : "Identites originales des activites de la sequence, dans leur ordre.",
-            "items" : {
-              "format" : "uuid",
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "element" : {
-            "description" : "Element de fabrication portant la sequence.",
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "operateur" : {
-            "description" : "Operateur de la sequence.",
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "pointages" : {
-            "description" : "Identites des faits actifs contradictoires, dans leur ordre.",
-            "items" : {
-              "format" : "uuid",
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "poste" : {
-            "description" : "Poste de la sequence, absent sans poste.",
-            "format" : "uuid",
-            "type" : "string"
-          }
-        },
-        "required" : [ "activites", "element", "operateur", "pointages" ],
-        "type" : "object"
-      },
       "RestCout" : {
         "description" : "Un cout, separe en ce que coute la machine et en ce que coute la personne.\n\nLes deux ne s'agregent pas de la meme facon : le cout horaire de chaque poste actif court en entier, alors que le\ntaux horaire de l'operateur est divise par le nombre de postes qu'il occupait simultanement, tous elements\nconfondus. Les afficher separement est ce qui rend la regle lisible.\n",
         "properties" : {
@@ -532,13 +494,6 @@
             "description" : "Nombre d'activites en cours exclues du temps, des couts et du diviseur.",
             "format" : "int32",
             "type" : "integer"
-          },
-          "conflits" : {
-            "description" : "Conflits de l'element et sequences responsables de valeurs incompletes, meme sur un autre element.",
-            "items" : {
-              "$ref" : "#/components/schemas/RestConflitDuCout"
-            },
-            "type" : "array"
           },
           "cout" : {
             "$ref" : "#/components/schemas/RestCout",
@@ -1127,7 +1082,7 @@
             "description" : "Premier debut comptabilise, derniere fin certaine de cette nature si elle existe."
           },
           "pointages" : {
-            "description" : "Les pointages de la ligne dans l'ordre ou ils ont commence, ceux a resoudre compris : de quoi justifier son cout.",
+            "description" : "Les pointages de la ligne dans l'ordre ou ils ont commence, de quoi justifier son cout.",
             "items" : {
               "$ref" : "#/components/schemas/RestPointageDuCout"
             },
@@ -1505,22 +1460,15 @@
         "type" : "object"
       },
       "RestPartDuPointageDuCout" : {
-        "description" : "Une part d'un pointage termine : la periode ou l'operateur occupait le meme ensemble de postes.\n\nSa main d'oeuvre vaut taux horaire x duree / diviseur, deja repartie au centime dans la fenetre de partage. Elle est\nincomplete, sans diviseur, quand un pointage a resoudre de l'operateur, sur un autre poste, empeche de la partager.\n",
+        "description" : "Une part d'un pointage termine : la periode ou l'operateur occupait le meme ensemble de postes.\n\nSa main d'oeuvre vaut taux horaire x duree / diviseur, deja repartie au centime dans la fenetre de partage.\n",
         "properties" : {
-          "bloquants" : {
-            "description" : "Les activites a resoudre qui empechent de connaitre le diviseur.",
-            "items" : {
-              "$ref" : "#/components/schemas/RestActiviteCiteeDuCout"
-            },
-            "type" : "array"
-          },
           "debut" : {
             "description" : "Debut de la part.",
             "format" : "date-time",
             "type" : "string"
           },
           "diviseur" : {
-            "description" : "Nombre de postes occupes en meme temps, absent quand le partage est inconnu.",
+            "description" : "Nombre de postes occupes en meme temps.",
             "example" : 2,
             "format" : "int32",
             "type" : "integer"
@@ -1547,7 +1495,7 @@
             "type" : "array"
           }
         },
-        "required" : [ "bloquants", "debut", "duree", "fin", "mainDOeuvre", "paralleles" ],
+        "required" : [ "debut", "diviseur", "duree", "fin", "mainDOeuvre", "paralleles" ],
         "type" : "object"
       },
       "RestPeriodeDuCout" : {
@@ -1651,12 +1599,12 @@
         "type" : "object"
       },
       "RestPointageDuCout" : {
-        "description" : "Un pointage d'une ligne, avec tout ce qui permet de refaire son calcul.\n\nTermine, il porte sa duree, sa machine (cout horaire x duree, jamais divisee) et sa main d'oeuvre, somme de ses\nparts. A resoudre, il n'a ni fin, ni duree, ni montant : seulement sa fin au plus tard et les faits contradictoires\nde sa sequence. Les montants sont deja au centime, et ceux des pointages s'additionnent exactement au cout de la\nligne quand il est complet.\n",
+        "description" : "Un pointage d'une ligne, avec tout ce qui permet de refaire son calcul.\n\nIl porte sa duree, sa machine (cout horaire x duree, jamais divisee) et sa main d'oeuvre, somme de ses parts. Les\nmontants sont deja au centime, et ceux des pointages s'additionnent exactement au cout de la ligne.\n",
         "properties" : {
           "anomalies" : {
             "description" : "Anomalies du pointage, vide s'il n'en a aucune.",
             "items" : {
-              "enum" : [ "FIN_AUTOMATIQUE", "A_RESOUDRE", "PARTAGE_INCONNU" ],
+              "enum" : [ "FIN_AUTOMATIQUE" ],
               "type" : "string"
             },
             "type" : "array"
@@ -1665,13 +1613,6 @@
             "description" : "Travail ou reprise de non conformite.",
             "enum" : [ "TRAVAIL", "NON_CONFORMITE" ],
             "type" : "string"
-          },
-          "contradictoires" : {
-            "description" : "Faits contradictoires d'un pointage a resoudre, dans leur ordre ; vide sinon.",
-            "items" : {
-              "$ref" : "#/components/schemas/RestPointageEnConflitDuCout"
-            },
-            "type" : "array"
           },
           "cout" : {
             "$ref" : "#/components/schemas/RestCout",
@@ -1689,15 +1630,10 @@
           },
           "duree" : {
             "$ref" : "#/components/schemas/RestDureeDuCout",
-            "description" : "Duree du pointage, incomplete s'il est a resoudre."
+            "description" : "Duree du pointage."
           },
           "fin" : {
-            "description" : "Fin du pointage, absente s'il est a resoudre.",
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "finAuPlusTard" : {
-            "description" : "Fin au plus tard d'un pointage a resoudre.",
+            "description" : "Fin du pointage.",
             "format" : "date-time",
             "type" : "string"
           },
@@ -1706,7 +1642,7 @@
             "description" : "Operateur du pointage."
           },
           "parts" : {
-            "description" : "Parts du pointage termine, une par fenetre de partage ; vide s'il est a resoudre.",
+            "description" : "Parts du pointage, une par fenetre de partage.",
             "items" : {
               "$ref" : "#/components/schemas/RestPartDuPointageDuCout"
             },
@@ -1722,29 +1658,7 @@
             "type" : "number"
           }
         },
-        "required" : [ "anomalies", "categorie", "contradictoires", "cout", "debut", "duree", "operateur", "parts" ],
-        "type" : "object"
-      },
-      "RestPointageEnConflitDuCout" : {
-        "description" : "Un fait actif contradictoire de la sequence qui laisse le pointage a resoudre.",
-        "properties" : {
-          "id" : {
-            "description" : "Identite du fait.",
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "survenue" : {
-            "description" : "Quand il est survenu.",
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "type" : {
-            "description" : "Ce que le fait disait.",
-            "enum" : [ "DEBUT", "NON_CONFORMITE", "FIN" ],
-            "type" : "string"
-          }
-        },
-        "required" : [ "id", "survenue", "type" ],
+        "required" : [ "anomalies", "categorie", "cout", "debut", "duree", "fin", "operateur", "parts" ],
         "type" : "object"
       },
       "RestPosteDAtelier" : {
@@ -2857,7 +2771,7 @@
     },
     "/api/couts-de-revient/{elementId}" : {
       "get" : {
-        "description" : "Rend une ligne par nature d'operation — fraisage, tournage, erosion —, chacune portant le temps de bon travail,\nle temps passe en non conformite avec ses periodes datees, et le cout separe en machine et main d'oeuvre.\n\nL'entree se fait par l'element, non par son suivi d'atelier : un element reengage apres cloture additionne ses\npassages.\n\nDeux regles a connaitre avant d'afficher les montants. Le cout horaire de chaque poste actif court **en entier**,\nmeme quand l'operateur en mene plusieurs de front ; son taux horaire, lui, est **divise** par le nombre de postes\nqu'il occupait a cet instant, tous elements confondus. Un operateur sur trois elements avec une seule machine\nn'est donc pas divise. Le decoupage se fait aux bornes de chaque pointage, si bien que seul le chevauchement reel\nest divise.\n\nUne activite encore en cours est entierement exclue du temps, des couts et du diviseur. A son echeance\nprojetee, elle compte jusqu'a sa fin automatique avec une anomalie et sa periode datee. L'horloge est relevee\nune seule fois par rapport ; cet instant est rendu dans evaluation.\n\nChaque duree et montant porte complete ; valeur est absente si incomplet, sans zero ni somme partielle.\nTravail, non conformite, machine et main d'oeuvre sont independants. Pour le partage humain, toute la plage\nfactuelle possible d'une activite a resoudre est bornee a evaluation. Une occupation certaine du meme poste\npeut neutraliser son effet sur le nombre de postes distincts ; la machine d'une activite terminee reste connue.\nconflits rend les sequences de l'element et toutes celles responsables d'une valeur inconnue, meme sur un autre\nelement, avec les identites originales d'activites et les faits actifs.\n",
+        "description" : "Rend une ligne par nature d'operation — fraisage, tournage, erosion —, chacune portant le temps de bon travail,\nle temps passe en non conformite avec ses periodes datees, et le cout separe en machine et main d'oeuvre.\n\nL'entree se fait par l'element, non par son suivi d'atelier : un element reengage apres cloture additionne ses\npassages.\n\nDeux regles a connaitre avant d'afficher les montants. Le cout horaire de chaque poste actif court **en entier**,\nmeme quand l'operateur en mene plusieurs de front ; son taux horaire, lui, est **divise** par le nombre de postes\nqu'il occupait a cet instant, tous elements confondus. Un operateur sur trois elements avec une seule machine\nn'est donc pas divise. Le decoupage se fait aux bornes de chaque pointage, si bien que seul le chevauchement reel\nest divise.\n\nUne activite encore en cours est entierement exclue du temps, des couts et du diviseur. A son echeance\nprojetee, elle compte jusqu'a sa fin automatique avec une anomalie et sa periode datee. L'horloge est relevee\nune seule fois par rapport ; cet instant est rendu dans evaluation.\n\nChaque duree et montant porte complete et sa valeur.\n",
         "operationId" : "get_5",
         "parameters" : [ {
           "description" : "Identifiant de l'element de fabrication.",

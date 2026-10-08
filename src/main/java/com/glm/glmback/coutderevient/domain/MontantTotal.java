@@ -13,10 +13,6 @@ public record MontantTotal(Optional<Montant> valeur) {
     return new MontantTotal(Optional.of(valeur));
   }
 
-  public static MontantTotal incomplet() {
-    return new MontantTotal(Optional.empty());
-  }
-
   public boolean complete() {
     return valeur.isPresent();
   }

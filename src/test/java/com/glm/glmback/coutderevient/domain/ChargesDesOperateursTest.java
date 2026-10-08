@@ -28,7 +28,7 @@ class ChargesDesOperateursTest {
     List<TrancheValorisable> parts = charges.decoupe(surFraiseuse(OPERATEUR_ID_DUPONT, LE_11_MAI_A_9H, LE_11_MAI_A_11H));
 
     assertThat(parts)
-      .extracting(part -> part.diviseur().orElseThrow())
+      .extracting(part -> part.diviseur())
       .containsExactly(new Diviseur(1));
   }
 
@@ -44,7 +44,7 @@ class ChargesDesOperateursTest {
     List<TrancheValorisable> parts = charges.decoupe(surFraiseuse(OPERATEUR_ID_DUPONT, LE_11_MAI_A_9H, LE_11_MAI_A_11H));
 
     assertThat(parts)
-      .extracting(part -> part.diviseur().orElseThrow())
+      .extracting(part -> part.diviseur())
       .containsExactly(new Diviseur(2));
   }
 

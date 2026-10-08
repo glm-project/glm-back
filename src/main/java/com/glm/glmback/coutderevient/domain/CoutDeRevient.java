@@ -13,13 +13,7 @@ import java.util.Optional;
  * par atelier. Une saisie regularisee apres coup compte donc a l'heure ou le travail a eu lieu.
  * </p>
  */
-public record CoutDeRevient(
-  ElementValorise element,
-  List<LigneDeCout> lignes,
-  EvaluationDuCout lecture,
-  List<SequenceEnConflit> conflits,
-  AnnuaireDuCout annuaire
-) {
+public record CoutDeRevient(ElementValorise element, List<LigneDeCout> lignes, EvaluationDuCout lecture, AnnuaireDuCout annuaire) {
   /**
    * Les natures dans l'ordre alphabetique, et la ligne sans nature en dernier : elle est le residu de ce qui a ete
    * pointe sans poste, et n'a pas de place dans l'ordre des metiers.
@@ -33,18 +27,12 @@ public record CoutDeRevient(
     Assert.notNull("element", element);
     Assert.field("lignes", lignes).notNull().noNullElement();
     Assert.notNull("lecture", lecture);
-    Assert.field("conflits", conflits).notNull().noNullElement();
     Assert.notNull("annuaire", annuaire);
   }
 
   public static ElementBuilder builder() {
     return element ->
-      tranches ->
-        aResoudre ->
-          charges ->
-            lecture ->
-              conflits ->
-                annuaire -> new CoutDeRevient(element, lignes(tranches, charges, aResoudre, conflits), lecture, conflits, annuaire);
+      tranches -> charges -> lecture -> annuaire -> new CoutDeRevient(element, lignes(tranches, charges), lecture, annuaire);
   }
 
   public interface ElementBuilder {
@@ -52,11 +40,7 @@ public record CoutDeRevient(
   }
 
   public interface TranchesBuilder {
-    AResoudreBuilder tranches(List<TrancheDActivite> tranches);
-  }
-
-  public interface AResoudreBuilder {
-    ChargesBuilder aResoudre(List<ActiviteInterpretee> aResoudre);
+    ChargesBuilder tranches(List<TrancheDActivite> tranches);
   }
 
   public interface ChargesBuilder {
@@ -64,11 +48,7 @@ public record CoutDeRevient(
   }
 
   public interface LectureBuilder {
-    ConflitsBuilder lecture(EvaluationDuCout lecture);
-  }
-
-  public interface ConflitsBuilder {
-    AnnuaireBuilder conflits(List<SequenceEnConflit> conflits);
+    AnnuaireBuilder lecture(EvaluationDuCout lecture);
   }
 
   public interface AnnuaireBuilder {
@@ -83,16 +63,10 @@ public record CoutDeRevient(
     return lignes.stream().map(LigneDeCout::cout).reduce(Cout.AUCUN, Cout::plus);
   }
 
-  private static List<LigneDeCout> lignes(
-    List<TrancheDActivite> tranches,
-    ChargesDesOperateurs charges,
-    List<ActiviteInterpretee> aResoudre,
-    List<SequenceEnConflit> conflits
-  ) {
-    List<Optional<NatureDOperation>> natures = java.util.stream.Stream.concat(
-      tranches.stream().map(tranche -> tranche.activite().nature()),
-      aResoudre.stream().map(activite -> activite.activite().nature())
-    )
+  private static List<LigneDeCout> lignes(List<TrancheDActivite> tranches, ChargesDesOperateurs charges) {
+    List<Optional<NatureDOperation>> natures = tranches
+      .stream()
+      .map(tranche -> tranche.activite().nature())
       .distinct()
       .sorted(PAR_NATURE)
       .toList();
@@ -105,14 +79,9 @@ public record CoutDeRevient(
             tranches
               .stream()
               .filter(tranche -> tranche.activite().nature().equals(nature))
-              .toList(),
-            aResoudre
-              .stream()
-              .filter(activite -> activite.activite().nature().equals(nature))
               .toList()
           ),
-          charges,
-          conflits
+          charges
         )
       )
       .toList();

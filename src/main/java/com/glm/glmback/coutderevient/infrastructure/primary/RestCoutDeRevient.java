@@ -26,8 +26,6 @@ record RestCoutDeRevient(
   int activitesEnCours,
   @Schema(description = "L'element de fabrication, tous ses passages en atelier confondus.") RestElement element,
   @Schema(description = "Une ligne par nature, la ligne sans nature en dernier.") List<RestLigneDeCout> lignes,
-  @Schema(description = "Conflits de l'element et sequences responsables de valeurs incompletes, meme sur un autre element.")
-  List<RestConflitDuCout> conflits,
   @Schema(description = "Temps total passe sur l'element.") RestTempsPasse temps,
   @Schema(description = "Cout total de l'element.") RestCout cout
 ) {
@@ -41,7 +39,6 @@ record RestCoutDeRevient(
         .stream()
         .map(ligne -> RestLigneDeCout.from(ligne, rapport.annuaire()))
         .toList(),
-      rapport.conflits().stream().map(RestConflitDuCout::from).toList(),
       RestTempsPasse.from(rapport.temps()),
       RestCout.from(rapport.cout())
     );

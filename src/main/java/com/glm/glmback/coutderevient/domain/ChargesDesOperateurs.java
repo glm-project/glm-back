@@ -4,7 +4,6 @@ import com.glm.glmback.shared.error.domain.Assert;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -21,38 +20,13 @@ public record ChargesDesOperateurs(Map<OperateurId, ChargeDeLOperateur> parOpera
   }
 
   public static ChargesDesOperateurs de(List<TrancheDActivite> tranches) {
-    return de(tranches, List.of());
-  }
-
-  public static ChargesDesOperateurs de(List<TrancheDActivite> tranches, List<ZoneIncertaine> zones) {
     return new ChargesDesOperateurs(
       tranches
         .stream()
         .collect(
-          Collectors.groupingBy(
-            TrancheDActivite::operateur,
-            Collectors.collectingAndThen(Collectors.toList(), propres ->
-              ChargeDeLOperateur.de(
-                propres,
-                zones
-                  .stream()
-                  .filter(zone -> zone.activite().activite().operateur().equals(propres.getFirst().operateur()))
-                  .toList()
-              )
-            )
-          )
+          Collectors.groupingBy(TrancheDActivite::operateur, Collectors.collectingAndThen(Collectors.toList(), ChargeDeLOperateur::de))
         )
     );
-  }
-
-  public Set<ActiviteId> responsables(List<TrancheDActivite> tranches) {
-    return tranches
-      .stream()
-      .flatMap(tranche -> decoupe(tranche).stream())
-      .filter(part -> part.coutDeMainDOeuvre().isEmpty())
-      .flatMap(part -> part.responsables().stream())
-      .map(ActiviteInterpretee::id)
-      .collect(Collectors.toSet());
   }
 
   /**

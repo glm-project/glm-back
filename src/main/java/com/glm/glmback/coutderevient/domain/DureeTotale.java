@@ -14,10 +14,6 @@ public record DureeTotale(Optional<Duration> valeur) {
     return new DureeTotale(Optional.of(valeur));
   }
 
-  public static DureeTotale incomplet() {
-    return new DureeTotale(Optional.empty());
-  }
-
   public boolean complete() {
     return valeur.isPresent();
   }

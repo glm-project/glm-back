@@ -3,9 +3,7 @@ package com.glm.glmback.coutderevient.domain;
 import java.util.*;
 
 /** Les ports de lecture servis depuis la memoire. */
-final class AtelierEnMemoire
-  implements ElementsValorisables, TravailDeLElement, OccupationDesOperateurs, ConflitsDuCout, OperateursNommes, PostesNommes
-{
+final class AtelierEnMemoire implements ElementsValorisables, TravailDeLElement, OccupationDesOperateurs, OperateursNommes, PostesNommes {
 
   private final Map<ElementId, ElementValorise> elements = new HashMap<>();
   private final Map<ElementId, List<ActiviteInterpretee>> travaux = new HashMap<>();
@@ -76,15 +74,5 @@ final class AtelierEnMemoire
   @Override
   public List<ActiviteInterpretee> activites(Set<OperateurId> operateurs, Periode periode) {
     return List.copyOf(occupation);
-  }
-
-  @Override
-  public List<SequenceEnConflit> deLElement(ElementId element) {
-    return List.of();
-  }
-
-  @Override
-  public List<SequenceEnConflit> desOperateurs(Set<OperateurId> operateurs) {
-    return List.of();
   }
 }

@@ -634,19 +634,13 @@ les seules activités terminées du même opérateur, tous éléments confondus.
 modifier ce partage sur un autre élément. Les tarifs viennent du fait ouvrant actif figé par atelier.
 
 Les champs de durée et de montant des lignes et du rapport sont des objets : `{ "complete": true,
-"valeur": ... }` pour une valeur connue, y compris zéro ; `{ "complete": false }` pour une valeur à
-résoudre, sans chiffre ni somme partielle. Travail, non conformité, machine et main d'œuvre sont indépendants.
-Une activité à résoudre rend ses valeurs propres concernées inconnues. Le temps et la machine d'une
-activité terminée restent chiffrés, même si son partage humain dépend d'un conflit.
+"valeur": ... }`, y compris zéro. Un taux absent produit zéro, indépendamment du diviseur.
 
-Pour la main d'œuvre, l'incertitude occupe toute la plage possible factuelle `[debut, finAuPlusTard)`,
-bornée à `evaluation`. Elle ne propage que si elle change réellement le nombre de postes distincts : un
-poste déjà certainement occupé ne le change pas ; un taux absent produit zéro indépendamment du diviseur.
+Une activité que le moteur juge à résoudre n'est lue par aucun calcul : ni le temps, ni les coûts, ni le
+partage humain ne la voient, et le rapport ne rend ni conflit ni pointage contradictoire. Chaque pointage de
+la ligne porte ses `anomalies` (`FIN_AUTOMATIQUE` ou aucune), sa `fin` et ses `parts`, dont le `diviseur` est
+toujours connu.
 
-`conflits` rend les séquences de l'élément et toutes celles responsables des valeurs inconnues, même sur
-un autre élément, avec `element`, `operateur`, `poste` facultatif, les identités originales `activites`
-et les faits actifs `pointages`. Une séquence sans activité à résoudre reste visible pour son élément
-sans rendre les montants incomplets. Résoudre les faits par annulation ou correction recalcule les valeurs.
 Cette route ne prend pas de paramètre d'évaluation et ne garantit pas un instantané face aux écritures concurrentes.
 
 ## Anomalies de pointage

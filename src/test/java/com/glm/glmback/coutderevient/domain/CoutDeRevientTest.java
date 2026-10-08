@@ -24,23 +24,21 @@ class CoutDeRevientTest {
 
   @Test
   void shouldNotBuildWithoutElement() {
-    assertThatThrownBy(() -> new CoutDeRevient(null, List.of(), new EvaluationDuCout(LE_11_MAI_A_17H, 0), List.of(), AnnuaireDuCout.VIDE))
+    assertThatThrownBy(() -> new CoutDeRevient(null, List.of(), new EvaluationDuCout(LE_11_MAI_A_17H, 0), AnnuaireDuCout.VIDE))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("element");
   }
 
   @Test
   void shouldNotBuildWithoutLignes() {
-    assertThatThrownBy(() ->
-      new CoutDeRevient(ELEMENT_VALORISE_OF, null, new EvaluationDuCout(LE_11_MAI_A_17H, 0), List.of(), AnnuaireDuCout.VIDE)
-    )
+    assertThatThrownBy(() -> new CoutDeRevient(ELEMENT_VALORISE_OF, null, new EvaluationDuCout(LE_11_MAI_A_17H, 0), AnnuaireDuCout.VIDE))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("lignes");
   }
 
   @Test
   void shouldNotBuildWithoutAnnuaire() {
-    assertThatThrownBy(() -> new CoutDeRevient(ELEMENT_VALORISE_OF, List.of(), new EvaluationDuCout(LE_11_MAI_A_17H, 0), List.of(), null))
+    assertThatThrownBy(() -> new CoutDeRevient(ELEMENT_VALORISE_OF, List.of(), new EvaluationDuCout(LE_11_MAI_A_17H, 0), null))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("annuaire");
   }
@@ -50,10 +48,8 @@ class CoutDeRevientTest {
     CoutDeRevient rapport = CoutDeRevient.builder()
       .element(ELEMENT_VALORISE_OF)
       .tranches(List.of())
-      .aResoudre(List.of())
       .charges(ChargesDesOperateurs.de(List.of()))
       .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
-      .conflits(List.of())
       .annuaire(AnnuaireDuCout.VIDE);
 
     assertThat(rapport.lignes()).isEmpty();
@@ -71,10 +67,8 @@ class CoutDeRevientTest {
     CoutDeRevient rapport = CoutDeRevient.builder()
       .element(ELEMENT_VALORISE_OF)
       .tranches(tranches)
-      .aResoudre(List.of())
       .charges(ChargesDesOperateurs.de(tranches))
       .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
-      .conflits(List.of())
       .annuaire(AnnuaireDuCout.VIDE);
 
     assertThat(rapport.lignes())
@@ -103,10 +97,8 @@ class CoutDeRevientTest {
     CoutDeRevient rapport = CoutDeRevient.builder()
       .element(ELEMENT_VALORISE_OF)
       .tranches(tranches)
-      .aResoudre(List.of())
       .charges(ChargesDesOperateurs.de(tranches))
       .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
-      .conflits(List.of())
       .annuaire(AnnuaireDuCout.VIDE);
 
     assertThat(rapport.lignes())
@@ -128,10 +120,8 @@ class CoutDeRevientTest {
     CoutDeRevient rapport = CoutDeRevient.builder()
       .element(ELEMENT_VALORISE_OF)
       .tranches(tranches)
-      .aResoudre(List.of())
       .charges(ChargesDesOperateurs.de(tranches))
       .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
-      .conflits(List.of())
       .annuaire(AnnuaireDuCout.VIDE);
 
     assertThat(rapport.lignes())
@@ -153,10 +143,8 @@ class CoutDeRevientTest {
     CoutDeRevient rapport = CoutDeRevient.builder()
       .element(ELEMENT_VALORISE_OF)
       .tranches(tranches)
-      .aResoudre(List.of())
       .charges(ChargesDesOperateurs.de(tranches))
       .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
-      .conflits(List.of())
       .annuaire(AnnuaireDuCout.VIDE);
 
     assertThat(rapport.lignes().getFirst().cout()).isEqualTo(
@@ -179,10 +167,8 @@ class CoutDeRevientTest {
     CoutDeRevient rapport = CoutDeRevient.builder()
       .element(ELEMENT_VALORISE_OF)
       .tranches(tranches)
-      .aResoudre(List.of())
       .charges(ChargesDesOperateurs.de(tranches))
       .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
-      .conflits(List.of())
       .annuaire(AnnuaireDuCout.VIDE);
 
     assertThat(rapport.lignes().getFirst().cout().machine().valeur()).contains(new Montant(new BigDecimal("0.26")));
@@ -205,10 +191,8 @@ class CoutDeRevientTest {
     CoutDeRevient rapport = CoutDeRevient.builder()
       .element(ELEMENT_VALORISE_OF)
       .tranches(tranches)
-      .aResoudre(List.of())
       .charges(ChargesDesOperateurs.de(tranches))
       .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
-      .conflits(List.of())
       .annuaire(AnnuaireDuCout.VIDE);
 
     assertThat(rapport.lignes())
@@ -231,10 +215,8 @@ class CoutDeRevientTest {
     CoutDeRevient rapport = CoutDeRevient.builder()
       .element(ELEMENT_VALORISE_OF)
       .tranches(tranches)
-      .aResoudre(List.of())
       .charges(ChargesDesOperateurs.de(tranches))
       .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
-      .conflits(List.of())
       .annuaire(AnnuaireDuCout.VIDE);
 
     assertThat(rapport.lignes()).extracting(LigneDeCout::nature).containsExactly(Optional.of(NATURE_FRAISAGE), Optional.empty());
@@ -242,50 +224,24 @@ class CoutDeRevientTest {
   }
 
   /**
-   * Le detail montre tous les pointages de la ligne dans l'ordre ou ils ont commence, celui a resoudre compris, avec
-   * les pointages contradictoires de sa propre sequence et d'aucune autre.
+   * Le detail montre tous les pointages de la ligne dans l'ordre ou ils ont commence.
    */
   @Test
   void shouldListThePointagesOfALigneInTheOrderTheyStarted() {
     TrancheDActivite deuxieme = fraisage(CategorieDActivite.TRAVAIL, LE_11_MAI_A_10H, LE_11_MAI_A_11H);
     TrancheDActivite premier = fraisage(CategorieDActivite.TRAVAIL, LE_11_MAI_A_8H, LE_11_MAI_A_9H);
-    ActiviteInterpretee aResoudre = ActiviteInterpretee.builder()
-      .id(new ActiviteId(java.util.UUID.randomUUID()))
-      .activite(premier.activite())
-      .plage(new Plage(LE_11_MAI_A_9H, Optional.empty()))
-      .echeance(LE_11_MAI_A_21H)
-      .finAuPlusTard(Optional.of(LE_11_MAI_A_10H));
     List<TrancheDActivite> tranches = List.of(deuxieme, premier);
-    PointageEnConflit premierDebut = new PointageEnConflit(java.util.UUID.randomUUID(), TypeDePointage.DEBUT, LE_11_MAI_A_9H);
-    PointageEnConflit secondDebut = new PointageEnConflit(java.util.UUID.randomUUID(), TypeDePointage.DEBUT, LE_11_MAI_A_10H);
-    SequenceEnConflit sienne = SequenceEnConflit.builder()
-      .element(ELEMENT_ID_OF)
-      .operateur(OPERATEUR_ID_DUPONT)
-      .poste(Optional.of(POSTE_ID_FRAISEUSE))
-      .activites(List.of(aResoudre.id()))
-      .pointages(List.of(premierDebut, secondDebut));
-    SequenceEnConflit etrangere = SequenceEnConflit.builder()
-      .element(ELEMENT_ID_OF_2)
-      .operateur(OPERATEUR_ID_DUPONT)
-      .poste(Optional.of(POSTE_ID_TOUR))
-      .activites(List.of(new ActiviteId(java.util.UUID.randomUUID())))
-      .pointages(List.of(new PointageEnConflit(java.util.UUID.randomUUID(), TypeDePointage.FIN, LE_11_MAI_A_12H)));
 
     CoutDeRevient rapport = CoutDeRevient.builder()
       .element(ELEMENT_VALORISE_OF)
       .tranches(tranches)
-      .aResoudre(List.of(aResoudre))
       .charges(ChargesDesOperateurs.de(tranches))
       .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
-      .conflits(List.of(sienne, etrangere))
       .annuaire(AnnuaireDuCout.VIDE);
 
     assertThat(rapport.lignes().getFirst().pointages())
-      .extracting(PointageDeCout::debut)
-      .containsExactly(LE_11_MAI_A_8H, LE_11_MAI_A_9H, LE_11_MAI_A_10H);
-    assertThat(rapport.lignes().getFirst().pointages().get(1)).isEqualTo(
-      new PointageAResoudre(aResoudre, List.of(premierDebut, secondDebut))
-    );
+      .extracting(PointageValorise::debut)
+      .containsExactly(LE_11_MAI_A_8H, LE_11_MAI_A_10H);
   }
 
   @Test
@@ -298,10 +254,8 @@ class CoutDeRevientTest {
     CoutDeRevient rapport = CoutDeRevient.builder()
       .element(ELEMENT_VALORISE_OF)
       .tranches(tranches)
-      .aResoudre(List.of())
       .charges(ChargesDesOperateurs.de(tranches))
       .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
-      .conflits(List.of())
       .annuaire(AnnuaireDuCout.VIDE);
 
     assertThat(rapport.temps()).isEqualTo(new TempsPasse(Duration.ofHours(2), Duration.ofHours(1)));

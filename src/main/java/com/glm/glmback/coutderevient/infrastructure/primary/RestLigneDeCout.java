@@ -23,7 +23,7 @@ record RestLigneDeCout(
   @Schema(description = "Periodes terminees automatiquement, signalant une anomalie active.") List<RestPeriode> finsAutomatiques,
   @Schema(description = "Cout de la ligne, somme de montants deja au centime.") RestCout cout,
   @Schema(
-    description = "Les pointages de la ligne dans l'ordre ou ils ont commence, ceux a resoudre compris : de quoi justifier son cout.",
+    description = "Les pointages de la ligne dans l'ordre ou ils ont commence, de quoi justifier son cout.",
     requiredMode = Schema.RequiredMode.REQUIRED
   )
   List<RestPointageDeCout> pointages

@@ -180,11 +180,6 @@ public class CoutDeRevientSteps {
     assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).isTrue();
   }
 
-  @Then("le cout ne porte aucun conflit")
-  public void sansConflit() {
-    assertThat((List<?>) CucumberRestTestContext.getElement("$.conflits")).isEmpty();
-  }
-
   @Then("le cout porte {int} fins automatiques")
   @SuppressWarnings("unchecked")
   public void nombreFinsAutomatiques(int nombre) {
@@ -202,36 +197,6 @@ public class CoutDeRevientSteps {
   public void sansFinAutomatique() {
     List<Map<String, Object>> lignes = (List<Map<String, Object>>) CucumberRestTestContext.getElement("$.lignes");
     assertThat(lignes).allSatisfy(ligne -> assertThat((List<?>) ligne.get("finsAutomatiques")).isEmpty());
-  }
-
-  @Then("le cout porte les conflits")
-  @SuppressWarnings("unchecked")
-  public void conflits(List<Map<String, String>> attendus) {
-    List<Map<String, Object>> lus = (List<Map<String, Object>>) CucumberRestTestContext.getElement("$.conflits");
-    List<Map<String, Object>> esperes = attendus
-      .stream()
-      .map(ligne -> {
-        Map<String, Object> attendu = new java.util.LinkedHashMap<>();
-        attendu.put("element", elements.get(ligne.get("element")));
-        attendu.put("operateur", operateurs.get(ligne.get("operateur")));
-        if (ligne.get("poste") != null) {
-          attendu.put("poste", postes.get(ligne.get("poste")));
-        }
-        attendu.put("activites", identites(ligne.get("activites")));
-        attendu.put("pointages", identites(ligne.get("pointages")));
-        return attendu;
-      })
-      .toList();
-    assertThat(lus).containsExactlyInAnyOrderElementsOf(esperes);
-  }
-
-  private List<String> identites(String aliases) {
-    return aliases == null || aliases.isEmpty() ? List.of() : java.util.Arrays.stream(aliases.split(",")).map(pointages::get).toList();
-  }
-
-  @Then("le total du cout {string} est incomplet sans chiffre")
-  public void incomplet(String chemin) {
-    assertThat(CucumberRestTestContext.getElement(chemin)).isEqualTo(Map.of("complete", false));
   }
 
   @Then("le total du cout {string} est complet avec {string}")
@@ -326,31 +291,11 @@ public class CoutDeRevientSteps {
         resume.put("diviseur", texte(part.get("diviseur")));
         resume.put("mainDOeuvre", montantOuIncomplet(part.get("mainDOeuvre")));
         resume.put("paralleles", activitesCitees(part.get("paralleles")));
-        resume.put("bloquants", activitesCitees(part.get("bloquants")));
         return resume;
       })
       .toList();
 
     assertThat(lues).isEqualTo(sansCellulesVides(attendues));
-  }
-
-  @SuppressWarnings("unchecked")
-  @Then("le pointage de la ligne {string} commence a {string} est a resoudre, contredit par {string}")
-  public void lePointageEstAResoudre(String nature, String debut, String contradictoires) {
-    Map<String, Object> pointage = pointage(nature, debut);
-    Map<String, String> alias = new HashMap<>();
-    pointages.forEach((nom, id) -> alias.put(id, nom));
-
-    assertThat(pointage.get("anomalies")).isEqualTo(List.of("A_RESOUDRE"));
-    assertThat(pointage.get("fin")).isNull();
-    assertThat(
-      String.join(
-        ",",
-        ((List<Map<String, Object>>) pointage.get("contradictoires")).stream()
-          .map(fait -> alias.get(String.valueOf(fait.get("id"))) + ":" + fait.get("type"))
-          .toList()
-      )
-    ).isEqualTo(contradictoires);
   }
 
   @SuppressWarnings("unchecked")

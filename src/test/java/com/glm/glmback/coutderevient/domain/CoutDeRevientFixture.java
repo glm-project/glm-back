@@ -116,8 +116,7 @@ public final class CoutDeRevientFixture {
       .id(new ActiviteId(UUID.randomUUID()))
       .activite(ACTIVITE_FRAISAGE)
       .plage(plage)
-      .echeance(plage.debut().plusSeconds(46800))
-      .finAuPlusTard(Optional.empty());
+      .echeance(plage.debut().plusSeconds(46800));
   }
 
   public static ActiviteInterpretee activiteInterpreteeDeTournage(Plage plage) {
@@ -125,8 +124,7 @@ public final class CoutDeRevientFixture {
       .id(new ActiviteId(UUID.randomUUID()))
       .activite(ACTIVITE_TOURNAGE)
       .plage(plage)
-      .echeance(plage.debut().plusSeconds(46800))
-      .finAuPlusTard(Optional.empty());
+      .echeance(plage.debut().plusSeconds(46800));
   }
 
   public static ActiviteInterpretee activiteInterpreteeDeTournageDeLOf2(Plage plage) {
@@ -134,7 +132,6 @@ public final class CoutDeRevientFixture {
       .id(new ActiviteId(UUID.randomUUID()))
       .activite(ACTIVITE_TOURNAGE_DE_L_OF_2)
       .plage(plage)
-      .echeance(plage.debut().plusSeconds(46800))
-      .finAuPlusTard(Optional.empty());
+      .echeance(plage.debut().plusSeconds(46800));
   }
 }

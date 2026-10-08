@@ -110,10 +110,10 @@ Feature: Cout de revient d'un element de fabrication
       | Tournage | PT1H    | PT0S          | 60.00   | 10.00       |
     # Le detail nomme le tour comme parallele, meme quand il porte sur le meme ordre.
     And le pointage de la ligne "Fraisage" commence a "2026-05-11T09:00:00Z" se partage en
-      | debut                | fin                  | diviseur | mainDOeuvre | paralleles   | bloquants |
-      | 2026-05-11T09:00:00Z | 2026-05-11T10:00:00Z | 1        | 20.00       |              |           |
-      | 2026-05-11T10:00:00Z | 2026-05-11T11:00:00Z | 2        | 10.00       | tour@OF 3005 |           |
-      | 2026-05-11T11:00:00Z | 2026-05-11T12:00:00Z | 1        | 20.00       |              |           |
+      | debut                | fin                  | diviseur | mainDOeuvre | paralleles   |
+      | 2026-05-11T09:00:00Z | 2026-05-11T10:00:00Z | 1        | 20.00       |              |
+      | 2026-05-11T10:00:00Z | 2026-05-11T11:00:00Z | 2        | 10.00       | tour@OF 3005 |
+      | 2026-05-11T11:00:00Z | 2026-05-11T12:00:00Z | 1        | 20.00       |              |
 
   Scenario: Le detail justifie chaque pointage et le partage de son operateur
     Given l'entreprise fabrique "OF D1"
@@ -131,10 +131,10 @@ Feature: Cout de revient d'un element de fabrication
       | operateur | poste     | debut                | fin                  | anomalies | machine | mainDOeuvre |
       | dupont    | fraiseuse | 2026-05-11T09:00:00Z | 2026-05-11T12:00:00Z |           | 135.00  | 50.00       |
     And le pointage de la ligne "Fraisage" commence a "2026-05-11T09:00:00Z" se partage en
-      | debut                | fin                  | diviseur | mainDOeuvre | paralleles | bloquants |
-      | 2026-05-11T09:00:00Z | 2026-05-11T10:00:00Z | 1        | 20.00       |            |           |
-      | 2026-05-11T10:00:00Z | 2026-05-11T11:00:00Z | 2        | 10.00       | tour@OF D2 |           |
-      | 2026-05-11T11:00:00Z | 2026-05-11T12:00:00Z | 1        | 20.00       |            |           |
+      | debut                | fin                  | diviseur | mainDOeuvre | paralleles |
+      | 2026-05-11T09:00:00Z | 2026-05-11T10:00:00Z | 1        | 20.00       |            |
+      | 2026-05-11T10:00:00Z | 2026-05-11T11:00:00Z | 2        | 10.00       | tour@OF D2 |
+      | 2026-05-11T11:00:00Z | 2026-05-11T12:00:00Z | 1        | 20.00       |            |
 
   Scenario: Une periode partagee sur trois elements vaut exactement le cout de l'operateur
     Given l'entreprise fabrique "OF 3020"
@@ -268,44 +268,15 @@ Feature: Cout de revient d'un element de fabrication
     When je consulte le cout de revient de "OF T7 auto" a "2026-05-12T10:00:00Z"
     Then le cout porte la fin automatique de "2026-05-11T08:00:00Z" a "2026-05-11T21:00:00Z"
 
-  Scenario Outline: Le conflit laisse les categories et les couts concernes sans chiffre
-    Given l'entreprise fabrique "OF T7 conflit"
-    And "OF T7 conflit" est mis en atelier a "2026-05-11T05:00:00Z"
-    And pour le cout, "OF T7 conflit" recoit les pointages
-      | alias | type  | intention | cible | operateur | poste     | survenue             | reception            |
-      | A     | DEBUT | OUVERTURE |       | dupont    | fraiseuse | 2026-05-11T08:00:00Z | 2026-05-12T08:00:00Z |
-      | <a>   | <t1>  | <i1>      | A     | dupont    | fraiseuse | <d1>                 | 2026-05-12T08:01:00Z |
-      | <b>   | <t2>  | <i2>      | A     | dupont    | fraiseuse | <d2>                 | 2026-05-12T08:02:00Z |
-      | C     | DEBUT | OUVERTURE |       | dupont    | tour      | 2026-05-11T06:00:00Z | 2026-05-12T08:03:00Z |
-      | FC    | FIN   | FIN       | C     | dupont    | tour      | 2026-05-11T07:00:00Z | 2026-05-12T08:04:00Z |
-    When je consulte le cout de revient de "OF T7 conflit" a "2026-05-12T09:00:00Z"
-    Then le total du cout "$.temps.travail" est incomplet sans chiffre
-    And le total du cout "$.temps.nonConformite" est incomplet sans chiffre
-    And le total du cout "$.temps.total" est incomplet sans chiffre
-    And le total du cout "$.cout.machine" est incomplet sans chiffre
-    And le total du cout "$.cout.mainDOeuvre" est incomplet sans chiffre
-    And le total du cout "$.cout.total" est incomplet sans chiffre
-    And le total du cout "$.lignes[0].temps.travail" est incomplet sans chiffre
-    And le total du cout "$.lignes[0].cout.machine" est incomplet sans chiffre
-    And le total du cout "$.lignes[1].cout.machine" est complet avec "60.00"
-    And le total du cout "$.lignes[1].cout.mainDOeuvre" est complet avec "20.00"
-    And le cout porte les conflits
-      | element       | operateur | poste     | activites | pointages |
-      | OF T7 conflit | dupont    | fraiseuse | A,N       | A,N,F     |
-    And le pointage de la ligne "Fraisage" commence a "2026-05-11T08:00:00Z" est a resoudre, contredit par "A:DEBUT,N:NON_CONFORMITE,F:FIN"
-
-    Examples:
-      | a | t1             | i1         | d1                   | b | t2             | i2         | d2                   |
-      | N | NON_CONFORMITE | TRANSITION | 2026-05-11T12:00:00Z | F | FIN            | FIN        | 2026-05-11T17:00:00Z |
-      | F | FIN            | FIN        | 2026-05-11T17:00:00Z | N | NON_CONFORMITE | TRANSITION | 2026-05-11T12:00:00Z |
-
-  Scenario: Le poste certain neutralise l'incertitude sur le meme poste distinct
+  Scenario: Une activite que le moteur juge a resoudre n'entre ni dans le cout ni dans le diviseur
     Given l'entreprise fabrique "source incertaine"
     And l'entreprise fabrique "source certaine"
     And l'entreprise fabrique "cible certaine"
     And "source incertaine" est mis en atelier a "2026-05-11T05:00:00Z"
     And "source certaine" est mis en atelier a "2026-05-11T05:00:00Z"
     And "cible certaine" est mis en atelier a "2026-05-11T05:00:00Z"
+    # A et N, contradictoires, restent a resoudre : le cout ne les lit pas, et le poste certain de P suffit a fixer le
+    # diviseur de l'heure de tournage.
     And pour le cout, "source incertaine" recoit les pointages
       | alias | type           | intention  | cible | operateur | poste     | survenue             |
       | A     | DEBUT          | OUVERTURE  |       | dupont    | fraiseuse | 2026-05-11T08:00:00Z |
@@ -323,7 +294,6 @@ Feature: Cout de revient d'un element de fabrication
     Then le rapport porte les lignes
       | nature   | travail | nonConformite | machine | mainDOeuvre |
       | Tournage | PT2H    | PT0S          | 120.00  | 20.00       |
-    And le cout ne porte aucun conflit
 
   Scenario Outline: La borne effective respecte les faits tardifs, l'echeance et la regularisation
     Given l'entreprise fabrique "fin tardive"
@@ -341,7 +311,6 @@ Feature: Cout de revient d'un element de fabrication
       | nature   | travail | nonConformite | machine   | mainDOeuvre |
       | Fraisage | <temps> | PT0S          | <machine> | <humain>    |
     And le cout porte <auto> fins automatiques
-    And le cout ne porte aucun conflit
 
     Examples:
       | fin                  | acte           | temps | machine | humain | auto |
@@ -365,7 +334,6 @@ Feature: Cout de revient d'un element de fabrication
       | Fraisage | <temps> | PT1H          | <machine> | <humain>    |
     And le cout porte <auto> fins automatiques
     And le rapport porte la non conformite de "2026-05-11T23:00:00Z" a "2026-05-12T00:00:00Z"
-    And le cout ne porte aucun conflit
 
     Examples:
       | acte           | temps | machine | humain | auto |
@@ -392,31 +360,6 @@ Feature: Cout de revient d'un element de fabrication
       | Fraisage | PT4H    | PT13H         | 765.00  | 340.00      |
     And le cout porte 1 fins automatiques
     And le rapport porte la non conformite de "2026-05-11T12:00:00Z" a "2026-05-12T01:00:00Z"
-
-  Scenario Outline: Une categorie incertaine ne rend pas l'autre categorie incomplete
-    Given l'entreprise fabrique "categories independantes"
-    And "categories independantes" est mis en atelier a "2026-05-11T05:00:00Z"
-    And pour le cout, "categories independantes" recoit les pointages
-      | alias | type    | intention | cible | operateur | poste     | survenue             |
-      | A     | <type>  | OUVERTURE |       | dupont    | fraiseuse | 2026-05-11T08:00:00Z |
-      | F     | FIN     | FIN       | A     | dupont    | fraiseuse | 2026-05-11T10:00:00Z |
-      | G     | FIN     | FIN       | A     | dupont    | fraiseuse | 2026-05-11T12:00:00Z |
-      | C     | <autre> | OUVERTURE |       | dupont    | tour      | 2026-05-12T02:00:00Z |
-      | FC    | FIN     | FIN       | C     | dupont    | tour      | 2026-05-12T03:00:00Z |
-    When je consulte le cout de revient de "categories independantes" a "2026-05-12T09:00:00Z"
-    Then le total du cout "$.temps.<incomplete>" est incomplet sans chiffre
-    And le total du cout "$.temps.<complete>" est complet avec "PT1H"
-    And le total du cout "$.temps.total" est incomplet sans chiffre
-    And le total du cout "$.cout.total" est incomplet sans chiffre
-    And le total du cout "$.lignes[1].cout.mainDOeuvre" est complet avec "20.00"
-    And le cout porte les conflits
-      | element                  | operateur | poste     | activites | pointages |
-      | categories independantes | dupont    | fraiseuse | A         | A,F,G     |
-
-    Examples:
-      | type           | autre          | incomplete    | complete      |
-      | DEBUT          | NON_CONFORMITE | travail       | nonConformite |
-      | NON_CONFORMITE | DEBUT          | nonConformite | travail       |
 
   Scenario: Plusieurs elements sur le meme poste et sans poste ne multiplient pas les postes distincts
     Given l'entreprise fabrique "poste A"
@@ -480,4 +423,3 @@ Feature: Cout de revient d'un element de fabrication
     Then le rapport porte les lignes
       | nature   | travail | nonConformite | machine | mainDOeuvre |
       | Fraisage | PT2H    | PT0S          | 90.00   | 40.00       |
-    And le cout ne porte aucun conflit

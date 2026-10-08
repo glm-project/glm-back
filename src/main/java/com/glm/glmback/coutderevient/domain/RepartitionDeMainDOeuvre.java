@@ -31,8 +31,6 @@ import java.util.stream.Collectors;
  * </p>
  */
 public record RepartitionDeMainDOeuvre(Map<TrancheDActivite, Montant> parts) {
-  public static final RepartitionDeMainDOeuvre AUCUNE = new RepartitionDeMainDOeuvre(Map.of());
-
   private static final BigDecimal MILLISECONDES_PAR_HEURE = new BigDecimal(3_600_000);
   private static final int ECHELLE_DE_TRAVAIL = 10;
   private static final int CENTIMES = 2;

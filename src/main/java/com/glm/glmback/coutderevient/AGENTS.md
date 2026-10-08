@@ -42,31 +42,19 @@ ou de l'opérateur, ni un ancien ouvrant annulé.
   ([ADR 0004](../../../../../../../documentation/adr/0004-split-the-operator-cost-to-the-cent.md)). Arrondir la
   machine une fois par activité. La ligne et le rapport n'additionnent que des montants déjà arrondis.
 
-## Incertitude et dépendances
+## Activités à résoudre
 
-Une activité `A_RESOUDRE` rend ses propres durées et coûts concernés incomplets. Distinguer travail et
-non conformité : une catégorie certaine reste chiffrée même si l'autre est à résoudre. La machine d'une
-activité terminée reste indépendante d'un diviseur incertain.
+Une activité que le moteur d'atelier juge à résoudre n'est lue par aucun calcul : les requêtes de `activite_d_atelier`
+filtrent `a_resoudre = false`, et le rapport ne rend ni conflit ni pointage contradictoire. Le filtre reste jusqu'à
+ce que le moteur disparaisse. Un taux absent donne zéro, indépendant du diviseur. Aucun tarif ne doit être inventé.
 
-Pour le partage humain, utiliser toute la plage factuelle possible `[debut, finAuPlusTard)`, bornée à
-`evaluation`, sans noyau commun aux chronologies. Ne propager que la dépendance réelle du nombre de postes :
-une occupation certaine du même poste peut neutraliser cette incertitude. Un taux absent donne zéro,
-indépendant du diviseur. Aucun tarif ne doit être inventé.
-
-Chaque durée et montant rend `complete` et porte `valeur` seulement s'il est complet. Dès qu'une valeur
-requise manque, le total ne porte aucun chiffre, ni zéro ni somme partielle. Appliquer cela séparément
-au travail, à la non conformité, à la machine et à la main d'œuvre, puis aux totaux de ligne et de rapport.
-
-Rendre dans `conflits` les séquences propres et toutes celles responsables de valeurs incomplètes, même sur
-un autre élément. Conserver leurs identités originales d'activités et leurs pointages actifs. Une séquence
-sans activité à résoudre reste visible pour son élément et laisse ses montants complets. Annulation et
-correction rétablissent les valeurs lorsque l'interprétation d'atelier les résout.
+Chaque durée et montant rend `complete` et porte `valeur`. Le champ reste au contrat ; aucune valeur n'est plus
+incomplète depuis que les activités à résoudre sont écartées à la lecture.
 
 ## Contrat et vérification
 
 `GET /api/couts-de-revient/{elementId}` est réservé au `GESTIONNAIRE` : il expose les tarifs humains.
-Chaque ligne rend ses pointages : parts par fenêtre de partage, activités parallèles et bloquantes, anomalies,
-faits contradictoires. Les noms (opérateurs, postes, éléments) sont relus aux tables voisines par leurs noms
+Chaque ligne rend ses pointages : parts par fenêtre de partage, activités parallèles, anomalies. Les noms (opérateurs, postes, éléments) sont relus aux tables voisines par leurs noms
 logiques de colonnes, jamais copiés ; un nom absent laisse l'identifiant seul.
 Conserver l'isolation des entreprises, les natures et la ligne sans nature en dernier.
 Le service public et les scénarios REST Cucumber vérifient le calcul ; les scénarios écrivent par l'API

@@ -3,7 +3,6 @@ package com.glm.glmback.coutderevient.domain;
 import com.glm.glmback.shared.error.domain.Assert;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Une tranche d'activite reduite a une fenetre de partage : tout ce qu'il faut pour chiffrer sa main d'oeuvre.
@@ -23,12 +22,8 @@ public record TrancheValorisable(TrancheDActivite tranche, FenetreDePartage fene
     return tranche.activite();
   }
 
-  public Optional<Diviseur> diviseur() {
+  public Diviseur diviseur() {
     return fenetre.diviseur();
-  }
-
-  public Set<ActiviteInterpretee> responsables() {
-    return fenetre.responsables();
   }
 
   /**
@@ -48,12 +43,12 @@ public record TrancheValorisable(TrancheDActivite tranche, FenetreDePartage fene
   /**
    * Ce que la personne a coute pendant cette part, deja arrondi au centime par la repartition de sa fenetre : elle
    * ne peut pas etre payee deux fois la meme heure. Zero quand l'operateur n'est pas valorise, quel que soit le
-   * diviseur ; rien quand le diviseur n'est pas connu.
+   * diviseur.
    */
-  public Optional<Montant> coutDeMainDOeuvre() {
+  public Montant coutDeMainDOeuvre() {
     if (activite().tauxHoraire().isEmpty()) {
-      return Optional.of(Montant.ZERO);
+      return Montant.ZERO;
     }
-    return fenetre.repartition().de(tranche);
+    return fenetre.repartition().de(tranche).orElseThrow();
   }
 }
