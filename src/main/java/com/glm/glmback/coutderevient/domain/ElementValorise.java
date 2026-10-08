@@ -10,10 +10,10 @@ import com.glm.glmback.shared.error.domain.Assert;
  * renomme sur son rapport, qui parle de l'element et non de son passage en atelier.
  * </p>
  */
-public record ElementValorise(ElementId element, NomDElement nom, TypeDElement type) {
+public record ElementValorise(ElementId element, NomDElement nom, CategorieDElement categorie) {
   public ElementValorise {
     Assert.notNull("element", element);
     Assert.notNull("nom de l'element", nom);
-    Assert.notNull("type de l'element", type);
+    Assert.notNull("categorie de l'element", categorie);
   }
 }

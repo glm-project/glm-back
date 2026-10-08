@@ -1230,15 +1230,14 @@
             "type" : "string"
           },
           "type" : {
-            "description" : "Type de l'element.",
-            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
+            "description" : "Categorie de l'element.",
             "type" : "string"
           }
         },
         "type" : "object"
       },
       "RestElementCiteDuCout" : {
-        "description" : "L'element sur lequel portait une activite citee par le detail, nomme a la lecture ; nom et type absents s'il est inconnu.",
+        "description" : "L'element sur lequel portait une activite citee par le detail, nomme a la lecture ; nom et categorie absents s'il est inconnu.",
         "properties" : {
           "id" : {
             "description" : "Identifiant de l'element de fabrication.",
@@ -1251,8 +1250,7 @@
             "type" : "string"
           },
           "type" : {
-            "description" : "Type de l'element.",
-            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
+            "description" : "Categorie de l'element.",
             "type" : "string"
           }
         },

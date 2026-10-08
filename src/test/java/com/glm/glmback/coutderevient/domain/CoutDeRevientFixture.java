@@ -15,6 +15,9 @@ import java.util.UUID;
  */
 public final class CoutDeRevientFixture {
 
+  public static final CategorieDElement CATEGORIE_OF = new CategorieDElement("OF");
+  public static final CategorieDElement CATEGORIE_MOULE = new CategorieDElement("MOULE");
+
   public static final Instant LE_11_MAI_A_8H = Instant.parse("2026-05-11T08:00:00Z");
   public static final Instant LE_11_MAI_A_9H = Instant.parse("2026-05-11T09:00:00Z");
   public static final Instant LE_11_MAI_A_10H = Instant.parse("2026-05-11T10:00:00Z");
@@ -34,17 +37,13 @@ public final class CoutDeRevientFixture {
 
   public static final ElementId ELEMENT_ID_OF = new ElementId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
   public static final NomDElement NOM_D_ELEMENT_OF_2026_000001 = new NomDElement("OF-2026-000001");
-  public static final ElementValorise ELEMENT_VALORISE_OF = new ElementValorise(
-    ELEMENT_ID_OF,
-    NOM_D_ELEMENT_OF_2026_000001,
-    TypeDElement.ORDRE_DE_FABRICATION
-  );
+  public static final ElementValorise ELEMENT_VALORISE_OF = new ElementValorise(ELEMENT_ID_OF, NOM_D_ELEMENT_OF_2026_000001, CATEGORIE_OF);
 
   public static final ElementId ELEMENT_ID_OF_2 = new ElementId(UUID.fromString("22222222-2222-2222-2222-222222222222"));
   public static final ElementValorise ELEMENT_VALORISE_OF_2026_000002 = new ElementValorise(
     ELEMENT_ID_OF_2,
     new NomDElement("OF-2026-000002"),
-    TypeDElement.ORDRE_DE_FABRICATION
+    CATEGORIE_OF
   );
 
   public static final OperateurId OPERATEUR_ID_DUPONT = new OperateurId(UUID.fromString("33333333-3333-3333-3333-333333333333"));
