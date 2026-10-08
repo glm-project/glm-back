@@ -564,9 +564,14 @@
             "description" : "Code de la categorie, affiche tel quel et prefixe du nom des produits.",
             "example" : "MOULE",
             "type" : "string"
+          },
+          "utilisee" : {
+            "description" : "Des produits sont ranges dans la categorie : elle ne peut pas etre supprimee.",
+            "example" : true,
+            "type" : "boolean"
           }
         },
-        "required" : [ "code" ],
+        "required" : [ "code", "utilisee" ],
         "type" : "object"
       },
       "RestChoixDeResolution" : {
@@ -3778,7 +3783,7 @@
     },
     "/api/categories-de-produit" : {
       "get" : {
-        "description" : "La page demandee, dans l'ordre d'affichage choisi par l'entreprise.\n",
+        "description" : "La page demandee, dans l'ordre d'affichage choisi par l'entreprise. Chaque categorie dit si des produits y sont\nranges : l'ecran ne propose alors pas de la supprimer.\n",
         "operationId" : "list_3",
         "parameters" : [ {
           "in" : "query",
@@ -3815,7 +3820,7 @@
         "tags" : [ "Categories de produit" ]
       },
       "post" : {
-        "description" : "La categorie se range en dernier.",
+        "description" : "La categorie se range en dernier, sans produit.",
         "operationId" : "create_3",
         "requestBody" : {
           "content" : {

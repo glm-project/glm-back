@@ -16,6 +16,21 @@ Feature: Categories de produit
     Then la reponse a le statut http 200
     And les categories de produit se terminent par "CUCB, CUCC"
 
+  Scenario: La liste dit dans quelles categories des produits sont ranges
+    Given j'ai declare la categorie de produit "CUCP"
+    And j'ai declare la categorie de produit "CUCQ"
+    And j'ai cree un element de fabrication
+      | categorie | CUCP |
+    When je liste les categories de produit
+    Then la reponse a le statut http 200
+    And la categorie de produit "CUCP" est listee comme utilisee
+    And la categorie de produit "CUCQ" est listee comme libre
+
+  Scenario: Une categorie declaree est libre
+    When je declare la categorie de produit "CUCR"
+    Then la reponse a le statut http 201
+    And la categorie de produit declaree est libre
+
   Scenario: Declaration refusee si le code existe deja
     Given j'ai declare la categorie de produit "CUCD"
     When je declare la categorie de produit "CUCD"

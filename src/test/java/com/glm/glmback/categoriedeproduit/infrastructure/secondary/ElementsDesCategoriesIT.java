@@ -9,6 +9,7 @@ import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurity
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.AfterEach;
@@ -48,6 +49,25 @@ class ElementsDesCategoriesIT {
   @WithTenant(CATEGORIES_FIXTURE)
   void shouldNotSeeCategorieWithoutElement() {
     assertThat(inTransaction(() -> usages.estUtilisee(new CodeDeCategorie("USAGEB")))).isFalse();
+  }
+
+  @Test
+  @WithTenant(CATEGORIES_FIXTURE)
+  void shouldSeeUsedCategoriesAmongGivenCodes() {
+    rangeUnElementDans("USAGED");
+    rangeUnElementDans("USAGEE");
+
+    assertThat(
+      inTransaction(() ->
+        usages.utiliseesParmi(List.of(new CodeDeCategorie("USAGED"), new CodeDeCategorie("USAGEE"), new CodeDeCategorie("USAGEF")))
+      )
+    ).containsExactlyInAnyOrder(new CodeDeCategorie("USAGED"), new CodeDeCategorie("USAGEE"));
+  }
+
+  @Test
+  @WithTenant(CATEGORIES_FIXTURE)
+  void shouldSeeNoUsedCategorieAmongNoCode() {
+    assertThat(inTransaction(() -> usages.utiliseesParmi(List.of()))).isEmpty();
   }
 
   @Test

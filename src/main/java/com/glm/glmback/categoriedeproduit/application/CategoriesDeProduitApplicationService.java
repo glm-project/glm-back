@@ -1,6 +1,7 @@
 package com.glm.glmback.categoriedeproduit.application;
 
 import com.glm.glmback.categoriedeproduit.domain.CategorieDeProduit;
+import com.glm.glmback.categoriedeproduit.domain.CategorieDeProduitListee;
 import com.glm.glmback.categoriedeproduit.domain.CategorieDeProduitRepository;
 import com.glm.glmback.categoriedeproduit.domain.CategoriesDeProduitService;
 import com.glm.glmback.categoriedeproduit.domain.CategoriesUtilisees;
@@ -35,7 +36,7 @@ public class CategoriesDeProduitApplicationService {
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
   @Transactional(readOnly = true)
-  public Page<CategorieDeProduit> list(Pageable pageable) {
+  public Page<CategorieDeProduitListee> list(Pageable pageable) {
     return categories.list(pageable);
   }
 

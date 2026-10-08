@@ -93,12 +93,32 @@ public class CategorieDeProduitSteps {
     assertThat(codes()).doesNotContain(code);
   }
 
+  @Then("la categorie de produit {string} est listee comme utilisee")
+  public void laCategorieDeProduitEstListeeCommeUtilisee(String code) {
+    assertThat(utilisee(code)).containsExactly(true);
+  }
+
+  @Then("la categorie de produit {string} est listee comme libre")
+  public void laCategorieDeProduitEstListeeCommeLibre(String code) {
+    assertThat(utilisee(code)).containsExactly(false);
+  }
+
+  @Then("la categorie de produit declaree est libre")
+  public void laCategorieDeProduitDeclareeEstLibre() {
+    assertThat(CucumberRestTestContext.getElement("$.utilisee")).isEqualTo(false);
+  }
+
   private void reordonne(List<String> codes) {
     rest.put(BASE_URI + "/ordre", JSON.writeValueAsString(Map.of("codes", codes)));
   }
 
   private static List<String> liste(String codes) {
     return Arrays.stream(codes.split(",")).map(String::trim).toList();
+  }
+
+  @SuppressWarnings("unchecked")
+  private static List<Boolean> utilisee(String code) {
+    return (List<Boolean>) CucumberRestTestContext.getElement("$.content[?(@.code == '" + code + "')].utilisee");
   }
 
   @SuppressWarnings("unchecked")

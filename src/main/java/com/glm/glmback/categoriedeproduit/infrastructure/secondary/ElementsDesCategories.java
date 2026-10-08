@@ -2,6 +2,9 @@ package com.glm.glmback.categoriedeproduit.infrastructure.secondary;
 
 import com.glm.glmback.categoriedeproduit.domain.CategoriesUtilisees;
 import com.glm.glmback.categoriedeproduit.domain.CodeDeCategorie;
+import java.util.Collection;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -19,5 +22,18 @@ class ElementsDesCategories implements CategoriesUtilisees {
   @Override
   public boolean estUtilisee(CodeDeCategorie code) {
     return elements.findFirstByCategorie(code.value()).isPresent();
+  }
+
+  @Override
+  public Set<CodeDeCategorie> utiliseesParmi(Collection<CodeDeCategorie> codes) {
+    if (codes.isEmpty()) {
+      return Set.of();
+    }
+
+    return elements
+      .findCategoriesUtiliseesParmi(codes.stream().map(CodeDeCategorie::value).toList())
+      .stream()
+      .map(CodeDeCategorie::new)
+      .collect(Collectors.toUnmodifiableSet());
   }
 }

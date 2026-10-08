@@ -1,7 +1,9 @@
 package com.glm.glmback.categoriedeproduit.domain;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Doublure de test du port d'usage : elle tient lieu du contexte des elements de fabrication, que ce contexte ne
@@ -18,5 +20,10 @@ final class ElementsRangesEnMemoire implements CategoriesUtilisees {
   @Override
   public boolean estUtilisee(CodeDeCategorie code) {
     return utilisees.contains(code);
+  }
+
+  @Override
+  public Set<CodeDeCategorie> utiliseesParmi(Collection<CodeDeCategorie> codes) {
+    return codes.stream().filter(utilisees::contains).collect(Collectors.toUnmodifiableSet());
   }
 }

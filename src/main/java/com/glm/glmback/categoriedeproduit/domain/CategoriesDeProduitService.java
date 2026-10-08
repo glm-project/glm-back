@@ -4,6 +4,7 @@ import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public final class CategoriesDeProduitService {
 
@@ -46,8 +47,24 @@ public final class CategoriesDeProduitService {
     }
   }
 
-  public Page<CategorieDeProduit> list(Pageable pageable) {
-    return repository.list(pageable);
+  /**
+   * Chaque categorie dit si des produits y sont ranges, pour que l'ecran ne propose pas une suppression vouee au refus.
+   * Les usages de la page sont lus en une fois.
+   */
+  public Page<CategorieDeProduitListee> list(Pageable pageable) {
+    Page<CategorieDeProduit> page = repository.list(pageable);
+    Set<CodeDeCategorie> utilisees = usages.utiliseesParmi(page.content().stream().map(CategorieDeProduit::code).toList());
+
+    return new Page<>(
+      page
+        .content()
+        .stream()
+        .map(categorie -> new CategorieDeProduitListee(categorie, utilisees.contains(categorie.code())))
+        .toList(),
+      page.currentPage(),
+      page.pageSize(),
+      page.totalElementsCount()
+    );
   }
 
   /**
