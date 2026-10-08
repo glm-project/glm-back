@@ -9,8 +9,8 @@ Feature: Resolution reelle des conflits
   Scenario: Resolution reelle d'une fin remplacee avec neuf decimales et decalage conserve
     Given il est "2044-01-06T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Resolution 4401"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | RES4401              |
+      | categorie | OF      |
+      | reference | RES4401 |
     And j'ai engage l'element "Resolution 4401" en atelier
     And il est "2044-01-06T08:00:00.123456789Z"
     And j'ai pointe sur "Resolution 4401"
@@ -61,8 +61,8 @@ Feature: Resolution reelle des conflits
   Scenario: Resolution reelle par annulation de la transition donne neuf heures
     Given il est "2044-01-07T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Resolution 4402"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | RES4402              |
+      | categorie | OF      |
+      | reference | RES4402 |
     And j'ai engage l'element "Resolution 4402" en atelier
     And il est "2044-01-07T08:00:00.123456789Z"
     And j'ai pointe sur "Resolution 4402"
@@ -105,8 +105,8 @@ Feature: Resolution reelle des conflits
   Scenario: Resolution reelle avec une fin NC arbitraire a dix sept heures une
     Given il est "2044-01-08T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Resolution 4403"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | RES4403              |
+      | categorie | OF      |
+      | reference | RES4403 |
     And j'ai engage l'element "Resolution 4403" en atelier
     And il est "2044-01-08T08:00:00.123456789Z"
     And j'ai pointe sur "Resolution 4403"
@@ -155,8 +155,8 @@ Feature: Resolution reelle des conflits
   Scenario: Resolution reelle de la transition remplacee conserve la reprise
     Given il est "2044-01-09T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Resolution 4404"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | RES4404              |
+      | categorie | OF      |
+      | reference | RES4404 |
     And j'ai engage l'element "Resolution 4404" en atelier
     And il est "2044-01-09T08:00:00Z"
     And j'ai pointe sur "Resolution 4404"
@@ -216,8 +216,8 @@ Feature: Resolution reelle des conflits
   Scenario: Resolution reelle de meme categorie conserve les cibles de la transition
     Given il est "2044-01-10T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Resolution 4405"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | RES4405              |
+      | categorie | OF      |
+      | reference | RES4405 |
     And j'ai engage l'element "Resolution 4405" en atelier
     And il est "2044-01-10T08:00:00Z"
     And j'ai pointe sur "Resolution 4405"
@@ -267,8 +267,8 @@ Feature: Resolution reelle des conflits
   Scenario: Resolution reelle de la fin avant ouverture sans poste conserve neuf decimales
     Given il est "2044-01-11T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Resolution 4406"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | RES4406              |
+      | categorie | OF      |
+      | reference | RES4406 |
     And j'ai engage l'element "Resolution 4406" en atelier
     And il est "2044-01-11T08:00:00.123456789Z"
     And j'ai pointe sur "Resolution 4406"
@@ -306,8 +306,8 @@ Feature: Resolution reelle des conflits
   Scenario: Resolution reelle de deux fins distinctes separees de deux secondes
     Given il est "2044-01-12T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Resolution 4407"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | RES4407              |
+      | categorie | OF      |
+      | reference | RES4407 |
     And j'ai engage l'element "Resolution 4407" en atelier
     And il est "2044-01-12T08:00:00Z"
     And j'ai pointe sur "Resolution 4407"
@@ -354,8 +354,8 @@ Feature: Resolution reelle des conflits
   Scenario: Resolution reelle a treize heures reste en cours apres annulation
     Given il est "2044-01-13T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Resolution 4408"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | RES4408              |
+      | categorie | OF      |
+      | reference | RES4408 |
     And j'ai engage l'element "Resolution 4408" en atelier
     And il est "2044-01-13T08:00:00Z"
     And j'ai pointe sur "Resolution 4408"
@@ -396,8 +396,8 @@ Feature: Resolution reelle des conflits
   Scenario: Resolution reelle de la fin orpheline apres annulation de louvrant
     Given il est "2044-01-14T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Resolution 4409"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | RES4409              |
+      | categorie | OF      |
+      | reference | RES4409 |
     And j'ai engage l'element "Resolution 4409" en atelier
     And il est "2044-01-14T08:00:00Z"
     And j'ai pointe sur "Resolution 4409"
@@ -429,8 +429,8 @@ Feature: Resolution reelle des conflits
   Scenario: Resolution reelle rattache la transition a B et conserve le trou
     Given il est "2044-01-15T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Resolution 4410"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | RES4410              |
+      | categorie | OF      |
+      | reference | RES4410 |
     And j'ai engage l'element "Resolution 4410" en atelier
     And il est "2044-01-15T08:00:00Z"
     And j'ai pointe sur "Resolution 4410"
@@ -478,8 +478,8 @@ Feature: Resolution reelle des conflits
   Scenario: Resolution reelle preserve la fin regularisee apres annulation contradictoire
     Given il est "2044-01-16T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Resolution 4411"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | RES4411              |
+      | categorie | OF      |
+      | reference | RES4411 |
     And j'ai engage l'element "Resolution 4411" en atelier
     And il est "2044-01-16T08:00:00Z"
     And j'ai pointe sur "Resolution 4411"
@@ -520,8 +520,8 @@ Feature: Resolution reelle des conflits
   Scenario: Resolution reelle corrige la fin regularisee apres relance vers B
     Given il est "2044-01-17T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Resolution 4412"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | RES4412              |
+      | categorie | OF      |
+      | reference | RES4412 |
     And j'ai engage l'element "Resolution 4412" en atelier
     And il est "2044-01-17T08:00:00Z"
     And j'ai pointe sur "Resolution 4412"
@@ -567,8 +567,8 @@ Feature: Resolution reelle des conflits
   Scenario: Resolution reelle en deux actes conserve la cloture et accepte un conflit intermediaire
     Given il est "2044-01-18T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Resolution 4413"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | RES4413              |
+      | categorie | OF      |
+      | reference | RES4413 |
     And j'ai engage l'element "Resolution 4413" en atelier
     And il est "2044-01-18T08:00:00Z"
     And j'ai pointe sur "Resolution 4413"
@@ -634,8 +634,8 @@ Feature: Resolution reelle des conflits
   Scenario: Resolution reelle fin correctement ciblee sur NC
     Given il est "2044-01-20T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Resolution 4420"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | RES4420              |
+      | categorie | OF      |
+      | reference | RES4420 |
     And j'ai engage l'element "Resolution 4420" en atelier
     And il est "2044-01-20T08:00:00Z"
     And j'ai pointe sur "Resolution 4420"
@@ -668,8 +668,8 @@ Feature: Resolution reelle des conflits
   Scenario: Resolution reelle fin recue le lendemain survenue avant echeance
     Given il est "2044-01-21T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Resolution 4421"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | RES4421              |
+      | categorie | OF      |
+      | reference | RES4421 |
     And j'ai engage l'element "Resolution 4421" en atelier
     And il est "2044-01-21T08:00:00Z"
     And j'ai pointe sur "Resolution 4421"
@@ -695,8 +695,8 @@ Feature: Resolution reelle des conflits
   Scenario: Resolution reelle transition depuis une cible seulement echue
     Given il est "2044-01-22T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Resolution 4422"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | RES4422              |
+      | categorie | OF      |
+      | reference | RES4422 |
     And j'ai engage l'element "Resolution 4422" en atelier
     And il est "2044-01-22T08:00:00Z"
     And j'ai pointe sur "Resolution 4422"
@@ -721,8 +721,8 @@ Feature: Resolution reelle des conflits
   Scenario: Resolution reelle fin automatique isolee sans fait synthetique
     Given il est "2044-01-23T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Resolution 4423"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | RES4423              |
+      | categorie | OF      |
+      | reference | RES4423 |
     And j'ai engage l'element "Resolution 4423" en atelier
     And il est "2044-01-23T08:00:00Z"
     And j'ai pointe sur "Resolution 4423"
@@ -739,8 +739,8 @@ Feature: Resolution reelle des conflits
   Scenario: Resolution reelle sur deux postes preserve les faits independants
     Given il est "2044-01-24T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Resolution 4430"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | RES4430              |
+      | categorie | OF      |
+      | reference | RES4430 |
     And j'ai engage l'element "Resolution 4430" en atelier
     And il est "2044-01-24T08:00:00Z"
     And j'ai pointe sur "Resolution 4430"
@@ -809,8 +809,8 @@ Feature: Resolution reelle des conflits
   Scenario: Resolution reelle de deux sequences disjointes garde une revision commune
     Given il est "2044-01-26T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Resolution 4431"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | RES4431              |
+      | categorie | OF      |
+      | reference | RES4431 |
     And j'ai engage l'element "Resolution 4431" en atelier
     And il est "2044-01-26T08:00:00Z"
     And j'ai pointe sur "Resolution 4431"
@@ -879,8 +879,8 @@ Feature: Resolution reelle des conflits
   Scenario: Resolution reelle corrige louvrant deux fois sans changer son activite ni rediriger ses ancres
     Given il est "2044-01-28T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Resolution 4432"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | RES4432              |
+      | categorie | OF      |
+      | reference | RES4432 |
     And j'ai engage l'element "Resolution 4432" en atelier
     And il est "2044-01-28T08:00:00Z"
     And j'ai pointe sur "Resolution 4432"
@@ -956,8 +956,8 @@ Feature: Resolution reelle des conflits
   Scenario: Resolution reelle preserve une nanoseconde et distingue le rejeu UUID
     Given il est "2044-01-30T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Resolution 4433"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | RES4433              |
+      | categorie | OF      |
+      | reference | RES4433 |
     And j'ai engage l'element "Resolution 4433" en atelier
     And il est "2044-01-30T08:00:00.123456789Z"
     And j'ai pointe sur "Resolution 4433"
@@ -1005,8 +1005,8 @@ Feature: Resolution reelle des conflits
   Scenario: Resolution reelle interprete la NC recue apres la fin a son heure metier
     Given il est "2044-01-29T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Resolution 4434"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | RES4434              |
+      | categorie | OF      |
+      | reference | RES4434 |
     And j'ai engage l'element "Resolution 4434" en atelier
     And il est "2044-01-29T08:00:00Z"
     And j'ai pointe sur "Resolution 4434"
@@ -1056,8 +1056,8 @@ Feature: Resolution reelle des conflits
   Scenario: Resolution reelle refuse les autres droits acteurs et tenants avant confirmation et au rejeu
     Given il est "2044-01-31T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Resolution 4440"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | RES4440              |
+      | categorie | OF      |
+      | reference | RES4440 |
     And j'ai engage l'element "Resolution 4440" en atelier
     And il est "2044-01-31T08:00:00Z"
     And j'ai pointe sur "Resolution 4440"
@@ -1137,8 +1137,8 @@ Feature: Resolution reelle des conflits
   Scenario: Resolution reelle refuse les motifs blancs et le futur minimal sans ecriture
     Given il est "2044-01-31T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "Resolution 4441"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | RES4441              |
+      | categorie | OF      |
+      | reference | RES4441 |
     And j'ai engage l'element "Resolution 4441" en atelier
     And il est "2044-01-31T08:00:00Z"
     And j'ai pointe sur "Resolution 4441"

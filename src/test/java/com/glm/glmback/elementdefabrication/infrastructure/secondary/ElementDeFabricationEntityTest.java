@@ -19,14 +19,14 @@ class ElementDeFabricationEntityTest {
 
   @Test
   void shouldConvertProduitToDomainAndBack() {
-    ElementDeFabrication element = elementDeFabricationProduit2456();
+    ElementDeFabrication element = elementDeFabricationMoule2456();
 
     assertThat(ElementDeFabricationEntity.from(element).toDomain()).isEqualTo(element);
   }
 
   @Test
   void shouldConvertElementDeFabricationWithoutReferenceNorDescriptionToDomainAndBack() {
-    ElementDeFabrication element = elementDeFabricationProduitSansReference();
+    ElementDeFabrication element = elementDeFabricationMouleSansReference();
 
     assertThat(ElementDeFabricationEntity.from(element).toDomain()).isEqualTo(element);
   }

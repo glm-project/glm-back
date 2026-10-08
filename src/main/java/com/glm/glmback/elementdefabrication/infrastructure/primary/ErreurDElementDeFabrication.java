@@ -5,7 +5,8 @@ import org.springframework.http.HttpStatus;
 
 enum ErreurDElementDeFabrication implements ProblemCode {
   ELEMENT_DE_FABRICATION_INTROUVABLE(HttpStatus.NOT_FOUND, "element de fabrication introuvable"),
-  REFERENCE_DEJA_UTILISEE(HttpStatus.CONFLICT, "reference deja utilisee");
+  REFERENCE_DEJA_UTILISEE(HttpStatus.CONFLICT, "reference deja utilisee"),
+  CATEGORIE_INCONNUE(HttpStatus.CONFLICT, "categorie inconnue");
 
   private final HttpStatus status;
   private final String title;

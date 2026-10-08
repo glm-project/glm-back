@@ -63,12 +63,11 @@ Feature: Categories de produit
     When je supprime la categorie de produit "cuch"
     Then la reponse a le statut http 400
 
-  # Tant que les elements portent leur type, la categorie PRODUIT est la seule qu'un element puisse occuper.
   Scenario: Suppression refusee si des produits y sont ranges
-    Given j'ai declare la categorie de produit "PRODUIT"
+    Given j'ai declare la categorie de produit "CUCO"
     And j'ai cree un element de fabrication
-      | type | PRODUIT |
-    When je supprime la categorie de produit "PRODUIT"
+      | categorie | CUCO |
+    When je supprime la categorie de produit "CUCO"
     Then la reponse a le statut http 409
     And la reponse porte le code d'erreur "urn:glm:erreur:categorie-de-produit:categorie-utilisee"
 

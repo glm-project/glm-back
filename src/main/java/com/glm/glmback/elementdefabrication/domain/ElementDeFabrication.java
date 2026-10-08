@@ -4,10 +4,10 @@ import com.glm.glmback.shared.error.domain.Assert;
 import java.time.Instant;
 import java.util.Optional;
 
-public record ElementDeFabrication(ElementDeFabricationId id, TypeDElementDeFabrication type, Nom nom, Fiche fiche) {
+public record ElementDeFabrication(ElementDeFabricationId id, Categorie categorie, Nom nom, Fiche fiche) {
   public ElementDeFabrication {
     Assert.notNull("id", id);
-    Assert.notNull("type", type);
+    Assert.notNull("categorie", categorie);
     Assert.notNull("nom", nom);
     Assert.notNull("fiche", fiche);
   }
@@ -15,7 +15,7 @@ public record ElementDeFabrication(ElementDeFabricationId id, TypeDElementDeFabr
   private ElementDeFabrication(ElementDeFabricationBuilder builder) {
     this(
       builder.id,
-      builder.type,
+      builder.categorie,
       builder.nom,
       Fiche.builder()
         .reference(builder.reference)
@@ -30,7 +30,7 @@ public record ElementDeFabrication(ElementDeFabricationId id, TypeDElementDeFabr
   }
 
   public ElementDeFabrication revise(Optional<Reference> reference, Optional<Description> description, Instant dateDeModification) {
-    return new ElementDeFabrication(id, type, nom, fiche.revise(reference, description, dateDeModification));
+    return new ElementDeFabrication(id, categorie, nom, fiche.revise(reference, description, dateDeModification));
   }
 
   public Optional<Reference> reference() {
@@ -52,7 +52,7 @@ public record ElementDeFabrication(ElementDeFabricationId id, TypeDElementDeFabr
   private static final class ElementDeFabricationBuilder
     implements
       ElementDeFabricationIdBuilder,
-      ElementDeFabricationTypeBuilder,
+      ElementDeFabricationCategorieBuilder,
       ElementDeFabricationNomBuilder,
       ElementDeFabricationReferenceBuilder,
       ElementDeFabricationDescriptionBuilder,
@@ -61,7 +61,7 @@ public record ElementDeFabrication(ElementDeFabricationId id, TypeDElementDeFabr
   {
 
     private ElementDeFabricationId id;
-    private TypeDElementDeFabrication type;
+    private Categorie categorie;
     private Nom nom;
     private String reference;
     private String description;
@@ -69,15 +69,15 @@ public record ElementDeFabrication(ElementDeFabricationId id, TypeDElementDeFabr
     private Instant dateDeModification;
 
     @Override
-    public ElementDeFabricationTypeBuilder id(ElementDeFabricationId id) {
+    public ElementDeFabricationCategorieBuilder id(ElementDeFabricationId id) {
       this.id = id;
 
       return this;
     }
 
     @Override
-    public ElementDeFabricationNomBuilder type(TypeDElementDeFabrication type) {
-      this.type = type;
+    public ElementDeFabricationNomBuilder categorie(Categorie categorie) {
+      this.categorie = categorie;
 
       return this;
     }
@@ -119,11 +119,11 @@ public record ElementDeFabrication(ElementDeFabricationId id, TypeDElementDeFabr
   }
 
   public interface ElementDeFabricationIdBuilder {
-    ElementDeFabricationTypeBuilder id(ElementDeFabricationId id);
+    ElementDeFabricationCategorieBuilder id(ElementDeFabricationId id);
   }
 
-  public interface ElementDeFabricationTypeBuilder {
-    ElementDeFabricationNomBuilder type(TypeDElementDeFabrication type);
+  public interface ElementDeFabricationCategorieBuilder {
+    ElementDeFabricationNomBuilder categorie(Categorie categorie);
   }
 
   public interface ElementDeFabricationNomBuilder {

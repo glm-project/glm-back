@@ -2,6 +2,7 @@ package com.glm.glmback.syntheseheures.cucumber;
 
 import static org.assertj.core.api.Assertions.*;
 
+import com.glm.glmback.cucumber.CategoriesDeProduitDesScenarios;
 import com.glm.glmback.cucumber.CucumberClock;
 import com.glm.glmback.cucumber.EcrituresDuJournalDAtelier;
 import com.glm.glmback.cucumber.rest.CucumberRestClient;
@@ -88,7 +89,8 @@ public class SyntheseDesHeuresSteps {
 
   @Given("la synthese des heures connait l'element {string}")
   public void laSyntheseDesHeuresConnaitLElement(String alias) {
-    Map<String, Object> element = Map.of("type", "PRODUIT", "reference", "SYNTHESE-" + alias + "-" + SEQUENCE.incrementAndGet());
+    CategoriesDeProduitDesScenarios.declarer(rest, "MOULE");
+    Map<String, Object> element = Map.of("categorie", "MOULE", "reference", "SYNTHESE-" + alias + "-" + SEQUENCE.incrementAndGet());
     rest.post(ELEMENTS_URI, JSON.writeValueAsString(element));
     elements.put(alias, id());
   }

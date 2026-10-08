@@ -1,15 +1,13 @@
 package com.glm.glmback.elementdefabrication.infrastructure.secondary;
 
+import com.glm.glmback.elementdefabrication.domain.Categorie;
 import com.glm.glmback.elementdefabrication.domain.Description;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabrication;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationId;
 import com.glm.glmback.elementdefabrication.domain.Nom;
 import com.glm.glmback.elementdefabrication.domain.Reference;
-import com.glm.glmback.elementdefabrication.domain.TypeDElementDeFabrication;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
@@ -22,9 +20,8 @@ class ElementDeFabricationEntity {
   @Id
   private UUID id;
 
-  @Enumerated(EnumType.STRING)
-  @Column(name = "categorie", length = 30)
-  private TypeDElementDeFabrication type;
+  @Column(length = 30)
+  private String categorie;
 
   private String nom;
 
@@ -42,7 +39,7 @@ class ElementDeFabricationEntity {
 
   private ElementDeFabricationEntity(ElementDeFabrication element) {
     id = element.id().uuid();
-    type = element.type();
+    categorie = element.categorie().value();
     nom = element.nom().value();
     reference = element.reference().map(Reference::value).orElse(null);
     description = element.description().map(Description::value).orElse(null);
@@ -57,7 +54,7 @@ class ElementDeFabricationEntity {
   ElementDeFabrication toDomain() {
     return ElementDeFabrication.builder()
       .id(new ElementDeFabricationId(id))
-      .type(type)
+      .categorie(new Categorie(categorie))
       .nom(new Nom(nom))
       .reference(reference)
       .description(description)

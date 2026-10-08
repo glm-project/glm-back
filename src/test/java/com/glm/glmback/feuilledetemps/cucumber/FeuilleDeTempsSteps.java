@@ -2,6 +2,7 @@ package com.glm.glmback.feuilledetemps.cucumber;
 
 import static org.assertj.core.api.Assertions.*;
 
+import com.glm.glmback.cucumber.CategoriesDeProduitDesScenarios;
 import com.glm.glmback.cucumber.CucumberClock;
 import com.glm.glmback.cucumber.EcrituresDuJournalDAtelier;
 import com.glm.glmback.cucumber.rest.CucumberRestClient;
@@ -87,12 +88,8 @@ public class FeuilleDeTempsSteps {
 
   @Given("la feuille de temps connait l'element {string}")
   public void laFeuilleDeTempsConnaitLElement(String alias) {
-    Map<String, Object> element = Map.of(
-      "type",
-      "ORDRE_DE_FABRICATION",
-      "reference",
-      "FEUILLE-" + alias + "-" + SEQUENCE.incrementAndGet()
-    );
+    CategoriesDeProduitDesScenarios.declarer(rest, "OF");
+    Map<String, Object> element = Map.of("categorie", "OF", "reference", "FEUILLE-" + alias + "-" + SEQUENCE.incrementAndGet());
     rest.post(ELEMENTS_URI, JSON.writeValueAsString(element));
     elements.put(alias, id());
   }

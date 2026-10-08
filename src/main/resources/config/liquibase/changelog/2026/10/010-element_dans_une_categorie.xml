@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <changeSet id="element_dans_une_categorie" author="glm">
+    <preConditions
+      onFail="HALT"
+      onError="HALT"
+      onFailMessage="Des elements de fabrication portent une categorie non declaree (ORDRE_DE_FABRICATION ou PRODUIT, d'avant les categories de produit). Aucun client n'etant deploye, ce schema se remet a zero : supprimer le schema de l'entreprise (DROP SCHEMA ... CASCADE), en gardant public.tenant, puis redemarrer. Voir glm-back#103."
+    >
+      <sqlCheck expectedResult="0">
+        select count(*) from element_de_fabrication element where not exists (select 1 from categorie_de_produit categorie where
+        categorie.code = element.categorie)
+      </sqlCheck>
+    </preConditions>
+    <comment>
+      Un element de fabrication est range dans une categorie de produit que l'entreprise a declaree. La
+      regle vit dans le domaine ; cette cle etrangere n'est que le filet, et elle interdit aussi de supprimer
+      une categorie qui range encore des elements.
+    </comment>
+    <addForeignKeyConstraint
+      constraintName="fk_element_de_fabrication_categorie"
+      baseTableName="element_de_fabrication"
+      baseColumnNames="categorie"
+      referencedTableName="categorie_de_produit"
+      referencedColumnNames="code"
+      onDelete="RESTRICT"
+    />
+  </changeSet>
+</databaseChangeLog>

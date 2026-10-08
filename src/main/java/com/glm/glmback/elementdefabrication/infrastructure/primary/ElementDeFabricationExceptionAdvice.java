@@ -1,5 +1,6 @@
 package com.glm.glmback.elementdefabrication.infrastructure.primary;
 
+import com.glm.glmback.elementdefabrication.domain.CategorieInconnueException;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationIntrouvableException;
 import com.glm.glmback.elementdefabrication.domain.ReferenceDejaUtiliseeException;
 import org.springframework.core.Ordered;
@@ -20,5 +21,10 @@ class ElementDeFabricationExceptionAdvice {
   @ExceptionHandler(ReferenceDejaUtiliseeException.class)
   ProblemDetail handleReferenceDejaUtilisee(ReferenceDejaUtiliseeException e) {
     return ErreurDElementDeFabrication.REFERENCE_DEJA_UTILISEE.problem(e);
+  }
+
+  @ExceptionHandler(CategorieInconnueException.class)
+  ProblemDetail handleCategorieInconnue(CategorieInconnueException e) {
+    return ErreurDElementDeFabrication.CATEGORIE_INCONNUE.problem(e);
   }
 }

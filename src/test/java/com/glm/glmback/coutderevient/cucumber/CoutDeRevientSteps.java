@@ -3,6 +3,7 @@ package com.glm.glmback.coutderevient.cucumber;
 import static com.glm.glmback.cucumber.rest.CucumberRestAssertions.*;
 import static org.assertj.core.api.Assertions.*;
 
+import com.glm.glmback.cucumber.CategoriesDeProduitDesScenarios;
 import com.glm.glmback.cucumber.CucumberClock;
 import com.glm.glmback.cucumber.EcrituresDuJournalDAtelier;
 import com.glm.glmback.cucumber.rest.CucumberRestClient;
@@ -86,7 +87,8 @@ public class CoutDeRevientSteps {
 
   @Given("l'entreprise fabrique {string}")
   public void lEntrepriseFabrique(String alias) {
-    Map<String, Object> corps = Map.of("type", "ORDRE_DE_FABRICATION", "reference", alias + " " + SEQUENCE.incrementAndGet());
+    CategoriesDeProduitDesScenarios.declarer(rest, "OF");
+    Map<String, Object> corps = Map.of("categorie", "OF", "reference", alias + " " + SEQUENCE.incrementAndGet());
     rest.post(ELEMENTS_URI, JSON.writeValueAsString(corps));
     elements.put(alias, id());
   }

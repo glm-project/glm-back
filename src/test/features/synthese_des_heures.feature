@@ -77,8 +77,8 @@ Feature: Synthese des heures hebdomadaire d'un operateur
     And "martin" enregistre "FIN" sur l'element "carter" au poste "DMU 50" a "2026-05-11T09:00:00Z"
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then les elements de la synthese sont
-      | id     | type    | duree   | dureeNonConformite |
-      | carter | PRODUIT | PT3H55M | PT1H               |
+      | id     | type  | duree   | dureeNonConformite |
+      | carter | MOULE | PT3H55M | PT1H               |
 
   Scenario: Un element travaille sur deux postes porte deux couples de poste et de nature
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"

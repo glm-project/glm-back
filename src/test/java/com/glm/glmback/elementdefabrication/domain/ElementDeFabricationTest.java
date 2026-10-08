@@ -15,7 +15,7 @@ class ElementDeFabricationTest {
   void shouldNotBuildWithoutId() {
     Fiche fiche = fiche1015();
 
-    assertThatThrownBy(() -> new ElementDeFabrication(null, TypeDElementDeFabrication.ORDRE_DE_FABRICATION, OF_2026_000001, fiche))
+    assertThatThrownBy(() -> new ElementDeFabrication(null, CATEGORIE_OF, OF_2026_000001, fiche))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("id");
   }
@@ -27,7 +27,7 @@ class ElementDeFabricationTest {
 
     assertThatThrownBy(() -> new ElementDeFabrication(id, null, OF_2026_000001, fiche))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("type");
+      .hasMessageContaining("categorie");
   }
 
   @Test
@@ -35,7 +35,7 @@ class ElementDeFabricationTest {
     ElementDeFabricationId id = ElementDeFabricationId.newId();
     Fiche fiche = fiche1015();
 
-    assertThatThrownBy(() -> new ElementDeFabrication(id, TypeDElementDeFabrication.ORDRE_DE_FABRICATION, null, fiche))
+    assertThatThrownBy(() -> new ElementDeFabrication(id, CATEGORIE_OF, null, fiche))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("nom");
   }
@@ -44,7 +44,7 @@ class ElementDeFabricationTest {
   void shouldNotBuildWithoutFiche() {
     ElementDeFabricationId id = ElementDeFabricationId.newId();
 
-    assertThatThrownBy(() -> new ElementDeFabrication(id, TypeDElementDeFabrication.ORDRE_DE_FABRICATION, OF_2026_000001, null))
+    assertThatThrownBy(() -> new ElementDeFabrication(id, CATEGORIE_OF, OF_2026_000001, null))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("fiche");
   }
@@ -55,15 +55,15 @@ class ElementDeFabricationTest {
 
     ElementDeFabrication element = ElementDeFabrication.builder()
       .id(id)
-      .type(TypeDElementDeFabrication.ORDRE_DE_FABRICATION)
-      .nom(Nom.of(new Prefixe("OF"), new Annee(2026), 1))
+      .categorie(CATEGORIE_OF)
+      .nom(Nom.of(new Categorie("OF"), new Annee(2026), 1))
       .reference("1015")
       .description("Carter en fonte")
       .dateDeCreation(LE_15_JANVIER_2026)
       .dateDeModification(LE_20_FEVRIER_2026);
 
     assertThat(element.id()).isEqualTo(id);
-    assertThat(element.type()).isEqualTo(TypeDElementDeFabrication.ORDRE_DE_FABRICATION);
+    assertThat(element.categorie()).isEqualTo(CATEGORIE_OF);
     assertThat(element.nom()).isEqualTo(OF_2026_000001);
     assertThat(element.reference()).contains(reference1015());
     assertThat(element.description()).contains(descriptionCarterEnFonte());
@@ -75,25 +75,25 @@ class ElementDeFabricationTest {
   void shouldBuildProduitFromStepBuilder() {
     ElementDeFabrication element = ElementDeFabrication.builder()
       .id(ElementDeFabricationId.newId())
-      .type(TypeDElementDeFabrication.PRODUIT)
-      .nom(Nom.of(new Prefixe("PRD"), new Annee(2026), 1))
+      .categorie(CATEGORIE_MOULE)
+      .nom(Nom.of(CATEGORIE_MOULE, new Annee(2026), 1))
       .reference("2456")
       .description("Carter en fonte")
       .dateDeCreation(LE_15_JANVIER_2026)
       .dateDeModification(LE_15_JANVIER_2026);
 
-    assertThat(element.type()).isEqualTo(TypeDElementDeFabrication.PRODUIT);
-    assertThat(element.nom()).isEqualTo(PRD_2026_000001);
+    assertThat(element.categorie()).isEqualTo(CATEGORIE_MOULE);
+    assertThat(element.nom()).isEqualTo(MOULE_2026_000001);
     assertThat(element.fiche()).isEqualTo(fiche2456());
   }
 
   @Test
   void shouldBuildProduitWithoutReferenceNorDescription() {
-    ElementDeFabrication element = elementDeFabricationProduitSansReference();
+    ElementDeFabrication element = elementDeFabricationMouleSansReference();
 
     assertThat(element.reference()).isEmpty();
     assertThat(element.description()).isEmpty();
-    assertThat(element.nom()).isEqualTo(PRD_2026_000001);
+    assertThat(element.nom()).isEqualTo(MOULE_2026_000001);
   }
 
   @Test
@@ -103,7 +103,7 @@ class ElementDeFabricationTest {
     ElementDeFabrication revise = element.revise(Optional.of(reference1017()), Optional.of(descriptionCarterEnFonte()), LE_20_FEVRIER_2026);
 
     assertThat(revise.id()).isEqualTo(element.id());
-    assertThat(revise.type()).isEqualTo(element.type());
+    assertThat(revise.categorie()).isEqualTo(element.categorie());
     assertThat(revise.nom()).isEqualTo(element.nom());
     assertThat(revise.reference()).contains(reference1017());
     assertThat(revise.dateDeCreation()).isEqualTo(LE_15_JANVIER_2026);

@@ -17,8 +17,8 @@ Feature: Suivi des elements engages en atelier
   Scenario: Engager un element de fabrication le fait apparaitre en atelier
     Given il est "2026-05-10T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2001"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2001                 |
+      | categorie | OF   |
+      | reference | 2001 |
     When j'engage l'element "OF 2001" en atelier
     Then la reponse a le statut http 201
     # Rien n'a encore ete pointe : l'element attend son premier operateur.
@@ -28,8 +28,8 @@ Feature: Suivi des elements engages en atelier
   Scenario: La grille conserve les informations du suivi sans son journal
     Given il est "2026-07-02T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2962"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2962                 |
+      | categorie | OF   |
+      | reference | 2962 |
     And j'ai engage l'element "OF 2962" en atelier
     And j'ai pointe sur "OF 2962"
       | type      | DEBUT       |
@@ -52,8 +52,8 @@ Feature: Suivi des elements engages en atelier
 
   Scenario: Un element deja engage ne peut pas l'etre deux fois
     Given l'entreprise a cree l'element de fabrication "OF 2002"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2002                 |
+      | categorie | OF   |
+      | reference | 2002 |
     And j'ai engage l'element "OF 2002" en atelier
     When j'engage l'element "OF 2002" en atelier
     Then la reponse a le statut http 409
@@ -67,8 +67,8 @@ Feature: Suivi des elements engages en atelier
   Scenario: Un debut de travail met l'element en cours
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2003"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2003                 |
+      | categorie | OF   |
+      | reference | 2003 |
     And j'ai engage l'element "OF 2003" en atelier
     When je pointe sur "OF 2003"
       | type      | DEBUT       |
@@ -88,8 +88,8 @@ Feature: Suivi des elements engages en atelier
   Scenario: Le pointage d'atelier du pupitre conserve son identifiant et son heure de geste
     Given il est "2026-05-10T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2999"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2999                 |
+      | categorie | OF   |
+      | reference | 2999 |
     And j'ai engage l'element "OF 2999" en atelier
     Given il est "2026-05-10T14:00:00Z"
     When je pointe sur "OF 2999"
@@ -108,8 +108,8 @@ Feature: Suivi des elements engages en atelier
   Scenario: Un pointage d'atelier identique est rejoue sans second evenement
     Given il est "2026-05-10T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2998"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2998                 |
+      | categorie | OF   |
+      | reference | 2998 |
     And j'ai engage l'element "OF 2998" en atelier
     Given il est "2026-05-10T08:00:00Z"
     When je pointe sur "OF 2998"
@@ -129,8 +129,8 @@ Feature: Suivi des elements engages en atelier
   Scenario: Un pointage d'atelier futur est refuse
     Given il est "2026-05-10T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2997"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2997                 |
+      | categorie | OF   |
+      | reference | 2997 |
     And j'ai engage l'element "OF 2997" en atelier
     When je pointe sur "OF 2997"
       | id             | 00000000-0000-0000-0000-000000000036 |
@@ -144,8 +144,8 @@ Feature: Suivi des elements engages en atelier
   Scenario: Un pointage date par un poste qui avance un peu sur le serveur est ramene a l'instant courant
     Given il est "2026-05-10T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2996"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2996                 |
+      | categorie | OF   |
+      | reference | 2996 |
     And j'ai engage l'element "OF 2996" en atelier
     When je pointe sur "OF 2996"
       | id             | 00000000-0000-0000-0000-000000000037 |
@@ -159,8 +159,8 @@ Feature: Suivi des elements engages en atelier
   Scenario: Une non conformite interrompt l'element, une reprise se pointe comme un debut
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2004"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2004                 |
+      | categorie | OF   |
+      | reference | 2004 |
     And j'ai engage l'element "OF 2004" en atelier
     And j'ai pointe sur "OF 2004"
       | type      | DEBUT       |
@@ -187,8 +187,8 @@ Feature: Suivi des elements engages en atelier
   Scenario: Un element sur lequel plus personne ne travaille est interrompu
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2013"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2013                 |
+      | categorie | OF   |
+      | reference | 2013 |
     And j'ai engage l'element "OF 2013" en atelier
     And j'ai pointe sur "OF 2013"
       | type      | DEBUT       |
@@ -206,8 +206,8 @@ Feature: Suivi des elements engages en atelier
     # L'habilitation est la seule regle dure du contexte : le referentiel dit qui peut pointer ou.
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2017"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2017                 |
+      | categorie | OF   |
+      | reference | 2017 |
     And j'ai engage l'element "OF 2017" en atelier
     When je pointe sur "OF 2017"
       | type      | DEBUT       |
@@ -218,8 +218,8 @@ Feature: Suivi des elements engages en atelier
   Scenario: Pointer pour un operateur inconnu du referentiel renvoie 404
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2018"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2018                 |
+      | categorie | OF   |
+      | reference | 2018 |
     And j'ai engage l'element "OF 2018" en atelier
     When je pointe sur "OF 2018"
       | type      | DEBUT                                |
@@ -229,8 +229,8 @@ Feature: Suivi des elements engages en atelier
   Scenario: Pointer sur un poste inconnu du referentiel renvoie 404
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2019"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2019                 |
+      | categorie | OF   |
+      | reference | 2019 |
     And j'ai engage l'element "OF 2019" en atelier
     When je pointe sur "OF 2019"
       | type      | DEBUT                                |
@@ -243,8 +243,8 @@ Feature: Suivi des elements engages en atelier
     # precedente et en ouvre une nouvelle, sans trou ni recouvrement.
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2005"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2005                 |
+      | categorie | OF   |
+      | reference | 2005 |
     And j'ai engage l'element "OF 2005" en atelier
     And j'ai pointe sur "OF 2005"
       | type      | DEBUT       |
@@ -264,8 +264,8 @@ Feature: Suivi des elements engages en atelier
   Scenario: Pointer une non conformite deja en cours la relance
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2090"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2090                 |
+      | categorie | OF   |
+      | reference | 2090 |
     And j'ai engage l'element "OF 2090" en atelier
     And j'ai pointe sur "OF 2090"
       | type      | NON_CONFORMITE |
@@ -285,8 +285,8 @@ Feature: Suivi des elements engages en atelier
     # La relance est un nouveau geste, sous un nouvel identifiant. Le meme geste rejoue reste absorbe.
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2091"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2091                 |
+      | categorie | OF   |
+      | reference | 2091 |
     And j'ai engage l'element "OF 2091" en atelier
     And j'ai pointe sur "OF 2091"
       | id        | 00000000-0000-0000-0000-000000000041 |
@@ -315,8 +315,8 @@ Feature: Suivi des elements engages en atelier
     # que d'etre lue selon une interpretation choisie par le serveur.
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2092"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2092                 |
+      | categorie | OF   |
+      | reference | 2092 |
     And j'ai engage l'element "OF 2092" en atelier
     And j'ai pointe sur "OF 2092"
       | id        | 00000000-0000-0000-0000-000000000261 |
@@ -350,8 +350,8 @@ Feature: Suivi des elements engages en atelier
     # resoudre.
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2093"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2093                 |
+      | categorie | OF   |
+      | reference | 2093 |
     And j'ai engage l'element "OF 2093" en atelier
     And j'ai pointe sur "OF 2093"
       | id        | 00000000-0000-0000-0000-000000000271 |
@@ -385,8 +385,8 @@ Feature: Suivi des elements engages en atelier
   Scenario: Cloturer un element, puis le rouvrir
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2006"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2006                 |
+      | categorie | OF   |
+      | reference | 2006 |
     And j'ai engage l'element "OF 2006" en atelier
     And j'ai pointe sur "OF 2006"
       | id        | 00000000-0000-0000-0000-000000000291 |
@@ -424,8 +424,8 @@ Feature: Suivi des elements engages en atelier
   Scenario: Une saisie oubliee est rattrapee a l'heure ou elle a eu lieu
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2007"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2007                 |
+      | categorie | OF   |
+      | reference | 2007 |
     And j'ai engage l'element "OF 2007" en atelier
     Given il est "2026-05-11T09:00:00Z"
     When je regularise sur "OF 2007"
@@ -445,8 +445,8 @@ Feature: Suivi des elements engages en atelier
   Scenario: Une regularisation saisie a l'heure du fait reste une regularisation
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2022"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2022                 |
+      | categorie | OF   |
+      | reference | 2022 |
     And j'ai engage l'element "OF 2022" en atelier
     Given il est "2026-05-10T09:00:00Z"
     When je regularise sur "OF 2022"
@@ -461,8 +461,8 @@ Feature: Suivi des elements engages en atelier
   Scenario: Une saisie en trop est annulee, mais reste au journal
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2008"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2008                 |
+      | categorie | OF   |
+      | reference | 2008 |
     And j'ai engage l'element "OF 2008" en atelier
     And j'ai pointe sur "OF 2008"
       | type      | DEBUT       |
@@ -478,8 +478,8 @@ Feature: Suivi des elements engages en atelier
   Scenario: Une heure fausse est corrigee en un seul acte
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2009"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2009                 |
+      | categorie | OF   |
+      | reference | 2009 |
     And j'ai engage l'element "OF 2009" en atelier
     And j'ai pointe sur "OF 2009"
       | type      | DEBUT       |
@@ -507,8 +507,8 @@ Feature: Suivi des elements engages en atelier
   Scenario: Annuler un evenement d'atelier inexistant renvoie 404
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2014"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2014                 |
+      | categorie | OF   |
+      | reference | 2014 |
     And j'ai engage l'element "OF 2014" en atelier
     When j'annule l'evenement inconnu "2e1b6a9f-3c4d-4e6f-9021-b2c3d4e5f607" de "OF 2014"
       | motif | Evenement inconnu |
@@ -517,8 +517,8 @@ Feature: Suivi des elements engages en atelier
   Scenario: Annuler deux fois le meme evenement d'atelier est refuse
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2015"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2015                 |
+      | categorie | OF   |
+      | reference | 2015 |
     And j'ai engage l'element "OF 2015" en atelier
     And j'ai pointe sur "OF 2015"
       | type      | DEBUT       |
@@ -535,8 +535,8 @@ Feature: Suivi des elements engages en atelier
     # Un element ne peut pas avoir ete travaille avant d'avoir ete mis en atelier.
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2016"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2016                 |
+      | categorie | OF   |
+      | reference | 2016 |
     And j'ai engage l'element "OF 2016" en atelier
     Given il est "2026-05-10T09:00:00Z"
     When je regularise sur "OF 2016"
@@ -553,8 +553,8 @@ Feature: Suivi des elements engages en atelier
     And l'entreprise a declare le poste de travail "fraiseuse-solo" de nature "fraisage"
     And l'entreprise a declare l'operateur "solo" habilite sur "fraiseuse-solo"
     And l'entreprise a cree l'element de fabrication "OF 2020"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2020                 |
+      | categorie | OF   |
+      | reference | 2020 |
     And j'ai engage l'element "OF 2020" en atelier
     And j'ai pointe sur "OF 2020"
       | type      | DEBUT          |
@@ -567,8 +567,8 @@ Feature: Suivi des elements engages en atelier
   Scenario: Un operateur qui a pointe sur un element ne se supprime plus
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2021"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2021                 |
+      | categorie | OF   |
+      | reference | 2021 |
     And j'ai engage l'element "OF 2021" en atelier
     And j'ai pointe sur "OF 2021"
       | type      | DEBUT       |
@@ -580,8 +580,8 @@ Feature: Suivi des elements engages en atelier
   Scenario: Un operateur dont le seul fait historique a ete annule ne se supprime plus
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF annule lot7"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | annule lot7          |
+      | categorie | OF          |
+      | reference | annule lot7 |
     And j'ai engage l'element "OF annule lot7" en atelier
     And j'ai pointe sur "OF annule lot7"
       | type      | DEBUT  |
@@ -599,8 +599,8 @@ Feature: Suivi des elements engages en atelier
   Scenario: Le tableau d'atelier se filtre par etat
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2010"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2010                 |
+      | categorie | OF   |
+      | reference | 2010 |
     And j'ai engage l'element "OF 2010" en atelier
     When je liste les elements engages
     Then la reponse a le statut http 200
@@ -623,8 +623,8 @@ Feature: Suivi des elements engages en atelier
     # quand son activite atteint son echeance, 13 h apres son debut.
     Given il est "2026-04-06T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2023"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2023                 |
+      | categorie | OF   |
+      | reference | 2023 |
     And j'ai engage l'element "OF 2023" en atelier
     And il est "2026-04-06T08:00:00Z"
     And j'ai pointe sur "OF 2023"
@@ -642,8 +642,8 @@ Feature: Suivi des elements engages en atelier
 
   Scenario: Un operateur peut pointer mais pas engager
     Given l'entreprise a cree l'element de fabrication "OF 2011"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2011                 |
+      | categorie | OF   |
+      | reference | 2011 |
     And j'ai engage l'element "OF 2011" en atelier
     Given I am logged in as "user" with role "USER"
     When je pointe sur "OF 2011"
@@ -656,8 +656,8 @@ Feature: Suivi des elements engages en atelier
   Scenario: Les elements engages d'une entreprise ne sont pas visibles depuis une autre
     Given I am logged in as "gestionnaire" with role "GESTIONNAIRE" for tenant "impeccmold"
     And l'entreprise a cree l'element de fabrication "OF 2012"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2012                 |
+      | categorie | OF   |
+      | reference | 2012 |
     And j'ai engage l'element "OF 2012" en atelier
     Given I am logged in as "gestionnaire" with role "GESTIONNAIRE" for tenant "katilys"
     When je consulte "OF 2012"
@@ -669,11 +669,11 @@ Feature: Suivi des elements engages en atelier
     # puis rentre chez lui a 17 h SANS ARRETER l'OF 42. Le lendemain, le gestionnaire regularise la fin oubliee.
     Given il est "2026-05-10T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 42"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2042                 |
+      | categorie | OF   |
+      | reference | 2042 |
     And l'entreprise a cree l'element de fabrication "OF 43"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2043                 |
+      | categorie | OF   |
+      | reference | 2043 |
     And j'ai engage l'element "OF 42" en atelier
     And j'ai engage l'element "OF 43" en atelier
 
@@ -763,8 +763,8 @@ Feature: Suivi des elements engages en atelier
     # Dupont oublie d'arreter l'OF 44 ; sa relance du lendemain ouvre une nouvelle activite apres l'echeance.
     Given il est "2026-05-10T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 44"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2044                 |
+      | categorie | OF   |
+      | reference | 2044 |
     And j'ai engage l'element "OF 44" en atelier
     Given il est "2026-05-10T08:00:00Z"
     And j'ai pointe sur "OF 44"
@@ -808,8 +808,8 @@ Feature: Suivi des elements engages en atelier
   Scenario: Un travail sans fin reste en cours avant son echeance
     Given il est "2026-05-10T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 49"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2049                 |
+      | categorie | OF   |
+      | reference | 2049 |
     And j'ai engage l'element "OF 49" en atelier
     Given il est "2026-05-10T08:00:00Z"
     And j'ai pointe sur "OF 49"
@@ -827,8 +827,8 @@ Feature: Suivi des elements engages en atelier
     # L'activite compte de son debut pointe a sa fin pointee.
     Given il est "2026-05-12T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 50"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2050                 |
+      | categorie | OF   |
+      | reference | 2050 |
     And j'ai engage l'element "OF 50" en atelier
     Given il est "2026-05-12T08:00:00Z"
     And j'ai pointe sur "OF 50"
@@ -853,8 +853,8 @@ Feature: Suivi des elements engages en atelier
   Scenario: Les tarifs historiques sont reserves au gestionnaire meme apres un pointage du pupitre
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2981"
-      | type      | ORDRE_DE_FABRICATION |
-      | reference | 2981                 |
+      | categorie | OF   |
+      | reference | 2981 |
     And j'ai engage l'element "OF 2981" en atelier
     Given I am logged in as "user" with role "USER"
     When je pointe sur "OF 2981"

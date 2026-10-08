@@ -11,7 +11,7 @@ public record Nom(String value) {
     Assert.field("nom", value).notBlank().matches(PATTERN);
   }
 
-  public static Nom of(Prefixe prefixe, Annee annee, long compteur) {
-    return new Nom(FORMAT.formatted(prefixe.value(), annee.value(), compteur));
+  public static Nom of(Categorie categorie, Annee annee, long compteur) {
+    return new Nom(FORMAT.formatted(categorie.value(), annee.value(), compteur));
   }
 }

@@ -12,11 +12,11 @@ public final class ElementsDeFabricationFixture {
 
   public static final Annee ANNEE_2026 = new Annee(2026);
 
-  public static final Prefixe PREFIXE_OF = new Prefixe("OF");
-  public static final Prefixe PREFIXE_PRD = new Prefixe("PRD");
+  public static final Categorie CATEGORIE_OF = new Categorie("OF");
+  public static final Categorie CATEGORIE_MOULE = new Categorie("MOULE");
 
-  public static final Nom OF_2026_000001 = Nom.of(PREFIXE_OF, ANNEE_2026, 1);
-  public static final Nom PRD_2026_000001 = Nom.of(PREFIXE_PRD, ANNEE_2026, 1);
+  public static final Nom OF_2026_000001 = Nom.of(CATEGORIE_OF, ANNEE_2026, 1);
+  public static final Nom MOULE_2026_000001 = Nom.of(CATEGORIE_MOULE, ANNEE_2026, 1);
 
   private ElementsDeFabricationFixture() {}
 
@@ -45,19 +45,19 @@ public final class ElementsDeFabricationFixture {
   }
 
   public static ElementDeFabricationToCreate elementDeFabricationToCreateOrdre1015() {
-    return new ElementDeFabricationToCreate(TypeDElementDeFabrication.ORDRE_DE_FABRICATION, "1015", "Carter en fonte");
+    return new ElementDeFabricationToCreate("OF", "1015", "Carter en fonte");
   }
 
-  public static ElementDeFabricationToCreate elementDeFabricationToCreateProduit2456() {
-    return new ElementDeFabricationToCreate(TypeDElementDeFabrication.PRODUIT, "2456", "Carter en fonte");
+  public static ElementDeFabricationToCreate elementDeFabricationToCreateMoule2456() {
+    return new ElementDeFabricationToCreate("MOULE", "2456", "Carter en fonte");
   }
 
-  public static ElementDeFabricationToCreate elementDeFabricationToCreateProduit1015() {
-    return new ElementDeFabricationToCreate(TypeDElementDeFabrication.PRODUIT, "1015", "Carter en fonte");
+  public static ElementDeFabricationToCreate elementDeFabricationToCreateMoule1015() {
+    return new ElementDeFabricationToCreate("MOULE", "1015", "Carter en fonte");
   }
 
-  public static ElementDeFabricationToCreate elementDeFabricationToCreateProduitSansReference() {
-    return new ElementDeFabricationToCreate(TypeDElementDeFabrication.PRODUIT, Optional.empty(), Optional.empty());
+  public static ElementDeFabricationToCreate elementDeFabricationToCreateMouleSansReference() {
+    return new ElementDeFabricationToCreate(CATEGORIE_MOULE, Optional.empty(), Optional.empty());
   }
 
   public static ElementDeFabricationToUpdate elementDeFabricationToUpdate1017(ElementDeFabricationId id) {
@@ -99,7 +99,7 @@ public final class ElementsDeFabricationFixture {
   public static ElementDeFabrication elementDeFabricationOrdre1017(ElementDeFabricationId id) {
     return ElementDeFabrication.builder()
       .id(id)
-      .type(TypeDElementDeFabrication.ORDRE_DE_FABRICATION)
+      .categorie(CATEGORIE_OF)
       .nom(OF_2026_000001)
       .reference("1017")
       .description("Carter en fonte")
@@ -107,22 +107,22 @@ public final class ElementsDeFabricationFixture {
       .dateDeModification(LE_20_FEVRIER_2026);
   }
 
-  public static ElementDeFabrication elementDeFabricationProduit2456() {
+  public static ElementDeFabrication elementDeFabricationMoule2456() {
     return ElementDeFabrication.builder()
       .id(ElementDeFabricationId.newId())
-      .type(TypeDElementDeFabrication.PRODUIT)
-      .nom(PRD_2026_000001)
+      .categorie(CATEGORIE_MOULE)
+      .nom(MOULE_2026_000001)
       .reference("2456")
       .description("Carter en fonte")
       .dateDeCreation(LE_15_JANVIER_2026)
       .dateDeModification(LE_15_JANVIER_2026);
   }
 
-  public static ElementDeFabrication elementDeFabricationProduitSansReference() {
+  public static ElementDeFabrication elementDeFabricationMouleSansReference() {
     return ElementDeFabrication.builder()
       .id(ElementDeFabricationId.newId())
-      .type(TypeDElementDeFabrication.PRODUIT)
-      .nom(PRD_2026_000001)
+      .categorie(CATEGORIE_MOULE)
+      .nom(MOULE_2026_000001)
       .reference(null)
       .description(null)
       .dateDeCreation(LE_15_JANVIER_2026)
@@ -132,7 +132,7 @@ public final class ElementsDeFabricationFixture {
   private static ElementDeFabrication elementDeFabricationOrdre1015(ElementDeFabricationId id, Instant dateDeCreation) {
     return ElementDeFabrication.builder()
       .id(id)
-      .type(TypeDElementDeFabrication.ORDRE_DE_FABRICATION)
+      .categorie(CATEGORIE_OF)
       .nom(OF_2026_000001)
       .reference("1015")
       .description("Carter en fonte")

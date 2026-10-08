@@ -141,8 +141,11 @@ class SupervisionDAtelierResourceIT {
     when(clock.now()).thenReturn(LE_10_MAI_2026_A_9H);
     transactions.executeWithoutResult(status -> {
       entities
+        .createNativeQuery("insert into categorie_de_produit (code, rang) values ('MOULE', 1) on conflict (code) do nothing")
+        .executeUpdate();
+      entities
         .createNativeQuery(
-          "insert into element_de_fabrication (id, categorie, nom, reference, date_de_creation, date_de_modification) values (:id, 'PRODUIT', 'PRD-2026-000043', 'M-43', :date, :date)"
+          "insert into element_de_fabrication (id, categorie, nom, reference, date_de_creation, date_de_modification) values (:id, 'MOULE', 'MOULE-2026-000043', 'M-43', :date, :date)"
         )
         .setParameter("id", element.id().uuid())
         .setParameter("date", LE_10_MAI_2026_A_7H)
@@ -316,8 +319,11 @@ class SupervisionDAtelierResourceIT {
         .setParameter("poste", POSTE_ID_FRAISEUSE_1.uuid())
         .executeUpdate();
       entities
+        .createNativeQuery("insert into categorie_de_produit (code, rang) values ('OF', 1) on conflict (code) do nothing")
+        .executeUpdate();
+      entities
         .createNativeQuery(
-          "insert into element_de_fabrication (id,categorie,nom,reference,date_de_creation,date_de_modification) values (:id,'ORDRE_DE_FABRICATION','OF-2026-000042','R-42',:date,:date)"
+          "insert into element_de_fabrication (id,categorie,nom,reference,date_de_creation,date_de_modification) values (:id,'OF','OF-2026-000042','R-42',:date,:date)"
         )
         .setParameter("id", ELEMENT_OF_2026_000042.uuid())
         .setParameter("date", LE_10_MAI_2026_A_7H)
