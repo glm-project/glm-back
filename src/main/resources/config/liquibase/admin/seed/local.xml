@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <changeSet id="tenants_de_developpement" author="glm">
+    <comment>Jeu de developpement du profil local, absent de tout autre environnement.</comment>
+    <insert tableName="tenant">
+      <column name="id" value="impeccmold" />
+      <column name="schema_name" value="impeccmold" />
+      <column name="status" value="ACTIVE" />
+    </insert>
+    <insert tableName="tenant">
+      <column name="id" value="katilys" />
+      <column name="schema_name" value="katilys" />
+      <column name="status" value="ACTIVE" />
+    </insert>
+  </changeSet>
+</databaseChangeLog>

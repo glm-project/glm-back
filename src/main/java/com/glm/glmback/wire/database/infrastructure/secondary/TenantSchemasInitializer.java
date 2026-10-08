@@ -5,30 +5,32 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import javax.sql.DataSource;
 import liquibase.exception.LiquibaseException;
-import liquibase.integration.spring.SpringLiquibase;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.stereotype.Component;
 
 @Component
 class TenantSchemasInitializer implements InitializingBean {
 
   private final DataSource dataSource;
-  private final TenantSchemas tenantSchemas;
+  private final TenantRegistry tenantRegistry;
   private final String changeLog;
 
-  TenantSchemasInitializer(DataSource dataSource, TenantSchemas tenantSchemas, @Value("${spring.liquibase.change-log}") String changeLog) {
+  TenantSchemasInitializer(
+    DataSource dataSource,
+    TenantRegistry tenantRegistry,
+    @Value("${spring.liquibase.change-log}") String changeLog
+  ) {
     this.dataSource = dataSource;
-    this.tenantSchemas = tenantSchemas;
+    this.tenantRegistry = tenantRegistry;
     this.changeLog = changeLog;
   }
 
   @Override
   public void afterPropertiesSet() throws LiquibaseException, SQLException {
-    for (String schema : tenantSchemas.schemas()) {
+    for (String schema : tenantRegistry.schemas()) {
       createSchema(schema);
-      migrate(schema);
+      LiquibaseMigration.migrate(dataSource, changeLog, schema);
     }
   }
 
@@ -41,15 +43,5 @@ class TenantSchemasInitializer implements InitializingBean {
       connection.setAutoCommit(true);
       statement.execute("CREATE SCHEMA IF NOT EXISTS \"%s\"".formatted(schema));
     }
-  }
-
-  private void migrate(String schema) throws LiquibaseException {
-    SpringLiquibase liquibase = new SpringLiquibase();
-    liquibase.setDataSource(dataSource);
-    liquibase.setResourceLoader(new DefaultResourceLoader());
-    liquibase.setChangeLog(changeLog);
-    liquibase.setDefaultSchema(schema);
-    liquibase.setLiquibaseSchema(schema);
-    liquibase.afterPropertiesSet();
   }
 }

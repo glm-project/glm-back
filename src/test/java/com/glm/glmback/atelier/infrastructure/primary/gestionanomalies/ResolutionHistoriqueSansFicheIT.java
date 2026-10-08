@@ -27,10 +27,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 @IntegrationTest
 @SpringBootTest(
   classes = { GlmprojectApp.class, CucumberSecurityConfiguration.class },
-  webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-  properties = {
-    "application.multitenancy.tenants[0].id=historique_resolution", "application.multitenancy.tenants[0].schema=historique_resolution",
-  }
+  webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 @AutoConfigureRestTestClient
 class ResolutionHistoriqueSansFicheIT {

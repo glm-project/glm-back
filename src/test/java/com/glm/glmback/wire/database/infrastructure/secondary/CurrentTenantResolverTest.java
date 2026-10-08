@@ -29,7 +29,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 class CurrentTenantResolverTest {
 
   @Mock
-  private TenantSchemas tenantSchemas;
+  private TenantRegistry tenantRegistry;
 
   @InjectMocks
   private CurrentTenantResolver resolver;
@@ -43,7 +43,7 @@ class CurrentTenantResolverTest {
 
   @Test
   void shouldResolveDefaultSchemaOutOfRequest() {
-    when(tenantSchemas.defaultSchema()).thenReturn("public");
+    when(tenantRegistry.defaultSchema()).thenReturn("public");
 
     assertThat(resolver.resolveCurrentTenantIdentifier()).isEqualTo("public");
   }
@@ -59,7 +59,7 @@ class CurrentTenantResolverTest {
   void shouldResolveSchemaOfAuthenticatedTenant() {
     inRequest();
     authenticateOn(TENANT_IMPECCMOLD.value());
-    when(tenantSchemas.schema(TENANT_IMPECCMOLD)).thenReturn("impeccmold");
+    when(tenantRegistry.schema(TENANT_IMPECCMOLD)).thenReturn("impeccmold");
 
     assertThat(resolver.resolveCurrentTenantIdentifier()).isEqualTo("impeccmold");
   }

@@ -27,14 +27,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.support.TransactionTemplate;
 
-@IntegrationTest(
-  properties = {
-    "application.multitenancy.tenants[0].id=supervision_fixture",
-    "application.multitenancy.tenants[0].schema=supervision_fixture",
-    "application.multitenancy.tenants[1].id=supervision_voisine",
-    "application.multitenancy.tenants[1].schema=supervision_voisine",
-  }
-)
+@IntegrationTest
 @AutoConfigureMockMvc
 class SupervisionDAtelierResourceIT {
 

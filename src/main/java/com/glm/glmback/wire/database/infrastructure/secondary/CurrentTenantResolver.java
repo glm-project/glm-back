@@ -12,19 +12,19 @@ import org.springframework.web.context.request.RequestContextHolder;
 @Component
 class CurrentTenantResolver implements CurrentTenantIdentifierResolver<String> {
 
-  private final TenantSchemas tenantSchemas;
+  private final TenantRegistry tenantRegistry;
 
-  CurrentTenantResolver(TenantSchemas tenantSchemas) {
-    this.tenantSchemas = tenantSchemas;
+  CurrentTenantResolver(TenantRegistry tenantRegistry) {
+    this.tenantRegistry = tenantRegistry;
   }
 
   @Override
   public String resolveCurrentTenantIdentifier() {
     if (RequestContextHolder.getRequestAttributes() == null) {
-      return tenantSchemas.defaultSchema();
+      return tenantRegistry.defaultSchema();
     }
 
-    return tenantSchemas.schema(CurrentTenant.tenant());
+    return tenantRegistry.schema(CurrentTenant.tenant());
   }
 
   @Override
