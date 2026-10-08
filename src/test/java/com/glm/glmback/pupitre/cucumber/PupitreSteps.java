@@ -280,7 +280,8 @@ public class PupitreSteps {
   public void porteSaReferenceEtSonNom(String element) {
     assertThat(suivi(element))
       .containsEntry("reference", references.get(element))
-      .containsEntry("type", "OF")
+      .containsEntry("categorie", "OF")
+      .containsEntry("type", "ORDRE_DE_FABRICATION")
       .containsEntry("nom", nomsDAtelier.get(element));
   }
 

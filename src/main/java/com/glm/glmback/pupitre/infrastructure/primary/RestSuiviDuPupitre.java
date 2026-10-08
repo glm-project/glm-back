@@ -3,6 +3,7 @@ package com.glm.glmback.pupitre.infrastructure.primary;
 import com.glm.glmback.pupitre.domain.EtatDuSuivi;
 import com.glm.glmback.pupitre.domain.ReferenceDElement;
 import com.glm.glmback.pupitre.domain.SuiviDuPupitre;
+import com.glm.glmback.shared.elementtype.infrastructure.primary.LegacyElementType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.List;
@@ -30,7 +31,14 @@ record RestSuiviDuPupitre(
     example = "M-1187"
   )
   String reference,
-  @Schema(description = "Categorie de l'element, copiee a l'engagement.", requiredMode = Schema.RequiredMode.REQUIRED) String type,
+  @Schema(description = "Categorie de l'element, copiee a l'engagement.", requiredMode = Schema.RequiredMode.REQUIRED) String categorie,
+  @Schema(
+    description = "Remplace par categorie : ORDRE_DE_FABRICATION pour la categorie OF, PRODUIT pour toute autre.",
+    allowableValues = { LegacyElementType.ORDRE_DE_FABRICATION, LegacyElementType.PRODUIT },
+    deprecated = true,
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  String type,
   @Schema(
     description = "EN_ATTENTE, EN_COURS ou INTERROMPU. Juge sur les seules activites interpretables a genereLe.",
     requiredMode = Schema.RequiredMode.REQUIRED
@@ -47,6 +55,7 @@ record RestSuiviDuPupitre(
       suivi.nom().value(),
       suivi.reference().map(ReferenceDElement::value).orElse(null),
       suivi.categorie().value(),
+      LegacyElementType.fromCategory(suivi.categorie().value()),
       suivi.etatA(evaluation),
       suivi.activitesEnCoursA(evaluation).stream().map(RestActiviteDuPupitre::from).toList(),
       suivi.conflits().stream().map(RestConflitDuPupitre::from).toList()

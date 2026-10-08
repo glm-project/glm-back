@@ -270,7 +270,7 @@ Le filtre `etats` juge l'état à l'instant de la lecture, le même que celui de
 seule activité a atteint son échéance sort de `etats=EN_COURS` et entre dans `etats=INTERROMPU`, sans aucune écriture.
 
 La liste rend une page de **`RestSuiviDAtelierEnGrille`**, sans propriétés `journal` ni `conflits` (ni tableau vide, ni
-valeur `null`). Tous les autres champs sont conservés : `id`, `element`, `nom`, `type`, `engagePar`, `engageLe`,
+valeur `null`). Tous les autres champs sont conservés : `id`, `element`, `nom`, `categorie`, `type` (déprécié), `engagePar`, `engageLe`,
 `etat`, `cloturePar`, `clotureLe` et `activitesEnCours`. L'état et les activités restent calculés par le serveur depuis
 le journal ; ce changement allège la réponse HTTP et le cache du pupitre, pas la relecture en base.
 
@@ -343,7 +343,7 @@ figure pas dans cette collection : le consommateur peut alors constater que la l
 
 `activites` contient les activités interprétables encore sans fin réelle. Chacune porte son `id`, identité stable
 de l'ouvrant d'origine, `operateurId`, `categorie`, `debut`, `echeance`, `element` et le `poste` facultatif. L'élément
-porte son identité, son type `ORDRE_DE_FABRICATION` ou `PRODUIT`, son nom copié à l'engagement et sa référence
+porte son identité, sa `categorie` — le code d'une catégorie de produit de l'entreprise, `MOULE` ou `OF` par exemple — et, déprécié jusqu'à ce que le front lise `categorie`, son ancien `type` (`ORDRE_DE_FABRICATION` pour `OF`, `PRODUIT` pour toute autre), son nom copié à l'engagement et sa référence
 courante facultative. Le poste porte son identité, son libellé courant et la nature facultative copiée sur
 l'activité ; requalifier le poste ne réécrit pas cette nature historique.
 
@@ -368,7 +368,7 @@ un autre patron d'acquisition de connexion, comme expliqué dans le
 [contexte pupitre](../src/main/java/com/glm/glmback/pupitre/AGENTS.md).
 
 La supervision ne rend que des activités rattachées à un élément de fabrication. Le travail personnel ou non
-facturable sera déclaré par le superviseur sous la forme d'un OF de type Perso ; sa création et ce sous-type
+facturable sera déclaré par le superviseur sous la forme d'un élément d'une catégorie dédiée ; sa création et ce sous-type
 appartiennent à un chantier distinct. Aucun travail sans élément n'est créé par cette lecture.
 
 ### Le référentiel du pupitre, en un seul appel (rôle `USER`)
@@ -399,6 +399,7 @@ Les séquences en conflit sont également rendues sur chaque suivi.
       "id": "…",
       "nom": "OF-2026-000042",
       "reference": "M-1187",
+      "categorie": "OF",
       "type": "ORDRE_DE_FABRICATION",
       "etat": "EN_COURS",
       "activites": [
