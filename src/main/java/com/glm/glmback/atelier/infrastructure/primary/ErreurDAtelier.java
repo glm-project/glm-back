@@ -4,9 +4,8 @@ import com.glm.glmback.shared.error.infrastructure.primary.ProblemCode;
 import org.springframework.http.HttpStatus;
 
 enum ErreurDAtelier implements ProblemCode {
-  NATURE_D_ANOMALIE_INVALIDE(HttpStatus.BAD_REQUEST, "nature d'anomalie invalide"),
   SUIVI_D_ATELIER_INTROUVABLE(HttpStatus.NOT_FOUND, "suivi d'atelier introuvable"),
-  EVENEMENT_D_ATELIER_INTROUVABLE(HttpStatus.NOT_FOUND, "evenement d'atelier introuvable"),
+  FIN_AUTOMATIQUE_INTROUVABLE(HttpStatus.NOT_FOUND, "fin automatique introuvable"),
   ELEMENT_DE_FABRICATION_INTROUVABLE(HttpStatus.NOT_FOUND, "element de fabrication introuvable"),
   OPERATEUR_INTROUVABLE(HttpStatus.NOT_FOUND, "operateur introuvable"),
   POSTE_DE_TRAVAIL_INTROUVABLE(HttpStatus.NOT_FOUND, "poste de travail introuvable"),
@@ -14,7 +13,6 @@ enum ErreurDAtelier implements ProblemCode {
   OPERATEUR_NON_HABILITE(HttpStatus.CONFLICT, "operateur non habilite"),
   ACTIVITE_VISEE_INCOHERENTE(HttpStatus.CONFLICT, "activite visee incoherente"),
   ELEMENT_DEJA_ENGAGE(HttpStatus.CONFLICT, "element deja engage"),
-  EVENEMENT_DEJA_ANNULE(HttpStatus.CONFLICT, "evenement deja annule"),
   SUIVI_D_ATELIER_CLOTURE(HttpStatus.CONFLICT, "suivi d'atelier cloture"),
   EVENEMENT_ANTERIEUR_A_L_ENGAGEMENT(HttpStatus.CONFLICT, "evenement anterieur a l'engagement"),
   SAISIE_CONCURRENTE(HttpStatus.CONFLICT, "saisie concurrente"),

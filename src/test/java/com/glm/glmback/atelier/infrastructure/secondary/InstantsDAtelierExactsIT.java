@@ -4,7 +4,6 @@ import static com.glm.glmback.atelier.domain.AtelierFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.IntegrationTest;
-import com.glm.glmback.atelier.domain.Annulation;
 import com.glm.glmback.atelier.domain.Cloture;
 import com.glm.glmback.atelier.domain.Engagement;
 import com.glm.glmback.atelier.domain.EvenementDAtelier;
@@ -108,7 +107,7 @@ class InstantsDAtelierExactsIT {
 
   @Test
   @WithTenant("impeccmold")
-  void shouldConserverLEcheancePreciseDuPupitreEtLesDatesDeClotureEtDAnnulation() {
+  void shouldConserverLEcheancePreciseDuPupitreEtLesDatesDeCloture() {
     Instant debut = Instant.parse("2042-01-08T08:00:00.123456789Z");
     EvenementDAtelier ouvrant = debutSurFraiseuse1ParDupontA(debut);
     SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(ouvrant);
@@ -128,15 +127,13 @@ class InstantsDAtelierExactsIT {
             })
         )
     );
-    Annulation annulation = new Annulation(AUTEUR_LEROY, debut.plusSeconds(3600), MOTIF_ERREUR_DE_SAISIE);
     Cloture cloture = new Cloture(AUTEUR_LEROY, new Horodatage(debut.plusSeconds(7200), debut.plusSeconds(10800).plusNanos(1)));
-    SuiviDAtelier clos = suivi.annule(ouvrant.id(), annulation).cloture(cloture);
+    SuiviDAtelier clos = suivi.cloture(cloture);
 
     transactions.executeWithoutResult(transaction -> suivis.update(clos));
     SuiviDAtelier relu = transactions.execute(transaction -> suivis.get(suivi.id()).orElseThrow());
 
     assertThat(relu.cloture()).contains(cloture);
-    assertThat(relu.journal().evenement(ouvrant.id()).orElseThrow().annulation()).contains(annulation);
     transactions.executeWithoutResult(transaction ->
       assertThat(pupitre.tous()).noneMatch(tuile -> tuile.id().uuid().equals(suivi.id().uuid()))
     );

@@ -141,10 +141,10 @@ class JpaSuiviDAtelierRepository implements SuiviDAtelierRepository {
         case EN_COURS -> constructeur.and(constructeur.not(cloture()), constructeur.exists(activiteEnCours()));
         case INTERROMPU -> constructeur.and(
           constructeur.not(cloture()),
-          constructeur.exists(evenementActif()),
+          constructeur.exists(evenementDuJournal()),
           constructeur.not(constructeur.exists(activiteEnCours()))
         );
-        case EN_ATTENTE -> constructeur.and(constructeur.not(cloture()), constructeur.not(constructeur.exists(evenementActif())));
+        case EN_ATTENTE -> constructeur.and(constructeur.not(cloture()), constructeur.not(constructeur.exists(evenementDuJournal())));
       };
     }
 
@@ -166,13 +166,11 @@ class JpaSuiviDAtelierRepository implements SuiviDAtelierRepository {
         );
     }
 
-    private Subquery<UUID> evenementActif() {
+    private Subquery<UUID> evenementDuJournal() {
       Subquery<UUID> sousRequete = requete.subquery(UUID.class);
       Root<EvenementDAtelierEntity> evenement = sousRequete.from(EvenementDAtelierEntity.class);
 
-      return sousRequete
-        .select(evenement.get("id"))
-        .where(constructeur.equal(evenement.get("suivi"), suivi), constructeur.isNull(evenement.get("annulationDate")));
+      return sousRequete.select(evenement.get("id")).where(constructeur.equal(evenement.get("suivi"), suivi));
     }
   }
 }

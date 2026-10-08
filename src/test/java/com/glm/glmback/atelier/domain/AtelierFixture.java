@@ -67,7 +67,6 @@ public final class AtelierFixture {
     .coutHoraire(null);
   public static final NomDElement NOM_OF_2026_000042 = new NomDElement("OF-2026-000042");
   public static final NomDElement NOM_OF_2026_000043 = new NomDElement("OF-2026-000043");
-  public static final MotifDAnnulation MOTIF_ERREUR_DE_SAISIE = new MotifDAnnulation("Erreur de saisie");
   public static final ElementEngageId ELEMENT_OF_2026_000042 = new ElementEngageId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
   public static final ElementEngageId ELEMENT_OF_2026_000043 = new ElementEngageId(UUID.fromString("22222222-2222-2222-2222-222222222222"));
 
@@ -155,10 +154,6 @@ public final class AtelierFixture {
       .enregistre(passageEnNonConformiteDe(debutDeMartin).a(debut.plusSeconds(180)));
   }
 
-  public static Annulation annulationParLeroy() {
-    return new Annulation(AUTEUR_LEROY, LE_11_MAI_2026_A_9H15, MOTIF_ERREUR_DE_SAISIE);
-  }
-
   public static CleDActivite cleDeFraiseuse1DeDupont() {
     return new CleDActivite(OPERATEUR_ID_DUPONT, Optional.of(POSTE_ID_FRAISEUSE_1));
   }
@@ -204,7 +199,6 @@ public final class AtelierFixture {
       .tauxHoraire(Optional.empty())
       .auteur(AUTEUR_DUPONT)
       .origine(OrigineDuPointage.POINTAGE)
-      .remplace(Optional.empty())
       .horodatage(Horodatage.saisiA(date));
   }
 
@@ -325,7 +319,6 @@ public final class AtelierFixture {
       .tauxHoraire(Optional.of(TAUX_HORAIRE_DUPONT))
       .auteur(auteur)
       .origine(origine)
-      .remplace(Optional.empty())
       .horodatage(horodatage);
   }
 }

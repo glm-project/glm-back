@@ -193,81 +193,6 @@ class SuiviDAtelierTest {
   }
 
   @Test
-  void shouldRepasserEnTravailQuandUneNonConformiteEnTropEstAnnulee() {
-    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    EvenementDAtelier nonConformite = passageEnNonConformiteDe(debut).a(LE_10_MAI_2026_A_9H);
-    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(debut).enregistre(nonConformite);
-
-    SuiviDAtelier corrige = suivi.annule(nonConformite.id(), annulationParLeroy());
-
-    assertThat(corrige.activitesEnCours(LE_10_MAI_2026_A_17H))
-      .extracting(ActiviteEnCours::categorie)
-      .containsExactly(CategorieDActivite.TRAVAIL);
-    assertThat(corrige.etat(LE_10_MAI_2026_A_17H)).isEqualTo(EtatDAtelier.EN_COURS);
-  }
-
-  @Test
-  void shouldCorrigerUneSaisieFausseEnUnSeulActe() {
-    EvenementDAtelier debutFautif = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(debutFautif).enregistre(finDe(debutFautif).a(LE_10_MAI_2026_A_12H));
-
-    SuiviDAtelier corrige = suivi.corrige(
-      debutFautif.id(),
-      annulationParLeroy(),
-      debutSurFraiseuse1RegulariseParLeroyA(LE_10_MAI_2026_A_7H30)
-    );
-
-    assertThat(corrige.activites())
-      .singleElement()
-      .satisfies(activite -> {
-        assertThat(activite.debut()).isEqualTo(LE_10_MAI_2026_A_7H30);
-        assertThat(activite.fin()).contains(LE_10_MAI_2026_A_12H);
-      });
-  }
-
-  @Test
-  void shouldRefuserDeDeplacerUnOuvrantEncoreViseParUneFinSurSonPoste() {
-    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(debut).enregistre(finDe(debut).a(LE_10_MAI_2026_A_12H));
-    EvenementDAtelier remplacementSurFraiseuse2 = debutSurFraiseuse2ParDupontA(LE_10_MAI_2026_A_8H);
-
-    assertThatThrownBy(() -> suivi.corrige(debut.id(), annulationParLeroy(), remplacementSurFraiseuse2))
-      .isExactlyInstanceOf(ActiviteViseeIncoherenteException.class)
-      .hasMessageContaining(debut.activite().orElseThrow().uuid().toString());
-  }
-
-  @Test
-  void shouldPouvoirDeplacerUnOuvrantApresAnnulationDeLaFinQuiLeVisait() {
-    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    EvenementDAtelier fin = finDe(debut).a(LE_10_MAI_2026_A_12H);
-    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(debut).enregistre(fin).annule(fin.id(), annulationParLeroy());
-
-    SuiviDAtelier corrige = suivi.corrige(debut.id(), annulationParLeroy(), debutSurFraiseuse2ParDupontA(LE_10_MAI_2026_A_8H));
-
-    assertThat(corrige.conflits()).isEmpty();
-    assertThat(corrige.activites())
-      .singleElement()
-      .satisfies(activite -> assertThat(activite.cle().poste()).contains(POSTE_ID_FRAISEUSE_2));
-  }
-
-  /**
-   * La meme correction jouee en deux temps commence par un etat intermediaire en conflit, admis : annuler le debut
-   * laisse sa fin sans activite a terminer.
-   */
-  @Test
-  void shouldAdmettreEnConflitLAnnulationDUnDebutQueViseUneFin() {
-    EvenementDAtelier debutFautif = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(debutFautif).enregistre(finDe(debutFautif).a(LE_10_MAI_2026_A_12H));
-
-    SuiviDAtelier annule = suivi.annule(debutFautif.id(), annulationParLeroy());
-
-    assertThat(annule.conflits())
-      .singleElement()
-      .satisfies(conflit -> assertThat(conflit.activites()).isEmpty());
-    assertThat(annule.etat(LE_10_MAI_2026_A_17H)).isEqualTo(EtatDAtelier.INTERROMPU);
-  }
-
-  @Test
   void shouldFermerLesActivitesOuvertesSurLaCloture() {
     SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H));
 
@@ -281,22 +206,6 @@ class SuiviDAtelierTest {
   }
 
   @Test
-  void shouldCorrigerUnJournalDejaCloture() {
-    EvenementDAtelier debutFautif = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    SuiviDAtelier cloture = suiviDAtelierEngage().enregistre(debutFautif).cloture(clotureParLeroyA(LE_10_MAI_2026_A_17H));
-
-    SuiviDAtelier corrige = cloture.corrige(
-      debutFautif.id(),
-      annulationParLeroy(),
-      debutSurFraiseuse1RegulariseParLeroyA(LE_10_MAI_2026_A_7H30)
-    );
-
-    assertThat(corrige.activites())
-      .singleElement()
-      .satisfies(activite -> assertThat(activite.debut()).isEqualTo(LE_10_MAI_2026_A_7H30));
-  }
-
-  @Test
   void shouldRouvrirUnSuiviEnAnnulantSaCloture() {
     SuiviDAtelier cloture = suiviDAtelierEngage()
       .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))
@@ -306,15 +215,6 @@ class SuiviDAtelierTest {
 
     assertThat(rouvert.estCloture()).isFalse();
     assertThat(rouvert.etat(LE_10_MAI_2026_A_17H)).isEqualTo(EtatDAtelier.EN_COURS);
-  }
-
-  @Test
-  void shouldBeEnAttenteQuandTousLesEvenementsSontAnnules() {
-    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-
-    SuiviDAtelier corrige = suiviDAtelierEngage().enregistre(debut).annule(debut.id(), annulationParLeroy());
-
-    assertThat(corrige.etat(LE_10_MAI_2026_A_17H)).isEqualTo(EtatDAtelier.EN_ATTENTE);
   }
 
   @Test
@@ -431,28 +331,6 @@ class SuiviDAtelierTest {
         tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H), false),
         tuple(LE_10_MAI_2026_A_12H, Optional.of(LE_11_MAI_2026_A_1H), true)
       );
-  }
-
-  /**
-   * Debut corrige de 08 h a 12 h, lecture a 22 h : l'echeance passe de 21 h a 01 h ; l'activite redevient en cours et
-   * perd son anomalie.
-   */
-  @Test
-  void shouldRedevenirEnCoursQuandLaCorrectionDuDebutRepousseLEcheance() {
-    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(debut);
-    assertThat(suivi.etat(A_22H)).isEqualTo(EtatDAtelier.INTERROMPU);
-
-    SuiviDAtelier corrige = suivi.corrige(debut.id(), annulationParLeroy(), debutSurFraiseuse1RegulariseParLeroyA(LE_10_MAI_2026_A_12H));
-
-    assertThat(corrige.etat(A_22H)).isEqualTo(EtatDAtelier.EN_COURS);
-    assertThat(corrige.activitesEnCours(A_22H)).extracting(ActiviteEnCours::depuis).containsExactly(LE_10_MAI_2026_A_12H);
-    assertThat(corrige.intervalles(A_22H))
-      .singleElement()
-      .satisfies(intervalle -> {
-        assertThat(intervalle.estOuvert()).isTrue();
-        assertThat(intervalle.finAutomatique()).isFalse();
-      });
   }
 
   private static Stream<Arguments> composantsManquants() {

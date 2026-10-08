@@ -3,9 +3,7 @@ package com.glm.glmback.atelier.application.gestionanomalies;
 import com.glm.glmback.atelier.domain.OperateursConnus;
 import com.glm.glmback.atelier.domain.PostesConnus;
 import com.glm.glmback.atelier.domain.gestionanomalies.AnomaliesDAtelierCriteria;
-import com.glm.glmback.atelier.domain.gestionanomalies.ConflitsDAtelier;
 import com.glm.glmback.atelier.domain.gestionanomalies.FinsAutomatiquesDAtelier;
-import com.glm.glmback.atelier.domain.gestionanomalies.LectureDesConflits;
 import com.glm.glmback.atelier.domain.gestionanomalies.LectureDesFinsAutomatiques;
 import com.glm.glmback.atelier.domain.gestionanomalies.ListeDesAnomaliesService;
 import com.glm.glmback.shared.pagination.domain.Pageable;
@@ -21,20 +19,13 @@ public class ListeDesAnomaliesApplicationService {
   private final Clock clock;
 
   public ListeDesAnomaliesApplicationService(
-    ConflitsDAtelier conflits,
     FinsAutomatiquesDAtelier finsAutomatiques,
     OperateursConnus operateurs,
     PostesConnus postes,
     Clock clock
   ) {
-    this.anomalies = new ListeDesAnomaliesService(conflits, finsAutomatiques, operateurs, postes);
+    this.anomalies = new ListeDesAnomaliesService(finsAutomatiques, operateurs, postes);
     this.clock = clock;
-  }
-
-  @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
-  @Transactional(readOnly = true)
-  public LectureDesConflits listConflits(AnomaliesDAtelierCriteria criteria, Pageable pageable) {
-    return anomalies.listConflits(criteria, pageable);
   }
 
   /** L'instant d'evaluation est celui de l'horloge, lu une seule fois pour toute la page. */

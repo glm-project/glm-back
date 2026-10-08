@@ -280,51 +280,6 @@ Feature: Intention et activite visee des pointages d'atelier
     When je consulte "OF 2107"
     Then le journal du suivi contient 0 evenements
 
-  Scenario: Le debut corrige garde son activite, et la fin qui la visait la termine toujours
-    Given il est "2026-05-10T08:00:00Z"
-    And l'entreprise a cree l'element de fabrication "OF 2108"
-      | categorie | OF   |
-      | reference | 2108 |
-    And j'ai engage l'element "OF 2108" en atelier
-    And j'ai pointe sur "OF 2108"
-      | id        | 00000000-0000-0000-0000-000000000251 |
-      | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
-      | operateur | dupont                               |
-      | poste     | fraiseuse-1                          |
-    Given il est "2026-05-10T12:00:00Z"
-    And j'ai pointe sur "OF 2108"
-      | id        | 00000000-0000-0000-0000-000000000252 |
-      | type      | FIN                                  |
-      | intention | FIN                                  |
-      | cible     | 00000000-0000-0000-0000-000000000251 |
-      | operateur | dupont                               |
-      | poste     | fraiseuse-1                          |
-    Given il est "2026-05-10T13:00:00Z"
-    When je corrige l'evenement 0 de "OF 2108"
-      | motif          | Demarre a 8h30       |
-      | type           | DEBUT                |
-      | intention      | FIN                  |
-      | operateur      | dupont               |
-      | poste          | fraiseuse-1          |
-      | dateDeSurvenue | 2026-05-10T08:30:00Z |
-    Then la reponse a le statut http 400
-    When je corrige l'evenement 0 de "OF 2108"
-      | motif          | Demarre a 8h30       |
-      | type           | DEBUT                |
-      | intention      | OUVERTURE            |
-      | operateur      | dupont               |
-      | poste          | fraiseuse-1          |
-      | dateDeSurvenue | 2026-05-10T08:30:00Z |
-    Then la reponse a le statut http 200
-    And le journal du suivi contient 3 evenements
-    And l'evenement 1 du suivi ouvre l'activite de l'evenement 0 sous son propre identifiant
-    And l'evenement 2 du suivi vise l'activite de l'evenement 1
-    When je consulte le temps effectif de "OF 2108"
-    Then le temps effectif contient
-      | debut                | fin                  |
-      | 2026-05-10T08:30:00Z | 2026-05-10T12:00:00Z |
-
   Scenario: Une fin oubliee se regularise sur l'activite qu'elle termine
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2109"

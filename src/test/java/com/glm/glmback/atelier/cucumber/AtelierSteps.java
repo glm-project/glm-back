@@ -169,29 +169,6 @@ public class AtelierSteps {
     ecritures.regularise(suivis.get(alias), visant(alias, ouvrant, donnees));
   }
 
-  @When("je corrige l'evenement {int} de {string} en visant l'activite de l'evenement {int}")
-  public void jeCorrigeLEvenementDeEnVisantLActiviteDe(int rang, String alias, int ouvrant, Map<String, String> donnees) {
-    ecritures.corrige(suivis.get(alias), evenementDAtelier(alias, rang), visant(alias, ouvrant, donnees));
-  }
-
-  @When("j'annule l'evenement {int} de {string}")
-  public void jAnnuleLEvenementDe(int rang, String alias, Map<String, String> donnees) {
-    rest.post(
-      SUIVIS_URI + "/" + suivis.get(alias) + "/evenements/" + evenementDAtelier(alias, rang) + "/annulation",
-      JSON.writeValueAsString(donnees)
-    );
-  }
-
-  @When("j'annule l'evenement inconnu {string} de {string}")
-  public void jAnnuleLEvenementInconnuDe(String evenement, String alias, Map<String, String> donnees) {
-    rest.post(SUIVIS_URI + "/" + suivis.get(alias) + "/evenements/" + evenement + "/annulation", JSON.writeValueAsString(donnees));
-  }
-
-  @When("je corrige l'evenement {int} de {string}")
-  public void jeCorrigeLEvenementDe(int rang, String alias, Map<String, String> donnees) {
-    ecritures.corrige(suivis.get(alias), evenementDAtelier(alias, rang), resolu(donnees));
-  }
-
   @When("je cloture {string}")
   public void jeCloture(String alias, Map<String, String> donnees) {
     rest.put(SUIVIS_URI + "/" + suivis.get(alias) + "/cloture", JSON.writeValueAsString(donnees));
@@ -386,11 +363,6 @@ public class AtelierSteps {
       .isNotNull()
       .isEqualTo(elementDeLaDerniereReponse("$.journal[" + corrige + "].activite"))
       .isNotEqualTo(elementDeLaDerniereReponse("$.journal[" + rang + "].id"));
-  }
-
-  @Then("l'evenement {int} du suivi est annule avec le motif {string}")
-  public void lEvenementDuSuiviEstAnnuleAvecLeMotif(int rang, String motif) {
-    assertThatLastResponse().hasElement("$.journal[" + rang + "].annulation.motif").withValue(motif);
   }
 
   @Then("l'evenement {int} du suivi est une regularisation de {string} saisie par {string}")

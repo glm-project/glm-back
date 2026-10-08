@@ -12,8 +12,6 @@ import com.glm.glmback.atelier.domain.ElementDejaEngageException;
 import com.glm.glmback.atelier.domain.ElementEngageableIntrouvableException;
 import com.glm.glmback.atelier.domain.EvenementAvantEngagementException;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
-import com.glm.glmback.atelier.domain.EvenementDAtelierIntrouvableException;
-import com.glm.glmback.atelier.domain.EvenementDejaAnnuleException;
 import com.glm.glmback.atelier.domain.IdentifiantDEvenementReutiliseException;
 import com.glm.glmback.atelier.domain.OperateurDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.OperateurNonHabiliteException;
@@ -22,7 +20,8 @@ import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierClotureException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
-import com.glm.glmback.atelier.domain.gestionanomalies.NatureDAnomalieInvalideException;
+import com.glm.glmback.atelier.domain.gestionanomalies.AdresseDossierAnomalie;
+import com.glm.glmback.atelier.domain.gestionanomalies.FinAutomatiqueIntrouvableException;
 import com.glm.glmback.shared.error.infrastructure.primary.ExceptionAdviceContract;
 import com.glm.glmback.shared.error.infrastructure.primary.PublishedProblem;
 import java.util.stream.Stream;
@@ -39,18 +38,13 @@ class AtelierExceptionAdviceTest extends ExceptionAdviceContract {
   protected Stream<PublishedProblem> erreursPubliees() {
     return Stream.of(
       new PublishedProblem(
-        new NatureDAnomalieInvalideException("INCONNUE"),
-        "urn:glm:erreur:atelier:nature-d-anomalie-invalide",
-        BAD_REQUEST
-      ),
-      new PublishedProblem(
         new SuiviDAtelierIntrouvableException(SuiviDAtelierId.newId()),
         "urn:glm:erreur:atelier:suivi-d-atelier-introuvable",
         NOT_FOUND
       ),
       new PublishedProblem(
-        new EvenementDAtelierIntrouvableException(EvenementDAtelierId.newId()),
-        "urn:glm:erreur:atelier:evenement-d-atelier-introuvable",
+        new FinAutomatiqueIntrouvableException(new AdresseDossierAnomalie(SuiviDAtelierId.newId(), EvenementDAtelierId.newId())),
+        "urn:glm:erreur:atelier:fin-automatique-introuvable",
         NOT_FOUND
       ),
       new PublishedProblem(
@@ -90,11 +84,6 @@ class AtelierExceptionAdviceTest extends ExceptionAdviceContract {
         CONFLICT
       ),
       new PublishedProblem(new ElementDejaEngageException(ELEMENT_OF_2026_000042), "urn:glm:erreur:atelier:element-deja-engage", CONFLICT),
-      new PublishedProblem(
-        new EvenementDejaAnnuleException(EvenementDAtelierId.newId()),
-        "urn:glm:erreur:atelier:evenement-deja-annule",
-        CONFLICT
-      ),
       new PublishedProblem(
         new SuiviDAtelierClotureException(SuiviDAtelierId.newId()),
         "urn:glm:erreur:atelier:suivi-d-atelier-cloture",

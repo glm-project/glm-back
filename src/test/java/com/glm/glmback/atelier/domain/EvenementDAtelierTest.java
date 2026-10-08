@@ -32,30 +32,7 @@ class EvenementDAtelierTest {
   }
 
   @Test
-  void shouldNotBuildSansPresenceExpliciteDuLienDeRemplacement() {
-    assertThatThrownBy(() ->
-      EvenementDAtelier.builder()
-        .id(ID)
-        .type(TypeDEvenementDAtelier.DEBUT)
-        .intention(IntentionDePointage.OUVERTURE)
-        .activite(Optional.of(ACTIVITE))
-        .activiteVisee(Optional.empty())
-        .operateur(OPERATEUR_ID_DUPONT)
-        .poste(SUR_FRAISEUSE_1)
-        .nature(EN_FRAISAGE)
-        .coutHoraire(COUT_HORAIRE)
-        .tauxHoraire(TAUX_HORAIRE)
-        .auteur(AUTEUR_DUPONT)
-        .origine(OrigineDuPointage.POINTAGE)
-        .remplace(null)
-        .horodatage(HORODATAGE)
-    )
-      .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("evenement remplace");
-  }
-
-  @Test
-  void shouldBuildEvenementNonAnnule() {
+  void shouldBuildEvenement() {
     EvenementDAtelier evenement = EvenementDAtelier.builder()
       .id(ID)
       .type(TypeDEvenementDAtelier.DEBUT)
@@ -69,7 +46,6 @@ class EvenementDAtelierTest {
       .tauxHoraire(TAUX_HORAIRE)
       .auteur(AUTEUR_DUPONT)
       .origine(OrigineDuPointage.POINTAGE)
-      .remplace(Optional.empty())
       .horodatage(HORODATAGE);
 
     assertThat(evenement.id()).isEqualTo(ID);
@@ -85,8 +61,6 @@ class EvenementDAtelierTest {
     assertThat(evenement.auteur()).isEqualTo(AUTEUR_DUPONT);
     assertThat(evenement.origine()).isEqualTo(OrigineDuPointage.POINTAGE);
     assertThat(evenement.horodatage()).isEqualTo(HORODATAGE);
-    assertThat(evenement.annulation()).isEmpty();
-    assertThat(evenement.estAnnule()).isFalse();
   }
 
   @Test
@@ -104,7 +78,6 @@ class EvenementDAtelierTest {
       .tauxHoraire(Optional.empty())
       .auteur(AUTEUR_DUPONT)
       .origine(OrigineDuPointage.POINTAGE)
-      .remplace(Optional.empty())
       .horodatage(HORODATAGE);
 
     assertThat(evenement.poste()).isEmpty();
@@ -164,43 +137,6 @@ class EvenementDAtelierTest {
   }
 
   @Test
-  void shouldMarquerLEvenementCommeAnnule() {
-    EvenementDAtelier annule = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H).annule(annulationParLeroy());
-
-    assertThat(annule.estAnnule()).isTrue();
-    assertThat(annule.annulation()).contains(annulationParLeroy());
-  }
-
-  /**
-   * L'annulation ne doit pas faire perdre les montants figes a la saisie : ils doivent rester lisibles sur
-   * l'evenement annule, exactement comme la nature.
-   */
-  @Test
-  void shouldConserverLeCoutEtLeTauxHoraireALAnnulation() {
-    EvenementDAtelier annule = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H).annule(annulationParLeroy());
-
-    assertThat(annule.coutHoraire()).isEqualTo(COUT_HORAIRE);
-    assertThat(annule.tauxHoraire()).isEqualTo(TAUX_HORAIRE);
-  }
-
-  @Test
-  void shouldConserverLOrigineALAnnulation() {
-    EvenementDAtelier annule = debutSurFraiseuse1RegulariseParLeroyA(LE_10_MAI_2026_A_8H).annule(annulationParLeroy());
-
-    assertThat(annule.origine()).isEqualTo(OrigineDuPointage.REGULARISATION);
-  }
-
-  @Test
-  void shouldNotAnnulerUnEvenementDejaAnnule() {
-    EvenementDAtelier annule = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H).annule(annulationParLeroy());
-    Annulation seconde = annulationParLeroy();
-
-    assertThatThrownBy(() -> annule.annule(seconde))
-      .isExactlyInstanceOf(EvenementDejaAnnuleException.class)
-      .hasMessageContaining("annule");
-  }
-
-  @Test
   void shouldBuildUneTransitionQuiOuvreUneActiviteEtEnViseUneAutre() {
     EvenementDAtelier transition = geste(
       TypeDEvenementDAtelier.NON_CONFORMITE,
@@ -234,37 +170,6 @@ class EvenementDAtelierTest {
       .isExactlyInstanceOf(IntentionDePointageIncoherenteException.class)
       .hasMessageContaining(type.name())
       .hasMessageContaining(intention.name());
-  }
-
-  /**
-   * Le remplacant d'un debut corrige reprend l'activite de ce debut : la fin qui la visait la termine toujours.
-   */
-  @Test
-  void shouldReprendreLActiviteDeLOuvrantQuIlCorrige() {
-    EvenementDAtelier corrige = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    EvenementDAtelier remplacant = debutSurFraiseuse1RegulariseParLeroyA(LE_10_MAI_2026_A_7H30);
-
-    EvenementDAtelier enPlace = remplacant.enRemplacementDe(corrige);
-
-    assertThat(enPlace.activite()).isEqualTo(corrige.activite());
-    assertThat(enPlace.id()).isEqualTo(remplacant.id());
-    assertThat(enPlace.dateDeSurvenue()).isEqualTo(LE_10_MAI_2026_A_7H30);
-  }
-
-  @Test
-  void shouldGarderSaPropreActiviteEnRemplacantUneFin() {
-    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    EvenementDAtelier remplacant = debutSurFraiseuse1RegulariseParLeroyA(LE_10_MAI_2026_A_12H);
-
-    assertThat(remplacant.enRemplacementDe(finDe(debut).a(LE_10_MAI_2026_A_12H)).activite()).isEqualTo(remplacant.activite());
-  }
-
-  @Test
-  void shouldNOuvrirAucuneActiviteEnRemplacantUnOuvrantParUneFin() {
-    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    EvenementDAtelier fin = finDe(debut).a(LE_10_MAI_2026_A_12H);
-
-    assertThat(fin.enRemplacementDe(debut).activite()).isEmpty();
   }
 
   private static Stream<Arguments> gestesIncoherents() {
@@ -309,9 +214,7 @@ class EvenementDAtelierTest {
             TAUX_HORAIRE,
             AUTEUR_DUPONT,
             OrigineDuPointage.POINTAGE,
-            HORODATAGE,
-            Optional.empty(),
-            Optional.empty()
+            HORODATAGE
           ),
         "cout horaire"
       ),
@@ -330,9 +233,7 @@ class EvenementDAtelierTest {
             null,
             AUTEUR_DUPONT,
             OrigineDuPointage.POINTAGE,
-            HORODATAGE,
-            Optional.empty(),
-            Optional.empty()
+            HORODATAGE
           ),
         "taux horaire"
       ),
@@ -351,9 +252,7 @@ class EvenementDAtelierTest {
             TAUX_HORAIRE,
             null,
             OrigineDuPointage.POINTAGE,
-            HORODATAGE,
-            Optional.empty(),
-            Optional.empty()
+            HORODATAGE
           ),
         "auteur"
       ),
@@ -372,9 +271,7 @@ class EvenementDAtelierTest {
             TAUX_HORAIRE,
             AUTEUR_DUPONT,
             null,
-            HORODATAGE,
-            Optional.empty(),
-            Optional.empty()
+            HORODATAGE
           ),
         "origine"
       ),
@@ -393,32 +290,9 @@ class EvenementDAtelierTest {
             TAUX_HORAIRE,
             AUTEUR_DUPONT,
             OrigineDuPointage.POINTAGE,
-            null,
-            Optional.empty(),
-            Optional.empty()
+            null
           ),
         "horodatage"
-      ),
-      construction(
-        () ->
-          new EvenementDAtelier(
-            ID,
-            TypeDEvenementDAtelier.DEBUT,
-            IntentionDePointage.OUVERTURE,
-            Optional.of(ACTIVITE),
-            Optional.empty(),
-            OPERATEUR_ID_DUPONT,
-            SUR_FRAISEUSE_1,
-            EN_FRAISAGE,
-            COUT_HORAIRE,
-            TAUX_HORAIRE,
-            AUTEUR_DUPONT,
-            OrigineDuPointage.POINTAGE,
-            HORODATAGE,
-            null,
-            Optional.empty()
-          ),
-        "annulation"
       )
     );
   }
@@ -447,9 +321,7 @@ class EvenementDAtelierTest {
       TAUX_HORAIRE,
       AUTEUR_DUPONT,
       OrigineDuPointage.POINTAGE,
-      HORODATAGE,
-      Optional.empty(),
-      Optional.empty()
+      HORODATAGE
     );
   }
 
@@ -476,9 +348,7 @@ class EvenementDAtelierTest {
       TAUX_HORAIRE,
       AUTEUR_DUPONT,
       OrigineDuPointage.POINTAGE,
-      HORODATAGE,
-      Optional.empty(),
-      Optional.empty()
+      HORODATAGE
     );
   }
 
@@ -496,7 +366,6 @@ class EvenementDAtelierTest {
       .tauxHoraire(TAUX_HORAIRE)
       .auteur(AUTEUR_DUPONT)
       .origine(origine)
-      .remplace(Optional.empty())
       .horodatage(horodatage);
   }
 }

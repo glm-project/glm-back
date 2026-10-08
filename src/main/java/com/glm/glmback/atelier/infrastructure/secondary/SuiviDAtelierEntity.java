@@ -33,6 +33,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -121,9 +122,8 @@ class SuiviDAtelierEntity {
    *
    * <p>
    * L'element et l'engagement ne changent jamais apres la creation, ils ne sont donc pas retouches. Le journal, lui,
-   * se rapproche par identifiant : un evenement inconnu est insere, un evenement connu ne peut avoir gagne que son
-   * annulation, et aucun n'est jamais supprime — une annulation marque l'evenement, elle ne le retire pas. Le cout
-   * d'un pointage est donc d'une ligne, quelle que soit la longueur du journal.
+   * se rapproche par identifiant : un evenement inconnu est insere, un evenement connu ne change jamais, et aucun
+   * n'est jamais supprime. Le cout d'un pointage est donc d'une ligne, quelle que soit la longueur du journal.
    * </p>
    *
    * <p>
@@ -167,7 +167,7 @@ class SuiviDAtelierEntity {
     Map<UUID, Activite> parIdentite = interpretees
       .stream()
       .collect(Collectors.toMap(activite -> activite.id().uuid(), Function.identity()));
-    activites.removeIf(projetee -> !parIdentite.containsKey(projetee.id()));
+    activites.removeIf(Predicate.not(projetee -> parIdentite.containsKey(projetee.id())));
     Map<UUID, ActiviteDAtelierEntity> projetees = activites
       .stream()
       .collect(Collectors.toMap(ActiviteDAtelierEntity::id, Function.identity()));
@@ -194,7 +194,7 @@ class SuiviDAtelierEntity {
       .stream()
       .map(sequence -> sequence.pointages().getFirst().uuid())
       .collect(Collectors.toSet());
-    conflits.removeIf(projete -> !identites.contains(projete.id()));
+    conflits.removeIf(Predicate.not(projete -> identites.contains(projete.id())));
     Map<UUID, SequenceEnConflitDAtelierEntity> connus = conflits
       .stream()
       .collect(Collectors.toMap(SequenceEnConflitDAtelierEntity::id, Function.identity()));
@@ -222,8 +222,6 @@ class SuiviDAtelierEntity {
 
     if (connu == null) {
       journal.add(EvenementDAtelierEntity.from(this, evenement));
-    } else {
-      connu.reporteLAnnulation(evenement);
     }
   }
 

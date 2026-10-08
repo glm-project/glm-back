@@ -13,8 +13,8 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Les trois ecritures du journal d'un element engage, telles que les scenarios les envoient a l'API d'atelier :
- * pointage, regularisation et correction.
+ * Les deux ecritures du journal d'un element engage, telles que les scenarios les envoient a l'API d'atelier :
+ * pointage et regularisation.
  *
  * <p>
  * Chaque contexte qui relit ce journal y pointe par ici plutot que de composer sa propre requete : le corps d'une
@@ -47,7 +47,7 @@ public class EcrituresDuJournalDAtelier {
    * rejouerait.
    */
   public PointageEnvoye pointe(String suivi, Map<String, ?> corps) {
-    return envoie(suivi, avecIntention(suivi, corps, Optional.empty()));
+    return envoie(suivi, avecIntention(suivi, corps));
   }
 
   /**
@@ -59,11 +59,7 @@ public class EcrituresDuJournalDAtelier {
   }
 
   public void regularise(String suivi, Map<String, ?> corps) {
-    rest.post(SUIVIS_URI + suivi + "/regularisations", JSON.writeValueAsString(avecIntention(suivi, corps, Optional.empty())));
-  }
-
-  public void corrige(String suivi, String evenement, Map<String, ?> corps) {
-    rest.put(SUIVIS_URI + suivi + "/evenements/" + evenement, JSON.writeValueAsString(avecIntention(suivi, corps, Optional.of(evenement))));
+    rest.post(SUIVIS_URI + suivi + "/regularisations", JSON.writeValueAsString(avecIntention(suivi, corps)));
   }
 
   private PointageEnvoye envoie(String suivi, Map<String, ?> corps) {
@@ -73,14 +69,14 @@ public class EcrituresDuJournalDAtelier {
     return pointage;
   }
 
-  private Map<String, Object> avecIntention(String suivi, Map<String, ?> corps, Optional<String> corrige) {
+  private Map<String, Object> avecIntention(String suivi, Map<String, ?> corps) {
     Map<String, Object> complet = new HashMap<>(corps);
     if (corps.containsKey("intention")) {
       return complet;
     }
 
     String type = String.valueOf(corps.get("type"));
-    List<Map<String, Object>> precedents = precedents(suivi, corps, corrige);
+    List<Map<String, Object>> precedents = precedents(suivi, corps);
     Optional<Map<String, Object>> dernierOuvrant = precedents
       .stream()
       .filter(evenement -> "OUVERTURE".equals(evenement.get("intention")))
@@ -98,10 +94,10 @@ public class EcrituresDuJournalDAtelier {
 
   /**
    * Les pointages actifs du couple operateur/poste du geste, survenus au plus tard a son heure, dans l'ordre du
-   * journal. Le fait corrige n'en est pas : il va etre annule.
+   * journal.
    */
   @SuppressWarnings("unchecked")
-  private List<Map<String, Object>> precedents(String suivi, Map<String, ?> corps, Optional<String> corrige) {
+  private List<Map<String, Object>> precedents(String suivi, Map<String, ?> corps) {
     rest.get(SUIVIS_URI + suivi);
     if (!CucumberRestTestContext.getStatus().is2xxSuccessful()) {
       return List.of();
@@ -112,8 +108,6 @@ public class EcrituresDuJournalDAtelier {
     String poste = Optional.ofNullable(corps.get("poste")).map(String::valueOf).orElse(null);
 
     return ((List<Map<String, Object>>) CucumberRestTestContext.getElement("$.journal")).stream()
-      .filter(evenement -> evenement.get("annulation") == null)
-      .filter(evenement -> corrige.filter(evenement.get("id")::equals).isEmpty())
       .filter(evenement -> operateur.equals(identifiant(evenement.get("operateur"))))
       .filter(evenement -> Objects.equals(poste, identifiant(evenement.get("poste"))))
       .filter(evenement -> !Instant.parse(String.valueOf(evenement.get("dateDeSurvenue"))).isAfter(heure))

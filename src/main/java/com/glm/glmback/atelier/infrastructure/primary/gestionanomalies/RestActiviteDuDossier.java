@@ -21,7 +21,6 @@ record RestActiviteDuDossier(
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) CategorieDActivite categorie,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) Instant debut,
   Instant fin,
-  @Schema(requiredMode = Schema.RequiredMode.REQUIRED, allowableValues = { "A_RESOUDRE", "EN_COURS", "TERMINEE", "ECHUE" }) String etat,
   String duree
 ) {
   static RestActiviteDuDossier from(IntervalleDActivite intervalle, AnnuaireDAtelier annuaire) {
@@ -35,13 +34,6 @@ record RestActiviteDuDossier(
       intervalle.categorie(),
       intervalle.debut(),
       intervalle.fin().orElse(null),
-      intervalle.aResoudre()
-        ? "A_RESOUDRE"
-        : intervalle.fin().isPresent()
-          ? intervalle.finAutomatique()
-            ? "ECHUE"
-            : "TERMINEE"
-          : "EN_COURS",
       intervalle
         .fin()
         .map(fin -> Duration.between(intervalle.debut(), fin).toString())

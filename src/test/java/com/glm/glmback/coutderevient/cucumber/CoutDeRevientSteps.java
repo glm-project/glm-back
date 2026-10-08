@@ -177,46 +177,9 @@ public class CoutDeRevientSteps {
           && type.equals(pointage.get("type"))
           && intention.equals(pointage.get("intention"))
       )
-      .filter(pointage -> pointage.get("annulation") == null)
       .map(pointage -> (String) pointage.get("id"))
       .findFirst()
       .orElseThrow();
-  }
-
-  @Given("pour le cout, le pointage {string} sur {string} est annule a {string}")
-  public void annule(String alias, String element, String reception) {
-    horloge.ilEst(Instant.parse(reception));
-    rest.post(
-      SUIVIS_URI + "/" + suivis.get(element) + "/evenements/" + pointages.get(alias) + "/annulation",
-      JSON.writeValueAsString(Map.of("motif", "saisie en trop"))
-    );
-    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("annulation acceptee").isTrue();
-  }
-
-  @Given("pour le cout, le pointage {string} sur {string} est corrige a {string} vers {string}")
-  public void corrige(String alias, String element, String reception, String survenue) {
-    Map<String, Object> corps = new HashMap<>(corpsDesPointages.get(alias));
-    corps.put("dateDeSurvenue", survenue);
-    corrige(alias, element, reception, corps);
-  }
-
-  @Given("pour le cout, la cible du pointage {string} sur {string} est corrigee vers {string} a {string}")
-  public void corrigeCible(String alias, String element, String cible, String reception) {
-    Map<String, Object> corps = new HashMap<>(corpsDesPointages.get(alias));
-    corps.put("cible", pointages.get(cible));
-    corrige(alias, element, reception, corps);
-  }
-
-  private void corrige(String alias, String element, String reception, Map<String, Object> corps) {
-    horloge.ilEst(Instant.parse(reception));
-    corps.remove("id");
-    corps.put("motif", "saisie erronee");
-    ecritures.corrige(suivis.get(element), pointages.get(alias), corps);
-    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("correction acceptee").isTrue();
-    pointages.put(
-      alias + "-corrige",
-      identiteDuPointageActif((String) corps.get("dateDeSurvenue"), (String) corps.get("type"), (String) corps.get("intention"))
-    );
   }
 
   @Given("pour le cout, le poste {string} est revise a {string} de l'heure et l'operateur {string} a {string} a {string}")

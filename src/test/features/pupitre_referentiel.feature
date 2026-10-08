@@ -110,16 +110,6 @@ Feature: Le referentiel que le pupitre met en cache
     Then "OF 4005" figure au referentiel du pupitre dans l'etat "EN_COURS"
     And l'activite de "OF 4005" au referentiel du pupitre ne porte aucun poste
 
-  Scenario: Un evenement annule disparait des activites et des pointages actifs
-    Given le pupitre fabrique "OF 4006"
-    And "OF 4006" est engage au pupitre a "2026-05-11T07:00:00Z"
-    And au pupitre, "dupont" pointe "DEBUT" sur "OF 4006" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
-    And le dernier pointage sur "OF 4006" est annule a "2026-05-11T09:30:00Z"
-    When je lis le referentiel du pupitre a "2026-05-11T10:00:00Z"
-    # L'evenement reste au journal de l'atelier, porteur de son annulation ; la projection l'ecarte.
-    Then "OF 4006" figure au referentiel du pupitre dans l'etat "EN_ATTENTE"
-    And "OF 4006" ne porte aucune activite au referentiel du pupitre
-
   Scenario: Un element cloture quitte le referentiel du pupitre
     Given le pupitre fabrique "OF 4007"
     And "OF 4007" est engage au pupitre a "2026-05-11T07:00:00Z"
@@ -144,20 +134,6 @@ Feature: Le referentiel que le pupitre met en cache
     And "OF 4101" ne porte aucune activite au referentiel du pupitre
     When je lis le referentiel du pupitre a "2026-05-19T09:00:00Z"
     Then "OF 4101" ne porte aucune activite au referentiel du pupitre
-
-  Scenario: Un debut corrige de 08 h a 12 h, lu a 22 h, redevient en cours
-    Given le pupitre fabrique "OF 4102"
-    And "OF 4102" est engage au pupitre a "2026-05-19T07:00:00Z"
-    And au pupitre, "dupont" ouvre "A" en "DEBUT" sur "OF 4102" au poste "fraiseuse" a "2026-05-19T08:00:00Z"
-    When je lis le referentiel du pupitre a "2026-05-19T22:00:00Z"
-    Then "OF 4102" ne porte aucune activite au referentiel du pupitre
-    # La correction deplace l'echeance de 21:00 a 01:00 : l'activite redevient en cours, sous la meme ouverture.
-    Given au pupitre, le gestionnaire corrige a "2026-05-19T22:00:00Z" l'heure du geste "A" sur "OF 4102" en "2026-05-19T12:00:00Z"
-    When je lis le referentiel du pupitre a "2026-05-19T22:00:00Z"
-    Then "OF 4102" figure au referentiel du pupitre dans l'etat "EN_COURS"
-    And les activites de "OF 4102" au referentiel du pupitre sont
-      | operateur | poste     | categorie | depuis               | ouverture | echeance             |
-      | dupont    | fraiseuse | TRAVAIL   | 2026-05-19T12:00:00Z | A         | 2026-05-20T01:00:00Z |
 
   Scenario: Deux gestes a la meme heure se rangent sans leur date d'enregistrement
     # La relance B et la fin de A sont pointees hors ligne a 10:00 et recues dans cet ordre. A heure egale, la fin
@@ -209,10 +185,6 @@ Feature: Le referentiel que le pupitre met en cache
     Then les conflits de "OF 4201" au referentiel du pupitre sont
       | operateur | poste     | activites | pointages |
       | dupont    | fraiseuse | A,B       | A,B,F     |
-    Given au pupitre, le gestionnaire annule le geste "B" sur "OF 4201" a "2026-05-22T19:00:00Z"
-    When je lis le referentiel du pupitre a "2026-05-22T19:05:00Z"
-    Then "OF 4201" ne porte aucun conflit au referentiel du pupitre
-    And "OF 4201" figure au referentiel du pupitre dans l'etat "INTERROMPU"
 
   Scenario: Une transition recue apres la fin donne le meme conflit au referentiel
     Given le pupitre fabrique "OF 4202"
@@ -225,26 +197,6 @@ Feature: Le referentiel que le pupitre met en cache
       | operateur | poste     | activites | pointages |
       | dupont    | fraiseuse | A,B       | A,B,F     |
     And "OF 4202" ne porte aucune activite au referentiel du pupitre
-
-  Scenario: Un conflit sans activite a resoudre reste rendu sans poste
-    Given le pupitre fabrique "OF 4203"
-    And "OF 4203" est engage au pupitre a "2026-05-24T07:00:00Z"
-    And au pupitre, "dupont" ouvre "A" en "DEBUT" sur "OF 4203" sans poste a "2026-05-24T08:00:00Z"
-    And au pupitre, "dupont" termine "A" par "F" sur "OF 4203" sans poste a "2026-05-24T09:00:00Z"
-    And au pupitre, le gestionnaire annule le geste "A" sur "OF 4203" a "2026-05-24T10:00:00Z"
-    When je lis le referentiel du pupitre a "2026-05-24T10:05:00Z"
-    Then les conflits de "OF 4203" au referentiel du pupitre sont
-      | operateur | poste | activites | pointages |
-      | dupont    | null  |           | F         |
-    And le conflit de "OF 4203" au referentiel du pupitre ne porte aucun poste
-    And "OF 4203" ne porte aucune activite au referentiel du pupitre
-    And "OF 4203" figure au referentiel du pupitre dans l'etat "INTERROMPU"
-    Given au pupitre, "dupont" ouvre "C" en "DEBUT" sur "OF 4203" sans poste a "2026-05-24T10:10:00Z"
-    When je lis le referentiel du pupitre a "2026-05-24T10:15:00Z"
-    Then "OF 4203" figure au referentiel du pupitre dans l'etat "EN_COURS"
-    And les conflits de "OF 4203" au referentiel du pupitre sont
-      | operateur | poste | activites | pointages |
-      | dupont    | null  |           | F         |
 
   Scenario: Un element sans reference garde une tuile nominale
     Given le pupitre fabrique "PRD 4011" sans reference

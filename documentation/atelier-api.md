@@ -466,16 +466,13 @@ POST   /api/atelier/suivis                                    engager un éléme
 PUT    /api/atelier/suivis/{id}/cloture                        clôturer, ou déplacer la clôture
 DELETE /api/atelier/suivis/{id}/cloture                        rouvrir
 POST   /api/atelier/suivis/{id}/regularisations                rattraper une saisie oubliée
-POST   /api/atelier/suivis/{id}/evenements/{evtId}/annulation  annuler une saisie en trop
-PUT    /api/atelier/suivis/{id}/evenements/{evtId}             corriger une saisie fausse
 ```
 
-La régularisation et la correction portent `intention` et `cible` comme un pointage. Une fin oubliée se régularise
-donc sur l'activité qu'elle termine.
+La régularisation porte `intention` et `cible` comme un pointage. Une fin oubliée se régularise donc sur l'activité
+qu'elle termine.
 
-**La clôture ne fige rien pour le gestionnaire** : régularisation, annulation et correction restent possibles ensuite,
-et la clôture elle-même se déplace (`PUT`) ou s'annule (`DELETE`). Ne pas griser les actions de correction sur un
-élément clôturé.
+**La clôture ne fige rien pour le gestionnaire** : la régularisation reste possible ensuite, et la clôture elle-même
+se déplace (`PUT`) ou s'annule (`DELETE`). Ne pas griser la régularisation sur un élément clôturé.
 
 `PUT .../evenements/{evtId}` est une **correction** : une annulation et une régularisation en un seul appel. Le journal
 en ressort avec deux événements de plus, pas un — l'ancien annulé, le nouveau à l'heure corrigée. Le remplaçant d'un

@@ -103,16 +103,6 @@ Feature: Synthese des heures hebdomadaire d'un operateur
       | id     | duree   |
       | carter | PT5H50M |
 
-  Scenario: Un pointage annule disparait du journal
-    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
-    And "martin" enregistre "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:05:00Z"
-    And pour la synthese, le dernier pointage sur l'element "carter" est annule a "2026-05-11T06:00:00Z"
-    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
-    Then les pointages du "2026-05-11" sont
-      | type | dateDeSurvenue |
-    And les elements de la synthese sont
-      | id |
-
   Scenario: Le journal brut conserve les seuls gestes d'element
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And "martin" enregistre "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:00:00Z"
@@ -318,15 +308,6 @@ Feature: Synthese des heures hebdomadaire d'un operateur
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT13H"
 
-  Scenario: La correction du debut garde son identite et rend le travail de nouveau en cours
-    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
-    And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type  | intention | operateur | poste  | survenue             |
-      | A     | DEBUT | OUVERTURE | martin    | DMU 50 | 2026-05-11T06:00:00Z |
-    And la synthese des heures corrige le pointage "A" sur "carter" a "2026-05-11T20:00:00Z" vers "2026-05-11T10:00:00Z"
-    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
-    Then la duree operationnelle totale de la semaine est "PT0S"
-
   Scenario: Une cloture apres echeance conserve la fin automatique
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
@@ -356,16 +337,6 @@ Feature: Synthese des heures hebdomadaire d'un operateur
       | F     | FIN   | FIN       | A     | martin    | DMU 50 | 2026-05-11T08:00:00Z | REGULARISATION |
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT10H"
-
-  Scenario: Annuler la fin fait reapparaitre la borne automatique
-    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
-    And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type  | intention | cible | operateur | poste  | survenue             |
-      | A     | DEBUT | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
-      | F     | FIN   | FIN       | A     | martin    | DMU 50 | 2026-05-11T15:00:00Z |
-    And pour la synthese, le dernier pointage sur l'element "carter" est annule a "2026-05-12T08:00:00Z"
-    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
-    Then la duree operationnelle totale de la semaine est "PT13H"
 
   Scenario: Deux elements de huit a neuf heures se cumulent sans presence
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
@@ -402,24 +373,6 @@ Feature: Synthese des heures hebdomadaire d'un operateur
     And les elements de la synthese sont
       | id     | duree | dureeNonConformite |
       | carter | PT6H  | PT1H               |
-
-  Scenario: Un pointage actif sans activite conserve son element et son poste au journal
-    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
-    And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type  | intention | cible | operateur | poste  | survenue             |
-      | A     | DEBUT | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
-      | F     | FIN   | FIN       | A     | martin    | DMU 50 | 2026-05-11T07:00:00Z |
-    And pour la synthese, le pointage "A" sur "carter" est annule a "2026-05-11T08:00:00Z"
-    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
-    Then le journal du "2026-05-11" est
-      | type | dateDeSurvenue       | element | poste  |
-      | FIN  | 2026-05-11T07:00:00Z | carter  | DMU 50 |
-    And les elements de la synthese sont
-      | id     | duree |
-      | carter | PT0S  |
-    And l'element "carter" de la synthese porte les postes
-      | poste  | nature   |
-      | DMU 50 | Fraisage |
 
   Scenario: Un jour entier traverse sans pointage propre compte vingt-quatre heures terminees
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-10T17:00:00Z"
@@ -533,27 +486,6 @@ Feature: Synthese des heures hebdomadaire d'un operateur
       | element | poste  | activites | pointages |
       | carter  | DMU 50 | A         | A,F,G     |
 
-  Scenario: Un conflit sans activite ni poste reste visible et les totaux restent complets
-    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
-    And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type  | intention | cible | operateur | survenue             |
-      | A     | DEBUT | OUVERTURE |       | martin    | 2026-05-11T06:00:00Z |
-      | F     | FIN   | FIN       | A     | martin    | 2026-05-11T08:00:00Z |
-    And pour la synthese, le pointage "A" sur "carter" est annule a "2026-05-11T10:00:00Z"
-    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
-    Then la synthese porte les conflits
-      | element | poste | activites | pointages |
-      | carter  |       |           | F         |
-    And la duree operationnelle totale de la semaine est "PT0S"
-    And le jour "2026-05-11" a une duree operationnelle de "PT0S"
-    And la synthese restitue les identites et cibles du journal du "2026-05-11"
-      | alias | intention | cible |
-      | F     | FIN       | A     |
-    When je consulte la synthese des heures de "martin" pour la semaine 21 de 2026
-    Then la synthese porte les conflits
-      | element | poste | activites | pointages |
-    And la duree operationnelle totale de la semaine est "PT0S"
-
   Scenario: Une plage possible de synthese depasse la semaine et se borne a evaluation
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-10T18:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
@@ -578,58 +510,6 @@ Feature: Synthese des heures hebdomadaire d'un operateur
     And la synthese porte les conflits
       | element | poste | activites | pointages |
       | carter  |       | A,N       | A,N,F     |
-
-  Scenario: Annuler la transition erronee resout le conflit et recalcule les totaux
-    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
-    And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type           | intention  | cible | operateur | poste  | survenue             |
-      | A     | DEBUT          | OUVERTURE  |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
-      | N     | NON_CONFORMITE | TRANSITION | A     | martin    | DMU 50 | 2026-05-11T10:00:00Z |
-      | F     | FIN            | FIN        | A     | martin    | DMU 50 | 2026-05-11T15:00:00Z |
-    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
-    Then la synthese laisse incomplet sans chiffre le total "$.dureeOperationnelleTotale"
-    Given pour la synthese, le pointage "N" sur "carter" est annule a "2026-05-11T18:00:00Z"
-    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
-    Then la synthese porte les conflits
-      | element | poste | activites | pointages |
-    And la duree operationnelle totale de la semaine est "PT9H"
-    And l'element "carter" de la synthese porte les totaux
-      | mesure             | complete | valeur |
-      | duree              | true     | PT9H   |
-      | dureeNonConformite | true     | PT0S   |
-    And la synthese restitue les identites et cibles du journal du "2026-05-11"
-      | alias | intention | cible |
-      | A     | OUVERTURE |       |
-      | F     | FIN       | A     |
-
-  Scenario: Corriger le debut et la cible resout le conflit avec l'identite originale
-    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
-    And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type           | intention  | cible | operateur | poste  | survenue             |
-      | A     | DEBUT          | OUVERTURE  |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
-      | N     | NON_CONFORMITE | TRANSITION | A     | martin    | DMU 50 | 2026-05-11T10:00:00Z |
-      | F     | FIN            | FIN        | A     | martin    | DMU 50 | 2026-05-11T15:00:00Z |
-    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
-    Then la synthese laisse incomplet sans chiffre le total "$.dureeOperationnelleTotale"
-    Given la synthese des heures corrige le pointage "A" sur "carter" a "2026-05-11T17:00:00Z" vers "2026-05-11T07:00:00Z"
-    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
-    Then la synthese porte les conflits
-      | element | poste  | activites | pointages     |
-      | carter  | DMU 50 | A,N       | A-corrige,N,F |
-    Given la synthese des heures corrige la cible du pointage "F" sur "carter" vers "N" a "2026-05-11T18:00:00Z"
-    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
-    Then la synthese porte les conflits
-      | element | poste | activites | pointages |
-    And la duree operationnelle totale de la semaine est "PT8H"
-    And l'element "carter" de la synthese porte les totaux
-      | mesure             | complete | valeur |
-      | duree              | true     | PT8H   |
-      | dureeNonConformite | true     | PT5H   |
-    And la synthese restitue les identites et cibles du journal du "2026-05-11"
-      | alias     | intention  | cible |
-      | A-corrige | OUVERTURE  |       |
-      | N         | TRANSITION | A     |
-      | F-corrige | FIN        | N     |
 
   Scenario: Avant le debut possible le journal garde le conflit mais les durees restent completes
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"

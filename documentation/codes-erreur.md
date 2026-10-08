@@ -69,7 +69,7 @@ tests sont le seul endroit qui les tient.
 | Code                                 | Statut | `title`                            | Exception                                 |
 | ------------------------------------ | ------ | ---------------------------------- | ----------------------------------------- |
 | `suivi-d-atelier-introuvable`        | 404    | suivi d'atelier introuvable        | `SuiviDAtelierIntrouvableException`       |
-| `evenement-d-atelier-introuvable`    | 404    | evenement d'atelier introuvable    | `EvenementDAtelierIntrouvableException`   |
+| `fin-automatique-introuvable`        | 404    | fin automatique introuvable        | `FinAutomatiqueIntrouvableException`      |
 | `element-de-fabrication-introuvable` | 404    | element de fabrication introuvable | `ElementEngageableIntrouvableException`   |
 | `operateur-introuvable`              | 404    | operateur introuvable              | `OperateurDAtelierIntrouvableException`   |
 | `poste-de-travail-introuvable`       | 404    | poste de travail introuvable       | `PosteDAtelierIntrouvableException`       |
@@ -77,15 +77,14 @@ tests sont le seul endroit qui les tient.
 | `operateur-non-habilite`             | 409    | operateur non habilite             | `OperateurNonHabiliteException`           |
 | `activite-visee-incoherente`         | 409    | activite visee incoherente         | `ActiviteViseeIncoherenteException`       |
 | `element-deja-engage`                | 409    | element deja engage                | `ElementDejaEngageException`              |
-| `evenement-deja-annule`              | 409    | evenement deja annule              | `EvenementDejaAnnuleException`            |
 | `suivi-d-atelier-cloture`            | 409    | suivi d'atelier cloture            | `SuiviDAtelierClotureException`           |
 | `evenement-anterieur-a-l-engagement` | 409    | evenement anterieur a l'engagement | `EvenementAvantEngagementException`       |
 | `saisie-concurrente`                 | 409    | saisie concurrente                 | `SaisieConcurrenteException`              |
 | `identifiant-evenement-reutilise`    | 409    | identifiant d'evenement reutilise  | `IdentifiantDEvenementReutiliseException` |
 | `date-de-survenue-future`            | 400    | date de survenue future            | `DateDeSurvenueFutureException`           |
-| `nature-d-anomalie-invalide`         | 400    | nature d'anomalie invalide         | `NatureDAnomalieInvalideException`        |
 
-`nature-d-anomalie-invalide` refuse un paramètre `nature` absent ou inconnu sur `GET /api/atelier/anomalies`.
+`fin-automatique-introuvable` répond à `GET /api/atelier/suivis/{id}/anomalies/{pointage}` quand le pointage n'ouvre
+aucune fin automatique non régularisée : le front revient à la liste.
 
 `saisie-concurrente` est le seul code sur lequel **rejouer** l'appel est la bonne réaction : la saisie était valide,
 un autre pointage s'est glissé entre la lecture et l'écriture.
@@ -94,12 +93,11 @@ un autre pointage s'est glissé entre la lecture et l'écriture.
 suivi, opérateur, type, poste ou date fournie, et pour un pointage d'atelier autre intention ou autre cible.
 
 `activite-visee-introuvable` et `activite-visee-incoherente` refusent une transition ou une fin dont la cible n'est
-pas une activité de ce suivi, ou appartient à un autre opérateur ou à un autre poste. Ils valent pour le pointage, la
-régularisation et la correction, et sont définitifs : le même geste rejoué reçoit le même refus.
+pas une activité de ce suivi, ou appartient à un autre opérateur ou à un autre poste. Ils valent pour le pointage et la
+régularisation, et sont définitifs : le même geste rejoué reçoit le même refus.
 
 Aucun code ne refuse un geste qui contredit le journal d'un élément : sa cible déjà terminée ou remplacée à son heure,
-son ouvrant annulé, une transition vers sa propre catégorie. Pointage, régularisation, correction et annulation
-l’enregistrent, et sa séquence est en conflit jusqu’à ce que le gestionnaire la résolve.
+une transition vers sa propre catégorie. Pointage et régularisation l’enregistrent, et sa séquence est en conflit.
 
 ### `operateur` — `urn:glm:erreur:operateur:`
 

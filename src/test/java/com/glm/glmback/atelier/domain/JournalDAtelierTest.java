@@ -42,7 +42,7 @@ class JournalDAtelierTest {
     JournalDAtelier journal = JournalDAtelier.vide();
 
     assertThat(journal.evenements()).isEmpty();
-    assertThat(journal.actifs()).isEmpty();
+    assertThat(journal.evenements()).isEmpty();
     assertThat(journal.activites(Optional.empty())).isEmpty();
   }
 
@@ -235,7 +235,7 @@ class JournalDAtelierTest {
 
     JournalDAtelier journal = new JournalDAtelier(List.of(travail)).enregistre(travailSurTravail);
 
-    assertThat(journal.actifs()).containsExactly(travail, travailSurTravail);
+    assertThat(journal.evenements()).containsExactly(travail, travailSurTravail);
     assertThat(journal.conflits(Optional.empty())).hasSize(1);
   }
 
@@ -250,7 +250,7 @@ class JournalDAtelierTest {
 
     JournalDAtelier conserve = journal.enregistre(passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_12H));
 
-    assertThat(conserve.actifs()).hasSize(3);
+    assertThat(conserve.evenements()).hasSize(3);
     assertThat(conserve.activites(Optional.empty())).allSatisfy(activite -> assertThat(activite.aResoudre()).isTrue());
     assertThat(conserve.conflits(Optional.empty())).hasSize(1);
   }
@@ -397,174 +397,6 @@ class JournalDAtelierTest {
   }
 
   /**
-   * Une activite dont l'ouvrant est annule reste une activite de ce journal : le geste qui la vise n'est pas
-   * introuvable. Il est conserve, et la sequence est en conflit.
-   */
-  @Test
-  void shouldConserverEnConflitUneFinQuiViseUnOuvrantAnnule() {
-    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    JournalDAtelier journal = new JournalDAtelier(List.of(debut)).annule(debut.id(), annulationParLeroy());
-    EvenementDAtelier fin = finDe(debut).a(LE_10_MAI_2026_A_12H);
-
-    JournalDAtelier conserve = journal.enregistre(fin);
-
-    assertThat(conserve.actifs()).containsExactly(fin);
-    assertThat(conserve.conflits(Optional.empty()))
-      .singleElement()
-      .satisfies(conflit -> assertThat(conflit.pointages()).containsExactly(fin.id()));
-  }
-
-  @Test
-  void shouldEcarterDuRepliLesEvenementsAnnules() {
-    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    JournalDAtelier journal = new JournalDAtelier(List.of(debut));
-
-    JournalDAtelier corrige = journal.annule(debut.id(), annulationParLeroy());
-
-    assertThat(corrige.evenements()).hasSize(1);
-    assertThat(corrige.actifs()).isEmpty();
-    assertThat(corrige.activites(Optional.empty())).isEmpty();
-  }
-
-  @Test
-  void shouldConserverLaTraceDeLEvenementAnnule() {
-    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-
-    JournalDAtelier corrige = new JournalDAtelier(List.of(debut)).annule(debut.id(), annulationParLeroy());
-
-    assertThat(corrige.evenement(debut.id()))
-      .isPresent()
-      .get()
-      .satisfies(evenement -> {
-        assertThat(evenement.estAnnule()).isTrue();
-        assertThat(evenement.annulation()).contains(annulationParLeroy());
-      });
-  }
-
-  @Test
-  void shouldNotAnnulerUnEvenementInconnu() {
-    JournalDAtelier journal = JournalDAtelier.vide();
-    EvenementDAtelierId inconnu = EvenementDAtelierId.newId();
-    Annulation annulation = annulationParLeroy();
-
-    assertThatThrownBy(() -> journal.annule(inconnu, annulation))
-      .isExactlyInstanceOf(EvenementDAtelierIntrouvableException.class)
-      .hasMessageContaining("introuvable");
-  }
-
-  /**
-   * Annuler une ouverture que vise une fin est admis : la fin reste, et la sequence est en conflit plutot que refusee.
-   */
-  @Test
-  void shouldConserverEnConflitLAnnulationDUneOuvertureVisee() {
-    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    EvenementDAtelier fin = finDe(debut).a(LE_10_MAI_2026_A_12H);
-    JournalDAtelier journal = new JournalDAtelier(List.of(debut, fin));
-
-    JournalDAtelier annule = journal.annule(debut.id(), annulationParLeroy());
-
-    assertThat(annule.activites(Optional.empty())).isEmpty();
-    assertThat(annule.conflits(Optional.empty()))
-      .singleElement()
-      .satisfies(conflit -> assertThat(conflit.pointages()).containsExactly(fin.id()));
-  }
-
-  /**
-   * Le debut corrige garde son activite : la fin qui la visait la termine toujours, a l'heure du debut corrige.
-   */
-  @Test
-  void shouldCorrigerUnEvenementEnUnSeulActe() {
-    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    JournalDAtelier journal = new JournalDAtelier(List.of(debut, finDe(debut).a(LE_10_MAI_2026_A_12H)));
-    EvenementDAtelier remplacant = debutSurFraiseuse1RegulariseParLeroyA(LE_10_MAI_2026_A_7H30);
-
-    JournalDAtelier corrige = journal.corrige(debut.id(), annulationParLeroy(), remplacant);
-
-    assertThat(corrige.activites(Optional.empty()))
-      .singleElement()
-      .satisfies(activite -> {
-        assertThat(activite.ouvrant().id()).isEqualTo(remplacant.id());
-        assertThat(activite.debut()).isEqualTo(LE_10_MAI_2026_A_7H30);
-        assertThat(activite.fin()).contains(LE_10_MAI_2026_A_12H);
-      });
-    assertThat(corrige.evenement(remplacant.id()))
-      .get()
-      .satisfies(enPlace -> assertThat(enPlace.activite()).isEqualTo(debut.activite()));
-  }
-
-  @Test
-  void shouldRelierUneCorrectionALOrigineDeSonOuvrant() {
-    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    EvenementDAtelier remplacant = debutSurFraiseuse1RegulariseParLeroyA(LE_10_MAI_2026_A_7H30);
-
-    JournalDAtelier corrige = new JournalDAtelier(List.of(debut)).corrige(debut.id(), annulationParLeroy(), remplacant);
-
-    assertThat(corrige.evenement(remplacant.id()).orElseThrow().remplace()).contains(debut.id());
-  }
-
-  @Test
-  void shouldRelierLaCorrectionDUneFinEtConserverSaChaineALAnnulation() {
-    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    EvenementDAtelier fin = finDe(debut).a(LE_10_MAI_2026_A_12H);
-    EvenementDAtelier remplacant = finDe(debut).a(LE_10_MAI_2026_A_12H.plusSeconds(1800));
-    JournalDAtelier journal = new JournalDAtelier(List.of(debut, fin));
-
-    JournalDAtelier corrige = journal.corrige(fin.id(), annulationParLeroy(), remplacant);
-    JournalDAtelier annule = corrige.annule(remplacant.id(), annulationParLeroy());
-
-    assertThat(annule.evenement(remplacant.id()).orElseThrow().remplace()).contains(fin.id());
-    assertThat(annule.evenement(fin.id()).orElseThrow().remplace()).isEmpty();
-  }
-
-  /**
-   * Apres correction de son ouvrant, un geste visant l'activite se resout sur l'ouvrant actif : le remplacant.
-   */
-  @Test
-  void shouldResoudreLaCibleSurLOuvrantActifApresCorrection() {
-    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    JournalDAtelier corrige = new JournalDAtelier(List.of(debut)).corrige(
-      debut.id(),
-      annulationParLeroy(),
-      debutSurFraiseuse1RegulariseParLeroyA(LE_10_MAI_2026_A_7H30)
-    );
-
-    JournalDAtelier termine = corrige.enregistre(finDe(debut).a(LE_10_MAI_2026_A_12H));
-
-    assertThat(termine.activites(Optional.empty()))
-      .singleElement()
-      .satisfies(activite -> {
-        assertThat(activite.debut()).isEqualTo(LE_10_MAI_2026_A_7H30);
-        assertThat(activite.fin()).contains(LE_10_MAI_2026_A_12H);
-      });
-  }
-
-  @Test
-  void shouldRefuserUneCorrectionQuiViseUneActiviteIntrouvable() {
-    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    EvenementDAtelier fin = finDe(debut).a(LE_10_MAI_2026_A_12H);
-    JournalDAtelier journal = new JournalDAtelier(List.of(debut, fin));
-    EvenementDAtelierId corrigee = fin.id();
-    Annulation annulation = annulationParLeroy();
-    EvenementDAtelier finAilleurs = finRegulariseeParLeroyDe(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)).a(LE_10_MAI_2026_A_12H);
-
-    assertThatThrownBy(() -> journal.corrige(corrigee, annulation, finAilleurs)).isExactlyInstanceOf(
-      ActiviteViseeIntrouvableException.class
-    );
-  }
-
-  @Test
-  void shouldNotCorrigerUnEvenementInconnu() {
-    JournalDAtelier journal = JournalDAtelier.vide();
-    EvenementDAtelierId inconnu = EvenementDAtelierId.newId();
-    Annulation annulation = annulationParLeroy();
-    EvenementDAtelier remplacant = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-
-    assertThatThrownBy(() -> journal.corrige(inconnu, annulation, remplacant)).isExactlyInstanceOf(
-      EvenementDAtelierIntrouvableException.class
-    );
-  }
-
-  /**
    * Une transition rattrapee apres coup referme l'activite qu'elle vise a son heure ; la relance deja pointee referme
    * la non conformite qu'elle ouvre.
    */
@@ -680,57 +512,6 @@ class JournalDAtelierTest {
   }
 
   @Test
-  void shouldAnnulerLaRelanceDUneActivite() {
-    EvenementDAtelier relance = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H);
-    JournalDAtelier journal = new JournalDAtelier(List.of(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H), relance));
-
-    JournalDAtelier corrige = journal.annule(relance.id(), annulationParLeroy());
-
-    assertThat(corrige.activites(Optional.empty()))
-      .extracting(Activite::debut, Activite::fin)
-      .containsExactly(tuple(LE_10_MAI_2026_A_8H, Optional.empty()));
-  }
-
-  /**
-   * Annuler le premier debut d'une relance ne laisse aucune fin orpheline : la fin vise la relance.
-   */
-  @Test
-  void shouldAnnulerLePremierDebutDUneActiviteRelancee() {
-    EvenementDAtelier premier = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    EvenementDAtelier relance = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H);
-    JournalDAtelier journal = new JournalDAtelier(List.of(premier, relance, finDe(relance).a(LE_10_MAI_2026_A_17H)));
-
-    JournalDAtelier corrige = journal.annule(premier.id(), annulationParLeroy());
-
-    assertThat(corrige.activites(Optional.empty()))
-      .extracting(Activite::debut, Activite::fin)
-      .containsExactly(tuple(LE_10_MAI_2026_A_13H, Optional.of(LE_10_MAI_2026_A_17H)));
-  }
-
-  /**
-   * La non conformite corrigee en relance du travail garde son activite : la fin qui la visait la termine toujours.
-   */
-  @Test
-  void shouldCorrigerUneNonConformiteEnRelance() {
-    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    EvenementDAtelier nonConformite = passageEnNonConformiteDe(debut).a(LE_10_MAI_2026_A_12H);
-    JournalDAtelier journal = new JournalDAtelier(List.of(debut, nonConformite, finDe(nonConformite).a(LE_10_MAI_2026_A_17H)));
-
-    JournalDAtelier corrige = journal.corrige(
-      nonConformite.id(),
-      annulationParLeroy(),
-      debutSurFraiseuse1RegulariseParLeroyA(LE_10_MAI_2026_A_12H)
-    );
-
-    assertThat(corrige.activites(Optional.empty()))
-      .extracting(Activite::categorie, Activite::debut, Activite::fin)
-      .containsExactly(
-        tuple(CategorieDActivite.TRAVAIL, LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H)),
-        tuple(CategorieDActivite.TRAVAIL, LE_10_MAI_2026_A_12H, Optional.of(LE_10_MAI_2026_A_17H))
-      );
-  }
-
-  @Test
   void shouldNotReadEvenementInconnu() {
     assertThat(JournalDAtelier.vide().evenement(EvenementDAtelierId.newId())).isEmpty();
   }
@@ -815,7 +596,6 @@ class JournalDAtelierTest {
       .tauxHoraire(Optional.of(TAUX_HORAIRE_DUPONT))
       .auteur(AUTEUR_DUPONT)
       .origine(OrigineDuPointage.POINTAGE)
-      .remplace(Optional.empty())
       .horodatage(Horodatage.saisiA(date));
   }
 
@@ -833,7 +613,6 @@ class JournalDAtelierTest {
       .tauxHoraire(Optional.of(TAUX_HORAIRE_DUPONT))
       .auteur(AUTEUR_DUPONT)
       .origine(OrigineDuPointage.POINTAGE)
-      .remplace(Optional.empty())
       .horodatage(Horodatage.saisiA(date));
   }
 }

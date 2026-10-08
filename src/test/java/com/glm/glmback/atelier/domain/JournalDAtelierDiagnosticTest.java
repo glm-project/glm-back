@@ -59,21 +59,6 @@ class JournalDAtelierDiagnosticTest {
   }
 
   @Test
-  void shouldExpliquerLaFinOrphelineSansInventerDActivite() {
-    var ouvrant = debutSansPosteParDupontA(LE_10_MAI_2026_A_8H);
-    var fin = finDe(ouvrant).a(LE_10_MAI_2026_A_17H);
-    var journal = new JournalDAtelier(List.of(ouvrant, fin)).annule(ouvrant.id(), annulationParLeroy());
-
-    assertThat(journal.diagnostics(Optional.empty()))
-      .singleElement()
-      .satisfies(diagnostic -> {
-        assertThat(diagnostic.raison().name()).isEqualTo("OUVRANT_ANNULE");
-        assertThat(diagnostic.cible().ouvrant()).contains(ouvrant.id());
-      });
-    assertThat(journal.activites(Optional.empty())).isEmpty();
-  }
-
-  @Test
   void shouldExpliquerUneTransitionQuiReprendLaMemeCategorie() {
     var ouvrant = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     var transition = passageEnTravailDe(ouvrant).a(LE_10_MAI_2026_A_12H);

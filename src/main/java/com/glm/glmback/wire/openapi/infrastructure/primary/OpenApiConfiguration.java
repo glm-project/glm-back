@@ -46,7 +46,7 @@ class OpenApiConfiguration {
 
     - `USER` — shop-floor operator: records activities and reads.
     - `GESTIONNAIRE` — back-office: everything a `USER` can do, plus committing elements to the shop floor, closing
-      them, and correcting entries (`regularise`, `annule`, `corrige`).
+      them, and catching up forgotten entries (`regularise`).
     - `ADMIN` — technical administration (`/api/admin/**`, `/management/**`) only. **It grants no business access.**
 
     Development users (password equal to the login): `gestionnaire.impeccmold`, `user.impeccmold`,

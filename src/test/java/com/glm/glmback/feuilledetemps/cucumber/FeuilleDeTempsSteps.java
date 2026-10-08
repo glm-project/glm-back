@@ -166,53 +166,15 @@ public class FeuilleDeTempsSteps {
           && type.equals(pointage.get("type"))
           && intention.equals(pointage.get("intention"))
       )
-      .filter(pointage -> pointage.get("annulation") == null)
       .map(pointage -> (String) pointage.get("id"))
       .findFirst()
       .orElseThrow();
-  }
-
-  @Given("la feuille de temps corrige le pointage {string} sur {string} a {string} vers {string}")
-  public void corrigeLHeure(String alias, String element, String reception, String survenue) {
-    horloge.ilEst(Instant.parse(reception));
-    Map<String, Object> corps = new HashMap<>(corpsDesPointages.get(alias));
-    corps.remove("id");
-    corps.put("motif", "heure erronee");
-    corps.put("dateDeSurvenue", survenue);
-    ecritures.corrige(suivis.get(element), pointages.get(alias), corps);
-    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("la correction doit etre acceptee").isTrue();
-    pointages.put(alias + "-corrige", identiteDuPointageActif(survenue, (String) corps.get("type"), (String) corps.get("intention")));
-  }
-
-  @Given("la feuille de temps corrige la cible du pointage {string} sur {string} vers {string} a {string}")
-  public void corrigeLaCible(String alias, String element, String cible, String reception) {
-    horloge.ilEst(Instant.parse(reception));
-    Map<String, Object> corps = new HashMap<>(corpsDesPointages.get(alias));
-    corps.remove("id");
-    corps.put("motif", "activite visee erronee");
-    corps.put("cible", pointages.get(cible));
-    ecritures.corrige(suivis.get(element), pointages.get(alias), corps);
-    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("la correction de cible doit etre acceptee").isTrue();
-    pointages.put(
-      alias + "-corrige",
-      identiteDuPointageActif((String) corps.get("dateDeSurvenue"), (String) corps.get("type"), (String) corps.get("intention"))
-    );
   }
 
   @Then("le suivi de la feuille de temps de {string} ne porte aucun conflit")
   public void nePorteAucunConflit(String element) {
     rest.get(SUIVIS_URI + "/" + suivis.get(element));
     assertThat((List<?>) CucumberRestTestContext.getElement("$.conflits")).isEmpty();
-  }
-
-  @Given("le dernier pointage sur l'element {string} est annule a {string}")
-  public void leDernierPointageSurLElementEstAnnule(String element, String instant) {
-    horloge.ilEst(Instant.parse(instant));
-    rest.post(
-      SUIVIS_URI + "/" + suivis.get(element) + "/evenements/" + dernierPointage + "/annulation",
-      JSON.writeValueAsString(Map.of("motif", "saisie en trop"))
-    );
-    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("l'annulation doit etre acceptee").isTrue();
   }
 
   @Given("l'element {string} est cloture a {string}")

@@ -14,13 +14,11 @@ import java.util.Set;
  * <p>
  * Un pointage se date sur l'horloge, une regularisation sur la valeur fournie ; la date d'enregistrement vaut
  * l'instant present dans les deux cas. C'est aussi ici que l'evenement recoit son origine : un pointage, meme rejoue
- * hors ligne avec l'heure de son geste, ou une regularisation, qu'elle soit saisie seule ou comme remplacant d'une
- * correction. L'agregat, lui, ne voit qu'un evenement deja horodate et qualifie.
+ * hors ligne avec l'heure de son geste, ou une regularisation. L'agregat, lui, ne voit qu'un evenement deja horodate et qualifie.
  * </p>
  *
  * <p>
- * C'est encore ici qu'un pointage ouvrant recoit l'identite de l'activite qu'il ouvre : la sienne. Le remplacant
- * d'une correction reprend celle de l'ouvrant qu'il corrige, au journal.
+ * C'est encore ici qu'un pointage ouvrant recoit l'identite de l'activite qu'il ouvre : la sienne.
  * </p>
  *
  * <p>
@@ -30,7 +28,7 @@ import java.util.Set;
  * </p>
  *
  * <p>
- * La verification vaut pour les trois ecritures du journal — pointage, regularisation et correction. Sans quoi le
+ * La verification vaut pour les deux ecritures du journal — pointage et regularisation. Sans quoi le
  * back-office deviendrait un contournement de la regle que le pupitre applique.
  * </p>
  */
@@ -138,36 +136,7 @@ public final class SuivisDAtelierService {
   }
 
   public SuiviDAtelier regularise(RegularisationAEnregistrer commande, EvenementDAtelierId evenement) {
-    return repository.update(prepareRegularisation(get(commande.suivi()), commande, evenement));
-  }
-
-  public SuiviDAtelier annule(AnnulationAEnregistrer commande) {
-    return repository.update(prepareAnnulation(get(commande.suivi()), commande));
-  }
-
-  public SuiviDAtelier corrige(CorrectionAEnregistrer commande) {
-    return corrige(commande, EvenementDAtelierId.newId());
-  }
-
-  public SuiviDAtelier corrige(CorrectionAEnregistrer commande, EvenementDAtelierId remplacementId) {
-    return repository.update(prepareCorrection(get(commande.remplacement().suivi()), commande, remplacementId));
-  }
-
-  private SuiviDAtelier prepareRegularisation(SuiviDAtelier suivi, RegularisationAEnregistrer commande, EvenementDAtelierId evenement) {
-    return suivi.enregistre(regularisation(commande, evenement));
-  }
-
-  private SuiviDAtelier prepareAnnulation(SuiviDAtelier suivi, AnnulationAEnregistrer commande) {
-    return suivi.annule(commande.evenement(), annulation(commande.auteur(), commande.motif()));
-  }
-
-  private SuiviDAtelier prepareCorrection(SuiviDAtelier suivi, CorrectionAEnregistrer commande, EvenementDAtelierId remplacementId) {
-    RegularisationAEnregistrer remplacement = commande.remplacement();
-    return suivi.corrige(
-      commande.evenement(),
-      annulation(remplacement.auteur(), commande.motif()),
-      regularisation(remplacement, remplacementId)
-    );
+    return repository.update(get(commande.suivi()).enregistre(regularisation(commande, evenement)));
   }
 
   public SuiviDAtelier cloture(ClotureAEnregistrer commande) {
@@ -206,10 +175,6 @@ public final class SuivisDAtelierService {
       OrigineDuPointage.REGULARISATION,
       new Horodatage(commande.dateDeSurvenue(), maintenant)
     );
-  }
-
-  private Annulation annulation(Auteur auteur, MotifDAnnulation motif) {
-    return new Annulation(auteur, clock.now(), motif);
   }
 
   /**
@@ -261,7 +226,6 @@ public final class SuivisDAtelierService {
       .tauxHoraire(operateurConnu.tauxHoraire())
       .auteur(auteur)
       .origine(origine)
-      .remplace(Optional.empty())
       .horodatage(horodatage);
   }
 

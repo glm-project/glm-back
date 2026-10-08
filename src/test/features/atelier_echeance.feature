@@ -379,40 +379,6 @@ Feature: Echeance et fin automatique des activites
       | 00000000-0000-0000-0000-0000000005c1 | 2026-06-19T08:00:00Z | 2026-06-19T12:00:00Z | false          |
       | 00000000-0000-0000-0000-0000000005c2 | 2026-06-19T12:00:00Z | 2026-06-20T01:00:00Z | true           |
 
-  Scenario: Un debut corrige de 08 h a 12 h, lu a 22 h, redevient en cours
-    Given il est "2026-06-22T07:00:00Z"
-    And l'entreprise a cree l'element de fabrication "OF 5014"
-      | categorie | OF   |
-      | reference | 5014 |
-    And j'ai engage l'element "OF 5014" en atelier
-    And il est "2026-06-22T08:00:00Z"
-    And j'ai pointe sur "OF 5014"
-      | id        | 00000000-0000-0000-0000-0000000005d1 |
-      | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
-      | operateur | dupont                               |
-      | poste     | fraiseuse-1                          |
-    Given il est "2026-06-22T22:00:00Z"
-    When je consulte "OF 5014"
-    Then le suivi a l'etat "INTERROMPU"
-    When je corrige l'evenement 0 de "OF 5014"
-      | motif          | Demarre a 12 h       |
-      | type           | DEBUT                |
-      | intention      | OUVERTURE            |
-      | operateur      | dupont               |
-      | poste          | fraiseuse-1          |
-      | dateDeSurvenue | 2026-06-22T12:00:00Z |
-    # L'echeance passe de 21 h a 01 h : l'activite redevient en cours, sans anomalie, sous la meme identite.
-    Then la reponse a le statut http 200
-    And le suivi a l'etat "EN_COURS"
-    And les activites en cours sont
-      | categorie | depuis               | ouverture                            | echeance             |
-      | TRAVAIL   | 2026-06-22T12:00:00Z | 00000000-0000-0000-0000-0000000005d1 | 2026-06-23T01:00:00Z |
-    When je consulte le temps effectif de "OF 5014"
-    Then le temps effectif contient
-      | activite                             | debut                | fin | finAutomatique |
-      | 00000000-0000-0000-0000-0000000005d1 | 2026-06-22T12:00:00Z |     | false          |
-
   Scenario: L'echeance compte 13 heures ecoulees, meme au passage a l'heure d'ete
     # 00:30 UTC le 29 mars 2026, c'est 01:30 a Paris ; 13 heures plus tard, 13:30 UTC, il est 15:30 a Paris.
     Given il est "2026-03-29T00:00:00Z"

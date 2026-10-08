@@ -44,15 +44,14 @@ Feature: Suivi des elements engages en atelier
       | type      | NON_CONFORMITE |
       | operateur | dupont         |
       | poste     | fraiseuse-1    |
-    When j'annule l'evenement 1 de "OF 2962"
-      | motif | Pointe sur le mauvais ordre |
     Then le journal du suivi contient 3 evenements
+    # La non conformite est en cours : la comparaison porte sur une activite, pas sur deux listes vides.
+    And le suivi a l'etat "EN_COURS"
     And je retiens les informations du suivi hors journal et conflits
     When je liste les elements engages entre "2026-07-02T00:00:00Z" et "2026-07-03T00:00:00Z"
     Then la grille contient les memes informations sans journal ni conflits
     When je consulte "OF 2962"
     Then le journal du suivi contient 3 evenements
-    And l'evenement 1 du suivi est annule avec le motif "Pointe sur le mauvais ordre"
 
   Scenario: Un element deja engage ne peut pas l'etre deux fois
     Given l'entreprise a cree l'element de fabrication "OF 2002"
@@ -475,78 +474,9 @@ Feature: Suivi des elements engages en atelier
     And l'evenement 1 du suivi a survenu a "2026-05-10T10:00:00Z" et a ete saisi a "2026-05-10T10:00:00Z" par "gestionnaire"
     And l'evenement 1 du suivi est une regularisation de "dupont" saisie par "gestionnaire"
 
-  Scenario: Une saisie en trop est annulee, mais reste au journal
-    Given il est "2026-05-10T08:00:00Z"
-    And l'entreprise a cree l'element de fabrication "OF 2008"
-      | categorie | OF   |
-      | reference | 2008 |
-    And j'ai engage l'element "OF 2008" en atelier
-    And j'ai pointe sur "OF 2008"
-      | type      | DEBUT       |
-      | operateur | dupont      |
-      | poste     | fraiseuse-1 |
-    When j'annule l'evenement 0 de "OF 2008"
-      | motif | Pointe sur le mauvais ordre |
-    Then la reponse a le statut http 200
-    And le suivi a l'etat "EN_ATTENTE"
-    And le journal du suivi contient 1 evenements
-    And l'evenement 0 du suivi est annule avec le motif "Pointe sur le mauvais ordre"
-
-  Scenario: Une heure fausse est corrigee en un seul acte
-    Given il est "2026-05-10T08:00:00Z"
-    And l'entreprise a cree l'element de fabrication "OF 2009"
-      | categorie | OF   |
-      | reference | 2009 |
-    And j'ai engage l'element "OF 2009" en atelier
-    And j'ai pointe sur "OF 2009"
-      | type      | DEBUT       |
-      | operateur | dupont      |
-      | poste     | fraiseuse-1 |
-    # La correction est saisie apres coup : l'heure corrigee ne peut pas etre dans le futur de la saisie.
-    Given il est "2026-05-10T09:00:00Z"
-    When je corrige l'evenement 0 de "OF 2009"
-      | motif          | Demarre a 8h30       |
-      | type           | DEBUT                |
-      | operateur      | dupont               |
-      | poste          | fraiseuse-1          |
-      | dateDeSurvenue | 2026-05-10T08:30:00Z |
-    Then la reponse a le statut http 200
-    And le suivi a l'etat "EN_COURS"
-    And le journal du suivi contient 2 evenements
-    # Le remplacant est un acte du gestionnaire ; le pointage qu'il remplace le reste, annule au journal.
-    And l'evenement 0 du suivi n'est pas une regularisation
-    And l'evenement 1 du suivi est une regularisation de "dupont" saisie par "gestionnaire"
-
   Scenario: Consulter un suivi inexistant renvoie 404
     When je consulte le suivi inconnu "7a4e2c91-6b83-4d05-9e17-f204a6b8c1d3"
     Then la reponse a le statut http 404
-
-  Scenario: Annuler un evenement d'atelier inexistant renvoie 404
-    Given il est "2026-05-10T08:00:00Z"
-    And l'entreprise a cree l'element de fabrication "OF 2014"
-      | categorie | OF   |
-      | reference | 2014 |
-    And j'ai engage l'element "OF 2014" en atelier
-    When j'annule l'evenement inconnu "2e1b6a9f-3c4d-4e6f-9021-b2c3d4e5f607" de "OF 2014"
-      | motif | Evenement inconnu |
-    Then la reponse a le statut http 404
-
-  Scenario: Annuler deux fois le meme evenement d'atelier est refuse
-    Given il est "2026-05-10T08:00:00Z"
-    And l'entreprise a cree l'element de fabrication "OF 2015"
-      | categorie | OF   |
-      | reference | 2015 |
-    And j'ai engage l'element "OF 2015" en atelier
-    And j'ai pointe sur "OF 2015"
-      | type      | DEBUT       |
-      | operateur | dupont      |
-      | poste     | fraiseuse-1 |
-    When j'annule l'evenement 0 de "OF 2015"
-      | motif | Pointe sur le mauvais ordre |
-    Then la reponse a le statut http 200
-    When j'annule l'evenement 0 de "OF 2015"
-      | motif | Deja annule |
-    Then la reponse a le statut http 409
 
   Scenario: Une regularisation anterieure a l'engagement est refusee
     # Un element ne peut pas avoir ete travaille avant d'avoir ete mis en atelier.
@@ -591,21 +521,6 @@ Feature: Suivi des elements engages en atelier
       | type      | DEBUT       |
       | operateur | dupont      |
       | poste     | fraiseuse-1 |
-    When je tente de supprimer l'operateur declare "dupont"
-    Then la reponse a le statut http 409
-
-  Scenario: Un operateur dont le seul fait historique a ete annule ne se supprime plus
-    Given il est "2026-05-10T08:00:00Z"
-    And l'entreprise a cree l'element de fabrication "OF annule lot7"
-      | categorie | OF          |
-      | reference | annule lot7 |
-    And j'ai engage l'element "OF annule lot7" en atelier
-    And j'ai pointe sur "OF annule lot7"
-      | type      | DEBUT  |
-      | operateur | dupont |
-    When j'annule l'evenement 0 de "OF annule lot7"
-      | motif | Saisie sur le mauvais element |
-    Then la reponse a le statut http 200
     When je tente de supprimer l'operateur declare "dupont"
     Then la reponse a le statut http 409
 

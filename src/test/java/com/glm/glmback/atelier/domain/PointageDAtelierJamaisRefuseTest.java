@@ -43,7 +43,7 @@ class PointageDAtelierJamaisRefuseTest {
     PointageDAtelierTraite traite = pointeA(seconde, LE_10_MAI_2026_A_12H.plusSeconds(2));
 
     assertThat(traite.absorbe()).isFalse();
-    assertThat(traite.suivi().journal().actifs()).hasSize(3);
+    assertThat(traite.suivi().journal().evenements()).hasSize(3);
     assertThat(traite.suivi().conflits())
       .singleElement()
       .satisfies(conflit -> assertThat(conflit.pointages()).contains(seconde.evenement()));
@@ -62,7 +62,7 @@ class PointageDAtelierJamaisRefuseTest {
     PointageDAtelierTraite fin = pointeA(finDe(debut), Instant.parse("2026-05-10T23:00:00Z"));
 
     assertThat(fin.absorbe()).isFalse();
-    assertThat(fin.suivi().journal().actifs()).hasSize(2);
+    assertThat(fin.suivi().journal().evenements()).hasSize(2);
     assertThat(fin.suivi().activites()).singleElement().extracting(Activite::fin).isEqualTo(Optional.empty());
   }
 
@@ -103,7 +103,7 @@ class PointageDAtelierJamaisRefuseTest {
     PointageDAtelierTraite seconde = pointeA(finDe(debut), LE_10_MAI_2026_A_13H);
 
     assertThat(seconde.absorbe()).isFalse();
-    assertThat(seconde.suivi().journal().actifs()).hasSize(4);
+    assertThat(seconde.suivi().journal().evenements()).hasSize(4);
     assertThat(seconde.suivi().activitesEnCours(LE_10_MAI_2026_A_13H)).isEmpty();
     assertThat(seconde.suivi().conflits()).hasSize(1);
   }
@@ -224,7 +224,7 @@ class PointageDAtelierJamaisRefuseTest {
 
     PointageDAtelierTraite fin = atelier.pointe(finRejoueeA(debut, LE_10_MAI_2026_A_9H));
 
-    assertThat(fin.suivi().journal().actifs()).hasSize(3);
+    assertThat(fin.suivi().journal().evenements()).hasSize(3);
     assertThat(fin.suivi().conflits()).hasSize(1);
   }
 

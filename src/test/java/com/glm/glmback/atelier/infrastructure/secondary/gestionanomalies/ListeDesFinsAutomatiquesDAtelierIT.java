@@ -1,7 +1,6 @@
 package com.glm.glmback.atelier.infrastructure.secondary.gestionanomalies;
 
 import static com.glm.glmback.atelier.domain.AtelierFixture.*;
-import static com.glm.glmback.atelier.domain.gestionanomalies.ConflitsFixture.*;
 import static com.glm.glmback.atelier.domain.gestionanomalies.FinsAutomatiquesFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
@@ -288,19 +287,14 @@ class ListeDesFinsAutomatiquesDAtelierIT {
     });
     var ouverteParTransition = debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE));
     var transition = passageEnNonConformiteDe(ouverteParTransition).a(LE_9_JANVIER_2043_A.plusSeconds(12 * HEURE));
-    var corrigee = debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE));
     var aResoudre = debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE));
     var terminee = debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE));
     var finTardive = debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE));
     var clotureeAvant = debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE));
     var clotureeApres = debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE));
-    var annulee = debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE));
     var jeu = List.of(
       suiviEngageLe1erJanvier2025Pour(element).enregistre(debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE))),
       suiviEngageLe1erJanvier2025Pour(element).enregistre(ouverteParTransition).enregistre(transition),
-      suiviEngageLe1erJanvier2025Pour(element)
-        .enregistre(corrigee)
-        .corrige(corrigee.id(), annulationParLeroy(), debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(9 * HEURE))),
       suiviEngageLe1erJanvier2025Pour(element)
         .enregistre(aResoudre)
         .enregistre(finDe(aResoudre).a(LE_9_JANVIER_2043_A.plusSeconds(9 * HEURE)))
@@ -319,8 +313,7 @@ class ListeDesFinsAutomatiquesDAtelierIT {
         .cloture(clotureParLeroyA(LE_9_JANVIER_2043_A.plusSeconds(22 * HEURE))),
       suiviEngageLe1erJanvier2025Pour(element).enregistre(debutSansPosteParDupontA(LE_9_JANVIER_2043_A.plusSeconds(10 * HEURE))),
       suiviEngageLe1erJanvier2025Pour(element).enregistre(debutDu9Janvier2043A8hPar(berthe.id())),
-      suiviEngageLe1erJanvier2025Pour(element).enregistre(debutDu9Janvier2043A8hPar(charles.id())),
-      suiviEngageLe1erJanvier2025Pour(element).enregistre(annulee).annule(annulee.id(), annulationParLeroy())
+      suiviEngageLe1erJanvier2025Pour(element).enregistre(debutDu9Janvier2043A8hPar(charles.id()))
     );
     transactions.executeWithoutResult(transaction -> jeu.forEach(suivis::create));
     var annuaire = new AnnuaireDAtelier(Map.of(berthe.id(), berthe, charles.id(), charles), Map.of());
@@ -374,8 +367,8 @@ class ListeDesFinsAutomatiquesDAtelierIT {
         .map(evaluation -> lit(toutes, evaluation, new Pageable(0, 50)).totalElementsCount())
         .toList()
     )
-      .describedAs("le jeu change de population a chaque echeance")
-      .containsExactly(0L, 0L, 5L, 6L, 7L, 7L, 8L, 8L);
+      .describedAs("le jeu change de population aux echeances")
+      .containsExactly(0L, 0L, 5L, 5L, 6L, 6L, 7L, 7L);
   }
 
   private Page<FinAutomatiqueEnListe> lit(AnomaliesDAtelierCriteria criteria, Instant evaluation, Pageable pageable) {

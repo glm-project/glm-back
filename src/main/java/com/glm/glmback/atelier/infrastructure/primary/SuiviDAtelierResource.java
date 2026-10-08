@@ -40,12 +40,12 @@ import org.springframework.web.bind.annotation.RestController;
   Le suivi des elements de fabrication mis en atelier.
 
   Deux publics se partagent ces routes. L'operateur (role USER) consulte le tableau des elements actifs et pointe son
-  travail. Le gestionnaire (role GESTIONNAIRE) engage les elements, les cloture et corrige les saisies.
+  travail. Le gestionnaire (role GESTIONNAIRE) engage les elements, les cloture et rattrape les saisies oubliees.
 
   Rien de ce qui se deduit n'est stocke : etat, activites en cours, sequences en conflit et temps sont recalcules du
   journal a chaque lecture, a l'instant de cette lecture. Une activite que rien n'a terminee se termine automatiquement
   a son echeance, son debut plus 13 heures, sans qu'aucun evenement ne soit ecrit. Des pointages qui se contredisent
-  sont conserves en sequence en conflit, que le gestionnaire resout en corrigeant ou en annulant les faits concernes.
+  sont conserves en sequence en conflit.
   """
 )
 class SuiviDAtelierResource {
@@ -68,7 +68,7 @@ class SuiviDAtelierResource {
     son echeance n'est plus EN_COURS. La periode, quand elle est fournie, porte sur la date d'engagement.
 
     Chaque ligne conserve l'etat et les activites en cours, mais ne contient pas de journal.
-    Le journal complet, annules compris, se consulte via GET /api/atelier/suivis/{id}.
+    Le journal complet se consulte via GET /api/atelier/suivis/{id}.
     """
   )
   @ApiResponse(responseCode = "200", description = "La page demandee sans les journaux, triee par date d'engagement descendante.")
@@ -104,7 +104,7 @@ class SuiviDAtelierResource {
   }
 
   @GetMapping("/{id}")
-  @Operation(summary = "Consulter un element engage", description = "Le suivi complet, avec son journal, evenements annules compris.")
+  @Operation(summary = "Consulter un element engage", description = "Le suivi complet, avec son journal.")
   @ApiResponse(responseCode = "404", description = "Suivi introuvable.")
   RestSuiviDAtelier get(@PathVariable UUID id) {
     return rendu(applicationService.get(new SuiviDAtelierId(id)));
@@ -182,7 +182,7 @@ class SuiviDAtelierResource {
 
   @PostMapping("/{id}/regularisations")
   @ResponseStatus(HttpStatus.CREATED)
-  @Operation(summary = "Rattraper une saisie oubliee", description = "Premier des trois actes de correction.")
+  @Operation(summary = "Rattraper une saisie oubliee", description = "Le gestionnaire rattrape un fait que le pupitre n'a pas pointe.")
   @ApiResponse(
     responseCode = "201",
     description = "La regularisation est enregistree, y compris quand elle contredit le journal : sa sequence est alors en conflit."
@@ -200,37 +200,11 @@ class SuiviDAtelierResource {
     return rendu(applicationService.regularise(request.toDomain(new SuiviDAtelierId(id), AuteurConnecte.get())));
   }
 
-  @PostMapping("/{id}/evenements/{evenementId}/annulation")
-  @Operation(summary = "Annuler une saisie en trop", description = "Deuxieme acte de correction. L'evenement reste au journal.")
-  @ApiResponse(responseCode = "404", description = "Suivi ou evenement introuvable.")
-  @ApiResponse(responseCode = "409", description = "Evenement deja annule.")
-  RestSuiviDAtelier annule(@PathVariable UUID id, @PathVariable UUID evenementId, @RequestBody @Valid RestAnnulationDEvenement request) {
-    return rendu(applicationService.annule(request.toDomain(new SuiviDAtelierId(id), evenementId, AuteurConnecte.get())));
-  }
-
-  @PutMapping("/{id}/evenements/{evenementId}")
-  @Operation(
-    summary = "Corriger une saisie fausse",
-    description = "Troisieme acte : une annulation et une regularisation en un seul appel."
-  )
-  @ApiResponse(responseCode = "400", description = "Le corps est invalide, intention et cible comprises.")
-  @ApiResponse(responseCode = "404", description = "Suivi, evenement, operateur, poste de travail ou activite visee introuvable.")
-  @ApiResponse(
-    responseCode = "409",
-    description = """
-    Operateur non habilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, ou evenement deja
-    annule.
-    """
-  )
-  RestSuiviDAtelier corrige(@PathVariable UUID id, @PathVariable UUID evenementId, @RequestBody @Valid RestCorrection request) {
-    return rendu(applicationService.corrige(request.toDomain(new SuiviDAtelierId(id), evenementId, AuteurConnecte.get())));
-  }
-
   @PutMapping("/{id}/cloture")
   @Operation(
     summary = "Cloturer un element, ou deplacer sa cloture",
     description = """
-    La cloture ne fige rien pour le gestionnaire : regularisation, annulation et correction restent possibles ensuite.
+    La cloture ne fige rien pour le gestionnaire : la regularisation reste possible ensuite.
     Rappelee sur un element deja cloture, cette route deplace la date de cloture.
     """
   )

@@ -1,14 +1,12 @@
 package com.glm.glmback.atelier.infrastructure.secondary;
 
 import com.glm.glmback.atelier.domain.ActiviteId;
-import com.glm.glmback.atelier.domain.Annulation;
 import com.glm.glmback.atelier.domain.Auteur;
 import com.glm.glmback.atelier.domain.CoutHoraire;
 import com.glm.glmback.atelier.domain.EvenementDAtelier;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.Horodatage;
 import com.glm.glmback.atelier.domain.IntentionDePointage;
-import com.glm.glmback.atelier.domain.MotifDAnnulation;
 import com.glm.glmback.atelier.domain.NatureDOperation;
 import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.OrigineDuPointage;
@@ -76,22 +74,12 @@ class EvenementDAtelierEntity {
   @Column(length = 20)
   private OrigineDuPointage origine;
 
-  @Column(name = "remplace_evenement_id")
-  private UUID remplaceEvenementId;
-
   @Convert(converter = ExactInstantConverter.class)
   private Instant dateDeSurvenue;
 
   @Column(name = "date_d_enregistrement")
   @Convert(converter = ExactInstantConverter.class)
   private Instant dateDEnregistrement;
-
-  private String annulationAuteur;
-
-  @Convert(converter = ExactInstantConverter.class)
-  private Instant annulationDate;
-
-  private String annulationMotif;
 
   protected EvenementDAtelierEntity() {
     // Constructeur requis par JPA.
@@ -111,10 +99,8 @@ class EvenementDAtelierEntity {
     tauxHoraire = evenement.tauxHoraire().map(TauxHoraire::value).orElse(null);
     auteur = evenement.auteur().value();
     origine = evenement.origine();
-    remplaceEvenementId = evenement.remplace().map(EvenementDAtelierId::uuid).orElse(null);
     dateDeSurvenue = evenement.dateDeSurvenue();
     dateDEnregistrement = evenement.dateDEnregistrement();
-    reporteLAnnulation(evenement);
   }
 
   static EvenementDAtelierEntity from(SuiviDAtelierEntity suivi, EvenementDAtelier evenement) {
@@ -125,24 +111,8 @@ class EvenementDAtelierEntity {
     return id;
   }
 
-  /**
-   * Seule part mutable d'un evenement : le reste est ecrit une fois pour toutes a l'insertion. Reposer des valeurs
-   * identiques ne produit aucun UPDATE, c'est le controle de saletes de Hibernate qui tranche.
-   */
-  void reporteLAnnulation(EvenementDAtelier evenement) {
-    annulationAuteur = evenement
-      .annulation()
-      .map(annulation -> annulation.auteur().value())
-      .orElse(null);
-    annulationDate = evenement.annulation().map(Annulation::date).orElse(null);
-    annulationMotif = evenement
-      .annulation()
-      .map(annulation -> annulation.motif().value())
-      .orElse(null);
-  }
-
   EvenementDAtelier toDomain() {
-    EvenementDAtelier evenement = EvenementDAtelier.builder()
+    return EvenementDAtelier.builder()
       .id(new EvenementDAtelierId(id))
       .type(type)
       .intention(intention)
@@ -155,17 +125,6 @@ class EvenementDAtelierEntity {
       .tauxHoraire(Optional.ofNullable(tauxHoraire).map(TauxHoraire::new))
       .auteur(new Auteur(auteur))
       .origine(origine)
-      .remplace(Optional.ofNullable(remplaceEvenementId).map(EvenementDAtelierId::new))
       .horodatage(new Horodatage(dateDeSurvenue, dateDEnregistrement));
-
-    return annulation().map(evenement::annule).orElse(evenement);
-  }
-
-  private Optional<Annulation> annulation() {
-    return Optional.ofNullable(annulationDate).map(date -> new Annulation(new Auteur(annulationAuteur), date, motif()));
-  }
-
-  private MotifDAnnulation motif() {
-    return new MotifDAnnulation(annulationMotif);
   }
 }

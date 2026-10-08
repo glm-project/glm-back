@@ -142,11 +142,11 @@ class VieDeLAtelierTest {
    */
   @Test
   void shouldEstampillerLeCoutEtLeTauxHoraireALaSaisie() {
-    assertThat(atelier.get(premierOrdre).journal().actifs()).allSatisfy(evenement -> {
+    assertThat(atelier.get(premierOrdre).journal().evenements()).allSatisfy(evenement -> {
       assertThat(evenement.coutHoraire()).contains(COUT_HORAIRE_FRAISEUSE_1);
       assertThat(evenement.tauxHoraire()).contains(TAUX_HORAIRE_DUPONT);
     });
-    assertThat(atelier.get(secondOrdre).journal().actifs()).allSatisfy(evenement -> {
+    assertThat(atelier.get(secondOrdre).journal().evenements()).allSatisfy(evenement -> {
       assertThat(evenement.coutHoraire()).isEmpty();
       assertThat(evenement.tauxHoraire()).contains(TAUX_HORAIRE_DUPONT);
     });
@@ -158,10 +158,10 @@ class VieDeLAtelierTest {
    */
   @Test
   void shouldPorterLaPauseDeMidiDansLeJournalDeChaqueOrdre() {
-    assertThat(atelier.get(premierOrdre).journal().actifs())
+    assertThat(atelier.get(premierOrdre).journal().evenements())
       .extracting(EvenementDAtelier::type)
       .containsExactly(TypeDEvenementDAtelier.DEBUT, TypeDEvenementDAtelier.FIN, TypeDEvenementDAtelier.DEBUT);
-    assertThat(atelier.get(secondOrdre).journal().actifs())
+    assertThat(atelier.get(secondOrdre).journal().evenements())
       .extracting(EvenementDAtelier::type)
       .containsExactly(TypeDEvenementDAtelier.DEBUT, TypeDEvenementDAtelier.FIN, TypeDEvenementDAtelier.DEBUT, TypeDEvenementDAtelier.FIN);
   }

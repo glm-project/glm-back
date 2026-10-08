@@ -10,8 +10,7 @@ import java.util.Optional;
  * <p>
  * Son intention dit ce qu'il fait d'une activite. Une ouverture et une transition ouvrent une activite, dont elles
  * portent l'identite ; une transition et une fin visent l'activite qu'elles remplacent ou terminent. Seule une fin se
- * pointe FIN. Le fait qui ouvre une activite en porte l'identite : la sienne, ou, pour le remplacant d'une correction,
- * celle qu'ouvrait le fait corrige.
+ * pointe FIN. Le fait qui ouvre une activite en porte l'identite : la sienne.
  * </p>
  *
  * <p>
@@ -39,9 +38,7 @@ public record EvenementDAtelier(
   Optional<TauxHoraire> tauxHoraire,
   Auteur auteur,
   OrigineDuPointage origine,
-  Horodatage horodatage,
-  Optional<Annulation> annulation,
-  Optional<EvenementDAtelierId> remplace
+  Horodatage horodatage
 ) {
   public EvenementDAtelier {
     Assert.notNull("id", id);
@@ -57,8 +54,6 @@ public record EvenementDAtelier(
     Assert.notNull("auteur", auteur);
     Assert.notNull("origine", origine);
     Assert.notNull("horodatage", horodatage);
-    Assert.notNull("annulation", annulation);
-    Assert.notNull("evenement remplace", remplace);
     exigeUneIntentionCoherente(type, intention, activite, activiteVisee);
   }
 
@@ -76,9 +71,7 @@ public record EvenementDAtelier(
       builder.tauxHoraire,
       builder.auteur,
       builder.origine,
-      builder.horodatage,
-      Optional.empty(),
-      builder.remplace
+      builder.horodatage
     );
   }
 
@@ -90,61 +83,8 @@ public record EvenementDAtelier(
     return new EvenementDAtelierBuilder();
   }
 
-  public EvenementDAtelier annule(Annulation annulation) {
-    if (estAnnule()) {
-      throw new EvenementDejaAnnuleException(id);
-    }
-
-    return new EvenementDAtelier(
-      id,
-      type,
-      intention,
-      activite,
-      activiteVisee,
-      operateur,
-      poste,
-      nature,
-      coutHoraire,
-      tauxHoraire,
-      auteur,
-      origine,
-      horodatage,
-      Optional.of(annulation),
-      remplace
-    );
-  }
-
   /**
-   * Ce fait, pris comme remplacant du fait corrige : s'il ouvre une activite et que le fait corrige en ouvrait une, il
-   * en reprend l'identite. Les gestes qui visaient l'activite corrigee y restent ainsi rattaches.
-   */
-  EvenementDAtelier enRemplacementDe(EvenementDAtelier corrige) {
-    return new EvenementDAtelier(
-      id,
-      type,
-      intention,
-      intention.ouvreUneActivite() && corrige.activite().isPresent() ? corrige.activite() : activite,
-      activiteVisee,
-      operateur,
-      poste,
-      nature,
-      coutHoraire,
-      tauxHoraire,
-      auteur,
-      origine,
-      horodatage,
-      annulation,
-      Optional.of(corrige.id())
-    );
-  }
-
-  public boolean estAnnule() {
-    return annulation.isPresent();
-  }
-
-  /**
-   * Vrai si le fait a ete porte au journal par un acte du gestionnaire — une regularisation, ou le remplacant d'une
-   * correction. C'est son origine qui le dit, jamais l'ecart entre les deux dates, qui caracterise aussi un pointage
+   * Vrai si le fait a ete porte au journal par un acte du gestionnaire — une regularisation. C'est son origine qui le dit, jamais l'ecart entre les deux dates, qui caracterise aussi un pointage
    * rejoue hors ligne, ni l'identite de l'auteur.
    */
   public boolean estUneRegularisation() {
@@ -192,7 +132,6 @@ public record EvenementDAtelier(
       EvenementDAtelierTauxHoraireBuilder,
       EvenementDAtelierAuteurBuilder,
       EvenementDAtelierOrigineBuilder,
-      EvenementDAtelierRemplacementBuilder,
       EvenementDAtelierHorodatageBuilder
   {
 
@@ -209,7 +148,6 @@ public record EvenementDAtelier(
     private Auteur auteur;
     private OrigineDuPointage origine;
     private Horodatage horodatage;
-    private Optional<EvenementDAtelierId> remplace;
 
     @Override
     public EvenementDAtelierTypeBuilder id(EvenementDAtelierId id) {
@@ -289,15 +227,8 @@ public record EvenementDAtelier(
     }
 
     @Override
-    public EvenementDAtelierRemplacementBuilder origine(OrigineDuPointage origine) {
+    public EvenementDAtelierHorodatageBuilder origine(OrigineDuPointage origine) {
       this.origine = origine;
-
-      return this;
-    }
-
-    @Override
-    public EvenementDAtelierHorodatageBuilder remplace(Optional<EvenementDAtelierId> remplace) {
-      this.remplace = remplace;
 
       return this;
     }
@@ -355,11 +286,7 @@ public record EvenementDAtelier(
   }
 
   public interface EvenementDAtelierOrigineBuilder {
-    EvenementDAtelierRemplacementBuilder origine(OrigineDuPointage origine);
-  }
-
-  public interface EvenementDAtelierRemplacementBuilder {
-    EvenementDAtelierHorodatageBuilder remplace(Optional<EvenementDAtelierId> remplace);
+    EvenementDAtelierHorodatageBuilder origine(OrigineDuPointage origine);
   }
 
   public interface EvenementDAtelierHorodatageBuilder {

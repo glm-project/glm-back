@@ -199,40 +199,6 @@ public class PupitreSteps {
     rest.post(envois.get(geste).uri(), envois.get(geste).corps());
   }
 
-  @Given("au pupitre, le gestionnaire annule le geste {string} sur {string} a {string}")
-  public void leGestionnaireAnnuleLeGeste(String geste, String element, String instant) {
-    horloge.ilEst(Instant.parse(instant));
-    rest.post(
-      SUIVIS_URI + "/" + suivis.get(element) + "/evenements/" + gestes.get(geste) + "/annulation",
-      JSON.writeValueAsString(Map.of("motif", "saisie en trop"))
-    );
-    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("annulation de %s", geste).isTrue();
-  }
-
-  /**
-   * Corrige l'heure d'un geste en lui gardant tout le reste : son type, son intention, sa cible, son operateur et son
-   * poste. Le remplacant d'un ouvrant garde l'activite qu'il ouvrait.
-   */
-  @Given("au pupitre, le gestionnaire corrige a {string} l'heure du geste {string} sur {string} en {string}")
-  public void leGestionnaireCorrigeLHeureDuGeste(String instant, String geste, String element, String heure) {
-    horloge.ilEst(Instant.parse(instant));
-    Map<String, Object> corps = new LinkedHashMap<>(corpsDesGestes.get(geste));
-    corps.remove("id");
-    corps.put("motif", "heure erronee");
-    corps.put("dateDeSurvenue", heure);
-    ecritures.corrige(suivis.get(element), gestes.get(geste), corps);
-    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("correction de %s", geste).isTrue();
-  }
-
-  @Given("le dernier pointage sur {string} est annule a {string}")
-  public void leDernierPointageEstAnnule(String element, String instant) {
-    horloge.ilEst(Instant.parse(instant));
-    rest.post(
-      SUIVIS_URI + "/" + suivis.get(element) + "/evenements/" + dernierEvenement + "/annulation",
-      JSON.writeValueAsString(Map.of("motif", "saisie en trop"))
-    );
-  }
-
   @Given("{string} est supprime du referentiel")
   public void estSupprimeDuReferentiel(String element) {
     rest.delete(ELEMENTS_URI + "/" + elements.get(element));

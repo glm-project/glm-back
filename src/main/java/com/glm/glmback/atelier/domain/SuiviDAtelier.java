@@ -10,8 +10,7 @@ import java.util.Optional;
  *
  * <p>
  * Pointage et regularisation sont le meme acte du domaine, {@link #enregistre(EvenementDAtelier)} : ils ne different
- * que par la provenance de la date de survenue, decidee en amont. C'est ce qui rend la correction sure, elle repasse
- * par exactement les memes invariants.
+ * que par la provenance de la date de survenue, decidee en amont.
  * </p>
  *
  * <p>
@@ -61,18 +60,6 @@ public record SuiviDAtelier(
 
   public SuiviDAtelier enregistre(EvenementDAtelier evenement) {
     return new SuiviDAtelier(id, element, engagement, journal.enregistre(evenement), cloture, revision);
-  }
-
-  public SuiviDAtelier annule(EvenementDAtelierId evenement, Annulation annulation) {
-    return new SuiviDAtelier(id, element, engagement, journal.annule(evenement, annulation), cloture, revision);
-  }
-
-  /**
-   * Annule un evenement et lui substitue sa version corrigee, en un seul acte : le remplacant d'un ouvrant garde
-   * l'activite qu'il ouvrait, et les gestes qui la visent y restent rattaches.
-   */
-  public SuiviDAtelier corrige(EvenementDAtelierId evenement, Annulation annulation, EvenementDAtelier remplacant) {
-    return new SuiviDAtelier(id, element, engagement, journal.corrige(evenement, annulation, remplacant), cloture, revision);
   }
 
   public SuiviDAtelier cloture(Cloture cloture) {
@@ -135,7 +122,7 @@ public record SuiviDAtelier(
       return EtatDAtelier.EN_COURS;
     }
 
-    return journal.actifs().isEmpty() ? EtatDAtelier.EN_ATTENTE : EtatDAtelier.INTERROMPU;
+    return journal.evenements().isEmpty() ? EtatDAtelier.EN_ATTENTE : EtatDAtelier.INTERROMPU;
   }
 
   public boolean estCloture() {

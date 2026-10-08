@@ -6,8 +6,6 @@ import com.glm.glmback.atelier.domain.DateDeSurvenueFutureException;
 import com.glm.glmback.atelier.domain.ElementDejaEngageException;
 import com.glm.glmback.atelier.domain.ElementEngageableIntrouvableException;
 import com.glm.glmback.atelier.domain.EvenementAvantEngagementException;
-import com.glm.glmback.atelier.domain.EvenementDAtelierIntrouvableException;
-import com.glm.glmback.atelier.domain.EvenementDejaAnnuleException;
 import com.glm.glmback.atelier.domain.IdentifiantDEvenementReutiliseException;
 import com.glm.glmback.atelier.domain.OperateurDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.OperateurNonHabiliteException;
@@ -15,7 +13,7 @@ import com.glm.glmback.atelier.domain.PosteDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierClotureException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
-import com.glm.glmback.atelier.domain.gestionanomalies.NatureDAnomalieInvalideException;
+import com.glm.glmback.atelier.domain.gestionanomalies.FinAutomatiqueIntrouvableException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.ProblemDetail;
@@ -26,19 +24,14 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 @Order(Ordered.LOWEST_PRECEDENCE - 20_000)
 class AtelierExceptionAdvice {
 
-  @ExceptionHandler(NatureDAnomalieInvalideException.class)
-  ProblemDetail handleNatureDAnomalieInvalide(NatureDAnomalieInvalideException e) {
-    return ErreurDAtelier.NATURE_D_ANOMALIE_INVALIDE.problem(e);
-  }
-
   @ExceptionHandler(SuiviDAtelierIntrouvableException.class)
   ProblemDetail handleSuiviDAtelierIntrouvable(SuiviDAtelierIntrouvableException e) {
     return ErreurDAtelier.SUIVI_D_ATELIER_INTROUVABLE.problem(e);
   }
 
-  @ExceptionHandler(EvenementDAtelierIntrouvableException.class)
-  ProblemDetail handleEvenementDAtelierIntrouvable(EvenementDAtelierIntrouvableException e) {
-    return ErreurDAtelier.EVENEMENT_D_ATELIER_INTROUVABLE.problem(e);
+  @ExceptionHandler(FinAutomatiqueIntrouvableException.class)
+  ProblemDetail handleFinAutomatiqueIntrouvable(FinAutomatiqueIntrouvableException e) {
+    return ErreurDAtelier.FIN_AUTOMATIQUE_INTROUVABLE.problem(e);
   }
 
   @ExceptionHandler(ElementEngageableIntrouvableException.class)
@@ -74,11 +67,6 @@ class AtelierExceptionAdvice {
   @ExceptionHandler(ElementDejaEngageException.class)
   ProblemDetail handleElementDejaEngage(ElementDejaEngageException e) {
     return ErreurDAtelier.ELEMENT_DEJA_ENGAGE.problem(e);
-  }
-
-  @ExceptionHandler(EvenementDejaAnnuleException.class)
-  ProblemDetail handleEvenementDejaAnnule(EvenementDejaAnnuleException e) {
-    return ErreurDAtelier.EVENEMENT_DEJA_ANNULE.problem(e);
   }
 
   @ExceptionHandler(SuiviDAtelierClotureException.class)

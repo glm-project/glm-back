@@ -4,7 +4,6 @@ import com.glm.glmback.atelier.domain.ActiviteId;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
 import com.glm.glmback.atelier.domain.CoutHoraire;
 import com.glm.glmback.atelier.domain.EvenementDAtelier;
-import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.IntentionDePointage;
 import com.glm.glmback.atelier.domain.NatureDOperation;
 import com.glm.glmback.atelier.domain.TauxHoraire;
@@ -23,12 +22,8 @@ import java.util.UUID;
   ciblee, puis une ouverture a la reprise.
   """
 )
-record RestEvenementDAtelier(
-  @Schema(
-    description = "Identifiant de l'evenement, a reprendre pour l'annuler ou le corriger.",
-    requiredMode = Schema.RequiredMode.REQUIRED
-  )
-  UUID id,
+public record RestEvenementDAtelier(
+  @Schema(description = "Identifiant de l'evenement.", requiredMode = Schema.RequiredMode.REQUIRED) UUID id,
   @Schema(
     description = "Nature du pointage. La reprise du travail apres une non conformite se pointe DEBUT, en transition.",
     requiredMode = Schema.RequiredMode.REQUIRED
@@ -42,8 +37,7 @@ record RestEvenementDAtelier(
   @Schema(
     description = """
     Identite de l'activite qu'ouvre une ouverture ou une transition, absente pour une fin. C'est l'identifiant du
-    pointage ouvrant d'origine : le remplacant d'une correction garde celle de l'ouvrant qu'il corrige. C'est elle
-    qu'une transition ou une fin vise dans `cible`.
+    pointage ouvrant. C'est elle qu'une transition ou une fin vise dans `cible`.
     """
   )
   UUID activite,
@@ -75,20 +69,15 @@ record RestEvenementDAtelier(
   Instant dateDEnregistrement,
   @Schema(
     description = """
-    Vrai lorsque l'evenement a ete saisi par le gestionnaire, en regularisation ou comme remplacant d'une correction.
+    Vrai lorsque l'evenement a ete saisi par le gestionnaire, en regularisation.
     Un pointage ne l'est jamais, meme rejoue hors ligne avec l'heure de son geste : une saisie differee se lit a l'ecart
     entre dateDeSurvenue et dateDEnregistrement.
     """,
     requiredMode = Schema.RequiredMode.REQUIRED
   )
-  boolean estUneRegularisation,
-  @Schema(description = "Presente lorsque l'evenement a ete annule. L'evenement reste au journal.") RestAnnulation annulation,
-  @Schema(
-    description = "Evenement corrige par ce remplacant. Absent pour un pointage, une regularisation ou un historique sans lien explicite."
-  )
-  UUID remplace
+  boolean estUneRegularisation
 ) {
-  static RestEvenementDAtelier from(EvenementDAtelier evenement, AnnuaireDAtelier annuaire) {
+  public static RestEvenementDAtelier from(EvenementDAtelier evenement, AnnuaireDAtelier annuaire) {
     return new RestEvenementDAtelier(
       evenement.id().uuid(),
       evenement.type(),
@@ -108,9 +97,7 @@ record RestEvenementDAtelier(
       evenement.auteur().value(),
       evenement.dateDeSurvenue(),
       evenement.dateDEnregistrement(),
-      evenement.estUneRegularisation(),
-      evenement.annulation().map(RestAnnulation::from).orElse(null),
-      evenement.remplace().map(EvenementDAtelierId::uuid).orElse(null)
+      evenement.estUneRegularisation()
     );
   }
 }

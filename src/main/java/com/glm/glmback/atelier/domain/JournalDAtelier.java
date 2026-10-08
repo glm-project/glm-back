@@ -6,7 +6,6 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -14,11 +13,9 @@ import java.util.stream.Stream;
  * La suite ordonnee des evenements d'un element engage.
  *
  * <p>
- * Le journal se trie par date de survenue et se reinterprete en entier a chaque lecture : une insertion retroactive,
- * une annulation ou une correction rejoue tout le chemin. Il ne refuse jamais une sequence : des faits qui se
- * contredisent sont conserves, et leur sequence est en conflit jusqu'a ce que le gestionnaire la resolve. Les
- * evenements annules restent presents, pour la trace, mais sont ecartes du repli. Les faits de chaque cle d'activite
- * sont interpretes par {@link SequenceDActivites}.
+ * Le journal se trie par date de survenue et se reinterprete en entier a chaque lecture : une insertion retroactive
+ * rejoue tout le chemin. Il ne refuse jamais une sequence : des faits qui se contredisent sont conserves, et leur
+ * sequence est en conflit. Les faits de chaque cle d'activite sont interpretes par {@link SequenceDActivites}.
  * </p>
  *
  * <p>
@@ -57,44 +54,6 @@ public record JournalDAtelier(List<EvenementDAtelier> evenements) {
     return new JournalDAtelier(enregistres);
   }
 
-  public JournalDAtelier annule(EvenementDAtelierId id, Annulation annulation) {
-    exige(id);
-
-    return new JournalDAtelier(
-      evenements
-        .stream()
-        .map(evenement -> evenement.id().equals(id) ? evenement.annule(annulation) : evenement)
-        .toList()
-    );
-  }
-
-  /**
-   * Annule un evenement et lui substitue sa version corrigee, en un seul acte.
-   *
-   * <p>
-   * Le remplacant d'un ouvrant reprend l'activite qu'il ouvrait, pour que les gestes qui la visent y restent
-   * rattaches : c'est ce qui distingue la correction d'une annulation suivie d'une regularisation, qui ouvrirait une
-   * autre activite et laisserait ces gestes en conflit.
-   * </p>
-   */
-  public JournalDAtelier corrige(EvenementDAtelierId id, Annulation annulation, EvenementDAtelier remplacant) {
-    EvenementDAtelier corrige = evenement(id).orElseThrow(() -> new EvenementDAtelierIntrouvableException(id));
-    EvenementDAtelier enPlace = remplacant.enRemplacementDe(corrige);
-    List<EvenementDAtelier> corriges = remplace(corrige, evenement -> Stream.of(evenement.annule(annulation), enPlace));
-    exigeLActiviteVisee(corriges, enPlace);
-    enPlace
-      .activite()
-      .ifPresent(activite ->
-        corriges
-          .stream()
-          .filter(fait -> !fait.estAnnule())
-          .filter(fait -> fait.activiteVisee().filter(activite::equals).isPresent())
-          .forEach(fait -> exigeLActiviteVisee(corriges, fait))
-      );
-
-    return new JournalDAtelier(corriges);
-  }
-
   /**
    * Refuse un geste qui vise une activite absente de ce journal, ou ouverte sur une autre cle que la sienne.
    */
@@ -109,12 +68,8 @@ public record JournalDAtelier(List<EvenementDAtelier> evenements) {
       .findFirst();
   }
 
-  public List<EvenementDAtelier> actifs() {
-    return actifs(evenements);
-  }
-
   /**
-   * Les activites que les faits actifs de chaque cle interpretent, la cloture refermant a son heure celle qui reste en
+   * Les activites que les faits de chaque cle interpretent, la cloture refermant a son heure celle qui reste en
    * cours.
    */
   public List<Activite> activites(Optional<Instant> cloture) {
@@ -125,7 +80,7 @@ public record JournalDAtelier(List<EvenementDAtelier> evenements) {
   }
 
   /**
-   * Les sequences en conflit que les faits actifs de chaque cle laissent a resoudre.
+   * Les sequences en conflit que les faits de chaque cle laissent a resoudre.
    */
   public List<SequenceEnConflit> conflits(Optional<Instant> cloture) {
     return parCle()
@@ -140,7 +95,7 @@ public record JournalDAtelier(List<EvenementDAtelier> evenements) {
   }
 
   /**
-   * Les faits de chaque cle, annules compris : un geste qui vise une ouverture annulee se situe par elle.
+   * Les faits de chaque cle.
    */
   private Stream<List<EvenementDAtelier>> parCle() {
     return evenements
@@ -148,17 +103,6 @@ public record JournalDAtelier(List<EvenementDAtelier> evenements) {
       .collect(Collectors.groupingBy(EvenementDAtelier::cle, LinkedHashMap::new, Collectors.toList()))
       .values()
       .stream();
-  }
-
-  private void exige(EvenementDAtelierId id) {
-    evenement(id).orElseThrow(() -> new EvenementDAtelierIntrouvableException(id));
-  }
-
-  private List<EvenementDAtelier> remplace(EvenementDAtelier corrige, Function<EvenementDAtelier, Stream<EvenementDAtelier>> remplacement) {
-    return evenements
-      .stream()
-      .flatMap(evenement -> evenement.equals(corrige) ? remplacement.apply(evenement) : Stream.of(evenement))
-      .toList();
   }
 
   private static void exigeLActiviteVisee(List<EvenementDAtelier> evenements, EvenementDAtelier geste) {
@@ -172,26 +116,10 @@ public record JournalDAtelier(List<EvenementDAtelier> evenements) {
       });
   }
 
-  /**
-   * L'ouvrant actif de l'activite, ou a defaut celui, annule, qui l'avait ouverte.
-   */
   private static Optional<EvenementDAtelier> ouvrantDe(List<EvenementDAtelier> evenements, ActiviteId activite) {
-    List<EvenementDAtelier> ouvrants = evenements
-      .stream()
-      .filter(evenement -> evenement.activite().filter(activite::equals).isPresent())
-      .toList();
-
-    return ouvrants
-      .stream()
-      .filter(ouvrant -> !ouvrant.estAnnule())
-      .findFirst()
-      .or(() -> ouvrants.stream().findFirst());
-  }
-
-  private static List<EvenementDAtelier> actifs(List<EvenementDAtelier> evenements) {
     return evenements
       .stream()
-      .filter(evenement -> !evenement.estAnnule())
-      .toList();
+      .filter(evenement -> evenement.activite().filter(activite::equals).isPresent())
+      .findFirst();
   }
 }

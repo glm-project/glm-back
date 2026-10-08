@@ -180,53 +180,15 @@ public class SyntheseDesHeuresSteps {
           && type.equals(pointage.get("type"))
           && intention.equals(pointage.get("intention"))
       )
-      .filter(pointage -> pointage.get("annulation") == null)
       .map(pointage -> (String) pointage.get("id"))
       .findFirst()
       .orElseThrow();
-  }
-
-  @Given("la synthese des heures corrige le pointage {string} sur {string} a {string} vers {string}")
-  public void corrigeLHeure(String alias, String element, String reception, String survenue) {
-    horloge.ilEst(Instant.parse(reception));
-    Map<String, Object> corps = new HashMap<>(corpsDesPointages.get(alias));
-    corps.remove("id");
-    corps.put("motif", "heure erronee");
-    corps.put("dateDeSurvenue", survenue);
-    ecritures.corrige(suivis.get(element), pointages.get(alias), corps);
-    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("la correction doit etre acceptee").isTrue();
-    pointages.put(alias + "-corrige", identiteDuPointageActif(survenue, (String) corps.get("type"), (String) corps.get("intention")));
-  }
-
-  @Given("la synthese des heures corrige la cible du pointage {string} sur {string} vers {string} a {string}")
-  public void corrigeLaCible(String alias, String element, String cible, String reception) {
-    horloge.ilEst(Instant.parse(reception));
-    Map<String, Object> corps = new HashMap<>(corpsDesPointages.get(alias));
-    corps.remove("id");
-    corps.put("motif", "activite visee erronee");
-    corps.put("cible", pointages.get(cible));
-    ecritures.corrige(suivis.get(element), pointages.get(alias), corps);
-    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("la correction de cible doit etre acceptee").isTrue();
-    pointages.put(
-      alias + "-corrige",
-      identiteDuPointageActif((String) corps.get("dateDeSurvenue"), (String) corps.get("type"), (String) corps.get("intention"))
-    );
   }
 
   @Then("le suivi de la synthese des heures de {string} ne porte aucun conflit")
   public void nePorteAucunConflit(String element) {
     rest.get(SUIVIS_URI + "/" + suivis.get(element));
     assertThat((List<?>) CucumberRestTestContext.getElement("$.conflits")).isEmpty();
-  }
-
-  @Given("pour la synthese, le dernier pointage sur l'element {string} est annule a {string}")
-  public void pourLaSyntheseLeDernierPointageEstAnnule(String element, String instant) {
-    horloge.ilEst(Instant.parse(instant));
-    rest.post(
-      SUIVIS_URI + "/" + suivis.get(element) + "/evenements/" + dernierPointage + "/annulation",
-      JSON.writeValueAsString(Map.of("motif", "saisie en trop"))
-    );
-    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("l'annulation doit etre acceptee").isTrue();
   }
 
   @Given("pour la synthese, l'element {string} est cloture a {string}")
@@ -402,16 +364,6 @@ public class SyntheseDesHeuresSteps {
     assertThat(synthese).doesNotContainKeys("dureeTotale", "dureePresumeeTotale", "dureeOperationnellePresumeeTotale");
     assertThat(jours()).allSatisfy(jour -> assertThat(jour).doesNotContainKeys("duree", "dureePresumee", "dureeOperationnellePresumee"));
     assertThat(elementsDeLaSynthese()).allSatisfy(element -> assertThat(element).doesNotContainKey("dureePresumee"));
-  }
-
-  @Given("pour la synthese, le pointage {string} sur {string} est annule a {string}")
-  public void annuleLePointage(String alias, String element, String instant) {
-    horloge.ilEst(Instant.parse(instant));
-    rest.post(
-      SUIVIS_URI + "/" + suivis.get(element) + "/evenements/" + pointages.get(alias) + "/annulation",
-      JSON.writeValueAsString(Map.of("motif", "saisie en trop"))
-    );
-    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).isTrue();
   }
 
   private void compare(List<Map<String, Object>> lus, List<Map<String, String>> attendus) {

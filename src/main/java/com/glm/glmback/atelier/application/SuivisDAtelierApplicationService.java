@@ -3,9 +3,7 @@ package com.glm.glmback.atelier.application;
 import com.glm.glmback.atelier.domain.ActiviteId;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelierService;
-import com.glm.glmback.atelier.domain.AnnulationAEnregistrer;
 import com.glm.glmback.atelier.domain.ClotureAEnregistrer;
-import com.glm.glmback.atelier.domain.CorrectionAEnregistrer;
 import com.glm.glmback.atelier.domain.ElementsEngageables;
 import com.glm.glmback.atelier.domain.EngagementAEnregistrer;
 import com.glm.glmback.atelier.domain.EtatDAtelier;
@@ -43,7 +41,7 @@ import org.springframework.transaction.support.TransactionTemplate;
  * Orchestration des actes portant sur un element engage en atelier.
  *
  * <p>
- * Le pointage est ouvert a l'operateur ; l'engagement, la cloture et les trois actes de correction sont reserves au
+ * Le pointage est ouvert a l'operateur ; l'engagement, la cloture et la regularisation sont reserves au
  * gestionnaire. C'est la frontiere entre les deux surfaces de l'API.
  * </p>
  *
@@ -130,21 +128,6 @@ public class SuivisDAtelierApplicationService {
   public LectureDuSuivi regularise(RegularisationAEnregistrer commande) {
     UUID evenement = reserveIdentiteServeur();
     SuiviDAtelier suivi = suivisDAtelier.regularise(commande, new com.glm.glmback.atelier.domain.EvenementDAtelierId(evenement));
-    identites.associe(evenement, new AgregatDEvenement(TypeDAgregatDEvenement.SUIVI_D_ATELIER, suivi.id().uuid()));
-    return lu(suivi);
-  }
-
-  @Secured("ROLE_GESTIONNAIRE")
-  @Transactional
-  public LectureDuSuivi annule(AnnulationAEnregistrer commande) {
-    return lu(suivisDAtelier.annule(commande));
-  }
-
-  @Secured("ROLE_GESTIONNAIRE")
-  @Transactional
-  public LectureDuSuivi corrige(CorrectionAEnregistrer commande) {
-    UUID evenement = reserveIdentiteServeur();
-    SuiviDAtelier suivi = suivisDAtelier.corrige(commande, new com.glm.glmback.atelier.domain.EvenementDAtelierId(evenement));
     identites.associe(evenement, new AgregatDEvenement(TypeDAgregatDEvenement.SUIVI_D_ATELIER, suivi.id().uuid()));
     return lu(suivi);
   }

@@ -51,15 +51,10 @@ class OpenApiConfigurationIT {
       .perform(get("/v3/api-docs"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.paths['/api/atelier/anomalies'].get.tags[0]").value("Atelier - anomalies de pointage"))
-      .andExpect(jsonPath("$.paths['/api/atelier/anomalies'].get.parameters[?(@.name == 'nature')].required").value(true))
-      .andExpect(jsonPath("$.paths['/api/atelier/anomalies'].get.parameters[?(@.name == 'nature')].schema.enum[0]").value("CONFLIT"))
-      .andExpect(
-        jsonPath("$.paths['/api/atelier/anomalies'].get.parameters[?(@.name == 'nature')].schema.enum[1]").value("FIN_AUTOMATIQUE")
-      )
-      .andExpect(jsonPath("$.paths['/api/atelier/anomalies'].get.parameters[?(@.name == 'nature')].schema.enum[2]").isEmpty())
+      .andExpect(jsonPath("$.paths['/api/atelier/anomalies'].get.parameters[?(@.name == 'nature')]").isEmpty())
       .andExpect(
         jsonPath("$.paths['/api/atelier/anomalies'].get.responses['200'].content['*/*'].schema['$ref']").value(
-          "#/components/schemas/RestPageDesAnomalies"
+          "#/components/schemas/PageRestFinAutomatiqueEnListe"
         )
       )
       .andExpect(jsonPath("$.paths['/api/atelier/suivis/{id}/anomalies/{pointage}'].get.tags[0]").value("Atelier - anomalies de pointage"))
@@ -71,10 +66,11 @@ class OpenApiConfigurationIT {
       .andExpect(jsonPath("$.paths['/api/atelier/suivis/{id}/conflits/{pointage}/apercus']").doesNotExist())
       .andExpect(jsonPath("$.components.schemas.RestDossierAnomalie").exists())
       .andExpect(jsonPath("$.components.schemas.RestAdresseDossierAnomalie").exists())
-      .andExpect(jsonPath("$.components.schemas.RestPageDesAnomalies").exists())
-      .andExpect(jsonPath("$.components.schemas.RestConflitEnListe").exists())
+      .andExpect(jsonPath("$.components.schemas.PageRestFinAutomatiqueEnListe").exists())
       .andExpect(jsonPath("$.components.schemas.RestFinAutomatiqueEnListe").exists())
-      .andExpect(jsonPath("$.components.schemas.RestAnomalieEnListe").exists())
+      .andExpect(jsonPath("$.components.schemas.RestConflitEnListe").doesNotExist())
+      .andExpect(jsonPath("$.components.schemas.RestAnomalieEnListe").doesNotExist())
+      .andExpect(jsonPath("$.components.schemas.RestPageDesAnomalies").doesNotExist())
       .andExpect(jsonPath("$.components.schemas.RestDossierConflit").doesNotExist())
       .andExpect(jsonPath("$.components.schemas.RestAdresseDossierConflit").doesNotExist())
       .andExpect(jsonPath("$.components.schemas.RestPageDesConflits").doesNotExist());

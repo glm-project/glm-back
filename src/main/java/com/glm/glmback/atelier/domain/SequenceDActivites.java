@@ -36,7 +36,7 @@ import java.util.stream.Stream;
  *
  * <p>
  * Aucun fait n'est jamais refuse ici. Un geste qui contredit les autres faits est conserve, et la sequence est en
- * conflit : sa cible est deja remplacee ou deja terminee par une fin reelle a son heure, pas encore ouverte, ou annulee ;
+ * conflit : sa cible est deja remplacee ou deja terminee par une fin reelle a son heure, ou pas encore ouverte ;
  * la transition vise sa propre categorie, une cible echue alors qu'une autre activite est en cours, ou une cible que seul
  * le gestionnaire a prolongee au-dela de son echeance. Une cible seulement echue ne contredit rien.
  * </p>
@@ -44,7 +44,7 @@ import java.util.stream.Stream;
  * <p>
  * Une contradiction couvre la zone qui va du debut de la cible a l'heure du geste. Sont a resoudre la cible, l'activite
  * qu'ouvre le geste et toute activite de la cle qui chevauche cette zone ; les autres gardent leur interpretation. Les
- * contradictions qui partagent une activite, ou une cible annulee, forment une meme sequence en conflit, dont les
+ * contradictions qui partagent une activite forment une meme sequence en conflit, dont les
  * pointages sont les gestes contradictoires et tout fait actif qui ouvre ou vise l'une de ses activites. Le resultat ne
  * depend que de l'ensemble des faits, jamais de leur ordre de reception.
  * </p>
@@ -64,10 +64,7 @@ final class SequenceDActivites {
   private Optional<Instant> cloture = Optional.empty();
 
   private SequenceDActivites(List<EvenementDAtelier> faits) {
-    actifs = faits
-      .stream()
-      .filter(fait -> !fait.estAnnule())
-      .toList();
+    actifs = faits;
     regularisations = actifs
       .stream()
       .filter(EvenementDAtelier::estUneRegularisation)
@@ -79,7 +76,7 @@ final class SequenceDActivites {
           BinaryOperator.maxBy(Comparator.naturalOrder())
         )
       );
-    Stream.concat(faits.stream().filter(EvenementDAtelier::estAnnule), actifs.stream()).forEach(fait ->
+    actifs.forEach(fait ->
       fait
         .activite()
         .ifPresent(activite -> {
@@ -90,15 +87,14 @@ final class SequenceDActivites {
   }
 
   /**
-   * Les activites que les faits actifs de la cle interpretent, dans l'ordre de leur ouverture. Les faits annules n'y
-   * comptent pas : ils ne servent qu'a situer la contradiction d'un geste qui vise leur ouverture.
+   * Les activites que les faits de la cle interpretent, dans l'ordre de leur ouverture.
    */
   static List<Activite> activites(List<EvenementDAtelier> faits, Optional<Instant> cloture) {
     return interpretation(faits, cloture).activitesInterpretees();
   }
 
   /**
-   * Les sequences en conflit que les faits actifs de la cle laissent a resoudre, dans l'ordre de leur premier pointage.
+   * Les sequences en conflit que les faits de la cle laissent a resoudre, dans l'ordre de leur premier pointage.
    */
   static List<SequenceEnConflit> conflits(List<EvenementDAtelier> faits, Optional<Instant> cloture) {
     return interpretation(faits, cloture).sequencesEnConflit();
@@ -238,9 +234,6 @@ final class SequenceDActivites {
   }
 
   private RaisonDuConflit raison(EvenementDAtelier geste, ActiviteId visee) {
-    if (Optional.ofNullable(ouvrants.get(visee)).filter(EvenementDAtelier::estAnnule).isPresent()) {
-      return RaisonDuConflit.OUVRANT_ANNULE;
-    }
     if (debuts.getOrDefault(visee, geste.dateDeSurvenue()).isAfter(geste.dateDeSurvenue())) {
       return RaisonDuConflit.GESTE_AVANT_OUVERTURE;
     }
@@ -326,8 +319,8 @@ final class SequenceDActivites {
   }
 
   /**
-   * Les contradictions regroupees en sequences : deux contradictions qui laissent une meme activite a resoudre, ou qui
-   * visent une meme cible annulee, appartiennent a la meme sequence.
+   * Les contradictions regroupees en sequences : deux contradictions qui laissent une meme activite a resoudre
+   * appartiennent a la meme sequence.
    */
   private List<GroupeContradictoire> groupes() {
     List<GroupeContradictoire> groupes = new ArrayList<>();
@@ -379,7 +372,7 @@ final class SequenceDActivites {
   }
 
   /**
-   * Des contradictions d'une meme sequence : les identites qu'elles laissent a resoudre, cibles annulees comprises, et
+   * Des contradictions d'une meme sequence : les identites qu'elles laissent a resoudre, et
    * leurs gestes.
    */
   private record GroupeContradictoire(Set<ActiviteId> cibles, List<EvenementDAtelierId> gestes) {

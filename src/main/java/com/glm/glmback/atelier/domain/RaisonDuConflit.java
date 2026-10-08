@@ -2,7 +2,6 @@ package com.glm.glmback.atelier.domain;
 
 public enum RaisonDuConflit {
   GESTE_AVANT_OUVERTURE,
-  OUVRANT_ANNULE,
   TRANSITION_MEME_CATEGORIE,
   CIBLE_ECHUE_AVEC_AUTRE_ACTIVITE,
   CONTRADICTION_REGULARISATION,

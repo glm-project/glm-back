@@ -25,7 +25,6 @@ Feature: Liste des fins automatiques parmi les anomalies de pointage
     When je liste les fins automatiques de "Liste fins 8101"
     Then la liste des fins automatiques compte 1 ligne
     And la ligne de la liste des fins automatiques porte
-      | nature   | FIN_AUTOMATIQUE                      |
       | pointage | 00000000-0000-0000-0000-000000081011 |
       | activite | 00000000-0000-0000-0000-000000081011 |
       | debut    | 2044-02-01T08:00:00Z                 |
@@ -168,37 +167,3 @@ Feature: Liste des fins automatiques parmi les anomalies de pointage
       | pointage | 00000000-0000-0000-0000-000000081062 |
       | debut    | 2044-02-06T12:00:00Z                 |
       | echeance | 2044-02-07T01:00:00Z                 |
-
-  # L'adresse d'une ligne est celle de l'ouvrant actif, que la correction du debut remplace ; l'activite garde son
-  # identite d'origine. Le dossier de cette adresse doit etre celui de la meme fin automatique : l'adresse de
-  # l'activite d'origine, annulee, ne l'est pas.
-  Scenario: L'adresse de la ligne ouvre le dossier de la meme fin automatique apres la correction de l'ouvrant
-    Given il est "2044-02-08T07:00:00Z"
-    And l'entreprise a cree l'element de fabrication "Liste fins 8107"
-      | categorie | OF     |
-      | reference | LF8107 |
-    And j'ai engage l'element "Liste fins 8107" en atelier
-    And il est "2044-02-08T08:00:00Z"
-    And j'ai pointe sur "Liste fins 8107"
-      | id        | 00000000-0000-0000-0000-000000081071 |
-      | type      | DEBUT                                |
-      | intention | OUVERTURE                            |
-      | operateur | dupont-liste-fins                    |
-      | poste     | fraiseuse-liste-fins                 |
-    And il est "2044-02-08T23:00:00Z"
-    When je corrige l'evenement 0 de "Liste fins 8107"
-      | motif          | Le travail a commence a neuf heures |
-      | type           | DEBUT                               |
-      | intention      | OUVERTURE                           |
-      | operateur      | dupont-liste-fins                   |
-      | poste          | fraiseuse-liste-fins                |
-      | dateDeSurvenue | 2044-02-08T09:00:00Z                |
-    Then la reponse a le statut http 200
-    When je liste les fins automatiques de "Liste fins 8107"
-    Then la liste des fins automatiques compte 1 ligne
-    And la ligne de la liste des fins automatiques porte
-      | activite | 00000000-0000-0000-0000-000000081071 |
-      | debut    | 2044-02-08T09:00:00Z                 |
-      | echeance | 2044-02-08T22:00:00Z                 |
-    And l'adresse de la ligne de la liste des fins automatiques n'est pas l'activite d'origine
-    And le dossier de l'adresse de la ligne de la liste des fins automatiques est a l'etat "FIN_AUTOMATIQUE"
