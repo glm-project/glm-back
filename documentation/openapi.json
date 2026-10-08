@@ -1234,12 +1234,6 @@
             "description" : "Nom de l'element, produit par la numerotation automatique.",
             "example" : "OF-2026-000001",
             "type" : "string"
-          },
-          "type" : {
-            "deprecated" : true,
-            "description" : "Remplace par categorie : ORDRE_DE_FABRICATION pour la categorie OF, PRODUIT pour toute autre.",
-            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
-            "type" : "string"
           }
         },
         "type" : "object"
@@ -1259,12 +1253,6 @@
           "nom" : {
             "description" : "Nom de l'element.",
             "example" : "OF-2026-000002",
-            "type" : "string"
-          },
-          "type" : {
-            "deprecated" : true,
-            "description" : "Remplace par categorie : ORDRE_DE_FABRICATION pour la categorie OF, PRODUIT pour toute autre.",
-            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
             "type" : "string"
           }
         },
@@ -1295,12 +1283,6 @@
             "type" : "string"
           },
           "reference" : {
-            "type" : "string"
-          },
-          "type" : {
-            "deprecated" : true,
-            "description" : "Remplace par categorie : ORDRE_DE_FABRICATION pour la categorie OF, PRODUIT pour toute autre.",
-            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
             "type" : "string"
           }
         },
@@ -1347,15 +1329,9 @@
             "description" : "Reference de l'element, relue au referentiel.",
             "example" : 1015,
             "type" : "string"
-          },
-          "type" : {
-            "deprecated" : true,
-            "description" : "Remplace par categorie : ORDRE_DE_FABRICATION pour la categorie OF, PRODUIT pour toute autre.",
-            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
-            "type" : "string"
           }
         },
-        "required" : [ "categorie", "duree", "dureeNonConformite", "id", "nom", "postes", "type" ],
+        "required" : [ "categorie", "duree", "dureeNonConformite", "id", "nom", "postes" ],
         "type" : "object"
       },
       "RestElementDeSupervision" : {
@@ -1373,15 +1349,9 @@
           },
           "reference" : {
             "type" : "string"
-          },
-          "type" : {
-            "deprecated" : true,
-            "description" : "Remplace par categorie : ORDRE_DE_FABRICATION pour la categorie OF, PRODUIT pour toute autre.",
-            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
-            "type" : "string"
           }
         },
-        "required" : [ "categorie", "id", "nom", "type" ],
+        "required" : [ "categorie", "id", "nom" ],
         "type" : "object"
       },
       "RestEngagement" : {
@@ -2774,15 +2744,9 @@
             "description" : "Nom de l'element, copie a l'engagement.",
             "example" : "OF-2026-000042",
             "type" : "string"
-          },
-          "type" : {
-            "deprecated" : true,
-            "description" : "Remplace par categorie : ORDRE_DE_FABRICATION pour la categorie OF, PRODUIT pour toute autre.",
-            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
-            "type" : "string"
           }
         },
-        "required" : [ "activitesEnCours", "categorie", "conflits", "element", "engageLe", "engagePar", "etat", "id", "journal", "nom", "type" ],
+        "required" : [ "activitesEnCours", "categorie", "conflits", "element", "engageLe", "engagePar", "etat", "id", "journal", "nom" ],
         "type" : "object"
       },
       "RestSuiviDAtelierEnGrille" : {
@@ -2837,15 +2801,9 @@
             "description" : "Nom de l'element, copie a l'engagement.",
             "example" : "OF-2026-000042",
             "type" : "string"
-          },
-          "type" : {
-            "deprecated" : true,
-            "description" : "Remplace par categorie : ORDRE_DE_FABRICATION pour la categorie OF, PRODUIT pour toute autre.",
-            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
-            "type" : "string"
           }
         },
-        "required" : [ "activitesEnCours", "categorie", "element", "engageLe", "engagePar", "etat", "id", "nom", "type" ],
+        "required" : [ "activitesEnCours", "categorie", "element", "engageLe", "engagePar", "etat", "id", "nom" ],
         "type" : "object"
       },
       "RestSuiviDuPupitre" : {
@@ -2888,15 +2846,9 @@
             "description" : "Reference que l'entreprise donne elle-meme a l'element, relue a chaque lecture. Absente si elle n'en attribue pas.",
             "example" : "M-1187",
             "type" : "string"
-          },
-          "type" : {
-            "deprecated" : true,
-            "description" : "Remplace par categorie : ORDRE_DE_FABRICATION pour la categorie OF, PRODUIT pour toute autre.",
-            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
-            "type" : "string"
           }
         },
-        "required" : [ "activites", "categorie", "conflits", "etat", "id", "nom", "type" ],
+        "required" : [ "activites", "categorie", "conflits", "etat", "id", "nom" ],
         "type" : "object"
       },
       "RestSupervisionDAtelier" : {

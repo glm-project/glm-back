@@ -298,7 +298,6 @@ public class PupitreSteps {
     assertThat(suivi(element))
       .containsEntry("reference", references.get(element))
       .containsEntry("categorie", "OF")
-      .containsEntry("type", "ORDRE_DE_FABRICATION")
       .containsEntry("nom", nomsDAtelier.get(element));
   }
 

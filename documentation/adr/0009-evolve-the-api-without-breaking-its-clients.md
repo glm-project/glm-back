@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted on 8 October 2026, first applied to the product categories (glm-back#100: #103, glm-front#249, #107).
+Accepted on 8 October 2026, first applied to the product categories (glm-back#100): #103 expanded, glm-front#249 migrated,
+#107 contracted. `shared/elementtype/LegacyElementType`, cited below as the translation of that first application, was
+removed with the old field.
 
 ## Context
 

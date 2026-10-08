@@ -70,7 +70,6 @@ class RestReferentielDuPupitreTest {
     assertThat(suivi.nom()).isEqualTo("OF-2026-000042");
     assertThat(suivi.reference()).isEqualTo("M-1187");
     assertThat(suivi.categorie()).isEqualTo("OF");
-    assertThat(suivi.type()).isEqualTo("ORDRE_DE_FABRICATION");
     assertThat(suivi.etat()).isEqualTo(EtatDuSuivi.EN_COURS);
     assertThat(suivi.activites()).containsExactly(
       new RestActiviteDuPupitre(

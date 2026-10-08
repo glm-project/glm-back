@@ -60,7 +60,3 @@ plus tard, sur une différence réelle — le lien produit → OF, par exemple �
 
 Les quatre couches existent : `domain/`, `application/`, `infrastructure/primary/` (REST) et `infrastructure/secondary/`
 (JPA). Ce contexte sert donc de patron pour câbler `atelier`, qui n'a encore que son domaine.
-
-**Transition** : l'API accepte encore l'ancien champ `type` (`ORDRE_DE_FABRICATION` → `OF`, `PRODUIT` → `MOULE`) et le
-rend, déprécié, à côté de `categorie`. La traduction vit dans `shared/elementtype` (`LegacyElementType`), hors du
-domaine ; elle disparaît avec le champ dès que le front lit `categorie`.

@@ -5,7 +5,6 @@ import com.glm.glmback.atelier.domain.Cloture;
 import com.glm.glmback.atelier.domain.EtatDAtelier;
 import com.glm.glmback.atelier.domain.LectureDuSuivi;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
-import com.glm.glmback.shared.elementtype.infrastructure.primary.LegacyElementType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.List;
@@ -29,13 +28,6 @@ public record RestSuiviDAtelier(
   @Schema(description = "Nom de l'element, copie a l'engagement.", example = "OF-2026-000042", requiredMode = Schema.RequiredMode.REQUIRED)
   String nom,
   @Schema(description = "Categorie de l'element, copiee a l'engagement.", requiredMode = Schema.RequiredMode.REQUIRED) String categorie,
-  @Schema(
-    description = "Remplace par categorie : ORDRE_DE_FABRICATION pour la categorie OF, PRODUIT pour toute autre.",
-    allowableValues = { LegacyElementType.ORDRE_DE_FABRICATION, LegacyElementType.PRODUIT },
-    deprecated = true,
-    requiredMode = Schema.RequiredMode.REQUIRED
-  )
-  String type,
   @Schema(
     description = "Utilisateur ayant engage l'element.",
     example = "gestionnaire.impeccmold",
@@ -77,7 +69,6 @@ public record RestSuiviDAtelier(
       suivi.element().id().uuid(),
       suivi.element().nom().value(),
       suivi.element().categorie().value(),
-      LegacyElementType.fromCategory(suivi.element().categorie().value()),
       suivi.engagement().auteur().value(),
       suivi.engagement().date(),
       lecture.etat(),

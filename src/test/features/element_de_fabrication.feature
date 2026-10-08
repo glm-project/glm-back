@@ -68,14 +68,6 @@ Feature: Gestion des elements de fabrication
     Then la reponse a le statut http 201
     And la reponse d'element de fabrication a un nom commencant par "PIECE-"
 
-  Scenario: Le type d'element, deprecie, se deduit de la categorie
-    When je cree un element de fabrication
-      | categorie | PIECE |
-    Then la reponse a le statut http 201
-    And la reponse d'element de fabrication contient
-      | categorie | PIECE   |
-      | type      | PRODUIT |
-
   Scenario: Creation refusee a un client qui n'envoie que l'ancien type d'element
     When je cree un element de fabrication sans declarer sa categorie
       | type | ORDRE_DE_FABRICATION |
