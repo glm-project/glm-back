@@ -55,6 +55,7 @@ Feature: Cout de revient d'un element de fabrication
     Given l'entreprise fabrique "OF 3004"
     And "OF 3004" est mis en atelier a "2026-05-11T07:00:00Z"
     And "dupont" pointe "DEBUT" sur "OF 3004" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
+    And "dupont" pointe "FIN" sur "OF 3004" au poste "fraiseuse" a "2026-05-11T10:00:00Z"
     And "dupont" pointe "NON_CONFORMITE" sur "OF 3004" au poste "fraiseuse" a "2026-05-11T10:00:00Z"
     And "dupont" pointe "FIN" sur "OF 3004" au poste "fraiseuse" a "2026-05-11T11:00:00Z"
     When je consulte le cout de revient de "OF 3004" a "2026-05-11T18:00:00Z"
@@ -416,14 +417,15 @@ Feature: Cout de revient d'un element de fabrication
       | 2026-05-11T23:00:00Z | REGULARISATION | PT15H | 675.00  | 300.00 | 0    |
       | 2026-05-11T21:00:00Z |                | PT13H | 585.00  | 260.00 | 0    |
 
-  Scenario Outline: Une transition tardive conserve le trou ou la duree explicitement regularisee
+  Scenario Outline: Une fin tardive suivie d'une non conformite conserve le trou ou la duree explicitement regularisee
     Given l'entreprise fabrique "transition tardive"
     And "transition tardive" est mis en atelier a "2026-05-11T05:00:00Z"
     And pour le cout, "transition tardive" recoit les pointages
-      | alias | type           | intention  | cible | operateur | poste     | survenue             | acte   |
-      | A     | DEBUT          | OUVERTURE  |       | dupont    | fraiseuse | 2026-05-11T08:00:00Z |        |
-      | N     | NON_CONFORMITE | TRANSITION | A     | dupont    | fraiseuse | 2026-05-11T23:00:00Z | <acte> |
-      | FN    | FIN            | FIN        | N     | dupont    | fraiseuse | 2026-05-12T00:00:00Z |        |
+      | alias | type           | intention | cible | operateur | poste     | survenue             | acte   |
+      | A     | DEBUT          | OUVERTURE |       | dupont    | fraiseuse | 2026-05-11T08:00:00Z |        |
+      | FA    | FIN            | FIN       | A     | dupont    | fraiseuse | 2026-05-11T23:00:00Z | <acte> |
+      | N     | NON_CONFORMITE | OUVERTURE |       | dupont    | fraiseuse | 2026-05-11T23:00:00Z |        |
+      | FN    | FIN            | FIN       | N     | dupont    | fraiseuse | 2026-05-12T00:00:00Z |        |
     When je consulte le cout de revient de "transition tardive" a "2026-05-12T01:00:00Z"
     Then le rapport porte les lignes
       | nature   | travail | nonConformite | machine   | mainDOeuvre |
@@ -437,13 +439,14 @@ Feature: Cout de revient d'un element de fabrication
       |                | PT13H | 630.00  | 280.00 | 1    |
       | REGULARISATION | PT15H | 720.00  | 320.00 | 0    |
 
-  Scenario: La transition travail NC laisse son activite ouverte exclue jusqu'a sa propre echeance
+  Scenario: Le passage du travail a la NC laisse son activite ouverte exclue jusqu'a sa propre echeance
     Given l'entreprise fabrique "transition"
     And "transition" est mis en atelier a "2026-05-11T05:00:00Z"
     And pour le cout, "transition" recoit les pointages
-      | alias | type           | intention  | cible | operateur | poste     | survenue             |
-      | A     | DEBUT          | OUVERTURE  |       | dupont    | fraiseuse | 2026-05-11T08:00:00Z |
-      | N     | NON_CONFORMITE | TRANSITION | A     | dupont    | fraiseuse | 2026-05-11T12:00:00Z |
+      | alias | type           | intention | cible | operateur | poste     | survenue             |
+      | A     | DEBUT          | OUVERTURE |       | dupont    | fraiseuse | 2026-05-11T08:00:00Z |
+      | FA    | FIN            | FIN       | A     | dupont    | fraiseuse | 2026-05-11T12:00:00Z |
+      | N     | NON_CONFORMITE | OUVERTURE |       | dupont    | fraiseuse | 2026-05-11T12:00:00Z |
     When je consulte le cout de revient de "transition" a "2026-05-11T21:00:00Z"
     Then le rapport porte les lignes
       | nature   | travail | nonConformite | machine | mainDOeuvre |

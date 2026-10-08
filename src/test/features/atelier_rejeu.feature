@@ -73,10 +73,15 @@ Feature: Rejeu durable des gestes du pupitre
       | operateur | dupont                               |
     Given il est "2026-05-10T09:00:00Z"
     And j'ai pointe sur "OF cible"
+      | id        | 00000000-0000-0000-0000-000000000313 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | cible     | 00000000-0000-0000-0000-000000000311 |
+      | operateur | dupont                               |
+    And j'ai pointe sur "OF cible"
       | id        | 00000000-0000-0000-0000-000000000312 |
       | type      | NON_CONFORMITE                       |
-      | intention | TRANSITION                           |
-      | cible     | 00000000-0000-0000-0000-000000000311 |
+      | intention | OUVERTURE                            |
       | operateur | dupont                               |
     Given il est "2026-05-10T10:00:00Z"
     When je pointe sur "OF cible"
@@ -90,12 +95,13 @@ Feature: Rejeu durable des gestes du pupitre
     When je pointe sur "OF cible"
       | id        | 00000000-0000-0000-0000-000000000312 |
       | type      | NON_CONFORMITE                       |
-      | intention | OUVERTURE                            |
+      | intention | TRANSITION                           |
+      | cible     | 00000000-0000-0000-0000-000000000311 |
       | operateur | dupont                               |
     Then la reponse a le statut http 409
     And la reponse porte le code d'erreur "urn:glm:erreur:atelier:identifiant-evenement-reutilise"
     When je consulte "OF cible"
-    Then le journal du suivi contient 2 evenements
+    Then le journal du suivi contient 3 evenements
     And l'evenement 1 du suivi vise l'activite de l'evenement 0
 
   Scenario: Une fin ciblee acceptee reste soumise aux droits lors du rejeu

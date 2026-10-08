@@ -158,6 +158,7 @@ Feature: Feuille de temps hebdomadaire d'un operateur
   Scenario: Une non conformite suit le travail
     Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And "martin" pointe "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:05:00Z"
+    And "martin" pointe "FIN" sur l'element "carter" au poste "DMU 50" a "2026-05-11T08:00:00Z"
     And "martin" pointe "NON_CONFORMITE" sur l'element "carter" au poste "DMU 50" a "2026-05-11T08:00:00Z"
     And "martin" pointe "FIN" sur l'element "carter" au poste "DMU 50" a "2026-05-11T09:00:00Z"
     When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
@@ -207,6 +208,7 @@ Feature: Feuille de temps hebdomadaire d'un operateur
   Scenario: Le travail termine garde ses bornes meme sans depart
     Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And "martin" pointe "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:05:00Z"
+    And "martin" pointe "FIN" sur l'element "carter" au poste "DMU 50" a "2026-05-11T10:00:00Z"
     And "martin" pointe "NON_CONFORMITE" sur l'element "carter" au poste "DMU 50" a "2026-05-11T10:00:00Z"
     And "martin" pointe "FIN" sur l'element "carter" au poste "DMU 50" a "2026-05-11T14:00:00Z"
     And il est "2026-05-12T08:00:00Z"
@@ -342,9 +344,10 @@ Feature: Feuille de temps hebdomadaire d'un operateur
   Scenario: Le passage de travail a NC termine seulement le travail vise
     Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la feuille de temps recoit sur l'element "carter" les pointages
-      | alias | type           | intention  | cible | operateur | poste  | survenue             |
-      | A     | DEBUT          | OUVERTURE  |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
-      | N     | NON_CONFORMITE | TRANSITION | A     | martin    | DMU 50 | 2026-05-11T10:00:00Z |
+      | alias | type           | intention | cible | operateur | poste  | survenue             |
+      | A     | DEBUT          | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | FA    | FIN            | FIN       | A     | martin    | DMU 50 | 2026-05-11T10:00:00Z |
+      | N     | NON_CONFORMITE | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T10:00:00Z |
     When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
     Then les activites du "2026-05-11" sont
       | categorie      | debut                | fin                  | idActivite | etat     |
@@ -374,12 +377,13 @@ Feature: Feuille de temps hebdomadaire d'un operateur
       | debut                | fin                  | idActivite | etat                     |
       | 2026-05-11T06:00:00Z | 2026-05-11T19:00:00Z | A          | TERMINEE_AUTOMATIQUEMENT |
 
-  Scenario: Une transition pointee apres echeance ouvre une NC sans prolonger le travail
+  Scenario: Une fin puis une NC pointees apres echeance ouvrent la NC sans prolonger le travail
     Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la feuille de temps recoit sur l'element "carter" les pointages
-      | alias | type           | intention  | cible | operateur | poste  | survenue             |
-      | A     | DEBUT          | OUVERTURE  |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
-      | N     | NON_CONFORMITE | TRANSITION | A     | martin    | DMU 50 | 2026-05-11T21:00:00Z |
+      | alias | type           | intention | cible | operateur | poste  | survenue             |
+      | A     | DEBUT          | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | FA    | FIN            | FIN       | A     | martin    | DMU 50 | 2026-05-11T21:00:00Z |
+      | N     | NON_CONFORMITE | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T21:00:00Z |
     Then le suivi de la feuille de temps de "carter" ne porte aucun conflit
     When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
     Then les activites du "2026-05-11" sont
@@ -398,12 +402,13 @@ Feature: Feuille de temps hebdomadaire d'un operateur
       | debut                | fin                  | idActivite | etat     |
       | 2026-05-11T06:00:00Z | 2026-05-11T21:00:00Z | A          | TERMINEE |
 
-  Scenario: Une transition recue le lendemain conserve ses heures metier et sa propre echeance
+  Scenario: Une fin et une NC recues le lendemain conservent leurs heures metier et la propre echeance de la NC
     Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la feuille de temps recoit sur l'element "carter" les pointages
-      | alias | type           | intention  | cible | operateur | poste  | survenue             | reception            |
-      | A     | DEBUT          | OUVERTURE  |       | martin    | DMU 50 | 2026-05-11T06:00:00Z | 2026-05-11T06:00:00Z |
-      | N     | NON_CONFORMITE | TRANSITION | A     | martin    | DMU 50 | 2026-05-11T10:00:00Z | 2026-05-12T08:00:00Z |
+      | alias | type           | intention | cible | operateur | poste  | survenue             | reception            |
+      | A     | DEBUT          | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z | 2026-05-11T06:00:00Z |
+      | FA    | FIN            | FIN       | A     | martin    | DMU 50 | 2026-05-11T10:00:00Z | 2026-05-12T08:00:00Z |
+      | N     | NON_CONFORMITE | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T10:00:00Z | 2026-05-12T08:00:00Z |
     When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
     Then les activites du "2026-05-11" sont
       | categorie      | debut                | fin                  | idActivite | etat                     | finActivite          |

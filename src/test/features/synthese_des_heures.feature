@@ -73,6 +73,7 @@ Feature: Synthese des heures hebdomadaire d'un operateur
   Scenario: Une non conformite compte dans l'element, a part
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And "martin" enregistre "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:05:00Z"
+    And "martin" enregistre "FIN" sur l'element "carter" au poste "DMU 50" a "2026-05-11T08:00:00Z"
     And "martin" enregistre "NON_CONFORMITE" sur l'element "carter" au poste "DMU 50" a "2026-05-11T08:00:00Z"
     And "martin" enregistre "FIN" sur l'element "carter" au poste "DMU 50" a "2026-05-11T09:00:00Z"
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
@@ -235,9 +236,10 @@ Feature: Synthese des heures hebdomadaire d'un operateur
   Scenario: Le passage de travail a NC termine seulement le travail vise
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type           | intention  | cible | operateur | poste  | survenue             |
-      | A     | DEBUT          | OUVERTURE  |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
-      | N     | NON_CONFORMITE | TRANSITION | A     | martin    | DMU 50 | 2026-05-11T10:00:00Z |
+      | alias | type           | intention | cible | operateur | poste  | survenue             |
+      | A     | DEBUT          | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | FA    | FIN            | FIN       | A     | martin    | DMU 50 | 2026-05-11T10:00:00Z |
+      | N     | NON_CONFORMITE | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T10:00:00Z |
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT4H"
     And les elements de la synthese sont
@@ -269,12 +271,13 @@ Feature: Synthese des heures hebdomadaire d'un operateur
       | A     | OUVERTURE |       |
       | F     | FIN       | A     |
 
-  Scenario: Une transition pointee apres echeance ouvre une NC sans prolonger le travail
+  Scenario: Une fin puis une NC pointees apres echeance ouvrent la NC sans prolonger le travail
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type           | intention  | cible | operateur | poste  | survenue             |
-      | A     | DEBUT          | OUVERTURE  |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
-      | N     | NON_CONFORMITE | TRANSITION | A     | martin    | DMU 50 | 2026-05-11T21:00:00Z |
+      | alias | type           | intention | cible | operateur | poste  | survenue             |
+      | A     | DEBUT          | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | FA    | FIN            | FIN       | A     | martin    | DMU 50 | 2026-05-11T21:00:00Z |
+      | N     | NON_CONFORMITE | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T21:00:00Z |
     Then le suivi de la synthese des heures de "carter" ne porte aucun conflit
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT13H"
@@ -291,12 +294,13 @@ Feature: Synthese des heures hebdomadaire d'un operateur
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT15H"
 
-  Scenario: Une transition recue le lendemain conserve ses heures metier et sa propre echeance
+  Scenario: Une fin et une NC recues le lendemain conservent leurs heures metier et la propre echeance de la NC
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type           | intention  | cible | operateur | poste  | survenue             | reception            |
-      | A     | DEBUT          | OUVERTURE  |       | martin    | DMU 50 | 2026-05-11T06:00:00Z | 2026-05-11T06:00:00Z |
-      | N     | NON_CONFORMITE | TRANSITION | A     | martin    | DMU 50 | 2026-05-11T10:00:00Z | 2026-05-12T08:00:00Z |
+      | alias | type           | intention | cible | operateur | poste  | survenue             | reception            |
+      | A     | DEBUT          | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z | 2026-05-11T06:00:00Z |
+      | FA    | FIN            | FIN       | A     | martin    | DMU 50 | 2026-05-11T10:00:00Z | 2026-05-12T08:00:00Z |
+      | N     | NON_CONFORMITE | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T10:00:00Z | 2026-05-12T08:00:00Z |
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT17H"
     And le jour "2026-05-11" a une duree operationnelle de "PT16H"
@@ -386,23 +390,26 @@ Feature: Synthese des heures hebdomadaire d'un operateur
   Scenario: Travail puis NC puis travail conservent un seul total et la part de NC
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type           | intention  | cible | operateur | poste  | survenue             |
-      | A     | DEBUT          | OUVERTURE  |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
-      | N     | NON_CONFORMITE | TRANSITION | A     | martin    | DMU 50 | 2026-05-11T08:00:00Z |
-      | B     | DEBUT          | TRANSITION | N     | martin    | DMU 50 | 2026-05-11T09:00:00Z |
-      | F     | FIN            | FIN        | B     | martin    | DMU 50 | 2026-05-11T12:00:00Z |
+      | alias | type           | intention | cible | operateur | poste  | survenue             |
+      | A     | DEBUT          | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | FA    | FIN            | FIN       | A     | martin    | DMU 50 | 2026-05-11T08:00:00Z |
+      | N     | NON_CONFORMITE | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T08:00:00Z |
+      | FN    | FIN            | FIN       | N     | martin    | DMU 50 | 2026-05-11T09:00:00Z |
+      | B     | DEBUT          | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T09:00:00Z |
+      | F     | FIN            | FIN       | B     | martin    | DMU 50 | 2026-05-11T12:00:00Z |
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT6H"
     And les elements de la synthese sont
       | id     | duree | dureeNonConformite |
       | carter | PT6H  | PT1H               |
 
-  Scenario: Une transition regularisee apres echeance peut etablir quinze heures de travail
+  Scenario: Une fin regularisee apres echeance, suivie d'une NC, peut etablir quinze heures de travail
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type           | intention  | cible | operateur | poste  | survenue             | acte           |
-      | A     | DEBUT          | OUVERTURE  |       | martin    | DMU 50 | 2026-05-11T06:00:00Z | POINTAGE       |
-      | N     | NON_CONFORMITE | TRANSITION | A     | martin    | DMU 50 | 2026-05-11T21:00:00Z | REGULARISATION |
+      | alias | type           | intention | cible | operateur | poste  | survenue             | acte           |
+      | A     | DEBUT          | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T06:00:00Z | POINTAGE       |
+      | FA    | FIN            | FIN       | A     | martin    | DMU 50 | 2026-05-11T21:00:00Z | REGULARISATION |
+      | N     | NON_CONFORMITE | OUVERTURE |       | martin    | DMU 50 | 2026-05-11T21:00:00Z | POINTAGE       |
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then la duree operationnelle totale de la semaine est "PT15H"
     And les elements de la synthese sont

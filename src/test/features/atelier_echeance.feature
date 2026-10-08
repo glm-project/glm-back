@@ -158,11 +158,17 @@ Feature: Echeance et fin automatique des activites
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
     Given il est "2026-06-06T12:00:00Z"
+    And j'ai pointe sur "OF 5005"
+      | id        | 00000000-0000-0000-0000-000000000543 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | cible     | 00000000-0000-0000-0000-000000000541 |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
     When je pointe sur "OF 5005"
       | id        | 00000000-0000-0000-0000-000000000542 |
       | type      | NON_CONFORMITE                       |
-      | intention | TRANSITION                           |
-      | cible     | 00000000-0000-0000-0000-000000000541 |
+      | intention | OUVERTURE                            |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
     # Les 4 h de travail sont terminees a 12 h ; la non conformite a sa propre echeance, a 01 h le lendemain.
@@ -240,7 +246,7 @@ Feature: Echeance et fin automatique des activites
       | activite                             | debut                | fin                  | finAutomatique |
       | 00000000-0000-0000-0000-000000000561 | 2026-06-10T08:00:00Z | 2026-06-10T21:00:00Z | true           |
 
-  Scenario: Une transition vers la non conformite pointee a 23 h ouvre la non conformite a son heure
+  Scenario: Une fin puis une non conformite pointees a 23 h ouvrent la non conformite a son heure
     Given il est "2026-06-11T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 5008"
       | categorie | OF   |
@@ -254,11 +260,17 @@ Feature: Echeance et fin automatique des activites
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
     Given il est "2026-06-11T23:00:00Z"
+    And j'ai pointe sur "OF 5008"
+      | id        | 00000000-0000-0000-0000-000000000573 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | cible     | 00000000-0000-0000-0000-000000000571 |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
     When je pointe sur "OF 5008"
       | id        | 00000000-0000-0000-0000-000000000572 |
       | type      | NON_CONFORMITE                       |
-      | intention | TRANSITION                           |
-      | cible     | 00000000-0000-0000-0000-000000000571 |
+      | intention | OUVERTURE                            |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
     Then la reponse a le statut http 201
@@ -301,7 +313,7 @@ Feature: Echeance et fin automatique des activites
       | activite                             | debut                | fin                  | finAutomatique |
       | 00000000-0000-0000-0000-000000000581 | 2026-06-12T08:00:00Z | 2026-06-12T23:00:00Z | false          |
 
-  Scenario: Le gestionnaire regularise une transition au-dela de l'echeance
+  Scenario: Le gestionnaire regularise une fin au-dela de l'echeance, la non conformite s'ouvre a la meme heure
     Given il est "2026-06-15T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 5010"
       | categorie | OF   |
@@ -316,9 +328,17 @@ Feature: Echeance et fin automatique des activites
       | poste     | fraiseuse-1                          |
     Given il est "2026-06-16T09:00:00Z"
     When je regularise sur "OF 5010"
-      | type           | NON_CONFORMITE                       |
-      | intention      | TRANSITION                           |
+      | type           | FIN                                  |
+      | intention      | FIN                                  |
       | cible          | 00000000-0000-0000-0000-000000000591 |
+      | operateur      | dupont                               |
+      | poste          | fraiseuse-1                          |
+      | dateDeSurvenue | 2026-06-15T23:00:00Z                 |
+    Then la reponse a le statut http 201
+    When je pointe sur "OF 5010"
+      | id             | 00000000-0000-0000-0000-000000000592 |
+      | type           | NON_CONFORMITE                       |
+      | intention      | OUVERTURE                            |
       | operateur      | dupont                               |
       | poste          | fraiseuse-1                          |
       | dateDeSurvenue | 2026-06-15T23:00:00Z                 |
@@ -356,7 +376,7 @@ Feature: Echeance et fin automatique des activites
       | activite                             | debut                | fin                  | finAutomatique |
       | 00000000-0000-0000-0000-0000000005a1 | 2026-06-17T08:00:00Z | 2026-06-17T21:00:00Z | false          |
 
-  Scenario: Une transition pointee exactement a l'echeance termine sa cible sans anomalie
+  Scenario: Une fin puis une non conformite pointees exactement a l'echeance terminent le travail sans anomalie
     Given il est "2026-06-18T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 5012"
       | categorie | OF   |
@@ -370,11 +390,17 @@ Feature: Echeance et fin automatique des activites
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
     Given il est "2026-06-18T21:00:00Z"
+    And j'ai pointe sur "OF 5012"
+      | id        | 00000000-0000-0000-0000-0000000005b3 |
+      | type      | FIN                                  |
+      | intention | FIN                                  |
+      | cible     | 00000000-0000-0000-0000-0000000005b1 |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
     When je pointe sur "OF 5012"
       | id        | 00000000-0000-0000-0000-0000000005b2 |
       | type      | NON_CONFORMITE                       |
-      | intention | TRANSITION                           |
-      | cible     | 00000000-0000-0000-0000-0000000005b1 |
+      | intention | OUVERTURE                            |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
     Then la reponse a le statut http 201
@@ -384,7 +410,7 @@ Feature: Echeance et fin automatique des activites
       | 00000000-0000-0000-0000-0000000005b1 | 2026-06-18T08:00:00Z | 2026-06-18T21:00:00Z | false          |
       | 00000000-0000-0000-0000-0000000005b2 | 2026-06-18T21:00:00Z |                      | false          |
 
-  Scenario: Une transition vers la non conformite pointee a 12 h et recue le lendemain est rejouee a son heure
+  Scenario: Une fin puis une non conformite pointees a 12 h et recues le lendemain sont rejouees a leur heure
     Given il est "2026-06-19T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 5013"
       | categorie | OF   |
@@ -398,11 +424,18 @@ Feature: Echeance et fin automatique des activites
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
     Given il est "2026-06-20T09:00:00Z"
+    And j'ai pointe sur "OF 5013"
+      | id             | 00000000-0000-0000-0000-0000000005c3 |
+      | type           | FIN                                  |
+      | intention      | FIN                                  |
+      | cible          | 00000000-0000-0000-0000-0000000005c1 |
+      | operateur      | dupont                               |
+      | poste          | fraiseuse-1                          |
+      | dateDeSurvenue | 2026-06-19T12:00:00Z                 |
     When je pointe sur "OF 5013"
       | id             | 00000000-0000-0000-0000-0000000005c2 |
       | type           | NON_CONFORMITE                       |
-      | intention      | TRANSITION                           |
-      | cible          | 00000000-0000-0000-0000-0000000005c1 |
+      | intention      | OUVERTURE                            |
       | operateur      | dupont                               |
       | poste          | fraiseuse-1                          |
       | dateDeSurvenue | 2026-06-19T12:00:00Z                 |

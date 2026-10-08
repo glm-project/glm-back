@@ -25,11 +25,9 @@ import tools.jackson.databind.json.JsonMapper;
  *
  * <p>
  * Un corps qui porte son intention part tel quel : c'est le cas de tout scenario qui eprouve l'intention ou la cible.
- * Les scenarios ecrits avant que le contrat ne l'exige ne la portent pas ; elle est alors deduite du journal relu,
- * comme le pupitre le ferait, sur le couple operateur/poste du geste et a son heure. Une fin vise l'activite ouverte en
- * dernier. Un debut ou une non conformite remplace l'activite en cours si elle est de l'autre categorie, et ouvre sinon
- * une activite. Cette deduction ne sert qu'a ces scenarios anterieurs : un nouveau scenario donne son intention, et sa
- * cible.
+ * Les autres scenarios ne racontent que des pointages : un debut ou une non conformite ouvre une activite, et une fin
+ * vise l'activite ouverte en dernier sur le couple operateur/poste du geste, a son heure. Rien n'est deduit de plus : un
+ * scenario qui veut passer du travail a la non conformite pointe une fin, puis l'ouverture, a la meme heure.
  * </p>
  */
 public class EcrituresDuJournalDAtelier {
@@ -89,14 +87,10 @@ public class EcrituresDuJournalDAtelier {
       .stream()
       .filter(evenement -> OUVRANTS.contains(evenement.get("intention")))
       .reduce((premier, second) -> second);
-    boolean enCours = !precedents.isEmpty() && OUVRANTS.contains(precedents.getLast().get("intention"));
 
     if ("FIN".equals(type)) {
       complet.put("intention", "FIN");
       complet.put("cible", dernierOuvrant.map(ouvrant -> ouvrant.get("activite")).orElseGet(() -> UUID.randomUUID().toString()));
-    } else if (enCours && !type.equals(precedents.getLast().get("type"))) {
-      complet.put("intention", "TRANSITION");
-      complet.put("cible", precedents.getLast().get("activite"));
     } else {
       complet.put("intention", "OUVERTURE");
     }

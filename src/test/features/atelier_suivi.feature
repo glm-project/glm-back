@@ -37,18 +37,22 @@ Feature: Suivi des elements engages en atelier
       | poste     | fraiseuse-1 |
     Given il est "2026-07-02T09:00:00Z"
     And j'ai pointe sur "OF 2962"
+      | type      | FIN         |
+      | operateur | dupont      |
+      | poste     | fraiseuse-1 |
+    And j'ai pointe sur "OF 2962"
       | type      | NON_CONFORMITE |
       | operateur | dupont         |
       | poste     | fraiseuse-1    |
-    When j'annule l'evenement 1 de "OF 2962"
+    When j'annule l'evenement 2 de "OF 2962"
       | motif | Pointe sur le mauvais ordre |
-    Then le journal du suivi contient 2 evenements
+    Then le journal du suivi contient 3 evenements
     And je retiens les informations du suivi hors journal et conflits
     When je liste les elements engages entre "2026-07-02T00:00:00Z" et "2026-07-03T00:00:00Z"
     Then la grille contient les memes informations sans journal ni conflits
     When je consulte "OF 2962"
-    Then le journal du suivi contient 2 evenements
-    And l'evenement 1 du suivi est annule avec le motif "Pointe sur le mauvais ordre"
+    Then le journal du suivi contient 3 evenements
+    And l'evenement 2 du suivi est annule avec le motif "Pointe sur le mauvais ordre"
 
   Scenario: Un element deja engage ne peut pas l'etre deux fois
     Given l'entreprise a cree l'element de fabrication "OF 2002"
@@ -156,7 +160,7 @@ Feature: Suivi des elements engages en atelier
     Then la reponse a le statut http 201
     And l'evenement 0 du suivi a survenu a "2026-05-10T06:00:00Z" et a ete saisi a "2026-05-10T06:00:00Z" par "gestionnaire"
 
-  Scenario: Une non conformite interrompt l'element, une reprise se pointe comme un debut
+  Scenario: Une non conformite pointee apres une fin ouvre une activite, une reprise se pointe comme un debut
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2004"
       | categorie | OF   |
@@ -167,16 +171,24 @@ Feature: Suivi des elements engages en atelier
       | operateur | dupont      |
       | poste     | fraiseuse-1 |
     Given il est "2026-05-10T09:00:00Z"
+    And j'ai pointe sur "OF 2004"
+      | type      | FIN         |
+      | operateur | dupont      |
+      | poste     | fraiseuse-1 |
     When je pointe sur "OF 2004"
       | type      | NON_CONFORMITE |
       | operateur | dupont         |
       | poste     | fraiseuse-1    |
-    # L'element reste EN_COURS : une non conformite laisse l'activite ouverte, elle en change seulement la categorie,
-    # car ce temps-la se compte aussi. INTERROMPU est reserve a l'element sur lequel plus personne ne travaille.
+    # L'element reste EN_COURS : la non conformite ouvre une activite, car ce temps-la se compte aussi. INTERROMPU est
+    # reserve a l'element sur lequel plus personne ne travaille.
     Then le suivi a l'etat "EN_COURS"
     And l'activite en cours est de categorie "NON_CONFORMITE"
     # La reprise n'a pas de type propre : c'est un DEBUT, et la categorie atteinte suffit a la distinguer.
     Given il est "2026-05-10T10:00:00Z"
+    And j'ai pointe sur "OF 2004"
+      | type      | FIN         |
+      | operateur | dupont      |
+      | poste     | fraiseuse-1 |
     When je pointe sur "OF 2004"
       | type      | DEBUT       |
       | operateur | dupont      |
@@ -309,10 +321,10 @@ Feature: Suivi des elements engages en atelier
     And le journal du suivi contient 2 evenements
     And le suivi a 1 activites en cours
 
-  Scenario: Un debut regularise au milieu d'une activite deja terminee contredit sa fin
+  Scenario: Un debut pointe tardivement au milieu d'une activite deja terminee contredit sa fin
     # Le debut rattrape a 10 h ouvre une activite, donc remplace a son heure celle de 8 h : la fin de 12 h, qui la vise,
-    # la dirait terminee apres son remplacement. L'acte du gestionnaire est admis, et la sequence est en conflit plutot
-    # que d'etre lue selon une interpretation choisie par le serveur.
+    # la dirait terminee apres son remplacement. Le pointage est admis, et la sequence est en conflit plutot que d'etre
+    # lue selon une interpretation choisie par le serveur.
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2092"
       | categorie | OF   |
@@ -333,7 +345,7 @@ Feature: Suivi des elements engages en atelier
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
     Given il est "2026-05-11T09:15:00Z"
-    When je regularise sur "OF 2092"
+    When je pointe sur "OF 2092"
       | type           | DEBUT                |
       | intention      | OUVERTURE            |
       | operateur      | dupont               |
@@ -428,7 +440,7 @@ Feature: Suivi des elements engages en atelier
       | reference | 2007 |
     And j'ai engage l'element "OF 2007" en atelier
     Given il est "2026-05-11T09:00:00Z"
-    When je regularise sur "OF 2007"
+    When je pointe sur "OF 2007"
       | type           | DEBUT                |
       | operateur      | dupont               |
       | poste          | fraiseuse-1          |
@@ -438,9 +450,9 @@ Feature: Suivi des elements engages en atelier
     # automatiquement, et plus personne n'est sur l'element.
     And le suivi a l'etat "INTERROMPU"
     When je consulte "OF 2007"
-    # Une regularisation se reconnait a l'acte qui l'a saisie, jamais a l'ecart de ses deux dates ni a l'identite de
-    # son auteur.
-    Then l'evenement 0 du suivi est une regularisation de "dupont" saisie par "gestionnaire"
+    # Un pointage tardif reste un pointage : seul l'acte qui saisit une regularisation la fait reconnaitre, jamais
+    # l'ecart de ses deux dates.
+    Then l'evenement 0 du suivi n'est pas une regularisation
 
   Scenario: Une regularisation saisie a l'heure du fait reste une regularisation
     Given il est "2026-05-10T08:00:00Z"
@@ -449,14 +461,23 @@ Feature: Suivi des elements engages en atelier
       | reference | 2022 |
     And j'ai engage l'element "OF 2022" en atelier
     Given il est "2026-05-10T09:00:00Z"
+    And j'ai pointe sur "OF 2022"
+      | id        | 00000000-0000-0000-0000-000000002022 |
+      | type      | DEBUT                                |
+      | intention | OUVERTURE                            |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
+    Given il est "2026-05-10T10:00:00Z"
     When je regularise sur "OF 2022"
-      | type           | DEBUT                |
-      | operateur      | dupont               |
-      | poste          | fraiseuse-1          |
-      | dateDeSurvenue | 2026-05-10T09:00:00Z |
+      | type           | FIN                                  |
+      | intention      | FIN                                  |
+      | cible          | 00000000-0000-0000-0000-000000002022 |
+      | operateur      | dupont                               |
+      | poste          | fraiseuse-1                          |
+      | dateDeSurvenue | 2026-05-10T10:00:00Z                 |
     Then la reponse a le statut http 201
-    And l'evenement 0 du suivi a survenu a "2026-05-10T09:00:00Z" et a ete saisi a "2026-05-10T09:00:00Z" par "gestionnaire"
-    And l'evenement 0 du suivi est une regularisation de "dupont" saisie par "gestionnaire"
+    And l'evenement 1 du suivi a survenu a "2026-05-10T10:00:00Z" et a ete saisi a "2026-05-10T10:00:00Z" par "gestionnaire"
+    And l'evenement 1 du suivi est une regularisation de "dupont" saisie par "gestionnaire"
 
   Scenario: Une saisie en trop est annulee, mais reste au journal
     Given il est "2026-05-10T08:00:00Z"

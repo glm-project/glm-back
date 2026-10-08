@@ -80,10 +80,11 @@ Feature: Le referentiel que le pupitre met en cache
       | operateur | poste     | categorie      | depuis               |
       | dupont    | fraiseuse | NON_CONFORMITE | 2026-05-11T10:00:00Z |
 
-  Scenario: Une non conformite change la categorie sans fermer l'activite
+  Scenario: Une non conformite pointee apres une fin ouvre une activite de non conformite
     Given le pupitre fabrique "OF 4003"
     And "OF 4003" est engage au pupitre a "2026-05-11T07:00:00Z"
     And au pupitre, "dupont" pointe "DEBUT" sur "OF 4003" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
+    And au pupitre, "dupont" pointe "FIN" sur "OF 4003" au poste "fraiseuse" a "2026-05-11T10:00:00Z"
     And au pupitre, "dupont" pointe "NON_CONFORMITE" sur "OF 4003" au poste "fraiseuse" a "2026-05-11T10:00:00Z"
     When je lis le referentiel du pupitre a "2026-05-11T11:00:00Z"
     # L'etat de l'element ne bouge pas : ce temps-la se compte aussi. C'est la categorie qui le dit.
