@@ -462,9 +462,9 @@ L'opérateur, le poste et le type du fait se déduisent de l'activité : la sais
 une fin (`FIN`) qui vise l'activité, `estUneRegularisation` vrai ; elle ne passe pas par la règle de réception des
 pointages. Une régularisation qui n'est pas la fin d'une activité échue n'existe plus.
 
-**Idempotence.** La présence de `id` dans le journal est vérifiée avant toute règle : un renvoi de la même saisie répond
-**200** (au lieu de 201), avec le suivi tel qu'il est, et n'écrit rien — y compris quand l'activité est désormais
-régularisée.
+**Idempotence.** La présence de `id` dans la table des événements — le journal de n'importe quel suivi, pas seulement
+celui de la route — est vérifiée avant toute règle : un renvoi de la même saisie répond **200** (au lieu de 201), avec le
+suivi tel qu'il est, et n'écrit rien — y compris quand l'activité est désormais régularisée.
 
 **Refus**, par ordre de vérification (le code est dans `type`, voir [codes-erreur.md](codes-erreur.md)) :
 

@@ -76,13 +76,6 @@ public record SuiviDAtelier(
   }
 
   /**
-   * Vrai si le journal porte deja cet evenement : l'ecriture rejouee n'a rien a refaire.
-   */
-  public boolean aEnregistre(EvenementDAtelierId evenement) {
-    return journal.evenement(evenement).isPresent();
-  }
-
-  /**
    * L'activite dont le gestionnaire peut regulariser la fin, a l'heure de fin donnee et a l'instant present.
    *
    * <p>

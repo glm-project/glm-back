@@ -68,6 +68,20 @@ class SuivisDAtelierEnMemoire implements SuiviDAtelierRepository {
   }
 
   @Override
+  public boolean contientEvenement(EvenementDAtelierId evenement) {
+    return suivis
+      .values()
+      .stream()
+      .anyMatch(suivi ->
+        suivi
+          .journal()
+          .evenements()
+          .stream()
+          .anyMatch(fait -> fait.id().equals(evenement))
+      );
+  }
+
+  @Override
   public Page<SuiviDAtelier> list(SuiviDAtelierCriteria criteria, Pageable pageable) {
     List<SuiviDAtelier> retenus = suivis.values().stream().filter(criteria::matches).sorted(parDateDEngagementDescendante()).toList();
 

@@ -179,12 +179,4 @@ class SuiviDAtelierRegularisationTest {
 
     assertThat(suivi.borneDeFin(activite)).isEqualTo(Optional.empty());
   }
-
-  @Test
-  void shouldRepererLEvenementDejaAuJournal() {
-    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(travail);
-
-    assertThat(suivi.aEnregistre(travail.id())).isTrue();
-    assertThat(suivi.aEnregistre(EvenementDAtelierId.newId())).isFalse();
-  }
 }

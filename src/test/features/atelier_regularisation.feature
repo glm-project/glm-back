@@ -342,3 +342,34 @@ Feature: Regularisation directe de la fin d'une activite echue
     When je consulte le dossier d'anomalie de "Regul 9015" depuis l'evenement 0
     Then la reponse a le statut http 200
     And le dossier d'anomalie donne la borne de fin "2044-05-19T23:00:00Z"
+
+  Scenario: Un identifiant deja au journal d'un autre suivi est un renvoi, pas une violation de cle
+    # L'idempotence se juge sur toute la table des evenements : l'identifiant d'un geste d'un autre OF fait repondre 200
+    # sans rien ecrire, au lieu de heurter la cle primaire.
+    Given il est "2044-05-21T06:00:00Z"
+    And l'entreprise a cree l'element de fabrication "Regul 9017"
+      | categorie | OF      |
+      | reference | REG9017 |
+    And l'entreprise a cree l'element de fabrication "Regul 9018"
+      | categorie | OF      |
+      | reference | REG9018 |
+    And j'ai engage l'element "Regul 9017" en atelier
+    And j'ai engage l'element "Regul 9018" en atelier
+    And il est "2044-05-21T08:00:00Z"
+    And j'ai pointe sur "Regul 9017"
+      | id        | 00000000-0000-0000-0000-000000090171 |
+      | type      | DEBUT                                |
+      | operateur | dupont-regul                         |
+      | poste     | fraiseuse-regul                      |
+    And j'ai pointe sur "Regul 9018"
+      | type      | DEBUT           |
+      | operateur | dupont-regul    |
+      | poste     | fraiseuse-regul |
+    And il est "2044-05-21T22:00:00Z"
+    When je regularise sur "Regul 9018" en visant l'activite de l'evenement 0
+      | id             | 00000000-0000-0000-0000-000000090171 |
+      | dateDeSurvenue | 2044-05-21T17:00:00Z                 |
+    Then la reponse a le statut http 200
+    And le journal du suivi contient 1 evenements
+    When je consulte "Regul 9017"
+    Then le journal du suivi contient 1 evenements

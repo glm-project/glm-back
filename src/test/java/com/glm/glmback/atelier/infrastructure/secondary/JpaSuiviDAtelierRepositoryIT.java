@@ -98,6 +98,20 @@ class JpaSuiviDAtelierRepositoryIT {
   }
 
   /**
+   * L'identifiant d'un evenement est unique dans toute la table : il se retrouve quel que soit le suivi qui le porte.
+   */
+  @Test
+  @WithTenant(IMPECCMOLD)
+  void shouldRetrouverUnEvenementDansLeJournalDeNImporteQuelSuivi() {
+    Instant engagement = Instant.parse("2040-01-06T07:30:00Z");
+    EvenementDAtelier debut = debutSurFraiseuse1A(engagement.plusSeconds(3600));
+    inTransaction(() -> suivis.create(suiviEngageA(engagement).enregistre(debut)));
+
+    assertThat(inTransaction(() -> suivis.contientEvenement(debut.id()))).isTrue();
+    assertThat(inTransaction(() -> suivis.contientEvenement(EvenementDAtelierId.newId()))).isFalse();
+  }
+
+  /**
    * Le cout horaire du poste et le taux horaire de l'operateur survivent au round-trip base, sur le meme patron que
    * la nature : figes a la saisie, jamais relus depuis le referentiel.
    */

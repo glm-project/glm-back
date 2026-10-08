@@ -61,13 +61,6 @@ public record JournalDAtelier(List<EvenementDAtelier> evenements) {
     exigeLActiviteVisee(Stream.concat(evenements.stream(), Stream.of(geste)).toList(), geste);
   }
 
-  public Optional<EvenementDAtelier> evenement(EvenementDAtelierId id) {
-    return evenements
-      .stream()
-      .filter(evenement -> evenement.id().equals(id))
-      .findFirst();
-  }
-
   /**
    * Les activites que les faits de chaque cle interpretent, la cloture refermant a son heure celle qui reste en
    * cours.

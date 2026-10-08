@@ -511,11 +511,6 @@ class JournalDAtelierTest {
       .containsExactly(tuple(debut, true), tuple(debutRegularise, true));
   }
 
-  @Test
-  void shouldNotReadEvenementInconnu() {
-    assertThat(JournalDAtelier.vide().evenement(EvenementDAtelierId.newId())).isEmpty();
-  }
-
   /**
    * L'interpretation du journal obtenu en enregistrant les faits dans chaque ordre de reception possible : une
    * ouverture precede toujours les gestes qui la visent, un geste recu avant elle etant refuse.

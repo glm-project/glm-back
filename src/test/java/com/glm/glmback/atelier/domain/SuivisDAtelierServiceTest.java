@@ -551,6 +551,29 @@ class SuivisDAtelierServiceTest {
   }
 
   /**
+   * L'idempotence se juge sur toute la table des evenements, pas sur le seul journal du suivi : l'identifiant d'un geste
+   * d'un autre suivi est un renvoi, qui ne heurte pas la cle primaire.
+   */
+  @Test
+  void shouldRepondreCommeUnSuccesAuRenvoiDUnIdentifiantDejaAuJournalDUnAutreSuivi() {
+    SuiviDAtelier suivi = suiviAvecUnTravailOublie();
+    EvenementDAtelier gesteDUnAutreSuivi = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H);
+    suivis.create(suiviDAtelierEngage().enregistre(gesteDUnAutreSuivi));
+    RegularisationAEnregistrer commande = RegularisationAEnregistrer.builder()
+      .suivi(suivi.id())
+      .evenement(gesteDUnAutreSuivi.id())
+      .activite(suivi.journal().evenements().getFirst().activite().orElseThrow())
+      .auteur(AUTEUR_LEROY)
+      .dateDeSurvenue(LE_10_MAI_2026_A_17H);
+
+    RegularisationTraitee renvoi = atelier.regularise(commande);
+
+    assertThat(renvoi.rejeu()).isTrue();
+    assertThat(renvoi.suivi()).isEqualTo(suivi);
+    assertThat(suivis.get(suivi.id())).contains(suivi);
+  }
+
+  /**
    * La cloture ferme le pointage aux operateurs, elle ne fige rien pour le gestionnaire : il regularise jusqu'a elle.
    */
   @Test

@@ -2,6 +2,7 @@ package com.glm.glmback.atelier.infrastructure.secondary;
 
 import com.glm.glmback.atelier.domain.ElementEngageId;
 import com.glm.glmback.atelier.domain.EtatDAtelier;
+import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierCriteria;
@@ -34,10 +35,16 @@ class JpaSuiviDAtelierRepository implements SuiviDAtelierRepository {
   private static final Sort PAR_DATE_D_ENGAGEMENT_DESCENDANTE = Sort.by(Sort.Order.desc("engagementDate"), Sort.Order.asc("id"));
 
   private final SpringDataSuiviDAtelierRepository suivis;
+  private final SpringDataEvenementsDAtelierRepository evenements;
   private final EntityManager entities;
 
-  JpaSuiviDAtelierRepository(SpringDataSuiviDAtelierRepository suivis, EntityManager entities) {
+  JpaSuiviDAtelierRepository(
+    SpringDataSuiviDAtelierRepository suivis,
+    SpringDataEvenementsDAtelierRepository evenements,
+    EntityManager entities
+  ) {
     this.suivis = suivis;
+    this.evenements = evenements;
     this.entities = entities;
   }
 
@@ -86,6 +93,11 @@ class JpaSuiviDAtelierRepository implements SuiviDAtelierRepository {
     return suivis
       .findFirstByElementIdAndClotureDateDeSurvenueIsNullOrderByEngagementDateDescIdAsc(element.uuid())
       .map(SuiviDAtelierEntity::toDomain);
+  }
+
+  @Override
+  public boolean contientEvenement(EvenementDAtelierId evenement) {
+    return evenements.existsById(evenement.uuid());
   }
 
   @Override

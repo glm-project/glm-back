@@ -135,14 +135,15 @@ public final class SuivisDAtelierService {
    * Regularise la fin d'une activite echue, sans passer par la regle de reception des pointages.
    *
    * <p>
-   * Un evenement deja au journal est un renvoi : il repond comme un succes et n'ecrit rien, avant toute regle. Sinon la
+   * Un evenement deja present dans la table des evenements, de ce suivi ou d'un autre, est un renvoi : il repond comme
+   * un succes et n'ecrit rien, avant toute regle. Sinon la
    * fin est datee sur la valeur fournie ; l'operateur et le poste sont ceux de l'activite, et la nature de l'operation,
    * le cout et le taux horaires sont figes comme pour un pointage.
    * </p>
    */
   public RegularisationTraitee regularise(RegularisationAEnregistrer commande) {
     SuiviDAtelier suivi = get(commande.suivi());
-    if (suivi.aEnregistre(commande.evenement())) {
+    if (repository.contientEvenement(commande.evenement())) {
       return new RegularisationTraitee(suivi, true);
     }
 

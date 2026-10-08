@@ -40,6 +40,16 @@ class SuivisDAtelierEnMemoireTest {
   }
 
   @Test
+  void shouldRetrouverUnEvenementDansLeJournalDeNImporteQuelSuivi() {
+    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    suivis.create(suiviDAtelierEngage());
+    suivis.create(suiviDAtelierEngage().enregistre(debut));
+
+    assertThat(suivis.contientEvenement(debut.id())).isTrue();
+    assertThat(suivis.contientEvenement(EvenementDAtelierId.newId())).isFalse();
+  }
+
+  @Test
   void shouldNotGetEnCoursPourUnElementCloture() {
     SuiviDAtelier suivi = suivis.create(suiviDAtelierEngage());
     suivis.update(suivi.cloture(clotureParLeroyA(LE_10_MAI_2026_A_17H)));
