@@ -10,4 +10,5 @@
   <include file="005-atelier_instants_exacts.xml" relativeToChangelogFile="true" />
   <include file="006-recu_d_acte.xml" relativeToChangelogFile="true" />
   <include file="007-proposition_confirmee.xml" relativeToChangelogFile="true" />
+  <include file="008-categorie_de_produit.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>

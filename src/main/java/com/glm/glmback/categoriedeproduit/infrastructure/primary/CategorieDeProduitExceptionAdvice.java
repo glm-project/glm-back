@@ -1,0 +1,18 @@
+package com.glm.glmback.categoriedeproduit.infrastructure.primary;
+
+import com.glm.glmback.categoriedeproduit.domain.CategorieDejaExistanteException;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.ProblemDetail;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+
+@ControllerAdvice
+@Order(Ordered.LOWEST_PRECEDENCE - 20_000)
+class CategorieDeProduitExceptionAdvice {
+
+  @ExceptionHandler(CategorieDejaExistanteException.class)
+  ProblemDetail handleCategorieDejaExistante(CategorieDejaExistanteException e) {
+    return ErreurDeCategorieDeProduit.CATEGORIE_DEJA_EXISTANTE.problem(e);
+  }
+}

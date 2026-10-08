@@ -27,6 +27,14 @@ Le repository et le compteur sont persistés en PostgreSQL, dans le schéma de l
 3. **Numérotation et préfixes.** Les préfixes sont figés pour toutes les entreprises, ce qui contredit la cible multi-clients. L'année et le reset annuel du format `PRD-2026-000001` n'ont par ailleurs aucune source client, alors que des ordres de fabrication durant plusieurs mois traversent les millésimes.
 4. **Critère de lecture.** `ElementDeFabricationCriteria` ne filtre que par période de création et la liste est paginée. Aucun écran décrit par le client ne filtre ainsi ; le seul critère cité est « actifs seulement ». Côté atelier, ce point est traité — la période y est devenue facultative.
 
+## categoriedeproduit
+
+Gère le **référentiel des catégories de produit** : les familles dans lesquelles l'entreprise range ce qu'elle fabrique. Le client de référence en a deux, les moules et les OF ; une autre entreprise en nommera d'autres. C'est pourquoi aucune catégorie n'est créée d'office : une entreprise neuve commence sans, et son gestionnaire déclare les siennes.
+
+Une `CategorieDeProduit` se réduit à un **code** (`MOULE`, `OF`) et à un **rang**. Le code est à la fois ce qui s'affiche et le préfixe du nom des éléments qui s'y créent : il n'y a pas de libellé à part, donc pas deux désignations à garder d'accord. Il **ne se renomme jamais**, puisqu'il entre dans la clé qui fabrique les noms ; son motif est celui du préfixe d'un nom d'élément, des lettres majuscules sans accent.
+
+Le **rang** porte l'ordre d'affichage choisi par l'entreprise. Une catégorie nouvelle se range en dernier, pour que l'ordre déjà choisi ne bouge pas.
+
 ## atelier
 
 Gère l'exécution en atelier de ce que `elementdefabrication` a déclaré. Le gestionnaire y met un élément en atelier, les opérateurs y pointent leurs activités, le gestionnaire clôture et corrige.
