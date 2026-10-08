@@ -94,8 +94,10 @@ Les quatre refus de `POST /api/atelier/suivis/{id}/regularisations` propres à l
 `activite-visee-introuvable` (404) et `date-de-survenue-future` (400) : `activite-non-echue` (l'activité n'est pas une
 fin automatique : échéance non atteinte, ou terminée par un pointage), `activite-deja-regularisee` (une régularisation
 vise déjà l'activité), `fin-avant-debut` (l'heure précède le début de l'activité) et `fin-apres-borne` (l'heure dépasse
-le début suivant sur la clé ou la clôture, `borneDeFin` du dossier). Ils sont définitifs : le même geste rejoué reçoit le
-même refus, sauf un renvoi du même `id`, qui répond 200 avant toute règle.
+le début suivant sur la clé ou la clôture, `borneDeFin` du dossier). Un renvoi du même `id` déjà au journal répond 200 avant toute
+règle. Hors ce cas, `activite-non-echue` tant que l'échéance n'est pas atteinte n'est pas définitif : le même geste
+rejoué après l'échéance est accepté. `activite-deja-regularisee`, `fin-avant-debut` et `fin-apres-borne` ne changent
+pas en rejouant (la borne ne bouge qu'avec un nouveau pointage ou une clôture déplacée).
 
 `saisie-concurrente` est le seul code sur lequel **rejouer** l'appel est la bonne réaction : la saisie était valide,
 un autre pointage s'est glissé entre la lecture et l'écriture.

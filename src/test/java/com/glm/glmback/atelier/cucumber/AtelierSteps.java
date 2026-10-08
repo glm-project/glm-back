@@ -165,6 +165,11 @@ public class AtelierSteps {
     dernierGesteCorps = regularisation.corps();
   }
 
+  @When("je regularise sur {string} sans identifiant de saisie")
+  public void jeRegulariseSurSansIdentifiant(String alias, Map<String, String> donnees) {
+    ecritures.regulariseTelQuel(suivis.get(alias), donnees);
+  }
+
   /**
    * Regularise la fin de l'activite qu'ouvre l'evenement de ce rang du journal.
    */

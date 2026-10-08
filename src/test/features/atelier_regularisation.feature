@@ -225,6 +225,26 @@ Feature: Regularisation directe de la fin d'une activite echue
       | dateDeSurvenue | 2044-05-12T23:30:00Z |
     Then la reponse a le statut http 201
 
+  Scenario: Une saisie sans identifiant est refusee
+    Given il est "2044-05-20T06:00:00Z"
+    And l'entreprise a cree l'element de fabrication "Regul 9016"
+      | categorie | OF      |
+      | reference | REG9016 |
+    And j'ai engage l'element "Regul 9016" en atelier
+    And il est "2044-05-20T08:00:00Z"
+    And j'ai pointe sur "Regul 9016"
+      | type      | DEBUT           |
+      | operateur | dupont-regul    |
+      | poste     | fraiseuse-regul |
+    And il est "2044-05-20T22:00:00Z"
+    When je consulte "Regul 9016"
+    And je regularise sur "Regul 9016" sans identifiant de saisie
+      | activite       | 00000000-0000-0000-0000-000000090161 |
+      | dateDeSurvenue | 2044-05-20T17:00:00Z                 |
+    Then la reponse a le statut http 400
+    When je consulte "Regul 9016"
+    Then le journal du suivi contient 1 evenements
+
   Scenario: Le renvoi de la meme saisie repond comme un succes sans rien ecrire de plus
     Given il est "2044-05-14T06:00:00Z"
     And l'entreprise a cree l'element de fabrication "Regul 9011"

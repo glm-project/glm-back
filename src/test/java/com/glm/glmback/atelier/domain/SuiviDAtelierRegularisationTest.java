@@ -93,6 +93,19 @@ class SuiviDAtelierRegularisationTest {
     assertThat(suivi.exigeUneFinRegularisable(activite, A_22H, A_22H).ouvrant()).isEqualTo(travail);
   }
 
+  /**
+   * Une fin qui depasse a la fois maintenant et le debut suivant repond qu'elle est future : « maintenant » se juge
+   * avant la borne.
+   */
+  @Test
+  void shouldJugerLeFuturAvantLaBorne() {
+    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(travail).enregistre(debutSurFraiseuse1ParDupontA(A_22H));
+
+    assertThatThrownBy(() -> suivi.exigeUneFinRegularisable(activite, A_23H.plusNanos(1), A_23H)).isExactlyInstanceOf(
+      DateDeSurvenueFutureException.class
+    );
+  }
+
   @Test
   void shouldRefuserUneFinAvantLeDebutDeLActivite() {
     SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(travail);

@@ -69,6 +69,13 @@ public class EcrituresDuJournalDAtelier {
     return envoieA(SUIVIS_URI + suivi + "/regularisations", complet);
   }
 
+  /**
+   * Regularise exactement le corps donne, sans identifiant tire : de quoi eprouver le refus d'un corps incomplet.
+   */
+  public PointageEnvoye regulariseTelQuel(String suivi, Map<String, ?> corps) {
+    return envoieA(SUIVIS_URI + suivi + "/regularisations", corps);
+  }
+
   private PointageEnvoye envoie(String suivi, Map<String, ?> corps) {
     return envoieA(SUIVIS_URI + suivi + "/pointages", corps);
   }
