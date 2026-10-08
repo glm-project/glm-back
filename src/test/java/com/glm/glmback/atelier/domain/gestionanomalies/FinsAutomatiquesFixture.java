@@ -1,6 +1,7 @@
 package com.glm.glmback.atelier.domain.gestionanomalies;
 
 import static com.glm.glmback.atelier.domain.AtelierFixture.AUTEUR_LEROY;
+import static com.glm.glmback.atelier.domain.AtelierFixture.CATEGORIE_OF;
 
 import com.glm.glmback.atelier.domain.ElementEngage;
 import com.glm.glmback.atelier.domain.ElementEngageId;
@@ -13,7 +14,6 @@ import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.Prenom;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
-import com.glm.glmback.atelier.domain.TypeDElementEngage;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -24,7 +24,7 @@ public final class FinsAutomatiquesFixture {
   private FinsAutomatiquesFixture() {}
 
   public static ElementEngage elementDeFinAutomatiqueNomme(String nom) {
-    return new ElementEngage(new ElementEngageId(UUID.randomUUID()), new NomDElement(nom), TypeDElementEngage.ORDRE_DE_FABRICATION);
+    return new ElementEngage(new ElementEngageId(UUID.randomUUID()), new NomDElement(nom), CATEGORIE_OF);
   }
 
   /** Un suivi engage avant toute date de test : ses pointages peuvent etre dates librement apres le 1er janvier 2025. */

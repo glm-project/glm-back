@@ -3,6 +3,7 @@ package com.glm.glmback.atelier.infrastructure.secondary;
 import com.glm.glmback.atelier.domain.ActiviteDeSupervision;
 import com.glm.glmback.atelier.domain.ActiviteId;
 import com.glm.glmback.atelier.domain.CategorieDActivite;
+import com.glm.glmback.atelier.domain.CategorieDElement;
 import com.glm.glmback.atelier.domain.DescriptionDActiviteDeSupervision;
 import com.glm.glmback.atelier.domain.Echeance;
 import com.glm.glmback.atelier.domain.ElementDeSupervision;
@@ -22,7 +23,6 @@ import com.glm.glmback.atelier.domain.PosteDeSupervision;
 import com.glm.glmback.atelier.domain.PosteDeTravailId;
 import com.glm.glmback.atelier.domain.Prenom;
 import com.glm.glmback.atelier.domain.SequenceEnConflitDeSupervision;
-import com.glm.glmback.atelier.domain.TypeDElementEngage;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Tuple;
 import java.time.Instant;
@@ -134,7 +134,7 @@ class JpaLecturesDeSupervision implements LecturesDeSupervision {
     ElementEngage element = new ElementEngage(
       new ElementEngageId(row.get("elementId", UUID.class)),
       new NomDElement(row.get("elementNom", String.class)),
-      row.get("elementType", TypeDElementEngage.class)
+      new CategorieDElement(row.get("elementType", String.class))
     );
     return DescriptionDActiviteDeSupervision.builder()
       .id(new ActiviteId(row.get("id", UUID.class)))

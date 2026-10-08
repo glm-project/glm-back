@@ -159,7 +159,7 @@ ajoutent l'évaluation temporelle, le calendrier ou la valorisation de leur cont
 
 ### Frontière avec elementdefabrication
 
-`elementdefabrication` étant annoté `@BusinessContext`, l'atelier ne l'importe jamais. Il déclare sa propre identité, `ElementEngage`, dont le nom et le type sont **copiés à l'engagement** : c'est ce qu'affiche l'écran d'atelier, et un élément renommé plus tard ne doit pas réécrire l'histoire de l'atelier. Le port `ElementsEngageables` porte cette frontière.
+`elementdefabrication` étant annoté `@BusinessContext`, l'atelier ne l'importe jamais. Il déclare sa propre identité, `ElementEngage`, dont le nom et la catégorie sont **copiés à l'engagement** : c'est ce qu'affiche l'écran d'atelier, et un élément renommé plus tard ne doit pas réécrire l'histoire de l'atelier. Le port `ElementsEngageables` porte cette frontière. La catégorie copiée est une valeur libre, `CategorieDElement`, et non une liste fermée : chaque entreprise déclare les siennes dans `categoriedeproduit`, et l'atelier — comme le pupitre, la synthèse et le coût de revient — la restitue sans la connaître.
 
 **Mettre un élément en atelier est un geste métier explicite du back-office**, distinct de sa création : tout ce qui est créé n'est pas forcément à faire, et c'est cet acte qui fait apparaître l'élément sur l'écran des opérateurs. C'est aussi ce qui donne un sens à l'invariant « aucun événement antérieur à l'engagement ».
 
@@ -261,7 +261,7 @@ L'identité (nom, prénom) est **unique par entreprise**. L'**identifiant** est 
 
 `postedetravail` étant annoté `@BusinessContext`, ce contexte ne l'importe jamais : il déclare ses propres `PosteHabilitableId`, `LibelleDePoste` et `NatureDeTravail`, et lit la table voisine par une entité en lecture seule, sur le patron d'`ElementEngageableEntity`.
 
-**Rien n'est copié**, à la différence de l'atelier qui copie nom et type à l'engagement. La raison est symétrique : l'atelier copie parce qu'un élément renommé ne doit pas réécrire son histoire, alors qu'ici aucun historique ne pend à un poste — un poste renommé doit s'afficher renommé partout. L'opérateur ne stocke donc que l'identifiant, et le port `PostesHabilitables` n'expose que `parIds`, pour qu'une page entière se résolve en une requête.
+**Rien n'est copié**, à la différence de l'atelier qui copie nom et catégorie à l'engagement. La raison est symétrique : l'atelier copie parce qu'un élément renommé ne doit pas réécrire son histoire, alors qu'ici aucun historique ne pend à un poste — un poste renommé doit s'afficher renommé partout. L'opérateur ne stocke donc que l'identifiant, et le port `PostesHabilitables` n'expose que `parIds`, pour qu'une page entière se résolve en une requête.
 
 ### Points ouverts
 
@@ -477,7 +477,7 @@ conserve son élément sur chaque jour atteint, même sans pointage dans la sema
 et sans rendre un total incomplet.
 
 Les éléments rendus portent une activité ou un pointage dans la semaine, par première apparition puis nom.
-Un réengagement reste le même élément. Le nom et le type viennent du suivi ; référence et description sont
+Un réengagement reste le même élément. Le nom et la catégorie viennent du suivi ; référence et description sont
 relues au référentiel, et peuvent être absentes. Les couples poste/nature suivent leur première apparition,
 activité et pointage confondus ; l'absence de poste ou de nature est nominale.
 

@@ -1346,7 +1346,7 @@
             "type" : "string"
           },
           "type" : {
-            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
+            "description" : "Categorie de l'element, copiee a l'engagement.",
             "type" : "string"
           }
         },
@@ -2733,8 +2733,7 @@
             "type" : "string"
           },
           "type" : {
-            "description" : "Type de l'element, copie a l'engagement.",
-            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
+            "description" : "Categorie de l'element, copiee a l'engagement.",
             "type" : "string"
           }
         },
@@ -2791,8 +2790,7 @@
             "type" : "string"
           },
           "type" : {
-            "description" : "Type de l'element, copie a l'engagement.",
-            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
+            "description" : "Categorie de l'element, copiee a l'engagement.",
             "type" : "string"
           }
         },

@@ -119,7 +119,7 @@ class PariteDesRepositoriesDAtelierIT {
   private static SuiviDAtelier suiviEngageA(Instant date) {
     return SuiviDAtelier.builder()
       .id(SuiviDAtelierId.newId())
-      .element(new ElementEngage(new ElementEngageId(UUID.randomUUID()), NOM_OF_2026_000042, TypeDElementEngage.ORDRE_DE_FABRICATION))
+      .element(new ElementEngage(new ElementEngageId(UUID.randomUUID()), NOM_OF_2026_000042, CATEGORIE_OF))
       .engagement(new Engagement(AUTEUR_LEROY, date))
       .journal(JournalDAtelier.vide());
   }

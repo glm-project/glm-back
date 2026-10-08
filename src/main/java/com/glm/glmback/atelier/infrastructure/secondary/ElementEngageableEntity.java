@@ -1,13 +1,11 @@
 package com.glm.glmback.atelier.infrastructure.secondary;
 
+import com.glm.glmback.atelier.domain.CategorieDElement;
 import com.glm.glmback.atelier.domain.ElementEngage;
 import com.glm.glmback.atelier.domain.ElementEngageId;
 import com.glm.glmback.atelier.domain.NomDElement;
-import com.glm.glmback.atelier.domain.TypeDElementEngage;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.util.UUID;
@@ -18,7 +16,7 @@ import org.hibernate.annotations.Immutable;
  *
  * <p>
  * L'atelier lit la table du contexte voisin sans jamais importer son code, annote {@code @BusinessContext} : il n'en
- * retient que l'identite, le nom et le type, les trois seules choses qu'il copie a l'engagement.
+ * retient que l'identite, le nom et la categorie, les trois seules choses qu'il copie a l'engagement.
  * </p>
  */
 @Entity
@@ -29,9 +27,8 @@ class ElementEngageableEntity {
   @Id
   private UUID id;
 
-  @Enumerated(EnumType.STRING)
-  @Column(length = 30)
-  private TypeDElementEngage type;
+  @Column(name = "type", length = 30)
+  private String categorie;
 
   private String nom;
 
@@ -42,6 +39,6 @@ class ElementEngageableEntity {
   }
 
   ElementEngage toDomain() {
-    return new ElementEngage(new ElementEngageId(id), new NomDElement(nom), type);
+    return new ElementEngage(new ElementEngageId(id), new NomDElement(nom), new CategorieDElement(categorie));
   }
 }
