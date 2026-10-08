@@ -1,11 +1,15 @@
 package com.glm.glmback.atelier.infrastructure.primary;
 
+import com.glm.glmback.atelier.domain.ActiviteDejaRegulariseeException;
+import com.glm.glmback.atelier.domain.ActiviteNonEchueException;
 import com.glm.glmback.atelier.domain.ActiviteViseeIncoherenteException;
 import com.glm.glmback.atelier.domain.ActiviteViseeIntrouvableException;
 import com.glm.glmback.atelier.domain.DateDeSurvenueFutureException;
 import com.glm.glmback.atelier.domain.ElementDejaEngageException;
 import com.glm.glmback.atelier.domain.ElementEngageableIntrouvableException;
 import com.glm.glmback.atelier.domain.EvenementAvantEngagementException;
+import com.glm.glmback.atelier.domain.FinApresBorneException;
+import com.glm.glmback.atelier.domain.FinAvantDebutException;
 import com.glm.glmback.atelier.domain.IdentifiantDEvenementReutiliseException;
 import com.glm.glmback.atelier.domain.OperateurDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.OperateurNonHabiliteException;
@@ -77,6 +81,26 @@ class AtelierExceptionAdvice {
   @ExceptionHandler(EvenementAvantEngagementException.class)
   ProblemDetail handleEvenementAvantEngagement(EvenementAvantEngagementException e) {
     return ErreurDAtelier.EVENEMENT_ANTERIEUR_A_L_ENGAGEMENT.problem(e);
+  }
+
+  @ExceptionHandler(ActiviteNonEchueException.class)
+  ProblemDetail handleActiviteNonEchue(ActiviteNonEchueException e) {
+    return ErreurDAtelier.ACTIVITE_NON_ECHUE.problem(e);
+  }
+
+  @ExceptionHandler(ActiviteDejaRegulariseeException.class)
+  ProblemDetail handleActiviteDejaRegularisee(ActiviteDejaRegulariseeException e) {
+    return ErreurDAtelier.ACTIVITE_DEJA_REGULARISEE.problem(e);
+  }
+
+  @ExceptionHandler(FinAvantDebutException.class)
+  ProblemDetail handleFinAvantDebut(FinAvantDebutException e) {
+    return ErreurDAtelier.FIN_AVANT_DEBUT.problem(e);
+  }
+
+  @ExceptionHandler(FinApresBorneException.class)
+  ProblemDetail handleFinApresBorne(FinApresBorneException e) {
+    return ErreurDAtelier.FIN_APRES_BORNE.problem(e);
   }
 
   @ExceptionHandler(SaisieConcurrenteException.class)

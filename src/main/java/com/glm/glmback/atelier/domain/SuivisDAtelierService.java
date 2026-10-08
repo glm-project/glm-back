@@ -131,12 +131,36 @@ public final class SuivisDAtelierService {
     return new PointageDAtelierTraite(repository.update(suivi.enregistre(evenement)), false);
   }
 
-  public SuiviDAtelier regularise(RegularisationAEnregistrer commande) {
-    return regularise(commande, EvenementDAtelierId.newId());
-  }
+  /**
+   * Regularise la fin d'une activite echue, sans passer par la regle de reception des pointages.
+   *
+   * <p>
+   * Un evenement deja au journal est un renvoi : il repond comme un succes et n'ecrit rien, avant toute regle. Sinon la
+   * fin est datee sur la valeur fournie ; l'operateur et le poste sont ceux de l'activite, et la nature de l'operation,
+   * le cout et le taux horaires sont figes comme pour un pointage.
+   * </p>
+   */
+  public RegularisationTraitee regularise(RegularisationAEnregistrer commande) {
+    SuiviDAtelier suivi = get(commande.suivi());
+    if (suivi.aEnregistre(commande.evenement())) {
+      return new RegularisationTraitee(suivi, true);
+    }
 
-  public SuiviDAtelier regularise(RegularisationAEnregistrer commande, EvenementDAtelierId evenement) {
-    return repository.update(get(commande.suivi()).enregistre(regularisation(commande, evenement)));
+    Instant maintenant = clock.now();
+    Activite activite = suivi.exigeUneFinRegularisable(commande.activite(), commande.dateDeSurvenue(), maintenant);
+    EvenementDAtelier fin = evenement(
+      commande.evenement(),
+      TypeDEvenementDAtelier.FIN,
+      IntentionDePointage.FIN,
+      Optional.of(commande.activite()),
+      activite.ouvrant().operateur(),
+      activite.ouvrant().poste(),
+      commande.auteur(),
+      OrigineDuPointage.REGULARISATION,
+      new Horodatage(commande.dateDeSurvenue(), maintenant)
+    );
+
+    return new RegularisationTraitee(repository.update(suivi.enregistre(fin)), false);
   }
 
   public SuiviDAtelier cloture(ClotureAEnregistrer commande) {
@@ -161,22 +185,6 @@ public final class SuivisDAtelierService {
     return repository.list(new SuiviDAtelierCriteria(periode, etats, evaluation), pageable);
   }
 
-  private EvenementDAtelier regularisation(RegularisationAEnregistrer commande, EvenementDAtelierId evenement) {
-    Instant maintenant = clock.now();
-    refuseDateFuture(Optional.of(commande.dateDeSurvenue()), maintenant);
-    return evenement(
-      evenement,
-      commande.type(),
-      commande.intention(),
-      commande.activiteVisee(),
-      commande.operateur(),
-      commande.poste(),
-      commande.auteur(),
-      OrigineDuPointage.REGULARISATION,
-      new Horodatage(commande.dateDeSurvenue(), maintenant)
-    );
-  }
-
   /**
    * La date de survenue d'un geste horodate par le pupitre, lue sur l'horloge du serveur.
    *
@@ -191,12 +199,6 @@ public final class SuivisDAtelierService {
     }
 
     return dateDeSurvenue.filter(date -> date.isBefore(maintenant)).orElse(maintenant);
-  }
-
-  private static void refuseDateFuture(Optional<Instant> dateDeSurvenue, Instant maintenant) {
-    if (dateDeSurvenue.filter(date -> date.isAfter(maintenant)).isPresent()) {
-      throw new DateDeSurvenueFutureException(dateDeSurvenue.orElseThrow());
-    }
   }
 
   private EvenementDAtelier evenement(

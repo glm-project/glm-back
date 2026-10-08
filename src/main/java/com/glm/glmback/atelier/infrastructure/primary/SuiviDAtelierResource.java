@@ -181,23 +181,37 @@ class SuiviDAtelierResource {
   }
 
   @PostMapping("/{id}/regularisations")
-  @ResponseStatus(HttpStatus.CREATED)
-  @Operation(summary = "Rattraper une saisie oubliee", description = "Le gestionnaire rattrape un fait que le pupitre n'a pas pointe.")
-  @ApiResponse(
-    responseCode = "201",
-    description = "La regularisation est enregistree, y compris quand elle contredit le journal : sa sequence est alors en conflit."
+  @Operation(
+    summary = "Regulariser la fin d'une activite echue",
+    description = """
+    Le gestionnaire etablit la fin d'une activite que rien n'a terminee avant son echeance (une fin automatique). Le
+    corps ne porte que l'identifiant de la saisie, que le client genere une fois par saisie, l'activite et l'heure du
+    fait : l'operateur, le poste et le type se deduisent de l'activite. La regularisation ne passe pas par la regle de
+    reception des pointages, et son heure peut depasser l'echeance de l'activite.
+
+    L'heure ne depasse ni l'instant present, ni le debut suivant de la meme cle (operateur et poste), ni la cloture ; le
+    dossier de la fin automatique donne ces deux dernieres bornes (`borneDeFin`).
+
+    L'identifiant est verifie avant toute regle : un renvoi de la meme saisie repond 200 et n'ecrit rien.
+    """
   )
-  @ApiResponse(responseCode = "400", description = "Le corps est invalide, intention et cible comprises.")
-  @ApiResponse(responseCode = "404", description = "Suivi, operateur, poste de travail ou activite visee introuvable.")
+  @ApiResponse(responseCode = "201", description = "La fin est regularisee et portee au journal.")
+  @ApiResponse(
+    responseCode = "200",
+    description = "Renvoi : l'evenement de cet identifiant figure deja au journal, rien n'est ecrit de plus."
+  )
+  @ApiResponse(responseCode = "400", description = "Le corps est invalide, ou l'heure de la fin est future.")
+  @ApiResponse(responseCode = "404", description = "Suivi ou activite introuvable.")
   @ApiResponse(
     responseCode = "409",
     description = """
-    Operateur non habilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, ou evenement anterieur
-    a l'engagement.
+    Activite non echue (ou deja terminee par un pointage) ou deja regularisee, fin avant le debut de l'activite ou apres sa
+    borne, operateur non habilite sur ce poste, ou saisie concurrente (le dossier est a relire).
     """
   )
-  RestSuiviDAtelier regularise(@PathVariable UUID id, @RequestBody @Valid RestRegularisation request) {
-    return rendu(applicationService.regularise(request.toDomain(new SuiviDAtelierId(id), AuteurConnecte.get())));
+  ResponseEntity<RestSuiviDAtelier> regularise(@PathVariable UUID id, @RequestBody @Valid RestRegularisation request) {
+    var resultat = applicationService.regularise(request.toDomain(new SuiviDAtelierId(id), AuteurConnecte.get()));
+    return ResponseEntity.status(resultat.rejeu() ? HttpStatus.OK : HttpStatus.CREATED).body(rendu(resultat.agregat()));
   }
 
   @PutMapping("/{id}/cloture")

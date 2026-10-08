@@ -118,11 +118,8 @@ class VieDeLAtelierTest {
     atelier.regularise(
       RegularisationAEnregistrer.builder()
         .suivi(premierOrdre)
-        .type(TypeDEvenementDAtelier.FIN)
-        .intention(IntentionDePointage.FIN)
-        .activiteVisee(Optional.of(ActiviteId.ouvertePar(premierApresMidi.evenement())))
-        .operateur(OPERATEUR_ID_DUPONT)
-        .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
+        .evenement(EvenementDAtelierId.newId())
+        .activite(ActiviteId.ouvertePar(premierApresMidi.evenement()))
         .auteur(AUTEUR_LEROY)
         .dateDeSurvenue(LE_10_MAI_2026_A_17H)
     );

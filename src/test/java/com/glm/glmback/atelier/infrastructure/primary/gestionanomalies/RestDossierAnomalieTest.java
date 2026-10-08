@@ -56,7 +56,18 @@ class RestDossierAnomalieTest {
 
     var json = dossier(suiviDAtelierEngage().enregistre(travail), travail);
 
-    assertThat(json.propertyNames()).containsExactlyInAnyOrder("adresse", "revision", "evaluation", "activite", "pointages");
+    assertThat(json.propertyNames()).containsExactlyInAnyOrder("adresse", "revision", "evaluation", "activite", "pointages", "borneDeFin");
+  }
+
+  @Test
+  void shouldPublierLaBorneDeFinQuandUnDebutSuitSurLaCle() {
+    var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    var suivant = debutSurFraiseuse1ParDupontA(A_22H);
+
+    assertThat(dossier(suiviDAtelierEngage().enregistre(travail).enregistre(suivant), travail).path("borneDeFin").asString()).isEqualTo(
+      "2026-05-10T22:00:00Z"
+    );
+    assertThat(dossier(suiviDAtelierEngage().enregistre(travail), travail).path("borneDeFin").isNull()).isTrue();
   }
 
   @Test

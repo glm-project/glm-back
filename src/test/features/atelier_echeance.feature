@@ -299,11 +299,7 @@ Feature: Echeance et fin automatique des activites
       | poste     | fraiseuse-1                          |
     Given il est "2026-06-13T09:00:00Z"
     When je regularise sur "OF 5009"
-      | type           | FIN                                  |
-      | intention      | FIN                                  |
-      | cible          | 00000000-0000-0000-0000-000000000581 |
-      | operateur      | dupont                               |
-      | poste          | fraiseuse-1                          |
+      | activite       | 00000000-0000-0000-0000-000000000581 |
       | dateDeSurvenue | 2026-06-12T23:00:00Z                 |
     Then la reponse a le statut http 201
     And l'evenement 1 du suivi est une regularisation de "dupont" saisie par "gestionnaire"

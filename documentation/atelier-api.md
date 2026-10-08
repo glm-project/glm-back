@@ -465,11 +465,46 @@ créé par le pupitre et la `dateDeSurvenue` conservée hors ligne.
 POST   /api/atelier/suivis                                    engager un élément
 PUT    /api/atelier/suivis/{id}/cloture                        clôturer, ou déplacer la clôture
 DELETE /api/atelier/suivis/{id}/cloture                        rouvrir
-POST   /api/atelier/suivis/{id}/regularisations                rattraper une saisie oubliée
+POST   /api/atelier/suivis/{id}/regularisations                régulariser la fin d'une activité échue
 ```
 
-La régularisation porte `intention` et `cible` comme un pointage. Une fin oubliée se régularise donc sur l'activité
-qu'elle termine.
+**La régularisation directe** établit la fin d'une activité que rien n'a terminée avant son échéance (une fin
+automatique). Le corps ne porte que trois champs :
+
+```json
+{
+  "id": "6d0c1a4e-…",
+  "activite": "ab8f8dba-…",
+  "dateDeSurvenue": "2026-05-10T17:00:00Z"
+}
+```
+
+- `id` est généré par le client **une fois par saisie** et conservé d'un renvoi à l'autre ;
+- `activite` est l'`ActiviteId` de l'activité (l'identifiant de son pointage ouvrant) ;
+- `dateDeSurvenue` est l'heure à laquelle la fin a réellement eu lieu. Elle peut dépasser l'échéance de l'activité.
+
+L'opérateur, le poste et le type du fait se déduisent de l'activité : la saisie ne les porte pas. L'événement écrit est
+une fin (`FIN`) qui vise l'activité, `estUneRegularisation` vrai ; elle ne passe pas par la règle de réception des
+pointages. Une régularisation qui n'est pas la fin d'une activité échue n'existe plus.
+
+**Idempotence.** La présence de `id` dans le journal est vérifiée avant toute règle : un renvoi de la même saisie répond
+**200** (au lieu de 201), avec le suivi tel qu'il est, et n'écrit rien — y compris quand l'activité est désormais
+régularisée.
+
+**Refus**, par ordre de vérification (le code est dans `type`, voir [codes-erreur.md](codes-erreur.md)) :
+
+| Statut | Code                         | Cas                                                                                                 |
+| ------ | ---------------------------- | --------------------------------------------------------------------------------------------------- |
+| 404    | `activite-visee-introuvable` | Aucun pointage de ce suivi n'a ouvert cette activité.                                               |
+| 409    | `activite-deja-regularisee`  | Une régularisation vise déjà cette activité.                                                        |
+| 409    | `activite-non-echue`         | L'activité n'est pas une fin automatique : échéance non atteinte, ou terminée par un pointage.      |
+| 400    | `date-de-survenue-future`    | L'heure dépasse l'instant présent.                                                                  |
+| 409    | `fin-avant-debut`            | L'heure précède le début de l'activité.                                                             |
+| 409    | `fin-apres-borne`            | L'heure dépasse le début suivant sur la clé (opérateur et poste) ou la clôture : voir `borneDeFin`. |
+
+`saisie-concurrente` (409) reste le refus de concurrence : un pointage s'est glissé entre la lecture et l'écriture,
+relire le dossier. Le dossier d'une fin automatique donne la borne `borneDeFin` : le plus tôt du début suivant sur la
+clé et de la clôture, ou rien ; l'instant présent borne toujours la fin.
 
 **La clôture ne fige rien pour le gestionnaire** : la régularisation reste possible ensuite, et la clôture elle-même
 se déplace (`PUT`) ou s'annule (`DELETE`). Ne pas griser la régularisation sur un élément clôturé.
@@ -778,6 +813,9 @@ Les continuations donnent les adresses actives explicites ; elles ne changent ja
 désormais `"nature": "CONFLIT"`, champ requis ajouté au dossier avec la liste des anomalies.
 
 ### Le dossier d'une fin automatique
+
+Le dossier porte aussi `borneDeFin` (instant, absent quand rien ne borne la fin) : le plus tôt du début suivant sur la
+clé de l'activité et de la clôture, que la régularisation de sa fin ne peut pas dépasser.
 
 Une activité que rien n'a terminée s'arrête à son échéance, treize heures écoulées après son début, borne incluse.
 Ce n'est pas un conflit : le dossier de son ouvrant actif (`activite_d_atelier.ouverture_id`) répond

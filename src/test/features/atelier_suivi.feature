@@ -462,23 +462,19 @@ Feature: Suivi des elements engages en atelier
       | intention | OUVERTURE                            |
       | operateur | dupont                               |
       | poste     | fraiseuse-1                          |
-    Given il est "2026-05-10T10:00:00Z"
+    Given il est "2026-05-10T22:00:00Z"
     When je regularise sur "OF 2022"
-      | type           | FIN                                  |
-      | intention      | FIN                                  |
-      | cible          | 00000000-0000-0000-0000-000000002022 |
-      | operateur      | dupont                               |
-      | poste          | fraiseuse-1                          |
-      | dateDeSurvenue | 2026-05-10T10:00:00Z                 |
+      | activite       | 00000000-0000-0000-0000-000000002022 |
+      | dateDeSurvenue | 2026-05-10T22:00:00Z                 |
     Then la reponse a le statut http 201
-    And l'evenement 1 du suivi a survenu a "2026-05-10T10:00:00Z" et a ete saisi a "2026-05-10T10:00:00Z" par "gestionnaire"
+    And l'evenement 1 du suivi a survenu a "2026-05-10T22:00:00Z" et a ete saisi a "2026-05-10T22:00:00Z" par "gestionnaire"
     And l'evenement 1 du suivi est une regularisation de "dupont" saisie par "gestionnaire"
 
   Scenario: Consulter un suivi inexistant renvoie 404
     When je consulte le suivi inconnu "7a4e2c91-6b83-4d05-9e17-f204a6b8c1d3"
     Then la reponse a le statut http 404
 
-  Scenario: Une regularisation anterieure a l'engagement est refusee
+  Scenario: Un pointage anterieur a l'engagement est refuse
     # Un element ne peut pas avoir ete travaille avant d'avoir ete mis en atelier.
     Given il est "2026-05-10T08:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 2016"
@@ -486,11 +482,12 @@ Feature: Suivi des elements engages en atelier
       | reference | 2016 |
     And j'ai engage l'element "OF 2016" en atelier
     Given il est "2026-05-10T09:00:00Z"
-    When je regularise sur "OF 2016"
+    When je pointe sur "OF 2016"
       | type           | DEBUT                |
       | operateur      | dupont               |
       | dateDeSurvenue | 2026-05-10T06:00:00Z |
     Then la reponse a le statut http 409
+    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:evenement-anterieur-a-l-engagement"
 
   Scenario: Un poste sur lequel du temps a ete pointe ne se supprime plus, meme sans habilitation restante
     # Le journal ne retient que l'identifiant du poste : le supprimer laisserait des heures de travail sans machine.
@@ -680,10 +677,7 @@ Feature: Suivi des elements engages en atelier
       | FIN   |
 
     # Le gestionnaire regularise la fin oubliee de l'OF 42 : la fin reelle remplace la fin automatique.
-    When je regularise sur "OF 42"
-      | type           | FIN                  |
-      | operateur      | dupont               |
-      | poste          | fraiseuse-1          |
+    When je regularise sur "OF 42" en visant l'activite de l'evenement 2
       | dateDeSurvenue | 2026-05-10T17:00:00Z |
     And je consulte le temps effectif de "OF 42"
     Then le temps effectif contient

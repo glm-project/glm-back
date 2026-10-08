@@ -4,7 +4,9 @@ import com.glm.glmback.atelier.domain.EvenementDAtelier;
 import com.glm.glmback.atelier.domain.IntervalleDActivite;
 import com.glm.glmback.atelier.domain.LectureDuSuivi;
 import com.glm.glmback.shared.error.domain.Assert;
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Le dossier d'une fin automatique : l'activite echue que le pointage de l'adresse ouvre, et que rien n'a terminee.
@@ -31,6 +33,14 @@ public record LectureDossierAnomalie(AdresseDossierAnomalie adresse, LectureDuSu
       .findFirst()
       .map(activite -> new LectureDossierAnomalie(adresse, lecture, activite))
       .orElseThrow(() -> new FinAutomatiqueIntrouvableException(adresse));
+  }
+
+  /**
+   * L'instant que la fin regularisee ne peut pas depasser : le plus tot du debut suivant sur la cle et de la cloture,
+   * ou rien.
+   */
+  public Optional<Instant> borneDeFin() {
+    return lecture.suivi().borneDeFin(activite.activite());
   }
 
   /** Les pointages de la cle de l'activite echue : meme operateur, meme poste, dans l'ordre du journal. */

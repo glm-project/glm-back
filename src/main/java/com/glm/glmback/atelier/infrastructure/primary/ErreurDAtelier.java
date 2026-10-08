@@ -15,6 +15,10 @@ enum ErreurDAtelier implements ProblemCode {
   ELEMENT_DEJA_ENGAGE(HttpStatus.CONFLICT, "element deja engage"),
   SUIVI_D_ATELIER_CLOTURE(HttpStatus.CONFLICT, "suivi d'atelier cloture"),
   EVENEMENT_ANTERIEUR_A_L_ENGAGEMENT(HttpStatus.CONFLICT, "evenement anterieur a l'engagement"),
+  ACTIVITE_NON_ECHUE(HttpStatus.CONFLICT, "activite non echue"),
+  ACTIVITE_DEJA_REGULARISEE(HttpStatus.CONFLICT, "activite deja regularisee"),
+  FIN_AVANT_DEBUT(HttpStatus.CONFLICT, "fin avant debut"),
+  FIN_APRES_BORNE(HttpStatus.CONFLICT, "fin apres borne"),
   SAISIE_CONCURRENTE(HttpStatus.CONFLICT, "saisie concurrente"),
   IDENTIFIANT_EVENEMENT_REUTILISE(HttpStatus.CONFLICT, "identifiant d'evenement reutilise"),
   DATE_DE_SURVENUE_FUTURE(HttpStatus.BAD_REQUEST, "date de survenue future");

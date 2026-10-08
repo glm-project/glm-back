@@ -79,12 +79,23 @@ tests sont le seul endroit qui les tient.
 | `element-deja-engage`                | 409    | element deja engage                | `ElementDejaEngageException`              |
 | `suivi-d-atelier-cloture`            | 409    | suivi d'atelier cloture            | `SuiviDAtelierClotureException`           |
 | `evenement-anterieur-a-l-engagement` | 409    | evenement anterieur a l'engagement | `EvenementAvantEngagementException`       |
+| `activite-non-echue`                 | 409    | activite non echue                 | `ActiviteNonEchueException`               |
+| `activite-deja-regularisee`          | 409    | activite deja regularisee          | `ActiviteDejaRegulariseeException`        |
+| `fin-avant-debut`                    | 409    | fin avant debut                    | `FinAvantDebutException`                  |
+| `fin-apres-borne`                    | 409    | fin apres borne                    | `FinApresBorneException`                  |
 | `saisie-concurrente`                 | 409    | saisie concurrente                 | `SaisieConcurrenteException`              |
 | `identifiant-evenement-reutilise`    | 409    | identifiant d'evenement reutilise  | `IdentifiantDEvenementReutiliseException` |
 | `date-de-survenue-future`            | 400    | date de survenue future            | `DateDeSurvenueFutureException`           |
 
 `fin-automatique-introuvable` répond à `GET /api/atelier/suivis/{id}/anomalies/{pointage}` quand le pointage n'ouvre
 aucune fin automatique non régularisée : le front revient à la liste.
+
+Les quatre refus de `POST /api/atelier/suivis/{id}/regularisations` propres à la régularisation directe, avec
+`activite-visee-introuvable` (404) et `date-de-survenue-future` (400) : `activite-non-echue` (l'activité n'est pas une
+fin automatique : échéance non atteinte, ou terminée par un pointage), `activite-deja-regularisee` (une régularisation
+vise déjà l'activité), `fin-avant-debut` (l'heure précède le début de l'activité) et `fin-apres-borne` (l'heure dépasse
+le début suivant sur la clé ou la clôture, `borneDeFin` du dossier). Ils sont définitifs : le même geste rejoué reçoit le
+même refus, sauf un renvoi du même `id`, qui répond 200 avant toute règle.
 
 `saisie-concurrente` est le seul code sur lequel **rejouer** l'appel est la bonne réaction : la saisie était valide,
 un autre pointage s'est glissé entre la lecture et l'écriture.
@@ -93,11 +104,12 @@ un autre pointage s'est glissé entre la lecture et l'écriture.
 suivi, opérateur, type, poste ou date fournie, et pour un pointage d'atelier autre intention ou autre cible.
 
 `activite-visee-introuvable` et `activite-visee-incoherente` refusent une transition ou une fin dont la cible n'est
-pas une activité de ce suivi, ou appartient à un autre opérateur ou à un autre poste. Ils valent pour le pointage et la
-régularisation, et sont définitifs : le même geste rejoué reçoit le même refus.
+pas une activité de ce suivi, ou appartient à un autre opérateur ou à un autre poste. Ils sont définitifs : le même
+geste rejoué reçoit le même refus. La régularisation directe n'émet que le premier : son opérateur et son poste sont
+ceux de l'activité visée.
 
 Aucun code ne refuse un geste qui contredit le journal d'un élément : sa cible déjà terminée ou remplacée à son heure,
-une transition vers sa propre catégorie. Pointage et régularisation l’enregistrent, et sa séquence est en conflit.
+une transition vers sa propre catégorie. Le pointage l’enregistre, et sa séquence est en conflit.
 
 ### `operateur` — `urn:glm:erreur:operateur:`
 

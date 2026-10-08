@@ -36,17 +36,6 @@ class JpaIdentitesDEvenements implements IdentitesDEvenements {
   }
 
   @Override
-  public boolean reserveHorsPupitre(UUID evenement) {
-    return (
-      entityManager
-        .createNativeQuery("insert into identite_evenement_atelier (id, rejouable) values (?, false) on conflict (id) do nothing")
-        .setParameter(1, evenement)
-        .executeUpdate()
-      == 1
-    );
-  }
-
-  @Override
   public void associe(UUID evenement, AgregatDEvenement agregat) {
     entityManager
       .createNativeQuery("update identite_evenement_atelier set type_agregat = ?, agregat_id = ? where id = ?")

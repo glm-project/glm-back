@@ -6,7 +6,5 @@ import java.util.UUID;
 public interface IdentitesDEvenements {
   ReservationDEvenement reserve(UUID evenement, EmpreinteDEvenement empreinte);
 
-  boolean reserveHorsPupitre(UUID evenement);
-
   void associe(UUID evenement, AgregatDEvenement agregat);
 }

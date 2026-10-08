@@ -27,6 +27,7 @@ import com.glm.glmback.operateur.domain.OperateursFixture;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurityContexts;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.time.domain.Clock;
+import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -62,6 +63,9 @@ class JpaIdentitesDEvenementsIT {
 
   @Autowired
   private TransactionTemplate transactions;
+
+  @Autowired
+  private EntityManager entityManager;
 
   @Autowired
   private SuivisDAtelierApplicationService atelier;
@@ -224,12 +228,14 @@ class JpaIdentitesDEvenementsIT {
   @Test
   @WithTenant("impeccmold")
   void shouldRejectAnotherFingerprintAndANonReplayableIdentity() {
-    // GIVEN
+    // GIVEN : une identite sans empreinte, telle que la migration en a reprise pour les evenements deja au journal
     UUID evenement = UUID.randomUUID();
-    inTransaction(() -> {
-      identites.reserveHorsPupitre(evenement);
-      return null;
-    });
+    inTransaction(() ->
+      entityManager
+        .createNativeQuery("insert into identite_evenement_atelier (id, rejouable) values (?, false)")
+        .setParameter(1, evenement)
+        .executeUpdate()
+    );
 
     // WHEN
     Throwable refus = catchThrowable(() -> inTransaction(() -> identites.reserve(evenement, finDatee(Optional.empty()))));
@@ -330,21 +336,6 @@ class JpaIdentitesDEvenementsIT {
 
     // THEN
     assertThat(refus).isExactlyInstanceOf(IdentifiantDEvenementReutiliseException.class);
-  }
-
-  @Test
-  @WithTenant("impeccmold")
-  void shouldNeverAllocateAServerIdentityTwice() {
-    // GIVEN
-    UUID evenement = UUID.randomUUID();
-
-    // WHEN
-    boolean premiere = inTransaction(() -> identites.reserveHorsPupitre(evenement));
-    boolean seconde = inTransaction(() -> identites.reserveHorsPupitre(evenement));
-
-    // THEN
-    assertThat(premiere).isTrue();
-    assertThat(seconde).isFalse();
   }
 
   @Test

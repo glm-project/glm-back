@@ -532,30 +532,3 @@ Feature: Feuille de temps hebdomadaire d'un operateur
     And le "2026-05-12" ne porte aucune activite
     When je lis la synthese du releve avec l'instant rendu par la feuille
     Then la synthese du releve conserve les jours a resoudre de la feuille
-
-  Scenario: La plage possible regularisee depasse une semaine et se borne a l'evaluation
-    Given l'element "carter" est engage en atelier a "2026-05-10T18:00:00Z"
-    And la feuille de temps recoit sur l'element "carter" les pointages
-      | alias | type           | intention  | cible | operateur | survenue             | reception            | acte           |
-      | A     | DEBUT          | OUVERTURE  |       | martin    | 2026-05-10T20:00:00Z | 2026-05-10T20:00:00Z | POINTAGE       |
-      | N     | NON_CONFORMITE | TRANSITION | A     | martin    | 2026-05-10T21:00:00Z | 2026-05-10T21:00:00Z | POINTAGE       |
-      | F     | FIN            | FIN        | A     | martin    | 2026-05-19T10:00:00Z | 2026-05-20T12:00:00Z | REGULARISATION |
-    And l'element "carter" est cloture a "2026-05-20T13:00:00Z"
-    When je consulte la feuille de temps de "martin" pour la semaine 21 de 2026 avec evaluation "2026-05-18T23:00:00Z"
-    Then les activites a resoudre du "2026-05-18" sont
-      | idActivite | etat       | debut                | fin | debutActivite        | finAuPlusTard        |
-      | A          | A_RESOUDRE | 2026-05-17T22:00:00Z |     | 2026-05-10T20:00:00Z | 2026-05-19T10:00:00Z |
-    And les activites a resoudre du "2026-05-19" sont
-      | idActivite | etat       | debut                | fin | debutActivite        | finAuPlusTard        |
-      | A          | A_RESOUDRE | 2026-05-18T22:00:00Z |     | 2026-05-10T20:00:00Z | 2026-05-19T10:00:00Z |
-    And le "2026-05-20" ne porte aucune activite
-    When je lis la synthese du releve avec l'instant rendu par la feuille
-    Then la synthese du releve conserve les jours a resoudre de la feuille
-    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026 avec evaluation "2026-05-11T20:00:00Z"
-    Then les activites a resoudre du "2026-05-11" sont
-      | idActivite | etat       | debut                | fin | finAuPlusTard        |
-      | A          | A_RESOUDRE | 2026-05-10T22:00:00Z |     | 2026-05-19T10:00:00Z |
-      | N          | A_RESOUDRE | 2026-05-10T22:00:00Z |     | 2026-05-11T10:00:00Z |
-    And le "2026-05-12" ne porte aucune activite
-    When je lis la synthese du releve avec l'instant rendu par la feuille
-    Then la synthese du releve conserve les jours a resoudre de la feuille

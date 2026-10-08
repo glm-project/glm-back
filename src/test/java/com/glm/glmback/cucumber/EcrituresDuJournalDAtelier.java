@@ -14,7 +14,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Les deux ecritures du journal d'un element engage, telles que les scenarios les envoient a l'API d'atelier :
- * pointage et regularisation.
+ * pointage et regularisation d'une fin.
  *
  * <p>
  * Chaque contexte qui relit ce journal y pointe par ici plutot que de composer sa propre requete : le corps d'une
@@ -58,15 +58,26 @@ public class EcrituresDuJournalDAtelier {
     return envoie(suivi, corps);
   }
 
-  public void regularise(String suivi, Map<String, ?> corps) {
-    rest.post(SUIVIS_URI + suivi + "/regularisations", JSON.writeValueAsString(avecIntention(suivi, corps)));
+  /**
+   * Regularise la fin d'une activite echue : le corps ne porte que l'activite et l'heure, et l'identifiant que le client
+   * fournit, tire ici quand le scenario n'en donne pas. Rend la requete telle qu'elle est partie, de quoi la renvoyer.
+   */
+  public PointageEnvoye regularise(String suivi, Map<String, ?> corps) {
+    Map<String, Object> complet = new HashMap<>(corps);
+    complet.putIfAbsent("id", UUID.randomUUID().toString());
+
+    return envoieA(SUIVIS_URI + suivi + "/regularisations", complet);
   }
 
   private PointageEnvoye envoie(String suivi, Map<String, ?> corps) {
-    PointageEnvoye pointage = new PointageEnvoye(SUIVIS_URI + suivi + "/pointages", JSON.writeValueAsString(corps));
-    rest.post(pointage.uri(), pointage.corps());
+    return envoieA(SUIVIS_URI + suivi + "/pointages", corps);
+  }
 
-    return pointage;
+  private PointageEnvoye envoieA(String uri, Map<String, ?> corps) {
+    PointageEnvoye envoye = new PointageEnvoye(uri, JSON.writeValueAsString(corps));
+    rest.post(envoye.uri(), envoye.corps());
+
+    return envoye;
   }
 
   private Map<String, Object> avecIntention(String suivi, Map<String, ?> corps) {

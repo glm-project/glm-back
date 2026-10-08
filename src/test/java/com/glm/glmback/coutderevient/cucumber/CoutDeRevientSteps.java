@@ -151,33 +151,16 @@ public class CoutDeRevientSteps {
         corps.put("cible", pointages.get(pointage.get("cible")));
       }
       if ("REGULARISATION".equals(pointage.get("acte"))) {
-        corps.remove("id");
-        ecritures.regularise(suivis.get(element), corps);
+        ecritures.regularise(
+          suivis.get(element),
+          Map.of("id", identite, "activite", pointages.get(pointage.get("cible")), "dateDeSurvenue", survenue)
+        );
       } else {
         ecritures.pointe(suivis.get(element), corps);
       }
       assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage explicite du cout doit etre accepte").isTrue();
-      if ("REGULARISATION".equals(pointage.get("acte"))) {
-        identite = identiteDuPointageActif(survenue, pointage.get("type"), pointage.get("intention"));
-      }
       pointages.put(pointage.get("alias"), identite);
     }
-  }
-
-  @SuppressWarnings("unchecked")
-  private static String identiteDuPointageActif(String survenue, String type, String intention) {
-    List<Map<String, Object>> journal = (List<Map<String, Object>>) CucumberRestTestContext.getElement("$.journal");
-    return journal
-      .stream()
-      .filter(
-        pointage ->
-          survenue.equals(pointage.get("dateDeSurvenue"))
-          && type.equals(pointage.get("type"))
-          && intention.equals(pointage.get("intention"))
-      )
-      .map(pointage -> (String) pointage.get("id"))
-      .findFirst()
-      .orElseThrow();
   }
 
   @Given("pour le cout, le poste {string} est revise a {string} de l'heure et l'operateur {string} a {string} a {string}")

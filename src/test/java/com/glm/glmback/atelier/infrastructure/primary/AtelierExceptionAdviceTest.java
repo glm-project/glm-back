@@ -4,7 +4,9 @@ import static com.glm.glmback.atelier.domain.AtelierFixture.*;
 import static org.springframework.http.HttpStatus.*;
 
 import com.glm.glmback.UnitTest;
+import com.glm.glmback.atelier.domain.ActiviteDejaRegulariseeException;
 import com.glm.glmback.atelier.domain.ActiviteId;
+import com.glm.glmback.atelier.domain.ActiviteNonEchueException;
 import com.glm.glmback.atelier.domain.ActiviteViseeIncoherenteException;
 import com.glm.glmback.atelier.domain.ActiviteViseeIntrouvableException;
 import com.glm.glmback.atelier.domain.DateDeSurvenueFutureException;
@@ -12,6 +14,8 @@ import com.glm.glmback.atelier.domain.ElementDejaEngageException;
 import com.glm.glmback.atelier.domain.ElementEngageableIntrouvableException;
 import com.glm.glmback.atelier.domain.EvenementAvantEngagementException;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
+import com.glm.glmback.atelier.domain.FinApresBorneException;
+import com.glm.glmback.atelier.domain.FinAvantDebutException;
 import com.glm.glmback.atelier.domain.IdentifiantDEvenementReutiliseException;
 import com.glm.glmback.atelier.domain.OperateurDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.OperateurNonHabiliteException;
@@ -92,6 +96,26 @@ class AtelierExceptionAdviceTest extends ExceptionAdviceContract {
       new PublishedProblem(
         new EvenementAvantEngagementException(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)),
         "urn:glm:erreur:atelier:evenement-anterieur-a-l-engagement",
+        CONFLICT
+      ),
+      new PublishedProblem(
+        new ActiviteNonEchueException(new ActiviteId(java.util.UUID.randomUUID())),
+        "urn:glm:erreur:atelier:activite-non-echue",
+        CONFLICT
+      ),
+      new PublishedProblem(
+        new ActiviteDejaRegulariseeException(new ActiviteId(java.util.UUID.randomUUID())),
+        "urn:glm:erreur:atelier:activite-deja-regularisee",
+        CONFLICT
+      ),
+      new PublishedProblem(
+        new FinAvantDebutException(new ActiviteId(java.util.UUID.randomUUID()), LE_10_MAI_2026_A_8H, LE_10_MAI_2026_A_9H),
+        "urn:glm:erreur:atelier:fin-avant-debut",
+        CONFLICT
+      ),
+      new PublishedProblem(
+        new FinApresBorneException(new ActiviteId(java.util.UUID.randomUUID()), LE_10_MAI_2026_A_9H, LE_10_MAI_2026_A_8H),
+        "urn:glm:erreur:atelier:fin-apres-borne",
         CONFLICT
       ),
       new PublishedProblem(new SaisieConcurrenteException(SuiviDAtelierId.newId()), "urn:glm:erreur:atelier:saisie-concurrente", CONFLICT),

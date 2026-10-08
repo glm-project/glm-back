@@ -61,6 +61,22 @@ class LectureDossierAnomalieTest {
     assertThat(dossier.pointages()).containsExactly(travail, finDuTravailDeLaCle, relance);
   }
 
+  /**
+   * La fin que le gestionnaire regularise ne depasse ni le debut suivant sur la cle, ni la cloture.
+   */
+  @Test
+  void shouldDonnerLaBorneDeFinDeLActiviteEchue() {
+    var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    var suivant = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_22H);
+    var sansBorne = suiviDAtelierEngage().enregistre(travail);
+    var avecDebutSuivant = sansBorne.enregistre(suivant);
+    var cloture = sansBorne.cloture(clotureParLeroyA(LE_10_MAI_2026_A_23H));
+
+    assertThat(dossier(sansBorne, travail, LE_10_MAI_2026_A_22H).borneDeFin()).isEmpty();
+    assertThat(dossier(avecDebutSuivant, travail, LE_10_MAI_2026_A_23H).borneDeFin()).contains(LE_10_MAI_2026_A_22H);
+    assertThat(dossier(cloture, travail, LE_10_MAI_2026_A_23H).borneDeFin()).contains(LE_10_MAI_2026_A_23H);
+  }
+
   @Test
   void shouldRefuserUnPointageQuiNOuvreAucuneActiviteEchue() {
     var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);

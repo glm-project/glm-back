@@ -17,8 +17,7 @@ class SuivisDAtelierServiceTest {
 
   private static final ElementEngageId ELEMENT_INCONNU = new ElementEngageId(UUID.randomUUID());
   private static final Instant LE_10_MAI_2026_A_14H = Instant.parse("2026-05-10T14:00:00Z");
-  private static final Instant A_22H = Instant.parse("2026-05-10T22:00:00Z");
-  private static final Instant A_23H = Instant.parse("2026-05-10T23:00:00Z");
+  private static final Instant LE_10_MAI_2026_A_22H = Instant.parse("2026-05-10T22:00:00Z");
 
   private final AtomicReference<Instant> maintenant = new AtomicReference<>(LE_10_MAI_2026_A_7H);
   private final SuivisDAtelierEnMemoire suivis = new SuivisDAtelierEnMemoire();
@@ -43,8 +42,8 @@ class SuivisDAtelierServiceTest {
   @Test
   void shouldRefuserUneRegularisationFutureSansModifierLeSuivi() {
     // GIVEN
-    var suivi = engage();
-    var commande = regularisationDeDebutA(suivi.id(), LE_10_MAI_2026_A_8H);
+    var suivi = suiviAvecUnTravailOublie();
+    var commande = regularisationDeLaFin(suivi, LE_11_MAI_2026_A_9H15.plusSeconds(1));
     // WHEN THEN
     assertThatThrownBy(() -> atelier.regularise(commande)).isExactlyInstanceOf(DateDeSurvenueFutureException.class);
     assertThat(suivis.get(suivi.id())).contains(suivi);
@@ -190,15 +189,7 @@ class SuivisDAtelierServiceTest {
   void shouldRefuserUneRegularisationQuiViseUneActiviteIntrouvable() {
     SuiviDAtelier engage = engage();
     maintenant.set(LE_11_MAI_2026_A_9H15);
-    RegularisationAEnregistrer fin = RegularisationAEnregistrer.builder()
-      .suivi(engage.id())
-      .type(TypeDEvenementDAtelier.FIN)
-      .intention(IntentionDePointage.FIN)
-      .activiteVisee(Optional.of(new ActiviteId(UUID.randomUUID())))
-      .operateur(OPERATEUR_ID_DUPONT)
-      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
-      .auteur(AUTEUR_LEROY)
-      .dateDeSurvenue(LE_10_MAI_2026_A_12H);
+    RegularisationAEnregistrer fin = regularisationDe(engage.id(), new ActiviteId(UUID.randomUUID()), LE_10_MAI_2026_A_12H);
 
     assertThatThrownBy(() -> atelier.regularise(fin)).isExactlyInstanceOf(ActiviteViseeIntrouvableException.class);
   }
@@ -423,21 +414,15 @@ class SuivisDAtelierServiceTest {
 
   /**
    * La regularisation ecrit le meme journal que le pointage : elle passe donc par les memes verifications, sans quoi
-   * le back-office contournerait la regle que le pupitre applique.
+   * le back-office contournerait la regle que le pupitre applique. Ici l'habilitation de Martin a disparu depuis son
+   * debut de 8 h sur la fraiseuse 1.
    */
   @Test
   void shouldNotRegulariserSurUnPosteNonHabilite() {
     SuiviDAtelier engage = engage();
+    SuiviDAtelier suivi = suivis.update(engage.enregistre(debutSurFraiseuse1ParMartinA(LE_10_MAI_2026_A_8H)));
     maintenant.set(LE_11_MAI_2026_A_9H15);
-    RegularisationAEnregistrer commande = RegularisationAEnregistrer.builder()
-      .suivi(engage.id())
-      .type(TypeDEvenementDAtelier.DEBUT)
-      .intention(IntentionDePointage.OUVERTURE)
-      .activiteVisee(Optional.empty())
-      .operateur(OPERATEUR_ID_MARTIN)
-      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
-      .auteur(AUTEUR_LEROY)
-      .dateDeSurvenue(LE_10_MAI_2026_A_8H);
+    RegularisationAEnregistrer commande = regularisationDeLaFin(suivi, LE_10_MAI_2026_A_17H);
 
     assertThatThrownBy(() -> atelier.regularise(commande)).isExactlyInstanceOf(OperateurNonHabiliteException.class);
   }
@@ -481,21 +466,31 @@ class SuivisDAtelierServiceTest {
     assertThatThrownBy(() -> atelier.pointe(commande)).isExactlyInstanceOf(SuiviDAtelierIntrouvableException.class);
   }
 
+  /**
+   * L'operateur et le poste se deduisent de l'activite : la fin est du meme couple, saisie par le gestionnaire.
+   */
   @Test
-  void shouldDaterUneRegularisationSurLaValeurFournie() {
-    SuiviDAtelier engage = engage();
-    maintenant.set(LE_11_MAI_2026_A_9H15);
+  void shouldDeduireDeLActiviteLOperateurLePosteEtLeTypeDeLaRegularisation() {
+    SuiviDAtelier suivi = suiviAvecUnTravailOublie();
+    RegularisationAEnregistrer commande = regularisationDeLaFin(suivi, LE_10_MAI_2026_A_17H);
 
-    SuiviDAtelier regularise = atelier.regularise(regularisationDeDebutA(engage.id(), LE_10_MAI_2026_A_8H));
+    RegularisationTraitee regularise = atelier.regularise(commande);
 
-    assertThat(regularise.journal().evenements())
-      .singleElement()
+    assertThat(regularise.rejeu()).isFalse();
+    assertThat(regularise.suivi().journal().evenements())
+      .last()
       .satisfies(evenement -> {
-        assertThat(evenement.dateDeSurvenue()).isEqualTo(LE_10_MAI_2026_A_8H);
-        assertThat(evenement.dateDEnregistrement()).isEqualTo(LE_11_MAI_2026_A_9H15);
+        assertThat(evenement.id()).isEqualTo(commande.evenement());
+        assertThat(evenement.type()).isEqualTo(TypeDEvenementDAtelier.FIN);
+        assertThat(evenement.intention()).isEqualTo(IntentionDePointage.FIN);
+        assertThat(evenement.activite()).isEmpty();
+        assertThat(evenement.activiteVisee()).contains(commande.activite());
         assertThat(evenement.operateur()).isEqualTo(OPERATEUR_ID_DUPONT);
+        assertThat(evenement.poste()).contains(POSTE_ID_FRAISEUSE_1);
         assertThat(evenement.auteur()).isEqualTo(AUTEUR_LEROY);
         assertThat(evenement.estUneRegularisation()).isTrue();
+        assertThat(evenement.dateDeSurvenue()).isEqualTo(LE_10_MAI_2026_A_17H);
+        assertThat(evenement.dateDEnregistrement()).isEqualTo(LE_11_MAI_2026_A_9H15);
       });
   }
 
@@ -505,66 +500,66 @@ class SuivisDAtelierServiceTest {
    */
   @Test
   void shouldConserverLOrigineDUneRegularisationSaisieALHeureDuFait() {
-    SuiviDAtelier engage = engage();
-    maintenant.set(LE_10_MAI_2026_A_8H);
+    SuiviDAtelier suivi = suiviAvecUnTravailOublie();
+    maintenant.set(LE_11_MAI_2026_A_9H15);
 
-    SuiviDAtelier regularise = atelier.regularise(regularisationDeDebutA(engage.id(), LE_10_MAI_2026_A_8H));
+    RegularisationTraitee regularise = atelier.regularise(regularisationDeLaFin(suivi, LE_11_MAI_2026_A_9H15));
 
-    assertThat(regularise.journal().evenements())
-      .singleElement()
+    assertThat(regularise.suivi().journal().evenements())
+      .last()
       .satisfies(evenement -> {
         assertThat(evenement.origine()).isEqualTo(OrigineDuPointage.REGULARISATION);
-        assertThat(evenement.estUneRegularisation()).isTrue();
+        assertThat(evenement.dateDeSurvenue()).isEqualTo(evenement.dateDEnregistrement());
       });
   }
 
   /**
-   * La regularisation ecrit le meme evenement que le pointage : le cout et le taux horaires y sont donc figes de la
-   * meme facon, sans quoi le back-office contournerait la capture que le pupitre applique.
+   * La regularisation ecrit le meme evenement que le pointage : la nature, le cout et le taux horaires y sont donc figes
+   * de la meme facon, sans quoi le back-office contournerait la capture que le pupitre applique.
    */
   @Test
-  void shouldEstampillerLeCoutEtLeTauxHoraireALaRegularisation() {
-    SuiviDAtelier engage = engage();
-    maintenant.set(LE_11_MAI_2026_A_9H15);
+  void shouldEstampillerLaNatureLeCoutEtLeTauxHoraireALaRegularisation() {
+    SuiviDAtelier suivi = suiviAvecUnTravailOublie();
 
-    SuiviDAtelier regularise = atelier.regularise(regularisationDeDebutA(engage.id(), LE_10_MAI_2026_A_8H));
+    RegularisationTraitee regularise = atelier.regularise(regularisationDeLaFin(suivi, LE_10_MAI_2026_A_17H));
 
-    assertThat(regularise.journal().evenements())
-      .singleElement()
+    assertThat(regularise.suivi().journal().evenements())
+      .last()
       .satisfies(evenement -> {
+        assertThat(evenement.nature()).contains(NATURE_FRAISAGE);
         assertThat(evenement.coutHoraire()).contains(COUT_HORAIRE_FRAISEUSE_1);
         assertThat(evenement.tauxHoraire()).contains(TAUX_HORAIRE_DUPONT);
       });
   }
 
   /**
-   * Une regularisation qui contredit le journal est admise : la transition rattrapee a 12 h remplace le travail que vise
-   * la fin de 17 h, et la sequence est en conflit plutot que refusee.
+   * Le renvoi de la meme saisie, de meme identifiant, repond comme un succes et n'ecrit rien : l'identifiant deja au
+   * journal est verifie avant toute regle, sans quoi l'activite desormais regularisee ferait refuser le renvoi.
    */
   @Test
-  void shouldAdmettreEnConflitUneRegularisationQuiContreditLeJournal() {
-    SuiviDAtelier engage = engage();
-    maintenant.set(LE_10_MAI_2026_A_8H);
-    PointageAEnregistrer debut = debutSurFraiseuse1(engage.id());
-    atelier.pointe(debut);
-    maintenant.set(LE_10_MAI_2026_A_17H);
-    atelier.pointe(gesteVisant(debut, TypeDEvenementDAtelier.FIN, IntentionDePointage.FIN));
-    maintenant.set(LE_11_MAI_2026_A_9H15);
+  void shouldRepondreCommeUnSuccesAuRenvoiDeLaMemeRegularisationSansRienEcrire() {
+    SuiviDAtelier suivi = suiviAvecUnTravailOublie();
+    RegularisationAEnregistrer commande = regularisationDeLaFin(suivi, LE_10_MAI_2026_A_17H);
+    RegularisationTraitee premiere = atelier.regularise(commande);
 
-    SuiviDAtelier regularise = atelier.regularise(
-      RegularisationAEnregistrer.builder()
-        .suivi(engage.id())
-        .type(TypeDEvenementDAtelier.NON_CONFORMITE)
-        .intention(IntentionDePointage.TRANSITION)
-        .activiteVisee(Optional.of(ActiviteId.ouvertePar(debut.evenement())))
-        .operateur(OPERATEUR_ID_DUPONT)
-        .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
-        .auteur(AUTEUR_LEROY)
-        .dateDeSurvenue(LE_10_MAI_2026_A_12H)
-    );
+    RegularisationTraitee renvoi = atelier.regularise(commande);
 
-    assertThat(regularise.journal().evenements()).hasSize(3);
-    assertThat(regularise.conflits()).hasSize(1);
+    assertThat(premiere.rejeu()).isFalse();
+    assertThat(renvoi.rejeu()).isTrue();
+    assertThat(renvoi.suivi()).isEqualTo(premiere.suivi());
+    assertThat(suivis.get(suivi.id())).contains(premiere.suivi());
+  }
+
+  /**
+   * La cloture ferme le pointage aux operateurs, elle ne fige rien pour le gestionnaire : il regularise jusqu'a elle.
+   */
+  @Test
+  void shouldRegulariserUnSuiviDejaCloture() {
+    SuiviDAtelier suivi = suivis.update(suiviAvecUnTravailOublie().cloture(clotureParLeroyA(LE_10_MAI_2026_A_22H)));
+
+    RegularisationTraitee regularise = atelier.regularise(regularisationDeLaFin(suivi, LE_10_MAI_2026_A_22H));
+
+    assertThat(regularise.suivi().journal().evenements()).hasSize(2);
   }
 
   @Test
@@ -590,20 +585,6 @@ class SuivisDAtelierServiceTest {
     assertThat(cloture.cloture())
       .get()
       .satisfies(fin -> assertThat(fin.dateDeSurvenue()).isEqualTo(LE_10_MAI_2026_A_17H));
-  }
-
-  /**
-   * La cloture ferme le pointage aux operateurs, elle ne fige rien pour le gestionnaire.
-   */
-  @Test
-  void shouldRegulariserUnSuiviDejaCloture() {
-    SuiviDAtelier engage = engage();
-    maintenant.set(LE_10_MAI_2026_A_17H);
-    atelier.cloture(new ClotureAEnregistrer(engage.id(), AUTEUR_LEROY));
-
-    SuiviDAtelier regularise = atelier.regularise(regularisationDeDebutA(engage.id(), LE_10_MAI_2026_A_8H));
-
-    assertThat(regularise.journal().evenements()).hasSize(1);
   }
 
   @Test
@@ -644,21 +625,27 @@ class SuivisDAtelierServiceTest {
   }
 
   /**
-   * Un geste que le gestionnaire regularise sur l'activite visee : une fin pour une fin, une transition sinon.
+   * Un suivi dont le travail de Dupont, ouvert a 8 h sur la fraiseuse 1, n'a jamais ete termine : lu le lendemain a 9 h 15,
+   * il a atteint son echeance de 21 h.
    */
-  private static RegularisationAEnregistrer regularisationVisant(
-    SuiviDAtelierId suivi,
-    ActiviteId visee,
-    TypeDEvenementDAtelier type,
-    Instant date
-  ) {
+  private SuiviDAtelier suiviAvecUnTravailOublie() {
+    SuiviDAtelier engage = engage();
+    maintenant.set(LE_10_MAI_2026_A_8H);
+    SuiviDAtelier suivi = atelier.pointe(debutSurFraiseuse1(engage.id())).suivi();
+    maintenant.set(LE_11_MAI_2026_A_9H15);
+
+    return suivi;
+  }
+
+  private static RegularisationAEnregistrer regularisationDeLaFin(SuiviDAtelier suivi, Instant date) {
+    return regularisationDe(suivi.id(), suivi.journal().evenements().getFirst().activite().orElseThrow(), date);
+  }
+
+  private static RegularisationAEnregistrer regularisationDe(SuiviDAtelierId suivi, ActiviteId activite, Instant date) {
     return RegularisationAEnregistrer.builder()
       .suivi(suivi)
-      .type(type)
-      .intention(type == TypeDEvenementDAtelier.FIN ? IntentionDePointage.FIN : IntentionDePointage.TRANSITION)
-      .activiteVisee(Optional.of(visee))
-      .operateur(OPERATEUR_ID_DUPONT)
-      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
+      .evenement(EvenementDAtelierId.newId())
+      .activite(activite)
       .auteur(AUTEUR_LEROY)
       .dateDeSurvenue(date);
   }
@@ -687,18 +674,6 @@ class SuivisDAtelierServiceTest {
       .operateur(ouvrant.operateur())
       .poste(ouvrant.poste())
       .auteur(ouvrant.auteur());
-  }
-
-  private static RegularisationAEnregistrer regularisationDeDebutA(SuiviDAtelierId suivi, Instant date) {
-    return RegularisationAEnregistrer.builder()
-      .suivi(suivi)
-      .type(TypeDEvenementDAtelier.DEBUT)
-      .intention(IntentionDePointage.OUVERTURE)
-      .activiteVisee(Optional.empty())
-      .operateur(OPERATEUR_ID_DUPONT)
-      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
-      .auteur(AUTEUR_LEROY)
-      .dateDeSurvenue(date);
   }
 
   private static final class ElementsEngageablesFiges implements ElementsEngageables {

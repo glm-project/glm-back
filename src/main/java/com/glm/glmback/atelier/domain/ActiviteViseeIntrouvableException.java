@@ -6,6 +6,10 @@ package com.glm.glmback.atelier.domain;
  */
 public final class ActiviteViseeIntrouvableException extends RuntimeException {
 
+  public ActiviteViseeIntrouvableException(ActiviteId visee) {
+    super("L'activite %s est introuvable dans ce suivi".formatted(visee.uuid()));
+  }
+
   public ActiviteViseeIntrouvableException(EvenementDAtelier geste, ActiviteId visee) {
     super(
       "L'activite %s visee par le pointage %s de %s du %s est introuvable dans ce suivi".formatted(

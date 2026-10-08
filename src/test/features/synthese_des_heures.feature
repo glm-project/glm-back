@@ -486,31 +486,6 @@ Feature: Synthese des heures hebdomadaire d'un operateur
       | element | poste  | activites | pointages |
       | carter  | DMU 50 | A         | A,F,G     |
 
-  Scenario: Une plage possible de synthese depasse la semaine et se borne a evaluation
-    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-10T18:00:00Z"
-    And la synthese des heures recoit sur l'element "carter" les pointages
-      | alias | type           | intention  | cible | operateur | survenue             | reception            | acte           |
-      | A     | DEBUT          | OUVERTURE  |       | martin    | 2026-05-10T20:00:00Z | 2026-05-10T20:00:00Z | POINTAGE       |
-      | N     | NON_CONFORMITE | TRANSITION | A     | martin    | 2026-05-10T21:00:00Z | 2026-05-10T21:00:00Z | POINTAGE       |
-      | F     | FIN            | FIN        | A     | martin    | 2026-05-19T10:00:00Z | 2026-05-20T12:00:00Z | REGULARISATION |
-    And pour la synthese, l'element "carter" est cloture a "2026-05-20T13:00:00Z"
-    When je consulte la synthese des heures de "martin" pour la semaine 21 de 2026 avec evaluation "2026-05-18T23:00:00Z"
-    Then le jour "2026-05-18" de la synthese est incomplet sans chiffre
-    And le jour "2026-05-19" de la synthese est incomplet sans chiffre
-    And le jour "2026-05-20" a une duree operationnelle de "PT0S"
-    And la synthese porte les conflits
-      | element | poste | activites | pointages |
-      | carter  |       | A,N       | A,N,F     |
-    When je consulte la synthese des heures de "martin" pour la semaine 21 de 2026 avec evaluation "2026-05-20T13:00:00Z"
-    Then le jour "2026-05-19" de la synthese est incomplet sans chiffre
-    And le jour "2026-05-20" a une duree operationnelle de "PT0S"
-    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026 avec evaluation "2026-05-11T20:00:00Z"
-    Then le jour "2026-05-11" de la synthese est incomplet sans chiffre
-    And le jour "2026-05-12" a une duree operationnelle de "PT0S"
-    And la synthese porte les conflits
-      | element | poste | activites | pointages |
-      | carter  |       | A,N       | A,N,F     |
-
   Scenario: Avant le debut possible le journal garde le conflit mais les durees restent completes
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And la synthese des heures recoit sur l'element "carter" les pointages

@@ -16,6 +16,7 @@ import com.glm.glmback.atelier.domain.PointageAEnregistrer;
 import com.glm.glmback.atelier.domain.PointageDAtelierTraite;
 import com.glm.glmback.atelier.domain.PostesConnus;
 import com.glm.glmback.atelier.domain.RegularisationAEnregistrer;
+import com.glm.glmback.atelier.domain.RegularisationTraitee;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
@@ -29,8 +30,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Stream;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -125,11 +124,10 @@ public class SuivisDAtelierApplicationService {
 
   @Secured("ROLE_GESTIONNAIRE")
   @Transactional
-  public LectureDuSuivi regularise(RegularisationAEnregistrer commande) {
-    UUID evenement = reserveIdentiteServeur();
-    SuiviDAtelier suivi = suivisDAtelier.regularise(commande, new com.glm.glmback.atelier.domain.EvenementDAtelierId(evenement));
-    identites.associe(evenement, new AgregatDEvenement(TypeDAgregatDEvenement.SUIVI_D_ATELIER, suivi.id().uuid()));
-    return lu(suivi);
+  public ResultatDEcriture<LectureDuSuivi> regularise(RegularisationAEnregistrer commande) {
+    RegularisationTraitee traitee = suivisDAtelier.regularise(commande);
+
+    return new ResultatDEcriture<>(lu(traitee.suivi()), traitee.rejeu());
   }
 
   @Secured("ROLE_GESTIONNAIRE")
@@ -195,9 +193,5 @@ public class SuivisDAtelierApplicationService {
 
   private LectureDuSuivi lu(SuiviDAtelier suivi) {
     return new LectureDuSuivi(suivi, clock.now());
-  }
-
-  private UUID reserveIdentiteServeur() {
-    return Stream.generate(UUID::randomUUID).filter(identites::reserveHorsPupitre).findFirst().orElseThrow();
   }
 }

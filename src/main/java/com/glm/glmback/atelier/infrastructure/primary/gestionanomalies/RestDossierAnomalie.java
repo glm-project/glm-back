@@ -8,7 +8,7 @@ import java.time.Instant;
 import java.util.List;
 
 @Schema(
-  description = "Le dossier d'une fin automatique non regularisee : l'activite echue et les pointages de sa cle, a l'instant d'evaluation."
+  description = "Le dossier d'une fin automatique non regularisee : l'activite echue, les pointages de sa cle, a l'instant d'evaluation, et la borne de la fin a regulariser."
 )
 record RestDossierAnomalie(
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestAdresseDossierAnomalie adresse,
@@ -19,7 +19,15 @@ record RestDossierAnomalie(
     requiredMode = Schema.RequiredMode.REQUIRED,
     description = "Les pointages du suivi qui portent la cle de l'activite, operateur et poste : du plus ancien au plus recent."
   )
-  List<RestEvenementDAtelier> pointages
+  List<RestEvenementDAtelier> pointages,
+  @Schema(
+    description = """
+    L'instant que la fin regularisee ne peut pas depasser : le plus tot du debut suivant sur la cle (operateur et poste)
+    et de la cloture. Absent quand rien ne borne la fin ; la regularisation reste de toute facon bornee par l'instant
+    present.
+    """
+  )
+  Instant borneDeFin
 ) {
   static RestDossierAnomalie from(LectureDossierAnomalie dossier, AnnuaireDAtelier annuaire) {
     return new RestDossierAnomalie(
@@ -31,7 +39,8 @@ record RestDossierAnomalie(
         .pointages()
         .stream()
         .map(pointage -> RestEvenementDAtelier.from(pointage, annuaire))
-        .toList()
+        .toList(),
+      dossier.borneDeFin().orElse(null)
     );
   }
 }

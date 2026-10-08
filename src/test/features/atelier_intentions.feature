@@ -271,10 +271,6 @@ Feature: Intention et activite visee des pointages d'atelier
       | poste     | fraiseuse-1 |
     Then la reponse a le statut http 400
     When je regularise sur "OF 2107"
-      | type           | FIN                  |
-      | intention      | FIN                  |
-      | operateur      | dupont               |
-      | poste          | fraiseuse-1          |
       | dateDeSurvenue | 2026-05-10T08:00:00Z |
     Then la reponse a le statut http 400
     When je consulte "OF 2107"
@@ -294,11 +290,7 @@ Feature: Intention et activite visee des pointages d'atelier
       | poste     | fraiseuse-1                          |
     Given il est "2026-05-11T09:00:00Z"
     When je regularise sur "OF 2109"
-      | type           | FIN                                  |
-      | intention      | FIN                                  |
-      | cible          | 00000000-0000-0000-0000-000000000281 |
-      | operateur      | dupont                               |
-      | poste          | fraiseuse-1                          |
+      | activite       | 00000000-0000-0000-0000-000000000281 |
       | dateDeSurvenue | 2026-05-10T17:00:00Z                 |
     Then la reponse a le statut http 201
     And le suivi a l'etat "INTERROMPU"

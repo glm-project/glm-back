@@ -104,10 +104,6 @@ Feature: Liste des fins automatiques parmi les anomalies de pointage
     When je liste les fins automatiques de "Liste fins 8104"
     Then la liste des fins automatiques compte 1 ligne
     When je regularise sur "Liste fins 8104" en visant l'activite de l'evenement 0
-      | type           | FIN                  |
-      | intention      | FIN                  |
-      | operateur      | dupont-liste-fins    |
-      | poste          | fraiseuse-liste-fins |
       | dateDeSurvenue | 2044-02-04T17:00:00Z |
     Then la reponse a le statut http 201
     When je liste les fins automatiques de "Liste fins 8104"

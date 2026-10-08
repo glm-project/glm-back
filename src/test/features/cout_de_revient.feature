@@ -418,41 +418,6 @@ Feature: Cout de revient d'un element de fabrication
       | DEBUT          | NON_CONFORMITE | travail       | nonConformite |
       | NON_CONFORMITE | DEBUT          | nonConformite | travail       |
 
-  Scenario: Toute la plage possible regularisee au dela de treize heures affecte le diviseur
-    Given l'entreprise fabrique "source longue"
-    And l'entreprise fabrique "cible tardive"
-    And l'entreprise fabrique "cible limite"
-    And "source longue" est mis en atelier a "2026-05-11T05:00:00Z"
-    And "cible tardive" est mis en atelier a "2026-05-11T05:00:00Z"
-    And "cible limite" est mis en atelier a "2026-05-11T05:00:00Z"
-    And pour le cout, "source longue" recoit les pointages
-      | alias | type  | intention | cible | operateur | poste     | survenue             | reception            | acte           |
-      | A     | DEBUT | OUVERTURE |       | dupont    | fraiseuse | 2026-05-11T08:00:00Z | 2026-05-12T08:00:00Z |                |
-      | F     | FIN   | FIN       | A     | dupont    | fraiseuse | 2026-05-11T17:00:00Z | 2026-05-12T08:01:00Z |                |
-      | G     | FIN   | FIN       | A     | dupont    | fraiseuse | 2026-05-11T23:00:00Z | 2026-05-12T08:02:00Z | REGULARISATION |
-    And pour le cout, "cible tardive" recoit les pointages
-      | alias | type  | intention | cible | operateur | poste | survenue             | reception            |
-      | C     | DEBUT | OUVERTURE |       | dupont    | tour  | 2026-05-11T22:00:00Z | 2026-05-12T08:03:00Z |
-      | FC    | FIN   | FIN       | C     | dupont    | tour  | 2026-05-11T23:00:00Z | 2026-05-12T08:04:00Z |
-    And pour le cout, "cible limite" recoit les pointages
-      | alias | type  | intention | cible | operateur | poste | survenue             | reception            |
-      | L     | DEBUT | OUVERTURE |       | dupont    | tour  | 2026-05-11T23:00:00Z | 2026-05-12T08:05:00Z |
-      | FL    | FIN   | FIN       | L     | dupont    | tour  | 2026-05-12T00:00:00Z | 2026-05-12T08:06:00Z |
-    When je consulte le cout de revient de "cible tardive" a "2026-05-12T09:00:00Z"
-    Then le total du cout "$.cout.machine" est complet avec "60.00"
-    And le total du cout "$.cout.mainDOeuvre" est incomplet sans chiffre
-    And le cout porte les conflits
-      | element       | operateur | poste     | activites | pointages |
-      | source longue | dupont    | fraiseuse | A         | A,F,G     |
-    When je consulte le cout de revient de "cible limite" a "2026-05-12T09:00:00Z"
-    Then le rapport porte les lignes
-      | nature   | travail | nonConformite | machine | mainDOeuvre |
-      | Tournage | PT1H    | PT0S          | 60.00   | 20.00       |
-    And le cout ne porte aucun conflit
-    When je consulte le cout de revient de "cible tardive" a "2026-05-11T22:00:00Z"
-    Then le total du cout "$.cout.mainDOeuvre" est complet avec "20.00"
-    And le cout ne porte aucun conflit
-
   Scenario: Plusieurs elements sur le meme poste et sans poste ne multiplient pas les postes distincts
     Given l'entreprise fabrique "poste A"
     And l'entreprise fabrique "poste B"

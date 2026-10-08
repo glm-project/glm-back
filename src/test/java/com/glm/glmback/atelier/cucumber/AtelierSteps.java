@@ -155,18 +155,27 @@ public class AtelierSteps {
     ecritures.pointeTelQuel(suivis.get(alias), resoluAvecIdentifiant(donnees));
   }
 
+  /**
+   * Regularise la fin de l'activite donnee par son identifiant : le corps ne porte que l'activite et l'heure du fait.
+   */
   @When("je regularise sur {string}")
   public void jeRegulariseSur(String alias, Map<String, String> donnees) {
-    ecritures.regularise(suivis.get(alias), resolu(donnees));
+    PointageEnvoye regularisation = ecritures.regularise(suivis.get(alias), donnees);
+    dernierGesteUri = regularisation.uri();
+    dernierGesteCorps = regularisation.corps();
   }
 
   /**
-   * Regularise un geste qui vise l'activite qu'ouvre l'evenement de ce rang du journal : de quoi viser une activite
-   * ouverte par un acte du gestionnaire, dont l'identifiant vient du serveur.
+   * Regularise la fin de l'activite qu'ouvre l'evenement de ce rang du journal.
    */
   @When("je regularise sur {string} en visant l'activite de l'evenement {int}")
-  public void jeRegulariseSurEnVisantLActiviteDe(String alias, int ouvrant, Map<String, String> donnees) {
-    ecritures.regularise(suivis.get(alias), visant(alias, ouvrant, donnees));
+  public void jeRegulariseSurLActiviteDe(String alias, int ouvrant, Map<String, String> donnees) {
+    jeRegulariseSur(alias, visant(alias, ouvrant, donnees));
+  }
+
+  @When("je renvoie la derniere regularisation")
+  public void jeRenvoieLaDerniereRegularisation() {
+    rest.post(dernierGesteUri, dernierGesteCorps);
   }
 
   @When("je cloture {string}")
@@ -516,12 +525,12 @@ public class AtelierSteps {
   }
 
   /**
-   * Le corps donne, dont la cible est l'activite qu'ouvre l'evenement de ce rang du journal.
+   * Le corps donne, dont l'activite est celle qu'ouvre l'evenement de ce rang du journal.
    */
   private Map<String, String> visant(String alias, int ouvrant, Map<String, String> donnees) {
     rest.get(SUIVIS_URI + "/" + suivis.get(alias));
-    Map<String, String> corps = resolu(donnees);
-    corps.put("cible", elementDeLaDerniereReponse("$.journal[" + ouvrant + "].activite"));
+    Map<String, String> corps = new HashMap<>(donnees);
+    corps.put("activite", elementDeLaDerniereReponse("$.journal[" + ouvrant + "].activite"));
 
     return corps;
   }

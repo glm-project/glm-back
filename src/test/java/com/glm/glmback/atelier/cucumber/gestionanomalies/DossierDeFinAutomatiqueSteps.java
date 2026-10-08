@@ -13,7 +13,8 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
- * La lecture du dossier d'une fin automatique, ouvert depuis l'ouvrant de l'activite echue.
+ * La lecture du dossier d'une fin automatique, ouvert depuis l'ouvrant de l'activite echue, et la borne qu'il donne a
+ * sa regularisation.
  *
  * <p>
  * Les evenements se designent par leur rang dans le journal du suivi : les identifiants d'evenement et d'activite
@@ -58,6 +59,16 @@ public class DossierDeFinAutomatiqueSteps {
       .toList();
 
     assertThat((List<?>) CucumberRestTestContext.getElement("$.pointages[*].id")).isEqualTo(attendus);
+  }
+
+  @Then("le dossier d'anomalie donne la borne de fin {string}")
+  public void borneDeFin(String attendue) {
+    assertThat(CucumberRestTestContext.getElement("$.borneDeFin")).hasToString(attendue);
+  }
+
+  @Then("le dossier d'anomalie ne donne aucune borne de fin")
+  public void aucuneBorneDeFin() {
+    assertThat(CucumberRestTestContext.getElement("$.borneDeFin")).isNull();
   }
 
   private int rangDeLActivite(String activite) {

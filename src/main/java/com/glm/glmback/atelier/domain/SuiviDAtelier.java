@@ -2,8 +2,10 @@ package com.glm.glmback.atelier.domain;
 
 import com.glm.glmback.shared.error.domain.Assert;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Le suivi en atelier d'un element engage : son journal, et ce que ce journal permet de deduire.
@@ -78,6 +80,63 @@ public record SuiviDAtelier(
     journal.exigeLActiviteViseePar(geste);
   }
 
+  /**
+   * Vrai si le journal porte deja cet evenement : l'ecriture rejouee n'a rien a refaire.
+   */
+  public boolean aEnregistre(EvenementDAtelierId evenement) {
+    return journal.evenement(evenement).isPresent();
+  }
+
+  /**
+   * L'activite dont le gestionnaire peut regulariser la fin, a l'heure de fin donnee et a l'instant present.
+   *
+   * <p>
+   * Elle doit exister dans ce suivi, ne pas etre deja regularisee, et etre une fin automatique : sans fin reelle et
+   * echue a l'instant present. La fin ne vient pas du futur, ne precede pas le debut de l'activite et ne depasse pas sa
+   * borne. Elle peut en revanche depasser l'echeance : c'est ce que la regularisation a de particulier.
+   * </p>
+   */
+  public Activite exigeUneFinRegularisable(ActiviteId id, Instant fin, Instant maintenant) {
+    Activite activite = activites()
+      .stream()
+      .filter(candidate -> candidate.id().equals(id))
+      .findFirst()
+      .orElseThrow(() -> new ActiviteViseeIntrouvableException(id));
+    if (estRegularisee(id)) {
+      throw new ActiviteDejaRegulariseeException(id);
+    }
+    if (!activite.a(maintenant).finAutomatique()) {
+      throw new ActiviteNonEchueException(id);
+    }
+    if (fin.isAfter(maintenant)) {
+      throw new DateDeSurvenueFutureException(fin);
+    }
+    if (fin.isBefore(activite.debut())) {
+      throw new FinAvantDebutException(id, fin, activite.debut());
+    }
+    borne(activite)
+      .filter(fin::isAfter)
+      .ifPresent(borne -> {
+        throw new FinApresBorneException(id, fin, borne);
+      });
+
+    return activite;
+  }
+
+  /**
+   * Le plus tot de l'ouverture suivante sur la cle de l'activite et de la cloture, ou rien : la fin de l'activite ne
+   * peut pas les depasser.
+   */
+  public Optional<Instant> borneDeFin(ActiviteId id) {
+    return borne(
+      activites()
+        .stream()
+        .filter(candidate -> candidate.id().equals(id))
+        .findFirst()
+        .orElseThrow()
+    );
+  }
+
   public List<Activite> activites() {
     return journal.activites(cloture.map(Cloture::dateDeSurvenue));
   }
@@ -123,6 +182,25 @@ public record SuiviDAtelier(
     }
 
     return journal.evenements().isEmpty() ? EtatDAtelier.EN_ATTENTE : EtatDAtelier.INTERROMPU;
+  }
+
+  private boolean estRegularisee(ActiviteId id) {
+    return journal
+      .evenements()
+      .stream()
+      .anyMatch(evenement -> evenement.estUneRegularisation() && evenement.activiteVisee().filter(id::equals).isPresent());
+  }
+
+  private Optional<Instant> borne(Activite activite) {
+    Optional<Instant> debutSuivant = activites()
+      .stream()
+      .filter(candidate -> candidate.cle().equals(activite.cle()))
+      .dropWhile(candidate -> !candidate.id().equals(activite.id()))
+      .skip(1)
+      .findFirst()
+      .map(Activite::debut);
+
+    return Stream.concat(debutSuivant.stream(), cloture.map(Cloture::dateDeSurvenue).stream()).min(Comparator.naturalOrder());
   }
 
   public boolean estCloture() {
