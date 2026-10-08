@@ -7,6 +7,7 @@ import com.glm.glmback.categoriedeproduit.domain.CategoriesUtilisees;
 import com.glm.glmback.categoriedeproduit.domain.CodeDeCategorie;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
+import java.util.List;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,12 @@ public class CategoriesDeProduitApplicationService {
   @Transactional
   public CategorieDeProduit create(CodeDeCategorie code) {
     return categories.create(code);
+  }
+
+  @Secured("ROLE_GESTIONNAIRE")
+  @Transactional
+  public void reordonne(List<CodeDeCategorie> ordre) {
+    categories.reordonne(ordre);
   }
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })

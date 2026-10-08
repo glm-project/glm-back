@@ -3,6 +3,7 @@ package com.glm.glmback.categoriedeproduit.infrastructure.primary;
 import com.glm.glmback.categoriedeproduit.domain.CategorieDejaExistanteException;
 import com.glm.glmback.categoriedeproduit.domain.CategorieIntrouvableException;
 import com.glm.glmback.categoriedeproduit.domain.CategorieUtiliseeException;
+import com.glm.glmback.categoriedeproduit.domain.OrdreIncompletException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.ProblemDetail;
@@ -26,5 +27,10 @@ class CategorieDeProduitExceptionAdvice {
   @ExceptionHandler(CategorieUtiliseeException.class)
   ProblemDetail handleCategorieUtilisee(CategorieUtiliseeException e) {
     return ErreurDeCategorieDeProduit.CATEGORIE_UTILISEE.problem(e);
+  }
+
+  @ExceptionHandler(OrdreIncompletException.class)
+  ProblemDetail handleOrdreIncomplet(OrdreIncompletException e) {
+    return ErreurDeCategorieDeProduit.ORDRE_INCOMPLET.problem(e);
   }
 }

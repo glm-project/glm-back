@@ -17,4 +17,12 @@ public final class CategoriesDeProduitFixture {
   public static CategorieDeProduit categorieDeProduitOf() {
     return new CategorieDeProduit(CODE_OF, RANG_2);
   }
+
+  public static CategorieDeProduit categorieDeProduitMouleEnSecond() {
+    return new CategorieDeProduit(CODE_MOULE, RANG_2);
+  }
+
+  public static CategorieDeProduit categorieDeProduitOfEnTete() {
+    return new CategorieDeProduit(CODE_OF, RANG_1);
+  }
 }

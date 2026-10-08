@@ -26,6 +26,16 @@ final class CategoriesDeProduitEnMemoire implements CategorieDeProduitRepository
   }
 
   @Override
+  public CategorieDeProduit update(CategorieDeProduit categorie) {
+    CategorieDeProduit precedente = categories.replace(categorie.code(), categorie);
+    if (precedente == null) {
+      throw new CategorieIntrouvableException(categorie.code());
+    }
+
+    return categorie;
+  }
+
+  @Override
   public void delete(CodeDeCategorie code) {
     CategorieDeProduit supprimee = categories.remove(code);
     if (supprimee == null) {
@@ -41,6 +51,11 @@ final class CategoriesDeProduitEnMemoire implements CategorieDeProduitRepository
   @Override
   public Optional<Rang> dernierRang() {
     return categories.values().stream().map(CategorieDeProduit::rang).max(Comparator.comparingInt(Rang::value));
+  }
+
+  @Override
+  public long compte() {
+    return categories.size();
   }
 
   @Override

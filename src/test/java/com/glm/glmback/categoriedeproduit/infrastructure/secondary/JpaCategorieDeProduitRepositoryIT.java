@@ -65,6 +65,35 @@ class JpaCategorieDeProduitRepositoryIT {
 
   @Test
   @WithTenant(CATEGORIES_FIXTURE)
+  void shouldUpdateCategorie() {
+    CategorieDeProduit categorie = categorieApresLaDerniere();
+    inTransaction(() -> categories.create(categorie));
+    CategorieDeProduit deplacee = categorie.deplace(categorie.rang().suivant());
+
+    inTransaction(() -> categories.update(deplacee));
+
+    assertThat(inTransaction(() -> categories.get(categorie.code()))).contains(deplacee);
+  }
+
+  @Test
+  @WithTenant(CATEGORIES_FIXTURE)
+  void shouldNotUpdateUnknownCategorie() {
+    CategorieDeProduit inconnue = new CategorieDeProduit(codeDeTest(), Rang.premier());
+
+    assertThatThrownBy(() -> inTransaction(() -> categories.update(inconnue))).isExactlyInstanceOf(CategorieIntrouvableException.class);
+  }
+
+  @Test
+  @WithTenant(CATEGORIES_FIXTURE)
+  void shouldCountCategories() {
+    long avant = inTransaction(() -> categories.compte());
+    inTransaction(() -> categories.create(categorieApresLaDerniere()));
+
+    assertThat(inTransaction(() -> categories.compte())).isEqualTo(avant + 1);
+  }
+
+  @Test
+  @WithTenant(CATEGORIES_FIXTURE)
   void shouldDeleteCategorie() {
     CategorieDeProduit categorie = categorieApresLaDerniere();
     inTransaction(() -> categories.create(categorie));

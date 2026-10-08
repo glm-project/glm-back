@@ -31,4 +31,9 @@ class CategorieDeProduitTest {
     assertThat(categorie.code()).isEqualTo(CODE_MOULE);
     assertThat(categorie.rang()).isEqualTo(RANG_1);
   }
+
+  @Test
+  void shouldKeepCodeWhenMoved() {
+    assertThat(categorieDeProduitMoule().deplace(RANG_2)).isEqualTo(new CategorieDeProduit(CODE_MOULE, RANG_2));
+  }
 }

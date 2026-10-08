@@ -11,4 +11,8 @@ public record CategorieDeProduit(CodeDeCategorie code, Rang rang) {
     Assert.notNull("code", code);
     Assert.notNull("rang", rang);
   }
+
+  public CategorieDeProduit deplace(Rang rang) {
+    return new CategorieDeProduit(code, rang);
+  }
 }

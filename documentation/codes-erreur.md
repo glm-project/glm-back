@@ -148,6 +148,7 @@ segment de contexte, et lui seul, qui les distingue.
 | `categorie-introuvable`    | 404    | categorie introuvable    | `CategorieIntrouvableException`   |
 | `categorie-deja-existante` | 409    | categorie deja existante | `CategorieDejaExistanteException` |
 | `categorie-utilisee`       | 409    | categorie utilisee       | `CategorieUtiliseeException`      |
+| `ordre-incomplet`          | 409    | ordre incomplet          | `OrdreIncompletException`         |
 
 ### `feuille-de-temps` — `urn:glm:erreur:feuille-de-temps:`
 

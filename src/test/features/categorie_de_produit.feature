@@ -77,3 +77,26 @@ Feature: Categories de produit
     And I am logged in as "user" with role "USER"
     When je supprime la categorie de produit "CUCJ"
     Then la reponse a le statut http 403
+
+  Scenario: Reordonnancement des categories
+    Given j'ai declare la categorie de produit "CUCK"
+    When je place la categorie de produit "CUCK" en tete
+    Then la reponse a le statut http 204
+    And les categories de produit commencent par "CUCK"
+
+  Scenario: Reordonnancement refuse s'il omet une categorie
+    Given j'ai declare la categorie de produit "CUCL"
+    And j'ai declare la categorie de produit "CUCM"
+    When je reordonne les categories de produit en "CUCM"
+    Then la reponse a le statut http 409
+    And la reponse porte le code d'erreur "urn:glm:erreur:categorie-de-produit:ordre-incomplet"
+
+  Scenario: Reordonnancement refuse pour un code hors motif
+    When je reordonne les categories de produit en "cucm"
+    Then la reponse a le statut http 400
+
+  Scenario: Reordonnancement refuse a un utilisateur simple
+    Given j'ai declare la categorie de produit "CUCN"
+    And I am logged in as "user" with role "USER"
+    When je reordonne les categories de produit en "CUCN"
+    Then la reponse a le statut http 403

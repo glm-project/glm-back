@@ -35,6 +35,16 @@ class JpaCategorieDeProduitRepository implements CategorieDeProduitRepository {
   }
 
   @Override
+  public CategorieDeProduit update(CategorieDeProduit categorie) {
+    if (!categories.existsById(categorie.code().value())) {
+      throw new CategorieIntrouvableException(categorie.code());
+    }
+    categories.save(CategorieDeProduitEntity.from(categorie));
+
+    return categorie;
+  }
+
+  @Override
   public void delete(CodeDeCategorie code) {
     if (!categories.existsById(code.value())) {
       throw new CategorieIntrouvableException(code);
@@ -50,6 +60,11 @@ class JpaCategorieDeProduitRepository implements CategorieDeProduitRepository {
   @Override
   public Optional<Rang> dernierRang() {
     return categories.findDernierRang().map(Rang::new);
+  }
+
+  @Override
+  public long compte() {
+    return categories.count();
   }
 
   @Override

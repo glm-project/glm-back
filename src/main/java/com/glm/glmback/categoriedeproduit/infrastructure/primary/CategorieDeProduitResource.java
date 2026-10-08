@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -33,7 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 
   Une categorie se supprime tant qu'aucun produit n'y est range.
 
-  Le gestionnaire declare et supprime les categories ; l'operateur (role USER) les consulte.
+  Le gestionnaire declare, reordonne et supprime les categories ; l'operateur (role USER) les consulte.
   """
 )
 class CategorieDeProduitResource {
@@ -63,6 +64,24 @@ class CategorieDeProduitResource {
   @ApiResponse(responseCode = "409", description = "Une categorie porte deja ce code.")
   RestCategorieDeProduit create(@RequestBody @Valid RestCreationCategorieDeProduit request) {
     return RestCategorieDeProduit.from(applicationService.create(request.toDomain()));
+  }
+
+  @PutMapping("/ordre")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @Operation(
+    summary = "Reordonner les categories de produit",
+    description = """
+    L'ordre est donne en entier : chaque categorie de l'entreprise, une fois et une seule, de la premiere a la
+    derniere. C'est celui des boutons de creation, des filtres et des zones du pupitre.
+    """
+  )
+  @ApiResponse(responseCode = "204", description = "L'ordre est enregistre.")
+  @ApiResponse(
+    responseCode = "409",
+    description = "L'ordre omet une categorie, en cite une deux fois ou en cite une inconnue — par exemple declaree ou supprimee entre-temps."
+  )
+  void reordonne(@RequestBody @Valid RestOrdreDesCategories request) {
+    applicationService.reordonne(request.toDomain());
   }
 
   @DeleteMapping("/{code}")

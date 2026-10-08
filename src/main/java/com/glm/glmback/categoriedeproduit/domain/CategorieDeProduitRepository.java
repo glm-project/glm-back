@@ -7,11 +7,15 @@ import java.util.Optional;
 public interface CategorieDeProduitRepository {
   CategorieDeProduit create(CategorieDeProduit categorie);
 
+  CategorieDeProduit update(CategorieDeProduit categorie);
+
   void delete(CodeDeCategorie code);
 
   Optional<CategorieDeProduit> get(CodeDeCategorie code);
 
   Optional<Rang> dernierRang();
+
+  long compte();
 
   Page<CategorieDeProduit> list(Pageable pageable);
 }

@@ -6,7 +6,8 @@ import org.springframework.http.HttpStatus;
 enum ErreurDeCategorieDeProduit implements ProblemCode {
   CATEGORIE_INTROUVABLE(HttpStatus.NOT_FOUND, "categorie introuvable"),
   CATEGORIE_DEJA_EXISTANTE(HttpStatus.CONFLICT, "categorie deja existante"),
-  CATEGORIE_UTILISEE(HttpStatus.CONFLICT, "categorie utilisee");
+  CATEGORIE_UTILISEE(HttpStatus.CONFLICT, "categorie utilisee"),
+  ORDRE_INCOMPLET(HttpStatus.CONFLICT, "ordre incomplet");
 
   private final HttpStatus status;
   private final String title;

@@ -5,6 +5,7 @@ import static com.glm.glmback.shared.pagination.domain.PaginationFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -87,5 +88,49 @@ class CategoriesDeProduitServiceTest {
     categories.delete(CODE_MOULE);
 
     assertThat(categories.create(CODE_MOULE)).isEqualTo(categorieDeProduitMoule());
+  }
+
+  @Test
+  void shouldReorderCategories() {
+    repository.create(categorieDeProduitMoule());
+    repository.create(categorieDeProduitOf());
+
+    categories.reordonne(List.of(CODE_OF, CODE_MOULE));
+
+    assertThat(categories.list(firstPageOfTen()).content()).containsExactly(
+      categorieDeProduitOfEnTete(),
+      categorieDeProduitMouleEnSecond()
+    );
+  }
+
+  @Test
+  void shouldNotReorderWithMissingCategorie() {
+    repository.create(categorieDeProduitMoule());
+    repository.create(categorieDeProduitOf());
+
+    assertThatThrownBy(() -> categories.reordonne(List.of(CODE_OF))).isExactlyInstanceOf(OrdreIncompletException.class);
+  }
+
+  @Test
+  void shouldNotReorderWithDuplicatedCategorie() {
+    repository.create(categorieDeProduitMoule());
+    repository.create(categorieDeProduitOf());
+
+    assertThatThrownBy(() -> categories.reordonne(List.of(CODE_OF, CODE_OF))).isExactlyInstanceOf(OrdreIncompletException.class);
+  }
+
+  @Test
+  void shouldNotReorderWithUnknownCategorie() {
+    repository.create(categorieDeProduitMoule());
+
+    assertThatThrownBy(() -> categories.reordonne(List.of(CODE_OF))).isExactlyInstanceOf(OrdreIncompletException.class);
+    assertThat(repository.get(CODE_MOULE)).contains(categorieDeProduitMoule());
+  }
+
+  @Test
+  void shouldNotReorderWithMoreCategoriesThanDeclared() {
+    repository.create(categorieDeProduitMoule());
+
+    assertThatThrownBy(() -> categories.reordonne(List.of(CODE_MOULE, CODE_OF))).isExactlyInstanceOf(OrdreIncompletException.class);
   }
 }

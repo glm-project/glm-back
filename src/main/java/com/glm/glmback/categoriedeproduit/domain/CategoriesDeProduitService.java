@@ -2,6 +2,8 @@ package com.glm.glmback.categoriedeproduit.domain;
 
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
+import java.util.HashSet;
+import java.util.List;
 
 public final class CategoriesDeProduitService {
 
@@ -22,6 +24,26 @@ public final class CategoriesDeProduitService {
     }
 
     return repository.create(new CategorieDeProduit(code, repository.dernierRang().map(Rang::suivant).orElseGet(Rang::premier)));
+  }
+
+  /**
+   * L'ordre est donne en entier, jamais par deplacements relatifs : il doit citer chaque categorie de l'entreprise une
+   * fois et une seule, faute de quoi deux rangs pourraient se confondre ou une categorie rester sans place choisie.
+   */
+  public void reordonne(List<CodeDeCategorie> ordre) {
+    if (new HashSet<>(ordre).size() != ordre.size() || ordre.size() != repository.compte()) {
+      throw new OrdreIncompletException();
+    }
+    List<CategorieDeProduit> categories = ordre
+      .stream()
+      .map(code -> repository.get(code).orElseThrow(OrdreIncompletException::new))
+      .toList();
+
+    Rang rang = Rang.premier();
+    for (CategorieDeProduit categorie : categories) {
+      repository.update(categorie.deplace(rang));
+      rang = rang.suivant();
+    }
   }
 
   public Page<CategorieDeProduit> list(Pageable pageable) {

@@ -8,6 +8,7 @@ import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,20 @@ public class CategorieDeProduitSteps {
     assertThatLastResponse().hasHttpStatus(204);
   }
 
+  @When("je place la categorie de produit {string} en tete")
+  public void jePlaceLaCategorieDeProduitEnTete(String code) {
+    jeListeLesCategoriesDeProduit();
+    List<String> ordre = new ArrayList<>(codes());
+    ordre.remove(code);
+    ordre.addFirst(code);
+    reordonne(ordre);
+  }
+
+  @When("je reordonne les categories de produit en {string}")
+  public void jeReordonneLesCategoriesDeProduitEn(String codes) {
+    reordonne(liste(codes));
+  }
+
   @When("je liste les categories de produit")
   public void jeListeLesCategoriesDeProduit() {
     rest.get(BASE_URI + "?size=100");
@@ -57,13 +72,27 @@ public class CategorieDeProduitSteps {
 
   @Then("les categories de produit se terminent par {string}")
   public void lesCategoriesDeProduitSeTerminentPar(String codes) {
-    assertThat(codes()).endsWith(Arrays.stream(codes.split(",")).map(String::trim).toArray(String[]::new));
+    assertThat(codes()).endsWith(liste(codes).toArray(String[]::new));
+  }
+
+  @Then("les categories de produit commencent par {string}")
+  public void lesCategoriesDeProduitCommencentPar(String codes) {
+    jeListeLesCategoriesDeProduit();
+    assertThat(codes()).startsWith(liste(codes).toArray(String[]::new));
   }
 
   @Then("la categorie de produit {string} n'est plus listee")
   public void laCategorieDeProduitNEstPlusListee(String code) {
     jeListeLesCategoriesDeProduit();
     assertThat(codes()).doesNotContain(code);
+  }
+
+  private void reordonne(List<String> codes) {
+    rest.put(BASE_URI + "/ordre", JSON.writeValueAsString(Map.of("codes", codes)));
+  }
+
+  private static List<String> liste(String codes) {
+    return Arrays.stream(codes.split(",")).map(String::trim).toList();
   }
 
   @SuppressWarnings("unchecked")

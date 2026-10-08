@@ -7,7 +7,7 @@ Responsabilité, frontières et invariants de ce contexte. Les règles de code c
 ## Ce dont ce contexte s'occupe
 
 Le **référentiel des familles dans lesquelles l'entreprise range ce qu'elle fabrique** : des moules et des OF chez le
-client de référence, autre chose ailleurs. Déclarer, supprimer et lister les catégories dans l'ordre d'affichage
+client de référence, autre chose ailleurs. Déclarer, réordonner, supprimer et lister les catégories dans l'ordre d'affichage
 choisi par l'entreprise.
 
 ## Ce dont il ne s'occupe pas
@@ -35,6 +35,9 @@ le code **est** l'identité.
 - **Une catégorie qui range des produits ne se supprime pas** : leur nom porte son code. La règle vit dans le domaine,
   derrière le port `CategoriesUtilisees` ; son adapter lit `element_de_fabrication` par une entité en lecture seule
   (patron `ElementEngageableEntity`), sans importer `elementdefabrication`.
+- **Un réordonnancement donne l'ordre entier** : chaque catégorie une fois et une seule, sinon
+  `OrdreIncompletException` (409). Les rangs sont alors réattribués de 1 à n par la transition
+  `CategorieDeProduit.deplace`, qui conserve le code.
 - **L'ordre de lecture est total** : rang, puis code. Le rang n'est pas unique en base — deux déclarations
   concurrentes peuvent obtenir le même — et le code départage.
 

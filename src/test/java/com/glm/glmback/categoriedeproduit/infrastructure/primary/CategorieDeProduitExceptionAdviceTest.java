@@ -7,6 +7,7 @@ import com.glm.glmback.UnitTest;
 import com.glm.glmback.categoriedeproduit.domain.CategorieDejaExistanteException;
 import com.glm.glmback.categoriedeproduit.domain.CategorieIntrouvableException;
 import com.glm.glmback.categoriedeproduit.domain.CategorieUtiliseeException;
+import com.glm.glmback.categoriedeproduit.domain.OrdreIncompletException;
 import com.glm.glmback.shared.error.infrastructure.primary.ExceptionAdviceContract;
 import com.glm.glmback.shared.error.infrastructure.primary.PublishedProblem;
 import java.util.stream.Stream;
@@ -32,7 +33,8 @@ class CategorieDeProduitExceptionAdviceTest extends ExceptionAdviceContract {
         "urn:glm:erreur:categorie-de-produit:categorie-deja-existante",
         CONFLICT
       ),
-      new PublishedProblem(new CategorieUtiliseeException(CODE_MOULE), "urn:glm:erreur:categorie-de-produit:categorie-utilisee", CONFLICT)
+      new PublishedProblem(new CategorieUtiliseeException(CODE_MOULE), "urn:glm:erreur:categorie-de-produit:categorie-utilisee", CONFLICT),
+      new PublishedProblem(new OrdreIncompletException(), "urn:glm:erreur:categorie-de-produit:ordre-incomplet", CONFLICT)
     );
   }
 }

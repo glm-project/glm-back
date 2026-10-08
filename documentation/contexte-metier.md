@@ -33,7 +33,7 @@ Gère le **référentiel des catégories de produit** : les familles dans lesque
 
 Une `CategorieDeProduit` se réduit à un **code** (`MOULE`, `OF`) et à un **rang**. Le code est à la fois ce qui s'affiche et le préfixe du nom des éléments qui s'y créent : il n'y a pas de libellé à part, donc pas deux désignations à garder d'accord. Il **ne se renomme jamais**, puisqu'il entre dans la clé qui fabrique les noms ; son motif est celui du préfixe d'un nom d'élément, des lettres majuscules sans accent.
 
-Le **rang** porte l'ordre d'affichage choisi par l'entreprise. Une catégorie nouvelle se range en dernier, pour que l'ordre déjà choisi ne bouge pas.
+Le **rang** porte l'ordre d'affichage choisi par l'entreprise : celui des boutons de création, des filtres et des zones du pupitre. Une catégorie nouvelle se range en dernier, pour que l'ordre déjà choisi ne bouge pas. Le gestionnaire réordonne en donnant **l'ordre entier**, jamais par déplacements relatifs : il doit citer chaque catégorie une fois et une seule. Une liste qui en omet une, en cite une deux fois ou en cite une inconnue — déclarée ou supprimée entre-temps par quelqu'un d'autre — est refusée plutôt que complétée au hasard.
 
 **Une catégorie qui range des produits ne se supprime pas** : leur nom porte son code, et ils resteraient rangés dans une famille disparue. La règle vit dans le domaine, derrière le port `CategoriesUtilisees`, dont l'adapter lit la table `element_de_fabrication` par une entité en lecture seule — sans jamais importer `elementdefabrication`. Une catégorie vide, elle, se supprime et peut être déclarée à nouveau.
 
