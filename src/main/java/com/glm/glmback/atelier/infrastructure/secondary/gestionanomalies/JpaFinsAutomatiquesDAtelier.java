@@ -1,6 +1,7 @@
 package com.glm.glmback.atelier.infrastructure.secondary.gestionanomalies;
 
 import com.glm.glmback.atelier.domain.ActiviteId;
+import com.glm.glmback.atelier.domain.CategorieDElement;
 import com.glm.glmback.atelier.domain.CleDActivite;
 import com.glm.glmback.atelier.domain.ElementEngage;
 import com.glm.glmback.atelier.domain.ElementEngageId;
@@ -10,7 +11,6 @@ import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.PosteDeTravailId;
 import com.glm.glmback.atelier.domain.RevisionDuSuivi;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
-import com.glm.glmback.atelier.domain.TypeDElementEngage;
 import com.glm.glmback.atelier.domain.gestionanomalies.AdresseDossierAnomalie;
 import com.glm.glmback.atelier.domain.gestionanomalies.AnomaliesDAtelierCriteria;
 import com.glm.glmback.atelier.domain.gestionanomalies.FinAutomatiqueEnListe;
@@ -102,7 +102,7 @@ class JpaFinsAutomatiquesDAtelier implements FinsAutomatiquesDAtelier {
         new ElementEngage(
           new ElementEngageId(ligne.get("element_id", UUID.class)),
           new NomDElement(ligne.get("element_nom", String.class)),
-          TypeDElementEngage.valueOf(ligne.get("element_type", String.class))
+          new CategorieDElement(ligne.get("element_type", String.class))
         )
       )
       .cle(

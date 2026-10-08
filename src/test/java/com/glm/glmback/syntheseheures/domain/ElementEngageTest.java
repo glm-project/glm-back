@@ -12,22 +12,22 @@ class ElementEngageTest {
 
   @Test
   void shouldNotBuildWithoutId() {
-    assertThatThrownBy(() -> new ElementEngage(null, NOM_PRD_2026_000015, TypeDElement.PRODUIT))
+    assertThatThrownBy(() -> new ElementEngage(null, NOM_PRD_2026_000015, CATEGORIE_MOULE))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("id de l'element de fabrication");
   }
 
   @Test
   void shouldNotBuildWithoutNom() {
-    assertThatThrownBy(() -> new ElementEngage(ELEMENT_ID_CARTER, null, TypeDElement.PRODUIT))
+    assertThatThrownBy(() -> new ElementEngage(ELEMENT_ID_CARTER, null, CATEGORIE_MOULE))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("nom de l'element");
   }
 
   @Test
-  void shouldNotBuildWithoutType() {
+  void shouldNotBuildWithoutCategorie() {
     assertThatThrownBy(() -> new ElementEngage(ELEMENT_ID_CARTER, NOM_PRD_2026_000015, null))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("type de l'element");
+      .hasMessageContaining("categorie de l'element");
   }
 }

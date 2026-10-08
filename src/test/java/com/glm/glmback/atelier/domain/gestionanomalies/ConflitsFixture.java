@@ -20,7 +20,6 @@ import com.glm.glmback.atelier.domain.PosteDeTravailId;
 import com.glm.glmback.atelier.domain.Prenom;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
-import com.glm.glmback.atelier.domain.TypeDElementEngage;
 import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
 import java.time.Instant;
 import java.util.Optional;
@@ -33,7 +32,7 @@ public final class ConflitsFixture {
   public static SuiviDAtelier suiviOF2026000042EngageA(Instant debut) {
     return SuiviDAtelier.builder()
       .id(SuiviDAtelierId.newId())
-      .element(new ElementEngage(new ElementEngageId(UUID.randomUUID()), NOM_OF_2026_000042, TypeDElementEngage.ORDRE_DE_FABRICATION))
+      .element(new ElementEngage(new ElementEngageId(UUID.randomUUID()), NOM_OF_2026_000042, CATEGORIE_OF))
       .engagement(new Engagement(AUTEUR_LEROY, debut.minusSeconds(3600)))
       .journal(JournalDAtelier.vide());
   }
@@ -55,27 +54,15 @@ public final class ConflitsFixture {
   }
 
   public static ElementEngage elementFiltrePourcentA() {
-    return new ElementEngage(
-      new ElementEngageId(UUID.randomUUID()),
-      new NomDElement("FILTRE_2043_%A"),
-      TypeDElementEngage.ORDRE_DE_FABRICATION
-    );
+    return new ElementEngage(new ElementEngageId(UUID.randomUUID()), new NomDElement("FILTRE_2043_%A"), CATEGORIE_OF);
   }
 
   public static ElementEngage elementFiltrePourcentB() {
-    return new ElementEngage(
-      new ElementEngageId(UUID.randomUUID()),
-      new NomDElement("FILTRE_2043_%B"),
-      TypeDElementEngage.ORDRE_DE_FABRICATION
-    );
+    return new ElementEngage(new ElementEngageId(UUID.randomUUID()), new NomDElement("FILTRE_2043_%B"), CATEGORIE_OF);
   }
 
   public static ElementEngage elementAutre2043() {
-    return new ElementEngage(
-      new ElementEngageId(UUID.randomUUID()),
-      new NomDElement("AUTRE_2043"),
-      TypeDElementEngage.ORDRE_DE_FABRICATION
-    );
+    return new ElementEngage(new ElementEngageId(UUID.randomUUID()), new NomDElement("AUTRE_2043"), CATEGORIE_OF);
   }
 
   public static SuiviDAtelier suiviPourFiltre2043(ElementEngage element) {
@@ -106,19 +93,11 @@ public final class ConflitsFixture {
   }
 
   public static ElementEngage elementLitteralePourcentSoulignementAntislash2043() {
-    return new ElementEngage(
-      new ElementEngageId(UUID.randomUUID()),
-      new NomDElement("LITTERALE_%\\2043"),
-      TypeDElementEngage.ORDRE_DE_FABRICATION
-    );
+    return new ElementEngage(new ElementEngageId(UUID.randomUUID()), new NomDElement("LITTERALE_%\\2043"), CATEGORIE_OF);
   }
 
   public static ElementEngage elementLitteraleXX2043() {
-    return new ElementEngage(
-      new ElementEngageId(UUID.randomUUID()),
-      new NomDElement("LITTERALEXX2043"),
-      TypeDElementEngage.ORDRE_DE_FABRICATION
-    );
+    return new ElementEngage(new ElementEngageId(UUID.randomUUID()), new NomDElement("LITTERALEXX2043"), CATEGORIE_OF);
   }
 
   public static ConflitEnListe ligneDuPremierConflitDe(SuiviDAtelier suivi) {
@@ -141,7 +120,7 @@ public final class ConflitsFixture {
   public static SuiviDAtelier suiviDu12Janvier2043Identifie(SuiviDAtelierId id) {
     return SuiviDAtelier.builder()
       .id(id)
-      .element(new ElementEngage(new ElementEngageId(UUID.randomUUID()), new NomDElement("ORDRE_2043_01_12"), TypeDElementEngage.PRODUIT))
+      .element(new ElementEngage(new ElementEngageId(UUID.randomUUID()), new NomDElement("ORDRE_2043_01_12"), CATEGORIE_MOULE))
       .engagement(new Engagement(AUTEUR_LEROY, Instant.parse("2043-01-12T07:00:00Z")))
       .journal(JournalDAtelier.vide());
   }

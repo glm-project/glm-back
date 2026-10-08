@@ -8,6 +8,9 @@ import java.util.UUID;
 
 public final class AtelierFixture {
 
+  public static final CategorieDElement CATEGORIE_OF = new CategorieDElement("OF");
+  public static final CategorieDElement CATEGORIE_MOULE = new CategorieDElement("MOULE");
+
   public static final Instant LE_10_MAI_2026_A_7H = Instant.parse("2026-05-10T07:00:00Z");
   public static final Instant LE_10_MAI_2026_A_7H30 = Instant.parse("2026-05-10T07:30:00Z");
   public static final Instant LE_10_MAI_2026_A_8H = Instant.parse("2026-05-10T08:00:00Z");
@@ -83,11 +86,11 @@ public final class AtelierFixture {
   }
 
   public static ElementEngage elementEngageOf2026000042() {
-    return new ElementEngage(ELEMENT_OF_2026_000042, NOM_OF_2026_000042, TypeDElementEngage.ORDRE_DE_FABRICATION);
+    return new ElementEngage(ELEMENT_OF_2026_000042, NOM_OF_2026_000042, CATEGORIE_OF);
   }
 
   public static ElementEngage elementEngageOf2026000043() {
-    return new ElementEngage(ELEMENT_OF_2026_000043, NOM_OF_2026_000043, TypeDElementEngage.ORDRE_DE_FABRICATION);
+    return new ElementEngage(ELEMENT_OF_2026_000043, NOM_OF_2026_000043, CATEGORIE_OF);
   }
 
   public static Engagement engagementParLeroy() {

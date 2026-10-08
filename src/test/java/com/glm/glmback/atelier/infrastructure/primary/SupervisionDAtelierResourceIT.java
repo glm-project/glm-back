@@ -94,7 +94,7 @@ class SupervisionDAtelierResourceIT {
       .andExpect(jsonPath("$.activites[0].operateurId").value(OPERATEUR_ID_DUPONT.uuid().toString()))
       .andExpect(jsonPath("$.activites[0].categorie").value("TRAVAIL"))
       .andExpect(jsonPath("$.activites[0].element.id").value(ELEMENT_OF_2026_000042.uuid().toString()))
-      .andExpect(jsonPath("$.activites[0].element.type").value("ORDRE_DE_FABRICATION"))
+      .andExpect(jsonPath("$.activites[0].element.type").value("OF"))
       .andExpect(jsonPath("$.activites[0].element.nom").value(NOM_OF_2026_000042.value()))
       .andExpect(jsonPath("$.activites[0].element.reference").doesNotExist())
       .andExpect(jsonPath("$.activites[0].poste").doesNotExist())
@@ -131,7 +131,7 @@ class SupervisionDAtelierResourceIT {
   @Test
   @WithTenant("supervision_fixture")
   void shouldDescribeANonConformityOnAReferencedMoldAndItsPost() throws Exception {
-    var element = new ElementEngage(ELEMENT_OF_2026_000043, NOM_OF_2026_000043, TypeDElementEngage.PRODUIT);
+    var element = new ElementEngage(ELEMENT_OF_2026_000043, NOM_OF_2026_000043, CATEGORIE_MOULE);
     var suivi = SuiviDAtelier.builder()
       .id(SuiviDAtelierId.newId())
       .element(element)
@@ -159,7 +159,7 @@ class SupervisionDAtelierResourceIT {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.activites.length()").value(1))
       .andExpect(jsonPath("$.activites[0].categorie").value("NON_CONFORMITE"))
-      .andExpect(jsonPath("$.activites[0].element.type").value("PRODUIT"))
+      .andExpect(jsonPath("$.activites[0].element.type").value("MOULE"))
       .andExpect(jsonPath("$.activites[0].element.nom").value(NOM_OF_2026_000043.value()))
       .andExpect(jsonPath("$.activites[0].element.reference").value("M-43"))
       .andExpect(jsonPath("$.activites[0].poste.id").value(POSTE_ID_FRAISEUSE_1.uuid().toString()))
@@ -203,7 +203,7 @@ class SupervisionDAtelierResourceIT {
       .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].id").value(travail.activite().orElseThrow().uuid().toString()))
       .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].operateurId").value(OPERATEUR_ID_DUPONT.uuid().toString()))
       .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].element.nom").value(NOM_OF_2026_000042.value()))
-      .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].element.type").value("ORDRE_DE_FABRICATION"))
+      .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].element.type").value("OF"))
       .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].categorie").value("TRAVAIL"))
       .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].debut").value("2026-05-10T08:00:00Z"))
       .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].echeance").value("2026-05-10T21:00:00Z"))

@@ -3,7 +3,6 @@ package com.glm.glmback.pupitre.infrastructure.primary;
 import com.glm.glmback.pupitre.domain.EtatDuSuivi;
 import com.glm.glmback.pupitre.domain.ReferenceDElement;
 import com.glm.glmback.pupitre.domain.SuiviDuPupitre;
-import com.glm.glmback.pupitre.domain.TypeDElementEngage;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.List;
@@ -31,8 +30,7 @@ record RestSuiviDuPupitre(
     example = "M-1187"
   )
   String reference,
-  @Schema(description = "ORDRE_DE_FABRICATION ou PRODUIT, copie a l'engagement.", requiredMode = Schema.RequiredMode.REQUIRED)
-  TypeDElementEngage type,
+  @Schema(description = "Categorie de l'element, copiee a l'engagement.", requiredMode = Schema.RequiredMode.REQUIRED) String type,
   @Schema(
     description = "EN_ATTENTE, EN_COURS ou INTERROMPU. Juge sur les seules activites interpretables a genereLe.",
     requiredMode = Schema.RequiredMode.REQUIRED
@@ -48,7 +46,7 @@ record RestSuiviDuPupitre(
       suivi.id().uuid(),
       suivi.nom().value(),
       suivi.reference().map(ReferenceDElement::value).orElse(null),
-      suivi.type(),
+      suivi.categorie().value(),
       suivi.etatA(evaluation),
       suivi.activitesEnCoursA(evaluation).stream().map(RestActiviteDuPupitre::from).toList(),
       suivi.conflits().stream().map(RestConflitDuPupitre::from).toList()

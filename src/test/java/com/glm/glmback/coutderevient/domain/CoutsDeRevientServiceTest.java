@@ -20,11 +20,7 @@ class CoutsDeRevientServiceTest {
 
   @Test
   void shouldAcquerirTouteLaFenetreDePartageQuelQueSoitLElementLu() {
-    var troisieme = new ElementValorise(
-      new ElementId(UUID.randomUUID()),
-      new NomDElement("OF-ARRONDI-C"),
-      TypeDElement.ORDRE_DE_FABRICATION
-    );
+    var troisieme = new ElementValorise(new ElementId(UUID.randomUUID()), new NomDElement("OF-ARRONDI-C"), CATEGORIE_OF);
     var a = activiteADeuxEuros(ELEMENT_ID_OF, POSTE_ID_FRAISEUSE, new Periode(LE_11_MAI_A_8H, LE_11_MAI_A_8H.plusSeconds(60)));
     var b = activiteADeuxEuros(ELEMENT_ID_OF_2, POSTE_ID_TOUR, new Periode(LE_11_MAI_A_8H, LE_11_MAI_A_8H.plusSeconds(120)));
     var c = activiteADeuxEuros(

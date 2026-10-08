@@ -1,13 +1,11 @@
 package com.glm.glmback.coutderevient.infrastructure.secondary;
 
+import com.glm.glmback.coutderevient.domain.CategorieDElement;
 import com.glm.glmback.coutderevient.domain.ElementId;
 import com.glm.glmback.coutderevient.domain.ElementValorise;
 import com.glm.glmback.coutderevient.domain.NomDElement;
-import com.glm.glmback.coutderevient.domain.TypeDElement;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.util.UUID;
@@ -18,7 +16,7 @@ import org.hibernate.annotations.Immutable;
  *
  * <p>
  * Ce contexte lit la table du voisin sans jamais importer son code, annote {@code BusinessContext} — exactement ce
- * que l'atelier fait deja sur la meme table. Il n'en retient que l'identite, le nom et le type : c'est tout ce que le
+ * que l'atelier fait deja sur la meme table. Il n'en retient que l'identite, le nom et la categorie : c'est tout ce que le
  * rapport a besoin de nommer.
  * </p>
  */
@@ -30,9 +28,8 @@ class ElementValorisableEntity {
   @Id
   private UUID id;
 
-  @Enumerated(EnumType.STRING)
-  @Column(length = 30)
-  private TypeDElement type;
+  @Column(name = "type", length = 30)
+  private String categorie;
 
   private String nom;
 
@@ -41,6 +38,6 @@ class ElementValorisableEntity {
   }
 
   ElementValorise toDomain() {
-    return new ElementValorise(new ElementId(id), new NomDElement(nom), type);
+    return new ElementValorise(new ElementId(id), new NomDElement(nom), new CategorieDElement(categorie));
   }
 }

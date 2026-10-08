@@ -1230,15 +1230,14 @@
             "type" : "string"
           },
           "type" : {
-            "description" : "Type de l'element.",
-            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
+            "description" : "Categorie de l'element.",
             "type" : "string"
           }
         },
         "type" : "object"
       },
       "RestElementCiteDuCout" : {
-        "description" : "L'element sur lequel portait une activite citee par le detail, nomme a la lecture ; nom et type absents s'il est inconnu.",
+        "description" : "L'element sur lequel portait une activite citee par le detail, nomme a la lecture ; nom et categorie absents s'il est inconnu.",
         "properties" : {
           "id" : {
             "description" : "Identifiant de l'element de fabrication.",
@@ -1251,8 +1250,7 @@
             "type" : "string"
           },
           "type" : {
-            "description" : "Type de l'element.",
-            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
+            "description" : "Categorie de l'element.",
             "type" : "string"
           }
         },
@@ -1290,7 +1288,7 @@
         "type" : "object"
       },
       "RestElementDeLaSynthese" : {
-        "description" : "Un element sur lequel l'operateur a travaille ou pointe dans la semaine, et le temps qu'il y a passe.\n\nNom et type viennent du suivi, copies a l'engagement ; reference et description sont relues au referentiel, et\nabsentes si l'element a ete supprime. Les durees se cumulent par element : une heure passee sur deux elements compte\nsur chacun.\n",
+        "description" : "Un element sur lequel l'operateur a travaille ou pointe dans la semaine, et le temps qu'il y a passe.\n\nNom et categorie viennent du suivi, copies a l'engagement ; reference et description sont relues au referentiel, et\nabsentes si l'element a ete supprime. Les durees se cumulent par element : une heure passee sur deux elements compte\nsur chacun.\n",
         "properties" : {
           "description" : {
             "description" : "Description de l'element, relue au referentiel.",
@@ -1328,8 +1326,7 @@
             "type" : "string"
           },
           "type" : {
-            "description" : "Type de l'element.",
-            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
+            "description" : "Categorie de l'element.",
             "type" : "string"
           }
         },
@@ -1349,7 +1346,7 @@
             "type" : "string"
           },
           "type" : {
-            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
+            "description" : "Categorie de l'element, copiee a l'engagement.",
             "type" : "string"
           }
         },
@@ -2736,8 +2733,7 @@
             "type" : "string"
           },
           "type" : {
-            "description" : "Type de l'element, copie a l'engagement.",
-            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
+            "description" : "Categorie de l'element, copiee a l'engagement.",
             "type" : "string"
           }
         },
@@ -2794,8 +2790,7 @@
             "type" : "string"
           },
           "type" : {
-            "description" : "Type de l'element, copie a l'engagement.",
-            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
+            "description" : "Categorie de l'element, copiee a l'engagement.",
             "type" : "string"
           }
         },
@@ -2840,8 +2835,7 @@
             "type" : "string"
           },
           "type" : {
-            "description" : "ORDRE_DE_FABRICATION ou PRODUIT, copie a l'engagement.",
-            "enum" : [ "ORDRE_DE_FABRICATION", "PRODUIT" ],
+            "description" : "Categorie de l'element, copiee a l'engagement.",
             "type" : "string"
           }
         },

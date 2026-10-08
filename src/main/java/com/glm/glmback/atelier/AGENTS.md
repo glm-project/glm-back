@@ -165,7 +165,8 @@ suivent leurs propriétaires dans les mêmes sous-packages.
   sont relus à chaque lecture : une fiche corrigée doit s'afficher corrigée sur tout l'historique. La contrepartie vit
   chez les voisins — ni un opérateur ni un poste ayant servi à pointer ne se supprime.
 - **Aucun import de `elementdefabrication`**, annoté `@BusinessContext`. L'atelier déclare sa propre identité
-  `ElementEngage`, dont le nom et le type sont **copiés à l'engagement**.
+  `ElementEngage`, dont le nom et la catégorie sont **copiés à l'engagement**. La catégorie est une valeur
+  libre (`CategorieDElement`), jamais une liste fermée : chaque entreprise nomme les siennes.
 - **Domaine immuable** : toute transition rend un nouvel agrégat, suivie d'un `update` explicite sur le repository.
 
 ## Ports sortants

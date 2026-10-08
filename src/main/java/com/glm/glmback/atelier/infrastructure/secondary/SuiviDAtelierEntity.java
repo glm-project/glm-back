@@ -2,6 +2,7 @@ package com.glm.glmback.atelier.infrastructure.secondary;
 
 import com.glm.glmback.atelier.domain.Activite;
 import com.glm.glmback.atelier.domain.Auteur;
+import com.glm.glmback.atelier.domain.CategorieDElement;
 import com.glm.glmback.atelier.domain.Cloture;
 import com.glm.glmback.atelier.domain.ElementEngage;
 import com.glm.glmback.atelier.domain.ElementEngageId;
@@ -14,14 +15,11 @@ import com.glm.glmback.atelier.domain.RevisionDuSuivi;
 import com.glm.glmback.atelier.domain.SequenceEnConflit;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
-import com.glm.glmback.atelier.domain.TypeDElementEngage;
 import com.glm.glmback.shared.time.infrastructure.secondary.ExactInstantConverter;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
@@ -61,9 +59,8 @@ class SuiviDAtelierEntity {
 
   private String elementNom;
 
-  @Enumerated(EnumType.STRING)
   @Column(length = 30)
-  private TypeDElementEngage elementType;
+  private String elementType;
 
   private String engagementAuteur;
 
@@ -98,7 +95,7 @@ class SuiviDAtelierEntity {
     revision = suivi.revision().value();
     elementId = suivi.element().id().uuid();
     elementNom = suivi.element().nom().value();
-    elementType = suivi.element().type();
+    elementType = suivi.element().categorie().value();
     engagementAuteur = suivi.engagement().auteur().value();
     engagementDate = suivi.engagement().date();
     reconcilie(suivi);
@@ -152,7 +149,7 @@ class SuiviDAtelierEntity {
   SuiviDAtelier toDomain() {
     SuiviDAtelier suivi = SuiviDAtelier.relectureBuilder(new RevisionDuSuivi(revision))
       .id(new SuiviDAtelierId(id))
-      .element(new ElementEngage(new ElementEngageId(elementId), new NomDElement(elementNom), elementType))
+      .element(new ElementEngage(new ElementEngageId(elementId), new NomDElement(elementNom), new CategorieDElement(elementType)))
       .engagement(new Engagement(new Auteur(engagementAuteur), engagementDate))
       .journal(new JournalDAtelier(journal.stream().map(EvenementDAtelierEntity::toDomain).toList()));
 

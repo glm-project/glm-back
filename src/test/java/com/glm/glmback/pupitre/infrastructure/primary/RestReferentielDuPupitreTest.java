@@ -10,7 +10,6 @@ import com.glm.glmback.pupitre.domain.EtatDuSuivi;
 import com.glm.glmback.pupitre.domain.OperateurDuPupitre;
 import com.glm.glmback.pupitre.domain.ReferentielDuPupitre;
 import com.glm.glmback.pupitre.domain.SuiviDuPupitre;
-import com.glm.glmback.pupitre.domain.TypeDElementEngage;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -64,7 +63,7 @@ class RestReferentielDuPupitreTest {
     assertThat(suivi.id()).isEqualTo(SUIVI_ID_OF_42.uuid());
     assertThat(suivi.nom()).isEqualTo("OF-2026-000042");
     assertThat(suivi.reference()).isEqualTo("M-1187");
-    assertThat(suivi.type()).isEqualTo(TypeDElementEngage.ORDRE_DE_FABRICATION);
+    assertThat(suivi.type()).isEqualTo("OF");
     assertThat(suivi.etat()).isEqualTo(EtatDuSuivi.EN_COURS);
     assertThat(suivi.activites()).containsExactly(
       new RestActiviteDuPupitre(
@@ -94,7 +93,7 @@ class RestReferentielDuPupitreTest {
       .id(SUIVI_ID_OF_42)
       .nom(NOM_OF_42)
       .reference(null)
-      .type(TypeDElementEngage.PRODUIT)
+      .categorie(CATEGORIE_MOULE.value())
       .activites(List.of())
       .conflits(List.of())
       .dejaPointe(false);

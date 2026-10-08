@@ -12,27 +12,27 @@ class ElementValoriseTest {
 
   @Test
   void shouldNotBuildWithoutElement() {
-    assertThatThrownBy(() -> new ElementValorise(null, NOM_D_ELEMENT_OF_2026_000001, TypeDElement.ORDRE_DE_FABRICATION))
+    assertThatThrownBy(() -> new ElementValorise(null, NOM_D_ELEMENT_OF_2026_000001, CATEGORIE_OF))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("element");
   }
 
   @Test
   void shouldNotBuildWithoutNom() {
-    assertThatThrownBy(() -> new ElementValorise(ELEMENT_ID_OF, null, TypeDElement.ORDRE_DE_FABRICATION))
+    assertThatThrownBy(() -> new ElementValorise(ELEMENT_ID_OF, null, CATEGORIE_OF))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("nom");
   }
 
   @Test
-  void shouldNotBuildWithoutType() {
+  void shouldNotBuildWithoutCategorie() {
     assertThatThrownBy(() -> new ElementValorise(ELEMENT_ID_OF, NOM_D_ELEMENT_OF_2026_000001, null))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("type");
+      .hasMessageContaining("categorie");
   }
 
   @Test
-  void shouldBuildWithElementNomAndType() {
+  void shouldBuildWithElementNomAndCategorie() {
     assertThat(ELEMENT_VALORISE_OF.nom()).isEqualTo(NOM_D_ELEMENT_OF_2026_000001);
   }
 }

@@ -21,14 +21,14 @@ class SuiviDuPupitreTest {
       .id(SUIVI_ID_OF_42)
       .nom(new NomDElement("OF-2026-000042"))
       .reference("M-1187")
-      .type(TypeDElementEngage.ORDRE_DE_FABRICATION)
+      .categorie(CATEGORIE_OF.value())
       .activites(List.of())
       .conflits(List.of())
       .dejaPointe(false);
     assertThat(suivi.id()).isEqualTo(SUIVI_ID_OF_42);
     assertThat(suivi.nom()).isEqualTo(NOM_OF_42);
     assertThat(suivi.reference()).contains(REFERENCE_M_1187);
-    assertThat(suivi.type()).isEqualTo(TypeDElementEngage.ORDRE_DE_FABRICATION);
+    assertThat(suivi.categorie()).isEqualTo(CATEGORIE_OF);
     assertThat(suivi.activites()).isEmpty();
     assertThat(suivi.dejaPointe()).isFalse();
   }
@@ -40,7 +40,7 @@ class SuiviDuPupitreTest {
         .id(null)
         .nom(NOM_OF_42)
         .reference(null)
-        .type(TypeDElementEngage.PRODUIT)
+        .categorie(CATEGORIE_MOULE.value())
         .activites(List.of())
         .conflits(List.of())
         .dejaPointe(false)
@@ -50,7 +50,7 @@ class SuiviDuPupitreTest {
         .id(SUIVI_ID_OF_42)
         .nom(null)
         .reference(null)
-        .type(TypeDElementEngage.PRODUIT)
+        .categorie(CATEGORIE_MOULE.value())
         .activites(List.of())
         .conflits(List.of())
         .dejaPointe(false)
@@ -60,7 +60,7 @@ class SuiviDuPupitreTest {
         .id(SUIVI_ID_OF_42)
         .nom(NOM_OF_42)
         .reference(null)
-        .type(null)
+        .categorie(null)
         .activites(List.of())
         .conflits(List.of())
         .dejaPointe(false)
@@ -79,7 +79,7 @@ class SuiviDuPupitreTest {
       .id(SUIVI_ID_OF_42)
       .nom(NOM_OF_42)
       .reference(null)
-      .type(TypeDElementEngage.PRODUIT)
+      .categorie(CATEGORIE_MOULE.value())
       .activites(List.of())
       .conflits(List.of())
       .dejaPointe(false);
@@ -102,7 +102,7 @@ class SuiviDuPupitreTest {
       .id(SUIVI_ID_OF_42)
       .nom(NOM_OF_42)
       .reference(null)
-      .type(TypeDElementEngage.PRODUIT)
+      .categorie(CATEGORIE_MOULE.value())
       .activites(List.of())
       .conflits(conflits)
       .dejaPointe(true);
@@ -120,7 +120,7 @@ class SuiviDuPupitreTest {
         .id(SUIVI_ID_OF_42)
         .nom(NOM_OF_42)
         .reference(null)
-        .type(TypeDElementEngage.PRODUIT)
+        .categorie(CATEGORIE_MOULE.value())
         .activites(List.of())
         .conflits(null)
         .dejaPointe(false)
@@ -130,7 +130,7 @@ class SuiviDuPupitreTest {
         .id(SUIVI_ID_OF_42)
         .nom(NOM_OF_42)
         .reference(null)
-        .type(TypeDElementEngage.PRODUIT)
+        .categorie(CATEGORIE_MOULE.value())
         .activites(List.of())
         .conflits(Arrays.asList(SEQUENCE_DUPONT_SUR_FRAISEUSE_1, null))
         .dejaPointe(false)
