@@ -30,10 +30,11 @@ purement lecteur, qui ne possède aucune table, n'écrit rien, et recalcule tout
 
 ## Agrégat de lecture
 
-`ReferentielDuPupitre` : un `genereLe`, une liste d'`OperateurDuPupitre`, une liste de `SuiviDuPupitre`. Aucune
+`ReferentielDuPupitre` : un `genereLe`, une liste d'`OperateurDuPupitre`, une liste de `SuiviDuPupitre` et la liste
+ordonnée des `CategorieDElement` de l'entreprise, qui range les tuiles. Aucune
 identité, aucune persistance — l'objet naît et meurt dans l'appel.
 
-`ReferentielsDuPupitreService` assemble les opérateurs et les suivis, et les date par le port `Clock`.
+`ReferentielsDuPupitreService` assemble les opérateurs, les suivis et les catégories, et les date par le port `Clock`.
 
 `SuiviDuPupitre` lit les activités interprétables sans fin projetées par atelier. `ActiviteSansFin` transmet
 leur identité stable et leur échéance ; `etatA` et `activitesEnCoursA` évaluent leur expiration à `genereLe`.
@@ -92,11 +93,12 @@ dans deux classes fait échouer **toute** la suite. `PupitreSteps` porte donc so
 
 ## Ports sortants
 
-`OperateursDuPupitre`, `SuivisOuvertsDuPupitre`, `Clock`.
+`OperateursDuPupitre`, `SuivisOuvertsDuPupitre`, `CategoriesDuPupitre`, `Clock`.
 
-Les deux lecteurs rendent tout d'un coup, sans critères ni pagination. Leurs entités propres `@Immutable`
+Les trois lecteurs rendent tout d'un coup, sans critères ni pagination. Leurs entités propres `@Immutable`
 lisent `operateur`, `operateur_poste`, `poste_de_travail`, `suivi_d_atelier`, `activite_d_atelier`,
-`sequence_en_conflit`, `pointage_en_conflit` et `element_de_fabrication`. Une requête scalaire sur
+`sequence_en_conflit`, `pointage_en_conflit`, `element_de_fabrication` et `categorie_de_produit`. Les catégories
+sont triées par rang puis par code, comme dans `categoriedeproduit` : le domaine ne connaît pas le rang. Une requête scalaire sur
 `evenement_d_atelier` relève les suivis portant au moins un pointage actif, sans rapporter leur journal.
 
 ## État d'avancement
@@ -105,7 +107,8 @@ Les quatre couches sont livrées, pour la seule route `GET /api/pupitre/referent
 `GESTIONNAIRE`.
 
 `infrastructure/secondary` n'a **aucun test dédié**, comme chez `feuilledetemps`, `coutderevient` et
-`syntheseheures` : sa correction est vérifiée par `src/test/features/pupitre_referentiel.feature`, qui engage,
+`syntheseheures`, hormis `CategoriesDuReferentielDuPupitreIT`, qui tient l'ordre et l'entreprise sans catégorie,
+deux cas que le schéma partagé des scénarios ne sait pas isoler. Pour le reste, sa correction est vérifiée par `src/test/features/pupitre_referentiel.feature`, qui engage,
 pointe, annule et clôture par l'API d'`atelier` puis relit par celle-ci — il échoue dès que les deux contextes
 cessent de lire les mêmes colonnes.
 

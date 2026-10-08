@@ -17,14 +17,20 @@ import org.junit.jupiter.api.Test;
 class RestReferentielDuPupitreTest {
 
   @Test
-  void shouldExposerLaDateDeLInstantaneEtSesDeuxCollections() {
+  void shouldExposerLaDateDeLInstantaneEtSesCollections() {
     RestReferentielDuPupitre referentiel = RestReferentielDuPupitre.from(
-      new ReferentielDuPupitre(LE_10_MAI_2026_A_8H, List.of(OPERATEUR_DUPONT), List.of(suiviOf42Vierge()))
+      new ReferentielDuPupitre(
+        LE_10_MAI_2026_A_8H,
+        List.of(OPERATEUR_DUPONT),
+        List.of(suiviOf42Vierge()),
+        List.of(CATEGORIE_MOULE, CATEGORIE_OF)
+      )
     );
 
     assertThat(referentiel.genereLe()).isEqualTo(LE_10_MAI_2026_A_8H);
     assertThat(referentiel.operateurs()).hasSize(1);
     assertThat(referentiel.suivis()).hasSize(1);
+    assertThat(referentiel.categories()).containsExactly("MOULE", "OF");
   }
 
   @Test

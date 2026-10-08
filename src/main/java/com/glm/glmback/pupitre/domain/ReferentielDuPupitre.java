@@ -13,12 +13,19 @@ import java.util.List;
  * voulu — dater le dernier changement supposerait d'horodater les modifications des referentiels voisins.
  * </p>
  */
-public record ReferentielDuPupitre(Instant genereLe, List<OperateurDuPupitre> operateurs, List<SuiviDuPupitre> suivis) {
+public record ReferentielDuPupitre(
+  Instant genereLe,
+  List<OperateurDuPupitre> operateurs,
+  List<SuiviDuPupitre> suivis,
+  List<CategorieDElement> categories
+) {
   public ReferentielDuPupitre {
     Assert.notNull("date de generation", genereLe);
     Assert.field("operateurs", operateurs).notNull().noNullElement();
     Assert.field("suivis", suivis).notNull().noNullElement();
+    Assert.field("categories", categories).notNull().noNullElement();
     operateurs = List.copyOf(operateurs);
     suivis = List.copyOf(suivis);
+    categories = List.copyOf(categories);
   }
 }

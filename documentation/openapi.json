@@ -2547,8 +2547,16 @@
         "type" : "object"
       },
       "RestReferentielDuPupitre" : {
-        "description" : "Tout ce que le pupitre met en cache pour continuer a fonctionner sans reseau, en un seul appel.\n\nOperateurs, habilitations et elements pointables sont relus dans une transaction unique, sans pagination.\nLes activites interpretees par atelier sont lues dans sa projection et leur expiration est jugee a genereLe.\nLes requetes successives ne garantissent pas un instantane face aux ecritures concurrentes.\n",
+        "description" : "Tout ce que le pupitre met en cache pour continuer a fonctionner sans reseau, en un seul appel.\n\nOperateurs, habilitations, elements pointables et categories de produit sont relus dans une transaction unique, sans pagination.\nLes activites interpretees par atelier sont lues dans sa projection et leur expiration est jugee a genereLe.\nLes requetes successives ne garantissent pas un instantane face aux ecritures concurrentes.\n",
         "properties" : {
+          "categories" : {
+            "description" : "Les codes des categories de produit de l'entreprise, dans l'ordre choisi par le gestionnaire. Vide tant qu'aucune n'est declaree.",
+            "example" : [ "MOULE", "OF" ],
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
           "genereLe" : {
             "description" : "Instant ou le serveur a produit la reponse et evalue l'expiration. Il ne garantit pas un instantane commun face aux ecritures concurrentes.",
             "format" : "date-time",
@@ -2569,7 +2577,7 @@
             "type" : "array"
           }
         },
-        "required" : [ "genereLe", "operateurs", "suivis" ],
+        "required" : [ "categories", "genereLe", "operateurs", "suivis" ],
         "type" : "object"
       },
       "RestRegularisation" : {
@@ -4625,7 +4633,7 @@
     },
     "/api/pupitre/referentiel" : {
       "get" : {
-        "description" : "Rend en une seule reponse les operateurs designables avec leurs habilitations, et les\nelements sur lesquels on peut encore pointer avec leurs activites en cours et leurs conflits. C'est la lecture que le pupitre\nrejoue a chaque synchronisation pour rafraichir son cache local.\n\nLa reponse entiere evite l'assemblage de pages. La lecture se fait dans une transaction unique sous\nREAD COMMITTED : une ecriture concurrente peut changer les faits entre les requetes successives.\nL'instant commun genereLe assure la meme decision d'expiration, sans garantir un instantane commun.\n\nLes operateurs restent designables sans activite, avec leur identite, leur identifiant et leurs habilitations. Les activites a resoudre\nsont exclues des activites en cours et leurs identites sont rendues dans les conflits. Une ouverture coherente\npeut etre en cours a cote d'un conflit. L'expiration des activites se juge a genereLe, echeance incluse.\n\n`genereLe` date l'evaluation. Elle change a chaque appel, y compris quand rien n'a bouge : elle\ndit quand le serveur a produit la reponse, pas quand le referentiel a change pour la derniere fois.\n\nCe que la reponse ne porte pas, et n'a pas a porter : aucun montant — ni taux horaire d'operateur, ni cout\nhoraire de poste —, aucun journal d'evenements, aucun element cloture.\n",
+        "description" : "Rend en une seule reponse les operateurs designables avec leurs habilitations, les\nelements sur lesquels on peut encore pointer avec leurs activites en cours et leurs conflits, et les codes\ndes categories de produit dans l'ordre choisi par le gestionnaire, qui range les tuiles. C'est la lecture que le pupitre\nrejoue a chaque synchronisation pour rafraichir son cache local.\n\nLa reponse entiere evite l'assemblage de pages. La lecture se fait dans une transaction unique sous\nREAD COMMITTED : une ecriture concurrente peut changer les faits entre les requetes successives.\nL'instant commun genereLe assure la meme decision d'expiration, sans garantir un instantane commun.\n\nLes operateurs restent designables sans activite, avec leur identite, leur identifiant et leurs habilitations. Les activites a resoudre\nsont exclues des activites en cours et leurs identites sont rendues dans les conflits. Une ouverture coherente\npeut etre en cours a cote d'un conflit. L'expiration des activites se juge a genereLe, echeance incluse.\n\n`genereLe` date l'evaluation. Elle change a chaque appel, y compris quand rien n'a bouge : elle\ndit quand le serveur a produit la reponse, pas quand le referentiel a change pour la derniere fois.\n\nCe que la reponse ne porte pas, et n'a pas a porter : aucun montant — ni taux horaire d'operateur, ni cout\nhoraire de poste —, aucun journal d'evenements, aucun element cloture.\n",
         "operationId" : "referentiel",
         "responses" : {
           "200" : {

@@ -25,6 +25,16 @@ Feature: Le referentiel que le pupitre met en cache
       | fraiseuse |
       | tour      |
 
+  Scenario: Le referentiel range les categories de produit dans l'ordre choisi par le gestionnaire
+    # Le pupitre range ses tuiles par categorie : il lui faut les codes, dans l'ordre de la gestion.
+    Given la categorie de produit "PUPITREA" est declaree
+    And la categorie de produit "PUPITREB" est declaree
+    And je place la categorie de produit "PUPITREB" en tete
+    When je lis le referentiel du pupitre a "2026-05-11T07:00:00Z"
+    Then la reponse a le statut http 200
+    And les categories du referentiel du pupitre commencent par "PUPITREB"
+    And les categories du referentiel du pupitre suivent l'ordre des categories de produit
+
   Scenario: Un element mis en atelier apparait en attente, avec sa reference relue au referentiel
     Given il est "2026-05-11T06:00:00Z"
     And le pupitre fabrique "OF 4001"

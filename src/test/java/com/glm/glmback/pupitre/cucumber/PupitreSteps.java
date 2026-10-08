@@ -45,6 +45,7 @@ public class PupitreSteps {
   private static final String ELEMENTS_URI = "/api/elements-de-fabrication";
   private static final String SUIVIS_URI = "/api/atelier/suivis";
   private static final String REFERENTIEL_URI = "/api/pupitre/referentiel";
+  private static final String CATEGORIES_URI = "/api/categories-de-produit";
   private static final ObjectMapper JSON = JsonMapper.builder().build();
   private static final AtomicInteger SEQUENCE = new AtomicInteger();
   /**
@@ -252,6 +253,22 @@ public class PupitreSteps {
   @Then("le referentiel du pupitre est date du {string}")
   public void leReferentielEstDateDu(String instant) {
     assertThat(CucumberRestTestContext.getElement("$.genereLe")).isEqualTo(instant);
+  }
+
+  @Then("les categories du referentiel du pupitre commencent par {string}")
+  public void lesCategoriesCommencentPar(String code) {
+    assertThat(categories()).startsWith(code);
+  }
+
+  /**
+   * Relit les categories par la route de gestion : apres ce step, la derniere reponse n'est plus le referentiel.
+   */
+  @Then("les categories du referentiel du pupitre suivent l'ordre des categories de produit")
+  public void lesCategoriesSuiventLOrdreDeLaGestion() {
+    List<String> lues = categories();
+    rest.get(CATEGORIES_URI + "?size=100");
+
+    assertThat(lues).isEqualTo(CucumberRestTestContext.getElement("$.content..code"));
   }
 
   @Then("le referentiel du pupitre porte l'operateur {string} avec son identifiant")
@@ -465,6 +482,11 @@ public class PupitreSteps {
   @SuppressWarnings("unchecked")
   private List<Map<String, Object>> activites(String element) {
     return (List<Map<String, Object>>) suivi(element).get("activites");
+  }
+
+  @SuppressWarnings("unchecked")
+  private static List<String> categories() {
+    return (List<String>) CucumberRestTestContext.getElement("$.categories");
   }
 
   private List<Map<String, Object>> suivis() {

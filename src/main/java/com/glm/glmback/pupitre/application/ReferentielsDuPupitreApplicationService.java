@@ -1,5 +1,6 @@
 package com.glm.glmback.pupitre.application;
 
+import com.glm.glmback.pupitre.domain.CategoriesDuPupitre;
 import com.glm.glmback.pupitre.domain.OperateursDuPupitre;
 import com.glm.glmback.pupitre.domain.ReferentielDuPupitre;
 import com.glm.glmback.pupitre.domain.ReferentielsDuPupitreService;
@@ -21,8 +22,13 @@ public class ReferentielsDuPupitreApplicationService {
 
   private final ReferentielsDuPupitreService referentiels;
 
-  public ReferentielsDuPupitreApplicationService(OperateursDuPupitre operateurs, SuivisOuvertsDuPupitre suivis, Clock clock) {
-    this.referentiels = ReferentielsDuPupitreService.builder().operateurs(operateurs).suivis(suivis).clock(clock);
+  public ReferentielsDuPupitreApplicationService(
+    OperateursDuPupitre operateurs,
+    SuivisOuvertsDuPupitre suivis,
+    CategoriesDuPupitre categories,
+    Clock clock
+  ) {
+    this.referentiels = ReferentielsDuPupitreService.builder().operateurs(operateurs).suivis(suivis).categories(categories).clock(clock);
   }
 
   /**

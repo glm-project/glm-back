@@ -23,8 +23,9 @@ class ReferentielDuPupitreResource {
   @Operation(
     summary = "Lire tout le referentiel du pupitre en un appel",
     description = """
-    Rend en une seule reponse les operateurs designables avec leurs habilitations, et les
-    elements sur lesquels on peut encore pointer avec leurs activites en cours et leurs conflits. C'est la lecture que le pupitre
+    Rend en une seule reponse les operateurs designables avec leurs habilitations, les
+    elements sur lesquels on peut encore pointer avec leurs activites en cours et leurs conflits, et les codes
+    des categories de produit dans l'ordre choisi par le gestionnaire, qui range les tuiles. C'est la lecture que le pupitre
     rejoue a chaque synchronisation pour rafraichir son cache local.
 
     La reponse entiere evite l'assemblage de pages. La lecture se fait dans une transaction unique sous
