@@ -12,12 +12,14 @@ import org.junit.jupiter.api.Test;
 class CategoriesDeProduitServiceTest {
 
   private CategoriesDeProduitEnMemoire repository;
+  private ElementsRangesEnMemoire elements;
   private CategoriesDeProduitService categories;
 
   @BeforeEach
   void setUp() {
     repository = new CategoriesDeProduitEnMemoire();
-    categories = new CategoriesDeProduitService(repository);
+    elements = new ElementsRangesEnMemoire();
+    categories = new CategoriesDeProduitService(repository, elements);
   }
 
   @Test
@@ -50,5 +52,40 @@ class CategoriesDeProduitServiceTest {
     repository.create(categorieDeProduitMoule());
 
     assertThat(categories.list(firstPageOfTen()).content()).containsExactly(categorieDeProduitMoule(), categorieDeProduitOf());
+  }
+
+  @Test
+  void shouldDeleteUnusedCategorie() {
+    repository.create(categorieDeProduitMoule());
+
+    categories.delete(CODE_MOULE);
+
+    assertThat(repository.get(CODE_MOULE)).isEmpty();
+  }
+
+  @Test
+  void shouldNotDeleteUnknownCategorie() {
+    assertThatThrownBy(() -> categories.delete(CODE_MOULE))
+      .isExactlyInstanceOf(CategorieIntrouvableException.class)
+      .hasMessageContaining("MOULE");
+  }
+
+  @Test
+  void shouldNotDeleteCategorieHoldingProduits() {
+    repository.create(categorieDeProduitMoule());
+    elements.range(CODE_MOULE);
+
+    assertThatThrownBy(() -> categories.delete(CODE_MOULE))
+      .isExactlyInstanceOf(CategorieUtiliseeException.class)
+      .hasMessageContaining("MOULE");
+    assertThat(repository.get(CODE_MOULE)).contains(categorieDeProduitMoule());
+  }
+
+  @Test
+  void shouldCreateAgainDeletedCategorie() {
+    categories.create(CODE_MOULE);
+    categories.delete(CODE_MOULE);
+
+    assertThat(categories.create(CODE_MOULE)).isEqualTo(categorieDeProduitMoule());
   }
 }

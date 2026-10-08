@@ -26,6 +26,14 @@ final class CategoriesDeProduitEnMemoire implements CategorieDeProduitRepository
   }
 
   @Override
+  public void delete(CodeDeCategorie code) {
+    CategorieDeProduit supprimee = categories.remove(code);
+    if (supprimee == null) {
+      throw new CategorieIntrouvableException(code);
+    }
+  }
+
+  @Override
   public Optional<CategorieDeProduit> get(CodeDeCategorie code) {
     return Optional.ofNullable(categories.get(code));
   }

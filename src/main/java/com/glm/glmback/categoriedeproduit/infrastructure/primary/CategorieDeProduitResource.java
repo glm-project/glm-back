@@ -1,14 +1,18 @@
 package com.glm.glmback.categoriedeproduit.infrastructure.primary;
 
 import com.glm.glmback.categoriedeproduit.application.CategoriesDeProduitApplicationService;
+import com.glm.glmback.categoriedeproduit.domain.CodeDeCategorie;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import com.glm.glmback.shared.pagination.infrastructure.primary.RestPage;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,7 +31,9 @@ import org.springframework.web.bind.annotation.RestController;
   Le code d'une categorie est a la fois son libelle et le prefixe du nom des produits qui s'y creent
   (MOULE-2026-000001). Il ne se renomme donc jamais.
 
-  Le gestionnaire declare les categories ; l'operateur (role USER) les consulte.
+  Une categorie se supprime tant qu'aucun produit n'y est range.
+
+  Le gestionnaire declare et supprime les categories ; l'operateur (role USER) les consulte.
   """
 )
 class CategorieDeProduitResource {
@@ -57,5 +63,20 @@ class CategorieDeProduitResource {
   @ApiResponse(responseCode = "409", description = "Une categorie porte deja ce code.")
   RestCategorieDeProduit create(@RequestBody @Valid RestCreationCategorieDeProduit request) {
     return RestCategorieDeProduit.from(applicationService.create(request.toDomain()));
+  }
+
+  @DeleteMapping("/{code}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @Operation(
+    summary = "Supprimer une categorie de produit",
+    description = """
+    Refuse tant qu'un produit y est range : son nom porte le code de la categorie.
+    """
+  )
+  @ApiResponse(responseCode = "204", description = "La categorie est supprimee.")
+  @ApiResponse(responseCode = "404", description = "Categorie introuvable.")
+  @ApiResponse(responseCode = "409", description = "Des produits sont ranges dans cette categorie.")
+  void delete(@PathVariable @Pattern(regexp = "^[A-Z]{1,10}$") String code) {
+    applicationService.delete(new CodeDeCategorie(code));
   }
 }

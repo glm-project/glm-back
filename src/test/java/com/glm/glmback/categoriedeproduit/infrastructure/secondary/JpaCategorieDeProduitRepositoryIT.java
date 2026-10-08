@@ -6,6 +6,7 @@ import com.glm.glmback.IntegrationTest;
 import com.glm.glmback.categoriedeproduit.domain.CategorieDeProduit;
 import com.glm.glmback.categoriedeproduit.domain.CategorieDeProduitRepository;
 import com.glm.glmback.categoriedeproduit.domain.CategorieDejaExistanteException;
+import com.glm.glmback.categoriedeproduit.domain.CategorieIntrouvableException;
 import com.glm.glmback.categoriedeproduit.domain.CodeDeCategorie;
 import com.glm.glmback.categoriedeproduit.domain.Rang;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurityContexts;
@@ -60,6 +61,33 @@ class JpaCategorieDeProduitRepositoryIT {
   @WithTenant(CATEGORIES_FIXTURE)
   void shouldNotGetUnknownCategorie() {
     assertThat(inTransaction(() -> categories.get(codeDeTest()))).isEmpty();
+  }
+
+  @Test
+  @WithTenant(CATEGORIES_FIXTURE)
+  void shouldDeleteCategorie() {
+    CategorieDeProduit categorie = categorieApresLaDerniere();
+    inTransaction(() -> categories.create(categorie));
+
+    inTransaction(() -> {
+      categories.delete(categorie.code());
+      return null;
+    });
+
+    assertThat(inTransaction(() -> categories.get(categorie.code()))).isEmpty();
+  }
+
+  @Test
+  @WithTenant(CATEGORIES_FIXTURE)
+  void shouldNotDeleteUnknownCategorie() {
+    CodeDeCategorie inconnu = codeDeTest();
+
+    assertThatThrownBy(() ->
+      inTransaction(() -> {
+        categories.delete(inconnu);
+        return null;
+      })
+    ).isExactlyInstanceOf(CategorieIntrouvableException.class);
   }
 
   @Test

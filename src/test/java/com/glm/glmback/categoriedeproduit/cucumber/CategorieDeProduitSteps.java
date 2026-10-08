@@ -34,6 +34,17 @@ public class CategorieDeProduitSteps {
     assertThatLastResponse().hasHttpStatus(201);
   }
 
+  @When("je supprime la categorie de produit {string}")
+  public void jeSupprimeLaCategorieDeProduit(String code) {
+    rest.delete(BASE_URI + "/" + code);
+  }
+
+  @Given("j'ai supprime la categorie de produit {string}")
+  public void jaiSupprimeLaCategorieDeProduit(String code) {
+    jeSupprimeLaCategorieDeProduit(code);
+    assertThatLastResponse().hasHttpStatus(204);
+  }
+
   @When("je liste les categories de produit")
   public void jeListeLesCategoriesDeProduit() {
     rest.get(BASE_URI + "?size=100");
@@ -47,6 +58,12 @@ public class CategorieDeProduitSteps {
   @Then("les categories de produit se terminent par {string}")
   public void lesCategoriesDeProduitSeTerminentPar(String codes) {
     assertThat(codes()).endsWith(Arrays.stream(codes.split(",")).map(String::trim).toArray(String[]::new));
+  }
+
+  @Then("la categorie de produit {string} n'est plus listee")
+  public void laCategorieDeProduitNEstPlusListee(String code) {
+    jeListeLesCategoriesDeProduit();
+    assertThat(codes()).doesNotContain(code);
   }
 
   @SuppressWarnings("unchecked")

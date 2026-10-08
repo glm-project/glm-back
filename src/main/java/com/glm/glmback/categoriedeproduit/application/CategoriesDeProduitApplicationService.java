@@ -3,6 +3,7 @@ package com.glm.glmback.categoriedeproduit.application;
 import com.glm.glmback.categoriedeproduit.domain.CategorieDeProduit;
 import com.glm.glmback.categoriedeproduit.domain.CategorieDeProduitRepository;
 import com.glm.glmback.categoriedeproduit.domain.CategoriesDeProduitService;
+import com.glm.glmback.categoriedeproduit.domain.CategoriesUtilisees;
 import com.glm.glmback.categoriedeproduit.domain.CodeDeCategorie;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
@@ -15,8 +16,8 @@ public class CategoriesDeProduitApplicationService {
 
   private final CategoriesDeProduitService categories;
 
-  public CategoriesDeProduitApplicationService(CategorieDeProduitRepository repository) {
-    this.categories = new CategoriesDeProduitService(repository);
+  public CategoriesDeProduitApplicationService(CategorieDeProduitRepository repository, CategoriesUtilisees usages) {
+    this.categories = new CategoriesDeProduitService(repository, usages);
   }
 
   @Secured("ROLE_GESTIONNAIRE")
@@ -29,5 +30,11 @@ public class CategoriesDeProduitApplicationService {
   @Transactional(readOnly = true)
   public Page<CategorieDeProduit> list(Pageable pageable) {
     return categories.list(pageable);
+  }
+
+  @Secured("ROLE_GESTIONNAIRE")
+  @Transactional
+  public void delete(CodeDeCategorie code) {
+    categories.delete(code);
   }
 }

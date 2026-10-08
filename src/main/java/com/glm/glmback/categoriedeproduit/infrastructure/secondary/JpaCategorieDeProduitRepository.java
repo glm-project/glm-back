@@ -3,6 +3,7 @@ package com.glm.glmback.categoriedeproduit.infrastructure.secondary;
 import com.glm.glmback.categoriedeproduit.domain.CategorieDeProduit;
 import com.glm.glmback.categoriedeproduit.domain.CategorieDeProduitRepository;
 import com.glm.glmback.categoriedeproduit.domain.CategorieDejaExistanteException;
+import com.glm.glmback.categoriedeproduit.domain.CategorieIntrouvableException;
 import com.glm.glmback.categoriedeproduit.domain.CodeDeCategorie;
 import com.glm.glmback.categoriedeproduit.domain.Rang;
 import com.glm.glmback.shared.pagination.domain.Page;
@@ -31,6 +32,14 @@ class JpaCategorieDeProduitRepository implements CategorieDeProduitRepository {
     categories.save(CategorieDeProduitEntity.from(categorie));
 
     return categorie;
+  }
+
+  @Override
+  public void delete(CodeDeCategorie code) {
+    if (!categories.existsById(code.value())) {
+      throw new CategorieIntrouvableException(code);
+    }
+    categories.deleteById(code.value());
   }
 
   @Override

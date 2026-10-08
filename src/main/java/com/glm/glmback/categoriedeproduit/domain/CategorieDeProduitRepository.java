@@ -7,6 +7,8 @@ import java.util.Optional;
 public interface CategorieDeProduitRepository {
   CategorieDeProduit create(CategorieDeProduit categorie);
 
+  void delete(CodeDeCategorie code);
+
   Optional<CategorieDeProduit> get(CodeDeCategorie code);
 
   Optional<Rang> dernierRang();

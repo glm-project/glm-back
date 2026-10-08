@@ -5,6 +5,8 @@ import static org.springframework.http.HttpStatus.*;
 
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.categoriedeproduit.domain.CategorieDejaExistanteException;
+import com.glm.glmback.categoriedeproduit.domain.CategorieIntrouvableException;
+import com.glm.glmback.categoriedeproduit.domain.CategorieUtiliseeException;
 import com.glm.glmback.shared.error.infrastructure.primary.ExceptionAdviceContract;
 import com.glm.glmback.shared.error.infrastructure.primary.PublishedProblem;
 import java.util.stream.Stream;
@@ -21,10 +23,16 @@ class CategorieDeProduitExceptionAdviceTest extends ExceptionAdviceContract {
   protected Stream<PublishedProblem> erreursPubliees() {
     return Stream.of(
       new PublishedProblem(
+        new CategorieIntrouvableException(CODE_MOULE),
+        "urn:glm:erreur:categorie-de-produit:categorie-introuvable",
+        NOT_FOUND
+      ),
+      new PublishedProblem(
         new CategorieDejaExistanteException(CODE_MOULE),
         "urn:glm:erreur:categorie-de-produit:categorie-deja-existante",
         CONFLICT
-      )
+      ),
+      new PublishedProblem(new CategorieUtiliseeException(CODE_MOULE), "urn:glm:erreur:categorie-de-produit:categorie-utilisee", CONFLICT)
     );
   }
 }

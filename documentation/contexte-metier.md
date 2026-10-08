@@ -35,6 +35,8 @@ Une `CategorieDeProduit` se réduit à un **code** (`MOULE`, `OF`) et à un **ra
 
 Le **rang** porte l'ordre d'affichage choisi par l'entreprise. Une catégorie nouvelle se range en dernier, pour que l'ordre déjà choisi ne bouge pas.
 
+**Une catégorie qui range des produits ne se supprime pas** : leur nom porte son code, et ils resteraient rangés dans une famille disparue. La règle vit dans le domaine, derrière le port `CategoriesUtilisees`, dont l'adapter lit la table `element_de_fabrication` par une entité en lecture seule — sans jamais importer `elementdefabrication`. Une catégorie vide, elle, se supprime et peut être déclarée à nouveau.
+
 ## atelier
 
 Gère l'exécution en atelier de ce que `elementdefabrication` a déclaré. Le gestionnaire y met un élément en atelier, les opérateurs y pointent leurs activités, le gestionnaire clôture et corrige.

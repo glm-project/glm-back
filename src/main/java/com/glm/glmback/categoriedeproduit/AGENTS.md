@@ -7,7 +7,7 @@ Responsabilité, frontières et invariants de ce contexte. Les règles de code c
 ## Ce dont ce contexte s'occupe
 
 Le **référentiel des familles dans lesquelles l'entreprise range ce qu'elle fabrique** : des moules et des OF chez le
-client de référence, autre chose ailleurs. Déclarer une catégorie et lister les catégories dans l'ordre d'affichage
+client de référence, autre chose ailleurs. Déclarer, supprimer et lister les catégories dans l'ordre d'affichage
 choisi par l'entreprise.
 
 ## Ce dont il ne s'occupe pas
@@ -32,12 +32,15 @@ le code **est** l'identité.
 - **Le code est unique par entreprise.** La garde vit dans `CategoriesDeProduitService` ; la clé primaire est le filet.
 - **Une catégorie nouvelle se range en dernier** : `Rang` suit le dernier rang connu, lu par le port
   (`CategorieDeProduitRepository.dernierRang`), pour que l'ordre déjà choisi ne bouge pas.
+- **Une catégorie qui range des produits ne se supprime pas** : leur nom porte son code. La règle vit dans le domaine,
+  derrière le port `CategoriesUtilisees` ; son adapter lit `element_de_fabrication` par une entité en lecture seule
+  (patron `ElementEngageableEntity`), sans importer `elementdefabrication`.
 - **L'ordre de lecture est total** : rang, puis code. Le rang n'est pas unique en base — deux déclarations
   concurrentes peuvent obtenir le même — et le code départage.
 
 ## Ports sortants
 
-`CategorieDeProduitRepository`.
+`CategorieDeProduitRepository`, `CategoriesUtilisees`.
 
 ## Structure
 

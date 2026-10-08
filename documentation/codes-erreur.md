@@ -145,7 +145,9 @@ segment de contexte, et lui seul, qui les distingue.
 
 | Code                       | Statut | `title`                  | Exception                         |
 | -------------------------- | ------ | ------------------------ | --------------------------------- |
+| `categorie-introuvable`    | 404    | categorie introuvable    | `CategorieIntrouvableException`   |
 | `categorie-deja-existante` | 409    | categorie deja existante | `CategorieDejaExistanteException` |
+| `categorie-utilisee`       | 409    | categorie utilisee       | `CategorieUtiliseeException`      |
 
 ### `feuille-de-temps` — `urn:glm:erreur:feuille-de-temps:`
 

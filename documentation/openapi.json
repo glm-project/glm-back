@@ -3834,6 +3834,34 @@
         "tags" : [ "Categories de produit" ]
       }
     },
+    "/api/categories-de-produit/{code}" : {
+      "delete" : {
+        "description" : "Refuse tant qu'un produit y est range : son nom porte le code de la categorie.\n",
+        "operationId" : "delete_3",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "code",
+          "required" : true,
+          "schema" : {
+            "pattern" : "^[A-Z]{1,10}$",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "La categorie est supprimee."
+          },
+          "404" : {
+            "description" : "Categorie introuvable."
+          },
+          "409" : {
+            "description" : "Des produits sont ranges dans cette categorie."
+          }
+        },
+        "summary" : "Supprimer une categorie de produit",
+        "tags" : [ "Categories de produit" ]
+      }
+    },
     "/api/couts-de-revient/{elementId}" : {
       "get" : {
         "description" : "Rend une ligne par nature d'operation — fraisage, tournage, erosion —, chacune portant le temps de bon travail,\nle temps passe en non conformite avec ses periodes datees, et le cout separe en machine et main d'oeuvre.\n\nL'entree se fait par l'element, non par son suivi d'atelier : un element reengage apres cloture additionne ses\npassages.\n\nDeux regles a connaitre avant d'afficher les montants. Le cout horaire de chaque poste actif court **en entier**,\nmeme quand l'operateur en mene plusieurs de front ; son taux horaire, lui, est **divise** par le nombre de postes\nqu'il occupait a cet instant, tous elements confondus. Un operateur sur trois elements avec une seule machine\nn'est donc pas divise. Le decoupage se fait aux bornes de chaque pointage, si bien que seul le chevauchement reel\nest divise.\n\nUne activite encore en cours est entierement exclue du temps, des couts et du diviseur. A son echeance\nprojetee, elle compte jusqu'a sa fin automatique avec une anomalie et sa periode datee. L'horloge est relevee\nune seule fois par rapport ; cet instant est rendu dans evaluation.\n\nChaque duree et montant porte complete ; valeur est absente si incomplet, sans zero ni somme partielle.\nTravail, non conformite, machine et main d'oeuvre sont independants. Pour le partage humain, toute la plage\nfactuelle possible d'une activite a resoudre est bornee a evaluation. Une occupation certaine du meme poste\npeut neutraliser son effet sur le nombre de postes distincts ; la machine d'une activite terminee reste connue.\nconflits rend les sequences de l'element et toutes celles responsables d'une valeur inconnue, meme sur un autre\nelement, avec les identites originales d'activites et les faits actifs.\n",
@@ -4618,11 +4646,11 @@
     "description" : "Ce que le gestionnaire doit trancher : une anomalie de pointage porte une nature. Deux natures : CONFLIT, une sequence en conflit, et FIN_AUTOMATIQUE, une activite terminee a son echeance faute de fin reelle. Le parcours est le meme pour chaque dossier : consulter, previsualiser, confirmer.",
     "name" : "Atelier - anomalies de pointage"
   }, {
-    "description" : "Les familles dans lesquelles l'entreprise range ce qu'elle fabrique : des moules et des OF chez le client de\nreference, autre chose ailleurs. Une entreprise neuve n'en a aucune.\n\nLe code d'une categorie est a la fois son libelle et le prefixe du nom des produits qui s'y creent\n(MOULE-2026-000001). Il ne se renomme donc jamais.\n\nLe gestionnaire declare les categories ; l'operateur (role USER) les consulte.\n",
-    "name" : "Categories de produit"
-  }, {
     "description" : "Le temps passe sur un element de fabrication, valorise par nature d'operation.",
     "name" : "Couts de revient"
+  }, {
+    "description" : "Les familles dans lesquelles l'entreprise range ce qu'elle fabrique : des moules et des OF chez le client de\nreference, autre chose ailleurs. Une entreprise neuve n'en a aucune.\n\nLe code d'une categorie est a la fois son libelle et le prefixe du nom des produits qui s'y creent\n(MOULE-2026-000001). Il ne se renomme donc jamais.\n\nUne categorie se supprime tant qu'aucun produit n'y est range.\n\nLe gestionnaire declare et supprime les categories ; l'operateur (role USER) les consulte.\n",
+    "name" : "Categories de produit"
   }, {
     "description" : "Le referentiel de ce sur quoi les operateurs pointent : une machine, un etabli, un four, une salle.\n\nChaque poste porte la nature du travail qui s'y fait. C'est de la que vient le metier exerce a un instant donne :\nl'operateur qui demarre sur le poste de soudure soude, celui qui demarre sur un tour tourne. Rien de tout cela n'est\ndeclare sur la personne.\n\nLe gestionnaire declare et revise les postes ; l'operateur (role USER) les consulte.\n",
     "name" : "Postes de travail"
