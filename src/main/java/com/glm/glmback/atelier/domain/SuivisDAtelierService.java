@@ -102,9 +102,17 @@ public final class SuivisDAtelierService {
    * Une fin survenue avant la cloture de l'OF, mais recue apres elle, est enregistree a son heure. Survenue apres, elle
    * ne change rien : la cloture a deja termine ce qu'elle terminerait, et le geste est absorbe.
    * </p>
+   *
+   * <p>
+   * Un evenement deja present dans la table des evenements, de ce suivi ou d'un autre, est un renvoi : il repond comme
+   * un succes et n'ecrit rien, avant toute regle.
+   * </p>
    */
   public PointageDAtelierTraite pointe(PointageAEnregistrer commande) {
     SuiviDAtelier suivi = get(commande.suivi());
+    if (repository.contientEvenement(commande.evenement())) {
+      return new PointageDAtelierTraite(suivi, true);
+    }
     if (suivi.estCloture() && commande.type() != TypeDEvenementDAtelier.FIN) {
       throw new SuiviDAtelierClotureException(suivi.id());
     }

@@ -43,7 +43,7 @@ class PointageDAtelierJamaisRefuseTest {
 
     PointageDAtelierTraite traite = pointeA(seconde, LE_10_MAI_2026_A_12H.plusSeconds(2));
 
-    assertThat(traite.absorbe()).isFalse();
+    assertThat(traite.sansEcriture()).isFalse();
     assertThat(traite.suivi().journal().evenements()).hasSize(3);
     assertThat(traite.suivi().conflits())
       .singleElement()
@@ -62,7 +62,7 @@ class PointageDAtelierJamaisRefuseTest {
 
     PointageDAtelierTraite fin = pointeA(finDe(debut), Instant.parse("2026-05-10T23:00:00Z"));
 
-    assertThat(fin.absorbe()).isFalse();
+    assertThat(fin.sansEcriture()).isFalse();
     assertThat(fin.suivi().journal().evenements()).hasSize(2);
     assertThat(fin.suivi().activites()).singleElement().extracting(Activite::fin).isEqualTo(Optional.empty());
   }
@@ -80,7 +80,7 @@ class PointageDAtelierJamaisRefuseTest {
 
     PointageDAtelierTraite fin = atelier.pointe(finRejoueeA(debut, LE_10_MAI_2026_A_17H));
 
-    assertThat(fin.absorbe()).isFalse();
+    assertThat(fin.sansEcriture()).isFalse();
     assertThat(intervalles(fin.suivi(), LE_11_MAI_2026_A_9H15))
       .singleElement()
       .satisfies(intervalle -> {
@@ -103,7 +103,7 @@ class PointageDAtelierJamaisRefuseTest {
 
     PointageDAtelierTraite seconde = pointeA(finDe(debut), LE_10_MAI_2026_A_13H);
 
-    assertThat(seconde.absorbe()).isFalse();
+    assertThat(seconde.sansEcriture()).isFalse();
     assertThat(seconde.suivi().journal().evenements()).hasSize(4);
     assertThat(seconde.suivi().activitesEnCours(LE_10_MAI_2026_A_13H)).isEmpty();
     assertThat(seconde.suivi().conflits()).hasSize(1);
@@ -117,7 +117,7 @@ class PointageDAtelierJamaisRefuseTest {
 
     PointageDAtelierTraite fin = pointeA(finDe(debut), LE_10_MAI_2026_A_12H);
 
-    assertThat(fin.absorbe()).isFalse();
+    assertThat(fin.sansEcriture()).isFalse();
     assertThat(fin.suivi().etat(LE_10_MAI_2026_A_12H)).isEqualTo(EtatDAtelier.INTERROMPU);
   }
 
@@ -134,7 +134,7 @@ class PointageDAtelierJamaisRefuseTest {
 
     PointageDAtelierTraite fin = pointeA(finDe(debut), LE_10_MAI_2026_A_16H);
 
-    assertThat(fin.absorbe()).isTrue();
+    assertThat(fin.sansEcriture()).isTrue();
     assertThat(fin.suivi()).isEqualTo(cloture);
   }
 
@@ -152,7 +152,7 @@ class PointageDAtelierJamaisRefuseTest {
 
     PointageDAtelierTraite fin = atelier.pointe(finRejoueeA(debut, LE_10_MAI_2026_A_9H));
 
-    assertThat(fin.absorbe()).isFalse();
+    assertThat(fin.sansEcriture()).isFalse();
     assertThat(fin.suivi().estCloture()).isTrue();
     assertThat(fin.suivi().activites()).singleElement().extracting(Activite::fin).isEqualTo(Optional.of(LE_10_MAI_2026_A_9H));
   }
@@ -207,7 +207,7 @@ class PointageDAtelierJamaisRefuseTest {
 
     PointageDAtelierTraite fin = atelier.pointe(finRejoueeA(debut, LE_10_MAI_2026_A_9H));
 
-    assertThat(fin.absorbe()).isFalse();
+    assertThat(fin.sansEcriture()).isFalse();
     assertThat(fin.suivi().activites()).singleElement().extracting(Activite::aResoudre).isEqualTo(true);
   }
 

@@ -8,10 +8,10 @@ urn:glm:erreur:<contexte>:<code>
 
 ```json
 {
-  "type": "urn:glm:erreur:atelier:identifiant-evenement-reutilise",
-  "title": "identifiant d'evenement reutilise",
+  "type": "urn:glm:erreur:atelier:suivi-d-atelier-cloture",
+  "title": "suivi d'atelier cloture",
   "status": 409,
-  "message": "Identifiant deja reserve pour un autre geste"
+  "message": "Le suivi d'atelier 6d0c1a4e-... est cloture"
 }
 ```
 
@@ -66,26 +66,25 @@ tests sont le seul endroit qui les tient.
 
 ### `atelier` — `urn:glm:erreur:atelier:`
 
-| Code                                 | Statut | `title`                            | Exception                                 |
-| ------------------------------------ | ------ | ---------------------------------- | ----------------------------------------- |
-| `suivi-d-atelier-introuvable`        | 404    | suivi d'atelier introuvable        | `SuiviDAtelierIntrouvableException`       |
-| `fin-automatique-introuvable`        | 404    | fin automatique introuvable        | `FinAutomatiqueIntrouvableException`      |
-| `element-de-fabrication-introuvable` | 404    | element de fabrication introuvable | `ElementEngageableIntrouvableException`   |
-| `operateur-introuvable`              | 404    | operateur introuvable              | `OperateurDAtelierIntrouvableException`   |
-| `poste-de-travail-introuvable`       | 404    | poste de travail introuvable       | `PosteDAtelierIntrouvableException`       |
-| `activite-visee-introuvable`         | 404    | activite visee introuvable         | `ActiviteViseeIntrouvableException`       |
-| `operateur-non-habilite`             | 409    | operateur non habilite             | `OperateurNonHabiliteException`           |
-| `activite-visee-incoherente`         | 409    | activite visee incoherente         | `ActiviteViseeIncoherenteException`       |
-| `element-deja-engage`                | 409    | element deja engage                | `ElementDejaEngageException`              |
-| `suivi-d-atelier-cloture`            | 409    | suivi d'atelier cloture            | `SuiviDAtelierClotureException`           |
-| `evenement-anterieur-a-l-engagement` | 409    | evenement anterieur a l'engagement | `EvenementAvantEngagementException`       |
-| `activite-non-echue`                 | 409    | activite non echue                 | `ActiviteNonEchueException`               |
-| `activite-deja-regularisee`          | 409    | activite deja regularisee          | `ActiviteDejaRegulariseeException`        |
-| `fin-avant-debut`                    | 409    | fin avant debut                    | `FinAvantDebutException`                  |
-| `fin-apres-borne`                    | 409    | fin apres borne                    | `FinApresBorneException`                  |
-| `saisie-concurrente`                 | 409    | saisie concurrente                 | `SaisieConcurrenteException`              |
-| `identifiant-evenement-reutilise`    | 409    | identifiant d'evenement reutilise  | `IdentifiantDEvenementReutiliseException` |
-| `date-de-survenue-future`            | 400    | date de survenue future            | `DateDeSurvenueFutureException`           |
+| Code                                 | Statut | `title`                            | Exception                               |
+| ------------------------------------ | ------ | ---------------------------------- | --------------------------------------- |
+| `suivi-d-atelier-introuvable`        | 404    | suivi d'atelier introuvable        | `SuiviDAtelierIntrouvableException`     |
+| `fin-automatique-introuvable`        | 404    | fin automatique introuvable        | `FinAutomatiqueIntrouvableException`    |
+| `element-de-fabrication-introuvable` | 404    | element de fabrication introuvable | `ElementEngageableIntrouvableException` |
+| `operateur-introuvable`              | 404    | operateur introuvable              | `OperateurDAtelierIntrouvableException` |
+| `poste-de-travail-introuvable`       | 404    | poste de travail introuvable       | `PosteDAtelierIntrouvableException`     |
+| `activite-visee-introuvable`         | 404    | activite visee introuvable         | `ActiviteViseeIntrouvableException`     |
+| `operateur-non-habilite`             | 409    | operateur non habilite             | `OperateurNonHabiliteException`         |
+| `activite-visee-incoherente`         | 409    | activite visee incoherente         | `ActiviteViseeIncoherenteException`     |
+| `element-deja-engage`                | 409    | element deja engage                | `ElementDejaEngageException`            |
+| `suivi-d-atelier-cloture`            | 409    | suivi d'atelier cloture            | `SuiviDAtelierClotureException`         |
+| `evenement-anterieur-a-l-engagement` | 409    | evenement anterieur a l'engagement | `EvenementAvantEngagementException`     |
+| `activite-non-echue`                 | 409    | activite non echue                 | `ActiviteNonEchueException`             |
+| `activite-deja-regularisee`          | 409    | activite deja regularisee          | `ActiviteDejaRegulariseeException`      |
+| `fin-avant-debut`                    | 409    | fin avant debut                    | `FinAvantDebutException`                |
+| `fin-apres-borne`                    | 409    | fin apres borne                    | `FinApresBorneException`                |
+| `saisie-concurrente`                 | 409    | saisie concurrente                 | `SaisieConcurrenteException`            |
+| `date-de-survenue-future`            | 400    | date de survenue future            | `DateDeSurvenueFutureException`         |
 
 `fin-automatique-introuvable` répond à `GET /api/atelier/suivis/{id}/anomalies/{pointage}` quand le pointage n'ouvre
 aucune fin automatique non régularisée : le front revient à la liste.
@@ -101,9 +100,6 @@ pas en rejouant (la borne ne bouge qu'avec un nouveau pointage ou une clôture d
 
 `saisie-concurrente` est le seul code sur lequel **rejouer** l'appel est la bonne réaction : la saisie était valide,
 un autre pointage s'est glissé entre la lecture et l'écriture.
-
-`identifiant-evenement-reutilise` refuse un identifiant de geste déjà réservé pour un autre contenu : autre nature,
-suivi, opérateur, type, poste ou date fournie, et pour un pointage d'atelier autre intention ou autre cible.
 
 `activite-visee-introuvable` et `activite-visee-incoherente` refusent une transition ou une fin dont la cible n'est
 pas une activité de ce suivi, ou appartient à un autre opérateur ou à un autre poste. Ils sont définitifs : le même
@@ -190,7 +186,7 @@ sans logo : le client relit la version dans `GET /api/parametrage`.
    c'est la seule pièce du contrat qui puisse se démoder en silence.
 
 Les refus définitifs des gestes d’activité sont `activite-visee-introuvable`, `activite-visee-incoherente`, `operateur-introuvable`,
-`poste-de-travail-introuvable`, `suivi-d-atelier-introuvable`, `identifiant-evenement-reutilise`,
+`poste-de-travail-introuvable`, `suivi-d-atelier-introuvable`,
 `operateur-non-habilite`, `evenement-anterieur-a-l-engagement` et `date-de-survenue-future`. `suivi-d-atelier-cloture` n'y sort
 plus que pour un démarrage ou une non conformité — la seule erreur à afficher à l'opérateur. `saisie-concurrente`
 n'y remonte qu'après trois essais du serveur. Un pointage d'atelier qui contredit le journal n'y est jamais refusé.

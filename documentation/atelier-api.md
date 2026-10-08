@@ -297,10 +297,10 @@ POST /api/atelier/suivis/{id}/pointages    { "id": "<uuid C>", "type": "FIN", "i
   retrouver un comportement nominal, pas un cas dégradé. Ne jamais rendre le champ obligatoire côté formulaire.
 - Un poste fourni doit être **habilité pour cet opérateur**, sans quoi 409. Filtrer la liste des postes sur la fiche de
   l'opérateur choisi évite d'avoir à traiter ce refus.
-- Un envoi accepté répond **201**. Rejouer exactement le même corps répond **200**, sans créer de second événement ;
-  conserver donc l'UUID dans la file offline jusqu'à l'acquittement, avec son intention et sa cible. Réutiliser cet UUID
-  avec un autre contenu — une autre intention ou une autre cible comprises — répond 409
-  (`identifiant-evenement-reutilise`). Une date future répond 400 et ne réserve pas l'UUID.
+- Un envoi accepté répond **201**. Renvoyer un UUID déjà présent dans la table des événements — le journal de n'importe
+  quel élément, quel que soit le contenu renvoyé — répond **200**, sans créer de second événement ; conserver donc
+  l'UUID dans la file offline jusqu'à l'acquittement. Il n'y a plus de refus pour un UUID réutilisé avec un autre
+  contenu. Une date future répond 400.
 
 Les états d'un élément :
 

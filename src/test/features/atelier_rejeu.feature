@@ -59,7 +59,7 @@ Feature: Rejeu durable des gestes du pupitre
     And l'evenement 1 du suivi a l'identifiant "00000000-0000-0000-0000-000000000302"
     And l'evenement 1 du suivi a survenu a "2026-05-10T12:00:00Z" et a ete saisi a "2026-05-10T13:00:00Z" par "user"
 
-  Scenario: Un identifiant reutilise avec une autre intention et une autre cible est refuse
+  Scenario: Un identifiant deja au journal est un rejeu, quel que soit le contenu renvoye
     Given l'entreprise a cree l'element de fabrication "OF cible"
       | categorie | OF    |
       | reference | cible |
@@ -89,16 +89,14 @@ Feature: Rejeu durable des gestes du pupitre
       | intention | TRANSITION                           |
       | cible     | 4d7c2a19-8e03-4b56-9f21-c0a1b2d3e4f5 |
       | operateur | dupont                               |
-    Then la reponse a le statut http 409
-    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:identifiant-evenement-reutilise"
+    Then la reponse a le statut http 200
     When je pointe sur "OF cible"
       | id        | 00000000-0000-0000-0000-000000000312 |
       | type      | NON_CONFORMITE                       |
       | intention | TRANSITION                           |
       | cible     | 00000000-0000-0000-0000-000000000311 |
       | operateur | dupont                               |
-    Then la reponse a le statut http 409
-    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:identifiant-evenement-reutilise"
+    Then la reponse a le statut http 200
     When je consulte "OF cible"
     Then le journal du suivi contient 3 evenements
     And l'evenement 2 du suivi a l'identifiant "00000000-0000-0000-0000-000000000312"
@@ -163,7 +161,7 @@ Feature: Rejeu durable des gestes du pupitre
     Then le suivi a l'etat "EN_ATTENTE"
     And le journal du suivi contient 0 evenements
 
-  Scenario: Une collision de date laisse la fin ciblee acceptee intacte
+  Scenario: Un renvoi avec une autre heure laisse la fin ciblee acceptee intacte
     Given l'entreprise a cree l'element de fabrication "OF collision FIN"
       | categorie | OF            |
       | reference | collision FIN |
@@ -190,8 +188,7 @@ Feature: Rejeu durable des gestes du pupitre
       | intention      | FIN                                  |
       | cible          | 00000000-0000-0000-0000-000000000331 |
       | dateDeSurvenue | 2026-05-10T12:30:00Z                 |
-    Then la reponse a le statut http 409
-    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:identifiant-evenement-reutilise"
+    Then la reponse a le statut http 200
     When je pointe sur "OF collision FIN"
       | id             | 00000000-0000-0000-0000-000000000332 |
       | operateur      | dupont                               |
@@ -202,3 +199,29 @@ Feature: Rejeu durable des gestes du pupitre
     Then la reponse a le statut http 200
     And le journal du suivi contient 2 evenements
     And l'evenement 1 du suivi a survenu a "2026-05-10T12:00:00Z" et a ete saisi a "2026-05-10T13:00:00Z" par "gestionnaire"
+
+  Scenario: L'identifiant d'un geste d'un autre OF est un rejeu qui n'ecrit rien
+    # L'identifiant est unique dans toute la table des evenements, pas seulement dans le journal du suivi.
+    Given l'entreprise a cree l'element de fabrication "OF source"
+      | categorie | OF     |
+      | reference | source |
+    And l'entreprise a cree l'element de fabrication "OF autre"
+      | categorie | OF    |
+      | reference | autre |
+    And j'ai engage l'element "OF source" en atelier
+    And j'ai engage l'element "OF autre" en atelier
+    And il est "2026-05-10T08:00:00Z"
+    And I am logged in as "user" with role "USER"
+    And j'ai pointe sur "OF source"
+      | id        | 00000000-0000-0000-0000-000000000341 |
+      | operateur | dupont                               |
+      | type      | DEBUT                                |
+    When je pointe sur "OF autre"
+      | id        | 00000000-0000-0000-0000-000000000341 |
+      | operateur | dupont                               |
+      | type      | DEBUT                                |
+    Then la reponse a le statut http 200
+    And le suivi a l'etat "EN_ATTENTE"
+    And le journal du suivi contient 0 evenements
+    When je consulte "OF source"
+    Then le journal du suivi contient 1 evenements

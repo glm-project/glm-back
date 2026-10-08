@@ -155,6 +155,46 @@ class SuivisDAtelierServiceTest {
       });
   }
 
+  @Test
+  void shouldRepondreCommeUnSuccesAuRenvoiDUnPointageSansRienEcrire() {
+    SuiviDAtelier engage = engage();
+    PointageAEnregistrer debut = debutSurFraiseuse1(engage.id());
+    PointageDAtelierTraite premier = atelier.pointe(debut);
+
+    PointageDAtelierTraite renvoi = atelier.pointe(debut);
+
+    assertThat(premier.sansEcriture()).isFalse();
+    assertThat(renvoi.sansEcriture()).isTrue();
+    assertThat(renvoi.suivi()).isEqualTo(premier.suivi());
+    assertThat(suivis.get(engage.id())).contains(premier.suivi());
+  }
+
+  /**
+   * L'identifiant d'un geste est unique dans toute la table : un pointage qui reutilise celui d'un autre suivi est un
+   * renvoi, il n'ecrit rien et ne heurte pas la cle primaire.
+   */
+  @Test
+  void shouldRepondreCommeUnSuccesAuPointageDontLIdentifiantEstAuJournalDUnAutreSuivi() {
+    SuiviDAtelier engage = engage();
+    EvenementDAtelier gesteDUnAutreSuivi = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H);
+    suivis.create(suiviDAtelierEngage().enregistre(gesteDUnAutreSuivi));
+    PointageAEnregistrer pointage = PointageAEnregistrer.pupitreBuilder()
+      .suivi(engage.id())
+      .type(TypeDEvenementDAtelier.DEBUT)
+      .intention(IntentionDePointage.OUVERTURE)
+      .activiteVisee(Optional.empty())
+      .operateur(OPERATEUR_ID_DUPONT)
+      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
+      .auteur(AUTEUR_DUPONT)
+      .dateDeSurvenue(Optional.empty())
+      .evenement(gesteDUnAutreSuivi.id());
+
+    PointageDAtelierTraite renvoi = atelier.pointe(pointage);
+
+    assertThat(renvoi.sansEcriture()).isTrue();
+    assertThat(renvoi.suivi()).isEqualTo(engage);
+  }
+
   /**
    * Une fin qui vise une activite qu'aucun pointage de ce suivi n'a ouverte est refusee, jamais absorbee : aucune
    * activite n'est pourtant en cours sur son poste.
