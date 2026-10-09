@@ -1,0 +1,31 @@
+package com.glm.glmback.naturedetravail.infrastructure.primary;
+
+import com.glm.glmback.shared.error.infrastructure.primary.ProblemCode;
+import org.springframework.http.HttpStatus;
+
+enum ErreurDeNatureDeTravail implements ProblemCode {
+  NATURE_DEJA_EXISTANTE(HttpStatus.CONFLICT, "nature deja existante");
+
+  private final HttpStatus status;
+  private final String title;
+
+  ErreurDeNatureDeTravail(HttpStatus status, String title) {
+    this.status = status;
+    this.title = title;
+  }
+
+  @Override
+  public String context() {
+    return "nature-de-travail";
+  }
+
+  @Override
+  public HttpStatus status() {
+    return status;
+  }
+
+  @Override
+  public String title() {
+    return title;
+  }
+}

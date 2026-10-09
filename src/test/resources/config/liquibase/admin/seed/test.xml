@@ -69,5 +69,10 @@
       <column name="schema_name" value="parametrage_logo" />
       <column name="status" value="ACTIVE" />
     </insert>
+    <insert tableName="tenant">
+      <column name="id" value="natures_fixture" />
+      <column name="schema_name" value="natures_fixture" />
+      <column name="status" value="ACTIVE" />
+    </insert>
   </changeSet>
 </databaseChangeLog>

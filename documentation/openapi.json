@@ -73,6 +73,30 @@
         "required" : [ "content", "currentPage", "pageSize", "totalElementsCount" ],
         "type" : "object"
       },
+      "PageRestNatureDeTravail" : {
+        "properties" : {
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RestNatureDeTravail"
+            },
+            "type" : "array"
+          },
+          "currentPage" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "pageSize" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElementsCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "content", "currentPage", "pageSize", "totalElementsCount" ],
+        "type" : "object"
+      },
       "PageRestOperateur" : {
         "properties" : {
           "content" : {
@@ -1015,6 +1039,19 @@
         "required" : [ "dureeOperationnelle" ],
         "type" : "object"
       },
+      "RestLibelleDeNature" : {
+        "description" : "Libelle d'une nature de travail.",
+        "properties" : {
+          "libelle" : {
+            "description" : "Libelle de la nature, de 1 a 50 caracteres une fois les espaces qui l'entourent retires. Unique dans l'entreprise, a la casse et aux accents pres.",
+            "example" : "Soudage",
+            "pattern" : "\\s*\\S(.{0,48}\\S)?\\s*",
+            "type" : "string"
+          }
+        },
+        "required" : [ "libelle" ],
+        "type" : "object"
+      },
       "RestLigneDeCout" : {
         "description" : "Une ligne du rapport : tout ce qui a ete fait sur l'element a une meme nature d'operation.\n\nLa nature vient du poste de travail, jamais de la personne, et elle a ete copiee au moment de la saisie : un poste\nrequalifie depuis ne requalifie pas les heures deja passees. Elle est absente quand le pointage n'a engage aucun\nposte, ce qui est le comportement nominal d'une entreprise sans parc machine.\n",
         "properties" : {
@@ -1178,6 +1215,28 @@
           }
         },
         "required" : [ "valeur" ],
+        "type" : "object"
+      },
+      "RestNatureDeTravail" : {
+        "description" : "Une nature de travail de l'entreprise.",
+        "properties" : {
+          "id" : {
+            "description" : "Identifiant de la nature.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "libelle" : {
+            "description" : "Libelle de la nature, affiche partout ou elle apparait.",
+            "example" : "Soudage",
+            "type" : "string"
+          },
+          "utilisee" : {
+            "description" : "Un poste ou un pointage se sert de la nature : elle ne peut pas etre supprimee.",
+            "example" : true,
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "id", "libelle", "utilisee" ],
         "type" : "object"
       },
       "RestOperateur" : {
@@ -2068,7 +2127,7 @@
     "/api/atelier/anomalies" : {
       "get" : {
         "description" : "Les activites sans fin reelle dont l'echeance est atteinte a l'instant de la lecture, borne comprise. Chaque ligne\nporte l'adresse du dossier (suivi et pointage ouvrant), l'activite, son debut et son echeance, sans duree. Le tri\nporte sur le debut, puis le suivi et l'ouvrant.\nLes recherches partielles operateur (nom, prenom ou identifiant) et element (designation ou identifiant)\nsont combinees sans tenir compte de la casse avant pagination. Pourcent, soulignement et antislash sont litteraux.\nUne acquisition en echec reste une erreur HTTP.\n",
-        "operationId" : "list_5",
+        "operationId" : "list_6",
         "parameters" : [ {
           "in" : "query",
           "name" : "operateur",
@@ -2123,7 +2182,7 @@
     "/api/atelier/suivis" : {
       "get" : {
         "description" : "Le tableau de l'atelier.\n\nTous les filtres sont facultatifs : l'ecran des operateurs veut tous les elements actifs d'un coup, sans notion de\ndate. Le parametre etats accepte plusieurs valeurs (?etats=EN_ATTENTE&etats=EN_COURS) ; absent, il ne filtre rien.\nL'etat se juge a l'instant de la lecture, celui de chaque ligne rendue : un element dont la seule activite a atteint\nson echeance n'est plus EN_COURS. La periode, quand elle est fournie, porte sur la date d'engagement.\n\nChaque ligne conserve l'etat et les activites en cours, mais ne contient pas de journal.\nLe journal complet se consulte via GET /api/atelier/suivis/{id}.\n",
-        "operationId" : "list_4",
+        "operationId" : "list_5",
         "parameters" : [ {
           "in" : "query",
           "name" : "debut",
@@ -2567,7 +2626,7 @@
     "/api/categories-de-produit" : {
       "get" : {
         "description" : "La page demandee, dans l'ordre d'affichage choisi par l'entreprise. Chaque categorie dit si des produits y sont\nranges : l'ecran ne propose alors pas de la supprimer.\n",
-        "operationId" : "list_3",
+        "operationId" : "list_4",
         "parameters" : [ {
           "in" : "query",
           "name" : "page",
@@ -2747,7 +2806,7 @@
     },
     "/api/elements-de-fabrication" : {
       "get" : {
-        "operationId" : "list_2",
+        "operationId" : "list_3",
         "parameters" : [ {
           "in" : "query",
           "name" : "debut",
@@ -2985,6 +3044,83 @@
         },
         "summary" : "Lire la feuille de temps hebdomadaire d'un operateur",
         "tags" : [ "Feuilles de temps" ]
+      }
+    },
+    "/api/natures-de-travail" : {
+      "get" : {
+        "description" : "La page demandee, dans l'ordre alphabetique sans egard aux accents ni a la casse. Chaque nature dit si elle sert\ndeja : l'ecran ne propose alors pas de la supprimer.\n",
+        "operationId" : "list_2",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageRestNatureDeTravail"
+                }
+              }
+            },
+            "description" : "La page demandee, par ordre alphabetique."
+          }
+        },
+        "summary" : "Lister les natures de travail",
+        "tags" : [ "Natures de travail" ]
+      },
+      "post" : {
+        "description" : "La nature est declaree sans poste ni pointage.",
+        "operationId" : "declare",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RestLibelleDeNature"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestNatureDeTravail"
+                }
+              }
+            },
+            "description" : "La nature est declaree."
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestNatureDeTravail"
+                }
+              }
+            },
+            "description" : "Une nature porte deja ce libelle, a la casse ou aux accents pres."
+          }
+        },
+        "summary" : "Declarer une nature de travail",
+        "tags" : [ "Natures de travail" ]
       }
     },
     "/api/operateurs" : {
@@ -3672,5 +3808,8 @@
   }, {
     "description" : "Le referentiel des personnes qui pointent, et des postes sur lesquels elles sont habilitees.\n\nLes metiers d'un operateur ne se saisissent pas : ils se deduisent des natures de ses postes. Un operateur habilite\nsur le poste de soudure et sur un tour ressort soudeur et tourneur.\n\nEn entree, l'operateur porte des identifiants de postes ; en sortie, il porte les postes resolus et ses natures, pour\nqu'un ecran se serve d'un seul appel.\n",
     "name" : "Operateurs"
+  }, {
+    "description" : "Les metiers exerces dans l'atelier : soudage, tournage, fraisage, dessin. L'entreprise les declare une fois, et les\npostes de travail les choisissent dans cette liste.\n\nDeux natures ne peuvent pas porter le meme libelle a la casse, aux accents ou aux espaces pres : « Soudage » et\n« soudâge » sont la meme.\n\nLe gestionnaire declare les natures ; l'operateur (role USER) les consulte.\n",
+    "name" : "Natures de travail"
   } ]
 }

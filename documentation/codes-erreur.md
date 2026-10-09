@@ -155,6 +155,14 @@ segment de contexte, et lui seul, qui les distingue.
 | `categorie-utilisee`       | 409    | categorie utilisee       | `CategorieUtiliseeException`      |
 | `ordre-incomplet`          | 409    | ordre incomplet          | `OrdreIncompletException`         |
 
+### `nature-de-travail` — `urn:glm:erreur:nature-de-travail:`
+
+| Code                    | Statut | `title`               | Exception                      |
+| ----------------------- | ------ | --------------------- | ------------------------------ |
+| `nature-deja-existante` | 409    | nature deja existante | `NatureDejaExistanteException` |
+
+`nature-deja-existante` refuse un libellé qu'une autre nature porte déjà, à la casse, aux accents ou aux espaces près.
+
 ### `parametrage` — `urn:glm:erreur:parametrage:`
 
 | Code               | Statut | `title`          | Exception                  |

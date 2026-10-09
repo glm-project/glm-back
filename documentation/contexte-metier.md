@@ -37,6 +37,14 @@ Le **rang** porte l'ordre d'affichage choisi par l'entreprise : celui des bouton
 
 **Une catégorie qui range des produits ne se supprime pas** : leur nom porte son code, et ils resteraient rangés dans une famille disparue. La règle vit dans le domaine, derrière le port `CategoriesUtilisees`, dont l'adapter lit la table `element_de_fabrication` par une entité en lecture seule — sans jamais importer `elementdefabrication`. Une catégorie vide, elle, se supprime et peut être déclarée à nouveau.
 
+## naturedetravail
+
+Gère le **référentiel des natures de travail** : les métiers exercés dans l'atelier, soudage, tournage, fraisage, dessin. Jusqu'ici, chaque poste portait sa nature en texte libre, et une faute de frappe (« Soudage » d'un côté, « Soudure » de l'autre) suffisait à couper en deux les rapports d'un même métier. L'entreprise déclare désormais ses natures une fois, et aucune n'est créée d'office.
+
+Une `NatureDeTravail` porte un **identifiant** et un **libellé**. Le libellé est unique à la casse, aux accents et aux espaces près : sa **clé** (minuscules, sans accents, espaces réduits) est ce qui distingue deux natures, et « Soudage » et « soudâge » ne peuvent pas coexister. La liste se lit dans l'ordre de cette clé, donc par ordre alphabétique sans égard aux accents, et dit pour chaque nature si elle sert déjà.
+
+Ceux qui se servent d'une nature n'en retiendront que l'**identifiant** : un renommage ne modifiera que la ligne de la nature, jamais l'historique, et le nouveau libellé s'affichera partout, rapports passés compris.
+
 ## parametrage
 
 Gère les **réglages que l'entreprise fixe elle-même**, sans développeur : un seul jeu pour toute l'entreprise, que le gestionnaire modifie et que tout utilisateur lit. GLM est une trame, et une donnée qui varie d'un client à l'autre ne s'écrit pas en constante.
