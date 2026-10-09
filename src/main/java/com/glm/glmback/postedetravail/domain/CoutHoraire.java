@@ -9,12 +9,13 @@ import java.util.Optional;
  *
  * <p>
  * Facultatif, comme le libelle et la nature ne le sont pas : une entreprise qui ne valorise pas encore ses postes
- * retrouve un comportement coherent plutot qu'un cas degrade.
+ * retrouve un comportement coherent plutot qu'un cas degrade. A zero, le poste ne demande que de la main d'oeuvre, ce
+ * qui reste distinct d'un poste qui n'est pas valorise.
  * </p>
  */
 public record CoutHoraire(BigDecimal value) {
   public CoutHoraire {
-    Assert.field("cout horaire", value).notNull().strictlyPositive().under(100_000_000);
+    Assert.field("cout horaire", value).notNull().positive().under(100_000_000);
     Assert.field("decimales du cout horaire", value.stripTrailingZeros().scale()).max(2);
   }
 

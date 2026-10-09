@@ -33,10 +33,10 @@ record RestCreationPosteDeTravail(
   String nature,
 
   @Schema(
-    description = "Cout horaire du poste, destine au cout de revient. Facultatif : toutes les entreprises ne le valorisent pas. Strictement positif, exactement representable en centimes et inferieur a 100000000.",
+    description = "Cout horaire du poste, destine au cout de revient. Facultatif : toutes les entreprises ne le valorisent pas. Positif ou nul (0 pour un poste qui ne demande que de la main d'oeuvre), exactement representable en centimes et inferieur a 100000000.",
     example = "45.50"
   )
-  @DecimalMin(value = "0", inclusive = false)
+  @DecimalMin("0")
   @Digits(integer = 8, fraction = 2)
   BigDecimal coutHoraire
 ) {

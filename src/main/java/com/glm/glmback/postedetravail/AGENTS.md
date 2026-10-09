@@ -16,7 +16,7 @@ l'atelier : une machine chez le client de référence, un établi, un four, une 
 
 - **Qui est habilité dessus** — cela appartient à `operateur`. Ce contexte n'en connaît que la conséquence : un poste
   encore habilité ne se supprime pas.
-- **Le calcul du coût de revient**. Le poste porte son `CoutHoraire` (facultatif, strictement positif), mais ce
+- **Le calcul du coût de revient**. Le poste porte son `CoutHoraire` (facultatif, positif ou nul), mais ce
   contexte ne fait rien d'autre que le stocker et le restituer : aucun calcul, aucune répartition. `atelier` ne le lit
   pas encore — c'est le lot « coût de revient » qui posera ce port.
 - **Le pointage** lui-même, qui appartient à `atelier`. Celui-ci ne connaît de ce contexte que l'identifiant, lu par
@@ -46,9 +46,9 @@ aucune inversion ne compile. `builder()` est public parce que la relecture depui
 - **Chemin de transition, déprécié** (`NatureChoisie.ParLibelle`) : un libellé saisi en texte désigne la nature de même clé — `NatureDeTravail.cle`,
   copie de `naturedetravail.CleDeNature` — et la déclare si elle manque. Il disparaît avec glm-back#130, et la copie de
   la clé avec lui.
-- **Le coût horaire est facultatif et strictement positif** quand il est renseigné, sur le patron d'`Identifiant` :
-  toutes les entreprises ne valorisent pas encore leurs postes, et un coût à zéro n'a pas de sens métier — s'il est
-  inconnu, le champ reste absent plutôt qu'à zéro.
+- **Le coût horaire est facultatif et positif ou nul** quand il est renseigné, sur le patron d'`Identifiant` :
+  toutes les entreprises ne valorisent pas encore leurs postes. Un coût à zéro dit que le poste ne demande que de la
+  main d'œuvre ; il reste distinct d'un coût absent, qui dit que le poste n'est pas valorisé (glm-back#141).
   Sa valeur doit être exactement représentable en centimes et inférieure à 100 000 000, pour rester relisible
   dans le stockage `numeric(10,2)`. Création et révision refusent toute précision perdue, sans arrondi.
 - **Le coût horaire reste réservé au `GESTIONNAIRE`.** Les lectures `USER` gardent les postes et leurs natures

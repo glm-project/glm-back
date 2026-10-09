@@ -295,6 +295,11 @@ public class CoutDeRevientSteps {
     assertThat(lues).isEqualTo(sansCellulesVides(attendues));
   }
 
+  @Then("le pointage de la ligne {string} commence a {string} a un cout horaire de {string}")
+  public void lePointageAUnCoutHoraireDe(String nature, String debut, String coutHoraire) {
+    assertThat(montant(pointage(nature, debut).get("coutHoraire"))).isEqualTo(coutHoraire);
+  }
+
   @SuppressWarnings("unchecked")
   private static List<Map<String, Object>> pointagesDeLaLigne(String nature) {
     List<Map<String, Object>> lues = (List<Map<String, Object>>) CucumberRestTestContext.getElement("$.lignes");

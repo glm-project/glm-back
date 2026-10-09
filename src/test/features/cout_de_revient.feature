@@ -190,6 +190,23 @@ Feature: Cout de revient d'un element de fabrication
       | nature | travail | nonConformite | machine | mainDOeuvre |
       | null   | PT1H    | PT0S          | 0.00    | 20.00       |
 
+  Scenario: Un poste a 0 EUR de l'heure ne coute rien en machine, mais reste valorise
+    Given le rapport connait le poste "etabli" de nature "montage" a "0" de l'heure
+    And le rapport connait l'operateur "martin" a "20.00" de l'heure, habilite sur
+      | etabli |
+    And l'entreprise fabrique "OF 3020"
+    And "OF 3020" est mis en atelier a "2026-05-11T07:00:00Z"
+    And "martin" pointe "DEBUT" sur "OF 3020" au poste "etabli" a "2026-05-11T09:00:00Z"
+    And "martin" pointe "FIN" sur "OF 3020" au poste "etabli" a "2026-05-11T11:00:00Z"
+    When je consulte le cout de revient de "OF 3020" a "2026-05-11T18:00:00Z"
+    Then la reponse a le statut http 200
+    # Le poste ne demande que de la main d'oeuvre : sa machine coute 0 EUR, l'operateur ses deux heures.
+    And le rapport porte les lignes
+      | nature  | travail | nonConformite | machine | mainDOeuvre |
+      | montage | PT2H    | PT0S          | 0.00    | 40.00       |
+    # Un cout saisi a 0 se distingue d'un poste non valorise : le pointage le porte, il n'est pas absent.
+    And le pointage de la ligne "montage" commence a "2026-05-11T09:00:00Z" a un cout horaire de "0.00"
+
   Scenario: Chaque nature d'operation a sa ligne
     Given l'entreprise fabrique "OF 3009"
     And "OF 3009" est mis en atelier a "2026-05-11T07:00:00Z"

@@ -21,6 +21,15 @@ Feature: Referentiel des postes de travail
     And la reponse de poste de travail contient
       | coutHoraire | 45.5 |
 
+  Scenario: Declaration d'un poste de travail qui ne coute rien de l'heure
+    # Un poste qui ne demande que de la main d'oeuvre coute 0 EUR, distinct d'un poste non valorise.
+    When je declare un poste de travail
+      | libelle     | Etabli 1 |
+      | nature      | montage  |
+      | coutHoraire | 0        |
+    Then la reponse a le statut http 201
+    And la reponse de poste de travail a le cout horaire "0"
+
   Scenario: Revision du cout horaire d'un poste de travail
     Given j'ai declare un poste de travail
       | libelle     | Tour 19  |
@@ -204,6 +213,7 @@ Feature: Referentiel des postes de travail
       | 45.555    |
       | 100000000 |
       | 1E+8      |
+      | -0.01     |
 
   Scenario Outline: La revision refuse un cout non representable et conserve le precedent
     Given j'ai declare un poste de travail
@@ -223,6 +233,7 @@ Feature: Referentiel des postes de travail
       | cout      |
       | 0.001     |
       | 100000000 |
+      | -1        |
 
   Scenario Outline: Un cout representable conserve sa valeur a la relecture
     Given j'ai declare un poste de travail
@@ -237,6 +248,8 @@ Feature: Referentiel des postes de travail
 
     Examples:
       | cout        | attendu     |
+      | 0           | 0           |
+      | 0.00        | 0           |
       | 0.01        | 0.01        |
       | 99999999.99 | 99999999.99 |
       | 45.500      | 45.50       |
