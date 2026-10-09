@@ -37,15 +37,15 @@ class DepotDeLogoTest {
 
     assertThatThrownBy(() -> depot.depose(pngCarre50Alourdi()))
       .isExactlyInstanceOf(LogoInvalideException.class)
-      .hasMessage("Le logo pese 25600 octets, au plus 20480");
+      .hasMessage("Le logo pese 61440 octets, au plus 51200");
     assertThat(logos.get()).isEmpty();
   }
 
   @Test
-  void shouldAccepterUnFichierDe20KoPile() {
-    byte[] contenu = new byte[20 * 1024];
+  void shouldAccepterUnFichierDe50KoPile() {
+    byte[] contenu = new byte[50 * 1024];
 
-    assertThat(depot(new ImageLue("png", 50, 50)).depose(contenu).contenu()).hasSize(20 * 1024);
+    assertThat(depot(new ImageLue("png", 50, 50)).depose(contenu).contenu()).hasSize(50 * 1024);
   }
 
   @Test

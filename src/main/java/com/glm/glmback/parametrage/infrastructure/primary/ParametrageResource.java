@@ -79,7 +79,7 @@ class ParametrageResource {
     summary = "Deposer le logo de l'entreprise",
     description = """
     Le fichier, dans la partie logo, remplace le logo courant. Il s'affiche en en-tete de la supervision, du pupitre et
-    des PDF, ajuste a chaque case sans etre deforme : une image PNG ou JPEG qui tient dans 256 x 256 pixels, de 20 Ko au
+    des PDF, ajuste a chaque case sans etre deforme : une image PNG ou JPEG qui tient dans 256 x 256 pixels, de 50 Ko au
     plus. Le format se juge sur le contenu, jamais sur le nom du fichier ni sur le type annonce.
     """
   )

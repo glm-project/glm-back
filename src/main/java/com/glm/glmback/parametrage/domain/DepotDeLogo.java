@@ -8,7 +8,7 @@ package com.glm.glmback.parametrage.domain;
 public final class DepotDeLogo {
 
   private static final int COTE_MAXIMAL = 256;
-  private static final int POIDS_MAXIMAL = 20 * 1024;
+  private static final int POIDS_MAXIMAL = 50 * 1024;
 
   private final DecodeurDImage decodeur;
   private final LogoRepository logos;

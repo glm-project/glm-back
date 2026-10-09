@@ -23,7 +23,7 @@ d'une activité et le logo de l'entreprise. Les lire, et les modifier pour le ge
 `Parametrage` — un composant par réglage, aujourd'hui `DureeMaxDActivite`. Il n'a pas d'identifiant : l'entreprise
 courante n'en a qu'un.
 
-`Logo` vit à part, derrière son propre port : son contenu pèse jusqu'à 20 Ko, et la lecture des autres réglages ne doit
+`Logo` vit à part, derrière son propre port : son contenu pèse jusqu'à 50 Ko, et la lecture des autres réglages ne doit
 pas le charger. Il partage la ligne unique du paramétrage (colonnes `logo_*`), lue et écrite par sa propre entité.
 
 ## Invariants à ne pas casser
@@ -33,7 +33,7 @@ pas le charger. Il partage la ligne unique du paramétrage (colonnes `logo_*`), 
 - **Un réglage jamais fixé vaut sa valeur par défaut**, que seul le domaine connaît (`DureeMaxDActivite.parDefaut()`,
   treize heures) : la colonne vide ne la recopie pas.
 - **La durée max d'une activité est comprise entre une heure et vingt-quatre heures**, bornes comprises.
-- **Un logo est une image PNG ou JPEG qui tient dans 256 x 256 pixels, de 20 Ko au plus** (`DepotDeLogo`), dans les
+- **Un logo est une image PNG ou JPEG qui tient dans 256 x 256 pixels, de 50 Ko au plus** (`DepotDeLogo`), dans les
   proportions de son choix. Le poids se juge avant tout décodage ; le format et les dimensions viennent du contenu, lu
   par le port `DecodeurDImage`, jamais du nom du fichier ni du type annoncé. Aucun recadrage ni aucune conversion :
   chaque en-tête ajuste l'image déposée à sa case, sans la déformer.

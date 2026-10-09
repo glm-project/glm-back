@@ -30,7 +30,7 @@ public class ParametrageSteps {
     ImagesFixture::pngDe256Sur100,
     "un PNG de 300 x 80",
     ImagesFixture::pngDe300Sur80,
-    "un PNG de 50 x 50 de 25 Ko",
+    "un PNG de 50 x 50 de 60 Ko",
     ImagesFixture::pngCarre50Alourdi,
     "un fichier texte",
     ImagesFixture::texte

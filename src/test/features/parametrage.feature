@@ -76,7 +76,7 @@ Feature: Parametrage de l'entreprise
       | fichier                    | raison                                                       |
       | un GIF de 50 x 50          | Le logo doit etre une image PNG ou JPEG (recu : gif)         |
       | un PNG de 300 x 80         | Le logo doit tenir dans 256 x 256 pixels (recu : 300 x 80)   |
-      | un PNG de 50 x 50 de 25 Ko | Le logo pese 25600 octets, au plus 20480                     |
+      | un PNG de 50 x 50 de 60 Ko | Le logo pese 61440 octets, au plus 51200                     |
       | un fichier texte           | Le fichier n'est pas une image lisible                       |
 
   Scenario: Depot du logo refuse a un utilisateur simple
