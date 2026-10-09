@@ -34,11 +34,15 @@ purement lecteur, qui ne possède aucune table, n'écrit rien, et recalcule tout
 
 `ReferentielDuPupitre` : un `genereLe`, une liste d'`OperateurDuPupitre`, une liste de `SuiviDuPupitre`, la liste
 ordonnée des `CategorieDElement` de l'entreprise, qui range les tuiles, et la durée maximale d'une activité
-(`dureeMaximaleDActivite`, `"PT13H"` en ISO 8601). Elle vient du noyau partagé `shared/activityduration` que lit aussi
-l'échéance d'atelier : le pupitre n'importe pas `atelier`, et le serveur n'a qu'une source de ce délai. Le pupitre la lit
-ici au lieu de coder 13 h. Aucune identité, aucune persistance — l'objet naît et meurt dans l'appel.
+(`dureeMaximaleDActivite`, ISO 8601, `"PT13H"` tant que le gestionnaire n'a rien fixé). C'est un réglage de l'entreprise,
+que le contexte `parametrage` possède : le pupitre le reçoit par le port `MaximumActivityDurations` du noyau partagé
+`shared/activityduration`, que `parametrage` implémente et dont l'atelier tire aussi l'échéance. Il n'importe ni
+`parametrage` ni `atelier`, ne connaît ni la valeur par défaut ni les bornes, et la relit à chaque référentiel : un
+changement du gestionnaire s'y voit à la lecture suivante. Le pupitre la lit ici au lieu de coder une durée. Aucune
+identité, aucune persistance — l'objet naît et meurt dans l'appel.
 
-`ReferentielsDuPupitreService` assemble les opérateurs, les suivis et les catégories, et les date par le port `Clock`.
+`ReferentielsDuPupitreService` assemble les opérateurs, les suivis, les catégories et la durée maximale, et les date par
+le port `Clock`.
 
 `SuiviDuPupitre` lit les activités sans fin projetées par atelier. `ActiviteSansFin` transmet leur identité (celle de
 leur pointage ouvrant) et leur échéance ; `etatA` et `activitesEnCoursA` évaluent leur expiration à `genereLe`.
@@ -93,7 +97,8 @@ dans deux classes fait échouer **toute** la suite. `PupitreSteps` porte donc so
 
 ## Ports sortants
 
-`OperateursDuPupitre`, `SuivisOuvertsDuPupitre`, `CategoriesDuPupitre`, `Clock`.
+`OperateursDuPupitre`, `SuivisOuvertsDuPupitre`, `CategoriesDuPupitre`, `MaximumActivityDurations` (noyau partagé,
+implémenté par `parametrage`), `Clock`.
 
 Les trois lecteurs rendent tout d'un coup, sans critères ni pagination. Leurs entités propres `@Immutable`
 lisent `operateur`, `operateur_poste`, `poste_de_travail`, `suivi_d_atelier`, `activite_d_atelier`,

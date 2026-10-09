@@ -60,6 +60,11 @@
       <column name="status" value="ACTIVE" />
     </insert>
     <insert tableName="tenant">
+      <column name="id" value="duree_parametree" />
+      <column name="schema_name" value="duree_parametree" />
+      <column name="status" value="ACTIVE" />
+    </insert>
+    <insert tableName="tenant">
       <column name="id" value="parametrage_logo" />
       <column name="schema_name" value="parametrage_logo" />
       <column name="status" value="ACTIVE" />

@@ -5,6 +5,7 @@ import com.glm.glmback.pupitre.domain.OperateursDuPupitre;
 import com.glm.glmback.pupitre.domain.ReferentielDuPupitre;
 import com.glm.glmback.pupitre.domain.ReferentielsDuPupitreService;
 import com.glm.glmback.pupitre.domain.SuivisOuvertsDuPupitre;
+import com.glm.glmback.shared.activityduration.domain.MaximumActivityDurations;
 import com.glm.glmback.shared.time.domain.Clock;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
@@ -26,9 +27,15 @@ public class ReferentielsDuPupitreApplicationService {
     OperateursDuPupitre operateurs,
     SuivisOuvertsDuPupitre suivis,
     CategoriesDuPupitre categories,
+    MaximumActivityDurations durees,
     Clock clock
   ) {
-    this.referentiels = ReferentielsDuPupitreService.builder().operateurs(operateurs).suivis(suivis).categories(categories).clock(clock);
+    this.referentiels = ReferentielsDuPupitreService.builder()
+      .operateurs(operateurs)
+      .suivis(suivis)
+      .categories(categories)
+      .dureeMaximaleDActivite(durees)
+      .clock(clock);
   }
 
   /**

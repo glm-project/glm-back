@@ -4,7 +4,6 @@ import static com.glm.glmback.pupitre.domain.PupitreFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
-import com.glm.glmback.shared.activityduration.domain.MaximumActivityDuration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -20,6 +19,7 @@ class ReferentielsDuPupitreServiceTest {
       .operateurs(() -> List.of(OPERATEUR_DUPONT))
       .suivis(() -> List.of(suiviOf42Vierge()))
       .categories(() -> List.of(CATEGORIE_OF, CATEGORIE_MOULE))
+      .dureeMaximaleDActivite(() -> DUREE_MAXIMALE_TREIZE_HEURES)
       .clock(() -> LE_10_MAI_2026_A_9H);
 
     ReferentielDuPupitre referentiel = service.referentiel();
@@ -31,18 +31,19 @@ class ReferentielsDuPupitreServiceTest {
   }
 
   /**
-   * La duree maximale d'une activite vient du noyau partage, dont l'atelier tire aussi l'echeance : le pupitre n'a pas
-   * sa propre valeur.
+   * La duree maximale d'une activite vient du port du noyau partage, que le parametrage implemente : le pupitre n'a pas
+   * sa propre valeur, et il suit celle que le gestionnaire a fixee.
    */
   @Test
-  void shouldDonnerLaDureeMaximaleDuNoyauPartage() {
+  void shouldDonnerLaDureeMaximaleQueLePortRend() {
     ReferentielsDuPupitreService service = ReferentielsDuPupitreService.builder()
       .operateurs(List::of)
       .suivis(List::of)
       .categories(List::of)
+      .dureeMaximaleDActivite(() -> DUREE_MAXIMALE_HUIT_HEURES)
       .clock(() -> LE_10_MAI_2026_A_7H);
 
-    assertThat(service.referentiel().dureeMaximaleDActivite()).isEqualTo(MaximumActivityDuration.standard());
+    assertThat(service.referentiel().dureeMaximaleDActivite()).isEqualTo(DUREE_MAXIMALE_HUIT_HEURES);
   }
 
   @Test
@@ -51,6 +52,7 @@ class ReferentielsDuPupitreServiceTest {
       .operateurs(List::of)
       .suivis(List::of)
       .categories(List::of)
+      .dureeMaximaleDActivite(() -> DUREE_MAXIMALE_TREIZE_HEURES)
       .clock(() -> LE_10_MAI_2026_A_7H);
 
     ReferentielDuPupitre referentiel = service.referentiel();

@@ -1734,7 +1734,7 @@
             "type" : "array"
           },
           "dureeMaximaleDActivite" : {
-            "description" : "La duree maximale d'une activite, au format ISO 8601 : l'echeance de chaque activite est son debut plus cette duree.\nUne activite que rien n'a terminee a cette echeance se termine automatiquement ; le pupitre hors ligne la lit ici\nplutot que de la coder.\n",
+            "description" : "La duree maximale d'une activite, au format ISO 8601, telle que le gestionnaire l'a fixee (treize heures tant qu'il\nn'a rien fixe) : l'echeance d'une activite est son debut plus cette duree. Une activite que rien n'a terminee a cette\necheance se termine automatiquement ; le pupitre hors ligne la lit ici plutot que de la coder.\n",
             "example" : "PT13H",
             "type" : "string"
           },

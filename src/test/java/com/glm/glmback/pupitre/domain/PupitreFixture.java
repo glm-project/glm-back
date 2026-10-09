@@ -1,5 +1,7 @@
 package com.glm.glmback.pupitre.domain;
 
+import com.glm.glmback.shared.activityduration.domain.MaximumActivityDuration;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -9,6 +11,9 @@ public final class PupitreFixture {
 
   public static final CategorieDElement CATEGORIE_OF = new CategorieDElement("OF");
   public static final CategorieDElement CATEGORIE_MOULE = new CategorieDElement("MOULE");
+
+  public static final MaximumActivityDuration DUREE_MAXIMALE_TREIZE_HEURES = new MaximumActivityDuration(Duration.ofHours(13));
+  public static final MaximumActivityDuration DUREE_MAXIMALE_HUIT_HEURES = new MaximumActivityDuration(Duration.ofHours(8));
 
   public static final Instant LE_10_MAI_2026_A_7H = Instant.parse("2026-05-10T07:00:00Z");
   public static final Instant LE_10_MAI_2026_A_8H = Instant.parse("2026-05-10T08:00:00Z");
