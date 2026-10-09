@@ -43,7 +43,7 @@ Gère le **référentiel des natures de travail** : les métiers exercés dans l
 
 Une `NatureDeTravail` porte un **identifiant** et un **libellé**. Le libellé est unique à la casse, aux accents et aux espaces près : sa **clé** (minuscules, sans accents, espaces réduits) est ce qui distingue deux natures, et « Soudage » et « soudâge » ne peuvent pas coexister. La liste se lit dans l'ordre de cette clé, donc par ordre alphabétique sans égard aux accents, et dit pour chaque nature si elle sert déjà.
 
-Le gestionnaire peut **renommer** une nature, y compris pour n'en corriger que la casse ou les accents. Ceux qui se servent d'une nature n'en retiendront que l'**identifiant** : un renommage ne modifiera que la ligne de la nature, jamais l'historique, et le nouveau libellé s'affichera partout, rapports passés compris. Une nature **ne se supprime pas** tant qu'un poste la porte ou qu'un pointage la cite ; la liste le dit pour chacune.
+Le gestionnaire peut **renommer** une nature, y compris pour n'en corriger que la casse ou les accents. Ceux qui se servent d'une nature n'en retiendront que l'**identifiant** : un renommage ne modifiera que la ligne de la nature, jamais l'historique, et le nouveau libellé s'affichera partout, rapports passés compris. Une nature **ne se supprime pas** tant qu'un poste la porte, et **plus jamais** dès qu'un pointage l'a recopiée : le journal n'en garde que l'identifiant. La liste dit, pour chacune, si elle sert.
 
 ## parametrage
 

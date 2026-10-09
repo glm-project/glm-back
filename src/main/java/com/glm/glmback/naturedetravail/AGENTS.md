@@ -33,9 +33,11 @@ supprimer les natures, et les lister par ordre alphabétique, en disant pour cha
 - **Une nature qui sert ne se supprime pas** (`NatureUtiliseeException`, 409). La règle vit dans le domaine, derrière
   le port `NaturesEnUsage`, et la liste dit pour chaque nature si elle sert, pour que l'écran ne propose pas une
   suppression vouée au refus. Les usages d'une page se lisent en une requête (`NaturesEnUsage.utiliseesParmi`).
-- **Une nature sert dès qu'un poste la porte.** L'adapter `PostesDesNatures` lit `poste_de_travail.nature_id` par une
-  entité en lecture seule (patron `ElementCategoriseEntity`), sans importer `postedetravail` ; la clé étrangère
-  `fk_poste_de_travail_nature` est le filet. Les pointages s'y ajouteront avec glm-back#129.
+- **Une nature sert dès qu'un poste la porte ou qu'un pointage l'a recopiée.** L'adapter `UsagesDesNatures` lit
+  `poste_de_travail.nature_id` et `evenement_d_atelier.nature_id` par des entités en lecture seule, sans importer
+  `postedetravail` ni `atelier`. Deux refus distincts : `nature-utilisee` tant qu'un poste la porte (la clé étrangère
+  `fk_poste_de_travail_nature` est le filet), `nature-pointee` dès qu'un pointage l'a recopiée — définitif, et sans
+  autre filet que la règle : comme pour l'opérateur et le poste, le journal ne porte aucune clé étrangère.
 
 ## Ports sortants
 

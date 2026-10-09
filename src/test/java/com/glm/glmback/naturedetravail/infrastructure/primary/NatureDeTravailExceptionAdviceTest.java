@@ -6,6 +6,7 @@ import static org.springframework.http.HttpStatus.*;
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.naturedetravail.domain.NatureDejaExistanteException;
 import com.glm.glmback.naturedetravail.domain.NatureIntrouvableException;
+import com.glm.glmback.naturedetravail.domain.NaturePointeeException;
 import com.glm.glmback.naturedetravail.domain.NatureUtiliseeException;
 import com.glm.glmback.shared.error.infrastructure.primary.ExceptionAdviceContract;
 import com.glm.glmback.shared.error.infrastructure.primary.PublishedProblem;
@@ -35,6 +36,11 @@ class NatureDeTravailExceptionAdviceTest extends ExceptionAdviceContract {
       new PublishedProblem(
         new NatureUtiliseeException(NATURE_DE_TRAVAIL_ID_SOUDAGE),
         "urn:glm:erreur:nature-de-travail:nature-utilisee",
+        CONFLICT
+      ),
+      new PublishedProblem(
+        new NaturePointeeException(NATURE_DE_TRAVAIL_ID_SOUDAGE),
+        "urn:glm:erreur:nature-de-travail:nature-pointee",
         CONFLICT
       )
     );

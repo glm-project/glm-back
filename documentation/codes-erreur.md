@@ -165,10 +165,11 @@ segment de contexte, et lui seul, qui les distingue.
 | `nature-introuvable`    | 404    | nature introuvable    | `NatureIntrouvableException`   |
 | `nature-deja-existante` | 409    | nature deja existante | `NatureDejaExistanteException` |
 | `nature-utilisee`       | 409    | nature utilisee       | `NatureUtiliseeException`      |
+| `nature-pointee`        | 409    | nature pointee        | `NaturePointeeException`       |
 
 `nature-deja-existante` refuse un libellé qu'une autre nature porte déjà, à la casse, aux accents ou aux espaces près,
-à la déclaration comme au renommage. `nature-utilisee` refuse de supprimer une nature dont un poste ou un pointage se
-sert.
+à la déclaration comme au renommage. `nature-utilisee` refuse de supprimer une nature qu'un poste porte encore ; `nature-pointee` refuse, définitivement,
+de supprimer une nature sous laquelle du temps a été pointé.
 
 ### `parametrage` — `urn:glm:erreur:parametrage:`
 

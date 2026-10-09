@@ -89,7 +89,10 @@ class NatureDeTravailResource {
   @Operation(summary = "Supprimer une nature de travail", description = "Refuse tant qu'un poste ou un pointage s'en sert.")
   @ApiResponse(responseCode = "204", description = "La nature est supprimee.")
   @ApiResponse(responseCode = "404", description = "Nature de travail introuvable.")
-  @ApiResponse(responseCode = "409", description = "Un poste ou un pointage se sert de cette nature.")
+  @ApiResponse(
+    responseCode = "409",
+    description = "Un poste porte cette nature (nature-utilisee), ou du temps a ete pointe sous elle (nature-pointee, definitif)."
+  )
   void delete(@PathVariable UUID id) {
     applicationService.delete(new NatureDeTravailId(id));
   }

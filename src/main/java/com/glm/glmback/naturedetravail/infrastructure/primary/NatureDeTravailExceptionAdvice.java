@@ -2,6 +2,7 @@ package com.glm.glmback.naturedetravail.infrastructure.primary;
 
 import com.glm.glmback.naturedetravail.domain.NatureDejaExistanteException;
 import com.glm.glmback.naturedetravail.domain.NatureIntrouvableException;
+import com.glm.glmback.naturedetravail.domain.NaturePointeeException;
 import com.glm.glmback.naturedetravail.domain.NatureUtiliseeException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -26,5 +27,10 @@ class NatureDeTravailExceptionAdvice {
   @ExceptionHandler(NatureUtiliseeException.class)
   ProblemDetail handleNatureUtilisee(NatureUtiliseeException e) {
     return ErreurDeNatureDeTravail.NATURE_UTILISEE.problem(e);
+  }
+
+  @ExceptionHandler(NaturePointeeException.class)
+  ProblemDetail handleNaturePointee(NaturePointeeException e) {
+    return ErreurDeNatureDeTravail.NATURE_POINTEE.problem(e);
   }
 }
