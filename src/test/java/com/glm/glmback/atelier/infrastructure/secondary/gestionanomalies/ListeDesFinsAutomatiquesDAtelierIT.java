@@ -50,6 +50,36 @@ class ListeDesFinsAutomatiquesDAtelierIT {
   @Autowired
   private EntityManager entities;
 
+  /**
+   * L'echeance que la liste juge est celle de la duree que le debut a portee : sous huit heures, la fin automatique
+   * apparait a 16 h, et non a 21 h.
+   */
+  @Test
+  @WithTenant("impeccmold")
+  void shouldJugerLEcheanceDeLaDureeQueLeDebutAPortee() {
+    Instant debut = Instant.parse("2044-03-02T08:00:00Z");
+    Instant echeance = Instant.parse("2044-03-02T16:00:00Z");
+    EvenementDAtelier ouvrant = debutSurFraiseuse1ParDupontSousHuitHeuresA(debut);
+    SuiviDAtelier suivi = suiviEngageLe1erJanvier2025Pour(elementDeFinAutomatiqueNomme("FINAUTO_HUIT_HEURES_2044")).enregistre(ouvrant);
+    transactions.executeWithoutResult(transaction -> suivis.create(suivi));
+    var criteria = new AnomaliesDAtelierCriteria("", suivi.element().id().uuid().toString());
+
+    var veille = lit(criteria, echeance.minusNanos(1), new Pageable(0, 5));
+    var pile = lit(criteria, echeance, new Pageable(0, 5));
+
+    assertThat(veille.content()).isEmpty();
+    assertThat(pile.content())
+      .singleElement()
+      .satisfies(ligne -> {
+        assertThat(ligne.activite()).isEqualTo(ouvrant.activite().orElseThrow());
+        assertThat(ligne.echeance()).isEqualTo(echeance);
+      });
+    assertThat(suivi.activites())
+      .singleElement()
+      .extracting(Activite::echeance)
+      .satisfies(attendue -> assertThat(attendue.value()).isEqualTo(echeance));
+  }
+
   @Test
   @WithTenant("impeccmold")
   void shouldJugerLEcheanceExactementALInstantDEvaluationBorneComprise() {
