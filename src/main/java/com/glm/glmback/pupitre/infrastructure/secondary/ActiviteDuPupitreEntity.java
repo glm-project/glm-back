@@ -50,9 +50,6 @@ class ActiviteDuPupitreEntity {
   @Convert(converter = ExactInstantConverter.class)
   private Instant fin;
 
-  @Column(name = "a_resoudre")
-  private boolean aResoudre;
-
   protected ActiviteDuPupitreEntity() {
     // Constructeur requis par JPA.
   }

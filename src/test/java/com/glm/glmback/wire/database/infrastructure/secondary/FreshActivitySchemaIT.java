@@ -62,10 +62,8 @@ class FreshActivitySchemaIT {
     "operateur",
     "operateur_poste",
     "parametrage",
-    "pointage_en_conflit",
     "pointage_ignore_d_atelier",
     "poste_de_travail",
-    "sequence_en_conflit",
     "suivi_d_atelier"
   );
 
@@ -234,10 +232,11 @@ class FreshActivitySchemaIT {
     assertThat(tables(database, schema)).containsExactlyInAnyOrderElementsOf(expectedTables);
     List<String> history = query(database, "SELECT id || ':' || exectype FROM \"" + schema + "\".databasechangelog ORDER BY orderexecuted");
     assertThat(history.getFirst()).isEqualTo("initialisation_schema_neuf:EXECUTED");
-    assertThat(history).containsOnlyOnce("initialisation_schema_neuf:EXECUTED").contains("activite_d_atelier_fin_au_plus_tard:EXECUTED");
+    assertThat(history).containsOnlyOnce("initialisation_schema_neuf:EXECUTED").contains("pointage_ignore_d_atelier:EXECUTED");
+    assertThat(history).noneMatch(entry -> entry.matches("(?s).*(conflit|a_resoudre|fin_au_plus_tard|remplacement|identite_evenement).*"));
     assertThat(
-      query(database, "SELECT filename FROM \"" + schema + "\".databasechangelog WHERE id = 'activite_d_atelier_fin_au_plus_tard'")
-    ).containsExactly("config/liquibase/changelog/2026/09/013-activite_d_atelier_fin_au_plus_tard.xml");
+      query(database, "SELECT filename FROM \"" + schema + "\".databasechangelog WHERE id = 'pointage_ignore_d_atelier'")
+    ).containsExactly("config/liquibase/changelog/2026/10/013-pointage_ignore_d_atelier.xml");
     assertThat(
       query(
         database,
@@ -251,35 +250,34 @@ class FreshActivitySchemaIT {
       "evenement_d_atelier.activite_visee_id:YES",
       "evenement_d_atelier.cout_horaire:YES",
       "evenement_d_atelier.taux_horaire:YES",
-      "activite_d_atelier.echeance:NO",
-      "activite_d_atelier.a_resoudre:NO",
-      "activite_d_atelier.fin_au_plus_tard:YES",
-      "activite_d_atelier.sequence_id:YES",
-      "activite_d_atelier.ordre_dans_sequence:YES"
+      "activite_d_atelier.echeance:NO"
+    );
+    assertThat(
+      query(database, "SELECT table_name || '.' || column_name FROM information_schema.columns WHERE table_schema = '" + schema + "'")
+    ).doesNotContain(
+      "evenement_d_atelier.intention",
+      "evenement_d_atelier.annulation_auteur",
+      "evenement_d_atelier.annulation_date",
+      "evenement_d_atelier.annulation_motif",
+      "evenement_d_atelier.remplace_evenement_id",
+      "activite_d_atelier.a_resoudre",
+      "activite_d_atelier.fin_au_plus_tard",
+      "activite_d_atelier.sequence_id",
+      "activite_d_atelier.ordre_dans_sequence"
     );
     assertThat(query(database, "SELECT indexname FROM pg_indexes WHERE schemaname = '" + schema + "'")).contains(
       "ux_operateur_identite",
       "ux_operateur_identifiant",
       "ix_operateur_poste_poste",
       "ix_activite_d_atelier_suivi",
-      "ix_activite_d_atelier_operateur",
-      "ix_sequence_en_conflit_suivi",
-      "ix_activite_d_atelier_sequence"
+      "ix_activite_d_atelier_operateur"
     );
     assertThat(
       query(
         database,
         "SELECT conname FROM pg_constraint c JOIN pg_namespace n ON n.oid = c.connamespace WHERE n.nspname = '" + schema + "'"
       )
-    ).contains(
-      "pk_operateur_poste",
-      "fk_activite_d_atelier_suivi",
-      "fk_sequence_en_conflit_suivi",
-      "fk_pointage_en_conflit_sequence",
-      "fk_pointage_en_conflit_evenement",
-      "uk_pointage_en_conflit_ordre",
-      "fk_activite_d_atelier_sequence"
-    );
+    ).contains("pk_operateur_poste", "fk_activite_d_atelier_suivi");
   }
 
   private static SuiviDAtelierId createActivity(ConfigurableApplicationContext application, String tenant) {

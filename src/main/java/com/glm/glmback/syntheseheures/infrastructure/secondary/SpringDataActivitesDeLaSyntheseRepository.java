@@ -13,7 +13,6 @@ interface SpringDataActivitesDeLaSyntheseRepository extends JpaRepository<Activi
     join fetch activite.suivi
     where activite.operateurId = :operateur
       and activite.debut < :finExclusive
-      and activite.aResoudre = false
       and coalesce(activite.fin, activite.echeance) > :debut
     order by activite.debut, activite.id
     """

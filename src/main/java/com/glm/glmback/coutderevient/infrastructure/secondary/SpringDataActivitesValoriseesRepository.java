@@ -11,7 +11,7 @@ interface SpringDataActivitesValoriseesRepository extends JpaRepository<Activite
   @Query(
     """
     select activite from ActiviteValoriseeEntity activite join fetch activite.ouverture join fetch activite.suivi
-    where activite.suivi.elementId = :element and activite.aResoudre = false order by activite.debut, activite.id
+    where activite.suivi.elementId = :element order by activite.debut, activite.id
     """
   )
   List<ActiviteValoriseeEntity> de(UUID element);
@@ -19,7 +19,7 @@ interface SpringDataActivitesValoriseesRepository extends JpaRepository<Activite
   @Query(
     """
     select activite from ActiviteValoriseeEntity activite join fetch activite.ouverture join fetch activite.suivi
-    where activite.operateurId in :operateurs and activite.aResoudre = false and activite.debut <= :fin
+    where activite.operateurId in :operateurs and activite.debut <= :fin
       and coalesce(activite.fin, activite.echeance) >= :debut
     order by activite.debut, activite.id
     """

@@ -10,7 +10,7 @@ interface SpringDataActivitesDuPupitreRepository extends JpaRepository<ActiviteD
   @Query(
     """
     select activite from ActiviteDuPupitreEntity activite
-    where activite.suiviId in :suivis and activite.fin is null and activite.aResoudre = false
+    where activite.suiviId in :suivis and activite.fin is null
     order by activite.debut, activite.id
     """
   )

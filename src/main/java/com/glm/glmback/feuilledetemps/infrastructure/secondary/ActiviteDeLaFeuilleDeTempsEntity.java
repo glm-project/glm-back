@@ -58,9 +58,6 @@ class ActiviteDeLaFeuilleDeTempsEntity {
   @Convert(converter = ExactInstantConverter.class)
   private Instant fin;
 
-  @Column(name = "a_resoudre")
-  private boolean aResoudre;
-
   protected ActiviteDeLaFeuilleDeTempsEntity() {
     // Constructeur requis par JPA.
   }

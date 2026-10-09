@@ -67,8 +67,8 @@
 
   <changeSet id="evenement_d_atelier" author="glm">
     <comment>
-      Un evenement annule reste au journal, porteur de son annulation : rien n'est jamais supprime de
-      cette table. Les index par operateur et par poste ne servent pas l'atelier lui-meme, qui lit
+      Rien n'est jamais supprime de cette table : le journal ne se corrige pas, il s'allonge. Les index par operateur et par poste ne
+      servent pas l'atelier lui-meme, qui lit
       toujours par suivi ; ils ouvrent les projections transverses des contextes a venir, qui
       agregent le temps par operateur ou par poste sur une periode.
 
@@ -112,12 +112,6 @@
       <column name="date_d_enregistrement" type="${datetimeType}">
         <constraints nullable="false" />
       </column>
-
-      <column name="annulation_auteur" type="varchar(100)" />
-
-      <column name="annulation_date" type="${datetimeType}" />
-
-      <column name="annulation_motif" type="varchar(255)" />
     </createTable>
 
     <createIndex indexName="ix_evenement_d_atelier_suivi" tableName="evenement_d_atelier">

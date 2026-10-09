@@ -52,8 +52,6 @@ class SupervisionDAtelierResourceIT {
       TenantSecurityContexts.authenticateOn(tenant);
       transactions.executeWithoutResult(status -> {
         entities.createNativeQuery("delete from activite_d_atelier").executeUpdate();
-        entities.createNativeQuery("delete from pointage_en_conflit").executeUpdate();
-        entities.createNativeQuery("delete from sequence_en_conflit").executeUpdate();
         entities.createNativeQuery("delete from evenement_d_atelier").executeUpdate();
         entities.createNativeQuery("delete from suivi_d_atelier").executeUpdate();
         entities.createNativeQuery("delete from element_de_fabrication").executeUpdate();
