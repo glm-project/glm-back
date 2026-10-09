@@ -4,6 +4,7 @@ import com.glm.glmback.shared.activityduration.domain.MaximumActivityDuration;
 import com.glm.glmback.shared.error.domain.Assert;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Tout ce que le pupitre met en cache pour continuer a fonctionner sans reseau, et la date de cet instantane.
@@ -16,7 +17,8 @@ import java.util.List;
  *
  * <p>
  * Il porte aussi la duree maximale d'une activite, que le pupitre hors ligne lit au lieu de la coder : c'est celle dont
- * l'atelier tire l'echeance de chaque activite.
+ * l'atelier tire l'echeance de chaque activite, et la version du logo de l'entreprise, pour que le pupitre ne
+ * telecharge l'image que quand elle change.
  * </p>
  */
 public record ReferentielDuPupitre(
@@ -24,7 +26,8 @@ public record ReferentielDuPupitre(
   List<OperateurDuPupitre> operateurs,
   List<SuiviDuPupitre> suivis,
   List<CategorieDElement> categories,
-  MaximumActivityDuration dureeMaximaleDActivite
+  MaximumActivityDuration dureeMaximaleDActivite,
+  Optional<VersionDuLogo> logo
 ) {
   public ReferentielDuPupitre {
     Assert.notNull("date de generation", genereLe);
@@ -32,6 +35,7 @@ public record ReferentielDuPupitre(
     Assert.field("suivis", suivis).notNull().noNullElement();
     Assert.field("categories", categories).notNull().noNullElement();
     Assert.notNull("duree maximale d'activite", dureeMaximaleDActivite);
+    Assert.notNull("logo", logo);
     operateurs = List.copyOf(operateurs);
     suivis = List.copyOf(suivis);
     categories = List.copyOf(categories);

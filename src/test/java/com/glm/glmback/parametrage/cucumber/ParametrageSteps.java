@@ -128,4 +128,14 @@ public class ParametrageSteps {
   public void jeRetireLeLogo() {
     rest.delete(BASE_URI + "/logo");
   }
+
+  @Then("le referentiel du pupitre porte la version retenue du logo")
+  public void leReferentielDuPupitrePorteLaVersionRetenueDuLogo() {
+    assertThat(CucumberRestTestContext.getElement("$.logo.version")).isEqualTo(versionRetenue);
+  }
+
+  @Then("le referentiel du pupitre n'a pas de logo")
+  public void leReferentielDuPupitreNAPasDeLogo() {
+    assertThat(CucumberRestTestContext.getElement("$.logo")).isNull();
+  }
 }

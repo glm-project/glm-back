@@ -41,7 +41,14 @@ record RestReferentielDuPupitre(
     requiredMode = Schema.RequiredMode.REQUIRED,
     example = "PT13H"
   )
-  String dureeMaximaleDActivite
+  String dureeMaximaleDActivite,
+  @Schema(
+    description = """
+    La version du logo de l'entreprise, absente tant qu'aucun n'est depose. Le pupitre ne telecharge l'image, a
+    l'adresse /api/parametrage/logo/{version}, que quand cette version change, et la garde hors ligne.
+    """
+  )
+  RestLogoDuPupitre logo
 ) {
   static RestReferentielDuPupitre from(ReferentielDuPupitre referentiel) {
     return new RestReferentielDuPupitre(
@@ -53,7 +60,8 @@ record RestReferentielDuPupitre(
         .map(suivi -> RestSuiviDuPupitre.from(suivi, referentiel.genereLe()))
         .toList(),
       referentiel.categories().stream().map(CategorieDElement::value).toList(),
-      referentiel.dureeMaximaleDActivite().value().toString()
+      referentiel.dureeMaximaleDActivite().value().toString(),
+      referentiel.logo().map(RestLogoDuPupitre::from).orElse(null)
     );
   }
 }

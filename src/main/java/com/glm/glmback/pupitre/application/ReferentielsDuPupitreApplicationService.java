@@ -1,6 +1,7 @@
 package com.glm.glmback.pupitre.application;
 
 import com.glm.glmback.pupitre.domain.CategoriesDuPupitre;
+import com.glm.glmback.pupitre.domain.LogoDuPupitre;
 import com.glm.glmback.pupitre.domain.OperateursDuPupitre;
 import com.glm.glmback.pupitre.domain.ReferentielDuPupitre;
 import com.glm.glmback.pupitre.domain.ReferentielsDuPupitreService;
@@ -28,6 +29,7 @@ public class ReferentielsDuPupitreApplicationService {
     SuivisOuvertsDuPupitre suivis,
     CategoriesDuPupitre categories,
     MaximumActivityDurations durees,
+    LogoDuPupitre logo,
     Clock clock
   ) {
     this.referentiels = ReferentielsDuPupitreService.builder()
@@ -35,6 +37,7 @@ public class ReferentielsDuPupitreApplicationService {
       .suivis(suivis)
       .categories(categories)
       .dureeMaximaleDActivite(durees)
+      .logo(logo)
       .clock(clock);
   }
 

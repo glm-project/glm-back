@@ -38,7 +38,10 @@ ordonnée des `CategorieDElement` de l'entreprise, qui range les tuiles, et la d
 que le contexte `parametrage` possède : le pupitre le reçoit par le port `MaximumActivityDurations` du noyau partagé
 `shared/activityduration`, que `parametrage` implémente et dont l'atelier tire aussi l'échéance. Il n'importe ni
 `parametrage` ni `atelier`, ne connaît ni la valeur par défaut ni les bornes, et la relit à chaque référentiel : un
-changement du gestionnaire s'y voit à la lecture suivante. Le pupitre la lit ici au lieu de coder une durée. Aucune
+changement du gestionnaire s'y voit à la lecture suivante. Le pupitre la lit ici au lieu de coder une durée. Il porte
+enfin la version du logo de l'entreprise (`logo.version`, absent sans logo), jamais son image : le pupitre ne
+télécharge l'image, à `/api/parametrage/logo/{version}`, que quand la version change. Le port `LogoDuPupitre` la lit
+dans la ligne unique de `parametrage` par une entité propre `@Immutable`, sans importer `parametrage`. Aucune
 identité, aucune persistance — l'objet naît et meurt dans l'appel.
 
 `ReferentielsDuPupitreService` assemble les opérateurs, les suivis, les catégories et la durée maximale, et les date par
@@ -98,7 +101,7 @@ dans deux classes fait échouer **toute** la suite. `PupitreSteps` porte donc so
 ## Ports sortants
 
 `OperateursDuPupitre`, `SuivisOuvertsDuPupitre`, `CategoriesDuPupitre`, `MaximumActivityDurations` (noyau partagé,
-implémenté par `parametrage`), `Clock`.
+implémenté par `parametrage`), `LogoDuPupitre`, `Clock`.
 
 Les trois lecteurs rendent tout d'un coup, sans critères ni pagination. Leurs entités propres `@Immutable`
 lisent `operateur`, `operateur_poste`, `poste_de_travail`, `suivi_d_atelier`, `activite_d_atelier`,
