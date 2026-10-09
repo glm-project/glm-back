@@ -19,13 +19,19 @@ record RestNatureDeTravail(
     example = "true",
     requiredMode = Schema.RequiredMode.REQUIRED
   )
-  boolean utilisee
+  boolean utilisee,
+  @Schema(
+    description = "Nombre de postes qui portent la nature. Une nature sans poste peut rester utilisee, si du temps a ete pointe sous elle.",
+    example = "3",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  int postes
 ) {
   static RestNatureDeTravail from(NatureDeTravailListee listee) {
-    return new RestNatureDeTravail(listee.nature().id().uuid(), listee.nature().libelle().value(), listee.utilisee());
+    return new RestNatureDeTravail(listee.nature().id().uuid(), listee.nature().libelle().value(), listee.utilisee(), listee.postes());
   }
 
   static RestNatureDeTravail declaree(NatureDeTravail nature) {
-    return from(new NatureDeTravailListee(nature, false));
+    return from(new NatureDeTravailListee(nature, false, 0));
   }
 }

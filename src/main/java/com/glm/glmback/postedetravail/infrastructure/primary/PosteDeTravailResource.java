@@ -2,7 +2,9 @@ package com.glm.glmback.postedetravail.infrastructure.primary;
 
 import com.glm.glmback.postedetravail.application.PostesDeTravailApplicationService;
 import com.glm.glmback.postedetravail.domain.NatureDeTravail;
+import com.glm.glmback.postedetravail.domain.NatureDeTravailId;
 import com.glm.glmback.postedetravail.domain.PosteDeTravail;
+import com.glm.glmback.postedetravail.domain.PosteDeTravailCriteria;
 import com.glm.glmback.postedetravail.domain.PosteDeTravailId;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
@@ -51,16 +53,22 @@ class PosteDeTravailResource {
   @Operation(
     summary = "Lister les postes de travail",
     description = """
-    La page demandee, triee par libelle. Le filtre sur la nature est facultatif ; absent, il ne filtre rien.
+    La page demandee, triee par libelle. La nature se filtre par son identifiant (natureId) ou par son libelle exact
+    (nature) ; un filtre absent ne filtre rien, deux filtres donnes se cumulent. Un natureId inconnu rend une page vide.
     """
   )
   @ApiResponse(responseCode = "200", description = "La page demandee, triee par libelle.")
   RestPage<RestPosteDeTravail> list(
     @RequestParam(required = false) String nature,
+    @RequestParam(required = false) UUID natureId,
     @RequestParam(defaultValue = "0") int page,
     @RequestParam(defaultValue = "20") int size
   ) {
-    Page<PosteDeTravail> resultat = applicationService.list(nature(nature), new Pageable(page, size));
+    PosteDeTravailCriteria criteria = new PosteDeTravailCriteria(
+      Optional.ofNullable(nature).map(NatureDeTravail::new),
+      Optional.ofNullable(natureId).map(NatureDeTravailId::new)
+    );
+    Page<PosteDeTravail> resultat = applicationService.list(criteria, new Pageable(page, size));
 
     return RestPage.from(resultat, RestPosteDeTravail::from);
   }
@@ -109,9 +117,5 @@ class PosteDeTravailResource {
   @ApiResponse(responseCode = "409", description = "Des operateurs sont encore habilites sur ce poste, ou du temps y a deja ete pointe.")
   void delete(@PathVariable UUID id) {
     applicationService.delete(new PosteDeTravailId(id));
-  }
-
-  private static Optional<NatureDeTravail> nature(String nature) {
-    return Optional.ofNullable(nature).map(NatureDeTravail::new);
   }
 }

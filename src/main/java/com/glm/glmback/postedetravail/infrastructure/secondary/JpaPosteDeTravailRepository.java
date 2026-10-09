@@ -85,6 +85,7 @@ class JpaPosteDeTravailRepository implements PosteDeTravailRepository {
     return (racine, requete, constructeur) -> {
       List<Predicate> predicats = new ArrayList<>();
       criteria.nature().ifPresent(nature -> predicats.add(constructeur.equal(racine.get("nature"), nature.value())));
+      criteria.natureId().ifPresent(natureId -> predicats.add(constructeur.equal(racine.get("natureId"), natureId.uuid())));
 
       return constructeur.and(predicats.toArray(Predicate[]::new));
     };

@@ -128,6 +128,14 @@ Feature: Natures de travail
     And le poste de travail "Poste CNS" porte la nature de travail "Soudage CNS"
     Then la nature de travail "Soudage CNS" est listee comme utilisee
 
+  Scenario: La liste donne le nombre de postes de chaque nature
+    Given j'ai declare la nature de travail "Soudage CNV"
+    And j'ai declare la nature de travail "Fraisage CNV"
+    And le poste de travail "Poste CNV 1" porte la nature de travail "Soudage CNV"
+    And le poste de travail "Poste CNV 2" porte la nature de travail "Soudage CNV"
+    Then la nature de travail "Soudage CNV" est listee avec 2 postes
+    And la nature de travail "Fraisage CNV" est listee avec 0 poste
+
   Scenario: Suppression refusee si un poste porte la nature
     Given j'ai declare la nature de travail "Soudage CNT"
     And le poste de travail "Poste CNT" porte la nature de travail "Soudage CNT"

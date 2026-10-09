@@ -3,6 +3,7 @@ package com.glm.glmback.naturedetravail.infrastructure.secondary;
 import com.glm.glmback.naturedetravail.domain.NatureDeTravailId;
 import com.glm.glmback.naturedetravail.domain.NaturesEnUsage;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -44,5 +45,19 @@ class UsagesDesNatures implements NaturesEnUsage {
     return Stream.concat(postes.findNaturesPorteesParmi(uuids).stream(), evenements.findNaturesPointeesParmi(uuids).stream())
       .map(NatureDeTravailId::new)
       .collect(Collectors.toUnmodifiableSet());
+  }
+
+  @Override
+  public Map<NatureDeTravailId, Integer> postesParmi(Collection<NatureDeTravailId> natures) {
+    if (natures.isEmpty()) {
+      return Map.of();
+    }
+
+    return postes
+      .countPostesParmi(natures.stream().map(NatureDeTravailId::uuid).toList())
+      .stream()
+      .collect(
+        Collectors.toUnmodifiableMap(compte -> new NatureDeTravailId(compte.getNatureId()), compte -> Math.toIntExact(compte.getPostes()))
+      );
   }
 }

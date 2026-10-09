@@ -86,10 +86,14 @@ public final class PostesDeTravailFixture {
   }
 
   public static PosteDeTravailCriteria criteresDeTournage() {
-    return new PosteDeTravailCriteria(Optional.of(NATURE_TOURNAGE));
+    return new PosteDeTravailCriteria(Optional.of(NATURE_TOURNAGE), Optional.empty());
   }
 
   public static PosteDeTravailCriteria criteresSansFiltre() {
-    return new PosteDeTravailCriteria(Optional.empty());
+    return PosteDeTravailCriteria.tous();
+  }
+
+  public static PosteDeTravailCriteria criteresDeLaNatureDeTournage() {
+    return new PosteDeTravailCriteria(Optional.empty(), Optional.of(NATURE_DE_TRAVAIL_ID_TOURNAGE));
   }
 }
