@@ -23,7 +23,7 @@ class SuivisDAtelierReceptionTest {
   private static final Instant LE_11_MAI_2026_A_1H = Instant.parse("2026-05-11T01:00:00Z");
 
   private final AtomicReference<Instant> maintenant = new AtomicReference<>(LE_10_MAI_2026_A_7H);
-  private final AtomicReference<MaximumActivityDuration> dureeMaximale = new AtomicReference<>(DUREE_MAXIMALE_TREIZE_HEURES);
+  private final AtomicReference<MaximumActivityDuration> dureeMax = new AtomicReference<>(DUREE_MAXIMALE_TREIZE_HEURES);
   private final AtomicInteger lecturesDeLaDuree = new AtomicInteger();
   private final SuivisDAtelierEnMemoire suivis = new SuivisDAtelierEnMemoire();
   private final PointagesIgnoresEnMemoire pointagesIgnores = new PointagesIgnoresEnMemoire();
@@ -35,10 +35,10 @@ class SuivisDAtelierReceptionTest {
     .postes(ressources.postes())
     .habilitations(ressources.habilitations())
     .pointagesIgnores(pointagesIgnores)
-    .dureeMaximaleDActivite(() -> {
+    .dureeMax(() -> {
       lecturesDeLaDuree.incrementAndGet();
 
-      return dureeMaximale.get();
+      return dureeMax.get();
     })
     .clock(maintenant::get);
 
@@ -76,7 +76,7 @@ class SuivisDAtelierReceptionTest {
   @Test
   void shouldCopierSurLOuvertureLaDureeMaximaleEnVigueur() {
     SuiviDAtelier engage = engage();
-    dureeMaximale.set(DUREE_MAXIMALE_HUIT_HEURES);
+    dureeMax.set(DUREE_MAXIMALE_HUIT_HEURES);
 
     PointageDAtelierTraite debut = pointeA(pointage(engage.id(), TypeDEvenementDAtelier.DEBUT), LE_10_MAI_2026_A_8H);
 
@@ -93,7 +93,7 @@ class SuivisDAtelierReceptionTest {
   @Test
   void shouldCopierLaDureeMaximaleSurUneNonConformite() {
     SuiviDAtelier engage = engage();
-    dureeMaximale.set(DUREE_MAXIMALE_HUIT_HEURES);
+    dureeMax.set(DUREE_MAXIMALE_HUIT_HEURES);
 
     PointageDAtelierTraite nonConformite = pointeA(pointage(engage.id(), TypeDEvenementDAtelier.NON_CONFORMITE), LE_10_MAI_2026_A_8H);
 
@@ -112,7 +112,7 @@ class SuivisDAtelierReceptionTest {
   void shouldGarderLaDureeDeSonDebutQuandLeGestionnaireLaChangeEnsuite() {
     SuiviDAtelier engage = engage();
     pointeA(pointage(engage.id(), TypeDEvenementDAtelier.DEBUT), LE_10_MAI_2026_A_8H);
-    dureeMaximale.set(DUREE_MAXIMALE_HUIT_HEURES);
+    dureeMax.set(DUREE_MAXIMALE_HUIT_HEURES);
 
     PointageDAtelierTraite fin = pointeA(pointage(engage.id(), TypeDEvenementDAtelier.FIN), LE_10_MAI_2026_A_17H);
     PointageDAtelierTraite suivant = pointeA(pointage(engage.id(), TypeDEvenementDAtelier.DEBUT), LE_10_MAI_2026_A_17H);

@@ -64,7 +64,7 @@ public class SuivisDAtelierApplicationService {
     PostesConnus postes,
     Habilitations habilitations,
     PointagesIgnores pointagesIgnores,
-    MaximumActivityDurations durees,
+    MaximumActivityDurations dureesMax,
     Clock clock,
     TransactionTemplate transactions
   ) {
@@ -75,7 +75,7 @@ public class SuivisDAtelierApplicationService {
       .postes(postes)
       .habilitations(habilitations)
       .pointagesIgnores(pointagesIgnores)
-      .dureeMaximaleDActivite(durees)
+      .dureeMax(dureesMax)
       .clock(clock);
     this.annuaires = new AnnuaireDAtelierService(operateurs, postes);
     this.transactions = transactions;
