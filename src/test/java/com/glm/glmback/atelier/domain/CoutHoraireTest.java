@@ -19,15 +19,13 @@ class CoutHoraireTest {
   }
 
   @Test
-  void shouldNotBuildWithZeroValue() {
-    assertThatThrownBy(() -> new CoutHoraire(BigDecimal.ZERO))
-      .isExactlyInstanceOf(NumberValueTooLowException.class)
-      .hasMessageContaining("cout horaire");
+  void shouldBuildWithZeroValue() {
+    assertThat(new CoutHoraire(BigDecimal.ZERO).value()).isEqualByComparingTo("0");
   }
 
   @Test
   void shouldNotBuildWithNegativeValue() {
-    assertThatThrownBy(() -> new CoutHoraire(new BigDecimal("-1")))
+    assertThatThrownBy(() -> new CoutHoraire(new BigDecimal("-0.01")))
       .isExactlyInstanceOf(NumberValueTooLowException.class)
       .hasMessageContaining("cout horaire");
   }
