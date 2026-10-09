@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.util.UUID;
+import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.Immutable;
 
 /**
@@ -30,6 +31,10 @@ class PosteConnuEntity {
 
   private String libelle;
 
+  /**
+   * Le libelle courant de la nature du poste : le poste n'en porte que l'identifiant.
+   */
+  @Formula("(select referentiel.libelle from nature_de_travail referentiel where referentiel.id = nature_id)")
   private String nature;
 
   @Column(name = "cout_horaire", precision = 10, scale = 2)

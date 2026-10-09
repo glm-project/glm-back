@@ -8,6 +8,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.util.UUID;
+import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.Immutable;
 
 /**
@@ -29,6 +30,10 @@ class PosteHabilitableEntity {
 
   private String libelle;
 
+  /**
+   * Le libelle courant de la nature du poste : le poste n'en porte que l'identifiant.
+   */
+  @Formula("(select referentiel.libelle from nature_de_travail referentiel where referentiel.id = nature_id)")
   private String nature;
 
   protected PosteHabilitableEntity() {

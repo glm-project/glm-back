@@ -73,6 +73,30 @@
         "required" : [ "content", "currentPage", "pageSize", "totalElementsCount" ],
         "type" : "object"
       },
+      "PageRestNatureDeTravail" : {
+        "properties" : {
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RestNatureDeTravail"
+            },
+            "type" : "array"
+          },
+          "currentPage" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "pageSize" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElementsCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "content", "currentPage", "pageSize", "totalElementsCount" ],
+        "type" : "object"
+      },
       "PageRestOperateur" : {
         "properties" : {
           "content" : {
@@ -580,14 +604,20 @@
             "type" : "string"
           },
           "nature" : {
-            "description" : "Metier qui s'exerce sur ce poste. Obligatoire : un poste est declare pour dire quel travail s'y fait.",
+            "deprecated" : true,
+            "description" : "Deprecie, remplace par natureId et retire par glm-back#130. Libelle de la nature du poste, designee a la casse, aux accents et aux espaces pres ; declaree dans le referentiel si elle manque.",
             "example" : "tournage",
             "maxLength" : 50,
             "minLength" : 0,
             "type" : "string"
+          },
+          "natureId" : {
+            "description" : "Identifiant de la nature du poste, choisie dans le referentiel des natures de travail. Obligatoire, sauf pendant la transition ou le libelle `nature` est encore accepte ; l'emporte sur lui quand les deux sont donnes.",
+            "format" : "uuid",
+            "type" : "string"
           }
         },
-        "required" : [ "libelle", "nature" ],
+        "required" : [ "libelle" ],
         "type" : "object"
       },
       "RestDossierAnomalie" : {
@@ -1015,6 +1045,19 @@
         "required" : [ "dureeOperationnelle" ],
         "type" : "object"
       },
+      "RestLibelleDeNature" : {
+        "description" : "Libelle d'une nature de travail.",
+        "properties" : {
+          "libelle" : {
+            "description" : "Libelle de la nature, de 1 a 50 caracteres une fois les espaces qui l'entourent retires. Unique dans l'entreprise, a la casse et aux accents pres.",
+            "example" : "Soudage",
+            "pattern" : "\\s*\\S(.{0,48}\\S)?\\s*",
+            "type" : "string"
+          }
+        },
+        "required" : [ "libelle" ],
+        "type" : "object"
+      },
       "RestLigneDeCout" : {
         "description" : "Une ligne du rapport : tout ce qui a ete fait sur l'element a une meme nature d'operation.\n\nLa nature vient du poste de travail, jamais de la personne, et elle a ete copiee au moment de la saisie : un poste\nrequalifie depuis ne requalifie pas les heures deja passees. Elle est absente quand le pointage n'a engage aucun\nposte, ce qui est le comportement nominal d'une entreprise sans parc machine.\n",
         "properties" : {
@@ -1158,14 +1201,20 @@
             "type" : "string"
           },
           "nature" : {
-            "description" : "Metier qui s'exerce sur ce poste.",
+            "deprecated" : true,
+            "description" : "Deprecie, remplace par natureId et retire par glm-back#130. Libelle de la nature du poste, designee a la casse, aux accents et aux espaces pres ; declaree dans le referentiel si elle manque.",
             "example" : "tournage",
             "maxLength" : 50,
             "minLength" : 0,
             "type" : "string"
+          },
+          "natureId" : {
+            "description" : "Identifiant de la nature du poste, choisie dans le referentiel des natures de travail. Obligatoire, sauf pendant la transition ou le libelle `nature` est encore accepte ; l'emporte sur lui quand les deux sont donnes.",
+            "format" : "uuid",
+            "type" : "string"
           }
         },
-        "required" : [ "libelle", "nature" ],
+        "required" : [ "libelle" ],
         "type" : "object"
       },
       "RestMontantDuCout" : {
@@ -1178,6 +1227,28 @@
           }
         },
         "required" : [ "valeur" ],
+        "type" : "object"
+      },
+      "RestNatureDeTravail" : {
+        "description" : "Une nature de travail de l'entreprise.",
+        "properties" : {
+          "id" : {
+            "description" : "Identifiant de la nature.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "libelle" : {
+            "description" : "Libelle de la nature, affiche partout ou elle apparait.",
+            "example" : "Soudage",
+            "type" : "string"
+          },
+          "utilisee" : {
+            "description" : "Un poste ou un pointage se sert de la nature : elle ne peut pas etre supprimee.",
+            "example" : true,
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "id", "libelle", "utilisee" ],
         "type" : "object"
       },
       "RestOperateur" : {
@@ -1670,12 +1741,17 @@
             "type" : "string"
           },
           "nature" : {
-            "description" : "Metier qui s'exerce sur ce poste.",
+            "description" : "Libelle courant de la nature du poste : celui du referentiel, relu a chaque lecture.",
             "example" : "tournage",
+            "type" : "string"
+          },
+          "natureId" : {
+            "description" : "Identifiant de la nature du poste, dans le referentiel des natures de travail.",
+            "format" : "uuid",
             "type" : "string"
           }
         },
-        "required" : [ "id", "libelle", "nature" ],
+        "required" : [ "id", "libelle", "nature", "natureId" ],
         "type" : "object"
       },
       "RestPosteDuCout" : {
@@ -2068,7 +2144,7 @@
     "/api/atelier/anomalies" : {
       "get" : {
         "description" : "Les activites sans fin reelle dont l'echeance est atteinte a l'instant de la lecture, borne comprise. Chaque ligne\nporte l'adresse du dossier (suivi et pointage ouvrant), l'activite, son debut et son echeance, sans duree. Le tri\nporte sur le debut, puis le suivi et l'ouvrant.\nLes recherches partielles operateur (nom, prenom ou identifiant) et element (designation ou identifiant)\nsont combinees sans tenir compte de la casse avant pagination. Pourcent, soulignement et antislash sont litteraux.\nUne acquisition en echec reste une erreur HTTP.\n",
-        "operationId" : "list_5",
+        "operationId" : "list_6",
         "parameters" : [ {
           "in" : "query",
           "name" : "operateur",
@@ -2123,7 +2199,7 @@
     "/api/atelier/suivis" : {
       "get" : {
         "description" : "Le tableau de l'atelier.\n\nTous les filtres sont facultatifs : l'ecran des operateurs veut tous les elements actifs d'un coup, sans notion de\ndate. Le parametre etats accepte plusieurs valeurs (?etats=EN_ATTENTE&etats=EN_COURS) ; absent, il ne filtre rien.\nL'etat se juge a l'instant de la lecture, celui de chaque ligne rendue : un element dont la seule activite a atteint\nson echeance n'est plus EN_COURS. La periode, quand elle est fournie, porte sur la date d'engagement.\n\nChaque ligne conserve l'etat et les activites en cours, mais ne contient pas de journal.\nLe journal complet se consulte via GET /api/atelier/suivis/{id}.\n",
-        "operationId" : "list_4",
+        "operationId" : "list_5",
         "parameters" : [ {
           "in" : "query",
           "name" : "debut",
@@ -2567,7 +2643,7 @@
     "/api/categories-de-produit" : {
       "get" : {
         "description" : "La page demandee, dans l'ordre d'affichage choisi par l'entreprise. Chaque categorie dit si des produits y sont\nranges : l'ecran ne propose alors pas de la supprimer.\n",
-        "operationId" : "list_3",
+        "operationId" : "list_4",
         "parameters" : [ {
           "in" : "query",
           "name" : "page",
@@ -2670,7 +2746,7 @@
     "/api/categories-de-produit/{code}" : {
       "delete" : {
         "description" : "Refuse tant qu'un produit y est range : son nom porte le code de la categorie.\n",
-        "operationId" : "delete_3",
+        "operationId" : "delete_4",
         "parameters" : [ {
           "in" : "path",
           "name" : "code",
@@ -2747,7 +2823,7 @@
     },
     "/api/elements-de-fabrication" : {
       "get" : {
-        "operationId" : "list_2",
+        "operationId" : "list_3",
         "parameters" : [ {
           "in" : "query",
           "name" : "debut",
@@ -2826,7 +2902,7 @@
     },
     "/api/elements-de-fabrication/{id}" : {
       "delete" : {
-        "operationId" : "delete_2",
+        "operationId" : "delete_3",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -2985,6 +3061,168 @@
         },
         "summary" : "Lire la feuille de temps hebdomadaire d'un operateur",
         "tags" : [ "Feuilles de temps" ]
+      }
+    },
+    "/api/natures-de-travail" : {
+      "get" : {
+        "description" : "La page demandee, dans l'ordre alphabetique sans egard aux accents ni a la casse. Chaque nature dit si elle sert\ndeja : l'ecran ne propose alors pas de la supprimer.\n",
+        "operationId" : "list_2",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageRestNatureDeTravail"
+                }
+              }
+            },
+            "description" : "La page demandee, par ordre alphabetique."
+          }
+        },
+        "summary" : "Lister les natures de travail",
+        "tags" : [ "Natures de travail" ]
+      },
+      "post" : {
+        "description" : "La nature est declaree sans poste ni pointage.",
+        "operationId" : "declare",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RestLibelleDeNature"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestNatureDeTravail"
+                }
+              }
+            },
+            "description" : "La nature est declaree."
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestNatureDeTravail"
+                }
+              }
+            },
+            "description" : "Une nature porte deja ce libelle, a la casse ou aux accents pres."
+          }
+        },
+        "summary" : "Declarer une nature de travail",
+        "tags" : [ "Natures de travail" ]
+      }
+    },
+    "/api/natures-de-travail/{id}" : {
+      "delete" : {
+        "description" : "Refuse tant qu'un poste ou un pointage s'en sert.",
+        "operationId" : "delete_2",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "La nature est supprimee."
+          },
+          "404" : {
+            "description" : "Nature de travail introuvable."
+          },
+          "409" : {
+            "description" : "Un poste ou un pointage se sert de cette nature."
+          }
+        },
+        "summary" : "Supprimer une nature de travail",
+        "tags" : [ "Natures de travail" ]
+      },
+      "put" : {
+        "description" : "Seule la nature change : postes et pointages n'en retiennent que l'identifiant, et le nouveau libelle s'affiche\npartout, rapports passes compris. Changer la casse ou les accents du libelle est permis.\n",
+        "operationId" : "renomme",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RestLibelleDeNature"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestNatureDeTravail"
+                }
+              }
+            },
+            "description" : "La nature est renommee."
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestNatureDeTravail"
+                }
+              }
+            },
+            "description" : "Nature de travail introuvable."
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestNatureDeTravail"
+                }
+              }
+            },
+            "description" : "Une autre nature porte deja ce libelle, a la casse ou aux accents pres."
+          }
+        },
+        "summary" : "Renommer une nature de travail",
+        "tags" : [ "Natures de travail" ]
       }
     },
     "/api/operateurs" : {
@@ -3254,7 +3492,7 @@
         "tags" : [ "Parametrage" ]
       },
       "put" : {
-        "description" : "Le fichier, dans la partie logo, remplace le logo courant. Il s'affiche tel quel en en-tete de la supervision, du\npupitre et des PDF : une image PNG ou JPEG de 50 x 50 pixels exactement, de 20 Ko au plus. Le format se juge sur\nle contenu, jamais sur le nom du fichier ni sur le type annonce.\n",
+        "description" : "Le fichier, dans la partie logo, remplace le logo courant. Il s'affiche en en-tete de la supervision, du pupitre et\ndes PDF, ajuste a chaque case sans etre deforme : une image PNG ou JPEG qui tient dans 256 x 256 pixels, de 50 Ko au\nplus. Le format se juge sur le contenu, jamais sur le nom du fichier ni sur le type annonce.\n",
         "operationId" : "deposeLeLogo",
         "requestBody" : {
           "content" : {
@@ -3291,7 +3529,7 @@
                 }
               }
             },
-            "description" : "Fichier absent, illisible, trop lourd, d'un autre format ou d'autres dimensions."
+            "description" : "Fichier absent, illisible, trop lourd, d'un autre format ou trop grand."
           }
         },
         "summary" : "Deposer le logo de l'entreprise",
@@ -3643,6 +3881,9 @@
     "bearer-jwt" : [ ]
   } ],
   "tags" : [ {
+    "description" : "Les metiers exerces dans l'atelier : soudage, tournage, fraisage, dessin. L'entreprise les declare une fois, et les\npostes de travail les choisissent dans cette liste.\n\nDeux natures ne peuvent pas porter le meme libelle a la casse, aux accents ou aux espaces pres : « Soudage » et\n« soudâge » sont la meme.\n\nRenommer une nature ne modifie qu'elle : son nouveau libelle s'affiche partout, rapports passes compris.\n\nUne nature se supprime tant qu'aucun poste ni aucun pointage ne s'en sert.\n\nLe gestionnaire declare, renomme et supprime les natures ; l'operateur (role USER) les consulte.\n",
+    "name" : "Natures de travail"
+  }, {
     "description" : "Les familles dans lesquelles l'entreprise range ce qu'elle fabrique : des moules et des OF chez le client de\nreference, autre chose ailleurs. Une entreprise neuve n'en a aucune.\n\nLe code d'une categorie est a la fois son libelle et le prefixe du nom des produits qui s'y creent\n(MOULE-2026-000001). Il ne se renomme donc jamais.\n\nUne categorie se supprime tant qu'aucun produit n'y est range.\n\nLe gestionnaire declare, reordonne et supprime les categories ; l'operateur (role USER) les consulte.\n",
     "name" : "Categories de produit"
   }, {

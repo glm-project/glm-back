@@ -60,7 +60,7 @@ class JpaLecturesDeSupervision implements LecturesDeSupervision {
     List<?> rows = entities.createNativeQuery("select id, nom, prenom from operateur order by id", Tuple.class).getResultList();
     List<?> habilitations = entities
       .createNativeQuery(
-        "select distinct op.operateur_id, p.nature from operateur_poste op join poste_de_travail p on p.id = op.poste_id order by op.operateur_id, p.nature",
+        "select distinct op.operateur_id, n.libelle as nature from operateur_poste op join poste_de_travail p on p.id = op.poste_id join nature_de_travail n on n.id = p.nature_id order by op.operateur_id, n.libelle",
         Tuple.class
       )
       .getResultList();

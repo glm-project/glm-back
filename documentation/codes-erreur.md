@@ -137,6 +137,9 @@ segment de contexte, et lui seul, qui les distingue.
 | `libelle-deja-utilise`         | 409    | libelle deja utilise         | `LibelleDejaUtiliseException`        |
 | `poste-de-travail-pointe`      | 409    | poste de travail pointe      | `PosteDeTravailPointeException`      |
 | `poste-de-travail-utilise`     | 409    | poste de travail utilise     | `PosteDeTravailUtiliseException`     |
+| `nature-inconnue`              | 422    | nature inconnue              | `NatureInconnueException`            |
+
+`nature-inconnue` refuse un `natureId` absent du référentiel des natures de l'entreprise.
 
 ### `element-de-fabrication` — `urn:glm:erreur:element-de-fabrication:`
 
@@ -155,6 +158,18 @@ segment de contexte, et lui seul, qui les distingue.
 | `categorie-utilisee`       | 409    | categorie utilisee       | `CategorieUtiliseeException`      |
 | `ordre-incomplet`          | 409    | ordre incomplet          | `OrdreIncompletException`         |
 
+### `nature-de-travail` — `urn:glm:erreur:nature-de-travail:`
+
+| Code                    | Statut | `title`               | Exception                      |
+| ----------------------- | ------ | --------------------- | ------------------------------ |
+| `nature-introuvable`    | 404    | nature introuvable    | `NatureIntrouvableException`   |
+| `nature-deja-existante` | 409    | nature deja existante | `NatureDejaExistanteException` |
+| `nature-utilisee`       | 409    | nature utilisee       | `NatureUtiliseeException`      |
+
+`nature-deja-existante` refuse un libellé qu'une autre nature porte déjà, à la casse, aux accents ou aux espaces près,
+à la déclaration comme au renommage. `nature-utilisee` refuse de supprimer une nature dont un poste ou un pointage se
+sert.
+
 ### `parametrage` — `urn:glm:erreur:parametrage:`
 
 | Code               | Statut | `title`          | Exception                  |
@@ -162,8 +177,8 @@ segment de contexte, et lui seul, qui les distingue.
 | `logo-invalide`    | 400    | logo invalide    | `LogoInvalideException`    |
 | `logo-introuvable` | 404    | logo introuvable | `LogoIntrouvableException` |
 
-`logo-invalide` refuse un fichier trop lourd, illisible, d'un autre format que PNG ou JPEG, ou d'autres dimensions
-que 50 x 50 pixels. Son `message` dit laquelle de ces règles il enfreint, avec la valeur reçue : il s'affiche tel quel.
+`logo-invalide` refuse un fichier trop lourd, illisible, d'un autre format que PNG ou JPEG, ou qui ne tient pas
+dans 256 x 256 pixels. Son `message` dit laquelle de ces règles il enfreint, avec la valeur reçue : il s'affiche tel quel.
 `logo-introuvable` répond à une adresse d'image dont la version n'est plus celle du logo courant, ou à une entreprise
 sans logo : le client relit la version dans `GET /api/parametrage`.
 

@@ -261,3 +261,21 @@ Feature: Referentiel des postes de travail
     When je consulte ce poste de travail
     Then la reponse a le statut http 200
     And la reponse de poste de travail a le cout horaire "45.50"
+
+  Scenario: Declaration d'un poste de travail d'une nature choisie dans le referentiel
+    When je declare le poste de travail "Tour PNA" de la nature declaree "Tournage PNA"
+    Then la reponse a le statut http 201
+    And le poste de travail porte la nature declaree "Tournage PNA"
+
+  Scenario: Revision de la nature d'un poste de travail par son identifiant
+    Given j'ai declare un poste de travail
+      | libelle | Tour PNB |
+      | nature  | tournage |
+    When je revise ce poste de travail en "Tour PNB" de la nature declaree "Fraisage PNB"
+    Then la reponse a le statut http 200
+    And le poste de travail porte la nature declaree "Fraisage PNB"
+
+  Scenario: Declaration refusee pour une nature inconnue du referentiel
+    When je declare le poste de travail "Tour PNC" d'une nature inconnue
+    Then la reponse a le statut http 422
+    And la reponse porte le code d'erreur "urn:glm:erreur:poste-de-travail:nature-inconnue"

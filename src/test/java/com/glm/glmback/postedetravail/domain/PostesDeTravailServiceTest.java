@@ -16,6 +16,7 @@ class PostesDeTravailServiceTest {
   private PostesDeTravailEnMemoire repository;
   private HabilitationsEnMemoire habilitations;
   private PointagesEnMemoire pointages;
+  private NaturesDeclareesEnMemoire natures;
   private PostesDeTravailService postes;
 
   @BeforeEach
@@ -23,7 +24,11 @@ class PostesDeTravailServiceTest {
     repository = new PostesDeTravailEnMemoire();
     habilitations = new HabilitationsEnMemoire();
     pointages = new PointagesEnMemoire();
-    postes = new PostesDeTravailService(repository, habilitations, pointages);
+    natures = new NaturesDeclareesEnMemoire();
+    natures.declare(NATURE_DU_POSTE_TOURNAGE);
+    natures.declare(NATURE_DU_POSTE_SOUDAGE);
+    natures.declare(NATURE_DU_POSTE_FRAISAGE);
+    postes = new PostesDeTravailService(repository, habilitations, pointages, natures);
   }
 
   @Test
@@ -31,8 +36,60 @@ class PostesDeTravailServiceTest {
     PosteDeTravail cree = postes.create(posteDeTravailACreerTour1());
 
     assertThat(cree.libelle()).isEqualTo(LIBELLE_TOUR_1);
-    assertThat(cree.nature()).isEqualTo(NATURE_TOURNAGE);
+    assertThat(cree.nature().libelle()).isEqualTo(NATURE_TOURNAGE);
     assertThat(postes.get(cree.id())).isEqualTo(cree);
+  }
+
+  @Test
+  void shouldGivePosteDeTravailTheChosenNature() {
+    PosteDeTravail cree = postes.create(posteDeTravailACreerTour1());
+
+    assertThat(cree.nature()).isEqualTo(NATURE_DU_POSTE_TOURNAGE);
+  }
+
+  @Test
+  void shouldNotCreatePosteDeTravailWithUnknownNature() {
+    NatureDeTravailId inconnue = NatureDeTravailId.newId();
+    PosteDeTravailACreer aCreer = new PosteDeTravailACreer(LIBELLE_TOUR_1, new NatureChoisie.ParIdentifiant(inconnue), Optional.empty());
+
+    assertThatThrownBy(() -> postes.create(aCreer))
+      .isExactlyInstanceOf(NatureInconnueException.class)
+      .hasMessageContaining(inconnue.uuid().toString());
+  }
+
+  @Test
+  void shouldNotUpdatePosteDeTravailWithUnknownNature() {
+    PosteDeTravail cree = postes.create(posteDeTravailACreerTour1());
+    PosteDeTravailAModifier aModifier = new PosteDeTravailAModifier(
+      cree.id(),
+      LIBELLE_TOUR_1,
+      new NatureChoisie.ParIdentifiant(NatureDeTravailId.newId()),
+      Optional.empty()
+    );
+
+    assertThatThrownBy(() -> postes.update(aModifier)).isExactlyInstanceOf(NatureInconnueException.class);
+    assertThat(postes.get(cree.id())).isEqualTo(cree);
+  }
+
+  @Test
+  @SuppressWarnings("removal")
+  void shouldDeclareMissingNatureGivenByLibelle() {
+    NatureDeTravail dessin = new NatureDeTravail("dessin");
+
+    PosteDeTravail cree = postes.create(new PosteDeTravailACreer(LIBELLE_TOUR_1, new NatureChoisie.ParLibelle(dessin), Optional.empty()));
+
+    assertThat(cree.nature().libelle()).isEqualTo(dessin);
+    assertThat(natures.parLibelle(dessin)).contains(cree.nature());
+  }
+
+  @Test
+  @SuppressWarnings("removal")
+  void shouldReuseNatureOfSameKeyGivenByLibelle() {
+    PosteDeTravail cree = postes.create(
+      new PosteDeTravailACreer(LIBELLE_TOUR_1, new NatureChoisie.ParLibelle(new NatureDeTravail(" TOURNÂGE ")), Optional.empty())
+    );
+
+    assertThat(cree.nature()).isEqualTo(NATURE_DU_POSTE_TOURNAGE);
   }
 
   @Test
@@ -66,7 +123,7 @@ class PostesDeTravailServiceTest {
 
     assertThat(revise.id()).isEqualTo(cree.id());
     assertThat(revise.libelle()).isEqualTo(LIBELLE_FRAISEUSE_1);
-    assertThat(revise.nature()).isEqualTo(NATURE_FRAISAGE);
+    assertThat(revise.nature().libelle()).isEqualTo(NATURE_FRAISAGE);
   }
 
   @Test

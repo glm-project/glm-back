@@ -1,6 +1,7 @@
 package com.glm.glmback.postedetravail.application;
 
 import com.glm.glmback.postedetravail.domain.NatureDeTravail;
+import com.glm.glmback.postedetravail.domain.NaturesDeclarees;
 import com.glm.glmback.postedetravail.domain.PosteDeTravail;
 import com.glm.glmback.postedetravail.domain.PosteDeTravailACreer;
 import com.glm.glmback.postedetravail.domain.PosteDeTravailAModifier;
@@ -21,8 +22,13 @@ public class PostesDeTravailApplicationService {
 
   private final PostesDeTravailService postesDeTravail;
 
-  public PostesDeTravailApplicationService(PosteDeTravailRepository repository, PostesEnUsage usages, PostesPointes pointages) {
-    this.postesDeTravail = new PostesDeTravailService(repository, usages, pointages);
+  public PostesDeTravailApplicationService(
+    PosteDeTravailRepository repository,
+    PostesEnUsage usages,
+    PostesPointes pointages,
+    NaturesDeclarees natures
+  ) {
+    this.postesDeTravail = new PostesDeTravailService(repository, usages, pointages, natures);
   }
 
   @Secured("ROLE_GESTIONNAIRE")

@@ -37,13 +37,21 @@ Le **rang** porte l'ordre d'affichage choisi par l'entreprise : celui des bouton
 
 **Une catégorie qui range des produits ne se supprime pas** : leur nom porte son code, et ils resteraient rangés dans une famille disparue. La règle vit dans le domaine, derrière le port `CategoriesUtilisees`, dont l'adapter lit la table `element_de_fabrication` par une entité en lecture seule — sans jamais importer `elementdefabrication`. Une catégorie vide, elle, se supprime et peut être déclarée à nouveau.
 
+## naturedetravail
+
+Gère le **référentiel des natures de travail** : les métiers exercés dans l'atelier, soudage, tournage, fraisage, dessin. Jusqu'ici, chaque poste portait sa nature en texte libre, et une faute de frappe (« Soudage » d'un côté, « Soudure » de l'autre) suffisait à couper en deux les rapports d'un même métier. L'entreprise déclare désormais ses natures une fois, et aucune n'est créée d'office.
+
+Une `NatureDeTravail` porte un **identifiant** et un **libellé**. Le libellé est unique à la casse, aux accents et aux espaces près : sa **clé** (minuscules, sans accents, espaces réduits) est ce qui distingue deux natures, et « Soudage » et « soudâge » ne peuvent pas coexister. La liste se lit dans l'ordre de cette clé, donc par ordre alphabétique sans égard aux accents, et dit pour chaque nature si elle sert déjà.
+
+Le gestionnaire peut **renommer** une nature, y compris pour n'en corriger que la casse ou les accents. Ceux qui se servent d'une nature n'en retiendront que l'**identifiant** : un renommage ne modifiera que la ligne de la nature, jamais l'historique, et le nouveau libellé s'affichera partout, rapports passés compris. Une nature **ne se supprime pas** tant qu'un poste la porte ou qu'un pointage la cite ; la liste le dit pour chacune.
+
 ## parametrage
 
 Gère les **réglages que l'entreprise fixe elle-même**, sans développeur : un seul jeu pour toute l'entreprise, que le gestionnaire modifie et que tout utilisateur lit. GLM est une trame, et une donnée qui varie d'un client à l'autre ne s'écrit pas en constante.
 
 Le premier réglage est la **durée max d'une activité** : le temps au bout duquel une activité que rien n'a terminée se termine automatiquement (voir « La fin automatique à l'échéance » dans `atelier`). Elle vaut **treize heures** tant que l'entreprise ne l'a pas fixée, et reste comprise entre une heure et vingt-quatre heures. Un réglage jamais fixé n'est pas recopié en base : la valeur par défaut n'existe qu'à un endroit, le domaine. `atelier` et le référentiel du pupitre ne la connaissent pas : ils la reçoivent par un port du noyau partagé, que `parametrage` implémente.
 
-Le second est le **logo de l'entreprise**, qui s'affiche en en-tête de la supervision, du pupitre et des PDF, dans une case de 50 x 50 pixels. Il y entre tel quel : une image PNG ou JPEG de 50 x 50 pixels exactement, de 20 Ko au plus, sans recadrage ni conversion par GLM. Le refus dit ce qui ne va pas, avec la valeur reçue, pour que le gestionnaire corrige son fichier. Sa **version** est l'empreinte de son contenu : elle entre dans l'adresse de l'image, que le navigateur garde en cache tant que le logo ne change pas.
+Le second est le **logo de l'entreprise**, qui s'affiche en en-tête de la supervision, du pupitre et des PDF, ajusté à la case de chaque en-tête sans être déformé. C'est une image PNG ou JPEG qui tient dans 256 x 256 pixels, dans les proportions de son choix (256 x 100 pour un logo en longueur), de 50 Ko au plus, sans recadrage ni conversion par GLM. Le refus dit ce qui ne va pas, avec la valeur reçue, pour que le gestionnaire corrige son fichier. Sa **version** est l'empreinte de son contenu : elle entre dans l'adresse de l'image, que le navigateur garde en cache tant que le logo ne change pas.
 
 Le `Parametrage` n'a pas d'identifiant : chaque schéma d'entreprise porte une seule ligne, créée avec lui. Un réglage n'est donc jamais créé ni supprimé, seulement modifié.
 
@@ -245,6 +253,8 @@ Le terme reste volontairement générique, comme dans l'atelier : une machine ch
 **Le libellé est unique par entreprise.** C'est ce qui fait du référentiel un référentiel : sans lui, rien ne relierait le « Tour 1 » saisi par Dupont au « Tour 1 » saisi par Martin. La garde vit dans `PostesDeTravailService`, sur le patron de `ElementsDeFabricationService.verifierReferenceLibre` ; la contrainte du schéma est le filet de dernier recours.
 
 **La nature est obligatoire ici**, alors qu'elle reste facultative dans l'atelier. Ce n'est pas une contradiction : l'atelier doit fonctionner pour une entreprise sans parc machine ni métiers distincts, qui n'ouvrira simplement pas cet écran. Mais un poste qui serait déclaré sans dire quel travail s'y fait ne servirait à rien — c'est précisément ce que ce contexte apporte.
+
+**Le poste ne porte que l'identifiant de sa nature**, choisie dans le référentiel de `naturedetravail` : la `NatureDuPoste` réunit cet identifiant et le libellé courant, relu par jointure à chaque lecture. Renommer une nature renomme donc celle de tous ses postes sans toucher leur ligne. Le port `NaturesDeclarees` lit le référentiel par la donnée. Pendant la transition du front, le libellé saisi en texte reste accepté : il désigne la nature de même clé (casse, accents et espaces ignorés), déclarée à la volée si elle manque — chemin déprécié, retiré par glm-back#130.
 
 **Un poste encore habilité ne se supprime pas** : cela laisserait des opérateurs pointer sur du vide. La règle vit dans le domaine, derrière le port `PostesEnUsage`, dont l'adapter lit la table `operateur_poste` par une entité en lecture seule — sans jamais importer `operateur`, annoté `@BusinessContext`.
 

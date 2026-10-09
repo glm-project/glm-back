@@ -5,6 +5,7 @@ import static org.springframework.http.HttpStatus.*;
 
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.postedetravail.domain.LibelleDejaUtiliseException;
+import com.glm.glmback.postedetravail.domain.NatureInconnueException;
 import com.glm.glmback.postedetravail.domain.PosteDeTravailId;
 import com.glm.glmback.postedetravail.domain.PosteDeTravailIntrouvableException;
 import com.glm.glmback.postedetravail.domain.PosteDeTravailPointeException;
@@ -43,6 +44,11 @@ class PosteDeTravailExceptionAdviceTest extends ExceptionAdviceContract {
         new PosteDeTravailUtiliseException(PosteDeTravailId.newId()),
         "urn:glm:erreur:poste-de-travail:poste-de-travail-utilise",
         CONFLICT
+      ),
+      new PublishedProblem(
+        new NatureInconnueException(NATURE_DE_TRAVAIL_ID_TOURNAGE),
+        "urn:glm:erreur:poste-de-travail:nature-inconnue",
+        UNPROCESSABLE_CONTENT
       )
     );
   }

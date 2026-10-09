@@ -76,7 +76,7 @@ public class PupitreSteps {
   @Given("le pupitre connait le poste {string}")
   public void lePupitreConnaitLePoste(String alias) {
     String libelle = PREFIXE + alias + " " + SEQUENCE.incrementAndGet();
-    rest.post(POSTES_URI, JSON.writeValueAsString(Map.of("libelle", libelle, "nature", "Fraisage")));
+    rest.post(POSTES_URI, JSON.writeValueAsString(Map.of("libelle", libelle, "nature", "fraisage")));
     postes.put(alias, id());
     libelles.put(alias, libelle);
   }

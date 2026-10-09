@@ -17,6 +17,6 @@ public record PosteDeTravailCriteria(Optional<NatureDeTravail> nature) {
   }
 
   public boolean matches(PosteDeTravail poste) {
-    return nature.map(attendue -> attendue.equals(poste.nature())).orElse(true);
+    return nature.map(attendue -> attendue.equals(poste.nature().libelle())).orElse(true);
   }
 }

@@ -24,7 +24,7 @@ l'atelier : une machine chez le client de référence, un établi, un four, une 
 
 ## Agrégat
 
-`PosteDeTravail` — quatre composants (`PosteDeTravailId`, `Libelle`, `NatureDeTravail`, `Optional<CoutHoraire>`), donc
+`PosteDeTravail` — quatre composants (`PosteDeTravailId`, `Libelle`, `NatureDuPoste`, `Optional<CoutHoraire>`), donc
 **step builder en chaîne de lambdas** depuis l'ajout du coût horaire : les quatre types d'étapes sont tous distincts,
 aucune inversion ne compile. `builder()` est public parce que la relecture depuis la persistance se fait dans
 `infrastructure/secondary`.
@@ -38,6 +38,14 @@ aucune inversion ne compile. `builder()` est public parce que la relecture depui
   la règle.
 - **La nature est obligatoire**, contrairement à l'atelier où elle reste facultative. Un poste n'est déclaré que pour
   dire quel travail s'y fait — c'est de lui, et non de la personne, que vient le métier exercé à un instant donné.
+- **Le poste ne persiste que l'identifiant de sa nature** (`nature_id`, clé étrangère vers `nature_de_travail`). Le
+  libellé de `NatureDuPoste` est relu par jointure (`@Formula`) : renommer la nature ne touche aucune ligne de poste.
+  Le référentiel n'est atteint que par la donnée, port `NaturesDeclarees`.
+- **La nature se choisit, elle ne se crée pas depuis le poste** : `NatureChoisie.ParIdentifiant` doit désigner une
+  nature déclarée, sinon `NatureInconnueException` (422).
+- **Chemin de transition, déprécié** (`NatureChoisie.ParLibelle`) : un libellé saisi en texte désigne la nature de même clé — `NatureDeTravail.cle`,
+  copie de `naturedetravail.CleDeNature` — et la déclare si elle manque. Il disparaît avec glm-back#130, et la copie de
+  la clé avec lui.
 - **Le coût horaire est facultatif et strictement positif** quand il est renseigné, sur le patron d'`Identifiant` :
   toutes les entreprises ne valorisent pas encore leurs postes, et un coût à zéro n'a pas de sens métier — s'il est
   inconnu, le champ reste absent plutôt qu'à zéro.
@@ -58,7 +66,7 @@ aucune inversion ne compile. `builder()` est public parce que la relecture depui
 
 ## Ports sortants
 
-`PosteDeTravailRepository`, `PostesEnUsage`, `PostesPointes`.
+`PosteDeTravailRepository`, `PostesEnUsage`, `PostesPointes`, `NaturesDeclarees`.
 
 ## Structure
 

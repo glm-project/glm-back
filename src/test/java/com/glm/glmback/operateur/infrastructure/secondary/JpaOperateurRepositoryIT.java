@@ -16,6 +16,9 @@ import com.glm.glmback.operateur.domain.PosteHabilitableId;
 import com.glm.glmback.operateur.domain.Prenom;
 import com.glm.glmback.postedetravail.domain.Libelle;
 import com.glm.glmback.postedetravail.domain.NatureDeTravail;
+import com.glm.glmback.postedetravail.domain.NatureDeTravailId;
+import com.glm.glmback.postedetravail.domain.NatureDuPoste;
+import com.glm.glmback.postedetravail.domain.NaturesDeclarees;
 import com.glm.glmback.postedetravail.domain.PosteDeTravail;
 import com.glm.glmback.postedetravail.domain.PosteDeTravailId;
 import com.glm.glmback.postedetravail.domain.PosteDeTravailRepository;
@@ -44,13 +47,15 @@ class JpaOperateurRepositoryIT {
   private static final String IMPECCMOLD = "impeccmold";
   private static final String KATILYS = "katilys";
   private static final AtomicLong COMPTEUR = new AtomicLong();
-  private static final NatureDeTravail TOURNAGE = new NatureDeTravail("tournage");
 
   @Autowired
   private OperateurRepository operateurs;
 
   @Autowired
   private PosteDeTravailRepository postes;
+
+  @Autowired
+  private NaturesDeclarees natures;
 
   @Autowired
   private TransactionTemplate transactions;
@@ -278,12 +283,30 @@ class JpaOperateurRepositoryIT {
     PosteDeTravail poste = new PosteDeTravail(
       PosteDeTravailId.newId(),
       new Libelle("IT-poste-operateur-%06d".formatted(COMPTEUR.incrementAndGet())),
-      TOURNAGE,
+      tournage(),
       Optional.empty()
     );
     inTransaction(() -> postes.create(poste));
 
     return new PosteHabilitableId(poste.id().uuid());
+  }
+
+  /**
+   * La cle etrangere du poste impose que sa nature existe : elle n'est declaree que si elle manque.
+   */
+  @SuppressWarnings("removal")
+  private NatureDuPoste tournage() {
+    NatureDeTravail tournage = new NatureDeTravail("tournage");
+
+    return inTransaction(() ->
+      natures
+        .parLibelle(tournage)
+        .orElseGet(() -> {
+          NatureDuPoste declaree = new NatureDuPoste(NatureDeTravailId.newId(), tournage);
+          natures.declare(declaree);
+          return declaree;
+        })
+    );
   }
 
   private static Operateur operateurHabiliteSur(Set<PosteHabilitableId> habilitations) {
