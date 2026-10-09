@@ -202,11 +202,12 @@ class SuivisDAtelierReceptionTest {
   }
 
   /**
-   * Rien de ce que le serveur ecrit ne laisse une activite a resoudre : la regle ecarte tout geste qui contredirait le
-   * journal.
+   * Sur cette suite de gestes — un double debut, un double arret, une fin rejouee avant le dernier accepte, une fin a
+   * l'heure du debut de l'activite qu'elle fermerait —, le journal ne laisse aucune activite a resoudre : la regle
+   * ecarte chaque geste qui contredirait le precedent. La suite ne prouve que ces cas, pas une propriete generale.
    */
   @Test
-  void shouldNeJamaisLaisserDActiviteAResoudre() {
+  void shouldNeLaisserAucuneActiviteAResoudreSurCetteSuiteDeGestes() {
     SuiviDAtelier engage = engage();
     pointeA(pointage(engage.id(), TypeDEvenementDAtelier.DEBUT), LE_10_MAI_2026_A_8H);
     pointeA(pointage(engage.id(), TypeDEvenementDAtelier.DEBUT), LE_10_MAI_2026_A_9H);
@@ -214,9 +215,10 @@ class SuivisDAtelierReceptionTest {
     pointeA(pointage(engage.id(), TypeDEvenementDAtelier.FIN), LE_10_MAI_2026_A_12H);
     pointeA(finRejoueeA(engage.id(), LE_10_MAI_2026_A_9H), LE_10_MAI_2026_A_13H);
     pointeA(pointage(engage.id(), TypeDEvenementDAtelier.NON_CONFORMITE), LE_10_MAI_2026_A_13H);
+    pointeA(pointage(engage.id(), TypeDEvenementDAtelier.FIN), LE_10_MAI_2026_A_13H);
 
     assertThat(suivis.get(engage.id()).orElseThrow().activites()).hasSize(2).noneMatch(Activite::aResoudre);
-    assertThat(pointagesIgnores.lignes()).hasSize(3);
+    assertThat(pointagesIgnores.lignes()).hasSize(4);
   }
 
   private SuiviDAtelier engage() {
