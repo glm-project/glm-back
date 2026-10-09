@@ -13,4 +13,5 @@
   <include file="011-parametrage.xml" relativeToChangelogFile="true" />
   <include file="012-parametrage_logo.xml" relativeToChangelogFile="true" />
   <include file="013-pointage_ignore_d_atelier.xml" relativeToChangelogFile="true" />
+  <include file="014-nature_de_travail.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <changeSet id="nature_de_travail" author="glm">
+    <comment>
+      Le referentiel des metiers exerces dans l'atelier, propre a chaque entreprise. Le libelle est ce qui s'affiche ;
+      la cle, ce meme libelle en minuscules, sans accents et aux espaces reduits, est ce qui le rend unique : la regle
+      vit dans le domaine, cette contrainte n'est que le filet. La cle sert aussi a trier la liste par ordre
+      alphabetique sans egard aux accents.
+    </comment>
+
+    <createTable tableName="nature_de_travail">
+      <column name="id" type="${uuidType}">
+        <constraints nullable="false" primaryKey="true" />
+      </column>
+
+      <column name="libelle" type="varchar(50)">
+        <constraints nullable="false" />
+      </column>
+
+      <column name="cle" type="varchar(50)">
+        <constraints nullable="false" unique="true" uniqueConstraintName="ux_nature_de_travail_cle" />
+      </column>
+    </createTable>
+  </changeSet>
+</databaseChangeLog>
