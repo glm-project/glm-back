@@ -7,8 +7,8 @@ Feature: Feuille de temps hebdomadaire d'un operateur
   Background:
     Given I am logged in as "gestionnaire" with role "GESTIONNAIRE"
     And la feuille de temps suit l'operateur "dupont"
-    And la feuille de temps connait le poste "DMU 50" de nature "Fraisage"
-    And la feuille de temps connait le poste "Tour" de nature "Tournage"
+    And la feuille de temps connait le poste "DMU 50" de nature "fraisage"
+    And la feuille de temps connait le poste "Tour" de nature "tournage"
     And la feuille de temps suit l'operateur "martin" habilite sur
       | DMU 50 |
       | Tour   |
@@ -152,8 +152,8 @@ Feature: Feuille de temps hebdomadaire d'un operateur
     Then la reponse a le statut http 200
     And les activites du "2026-05-11" sont
       | element | poste  | nature   | categorie | debut                | fin                  |
-      | carter  | DMU 50 | Fraisage | TRAVAIL   | 2026-05-11T05:05:00Z | 2026-05-11T10:00:00Z |
-      | carter  | DMU 50 | Fraisage | TRAVAIL   | 2026-05-11T11:00:00Z | 2026-05-11T15:00:00Z |
+      | carter  | DMU 50 | fraisage | TRAVAIL   | 2026-05-11T05:05:00Z | 2026-05-11T10:00:00Z |
+      | carter  | DMU 50 | fraisage | TRAVAIL   | 2026-05-11T11:00:00Z | 2026-05-11T15:00:00Z |
 
   Scenario: Une non conformite suit le travail
     Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
@@ -189,8 +189,8 @@ Feature: Feuille de temps hebdomadaire d'un operateur
     When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
     Then les activites du "2026-05-11" sont
       | element | poste  | nature   | debut                | fin                  |
-      | carter  | DMU 50 | Fraisage | 2026-05-11T05:05:00Z | 2026-05-11T10:00:00Z |
-      | carter  | Tour   | Tournage | 2026-05-11T06:00:00Z | 2026-05-11T10:00:00Z |
+      | carter  | DMU 50 | fraisage | 2026-05-11T05:05:00Z | 2026-05-11T10:00:00Z |
+      | carter  | Tour   | tournage | 2026-05-11T06:00:00Z | 2026-05-11T10:00:00Z |
 
   Scenario: Le travail d'un poste de nuit se coupe a minuit
     # Minuit a Paris, c'est 22:00Z.

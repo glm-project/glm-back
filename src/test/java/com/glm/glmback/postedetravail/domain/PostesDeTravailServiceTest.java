@@ -16,6 +16,7 @@ class PostesDeTravailServiceTest {
   private PostesDeTravailEnMemoire repository;
   private HabilitationsEnMemoire habilitations;
   private PointagesEnMemoire pointages;
+  private NaturesDeclareesEnMemoire natures;
   private PostesDeTravailService postes;
 
   @BeforeEach
@@ -23,7 +24,8 @@ class PostesDeTravailServiceTest {
     repository = new PostesDeTravailEnMemoire();
     habilitations = new HabilitationsEnMemoire();
     pointages = new PointagesEnMemoire();
-    postes = new PostesDeTravailService(repository, habilitations, pointages);
+    natures = new NaturesDeclareesEnMemoire();
+    postes = new PostesDeTravailService(repository, habilitations, pointages, natures);
   }
 
   @Test
@@ -31,8 +33,24 @@ class PostesDeTravailServiceTest {
     PosteDeTravail cree = postes.create(posteDeTravailACreerTour1());
 
     assertThat(cree.libelle()).isEqualTo(LIBELLE_TOUR_1);
-    assertThat(cree.nature()).isEqualTo(NATURE_TOURNAGE);
+    assertThat(cree.nature().libelle()).isEqualTo(NATURE_TOURNAGE);
     assertThat(postes.get(cree.id())).isEqualTo(cree);
+  }
+
+  @Test
+  void shouldDeclareMissingNatureOfCreatedPosteDeTravail() {
+    PosteDeTravail cree = postes.create(posteDeTravailACreerTour1());
+
+    assertThat(natures.parLibelle(NATURE_TOURNAGE)).contains(cree.nature());
+  }
+
+  @Test
+  void shouldReuseNatureOfSameKeyForCreatedPosteDeTravail() {
+    natures.declare(NATURE_DU_POSTE_TOURNAGE);
+
+    PosteDeTravail cree = postes.create(new PosteDeTravailACreer(LIBELLE_TOUR_1, new NatureDeTravail(" TOURNÂGE "), Optional.empty()));
+
+    assertThat(cree.nature()).isEqualTo(NATURE_DU_POSTE_TOURNAGE);
   }
 
   @Test
@@ -66,7 +84,7 @@ class PostesDeTravailServiceTest {
 
     assertThat(revise.id()).isEqualTo(cree.id());
     assertThat(revise.libelle()).isEqualTo(LIBELLE_FRAISEUSE_1);
-    assertThat(revise.nature()).isEqualTo(NATURE_FRAISAGE);
+    assertThat(revise.nature().libelle()).isEqualTo(NATURE_FRAISAGE);
   }
 
   @Test

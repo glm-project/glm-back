@@ -12,7 +12,7 @@ import java.util.Optional;
  * n'est declare que pour dire quel travail s'y fait.
  * </p>
  */
-public record PosteDeTravail(PosteDeTravailId id, Libelle libelle, NatureDeTravail nature, Optional<CoutHoraire> coutHoraire) {
+public record PosteDeTravail(PosteDeTravailId id, Libelle libelle, NatureDuPoste nature, Optional<CoutHoraire> coutHoraire) {
   public PosteDeTravail {
     Assert.notNull("id", id);
     Assert.notNull("libelle", libelle);
@@ -24,7 +24,7 @@ public record PosteDeTravail(PosteDeTravailId id, Libelle libelle, NatureDeTrava
     return id -> libelle -> nature -> coutHoraire -> new PosteDeTravail(id, libelle, nature, CoutHoraire.of(coutHoraire));
   }
 
-  public PosteDeTravail revise(Libelle libelle, NatureDeTravail nature, Optional<CoutHoraire> coutHoraire) {
+  public PosteDeTravail revise(Libelle libelle, NatureDuPoste nature, Optional<CoutHoraire> coutHoraire) {
     return new PosteDeTravail(id, libelle, nature, coutHoraire);
   }
 
@@ -37,7 +37,7 @@ public record PosteDeTravail(PosteDeTravailId id, Libelle libelle, NatureDeTrava
   }
 
   public interface PosteDeTravailNatureBuilder {
-    PosteDeTravailCoutHoraireBuilder nature(NatureDeTravail nature);
+    PosteDeTravailCoutHoraireBuilder nature(NatureDuPoste nature);
   }
 
   public interface PosteDeTravailCoutHoraireBuilder {

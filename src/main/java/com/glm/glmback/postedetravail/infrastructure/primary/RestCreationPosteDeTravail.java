@@ -17,7 +17,7 @@ record RestCreationPosteDeTravail(
   String libelle,
 
   @Schema(
-    description = "Metier qui s'exerce sur ce poste. Obligatoire : un poste est declare pour dire quel travail s'y fait.",
+    description = "Libelle de la nature du poste, designee a la casse, aux accents et aux espaces pres ; declaree dans le referentiel si elle manque. Metier qui s'exerce sur ce poste. Obligatoire : un poste est declare pour dire quel travail s'y fait.",
     example = "tournage",
     requiredMode = Schema.RequiredMode.REQUIRED
   )

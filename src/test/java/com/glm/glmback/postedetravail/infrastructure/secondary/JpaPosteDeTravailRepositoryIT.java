@@ -7,6 +7,9 @@ import com.glm.glmback.IntegrationTest;
 import com.glm.glmback.postedetravail.domain.CoutHoraire;
 import com.glm.glmback.postedetravail.domain.Libelle;
 import com.glm.glmback.postedetravail.domain.NatureDeTravail;
+import com.glm.glmback.postedetravail.domain.NatureDeTravailId;
+import com.glm.glmback.postedetravail.domain.NatureDuPoste;
+import com.glm.glmback.postedetravail.domain.NaturesDeclarees;
 import com.glm.glmback.postedetravail.domain.PosteDeTravail;
 import com.glm.glmback.postedetravail.domain.PosteDeTravailCriteria;
 import com.glm.glmback.postedetravail.domain.PosteDeTravailDejaExistantException;
@@ -16,6 +19,7 @@ import com.glm.glmback.postedetravail.domain.PosteDeTravailRepository;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurityContexts;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.pagination.domain.Page;
+import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
@@ -32,14 +36,18 @@ class JpaPosteDeTravailRepositoryIT {
   private static final String IMPECCMOLD = "impeccmold";
   private static final String KATILYS = "katilys";
   private static final AtomicLong COMPTEUR = new AtomicLong();
-  private static final NatureDeTravail TOURNAGE = new NatureDeTravail("tournage");
-  private static final NatureDeTravail SOUDAGE = new NatureDeTravail("soudage");
 
   @Autowired
   private PosteDeTravailRepository postes;
 
   @Autowired
+  private NaturesDeclarees natures;
+
+  @Autowired
   private TransactionTemplate transactions;
+
+  @Autowired
+  private EntityManager entities;
 
   @AfterEach
   void cleanup() {
@@ -62,7 +70,7 @@ class JpaPosteDeTravailRepositoryIT {
     PosteDeTravail poste = new PosteDeTravail(
       PosteDeTravailId.newId(),
       libelleDeTest(),
-      TOURNAGE,
+      nature("tournage"),
       Optional.of(new CoutHoraire(new BigDecimal("45.50")))
     );
 
@@ -92,7 +100,7 @@ class JpaPosteDeTravailRepositoryIT {
     PosteDeTravail poste = posteDeTournage();
     inTransaction(() -> postes.create(poste));
 
-    PosteDeTravail revise = poste.revise(libelleDeTest(), SOUDAGE, Optional.empty());
+    PosteDeTravail revise = poste.revise(libelleDeTest(), nature("soudage"), Optional.empty());
     inTransaction(() -> postes.update(revise));
 
     assertThat(inTransaction(() -> postes.get(poste.id()))).contains(revise);
@@ -154,11 +162,14 @@ class JpaPosteDeTravailRepositoryIT {
   @WithTenant(IMPECCMOLD)
   void shouldListPostesDeTravailOfExpectedNatureSortedByLibelle() {
     PosteDeTravail tournage = posteDeTournage();
-    PosteDeTravail soudage = new PosteDeTravail(PosteDeTravailId.newId(), libelleDeTest(), SOUDAGE, Optional.empty());
+    NatureDuPoste soudure = nature("soudage");
+    PosteDeTravail soudage = new PosteDeTravail(PosteDeTravailId.newId(), libelleDeTest(), soudure, Optional.empty());
     inTransaction(() -> postes.create(tournage));
     inTransaction(() -> postes.create(soudage));
 
-    Page<PosteDeTravail> page = inTransaction(() -> postes.list(new PosteDeTravailCriteria(Optional.of(SOUDAGE)), firstPageOfTen()));
+    Page<PosteDeTravail> page = inTransaction(() ->
+      postes.list(new PosteDeTravailCriteria(Optional.of(soudure.libelle())), firstPageOfTen())
+    );
 
     assertThat(page.content()).contains(soudage).doesNotContain(tournage);
   }
@@ -171,7 +182,7 @@ class JpaPosteDeTravailRepositoryIT {
   @WithTenant(IMPECCMOLD)
   void shouldListPostesDeTravailSortedByLibelle() {
     long numero = COMPTEUR.incrementAndGet();
-    NatureDeTravail natureDuTest = new NatureDeTravail("IT-tri-%06d".formatted(numero));
+    NatureDuPoste natureDuTest = nature("IT-tri-%06d".formatted(numero));
     PosteDeTravail second = new PosteDeTravail(
       PosteDeTravailId.newId(),
       new Libelle("IT-tri-%06d-b".formatted(numero)),
@@ -187,16 +198,17 @@ class JpaPosteDeTravailRepositoryIT {
     inTransaction(() -> postes.create(second));
     inTransaction(() -> postes.create(premier));
 
-    Page<PosteDeTravail> page = inTransaction(() -> postes.list(new PosteDeTravailCriteria(Optional.of(natureDuTest)), firstPageOfTen()));
+    Page<PosteDeTravail> page = inTransaction(() ->
+      postes.list(new PosteDeTravailCriteria(Optional.of(natureDuTest.libelle())), firstPageOfTen())
+    );
 
     assertThat(page.content()).containsExactly(premier, second);
   }
 
   @Test
   void shouldNotReadPosteDeTravailOfAnotherTenant() {
-    PosteDeTravail poste = posteDeTournage();
-
     TenantSecurityContexts.authenticateOn(IMPECCMOLD);
+    PosteDeTravail poste = posteDeTournage();
     inTransaction(() -> postes.create(poste));
 
     TenantSecurityContexts.authenticateOn(KATILYS);
@@ -207,20 +219,65 @@ class JpaPosteDeTravailRepositoryIT {
   @Test
   void shouldReuseSameLibelleInEachTenant() {
     Libelle partage = libelleDeTest();
-    PosteDeTravail chezImpeccMold = new PosteDeTravail(PosteDeTravailId.newId(), partage, TOURNAGE, Optional.empty());
-    PosteDeTravail chezKatilys = new PosteDeTravail(PosteDeTravailId.newId(), partage, TOURNAGE, Optional.empty());
 
     TenantSecurityContexts.authenticateOn(IMPECCMOLD);
+    PosteDeTravail chezImpeccMold = new PosteDeTravail(PosteDeTravailId.newId(), partage, nature("tournage"), Optional.empty());
     inTransaction(() -> postes.create(chezImpeccMold));
 
     TenantSecurityContexts.authenticateOn(KATILYS);
+    PosteDeTravail chezKatilys = new PosteDeTravail(PosteDeTravailId.newId(), partage, nature("tournage"), Optional.empty());
     inTransaction(() -> postes.create(chezKatilys));
 
     assertThat(inTransaction(() -> postes.get(chezKatilys.id()))).contains(chezKatilys);
   }
 
-  private static PosteDeTravail posteDeTournage() {
-    return new PosteDeTravail(PosteDeTravailId.newId(), libelleDeTest(), TOURNAGE, Optional.empty());
+  @Test
+  @WithTenant(IMPECCMOLD)
+  void shouldReadCurrentLibelleOfItsNature() {
+    PosteDeTravail poste = new PosteDeTravail(
+      PosteDeTravailId.newId(),
+      libelleDeTest(),
+      nature("IT-renommee-%06d".formatted(COMPTEUR.incrementAndGet())),
+      Optional.empty()
+    );
+    inTransaction(() -> postes.create(poste));
+
+    inTransaction(() ->
+      entities
+        .createNativeQuery("update nature_de_travail set libelle = 'IT-renommee', cle = :cle where id = :id")
+        .setParameter("cle", "it-renommee-" + poste.id().uuid())
+        .setParameter("id", poste.nature().id().uuid())
+        .executeUpdate()
+    );
+
+    assertThat(
+      inTransaction(() -> postes.get(poste.id()))
+        .orElseThrow()
+        .nature()
+    ).isEqualTo(new NatureDuPoste(poste.nature().id(), new NatureDeTravail("IT-renommee")));
+  }
+
+  /**
+   * La cle etrangere impose que la nature existe avant le poste ; les tests partagent le schema, la nature n'est donc
+   * declaree que si elle manque.
+   */
+  @SuppressWarnings("removal")
+  private NatureDuPoste nature(String libelle) {
+    NatureDeTravail nature = new NatureDeTravail(libelle);
+
+    return inTransaction(() ->
+      natures
+        .parLibelle(nature)
+        .orElseGet(() -> {
+          NatureDuPoste declaree = new NatureDuPoste(NatureDeTravailId.newId(), nature);
+          natures.declare(declaree);
+          return declaree;
+        })
+    );
+  }
+
+  private PosteDeTravail posteDeTournage() {
+    return new PosteDeTravail(PosteDeTravailId.newId(), libelleDeTest(), nature("tournage"), Optional.empty());
   }
 
   private static Libelle libelleDeTest() {

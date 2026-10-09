@@ -9,11 +9,18 @@ public final class PostesDeTravailService {
   private final PosteDeTravailRepository repository;
   private final PostesEnUsage usages;
   private final PostesPointes pointages;
+  private final NaturesDeclarees natures;
 
-  public PostesDeTravailService(PosteDeTravailRepository repository, PostesEnUsage usages, PostesPointes pointages) {
+  public PostesDeTravailService(
+    PosteDeTravailRepository repository,
+    PostesEnUsage usages,
+    PostesPointes pointages,
+    NaturesDeclarees natures
+  ) {
     this.repository = repository;
     this.usages = usages;
     this.pointages = pointages;
+    this.natures = natures;
   }
 
   public PosteDeTravail create(PosteDeTravailACreer aCreer) {
@@ -24,7 +31,7 @@ public final class PostesDeTravailService {
       PosteDeTravail.builder()
         .id(id)
         .libelle(aCreer.libelle())
-        .nature(aCreer.nature())
+        .nature(nature(aCreer.nature()))
         .coutHoraire(aCreer.coutHoraire().map(CoutHoraire::value).orElse(null))
     );
   }
@@ -41,7 +48,7 @@ public final class PostesDeTravailService {
     PosteDeTravail existant = get(aModifier.id());
     verifierLibelleLibre(existant.id(), aModifier.libelle());
 
-    return repository.update(existant.revise(aModifier.libelle(), aModifier.nature(), aModifier.coutHoraire()));
+    return repository.update(existant.revise(aModifier.libelle(), nature(aModifier.nature()), aModifier.coutHoraire()));
   }
 
   /**
@@ -61,6 +68,21 @@ public final class PostesDeTravailService {
       throw new PosteDeTravailPointeException(id);
     }
     repository.delete(id);
+  }
+
+  /**
+   * Chemin de transition : le libelle saisi en texte designe la nature qui porte la meme cle, declaree a la volee si
+   * elle manque, pour que le front d'avant le referentiel continue de declarer ses postes. Retire avec glm-back#130.
+   */
+  @SuppressWarnings("removal")
+  private NatureDuPoste nature(NatureDeTravail libelle) {
+    return natures
+      .parLibelle(libelle)
+      .orElseGet(() -> {
+        NatureDuPoste declaree = new NatureDuPoste(NatureDeTravailId.newId(), libelle);
+        natures.declare(declaree);
+        return declaree;
+      });
   }
 
   /**

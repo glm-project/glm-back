@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <changeSet id="poste_reference_sa_nature" author="glm">
+    <preConditions
+      onFail="HALT"
+      onError="HALT"
+      onFailMessage="Des postes de travail portent une nature en texte libre, d'avant le referentiel des natures. Aucun client n'etant deploye, ce schema se remet a zero : supprimer le schema de l'entreprise (DROP SCHEMA ... CASCADE), en gardant public.tenant, puis redemarrer. Voir glm-back#128."
+    >
+      <sqlCheck expectedResult="0">select count(*) from poste_de_travail</sqlCheck>
+    </preConditions>
+    <comment>
+      Le poste ne porte plus sa nature en texte libre mais l'identifiant d'une nature du referentiel : une faute de
+      frappe ne cree plus un metier de plus, et renommer la nature ne touche que sa ligne. Le libelle se relit par
+      jointure. La cle etrangere est le filet : elle interdit aussi de supprimer une nature qu'un poste porte encore,
+      regle qui vit dans le domaine du referentiel. L'index sert cette question de presence.
+    </comment>
+
+    <dropIndex indexName="ix_poste_de_travail_nature" tableName="poste_de_travail" />
+    <dropColumn tableName="poste_de_travail" columnName="nature" />
+
+    <addColumn tableName="poste_de_travail">
+      <column name="nature_id" type="${uuidType}">
+        <constraints nullable="false" />
+      </column>
+    </addColumn>
+
+    <addForeignKeyConstraint
+      constraintName="fk_poste_de_travail_nature"
+      baseTableName="poste_de_travail"
+      baseColumnNames="nature_id"
+      referencedTableName="nature_de_travail"
+      referencedColumnNames="id"
+      onDelete="RESTRICT"
+    />
+
+    <createIndex indexName="ix_poste_de_travail_nature" tableName="poste_de_travail">
+      <column name="nature_id" />
+    </createIndex>
+  </changeSet>
+</databaseChangeLog>

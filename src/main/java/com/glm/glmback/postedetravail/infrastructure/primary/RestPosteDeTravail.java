@@ -14,7 +14,17 @@ record RestPosteDeTravail(
   @Schema(description = "Nom du poste tel que l'atelier le designe.", example = "Tour 1", requiredMode = Schema.RequiredMode.REQUIRED)
   String libelle,
 
-  @Schema(description = "Metier qui s'exerce sur ce poste.", example = "tournage", requiredMode = Schema.RequiredMode.REQUIRED)
+  @Schema(
+    description = "Identifiant de la nature du poste, dans le referentiel des natures de travail.",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  UUID natureId,
+
+  @Schema(
+    description = "Libelle courant de la nature du poste : celui du referentiel, relu a chaque lecture.",
+    example = "tournage",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
   String nature,
 
   @Schema(
@@ -27,7 +37,8 @@ record RestPosteDeTravail(
     return new RestPosteDeTravail(
       poste.id().uuid(),
       poste.libelle().value(),
-      poste.nature().value(),
+      poste.nature().id().uuid(),
+      poste.nature().libelle().value(),
       HourlyRatesAuthorization.disclose(poste.coutHoraire().map(CoutHoraire::value))
     );
   }

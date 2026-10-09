@@ -604,7 +604,7 @@
             "type" : "string"
           },
           "nature" : {
-            "description" : "Metier qui s'exerce sur ce poste. Obligatoire : un poste est declare pour dire quel travail s'y fait.",
+            "description" : "Libelle de la nature du poste, designee a la casse, aux accents et aux espaces pres ; declaree dans le referentiel si elle manque. Metier qui s'exerce sur ce poste. Obligatoire : un poste est declare pour dire quel travail s'y fait.",
             "example" : "tournage",
             "maxLength" : 50,
             "minLength" : 0,
@@ -1195,7 +1195,7 @@
             "type" : "string"
           },
           "nature" : {
-            "description" : "Metier qui s'exerce sur ce poste.",
+            "description" : "Libelle de la nature du poste, designee a la casse, aux accents et aux espaces pres ; declaree dans le referentiel si elle manque. Metier qui s'exerce sur ce poste.",
             "example" : "tournage",
             "maxLength" : 50,
             "minLength" : 0,
@@ -1729,12 +1729,17 @@
             "type" : "string"
           },
           "nature" : {
-            "description" : "Metier qui s'exerce sur ce poste.",
+            "description" : "Libelle courant de la nature du poste : celui du referentiel, relu a chaque lecture.",
             "example" : "tournage",
+            "type" : "string"
+          },
+          "natureId" : {
+            "description" : "Identifiant de la nature du poste, dans le referentiel des natures de travail.",
+            "format" : "uuid",
             "type" : "string"
           }
         },
-        "required" : [ "id", "libelle", "nature" ],
+        "required" : [ "id", "libelle", "nature", "natureId" ],
         "type" : "object"
       },
       "RestPosteDuCout" : {
