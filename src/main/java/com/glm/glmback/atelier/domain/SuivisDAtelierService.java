@@ -51,7 +51,7 @@ public final class SuivisDAtelierService {
   private final PostesConnus postes;
   private final Habilitations habilitations;
   private final PointagesIgnores pointagesIgnores;
-  private final MaximumActivityDurations durees;
+  private final MaximumActivityDurations dureesMax;
   private final Clock clock;
 
   private SuivisDAtelierService(
@@ -61,7 +61,7 @@ public final class SuivisDAtelierService {
     PostesConnus postes,
     Habilitations habilitations,
     PointagesIgnores pointagesIgnores,
-    MaximumActivityDurations durees,
+    MaximumActivityDurations dureesMax,
     Clock clock
   ) {
     this.repository = repository;
@@ -70,7 +70,7 @@ public final class SuivisDAtelierService {
     this.postes = postes;
     this.habilitations = habilitations;
     this.pointagesIgnores = pointagesIgnores;
-    this.durees = durees;
+    this.dureesMax = dureesMax;
     this.clock = clock;
   }
 
@@ -81,9 +81,9 @@ public final class SuivisDAtelierService {
           postes ->
             habilitations ->
               pointagesIgnores ->
-                durees ->
+                dureesMax ->
                   clock ->
-                    new SuivisDAtelierService(repository, elements, operateurs, postes, habilitations, pointagesIgnores, durees, clock);
+                    new SuivisDAtelierService(repository, elements, operateurs, postes, habilitations, pointagesIgnores, dureesMax, clock);
   }
 
   /**
@@ -158,7 +158,7 @@ public final class SuivisDAtelierService {
           commande.type(),
           Optional.empty(),
           ressources,
-          commande.type().ouvreUneActivite() ? Optional.of(durees.current()) : Optional.empty(),
+          commande.type().ouvreUneActivite() ? Optional.of(dureesMax.current()) : Optional.empty(),
           commande.auteur(),
           OrigineDuPointage.POINTAGE,
           horodatage
@@ -316,11 +316,11 @@ public final class SuivisDAtelierService {
   }
 
   public interface SuivisDAtelierServicePointagesIgnoresBuilder {
-    SuivisDAtelierServiceDureesBuilder pointagesIgnores(PointagesIgnores pointagesIgnores);
+    SuivisDAtelierServiceDureeMaxBuilder pointagesIgnores(PointagesIgnores pointagesIgnores);
   }
 
-  public interface SuivisDAtelierServiceDureesBuilder {
-    SuivisDAtelierServiceClockBuilder dureeMaximaleDActivite(MaximumActivityDurations durees);
+  public interface SuivisDAtelierServiceDureeMaxBuilder {
+    SuivisDAtelierServiceClockBuilder dureeMax(MaximumActivityDurations dureesMax);
   }
 
   public interface SuivisDAtelierServiceClockBuilder {

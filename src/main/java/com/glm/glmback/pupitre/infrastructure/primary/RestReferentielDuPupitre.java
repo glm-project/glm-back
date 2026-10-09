@@ -35,7 +35,8 @@ record RestReferentielDuPupitre(
   @Schema(
     description = """
     La duree maximale d'une activite, au format ISO 8601, telle que le gestionnaire l'a fixee (treize heures tant qu'il
-    n'a rien fixe) : l'echeance d'une activite est son debut plus cette duree. Une activite que rien n'a terminee a cette
+    n'a rien fixe) : l'echeance d'une activite ouverte a partir de maintenant est son debut plus cette duree. Une
+    activite deja ouverte garde son echeance, rendue dans ses propres champs. Une activite que rien n'a terminee a son
     echeance se termine automatiquement ; le pupitre hors ligne la lit ici plutot que de la coder.
     """,
     requiredMode = Schema.RequiredMode.REQUIRED,

@@ -129,7 +129,10 @@ contextes n'importe un autre, et le domaine ne code aucun 13 : il n'y en a qu'un
 **La durée est copiée sur l'événement ouvrant.** `SuivisDAtelierService.pointe` lit le port quand un `DEBUT` ou une
 `NON_CONFORMITE` est accepté, et seulement alors, puis écrit la durée sur l'événement (`EvenementDAtelier.dureeMax`,
 colonne `duree_max_secondes`). `Activite.echeance()` la tient de son ouvrant : `Echeance.apres(début, durée)`. **Pas de
-rétroactivité** : une activité garde la durée en vigueur à son début, quoi que le gestionnaire fixe ensuite. La copie est
+rétroactivité** : une activité garde la durée lue à la réception de son début, quoi que le gestionnaire fixe ensuite.
+**Limite connue** : la durée est lue à la _réception_ du pointage, pas à l'heure du geste. Un `DEBUT` pointé hors ligne avant
+un changement de réglage, puis reçu après ce changement, prend la nouvelle durée ; le gestionnaire rattrape l'écart par la
+régularisation (voir l'ADR 0012). La copie est
 nécessaire — la projection `activite_d_atelier.echeance` est recalculée à chaque geste du suivi, et une durée lue en
 direct à ce moment-là s'appliquerait à une activité déjà ouverte. Seule une ouverture porte la durée (invariant de
 `EvenementDAtelier`) : une fin, une régularisation et un pointage ignoré ne lisent rien. Il n'y a pas de repli pour un
