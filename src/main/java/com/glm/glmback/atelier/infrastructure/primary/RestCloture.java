@@ -11,8 +11,8 @@ import java.util.Optional;
   description = """
   La cloture d'un element engage.
 
-  Elle ne fige rien pour le gestionnaire : regularisation, annulation et correction restent possibles ensuite, et la
-  cloture elle-meme peut etre deplacee ou annulee.
+  Elle ne fige rien pour le gestionnaire : la regularisation reste possible ensuite, et la cloture elle-meme peut etre
+  deplacee ou annulee.
   """
 )
 record RestCloture(@Schema(description = "Heure metier de la cloture. Absente, elle vaut l'instant present.") Instant dateDeSurvenue) {

@@ -4,12 +4,11 @@ import com.glm.glmback.coutderevient.domain.DureeTotale;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Duration;
 
-@Schema(description = "Total complet chiffre, ou incomplet sans aucun chiffre partiel.")
+@Schema(description = "Duree totale.")
 record RestDureeDuCout(
-  @Schema(description = "Valeur certaine ISO-8601, absente si incomplet.", example = "PT2H") Duration valeur,
-  @Schema(description = "Vrai si ce total est entierement determine.", requiredMode = Schema.RequiredMode.REQUIRED) boolean complete
+  @Schema(description = "Duree ISO-8601.", example = "PT2H", requiredMode = Schema.RequiredMode.REQUIRED) Duration valeur
 ) {
   static RestDureeDuCout from(DureeTotale total) {
-    return new RestDureeDuCout(total.valeur().orElse(null), total.complete());
+    return new RestDureeDuCout(total.valeur());
   }
 }

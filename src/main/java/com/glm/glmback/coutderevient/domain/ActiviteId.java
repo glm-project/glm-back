@@ -3,7 +3,7 @@ package com.glm.glmback.coutderevient.domain;
 import com.glm.glmback.shared.error.domain.Assert;
 import java.util.UUID;
 
-/** Identite de l'ouverture originale, stable apres correction. */
+/** Identite de l'activite : l'identifiant de son pointage ouvrant d'origine. */
 public record ActiviteId(UUID uuid) {
   public ActiviteId {
     Assert.notNull("id de l'activite", uuid);

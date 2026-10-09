@@ -9,29 +9,17 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/** Une acquisition des projections et une resolution en lot de chacune des ressources, pour chaque nature. */
+/** Une acquisition de la projection et une resolution en lot de chacune des ressources. */
 public final class ListeDesAnomaliesService {
 
-  private final ConflitsDAtelier conflits;
   private final FinsAutomatiquesDAtelier finsAutomatiques;
   private final OperateursConnus operateurs;
   private final PostesConnus postes;
 
-  public ListeDesAnomaliesService(
-    ConflitsDAtelier conflits,
-    FinsAutomatiquesDAtelier finsAutomatiques,
-    OperateursConnus operateurs,
-    PostesConnus postes
-  ) {
-    this.conflits = conflits;
+  public ListeDesAnomaliesService(FinsAutomatiquesDAtelier finsAutomatiques, OperateursConnus operateurs, PostesConnus postes) {
     this.finsAutomatiques = finsAutomatiques;
     this.operateurs = operateurs;
     this.postes = postes;
-  }
-
-  public LectureDesConflits listConflits(AnomaliesDAtelierCriteria criteria, Pageable pageable) {
-    var page = conflits.list(criteria, pageable);
-    return new LectureDesConflits(page, annuaire(page.content().stream().map(ConflitEnListe::cle).toList()));
   }
 
   public LectureDesFinsAutomatiques listFinsAutomatiques(AnomaliesDAtelierCriteria criteria, Instant evaluation, Pageable pageable) {

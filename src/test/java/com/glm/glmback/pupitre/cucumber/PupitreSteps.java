@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.*;
 import com.glm.glmback.cucumber.CategoriesDeProduitDesScenarios;
 import com.glm.glmback.cucumber.CucumberClock;
 import com.glm.glmback.cucumber.EcrituresDuJournalDAtelier;
-import com.glm.glmback.cucumber.EcrituresDuJournalDAtelier.PointageEnvoye;
 import com.glm.glmback.cucumber.rest.CucumberRestClient;
 import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
 import io.cucumber.java.en.Given;
@@ -27,8 +26,8 @@ import tools.jackson.databind.json.JsonMapper;
  * Le referentiel du pupitre vu du client HTTP, du pointage a sa relecture.
  *
  * <p>
- * Tout passe par les API : les referentiels pour declarer poste et operateur, l'atelier pour engager, pointer,
- * annuler et cloturer, le pupitre pour relire. C'est ce qui fait de ce scenario la garantie que les deux contextes
+ * Tout passe par les API : les referentiels pour declarer poste et operateur, l'atelier pour engager, pointer
+ * et cloturer, le pupitre pour relire. C'est ce qui fait de ce scenario la garantie que les deux contextes
  * lisent bien les memes tables — aucun import Java ne relie {@code pupitre} a {@code atelier}.
  * </p>
  *
@@ -73,9 +72,6 @@ public class PupitreSteps {
   private final Map<String, String> nomsDAtelier = new HashMap<>();
   private final Map<String, String> suivis = new HashMap<>();
   private final Map<String, String> gestes = new HashMap<>();
-  private final Map<String, Map<String, Object>> corpsDesGestes = new HashMap<>();
-  private final Map<String, PointageEnvoye> envois = new HashMap<>();
-  private String dernierEvenement;
 
   @Given("le pupitre connait le poste {string}")
   public void lePupitreConnaitLePoste(String alias) {
@@ -149,7 +145,7 @@ public class PupitreSteps {
 
   /**
    * Une ouverture nommee, dont l'identifiant de geste est l'identite de l'activite qu'elle ouvre : c'est lui que
-   * visent ensuite une fin ou une transition, et que le referentiel rend dans {@code ouverture}.
+   * cible la fin d'une regularisation, et que le referentiel rend dans {@code ouverture}.
    */
   @Given("au pupitre, {string} ouvre {string} en {string} sur {string} au poste {string} a {string}")
   public void ouvre(String operateur, String geste, String type, String element, String poste, String instant) {
@@ -158,79 +154,17 @@ public class PupitreSteps {
 
   @Given("au pupitre, {string} ouvre {string} en {string} sur {string} au poste {string} a {string}, recu a {string}")
   public void ouvreRecu(String operateur, String geste, String type, String element, String poste, String instant, String recu) {
-    envoie(geste, element, recu, geste(operateur, poste, instant, type, "OUVERTURE", null));
+    envoie(geste, element, recu, geste(operateur, poste, instant, type));
   }
 
-  @Given("au pupitre, {string} passe {string} en {string} sous le nom {string} sur {string} au poste {string} a {string}")
-  public void passe(String operateur, String cible, String type, String geste, String element, String poste, String instant) {
-    passeRecu(operateur, cible, type, geste, element, poste, instant, instant);
+  @Given("au pupitre, {string} termine par {string} sur {string} au poste {string} a {string}")
+  public void termine(String operateur, String geste, String element, String poste, String instant) {
+    termineRecu(operateur, geste, element, poste, instant, instant);
   }
 
-  @Given("au pupitre, {string} passe {string} en {string} sous le nom {string} sur {string} au poste {string} a {string}, recu a {string}")
-  public void passeRecu(
-    String operateur,
-    String cible,
-    String type,
-    String geste,
-    String element,
-    String poste,
-    String instant,
-    String recu
-  ) {
-    envoie(geste, element, recu, geste(operateur, poste, instant, type, "TRANSITION", gestes.get(cible)));
-  }
-
-  @Given("au pupitre, {string} termine {string} par {string} sur {string} au poste {string} a {string}")
-  public void termine(String operateur, String cible, String geste, String element, String poste, String instant) {
-    termineRecu(operateur, cible, geste, element, poste, instant, instant);
-  }
-
-  @Given("au pupitre, {string} termine {string} par {string} sur {string} au poste {string} a {string}, recu a {string}")
-  public void termineRecu(String operateur, String cible, String geste, String element, String poste, String instant, String recu) {
-    envoie(geste, element, recu, geste(operateur, poste, instant, "FIN", "FIN", gestes.get(cible)));
-  }
-
-  /**
-   * Le meme geste, a l'identique : ce qu'un pupitre renvoie apres une coupure ou au redemarrage.
-   */
-  @When("au pupitre, le geste {string} est rejoue a {string}")
-  public void leGesteEstRejoue(String geste, String instant) {
-    horloge.ilEst(Instant.parse(instant));
-    rest.post(envois.get(geste).uri(), envois.get(geste).corps());
-  }
-
-  @Given("au pupitre, le gestionnaire annule le geste {string} sur {string} a {string}")
-  public void leGestionnaireAnnuleLeGeste(String geste, String element, String instant) {
-    horloge.ilEst(Instant.parse(instant));
-    rest.post(
-      SUIVIS_URI + "/" + suivis.get(element) + "/evenements/" + gestes.get(geste) + "/annulation",
-      JSON.writeValueAsString(Map.of("motif", "saisie en trop"))
-    );
-    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("annulation de %s", geste).isTrue();
-  }
-
-  /**
-   * Corrige l'heure d'un geste en lui gardant tout le reste : son type, son intention, sa cible, son operateur et son
-   * poste. Le remplacant d'un ouvrant garde l'activite qu'il ouvrait.
-   */
-  @Given("au pupitre, le gestionnaire corrige a {string} l'heure du geste {string} sur {string} en {string}")
-  public void leGestionnaireCorrigeLHeureDuGeste(String instant, String geste, String element, String heure) {
-    horloge.ilEst(Instant.parse(instant));
-    Map<String, Object> corps = new LinkedHashMap<>(corpsDesGestes.get(geste));
-    corps.remove("id");
-    corps.put("motif", "heure erronee");
-    corps.put("dateDeSurvenue", heure);
-    ecritures.corrige(suivis.get(element), gestes.get(geste), corps);
-    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("correction de %s", geste).isTrue();
-  }
-
-  @Given("le dernier pointage sur {string} est annule a {string}")
-  public void leDernierPointageEstAnnule(String element, String instant) {
-    horloge.ilEst(Instant.parse(instant));
-    rest.post(
-      SUIVIS_URI + "/" + suivis.get(element) + "/evenements/" + dernierEvenement + "/annulation",
-      JSON.writeValueAsString(Map.of("motif", "saisie en trop"))
-    );
+  @Given("au pupitre, {string} termine par {string} sur {string} au poste {string} a {string}, recu a {string}")
+  public void termineRecu(String operateur, String geste, String element, String poste, String instant, String recu) {
+    envoie(geste, element, recu, geste(operateur, poste, instant, "FIN"));
   }
 
   @Given("{string} est supprime du referentiel")
@@ -253,6 +187,11 @@ public class PupitreSteps {
   @Then("le referentiel du pupitre est date du {string}")
   public void leReferentielEstDateDu(String instant) {
     assertThat(CucumberRestTestContext.getElement("$.genereLe")).isEqualTo(instant);
+  }
+
+  @Then("le referentiel du pupitre porte la duree maximale d'activite {string}")
+  public void lReferentielPorteLaDureeMaximale(String duree) {
+    assertThat(CucumberRestTestContext.getElement("$.dureeMaximaleDActivite")).isEqualTo(duree);
   }
 
   @Then("les categories du referentiel du pupitre commencent par {string}")
@@ -342,74 +281,10 @@ public class PupitreSteps {
     assertThat(CucumberRestTestContext.getResponse().orElseThrow()).doesNotContain("tauxHoraire", "coutHoraire");
   }
 
-  @Given("au pupitre, {string} ouvre {string} en {string} sur {string} sans poste a {string}")
-  public void ouvreSansPoste(String operateur, String geste, String type, String element, String instant) {
-    ouvreRecu(operateur, geste, type, element, null, instant, instant);
-  }
-
-  @Given("au pupitre, {string} termine {string} par {string} sur {string} sans poste a {string}")
-  public void termineSansPoste(String operateur, String cible, String geste, String element, String instant) {
-    termineRecu(operateur, cible, geste, element, null, instant, instant);
-  }
-
-  @Then("{string} ne porte aucun conflit au referentiel du pupitre")
-  public void nePorteAucunConflit(String element) {
-    assertThat(suivi(element)).containsKey("conflits");
-    assertThat(conflits(element)).isEmpty();
-  }
-
-  @Then("le conflit de {string} au referentiel du pupitre ne porte aucun poste")
-  public void leConflitNePorteAucunPoste(String element) {
-    assertThat(conflits(element))
-      .singleElement()
-      .satisfies(conflit -> assertThat(conflit).doesNotContainKey("poste"));
-  }
-
-  @Then("les conflits de {string} au referentiel du pupitre sont")
-  public void lesConflitsSont(String element, List<Map<String, String>> attendus) {
-    assertThat(suivi(element)).containsKey("conflits");
-    List<Map<String, String>> resumes = conflits(element)
-      .stream()
-      .map(conflit -> {
-        Map<String, String> ligne = new LinkedHashMap<>();
-        ligne.put("operateur", alias(operateurs, String.valueOf(conflit.get("operateur"))));
-        ligne.put("poste", alias(postes, String.valueOf(conflit.get("poste"))));
-        ligne.put("activites", identitesNommees(conflit.get("activites")));
-        ligne.put("pointages", identitesNommees(conflit.get("pointages")));
-        return ligne;
-      })
-      .toList();
-    List<Map<String, String>> normalises = attendus
-      .stream()
-      .map(attendu -> {
-        Map<String, String> ligne = new LinkedHashMap<>(attendu);
-        ligne.replaceAll((colonne, valeur) -> valeur == null ? "" : valeur);
-        return ligne;
-      })
-      .toList();
-    assertThat(resumes).isEqualTo(normalises);
-  }
-
-  @SuppressWarnings("unchecked")
-  private String identitesNommees(Object identites) {
-    return ((List<String>) identites).stream()
-      .map(identite -> alias(gestes, identite))
-      .collect(java.util.stream.Collectors.joining(","));
-  }
-
-  @SuppressWarnings("unchecked")
-  private List<Map<String, Object>> conflits(String element) {
-    return (List<Map<String, Object>>) suivi(element).get("conflits");
-  }
-
-  private Map<String, Object> geste(String operateur, String poste, String instant, String type, String intention, String cible) {
+  private Map<String, Object> geste(String operateur, String poste, String instant, String type) {
     Map<String, Object> corps = new LinkedHashMap<>();
     corps.put("id", UUID.randomUUID().toString());
     corps.put("type", type);
-    corps.put("intention", intention);
-    if (cible != null) {
-      corps.put("cible", cible);
-    }
     corps.put("operateur", operateurs.get(operateur));
     if (poste != null) {
       corps.put("poste", postes.get(poste));
@@ -421,17 +296,15 @@ public class PupitreSteps {
 
   private void envoie(String geste, String element, String recu, Map<String, Object> corps) {
     horloge.ilEst(Instant.parse(recu));
-    envois.put(geste, ecritures.pointe(suivis.get(element), corps));
+    ecritures.pointe(suivis.get(element), corps);
     assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("pointage de %s", geste).isTrue();
     gestes.put(geste, String.valueOf(corps.get("id")));
-    corpsDesGestes.put(geste, corps);
   }
 
   private void pointe(String instant, String element, Map<String, Object> corps) {
     horloge.ilEst(Instant.parse(instant));
     ecritures.pointe(suivis.get(element), corps);
-    List<Map<String, Object>> journal = lus("$.journal");
-    dernierEvenement = String.valueOf(journal.getLast().get("id"));
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage doit etre accepte").isTrue();
   }
 
   private List<Map<String, String>> resume(String element, Iterable<String> colonnes) {

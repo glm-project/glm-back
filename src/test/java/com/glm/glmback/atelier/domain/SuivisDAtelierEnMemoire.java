@@ -3,6 +3,7 @@ package com.glm.glmback.atelier.domain;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 class SuivisDAtelierEnMemoire implements SuiviDAtelierRepository {
 
   private final Map<SuiviDAtelierId, SuiviDAtelier> suivis = new ConcurrentHashMap<>();
+  private final List<SuiviDAtelierId> verrouilles = new ArrayList<>();
 
   @Override
   public SuiviDAtelier create(SuiviDAtelier suivi) {
@@ -54,7 +56,16 @@ class SuivisDAtelierEnMemoire implements SuiviDAtelierRepository {
 
   @Override
   public Optional<SuiviDAtelier> getForUpdate(SuiviDAtelierId id) {
+    verrouilles.add(id);
+
     return get(id);
+  }
+
+  /**
+   * Les suivis lus pour ecriture, donc verrouilles, dans l'ordre.
+   */
+  List<SuiviDAtelierId> verrouilles() {
+    return List.copyOf(verrouilles);
   }
 
   @Override
@@ -65,6 +76,20 @@ class SuivisDAtelierEnMemoire implements SuiviDAtelierRepository {
       .filter(suivi -> !suivi.estCloture())
       .filter(suivi -> suivi.element().id().equals(element))
       .findFirst();
+  }
+
+  @Override
+  public boolean contientEvenement(EvenementDAtelierId evenement) {
+    return suivis
+      .values()
+      .stream()
+      .anyMatch(suivi ->
+        suivi
+          .journal()
+          .evenements()
+          .stream()
+          .anyMatch(fait -> fait.id().equals(evenement))
+      );
   }
 
   @Override

@@ -19,6 +19,7 @@ class ReferentielsDuPupitreServiceTest {
       .operateurs(() -> List.of(OPERATEUR_DUPONT))
       .suivis(() -> List.of(suiviOf42Vierge()))
       .categories(() -> List.of(CATEGORIE_OF, CATEGORIE_MOULE))
+      .dureeMaximaleDActivite(() -> DUREE_MAXIMALE_TREIZE_HEURES)
       .clock(() -> LE_10_MAI_2026_A_9H);
 
     ReferentielDuPupitre referentiel = service.referentiel();
@@ -29,12 +30,29 @@ class ReferentielsDuPupitreServiceTest {
     assertThat(referentiel.categories()).containsExactly(CATEGORIE_OF, CATEGORIE_MOULE);
   }
 
+  /**
+   * La duree maximale d'une activite vient du port du noyau partage, que le parametrage implemente : le pupitre n'a pas
+   * sa propre valeur, et il suit celle que le gestionnaire a fixee.
+   */
+  @Test
+  void shouldDonnerLaDureeMaximaleQueLePortRend() {
+    ReferentielsDuPupitreService service = ReferentielsDuPupitreService.builder()
+      .operateurs(List::of)
+      .suivis(List::of)
+      .categories(List::of)
+      .dureeMaximaleDActivite(() -> DUREE_MAXIMALE_HUIT_HEURES)
+      .clock(() -> LE_10_MAI_2026_A_7H);
+
+    assertThat(service.referentiel().dureeMaximaleDActivite()).isEqualTo(DUREE_MAXIMALE_HUIT_HEURES);
+  }
+
   @Test
   void shouldRendreUnReferentielVideQuandLEntrepriseNAEncoreRienDeclare() {
     ReferentielsDuPupitreService service = ReferentielsDuPupitreService.builder()
       .operateurs(List::of)
       .suivis(List::of)
       .categories(List::of)
+      .dureeMaximaleDActivite(() -> DUREE_MAXIMALE_TREIZE_HEURES)
       .clock(() -> LE_10_MAI_2026_A_7H);
 
     ReferentielDuPupitre referentiel = service.referentiel();

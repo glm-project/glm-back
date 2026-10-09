@@ -25,7 +25,16 @@ class EcheanceTest {
    */
   @Test
   void shouldTomberTreizeHeuresApresLeDebut() {
-    assertThat(Echeance.apres(LE_10_MAI_2026_A_8H).value()).isEqualTo(Instant.parse("2026-05-10T21:00:00Z"));
+    assertThat(Echeance.apres(LE_10_MAI_2026_A_8H, DUREE_MAXIMALE_TREIZE_HEURES).value()).isEqualTo(Instant.parse("2026-05-10T21:00:00Z"));
+  }
+
+  /**
+   * La duree vient de l'activite, qui la tient du reglage en vigueur a son debut : fixee a huit heures par le
+   * gestionnaire, l'echeance d'une activite commencee a 8 h tombe a 16 h.
+   */
+  @Test
+  void shouldTomberLaDureeParametreeApresLeDebut() {
+    assertThat(Echeance.apres(LE_10_MAI_2026_A_8H, DUREE_MAXIMALE_HUIT_HEURES).value()).isEqualTo(Instant.parse("2026-05-10T16:00:00Z"));
   }
 
   /**
@@ -37,7 +46,7 @@ class EcheanceTest {
     ZoneId paris = ZoneId.of("Europe/Paris");
     Instant debut = LocalDateTime.parse("2026-03-29T01:30:00").atZone(paris).toInstant();
 
-    Instant echeance = Echeance.apres(debut).value();
+    Instant echeance = Echeance.apres(debut, DUREE_MAXIMALE_TREIZE_HEURES).value();
 
     assertThat(echeance.atZone(paris).toLocalDateTime()).isEqualTo(LocalDateTime.parse("2026-03-29T15:30:00"));
   }

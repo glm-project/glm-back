@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted on 4 October 2026 for Atelier conflict resolution.
+Superseded on 9 October 2026 by [ADR 0011](0011-regularise-an-automatic-end-directly.md) (glm-front#254). Accepted on
+4 October 2026 for Atelier conflict resolution.
+
+The preview, the confirmation, the receipt and the `apercu-obsolete` refusal described below were removed with the
+conflicts and the acts of correction. The text is kept as the record of that protocol.
 
 ## Context
 

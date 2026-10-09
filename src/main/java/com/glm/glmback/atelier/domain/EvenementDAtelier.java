@@ -1,5 +1,6 @@
 package com.glm.glmback.atelier.domain;
 
+import com.glm.glmback.shared.activityduration.domain.MaximumActivityDuration;
 import com.glm.glmback.shared.error.domain.Assert;
 import java.time.Instant;
 import java.util.Optional;
@@ -8,10 +9,9 @@ import java.util.Optional;
  * Un fait du journal d'atelier : tel operateur a fait telle action sur tel poste de travail, a telle heure.
  *
  * <p>
- * Son intention dit ce qu'il fait d'une activite. Une ouverture et une transition ouvrent une activite, dont elles
- * portent l'identite ; une transition et une fin visent l'activite qu'elles remplacent ou terminent. Seule une fin se
- * pointe FIN. Le fait qui ouvre une activite en porte l'identite : la sienne, ou, pour le remplacant d'une correction,
- * celle qu'ouvrait le fait corrige.
+ * Son type dit ce qu'il fait d'une activite. Un debut et une non conformite ouvrent une activite, dont ils portent
+ * l'identite : la leur. Une fin n'en ouvre aucune et ferme l'activite en cours de sa cle, sans la designer ; seule la
+ * fin que le gestionnaire regularise porte une cible, l'activite echue dont elle etablit la fin.
  * </p>
  *
  * <p>
@@ -29,7 +29,6 @@ import java.util.Optional;
 public record EvenementDAtelier(
   EvenementDAtelierId id,
   TypeDEvenementDAtelier type,
-  IntentionDePointage intention,
   Optional<ActiviteId> activite,
   Optional<ActiviteId> activiteVisee,
   OperateurId operateur,
@@ -37,16 +36,14 @@ public record EvenementDAtelier(
   Optional<NatureDOperation> nature,
   Optional<CoutHoraire> coutHoraire,
   Optional<TauxHoraire> tauxHoraire,
+  Optional<MaximumActivityDuration> dureeMax,
   Auteur auteur,
   OrigineDuPointage origine,
-  Horodatage horodatage,
-  Optional<Annulation> annulation,
-  Optional<EvenementDAtelierId> remplace
+  Horodatage horodatage
 ) {
   public EvenementDAtelier {
     Assert.notNull("id", id);
     Assert.notNull("type", type);
-    Assert.notNull("intention", intention);
     Assert.notNull("activite", activite);
     Assert.notNull("activite visee", activiteVisee);
     Assert.notNull("operateur", operateur);
@@ -54,19 +51,17 @@ public record EvenementDAtelier(
     Assert.notNull("nature de l'operation", nature);
     Assert.notNull("cout horaire", coutHoraire);
     Assert.notNull("taux horaire", tauxHoraire);
+    Assert.notNull("duree maximale d'activite", dureeMax);
     Assert.notNull("auteur", auteur);
     Assert.notNull("origine", origine);
     Assert.notNull("horodatage", horodatage);
-    Assert.notNull("annulation", annulation);
-    Assert.notNull("evenement remplace", remplace);
-    exigeUneIntentionCoherente(type, intention, activite, activiteVisee);
+    exigeLesActivitesDuType(type, activite, activiteVisee, dureeMax, origine);
   }
 
   private EvenementDAtelier(EvenementDAtelierBuilder builder) {
     this(
       builder.id,
       builder.type,
-      builder.intention,
       builder.activite,
       builder.activiteVisee,
       builder.operateur,
@@ -74,11 +69,10 @@ public record EvenementDAtelier(
       builder.nature,
       builder.coutHoraire,
       builder.tauxHoraire,
+      builder.dureeMax,
       builder.auteur,
       builder.origine,
-      builder.horodatage,
-      Optional.empty(),
-      builder.remplace
+      builder.horodatage
     );
   }
 
@@ -90,61 +84,8 @@ public record EvenementDAtelier(
     return new EvenementDAtelierBuilder();
   }
 
-  public EvenementDAtelier annule(Annulation annulation) {
-    if (estAnnule()) {
-      throw new EvenementDejaAnnuleException(id);
-    }
-
-    return new EvenementDAtelier(
-      id,
-      type,
-      intention,
-      activite,
-      activiteVisee,
-      operateur,
-      poste,
-      nature,
-      coutHoraire,
-      tauxHoraire,
-      auteur,
-      origine,
-      horodatage,
-      Optional.of(annulation),
-      remplace
-    );
-  }
-
   /**
-   * Ce fait, pris comme remplacant du fait corrige : s'il ouvre une activite et que le fait corrige en ouvrait une, il
-   * en reprend l'identite. Les gestes qui visaient l'activite corrigee y restent ainsi rattaches.
-   */
-  EvenementDAtelier enRemplacementDe(EvenementDAtelier corrige) {
-    return new EvenementDAtelier(
-      id,
-      type,
-      intention,
-      intention.ouvreUneActivite() && corrige.activite().isPresent() ? corrige.activite() : activite,
-      activiteVisee,
-      operateur,
-      poste,
-      nature,
-      coutHoraire,
-      tauxHoraire,
-      auteur,
-      origine,
-      horodatage,
-      annulation,
-      Optional.of(corrige.id())
-    );
-  }
-
-  public boolean estAnnule() {
-    return annulation.isPresent();
-  }
-
-  /**
-   * Vrai si le fait a ete porte au journal par un acte du gestionnaire — une regularisation, ou le remplacant d'une
-   * correction. C'est son origine qui le dit, jamais l'ecart entre les deux dates, qui caracterise aussi un pointage
+   * Vrai si le fait a ete porte au journal par un acte du gestionnaire — une regularisation. C'est son origine qui le dit, jamais l'ecart entre les deux dates, qui caracterise aussi un pointage
    * rejoue hors ligne, ni l'identite de l'auteur.
    */
   public boolean estUneRegularisation() {
@@ -163,18 +104,24 @@ public record EvenementDAtelier(
     return horodatage.dateDEnregistrement();
   }
 
-  private static void exigeUneIntentionCoherente(
+  /**
+   * Seul un debut ou une non conformite ouvre une activite, et seule la fin d'une regularisation en cible une : un
+   * pointage ne designe jamais l'activite qu'il ferme, la cle la donne. Seule une ouverture porte la duree maximale
+   * dont son activite tient son echeance.
+   */
+  private static void exigeLesActivitesDuType(
     TypeDEvenementDAtelier type,
-    IntentionDePointage intention,
     Optional<ActiviteId> activite,
-    Optional<ActiviteId> activiteVisee
+    Optional<ActiviteId> activiteVisee,
+    Optional<MaximumActivityDuration> dureeMax,
+    OrigineDuPointage origine
   ) {
-    if (
-      !intention.admet(type)
-      || activite.isPresent() != intention.ouvreUneActivite()
-      || activiteVisee.isPresent() != intention.viseUneActivite()
-    ) {
-      throw new IntentionDePointageIncoherenteException(type, intention);
+    boolean ouvre = type.ouvreUneActivite();
+    if (activite.isPresent() != ouvre || dureeMax.isPresent() != ouvre) {
+      throw new EvenementDAtelierIncoherentException(type, origine);
+    }
+    if (activiteVisee.isPresent() != (!ouvre && origine == OrigineDuPointage.REGULARISATION)) {
+      throw new EvenementDAtelierIncoherentException(type, origine);
     }
   }
 
@@ -182,7 +129,6 @@ public record EvenementDAtelier(
     implements
       EvenementDAtelierIdBuilder,
       EvenementDAtelierTypeBuilder,
-      EvenementDAtelierIntentionBuilder,
       EvenementDAtelierActiviteBuilder,
       EvenementDAtelierActiviteViseeBuilder,
       EvenementDAtelierOperateurBuilder,
@@ -190,15 +136,14 @@ public record EvenementDAtelier(
       EvenementDAtelierNatureBuilder,
       EvenementDAtelierCoutHoraireBuilder,
       EvenementDAtelierTauxHoraireBuilder,
+      EvenementDAtelierDureeMaxBuilder,
       EvenementDAtelierAuteurBuilder,
       EvenementDAtelierOrigineBuilder,
-      EvenementDAtelierRemplacementBuilder,
       EvenementDAtelierHorodatageBuilder
   {
 
     private EvenementDAtelierId id;
     private TypeDEvenementDAtelier type;
-    private IntentionDePointage intention;
     private Optional<ActiviteId> activite;
     private Optional<ActiviteId> activiteVisee;
     private OperateurId operateur;
@@ -206,10 +151,10 @@ public record EvenementDAtelier(
     private Optional<NatureDOperation> nature;
     private Optional<CoutHoraire> coutHoraire;
     private Optional<TauxHoraire> tauxHoraire;
+    private Optional<MaximumActivityDuration> dureeMax;
     private Auteur auteur;
     private OrigineDuPointage origine;
     private Horodatage horodatage;
-    private Optional<EvenementDAtelierId> remplace;
 
     @Override
     public EvenementDAtelierTypeBuilder id(EvenementDAtelierId id) {
@@ -219,15 +164,8 @@ public record EvenementDAtelier(
     }
 
     @Override
-    public EvenementDAtelierIntentionBuilder type(TypeDEvenementDAtelier type) {
+    public EvenementDAtelierActiviteBuilder type(TypeDEvenementDAtelier type) {
       this.type = type;
-
-      return this;
-    }
-
-    @Override
-    public EvenementDAtelierActiviteBuilder intention(IntentionDePointage intention) {
-      this.intention = intention;
 
       return this;
     }
@@ -275,8 +213,15 @@ public record EvenementDAtelier(
     }
 
     @Override
-    public EvenementDAtelierAuteurBuilder tauxHoraire(Optional<TauxHoraire> tauxHoraire) {
+    public EvenementDAtelierDureeMaxBuilder tauxHoraire(Optional<TauxHoraire> tauxHoraire) {
       this.tauxHoraire = tauxHoraire;
+
+      return this;
+    }
+
+    @Override
+    public EvenementDAtelierAuteurBuilder dureeMax(Optional<MaximumActivityDuration> dureeMax) {
+      this.dureeMax = dureeMax;
 
       return this;
     }
@@ -289,15 +234,8 @@ public record EvenementDAtelier(
     }
 
     @Override
-    public EvenementDAtelierRemplacementBuilder origine(OrigineDuPointage origine) {
+    public EvenementDAtelierHorodatageBuilder origine(OrigineDuPointage origine) {
       this.origine = origine;
-
-      return this;
-    }
-
-    @Override
-    public EvenementDAtelierHorodatageBuilder remplace(Optional<EvenementDAtelierId> remplace) {
-      this.remplace = remplace;
 
       return this;
     }
@@ -315,11 +253,7 @@ public record EvenementDAtelier(
   }
 
   public interface EvenementDAtelierTypeBuilder {
-    EvenementDAtelierIntentionBuilder type(TypeDEvenementDAtelier type);
-  }
-
-  public interface EvenementDAtelierIntentionBuilder {
-    EvenementDAtelierActiviteBuilder intention(IntentionDePointage intention);
+    EvenementDAtelierActiviteBuilder type(TypeDEvenementDAtelier type);
   }
 
   public interface EvenementDAtelierActiviteBuilder {
@@ -347,7 +281,11 @@ public record EvenementDAtelier(
   }
 
   public interface EvenementDAtelierTauxHoraireBuilder {
-    EvenementDAtelierAuteurBuilder tauxHoraire(Optional<TauxHoraire> tauxHoraire);
+    EvenementDAtelierDureeMaxBuilder tauxHoraire(Optional<TauxHoraire> tauxHoraire);
+  }
+
+  public interface EvenementDAtelierDureeMaxBuilder {
+    EvenementDAtelierAuteurBuilder dureeMax(Optional<MaximumActivityDuration> dureeMax);
   }
 
   public interface EvenementDAtelierAuteurBuilder {
@@ -355,11 +293,7 @@ public record EvenementDAtelier(
   }
 
   public interface EvenementDAtelierOrigineBuilder {
-    EvenementDAtelierRemplacementBuilder origine(OrigineDuPointage origine);
-  }
-
-  public interface EvenementDAtelierRemplacementBuilder {
-    EvenementDAtelierHorodatageBuilder remplace(Optional<EvenementDAtelierId> remplace);
+    EvenementDAtelierHorodatageBuilder origine(OrigineDuPointage origine);
   }
 
   public interface EvenementDAtelierHorodatageBuilder {

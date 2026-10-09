@@ -49,6 +49,30 @@
         "required" : [ "content", "currentPage", "pageSize", "totalElementsCount" ],
         "type" : "object"
       },
+      "PageRestFinAutomatiqueEnListe" : {
+        "properties" : {
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RestFinAutomatiqueEnListe"
+            },
+            "type" : "array"
+          },
+          "currentPage" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "pageSize" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElementsCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "content", "currentPage", "pageSize", "totalElementsCount" ],
+        "type" : "object"
+      },
       "PageRestOperateur" : {
         "properties" : {
           "content" : {
@@ -121,82 +145,8 @@
         "required" : [ "content", "currentPage", "pageSize", "totalElementsCount" ],
         "type" : "object"
       },
-      "RestActeAnnulation" : {
-        "properties" : {
-          "kind" : {
-            "enum" : [ "ANNULATION" ],
-            "type" : "string"
-          },
-          "motif" : {
-            "maxLength" : 255,
-            "minLength" : 0,
-            "type" : "string"
-          },
-          "pointage" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        },
-        "required" : [ "kind", "motif", "pointage" ]
-      },
-      "RestActeCorrection" : {
-        "properties" : {
-          "fait" : {
-            "$ref" : "#/components/schemas/RestFaitDeResolution"
-          },
-          "kind" : {
-            "enum" : [ "CORRECTION" ],
-            "type" : "string"
-          },
-          "motif" : {
-            "maxLength" : 255,
-            "minLength" : 0,
-            "type" : "string"
-          },
-          "pointage" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        },
-        "required" : [ "fait", "kind", "motif", "pointage" ]
-      },
-      "RestActeDeResolution" : {
-        "discriminator" : {
-          "mapping" : {
-            "ANNULATION" : "#/components/schemas/RestActeAnnulation",
-            "CORRECTION" : "#/components/schemas/RestActeCorrection",
-            "REGULARISATION" : "#/components/schemas/RestActeRegularisation"
-          },
-          "propertyName" : "kind"
-        },
-        "oneOf" : [ {
-          "$ref" : "#/components/schemas/RestActeAnnulation"
-        }, {
-          "$ref" : "#/components/schemas/RestActeCorrection"
-        }, {
-          "$ref" : "#/components/schemas/RestActeRegularisation"
-        } ],
-        "properties" : {
-          "kind" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "kind" ]
-      },
-      "RestActeRegularisation" : {
-        "properties" : {
-          "fait" : {
-            "$ref" : "#/components/schemas/RestFaitDeResolution"
-          },
-          "kind" : {
-            "enum" : [ "REGULARISATION" ],
-            "type" : "string"
-          }
-        },
-        "required" : [ "fait", "kind" ]
-      },
       "RestActiviteCiteeDuCout" : {
-        "description" : "Une autre activite du meme operateur, menee de front ou responsable d'un partage inconnu, tous elements confondus.",
+        "description" : "Une autre activite du meme operateur, menee de front, tous elements confondus.",
         "properties" : {
           "element" : {
             "$ref" : "#/components/schemas/RestElementCiteDuCout",
@@ -216,7 +166,7 @@
         "type" : "object"
       },
       "RestActiviteDeLaFeuilleDeTemps" : {
-        "description" : "Une periode de travail de l'operateur sur un element, ramenee au jour qui la porte.\n\nLe champ activite porte l'identite, les bornes entieres et l'etat explicite. Une activite en cours ou a resoudre\nn'a pas de fin ; une fin automatique porte l'echeance et signale son anomalie.\n",
+        "description" : "Une periode de travail de l'operateur sur un element, ramenee au jour qui la porte.\n\nLe champ activite porte l'identite, les bornes entieres et l'etat explicite. Une activite en cours n'a pas de fin ;\nune fin automatique porte l'echeance et signale son anomalie.\n",
         "properties" : {
           "activite" : {
             "$ref" : "#/components/schemas/RestActiviteInterpreteeDeLaFeuilleDeTemps",
@@ -315,10 +265,6 @@
           "duree" : {
             "type" : "string"
           },
-          "etat" : {
-            "enum" : [ "A_RESOUDRE", "EN_COURS", "TERMINEE", "ECHUE" ],
-            "type" : "string"
-          },
           "evenement" : {
             "format" : "uuid",
             "type" : "string"
@@ -342,11 +288,11 @@
             "type" : "string"
           }
         },
-        "required" : [ "activite", "categorie", "debut", "etat", "evenement", "operateurId" ],
+        "required" : [ "activite", "categorie", "debut", "duree", "evenement", "fin", "operateurId" ],
         "type" : "object"
       },
       "RestActiviteDuPupitre" : {
-        "description" : "Une activite ouverte sur cet element : qui travaille, sur quel poste, dans quel etat, depuis quand.\n\nUne transition ouvre une activite distincte de l autre categorie. Les activites a resoudre et celles dont\nl echeance est atteinte ne sont pas actionnables et ne figurent pas ici.\n",
+        "description" : "Une activite ouverte sur cet element : qui travaille, sur quel poste, dans quel etat, depuis quand.\n\nLes activites dont l echeance est atteinte ne sont pas actionnables et ne figurent pas ici.\n",
         "properties" : {
           "categorie" : {
             "description" : "TRAVAIL ou NON_CONFORMITE.",
@@ -369,7 +315,7 @@
             "type" : "string"
           },
           "ouverture" : {
-            "description" : "Identite stable de l activite, conservee apres correction de son ouvrant.",
+            "description" : "Identite stable de l activite : l identifiant de son pointage ouvrant.",
             "format" : "uuid",
             "type" : "string"
           },
@@ -396,7 +342,7 @@
             "type" : "string"
           },
           "echeance" : {
-            "description" : "Echeance de l'activite : son debut plus 13 heures ecoulees. Si rien ne la termine avant, elle se termine\nautomatiquement a cet instant, avec une anomalie.\n",
+            "description" : "Echeance de l'activite : son debut plus la duree maximale d'une activite en vigueur quand elle a commence (celle que\nle gestionnaire avait fixee, treize heures par defaut), en heures ecoulees. Si aucune fin ne la termine avant, elle se termine automatiquement a cet instant : c'est une fin automatique, que le gestionnaire\nregularise.\n",
             "format" : "date-time",
             "type" : "string"
           },
@@ -405,7 +351,7 @@
             "description" : "Operateur en activite, absent si la fiche n'est plus resolue au referentiel."
           },
           "ouverture" : {
-            "description" : "Identite de l'activite : l'identifiant de son pointage ouvrant d'origine. C'est elle qu'une fin ou une transition\nvise dans `cible`, y compris apres la correction de ce pointage.\n",
+            "description" : "Identite de l'activite : l'identifiant de son pointage ouvrant d'origine. C'est elle que vise la fin d'une\nregularisation (`activite`).\n",
             "format" : "uuid",
             "type" : "string"
           },
@@ -427,7 +373,7 @@
           },
           "etat" : {
             "description" : "TERMINEE_AUTOMATIQUEMENT signale l'anomalie de fin automatique.",
-            "enum" : [ "TERMINEE", "TERMINEE_AUTOMATIQUEMENT", "EN_COURS", "A_RESOUDRE" ],
+            "enum" : [ "TERMINEE", "TERMINEE_AUTOMATIQUEMENT", "EN_COURS" ],
             "type" : "string"
           },
           "fin" : {
@@ -435,13 +381,8 @@
             "format" : "date-time",
             "type" : "string"
           },
-          "finAuPlusTard" : {
-            "description" : "Borne possible issue des faits, seulement pour une activite a resoudre ; ce n'est pas une fin reelle.",
-            "format" : "date-time",
-            "type" : "string"
-          },
           "id" : {
-            "description" : "Identite stable de l'activite, conservee apres correction.",
+            "description" : "Identite stable de l'activite : l'identifiant de son pointage ouvrant d'origine.",
             "format" : "uuid",
             "type" : "string"
           }
@@ -463,100 +404,6 @@
         "required" : [ "pointage", "suivi" ],
         "type" : "object"
       },
-      "RestAnnulation" : {
-        "description" : "L'annulation d'un evenement. L'evenement reste au journal, porteur de cette annulation.",
-        "properties" : {
-          "auteur" : {
-            "description" : "Utilisateur ayant annule l'evenement.",
-            "example" : "gestionnaire.impeccmold",
-            "type" : "string"
-          },
-          "date" : {
-            "description" : "Instant auquel l'annulation a ete saisie.",
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "motif" : {
-            "description" : "Motif saisi par le gestionnaire.",
-            "example" : "Erreur de saisie",
-            "type" : "string"
-          }
-        },
-        "required" : [ "auteur", "date", "motif" ],
-        "type" : "object"
-      },
-      "RestAnnulationDEvenement" : {
-        "description" : "L'annulation d'une saisie en trop.\n\nL'evenement n'est pas supprime : il reste au journal, porteur de son annulation, et le repli l'ecarte.\n",
-        "properties" : {
-          "motif" : {
-            "description" : "Motif de l'annulation.",
-            "example" : "Erreur de saisie",
-            "maxLength" : 255,
-            "minLength" : 0,
-            "type" : "string"
-          }
-        },
-        "required" : [ "motif" ],
-        "type" : "object"
-      },
-      "RestAnomalieEnListe" : {
-        "discriminator" : {
-          "mapping" : {
-            "CONFLIT" : "#/components/schemas/RestConflitEnListe",
-            "FIN_AUTOMATIQUE" : "#/components/schemas/RestFinAutomatiqueEnListe"
-          },
-          "propertyName" : "nature"
-        },
-        "oneOf" : [ {
-          "$ref" : "#/components/schemas/RestConflitEnListe"
-        }, {
-          "$ref" : "#/components/schemas/RestFinAutomatiqueEnListe"
-        } ],
-        "properties" : {
-          "nature" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "nature" ]
-      },
-      "RestApercuDeResolution" : {
-        "description" : "L'acte exact et ses consequences autoritaires, sans ecriture. La proposition explicite est recalculee a la confirmation.",
-        "properties" : {
-          "acte" : {
-            "$ref" : "#/components/schemas/RestActeDeResolution"
-          },
-          "adresse" : {
-            "$ref" : "#/components/schemas/RestAdresseDossierAnomalie"
-          },
-          "apres" : {
-            "$ref" : "#/components/schemas/RestDossierAnomalie"
-          },
-          "avant" : {
-            "$ref" : "#/components/schemas/RestDossierAnomalie"
-          },
-          "commande" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "empreinteConsequences" : {
-            "type" : "string"
-          },
-          "evaluation" : {
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "evenement" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "revision" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        },
-        "required" : [ "acte", "adresse", "apres", "avant", "commande", "empreinteConsequences", "evaluation", "revision" ],
-        "type" : "object"
-      },
       "RestCategorieDeProduit" : {
         "description" : "Une categorie de produit de l'entreprise.",
         "properties" : {
@@ -574,53 +421,8 @@
         "required" : [ "code", "utilisee" ],
         "type" : "object"
       },
-      "RestChoixDeResolution" : {
-        "description" : "Une hypothese structuree issue du diagnostic, sans motif et sans selection par defaut.",
-        "properties" : {
-          "code" : {
-            "enum" : [ "RATTACHER_FIN_A_ACTIVITE_REMPLACANTE", "ANNULER_TRANSITION", "REGULARISER_FIN", "CORRIGER_FIN_TARDIVE", "CORRIGER_TRANSITION_TARDIVE" ],
-            "type" : "string"
-          },
-          "fait" : {
-            "description" : "Le fait prerempli de l'acte : sans instant pour REGULARISER_FIN, que le gestionnaire date ; avec l'instant du geste tardif pour une correction.",
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/RestFaitDeResolution"
-            }, {
-              "$ref" : "#/components/schemas/RestFaitARegulariser"
-            } ]
-          },
-          "kind" : {
-            "enum" : [ "ANNULATION", "CORRECTION", "REGULARISATION" ],
-            "type" : "string"
-          },
-          "pointage" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        },
-        "required" : [ "code", "kind", "pointage" ],
-        "type" : "object"
-      },
-      "RestCibleDuConflit" : {
-        "properties" : {
-          "activite" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "ouvrant" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "termineePar" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        },
-        "required" : [ "activite" ],
-        "type" : "object"
-      },
       "RestCloture" : {
-        "description" : "La cloture d'un element engage.\n\nElle ne fige rien pour le gestionnaire : regularisation, annulation et correction restent possibles ensuite, et la\ncloture elle-meme peut etre deplacee ou annulee.\n",
+        "description" : "La cloture d'un element engage.\n\nElle ne fige rien pour le gestionnaire : la regularisation reste possible ensuite, et la cloture elle-meme peut etre\ndeplacee ou annulee.\n",
         "properties" : {
           "dateDeSurvenue" : {
             "description" : "Heure metier de la cloture. Absente, elle vaut l'instant present.",
@@ -628,271 +430,6 @@
             "type" : "string"
           }
         },
-        "type" : "object"
-      },
-      "RestConfirmationAEnregistrer" : {
-        "properties" : {
-          "acte" : {
-            "$ref" : "#/components/schemas/RestActeDeResolution"
-          },
-          "adresse" : {
-            "$ref" : "#/components/schemas/RestAdresseDossierAnomalie"
-          },
-          "commande" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "empreinteConsequences" : {
-            "type" : "string"
-          },
-          "evenement" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "revision" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        },
-        "required" : [ "acte", "adresse", "commande", "empreinteConsequences", "revision" ],
-        "type" : "object"
-      },
-      "RestConfirmationDeResolution" : {
-        "discriminator" : {
-          "mapping" : {
-            "ENREGISTREE" : "#/components/schemas/RestConfirmationEnregistree",
-            "NON_ATTESTEE" : "#/components/schemas/RestConfirmationNonAttestee"
-          },
-          "propertyName" : "kind"
-        },
-        "oneOf" : [ {
-          "$ref" : "#/components/schemas/RestConfirmationEnregistree"
-        }, {
-          "$ref" : "#/components/schemas/RestConfirmationNonAttestee"
-        } ],
-        "properties" : {
-          "kind" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "kind" ]
-      },
-      "RestConfirmationEnregistree" : {
-        "properties" : {
-          "dossier" : {
-            "$ref" : "#/components/schemas/RestDossierAnomalie"
-          },
-          "kind" : {
-            "enum" : [ "ENREGISTREE" ],
-            "type" : "string"
-          },
-          "recu" : {
-            "$ref" : "#/components/schemas/RestRecuDActe"
-          }
-        },
-        "required" : [ "dossier", "kind", "recu" ]
-      },
-      "RestConfirmationNonAttestee" : {
-        "description" : "Aucun recu visible ; l absence ne prouve pas l echec de la commande.",
-        "properties" : {
-          "kind" : {
-            "enum" : [ "NON_ATTESTEE" ],
-            "type" : "string"
-          }
-        },
-        "required" : [ "kind" ]
-      },
-      "RestConflitDeSynthese" : {
-        "description" : "Sequence en conflit de l'operateur, rendue lorsqu'une activite ou un pointage concerne la semaine.",
-        "properties" : {
-          "activites" : {
-            "description" : "Identites stables des activites, dans l'ordre de la sequence ; peut etre vide.",
-            "items" : {
-              "format" : "uuid",
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "element" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "pointages" : {
-            "description" : "Identites des pointages en ordre metier, meme sans activite interpretable.",
-            "items" : {
-              "format" : "uuid",
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "poste" : {
-            "description" : "Poste lorsqu'il est connu, absent sinon.",
-            "format" : "uuid",
-            "type" : "string"
-          }
-        },
-        "required" : [ "activites", "element", "pointages" ],
-        "type" : "object"
-      },
-      "RestConflitDuCout" : {
-        "description" : "Sequence en conflit de l'element ou responsable d'un partage humain incomplet sur un autre element.",
-        "properties" : {
-          "activites" : {
-            "description" : "Identites originales des activites de la sequence, dans leur ordre.",
-            "items" : {
-              "format" : "uuid",
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "element" : {
-            "description" : "Element de fabrication portant la sequence.",
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "operateur" : {
-            "description" : "Operateur de la sequence.",
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "pointages" : {
-            "description" : "Identites des faits actifs contradictoires, dans leur ordre.",
-            "items" : {
-              "format" : "uuid",
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "poste" : {
-            "description" : "Poste de la sequence, absent sans poste.",
-            "format" : "uuid",
-            "type" : "string"
-          }
-        },
-        "required" : [ "activites", "element", "operateur", "pointages" ],
-        "type" : "object"
-      },
-      "RestConflitDuPupitre" : {
-        "description" : "Sequence interpretee en conflit par atelier. Aucune de ses activites n est actionnable ; une nouvelle ouverture reste possible.",
-        "properties" : {
-          "activites" : {
-            "description" : "Identites stables des activites a resoudre, dans l ordre des ouvertures. Peut etre vide.",
-            "items" : {
-              "format" : "uuid",
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "operateur" : {
-            "description" : "Operateur de la sequence.",
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "pointages" : {
-            "description" : "Identites des pointages de la sequence, dans l ordre du journal.",
-            "items" : {
-              "format" : "uuid",
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "poste" : {
-            "description" : "Poste de la sequence, absent si aucun poste n a ete pointe.",
-            "format" : "uuid",
-            "type" : "string"
-          }
-        },
-        "required" : [ "activites", "operateur", "pointages" ],
-        "type" : "object"
-      },
-      "RestConflitEnListe" : {
-        "description" : "Une sequence en conflit issue des projections courantes, sans journal.",
-        "properties" : {
-          "adresse" : {
-            "$ref" : "#/components/schemas/RestAdresseDossierAnomalie"
-          },
-          "datePremierPointage" : {
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "designation" : {
-            "type" : "string"
-          },
-          "elementId" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "nature" : {
-            "enum" : [ "CONFLIT" ],
-            "type" : "string"
-          },
-          "nombrePointages" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "operateur" : {
-            "$ref" : "#/components/schemas/RestOperateurDAtelier"
-          },
-          "operateurId" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "poste" : {
-            "$ref" : "#/components/schemas/RestPosteDAtelier"
-          },
-          "posteId" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "revision" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        },
-        "required" : [ "adresse", "datePremierPointage", "designation", "elementId", "nature", "nombrePointages", "operateurId", "revision" ]
-      },
-      "RestCorrection" : {
-        "description" : "La correction d'une saisie fausse : une annulation et une regularisation jouees en un seul acte.\n\nL'evenement d'origine reste au journal, annule, et le remplacant y prend sa place a l'heure corrigee. Le remplacant\nd'un pointage qui ouvrait une activite reprend l'identite de cette activite : les gestes qui la visaient y restent\nrattaches.\n",
-        "properties" : {
-          "cible" : {
-            "description" : "L'activite que vise une transition ou une fin, designee par l'identifiant de son pointage ouvrant d'origine. Requise\npour une transition ou une fin, absente pour une ouverture.\n",
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "dateDeSurvenue" : {
-            "description" : "Heure metier corrigee.",
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "intention" : {
-            "description" : "Ce que le geste fait d'une activite : OUVERTURE, TRANSITION ou FIN, comme pour un pointage. Seule une fin se pointe\nFIN. Aucune valeur par defaut.\n",
-            "enum" : [ "OUVERTURE", "TRANSITION", "FIN" ],
-            "type" : "string"
-          },
-          "motif" : {
-            "description" : "Motif de l'annulation de la saisie fausse.",
-            "example" : "Heure erronee",
-            "maxLength" : 255,
-            "minLength" : 0,
-            "type" : "string"
-          },
-          "operateur" : {
-            "description" : "Identifiant de l'operateur dont le temps est affecte.",
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "poste" : {
-            "description" : "Identifiant du poste de travail, facultatif.",
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "type" : {
-            "description" : "Nature du pointage corrige.",
-            "enum" : [ "DEBUT", "NON_CONFORMITE", "FIN" ],
-            "type" : "string"
-          }
-        },
-        "required" : [ "dateDeSurvenue", "intention", "motif", "operateur", "type" ],
         "type" : "object"
       },
       "RestCout" : {
@@ -914,19 +451,12 @@
         "type" : "object"
       },
       "RestCoutDeRevient" : {
-        "description" : "Le cout de revient d'un element de fabrication, une ligne par nature d'operation.\n\nRien n'est stocke : le rapport est recalcule a chaque lecture depuis les activites interpretees par atelier, pour qu'une saisie\nregularisee apres coup compte a l'heure ou le travail a eu lieu.\n\nChaque total complet est chiffre ; un total incomplet ne porte aucune somme partielle.\nLa main d'oeuvre est arrondie par fenetre de partage puis repartie au centime, la machine une fois par activite ;\nlignes et rapport additionnent ces montants.\n",
+        "description" : "Le cout de revient d'un element de fabrication, une ligne par nature d'operation.\n\nRien n'est stocke : le rapport est recalcule a chaque lecture depuis les activites interpretees par atelier, pour qu'une saisie\nregularisee apres coup compte a l'heure ou le travail a eu lieu.\n\nLa main d'oeuvre est arrondie par fenetre de partage puis repartie au centime, la machine une fois par activite ;\nlignes et rapport additionnent ces montants.\n",
         "properties" : {
           "activitesEnCours" : {
             "description" : "Nombre d'activites en cours exclues du temps, des couts et du diviseur.",
             "format" : "int32",
             "type" : "integer"
-          },
-          "conflits" : {
-            "description" : "Conflits de l'element et sequences responsables de valeurs incompletes, meme sur un autre element.",
-            "items" : {
-              "$ref" : "#/components/schemas/RestConflitDuCout"
-            },
-            "type" : "array"
           },
           "cout" : {
             "$ref" : "#/components/schemas/RestCout",
@@ -1060,167 +590,70 @@
         "required" : [ "libelle", "nature" ],
         "type" : "object"
       },
-      "RestDemandeDApercu" : {
-        "properties" : {
-          "acte" : {
-            "$ref" : "#/components/schemas/RestActeDeResolution"
-          },
-          "commande" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "revision" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        },
-        "required" : [ "acte", "commande", "revision" ],
-        "type" : "object"
-      },
-      "RestDescriptionDActiviteDeSupervision" : {
-        "properties" : {
-          "categorie" : {
-            "enum" : [ "TRAVAIL", "NON_CONFORMITE" ],
-            "type" : "string"
-          },
-          "debut" : {
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "echeance" : {
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "element" : {
-            "$ref" : "#/components/schemas/RestElementDeSupervision"
-          },
-          "id" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "operateurId" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "poste" : {
-            "$ref" : "#/components/schemas/RestPosteDeSupervision"
-          }
-        },
-        "required" : [ "categorie", "debut", "echeance", "element", "id", "operateurId" ],
-        "type" : "object"
-      },
-      "RestDiagnosticDeConflit" : {
-        "properties" : {
-          "cible" : {
-            "$ref" : "#/components/schemas/RestCibleDuConflit"
-          },
-          "pointage" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "raison" : {
-            "enum" : [ "GESTE_AVANT_OUVERTURE", "OUVRANT_ANNULE", "TRANSITION_MEME_CATEGORIE", "CIBLE_ECHUE_AVEC_AUTRE_ACTIVITE", "CONTRADICTION_REGULARISATION", "CIBLE_REMPLACEE", "CIBLE_DEJA_TERMINEE" ],
-            "type" : "string"
-          }
-        },
-        "required" : [ "cible", "pointage", "raison" ],
-        "type" : "object"
-      },
       "RestDossierAnomalie" : {
-        "description" : "Un dossier ancre dans le journal immutable, avec revision et interpretation a un meme instant. Les activites concernees restent presentes dans le resultat d un acte meme quand l ancre est annulee.",
+        "description" : "Le dossier d'une fin automatique non regularisee : l'element de fabrication concerne, l'activite echue, les pointages de sa cle, a l'instant d'evaluation, et la borne de la fin a regulariser.",
         "properties" : {
-          "activites" : {
-            "items" : {
-              "$ref" : "#/components/schemas/RestActiviteDuDossier"
-            },
-            "type" : "array"
+          "activite" : {
+            "$ref" : "#/components/schemas/RestActiviteDuDossier"
           },
           "adresse" : {
             "$ref" : "#/components/schemas/RestAdresseDossierAnomalie"
           },
-          "choix" : {
-            "items" : {
-              "$ref" : "#/components/schemas/RestChoixDeResolution"
-            },
-            "type" : "array"
+          "borneDeFin" : {
+            "description" : "L'instant que la fin regularisee ne peut pas depasser : le plus tot du debut suivant sur la cle (operateur et poste)\net de la cloture. Absent quand rien ne borne la fin ; la regularisation reste de toute facon bornee par l'instant\npresent.\n",
+            "format" : "date-time",
+            "type" : "string"
           },
-          "continuations" : {
-            "description" : "Les autres sequences encore en conflit de ce suivi, par ancre active ; aucune redirection implicite.",
-            "items" : {
-              "$ref" : "#/components/schemas/RestConflitEnListe"
-            },
-            "type" : "array"
+          "designation" : {
+            "description" : "Designation de l'element de fabrication, copiee a l'engagement.",
+            "type" : "string"
           },
-          "diagnostics" : {
-            "items" : {
-              "$ref" : "#/components/schemas/RestDiagnosticDeConflit"
-            },
-            "type" : "array"
-          },
-          "enConflit" : {
-            "description" : "Le perimetre concerne reste en conflit dans l interpretation du domaine, meme sans intervalle d activite ou avec une ancre annulee.",
-            "type" : "boolean"
+          "elementId" : {
+            "description" : "Identifiant de l'element de fabrication du suivi.",
+            "format" : "uuid",
+            "type" : "string"
           },
           "evaluation" : {
             "format" : "date-time",
             "type" : "string"
           },
-          "finAutomatique" : {
-            "description" : "Une activite concernee reste terminee automatiquement a son echeance faute de fin reelle, quel que soit l etat de l adresse : l anomalie n est traitee que si ni enConflit ni finAutomatique ne sont vrais.",
-            "type" : "boolean"
-          },
-          "kind" : {
-            "enum" : [ "EN_CONFLIT", "INTROUVABLE", "ANCRE_ANNULEE", "FIN_AUTOMATIQUE", "SANS_ANOMALIE" ],
-            "type" : "string"
-          },
-          "perimetre" : {
-            "$ref" : "#/components/schemas/RestSequenceDuDossier",
-            "description" : "Le perimetre conserve des faits et activites concernes, y compris apres resolution ou annulation de l ancre."
+          "pointages" : {
+            "description" : "Les pointages du suivi qui portent la cle de l'activite, operateur et poste : du plus ancien au plus recent.",
+            "items" : {
+              "$ref" : "#/components/schemas/RestEvenementDAtelier"
+            },
+            "type" : "array"
           },
           "revision" : {
             "format" : "int64",
             "type" : "integer"
-          },
-          "sequence" : {
-            "$ref" : "#/components/schemas/RestSequenceDuDossier"
-          },
-          "suivi" : {
-            "$ref" : "#/components/schemas/RestSuiviDAtelier"
           }
         },
-        "required" : [ "activites", "adresse", "choix", "continuations", "diagnostics", "enConflit", "evaluation", "finAutomatique", "kind", "revision", "suivi" ],
+        "required" : [ "activite", "adresse", "designation", "elementId", "evaluation", "pointages", "revision" ],
         "type" : "object"
       },
       "RestDureeDeSynthese" : {
-        "description" : "Total complet chiffre, ou incomplet sans valeur, jamais une somme partielle ni zero par defaut.",
+        "description" : "Duree totale.",
         "properties" : {
-          "complete" : {
-            "description" : "Vrai si aucune activite a resoudre ne contribue a ce total.",
-            "type" : "boolean"
-          },
           "valeur" : {
-            "description" : "Duree certaine, absente si le total est incomplet.",
+            "description" : "Duree ISO-8601.",
             "example" : "PT2H",
             "type" : "string"
           }
         },
-        "required" : [ "complete" ],
+        "required" : [ "valeur" ],
         "type" : "object"
       },
       "RestDureeDuCout" : {
-        "description" : "Total complet chiffre, ou incomplet sans aucun chiffre partiel.",
+        "description" : "Duree totale.",
         "properties" : {
-          "complete" : {
-            "description" : "Vrai si ce total est entierement determine.",
-            "type" : "boolean"
-          },
           "valeur" : {
-            "description" : "Valeur certaine ISO-8601, absente si incomplet.",
+            "description" : "Duree ISO-8601.",
             "example" : "PT2H",
             "type" : "string"
           }
         },
-        "required" : [ "complete" ],
+        "required" : [ "valeur" ],
         "type" : "object"
       },
       "RestDureeMaxDActivite" : {
@@ -1319,11 +752,11 @@
           },
           "duree" : {
             "$ref" : "#/components/schemas/RestDureeDeSynthese",
-            "description" : "Total sur l'element dans la semaine, NC comprise. Incomplet sans valeur si une activite a resoudre y contribue."
+            "description" : "Total sur l'element dans la semaine, NC comprise."
           },
           "dureeNonConformite" : {
             "$ref" : "#/components/schemas/RestDureeDeSynthese",
-            "description" : "Part de NC. Incomplete sans valeur si une NC a resoudre y contribue ; une contradiction de travail ne masque pas une NC certaine."
+            "description" : "Part de NC."
           },
           "id" : {
             "description" : "Identifiant de l'element de fabrication.",
@@ -1384,25 +817,16 @@
         "type" : "object"
       },
       "RestEvenementDAtelier" : {
-        "description" : "Un evenement du journal d'un element engage.\n\nL'horodatage est bitemporel : heure du fait et heure de son enregistrement. Une pause s'y lit par une fin\nciblee, puis une ouverture a la reprise.\n",
+        "description" : "Un evenement du journal d'un element engage.\n\nL'horodatage est bitemporel : heure du fait et heure de son enregistrement. Une pause s'y lit par une fin,\npuis une ouverture a la reprise.\n",
         "properties" : {
           "activite" : {
-            "description" : "Identite de l'activite qu'ouvre une ouverture ou une transition, absente pour une fin. C'est l'identifiant du\npointage ouvrant d'origine : le remplacant d'une correction garde celle de l'ouvrant qu'il corrige. C'est elle\nqu'une transition ou une fin vise dans `cible`.\n",
+            "description" : "Identite de l'activite qu'ouvre un debut ou une non conformite, absente pour une fin. C'est l'identifiant du\npointage ouvrant.\n",
             "format" : "uuid",
             "type" : "string"
-          },
-          "annulation" : {
-            "$ref" : "#/components/schemas/RestAnnulation",
-            "description" : "Presente lorsque l'evenement a ete annule. L'evenement reste au journal."
           },
           "auteur" : {
             "description" : "Utilisateur ayant saisi l'evenement.",
             "example" : "dupont",
-            "type" : "string"
-          },
-          "cible" : {
-            "description" : "Activite que vise une transition ou une fin, absente pour une ouverture.",
-            "format" : "uuid",
             "type" : "string"
           },
           "coutHoraire" : {
@@ -1421,17 +845,12 @@
             "type" : "string"
           },
           "estUneRegularisation" : {
-            "description" : "Vrai lorsque l'evenement a ete saisi par le gestionnaire, en regularisation ou comme remplacant d'une correction.\nUn pointage ne l'est jamais, meme rejoue hors ligne avec l'heure de son geste : une saisie differee se lit a l'ecart\nentre dateDeSurvenue et dateDEnregistrement.\n",
+            "description" : "Vrai lorsque l'evenement a ete saisi par le gestionnaire, en regularisation.\nUn pointage ne l'est jamais, meme rejoue hors ligne avec l'heure de son geste : une saisie differee se lit a l'ecart\nentre dateDeSurvenue et dateDEnregistrement.\n",
             "type" : "boolean"
           },
           "id" : {
-            "description" : "Identifiant de l'evenement, a reprendre pour l'annuler ou le corriger.",
+            "description" : "Identifiant de l'evenement.",
             "format" : "uuid",
-            "type" : "string"
-          },
-          "intention" : {
-            "description" : "Ce que le pointage fait d'une activite : OUVERTURE, TRANSITION ou FIN.",
-            "enum" : [ "OUVERTURE", "TRANSITION", "FIN" ],
             "type" : "string"
           },
           "nature" : {
@@ -1456,82 +875,18 @@
             "format" : "uuid",
             "type" : "string"
           },
-          "remplace" : {
-            "description" : "Evenement corrige par ce remplacant. Absent pour un pointage, une regularisation ou un historique sans lien explicite.",
-            "format" : "uuid",
-            "type" : "string"
-          },
           "tauxHoraire" : {
             "description" : "Taux horaire de l'operateur, copie a la saisie. Absent si l'operateur n'est pas valorise. Reserve au GESTIONNAIRE, absent pour les autres roles.",
             "example" : 22.0,
             "type" : "number"
           },
           "type" : {
-            "description" : "Nature du pointage. La reprise du travail apres une non conformite se pointe DEBUT, en transition.",
+            "description" : "Nature du pointage. La reprise du travail apres une non conformite se pointe DEBUT.",
             "enum" : [ "DEBUT", "NON_CONFORMITE", "FIN" ],
             "type" : "string"
           }
         },
-        "required" : [ "auteur", "dateDEnregistrement", "dateDeSurvenue", "estUneRegularisation", "id", "intention", "operateurId", "type" ],
-        "type" : "object"
-      },
-      "RestFaitARegulariser" : {
-        "description" : "La fin que le gestionnaire regularise sur une activite terminee automatiquement. Aucune heure n'est proposee : il la saisit, et la reprend dans le fait de l'acte REGULARISATION.",
-        "properties" : {
-          "activiteVisee" : {
-            "description" : "L'activite d'origine a terminer, celle de activites[].activite, jamais l'identifiant de l'evenement ouvrant.",
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "intention" : {
-            "enum" : [ "OUVERTURE", "TRANSITION", "FIN" ],
-            "type" : "string"
-          },
-          "operateur" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "poste" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "type" : {
-            "enum" : [ "DEBUT", "NON_CONFORMITE", "FIN" ],
-            "type" : "string"
-          }
-        },
-        "required" : [ "activiteVisee", "intention", "operateur", "type" ],
-        "type" : "object"
-      },
-      "RestFaitDeResolution" : {
-        "properties" : {
-          "activiteVisee" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "instant" : {
-            "description" : "Instant saisi, conserve avec son decalage et ses decimales.",
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "intention" : {
-            "enum" : [ "OUVERTURE", "TRANSITION", "FIN" ],
-            "type" : "string"
-          },
-          "operateur" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "poste" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "type" : {
-            "enum" : [ "DEBUT", "NON_CONFORMITE", "FIN" ],
-            "type" : "string"
-          }
-        },
-        "required" : [ "instant", "intention", "operateur", "type" ],
+        "required" : [ "auteur", "dateDEnregistrement", "dateDeSurvenue", "estUneRegularisation", "id", "operateurId", "type" ],
         "type" : "object"
       },
       "RestFeuilleDeTemps" : {
@@ -1570,7 +925,7 @@
         "type" : "object"
       },
       "RestFinAutomatiqueEnListe" : {
-        "description" : "Une activite terminee a son echeance faute de fin reelle, issue des projections courantes, sans journal. L'adresse est celle de l'ouvrant actif ; activite est l'identite d'origine que visent les actes.",
+        "description" : "Une activite terminee a son echeance faute de fin reelle, issue des projections courantes, sans journal. L'adresse est celle du pointage qui ouvre l'activite ; activite est l'identite de l'activite, que vise la regularisation.",
         "properties" : {
           "activite" : {
             "format" : "uuid",
@@ -1594,10 +949,6 @@
             "format" : "uuid",
             "type" : "string"
           },
-          "nature" : {
-            "enum" : [ "FIN_AUTOMATIQUE" ],
-            "type" : "string"
-          },
           "operateur" : {
             "$ref" : "#/components/schemas/RestOperateurDAtelier"
           },
@@ -1617,58 +968,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "activite", "adresse", "debut", "designation", "echeance", "elementId", "nature", "operateurId", "revision" ]
-      },
-      "RestIntervalleDActivite" : {
-        "description" : "Du temps passe sur un element, deduit du journal et jamais stocke, tel qu'il se lit a l'instant de la lecture.\n\nC'est l'intervalle de l'activite elle-meme : une fin pointee ou regularisee le termine a son heure. Une activite que rien n'a terminee avant son echeance, son debut plus 13 heures, y est terminee\nautomatiquement a cette echeance, avec une anomalie.\n",
-        "properties" : {
-          "aResoudre" : {
-            "description" : "Vrai si l'activite de l'intervalle est a resoudre : des pointages contradictoires la concernent, dans une sequence\nen conflit. Elle n'est alors ni en cours ni terminee, n'a ni fin ni duree a compter, et son echeance ne la termine\npas. Une correction ou une annulation du gestionnaire la rend de nouveau interpretable, au recalcul.\n",
-            "type" : "boolean"
-          },
-          "activite" : {
-            "description" : "Activite de l'intervalle : l'identifiant de son pointage ouvrant d'origine, celui que vise une fin ou une transition.",
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "categorie" : {
-            "description" : "TRAVAIL ou NON_CONFORMITE.",
-            "enum" : [ "TRAVAIL", "NON_CONFORMITE" ],
-            "type" : "string"
-          },
-          "debut" : {
-            "description" : "Debut de l'intervalle.",
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "evenement" : {
-            "description" : "Evenement qui a ouvert l'intervalle.",
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "fin" : {
-            "description" : "Fin de l'intervalle, absente s'il est encore en cours ou a resoudre. Pour une activite terminee automatiquement, son\necheance.\n",
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "finAutomatique" : {
-            "description" : "Vrai si l'activite de l'intervalle est terminee automatiquement a son echeance, faute de fin reelle : c'est une\nanomalie, qu'une fin pointee au plus tard a l'echeance, ou regularisee, retire au recalcul.\n",
-            "type" : "boolean"
-          },
-          "nature" : {
-            "description" : "Nature de l'operation, facultative.",
-            "type" : "string"
-          },
-          "operateur" : {
-            "$ref" : "#/components/schemas/RestOperateurDAtelier",
-            "description" : "Operateur concerne."
-          },
-          "poste" : {
-            "$ref" : "#/components/schemas/RestPosteDAtelier",
-            "description" : "Poste de travail, facultatif."
-          }
-        },
-        "required" : [ "aResoudre", "activite", "finAutomatique" ],
+        "required" : [ "activite", "adresse", "debut", "designation", "echeance", "elementId", "operateurId", "revision" ],
         "type" : "object"
       },
       "RestJourDeLaSemaine" : {
@@ -1696,7 +996,7 @@
         "properties" : {
           "dureeOperationnelle" : {
             "$ref" : "#/components/schemas/RestDureeDeSynthese",
-            "description" : "Total de travail et NC du jour, y compris automatiquement. Incomplet sans valeur si une activite a resoudre y contribue ; une activite en cours ne compte rien."
+            "description" : "Total de travail et NC du jour, y compris automatiquement ; une activite en cours ne compte rien."
           },
           "jour" : {
             "description" : "Date dans le fuseau de l'entreprise.",
@@ -1705,7 +1005,7 @@
             "type" : "string"
           },
           "pointages" : {
-            "description" : "Tous les pointages actifs de l'operateur dates de ce jour, meme sans activite interpretable.",
+            "description" : "Tous les pointages de l'operateur dates de ce jour, meme sans activite interpretable.",
             "items" : {
               "$ref" : "#/components/schemas/RestPointageDeSyntheseDesHeures"
             },
@@ -1746,7 +1046,7 @@
             "description" : "Premier debut comptabilise, derniere fin certaine de cette nature si elle existe."
           },
           "pointages" : {
-            "description" : "Les pointages de la ligne dans l'ordre ou ils ont commence, ceux a resoudre compris : de quoi justifier son cout.",
+            "description" : "Les pointages de la ligne dans l'ordre ou ils ont commence, de quoi justifier son cout.",
             "items" : {
               "$ref" : "#/components/schemas/RestPointageDuCout"
             },
@@ -1857,19 +1157,15 @@
         "type" : "object"
       },
       "RestMontantDuCout" : {
-        "description" : "Total complet chiffre, ou incomplet sans aucun chiffre partiel.",
+        "description" : "Montant total, deja au centime.",
         "properties" : {
-          "complete" : {
-            "description" : "Vrai si ce total est entierement determine.",
-            "type" : "boolean"
-          },
           "valeur" : {
-            "description" : "Valeur certaine, absente si incomplet.",
+            "description" : "Montant.",
             "example" : 90.0,
             "type" : "number"
           }
         },
-        "required" : [ "complete" ],
+        "required" : [ "valeur" ],
         "type" : "object"
       },
       "RestOperateur" : {
@@ -2079,34 +1375,6 @@
         "required" : [ "codes" ],
         "type" : "object"
       },
-      "RestPageDesAnomalies" : {
-        "description" : "Une page et son total acquis ensemble dans les projections courantes.",
-        "properties" : {
-          "complete" : {
-            "type" : "boolean"
-          },
-          "lignes" : {
-            "items" : {
-              "$ref" : "#/components/schemas/RestAnomalieEnListe"
-            },
-            "type" : "array"
-          },
-          "page" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "size" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "total" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        },
-        "required" : [ "complete", "lignes", "page", "size", "total" ],
-        "type" : "object"
-      },
       "RestParametrage" : {
         "description" : "Les reglages de l'entreprise.",
         "properties" : {
@@ -2124,22 +1392,15 @@
         "type" : "object"
       },
       "RestPartDuPointageDuCout" : {
-        "description" : "Une part d'un pointage termine : la periode ou l'operateur occupait le meme ensemble de postes.\n\nSa main d'oeuvre vaut taux horaire x duree / diviseur, deja repartie au centime dans la fenetre de partage. Elle est\nincomplete, sans diviseur, quand un pointage a resoudre de l'operateur, sur un autre poste, empeche de la partager.\n",
+        "description" : "Une part d'un pointage termine : la periode ou l'operateur occupait le meme ensemble de postes.\n\nSa main d'oeuvre vaut taux horaire x duree / diviseur, deja repartie au centime dans la fenetre de partage.\n",
         "properties" : {
-          "bloquants" : {
-            "description" : "Les activites a resoudre qui empechent de connaitre le diviseur.",
-            "items" : {
-              "$ref" : "#/components/schemas/RestActiviteCiteeDuCout"
-            },
-            "type" : "array"
-          },
           "debut" : {
             "description" : "Debut de la part.",
             "format" : "date-time",
             "type" : "string"
           },
           "diviseur" : {
-            "description" : "Nombre de postes occupes en meme temps, absent quand le partage est inconnu.",
+            "description" : "Nombre de postes occupes en meme temps.",
             "example" : 2,
             "format" : "int32",
             "type" : "integer"
@@ -2166,7 +1427,7 @@
             "type" : "array"
           }
         },
-        "required" : [ "bloquants", "debut", "duree", "fin", "mainDOeuvre", "paralleles" ],
+        "required" : [ "debut", "diviseur", "duree", "fin", "mainDOeuvre", "paralleles" ],
         "type" : "object"
       },
       "RestPeriodeDuCout" : {
@@ -2188,11 +1449,6 @@
       "RestPointage" : {
         "description" : "Un pointage de l'operateur sur un element engage, date a l'instant present.",
         "properties" : {
-          "cible" : {
-            "description" : "L'activite que vise une transition ou une fin, designee par l'identifiant de son pointage ouvrant d'origine : celui\nque porte `activite` au journal. Requise pour une transition ou une fin, absente pour une ouverture. Elle doit etre\nune activite de ce suivi, du meme operateur et du meme poste.\n",
-            "format" : "uuid",
-            "type" : "string"
-          },
           "dateDeSurvenue" : {
             "description" : "Heure metier du geste. Absente, elle vaut l'instant de reception initial. La fournir ne fait pas du pointage une regularisation.",
             "format" : "date-time",
@@ -2201,11 +1457,6 @@
           "id" : {
             "description" : "Identifiant durable du geste, genere par le pupitre.",
             "format" : "uuid",
-            "type" : "string"
-          },
-          "intention" : {
-            "description" : "Ce que le geste fait d'une activite : OUVERTURE en cree une nouvelle, y compris en non conformite ou a la reprise\napres une pause ; TRANSITION remplace l'activite visee par une activite de l'autre categorie ; FIN termine l'activite\nvisee. Seule une fin se pointe FIN. Aucune valeur par defaut.\n",
-            "enum" : [ "OUVERTURE", "TRANSITION", "FIN" ],
             "type" : "string"
           },
           "operateur" : {
@@ -2219,22 +1470,17 @@
             "type" : "string"
           },
           "type" : {
-            "description" : "DEBUT, NON_CONFORMITE ou FIN. La reprise du travail apres une non conformite se pointe DEBUT, en transition.",
+            "description" : "DEBUT, NON_CONFORMITE ou FIN. Un debut ou une non conformite ouvre une activite, une fin ferme celle qui est en cours\nsur la cle (operateur, element, poste) : le geste ne designe aucune activite. Le serveur ignore un pointage qui ne\ns'accorde pas a l'etat de la cle.\n",
             "enum" : [ "DEBUT", "NON_CONFORMITE", "FIN" ],
             "type" : "string"
           }
         },
-        "required" : [ "id", "intention", "operateur", "type" ],
+        "required" : [ "id", "operateur", "type" ],
         "type" : "object"
       },
       "RestPointageDeSyntheseDesHeures" : {
         "description" : "Un pointage du journal brut du jour, tel qu'il figure dans le releve : un geste sur un element.\n",
         "properties" : {
-          "cible" : {
-            "description" : "Identite stable de l'activite visee par une fin ou une transition.",
-            "format" : "uuid",
-            "type" : "string"
-          },
           "dateDeSurvenue" : {
             "description" : "Heure metier a laquelle le pointage a eu lieu.",
             "format" : "date-time",
@@ -2246,13 +1492,8 @@
             "type" : "string"
           },
           "id" : {
-            "description" : "Identite du pointage actif.",
+            "description" : "Identite du pointage.",
             "format" : "uuid",
-            "type" : "string"
-          },
-          "intention" : {
-            "description" : "Intention explicite du geste.",
-            "enum" : [ "OUVERTURE", "TRANSITION", "FIN" ],
             "type" : "string"
           },
           "poste" : {
@@ -2266,16 +1507,16 @@
             "type" : "string"
           }
         },
-        "required" : [ "dateDeSurvenue", "element", "id", "intention", "type" ],
+        "required" : [ "dateDeSurvenue", "element", "id", "type" ],
         "type" : "object"
       },
       "RestPointageDuCout" : {
-        "description" : "Un pointage d'une ligne, avec tout ce qui permet de refaire son calcul.\n\nTermine, il porte sa duree, sa machine (cout horaire x duree, jamais divisee) et sa main d'oeuvre, somme de ses\nparts. A resoudre, il n'a ni fin, ni duree, ni montant : seulement sa fin au plus tard et les faits contradictoires\nde sa sequence. Les montants sont deja au centime, et ceux des pointages s'additionnent exactement au cout de la\nligne quand il est complet.\n",
+        "description" : "Un pointage d'une ligne, avec tout ce qui permet de refaire son calcul.\n\nIl porte sa duree, sa machine (cout horaire x duree, jamais divisee) et sa main d'oeuvre, somme de ses parts. Les\nmontants sont deja au centime, et ceux des pointages s'additionnent exactement au cout de la ligne.\n",
         "properties" : {
           "anomalies" : {
             "description" : "Anomalies du pointage, vide s'il n'en a aucune.",
             "items" : {
-              "enum" : [ "FIN_AUTOMATIQUE", "A_RESOUDRE", "PARTAGE_INCONNU" ],
+              "enum" : [ "FIN_AUTOMATIQUE" ],
               "type" : "string"
             },
             "type" : "array"
@@ -2284,13 +1525,6 @@
             "description" : "Travail ou reprise de non conformite.",
             "enum" : [ "TRAVAIL", "NON_CONFORMITE" ],
             "type" : "string"
-          },
-          "contradictoires" : {
-            "description" : "Faits contradictoires d'un pointage a resoudre, dans leur ordre ; vide sinon.",
-            "items" : {
-              "$ref" : "#/components/schemas/RestPointageEnConflitDuCout"
-            },
-            "type" : "array"
           },
           "cout" : {
             "$ref" : "#/components/schemas/RestCout",
@@ -2308,15 +1542,10 @@
           },
           "duree" : {
             "$ref" : "#/components/schemas/RestDureeDuCout",
-            "description" : "Duree du pointage, incomplete s'il est a resoudre."
+            "description" : "Duree du pointage."
           },
           "fin" : {
-            "description" : "Fin du pointage, absente s'il est a resoudre.",
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "finAuPlusTard" : {
-            "description" : "Fin au plus tard d'un pointage a resoudre.",
+            "description" : "Fin du pointage.",
             "format" : "date-time",
             "type" : "string"
           },
@@ -2325,7 +1554,7 @@
             "description" : "Operateur du pointage."
           },
           "parts" : {
-            "description" : "Parts du pointage termine, une par fenetre de partage ; vide s'il est a resoudre.",
+            "description" : "Parts du pointage, une par fenetre de partage.",
             "items" : {
               "$ref" : "#/components/schemas/RestPartDuPointageDuCout"
             },
@@ -2341,29 +1570,7 @@
             "type" : "number"
           }
         },
-        "required" : [ "anomalies", "categorie", "contradictoires", "cout", "debut", "duree", "operateur", "parts" ],
-        "type" : "object"
-      },
-      "RestPointageEnConflitDuCout" : {
-        "description" : "Un fait actif contradictoire de la sequence qui laisse le pointage a resoudre.",
-        "properties" : {
-          "id" : {
-            "description" : "Identite du fait.",
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "survenue" : {
-            "description" : "Quand il est survenu.",
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "type" : {
-            "description" : "Ce que le fait disait.",
-            "enum" : [ "DEBUT", "NON_CONFORMITE", "FIN" ],
-            "type" : "string"
-          }
-        },
-        "required" : [ "id", "survenue", "type" ],
+        "required" : [ "anomalies", "categorie", "cout", "debut", "duree", "fin", "operateur", "parts" ],
         "type" : "object"
       },
       "RestPosteDAtelier" : {
@@ -2515,46 +1722,6 @@
         "required" : [ "id", "libelle", "nature" ],
         "type" : "object"
       },
-      "RestRecuDActe" : {
-        "description" : "Preuve durable d un acte enregistre. Sa revision est historique ; le dossier joint est relu a l instant courant.",
-        "properties" : {
-          "acte" : {
-            "$ref" : "#/components/schemas/RestActeDeResolution"
-          },
-          "adresse" : {
-            "$ref" : "#/components/schemas/RestAdresseDossierAnomalie"
-          },
-          "commande" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "enregistreLe" : {
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "evenementCree" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "evenementsTouches" : {
-            "items" : {
-              "format" : "uuid",
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "revisionDeDepart" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "revisionEnregistree" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        },
-        "required" : [ "acte", "adresse", "commande", "enregistreLe", "evenementsTouches", "revisionDeDepart", "revisionEnregistree" ],
-        "type" : "object"
-      },
       "RestReferentielDuPupitre" : {
         "description" : "Tout ce que le pupitre met en cache pour continuer a fonctionner sans reseau, en un seul appel.\n\nOperateurs, habilitations, elements pointables et categories de produit sont relus dans une transaction unique, sans pagination.\nLes activites interpretees par atelier sont lues dans sa projection et leur expiration est jugee a genereLe.\nLes requetes successives ne garantissent pas un instantane face aux ecritures concurrentes.\n",
         "properties" : {
@@ -2565,6 +1732,11 @@
               "type" : "string"
             },
             "type" : "array"
+          },
+          "dureeMaximaleDActivite" : {
+            "description" : "La duree maximale d'une activite, au format ISO 8601, telle que le gestionnaire l'a fixee (treize heures tant qu'il\nn'a rien fixe) : l'echeance d'une activite est son debut plus cette duree. Une activite que rien n'a terminee a cette\necheance se termine automatiquement ; le pupitre hors ligne la lit ici plutot que de la coder.\n",
+            "example" : "PT13H",
+            "type" : "string"
           },
           "genereLe" : {
             "description" : "Instant ou le serveur a produit la reponse et evalue l'expiration. Il ne garantit pas un instantane commun face aux ecritures concurrentes.",
@@ -2586,148 +1758,36 @@
             "type" : "array"
           }
         },
-        "required" : [ "categories", "genereLe", "operateurs", "suivis" ],
+        "required" : [ "categories", "dureeMaximaleDActivite", "genereLe", "operateurs", "suivis" ],
         "type" : "object"
       },
       "RestRegularisation" : {
-        "description" : "Une saisie oubliee, rattrapee par le gestionnaire a l'heure ou elle a reellement eu lieu.\n\nL'evenement produit portera `dateDeSurvenue` (fournie ici) et `dateDEnregistrement` (l'instant courant), et restera\nune regularisation (`estUneRegularisation`) meme saisi a l'heure du fait : c'est l'acte qui la fait, jamais l'ecart\nentre les deux dates.\n",
+        "description" : "La fin d'une activite echue, regularisee par le gestionnaire a l'heure ou elle a reellement eu lieu.\n\nL'operateur, le poste et le type du fait se deduisent de l'activite : la saisie ne les porte pas. L'evenement produit\nest une fin qui vise l'activite, porte `dateDeSurvenue` (fournie ici) et `dateDEnregistrement` (l'instant courant), et\nreste une regularisation (`estUneRegularisation`) meme saisie a l'heure du fait : c'est l'acte qui la fait, jamais\nl'ecart entre les deux dates.\n",
         "properties" : {
-          "cible" : {
-            "description" : "L'activite que vise une transition ou une fin, designee par l'identifiant de son pointage ouvrant d'origine. Requise\npour une transition ou une fin, absente pour une ouverture.\n",
+          "activite" : {
+            "description" : "L'activite dont la fin est regularisee, designee par l'identifiant de son pointage ouvrant d'origine.",
             "format" : "uuid",
             "type" : "string"
           },
           "dateDeSurvenue" : {
-            "description" : "Heure metier a laquelle le fait a reellement eu lieu.",
+            "description" : "Heure metier a laquelle la fin a reellement eu lieu : ni dans le futur, ni avant le debut de l'activite, ni apres sa\nborne (`borneDeFin` du dossier). Elle peut depasser l'echeance de l'activite.\n",
             "format" : "date-time",
             "type" : "string"
-          },
-          "intention" : {
-            "description" : "Ce que le geste fait d'une activite : OUVERTURE, TRANSITION ou FIN, comme pour un pointage. Seule une fin se pointe\nFIN. Aucune valeur par defaut.\n",
-            "enum" : [ "OUVERTURE", "TRANSITION", "FIN" ],
-            "type" : "string"
-          },
-          "operateur" : {
-            "description" : "Identifiant de l'operateur dont le temps est affecte.",
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "poste" : {
-            "description" : "Identifiant du poste de travail, facultatif.",
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "type" : {
-            "description" : "Nature du pointage rattrape.",
-            "enum" : [ "DEBUT", "NON_CONFORMITE", "FIN" ],
-            "type" : "string"
-          }
-        },
-        "required" : [ "dateDeSurvenue", "intention", "operateur", "type" ],
-        "type" : "object"
-      },
-      "RestSequenceDuDossier" : {
-        "description" : "La sequence autoritaire contenant l'ancre demandee, avec sa cle brute et les seuls faits de son perimetre.",
-        "properties" : {
-          "activites" : {
-            "items" : {
-              "format" : "uuid",
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "datePremierPointage" : {
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "nombrePointages" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "operateur" : {
-            "$ref" : "#/components/schemas/RestOperateurDAtelier"
-          },
-          "operateurId" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "pointages" : {
-            "items" : {
-              "format" : "uuid",
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "poste" : {
-            "$ref" : "#/components/schemas/RestPosteDAtelier"
-          },
-          "posteId" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        },
-        "required" : [ "activites", "datePremierPointage", "nombrePointages", "operateurId", "pointages" ],
-        "type" : "object"
-      },
-      "RestSequenceEnConflit" : {
-        "description" : "Des pointages d'un meme operateur sur un meme poste qui se contredisent : une fin ou une transition qui vise une\nactivite deja remplacee ou terminee, pas encore ouverte ou annulee, ou une transition vers sa propre categorie.\n\nRien n'est choisi a la place du gestionnaire : les activites de la sequence sont a resoudre, ni en cours ni terminees,\nsans fin ni duree, et l'echeance ne les termine pas. Il la resout en corrigeant ou en annulant les faits concernes ;\nelle disparait au recalcul des que les faits redeviennent coherents. Elle se deduit du journal a chaque lecture et\nn'est jamais stockee.\n",
-        "properties" : {
-          "activites" : {
-            "description" : "Les activites a resoudre, par l'identite de leur pointage ouvrant d'origine, dans l'ordre de leur ouverture : aucune\nfin ni transition ne doit plus les viser. Vide quand le seul geste en conflit vise une ouverture annulee.\n",
-            "items" : {
-              "format" : "uuid",
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "operateur" : {
-            "$ref" : "#/components/schemas/RestOperateurDAtelier",
-            "description" : "Operateur des pointages en conflit, absent si la fiche n'est plus resolue au referentiel."
-          },
-          "pointages" : {
-            "description" : "Les pointages de la sequence, dans l'ordre du journal : les gestes contradictoires et ceux qui ouvrent ou visent ses\nactivites. Un pointage publie dont l'identifiant figure ici est enregistre et conserve en conflit, pas refuse.\n",
-            "items" : {
-              "format" : "uuid",
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "poste" : {
-            "$ref" : "#/components/schemas/RestPosteDAtelier",
-            "description" : "Poste de travail des pointages en conflit, facultatif."
-          }
-        },
-        "required" : [ "activites", "pointages" ],
-        "type" : "object"
-      },
-      "RestSequenceEnConflitDeSupervision" : {
-        "properties" : {
-          "activites" : {
-            "items" : {
-              "$ref" : "#/components/schemas/RestDescriptionDActiviteDeSupervision"
-            },
-            "type" : "array"
           },
           "id" : {
+            "description" : "Identifiant de la saisie, genere par le client une fois par saisie et conserve d'un renvoi a l'autre. Un identifiant\ndeja present au journal est un renvoi : il repond 200, sans rien ecrire, avant toute regle.\n",
             "format" : "uuid",
             "type" : "string"
-          },
-          "operateurId" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "poste" : {
-            "$ref" : "#/components/schemas/RestPosteDeSupervision"
           }
         },
-        "required" : [ "activites", "id", "operateurId" ],
+        "required" : [ "activite", "dateDeSurvenue", "id" ],
         "type" : "object"
       },
       "RestSuiviDAtelier" : {
         "description" : "Le suivi en atelier d'un element engage.\n\nSon etat, ses activites en cours et son temps ne sont **jamais stockes** : tout est deduit du journal a chaque\nlecture. C'est ce qui permet a une saisie rattrapee de compter a l'heure ou elle a reellement eu lieu.\n",
         "properties" : {
           "activitesEnCours" : {
-            "description" : "Les activites en cours a l'instant de la lecture ; une activite dont l'echeance est atteinte n'y figure plus, ni une\nactivite a resoudre.\n",
+            "description" : "Les activites en cours a l'instant de la lecture ; une activite dont l'echeance est atteinte n'y figure plus.",
             "items" : {
               "$ref" : "#/components/schemas/RestActiviteEnCours"
             },
@@ -2745,13 +1805,6 @@
           "cloturePar" : {
             "description" : "Utilisateur ayant cloture l'element, absent tant qu'il ne l'est pas.",
             "type" : "string"
-          },
-          "conflits" : {
-            "description" : "Les sequences en conflit du journal, vide quand ses faits sont coherents. Elles ne dependent pas de l'instant de la\nlecture, et ne changent pas l'etat, juge sur les seules activites interpretables.\n",
-            "items" : {
-              "$ref" : "#/components/schemas/RestSequenceEnConflit"
-            },
-            "type" : "array"
           },
           "element" : {
             "description" : "Identifiant de l'element de fabrication engage.",
@@ -2779,7 +1832,7 @@
             "type" : "string"
           },
           "journal" : {
-            "description" : "Le journal complet, annules compris, du plus ancien au plus recent.",
+            "description" : "Le journal complet, du plus ancien au plus recent.",
             "items" : {
               "$ref" : "#/components/schemas/RestEvenementDAtelier"
             },
@@ -2791,14 +1844,14 @@
             "type" : "string"
           }
         },
-        "required" : [ "activitesEnCours", "categorie", "conflits", "element", "engageLe", "engagePar", "etat", "id", "journal", "nom" ],
+        "required" : [ "activitesEnCours", "categorie", "element", "engageLe", "engagePar", "etat", "id", "journal", "nom" ],
         "type" : "object"
       },
       "RestSuiviDAtelierEnGrille" : {
-        "description" : "Une ligne du tableau d'atelier, sans le journal des evenements ni ses sequences en conflit.\nL'etat et les activites en cours restent deduits du journal a chaque lecture.\nLe journal complet, annules compris, et ses sequences en conflit se consultent via GET /api/atelier/suivis/{id}.\n",
+        "description" : "Une ligne du tableau d'atelier, sans le journal des evenements.\nL'etat et les activites en cours restent deduits du journal a chaque lecture.\nLe journal complet se consulte via GET /api/atelier/suivis/{id}.\n",
         "properties" : {
           "activitesEnCours" : {
-            "description" : "Les activites en cours a l'instant de la lecture ; une activite dont l'echeance est atteinte n'y figure plus, ni une\nactivite a resoudre.\n",
+            "description" : "Les activites en cours a l'instant de la lecture ; une activite dont l'echeance est atteinte n'y figure plus.\n",
             "items" : {
               "$ref" : "#/components/schemas/RestActiviteEnCours"
             },
@@ -2865,15 +1918,8 @@
             "description" : "Categorie de l'element, copiee a l'engagement.",
             "type" : "string"
           },
-          "conflits" : {
-            "description" : "Sequences en conflit a resoudre par le gestionnaire.",
-            "items" : {
-              "$ref" : "#/components/schemas/RestConflitDuPupitre"
-            },
-            "type" : "array"
-          },
           "etat" : {
-            "description" : "EN_ATTENTE, EN_COURS ou INTERROMPU. Juge sur les seules activites interpretables a genereLe.",
+            "description" : "EN_ATTENTE, EN_COURS ou INTERROMPU. Juge sur les activites projetees a genereLe.",
             "enum" : [ "EN_ATTENTE", "EN_COURS", "INTERROMPU" ],
             "type" : "string"
           },
@@ -2893,7 +1939,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "activites", "categorie", "conflits", "etat", "id", "nom" ],
+        "required" : [ "activites", "categorie", "etat", "id", "nom" ],
         "type" : "object"
       },
       "RestSupervisionDAtelier" : {
@@ -2913,15 +1959,9 @@
               "$ref" : "#/components/schemas/RestOperateurDeSupervision"
             },
             "type" : "array"
-          },
-          "sequencesEnConflit" : {
-            "items" : {
-              "$ref" : "#/components/schemas/RestSequenceEnConflitDeSupervision"
-            },
-            "type" : "array"
           }
         },
-        "required" : [ "activites", "evaluation", "operateurs", "sequencesEnConflit" ],
+        "required" : [ "activites", "evaluation", "operateurs" ],
         "type" : "object"
       },
       "RestSyntheseDesHeures" : {
@@ -2933,16 +1973,9 @@
             "format" : "int32",
             "type" : "integer"
           },
-          "conflits" : {
-            "description" : "Conflits concernant une activite ou un pointage rendu dans cette semaine.",
-            "items" : {
-              "$ref" : "#/components/schemas/RestConflitDeSynthese"
-            },
-            "type" : "array"
-          },
           "dureeOperationnelleTotale" : {
             "$ref" : "#/components/schemas/RestDureeDeSynthese",
-            "description" : "Total de travail et NC des sept jours. Incomplet sans valeur si une activite a resoudre y contribue ; une activite en cours ne compte rien."
+            "description" : "Total de travail et NC des sept jours ; une activite en cours ne compte rien."
           },
           "elements" : {
             "description" : "Elements portant une activite ou un pointage dans la semaine, par premiere apparition puis nom. Un element reengage reste un seul element.",
@@ -2974,11 +2007,11 @@
             "type" : "integer"
           }
         },
-        "required" : [ "conflits", "dureeOperationnelleTotale", "elements", "evaluation" ],
+        "required" : [ "dureeOperationnelleTotale", "elements", "evaluation" ],
         "type" : "object"
       },
       "RestTempsPasse" : {
-        "description" : "Le temps passe, separe en bon travail et en reprise de non conformite.\n\nLa reprise d'une piece ratee se compte a part sur le meme element. Ses tarifs sont ceux de son propre fait\nouvrant actif, captures par atelier.\n",
+        "description" : "Le temps passe, separe en bon travail et en reprise de non conformite.\n\nLa reprise d'une piece ratee se compte a part sur le meme element. Ses tarifs sont ceux de son propre fait\nouvrant, captures par atelier.\n",
         "properties" : {
           "nonConformite" : {
             "$ref" : "#/components/schemas/RestDureeDuCout",
@@ -3006,7 +2039,7 @@
     }
   },
   "info" : {
-    "description" : "API of the GLM manufacturing tracking application.\n\n## Authentication\n\nEvery endpoint expects a Keycloak bearer token (realm `glmproject`, issuer `http://localhost:9080/realms/glmproject`).\n\nThe token **must carry a `tenant` claim** naming a declared company: each company owns a PostgreSQL schema, and the\nwhole `/api/**` surface answers `403` to a token without a known tenant. No endpoint takes the company as a\nparameter — it is always read from the token.\n\n## Roles\n\n- `USER` — shop-floor operator: records activities and reads.\n- `GESTIONNAIRE` — back-office: everything a `USER` can do, plus committing elements to the shop floor, closing\n  them, and correcting entries (`regularise`, `annule`, `corrige`).\n- `ADMIN` — technical administration (`/api/admin/**`, `/management/**`) only. **It grants no business access.**\n\nDevelopment users (password equal to the login): `gestionnaire.impeccmold`, `user.impeccmold`,\n`gestionnaire.katilys`, `user.katilys`.\n",
+    "description" : "API of the GLM manufacturing tracking application.\n\n## Authentication\n\nEvery endpoint expects a Keycloak bearer token (realm `glmproject`, issuer `http://localhost:9080/realms/glmproject`).\n\nThe token **must carry a `tenant` claim** naming a declared company: each company owns a PostgreSQL schema, and the\nwhole `/api/**` surface answers `403` to a token without a known tenant. No endpoint takes the company as a\nparameter — it is always read from the token.\n\n## Roles\n\n- `USER` — shop-floor operator: records activities and reads.\n- `GESTIONNAIRE` — back-office: everything a `USER` can do, plus committing elements to the shop floor, closing\n  them, and catching up forgotten entries (`regularise`).\n- `ADMIN` — technical administration (`/api/admin/**`, `/management/**`) only. **It grants no business access.**\n\nDevelopment users (password equal to the login): `gestionnaire.impeccmold`, `user.impeccmold`,\n`gestionnaire.katilys`, `user.katilys`.\n",
     "license" : {
       "name" : "Apache 2.0",
       "url" : "https://www.apache.org/licenses/LICENSE-2.0"
@@ -3018,17 +2051,9 @@
   "paths" : {
     "/api/atelier/anomalies" : {
       "get" : {
-        "description" : "nature est obligatoire : absente ou inconnue, elle est refusee en 400 avec le code\nurn:glm:erreur:atelier:nature-d-anomalie-invalide. La reponse est discriminee par nature : chaque ligne porte\nnature, CONFLIT ou FIN_AUTOMATIQUE, celle demandee.\nCONFLIT liste les sequences en conflit, une ligne par sequence, y compris pour un suivi cloture ou sans activite\ndeduite. Le tri porte sur le premier pointage metier, puis le suivi et l'ancrage de la sequence.\nFIN_AUTOMATIQUE liste les activites sans fin reelle, hors activites a resoudre, dont l'echeance est atteinte a\nl'instant de la lecture, borne comprise. Chaque ligne porte l'adresse du dossier (suivi et pointage ouvrant actif),\nl'activite d'origine, son debut et son echeance, sans duree. Le tri porte sur le debut, puis le suivi et l'ouvrant.\nLes recherches partielles operateur (nom, prenom ou identifiant) et element (designation ou identifiant)\nsont combinees sans tenir compte de la casse avant pagination. Pourcent, soulignement et antislash sont litteraux.\ncomplete vaut true lorsque la lecture a reussi, meme si aucune ligne ne correspond. Une acquisition en echec\nreste une erreur HTTP. Les diagnostics detailles se consultent dans le dossier de l'anomalie.\n",
+        "description" : "Les activites sans fin reelle dont l'echeance est atteinte a l'instant de la lecture, borne comprise. Chaque ligne\nporte l'adresse du dossier (suivi et pointage ouvrant), l'activite, son debut et son echeance, sans duree. Le tri\nporte sur le debut, puis le suivi et l'ouvrant.\nLes recherches partielles operateur (nom, prenom ou identifiant) et element (designation ou identifiant)\nsont combinees sans tenir compte de la casse avant pagination. Pourcent, soulignement et antislash sont litteraux.\nUne acquisition en echec reste une erreur HTTP.\n",
         "operationId" : "list_5",
         "parameters" : [ {
-          "in" : "query",
-          "name" : "nature",
-          "required" : true,
-          "schema" : {
-            "enum" : [ "CONFLIT", "FIN_AUTOMATIQUE" ],
-            "type" : "string"
-          }
-        }, {
           "in" : "query",
           "name" : "operateur",
           "required" : false,
@@ -3068,30 +2093,20 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/RestPageDesAnomalies"
+                  "$ref" : "#/components/schemas/PageRestFinAutomatiqueEnListe"
                 }
               }
             },
-            "description" : "Une page d'anomalies de la nature demandee, pour USER ou GESTIONNAIRE."
-          },
-          "400" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RestPageDesAnomalies"
-                }
-              }
-            },
-            "description" : "Nature absente ou inconnue : urn:glm:erreur:atelier:nature-d-anomalie-invalide."
+            "description" : "Une page de fins automatiques, pour USER ou GESTIONNAIRE."
           }
         },
-        "summary" : "Lister les anomalies de pointage d'une nature",
+        "summary" : "Lister les fins automatiques",
         "tags" : [ "Atelier - anomalies de pointage" ]
       }
     },
     "/api/atelier/suivis" : {
       "get" : {
-        "description" : "Le tableau de l'atelier.\n\nTous les filtres sont facultatifs : l'ecran des operateurs veut tous les elements actifs d'un coup, sans notion de\ndate. Le parametre etats accepte plusieurs valeurs (?etats=EN_ATTENTE&etats=EN_COURS) ; absent, il ne filtre rien.\nL'etat se juge a l'instant de la lecture, celui de chaque ligne rendue : un element dont la seule activite a atteint\nson echeance n'est plus EN_COURS. La periode, quand elle est fournie, porte sur la date d'engagement.\n\nChaque ligne conserve l'etat et les activites en cours, mais ne contient pas de journal.\nLe journal complet, annules compris, se consulte via GET /api/atelier/suivis/{id}.\n",
+        "description" : "Le tableau de l'atelier.\n\nTous les filtres sont facultatifs : l'ecran des operateurs veut tous les elements actifs d'un coup, sans notion de\ndate. Le parametre etats accepte plusieurs valeurs (?etats=EN_ATTENTE&etats=EN_COURS) ; absent, il ne filtre rien.\nL'etat se juge a l'instant de la lecture, celui de chaque ligne rendue : un element dont la seule activite a atteint\nson echeance n'est plus EN_COURS. La periode, quand elle est fournie, porte sur la date d'engagement.\n\nChaque ligne conserve l'etat et les activites en cours, mais ne contient pas de journal.\nLe journal complet se consulte via GET /api/atelier/suivis/{id}.\n",
         "operationId" : "list_4",
         "parameters" : [ {
           "in" : "query",
@@ -3206,7 +2221,7 @@
     },
     "/api/atelier/suivis/{id}" : {
       "get" : {
-        "description" : "Le suivi complet, avec son journal, evenements annules compris.",
+        "description" : "Le suivi complet, avec son journal.",
         "operationId" : "get_6",
         "parameters" : [ {
           "in" : "path",
@@ -3235,7 +2250,7 @@
     },
     "/api/atelier/suivis/{id}/anomalies/{pointage}" : {
       "get" : {
-        "description" : "Le journal, la revision et les consequences interpretees du suivi a un instant d'evaluation. L'adresse ne redirige jamais vers une autre sequence : une ancre absente, annulee ou active sans anomalie garde son etat et l'historique accessible.",
+        "description" : "Le dossier de l'activite echue que le pointage ouvre : l'activite et les pointages de sa cle, a l'instant d'evaluation. Une fin automatique deja regularisee n'a plus de dossier.",
         "operationId" : "dossier",
         "parameters" : [ {
           "in" : "path",
@@ -3263,7 +2278,7 @@
                 }
               }
             },
-            "description" : "Le dossier et l'etat de son adresse, pour USER ou GESTIONNAIRE."
+            "description" : "Le dossier de la fin automatique non regularisee, pour USER ou GESTIONNAIRE."
           },
           "404" : {
             "content" : {
@@ -3273,77 +2288,10 @@
                 }
               }
             },
-            "description" : "Suivi introuvable dans l'entreprise courante."
+            "description" : "Suivi introuvable dans l'entreprise courante, ou pointage qui n'ouvre aucune fin automatique non regularisee."
           }
         },
-        "summary" : "Consulter un dossier d'anomalie par un pointage",
-        "tags" : [ "Atelier - anomalies de pointage" ]
-      }
-    },
-    "/api/atelier/suivis/{id}/anomalies/{pointage}/apercus" : {
-      "post" : {
-        "description" : "Reserve au gestionnaire. Prepare le meme acte que sa confirmation, sans ecrire ni reserver son identifiant. Une revision perimee est refusee ; la proposition devient obsolete si ses consequences changent.",
-        "operationId" : "apercu",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        }, {
-          "in" : "path",
-          "name" : "pointage",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/RestDemandeDApercu"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RestApercuDeResolution"
-                }
-              }
-            },
-            "description" : "L'acte exact, avant/apres, l'adresse et les metadonnees explicites de sa commande."
-          },
-          "400" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RestApercuDeResolution"
-                }
-              }
-            },
-            "description" : "Acte invalide."
-          },
-          "409" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RestApercuDeResolution"
-                }
-              }
-            },
-            "description" : "Apercu obsolete ou acte refuse."
-          }
-        },
-        "summary" : "Previsualiser un acte de resolution",
+        "summary" : "Consulter le dossier d'une fin automatique",
         "tags" : [ "Atelier - anomalies de pointage" ]
       }
     },
@@ -3376,7 +2324,7 @@
         "tags" : [ "Atelier - elements engages" ]
       },
       "put" : {
-        "description" : "La cloture ne fige rien pour le gestionnaire : regularisation, annulation et correction restent possibles ensuite.\nRappelee sur un element deja cloture, cette route deplace la date de cloture.\n",
+        "description" : "La cloture ne fige rien pour le gestionnaire : la regularisation reste possible ensuite.\nRappelee sur un element deja cloture, cette route deplace la date de cloture.\n",
         "operationId" : "cloture",
         "parameters" : [ {
           "in" : "path",
@@ -3423,133 +2371,9 @@
         "tags" : [ "Atelier - elements engages" ]
       }
     },
-    "/api/atelier/suivis/{id}/evenements/{evenementId}" : {
-      "put" : {
-        "description" : "Troisieme acte : une annulation et une regularisation en un seul appel.",
-        "operationId" : "corrige",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        }, {
-          "in" : "path",
-          "name" : "evenementId",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/RestCorrection"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "400" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RestSuiviDAtelier"
-                }
-              }
-            },
-            "description" : "Le corps est invalide, intention et cible comprises."
-          },
-          "404" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RestSuiviDAtelier"
-                }
-              }
-            },
-            "description" : "Suivi, evenement, operateur, poste de travail ou activite visee introuvable."
-          },
-          "409" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RestSuiviDAtelier"
-                }
-              }
-            },
-            "description" : "Operateur non habilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, ou evenement deja\nannule.\n"
-          }
-        },
-        "summary" : "Corriger une saisie fausse",
-        "tags" : [ "Atelier - elements engages" ]
-      }
-    },
-    "/api/atelier/suivis/{id}/evenements/{evenementId}/annulation" : {
-      "post" : {
-        "description" : "Deuxieme acte de correction. L'evenement reste au journal.",
-        "operationId" : "annule",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        }, {
-          "in" : "path",
-          "name" : "evenementId",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/RestAnnulationDEvenement"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "404" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RestSuiviDAtelier"
-                }
-              }
-            },
-            "description" : "Suivi ou evenement introuvable."
-          },
-          "409" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RestSuiviDAtelier"
-                }
-              }
-            },
-            "description" : "Evenement deja annule."
-          }
-        },
-        "summary" : "Annuler une saisie en trop",
-        "tags" : [ "Atelier - elements engages" ]
-      }
-    },
     "/api/atelier/suivis/{id}/pointages" : {
       "post" : {
-        "description" : "Le geste de l'operateur, date a l'instant present.\n\nSon intention dit ce qu'il fait d'une activite : OUVERTURE en cree une, TRANSITION remplace l'activite visee par une\nactivite de l'autre categorie, FIN termine l'activite visee. La transition et la fin designent leur cible par\nl'identifiant du pointage ouvrant de l'activite.\n\nUne pause se pointe par une fin ciblee pour chaque activite en cours, puis une ouverture, en debut ou en non\nconformite, a la reprise.\n",
+        "description" : "Le geste de l'operateur, date a l'instant present ou a l'heure de son geste (`dateDeSurvenue`, hors ligne). Il ne\ndesigne aucune activite : un debut ou une non conformite en ouvre une, une fin ferme celle qui est en cours sur la cle\n(operateur, element, poste).\n\nLe serveur juge chaque pointage a son arrivee. L'identifiant est cherche d'abord : un renvoi deja accepte repond 200,\nmeme si l'element a ete cloture depuis. Apres les controles habituels (element cloture, date future, operateur,\nposte, habilitation), un pointage plus ancien que le dernier pointage accepte de la cle est ignore (`ANTERIEUR`, a heure egale\nil passe), ainsi qu'une fin qui n'est pas posterieure au debut de l'activite qu'elle fermerait (`ANTERIEUR`) ; une activite dont l'echeance est atteinte a l'heure du geste (debut plus la duree maximale de cette activite, borne comprise) compte\ncomme terminee ; puis : rien en cours accepte un debut ou une non conformite et ignore une fin (`APRES_ECHEANCE` si\nla derniere activite est echue sans fin, sinon `AUCUNE_ACTIVITE`) ; une activite en cours ignore un debut ou une non\nconformite (`DEJA_EN_COURS`) et accepte une fin. Un pointage ignore n'entre pas au journal : il laisse une ligne\nd'audit en base, et la reponse est le refus 409 `pointage-ignore`, qui ne s'affiche pas a l'operateur.\n\nUne pause se pointe par une fin pour chaque activite en cours, puis un debut ou une non conformite a la reprise.\n",
         "operationId" : "pointe",
         "parameters" : [ {
           "in" : "path",
@@ -3579,7 +2403,7 @@
                 }
               }
             },
-            "description" : "Le geste identique est rejoue, sequence en conflit comprise, ou une fin posterieure a la cloture de l'element est\nabsorbee.\n"
+            "description" : "Renvoi : l'identifiant du pointage figure deja dans la table des evenements, quel que soit le suivi qui le porte, et\nrien n'est ecrit. La reponse rend le suivi de la route.\n"
           },
           "201" : {
             "content" : {
@@ -3589,7 +2413,7 @@
                 }
               }
             },
-            "description" : "Le pointage est enregistre, y compris une fin pointee apres l'echeance de sa cible, conservee sans effet, et un\ngeste qui contredit le journal, conserve dans une sequence en conflit : son identifiant figure alors dans\nconflits[].pointages.\n"
+            "description" : "Le pointage est accepte et entre au journal."
           },
           "400" : {
             "content" : {
@@ -3599,7 +2423,7 @@
                 }
               }
             },
-            "description" : "Le corps est invalide, intention et cible comprises, ou la date de survenue est future."
+            "description" : "Le corps est invalide, ou la date de survenue est future."
           },
           "404" : {
             "content" : {
@@ -3609,7 +2433,7 @@
                 }
               }
             },
-            "description" : "Suivi, operateur, poste de travail ou activite visee introuvable."
+            "description" : "Suivi, operateur ou poste de travail introuvable."
           },
           "409" : {
             "content" : {
@@ -3619,7 +2443,7 @@
                 }
               }
             },
-            "description" : "Demarrer ou pointer une non conformite sur un element cloture (seul refus qu'afficher a l'operateur), operateur non\nhabilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, ou identifiant reutilise. Un geste\nqui contredit le journal n'est jamais refuse : il est enregistre, et sa sequence est en conflit.\n"
+            "description" : "Pointage ignore par la regle de reception (`pointage-ignore`, a ne pas afficher : le pupitre se recale sur le\nreferentiel), y compris un renvoi d'un pointage deja ignore ; demarrer ou pointer une non conformite sur un element\ncloture (`suivi-d-atelier-cloture`, seul refus a afficher a l'operateur) ; operateur non habilite sur ce poste.\n"
           }
         },
         "summary" : "Pointer un debut, une non conformite ou une fin",
@@ -3628,7 +2452,7 @@
     },
     "/api/atelier/suivis/{id}/regularisations" : {
       "post" : {
-        "description" : "Premier des trois actes de correction.",
+        "description" : "Le gestionnaire etablit la fin d'une activite que rien n'a terminee avant son echeance (une fin automatique). Le\ncorps ne porte que l'identifiant de la saisie, que le client genere une fois par saisie, l'activite et l'heure du\nfait : l'operateur, le poste et le type se deduisent de l'activite. La regularisation ne passe pas par la regle de\nreception des pointages, et son heure peut depasser l'echeance de l'activite.\n\nL'heure ne depasse ni l'instant present, ni le debut suivant de la meme cle (operateur et poste), ni la cloture ; le\ndossier de la fin automatique donne ces deux dernieres bornes (`borneDeFin`).\n\nL'identifiant est verifie avant toute regle : un renvoi de la meme saisie repond 200 et n'ecrit rien.\n",
         "operationId" : "regularise",
         "parameters" : [ {
           "in" : "path",
@@ -3650,6 +2474,16 @@
           "required" : true
         },
         "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestSuiviDAtelier"
+                }
+              }
+            },
+            "description" : "Renvoi : l'evenement de cet identifiant figure deja au journal, rien n'est ecrit de plus."
+          },
           "201" : {
             "content" : {
               "*/*" : {
@@ -3658,7 +2492,7 @@
                 }
               }
             },
-            "description" : "La regularisation est enregistree, y compris quand elle contredit le journal : sa sequence est alors en conflit."
+            "description" : "La fin est regularisee et portee au journal."
           },
           "400" : {
             "content" : {
@@ -3668,7 +2502,7 @@
                 }
               }
             },
-            "description" : "Le corps est invalide, intention et cible comprises."
+            "description" : "Le corps est invalide, ou l'heure de la fin est future."
           },
           "404" : {
             "content" : {
@@ -3678,7 +2512,7 @@
                 }
               }
             },
-            "description" : "Suivi, operateur, poste de travail ou activite visee introuvable."
+            "description" : "Suivi ou activite introuvable."
           },
           "409" : {
             "content" : {
@@ -3688,118 +2522,11 @@
                 }
               }
             },
-            "description" : "Operateur non habilite sur ce poste, activite visee d'un autre operateur ou d'un autre poste, ou evenement anterieur\na l'engagement.\n"
+            "description" : "Activite non echue (ou deja terminee par une fin reelle, pointage ou cloture) ou deja regularisee, fin avant le debut de l'activite ou apres sa\nborne, operateur non habilite sur ce poste, ou saisie concurrente (le dossier est a relire).\n"
           }
         },
-        "summary" : "Rattraper une saisie oubliee",
+        "summary" : "Regulariser la fin d'une activite echue",
         "tags" : [ "Atelier - elements engages" ]
-      }
-    },
-    "/api/atelier/suivis/{id}/temps-effectif" : {
-      "get" : {
-        "description" : "Les intervalles des activites de l'element, tels que le journal les interprete a l'instant de la lecture.\n\nUn intervalle sans fin est encore en cours a l'instant de la lecture, sauf s'il est a resoudre (aResoudre) : une\nsequence en conflit ne permet d'en affirmer ni la fin ni la duree. Une activite que rien n'a terminee avant son\necheance, son debut plus 13 heures, y est terminee automatiquement, a cette echeance, et signalee par\nfinAutomatique.\n",
-        "operationId" : "tempsEffectif",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "404" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "items" : {
-                    "$ref" : "#/components/schemas/RestIntervalleDActivite"
-                  },
-                  "type" : "array"
-                }
-              }
-            },
-            "description" : "Suivi introuvable."
-          }
-        },
-        "summary" : "Lire le temps effectivement passe sur un element",
-        "tags" : [ "Atelier - elements engages" ]
-      }
-    },
-    "/api/atelier/suivis/{suivi}/confirmations-de-resolution" : {
-      "post" : {
-        "operationId" : "confirme",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "suivi",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/RestConfirmationAEnregistrer"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RestConfirmationDeResolution"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "summary" : "Confirmer une proposition explicite une seule fois et rendre son recu avec le dossier courant",
-        "tags" : [ "Atelier - anomalies de pointage" ]
-      }
-    },
-    "/api/atelier/suivis/{suivi}/confirmations-de-resolution/{commande}" : {
-      "get" : {
-        "description" : "NON_ATTESTEE indique seulement qu aucun recu n est visible. La commande peut encore etre en cours ; cette reponse ne prouve pas son echec.",
-        "operationId" : "verifie",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "suivi",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        }, {
-          "in" : "path",
-          "name" : "commande",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RestConfirmationDeResolution"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "summary" : "Verifier si une confirmation dispose d un recu durable et rendre le dossier courant",
-        "tags" : [ "Atelier - anomalies de pointage" ]
       }
     },
     "/api/atelier/supervision" : {
@@ -3954,7 +2681,7 @@
     },
     "/api/couts-de-revient/{elementId}" : {
       "get" : {
-        "description" : "Rend une ligne par nature d'operation — fraisage, tournage, erosion —, chacune portant le temps de bon travail,\nle temps passe en non conformite avec ses periodes datees, et le cout separe en machine et main d'oeuvre.\n\nL'entree se fait par l'element, non par son suivi d'atelier : un element reengage apres cloture additionne ses\npassages.\n\nDeux regles a connaitre avant d'afficher les montants. Le cout horaire de chaque poste actif court **en entier**,\nmeme quand l'operateur en mene plusieurs de front ; son taux horaire, lui, est **divise** par le nombre de postes\nqu'il occupait a cet instant, tous elements confondus. Un operateur sur trois elements avec une seule machine\nn'est donc pas divise. Le decoupage se fait aux bornes de chaque pointage, si bien que seul le chevauchement reel\nest divise.\n\nUne activite encore en cours est entierement exclue du temps, des couts et du diviseur. A son echeance\nprojetee, elle compte jusqu'a sa fin automatique avec une anomalie et sa periode datee. L'horloge est relevee\nune seule fois par rapport ; cet instant est rendu dans evaluation.\n\nChaque duree et montant porte complete ; valeur est absente si incomplet, sans zero ni somme partielle.\nTravail, non conformite, machine et main d'oeuvre sont independants. Pour le partage humain, toute la plage\nfactuelle possible d'une activite a resoudre est bornee a evaluation. Une occupation certaine du meme poste\npeut neutraliser son effet sur le nombre de postes distincts ; la machine d'une activite terminee reste connue.\nconflits rend les sequences de l'element et toutes celles responsables d'une valeur inconnue, meme sur un autre\nelement, avec les identites originales d'activites et les faits actifs.\n",
+        "description" : "Rend une ligne par nature d'operation — fraisage, tournage, erosion —, chacune portant le temps de bon travail,\nle temps passe en non conformite avec ses periodes datees, et le cout separe en machine et main d'oeuvre.\n\nL'entree se fait par l'element, non par son suivi d'atelier : un element reengage apres cloture additionne ses\npassages.\n\nDeux regles a connaitre avant d'afficher les montants. Le cout horaire de chaque poste actif court **en entier**,\nmeme quand l'operateur en mene plusieurs de front ; son taux horaire, lui, est **divise** par le nombre de postes\nqu'il occupait a cet instant, tous elements confondus. Un operateur sur trois elements avec une seule machine\nn'est donc pas divise. Le decoupage se fait aux bornes de chaque pointage, si bien que seul le chevauchement reel\nest divise.\n\nUne activite encore en cours est entierement exclue du temps, des couts et du diviseur. A son echeance\nprojetee, elle compte jusqu'a sa fin automatique avec une anomalie et sa periode datee. L'horloge est relevee\nune seule fois par rapport ; cet instant est rendu dans evaluation.\n\nChaque duree et montant porte sa valeur.\n",
         "operationId" : "get_5",
         "parameters" : [ {
           "description" : "Identifiant de l'element de fabrication.",
@@ -4163,7 +2890,7 @@
     },
     "/api/feuilles-de-temps/{operateurId}" : {
       "get" : {
-        "description" : "Rend les sept jours de la semaine ISO demandee, chacun portant les portions d'activite qui lui reviennent\ndans le fuseau horaire de l'entreprise.\n\nLe travail est lu dans la projection des activites interpretees par atelier, selectionnee par recouvrement :\nune activite commencee avant la semaine reste visible. Chaque portion\nporte l'identite stable, l'etat et les bornes entieres de l'activite, en plus de ses bornes coupees a minuit et a\nla semaine. Une fin reelle est conservee ; sans elle, l'activite est terminee automatiquement a son echeance des\nqu'elle est atteinte. Cet etat signale l'anomalie. Une activite en cours ou a resoudre n'a pas de fin.\nUne activite en cours rend une indication sans fin sur chaque jour atteint a l'instant de lecture, dans la\nsemaine. Son debut entier permet de lire « en cours depuis dimanche » sur lundi, sans fin fabriquee a minuit.\n\nLa semaine est toujours explicite : aucune semaine courante implicite. L'annee est celle des semaines ISO, qui\ndiffere de l'annee civile a ses bornes — la semaine 1 de 2026 commence le 29 decembre 2025.\n\nL'instant evaluation facultatif decide de l'expiration et des jours atteints par les activites en cours.\nSans parametre, l'heure du serveur est relevee une seule fois. La reponse rend l'instant effectivement utilise.\nUn instant passe est accepte ; la limite future est l'heure du serveur plus deux minutes, incluse.\nAu-dela, ou si l'instant fourni est vide ou mal forme, la lecture est refusee en 400, sans rapport.\nPasser le meme instant a la feuille et a la synthese assure la meme decision d'expiration ; les faits connus\nrestent lus, meme posterieurs a cet instant. Ce contrat ne garantit ni lecture historique ni transaction commune.\n",
+        "description" : "Rend les sept jours de la semaine ISO demandee, chacun portant les portions d'activite qui lui reviennent\ndans le fuseau horaire de l'entreprise.\n\nLe travail est lu dans la projection des activites interpretees par atelier, selectionnee par recouvrement :\nune activite commencee avant la semaine reste visible. Chaque portion\nporte l'identite stable, l'etat et les bornes entieres de l'activite, en plus de ses bornes coupees a minuit et a\nla semaine. Une fin reelle est conservee ; sans elle, l'activite est terminee automatiquement a son echeance des\nqu'elle est atteinte. Cet etat signale l'anomalie. Une activite en cours n'a pas de fin.\nUne activite en cours rend une indication sans fin sur chaque jour atteint a l'instant de lecture, dans la\nsemaine. Son debut entier permet de lire « en cours depuis dimanche » sur lundi, sans fin fabriquee a minuit.\n\nLa semaine est toujours explicite : aucune semaine courante implicite. L'annee est celle des semaines ISO, qui\ndiffere de l'annee civile a ses bornes — la semaine 1 de 2026 commence le 29 decembre 2025.\n\nL'instant evaluation facultatif decide de l'expiration et des jours atteints par les activites en cours.\nSans parametre, l'heure du serveur est relevee une seule fois. La reponse rend l'instant effectivement utilise.\nUn instant passe est accepte ; la limite future est l'heure du serveur plus deux minutes, incluse.\nAu-dela, ou si l'instant fourni est vide ou mal forme, la lecture est refusee en 400, sans rapport.\nPasser le meme instant a la feuille et a la synthese assure la meme decision d'expiration ; les faits connus\nrestent lus, meme posterieurs a cet instant. Ce contrat ne garantit ni lecture historique ni transaction commune.\n",
         "operationId" : "get_4",
         "parameters" : [ {
           "description" : "Identifiant de l'operateur dans le referentiel.",
@@ -4794,7 +3521,7 @@
     },
     "/api/pupitre/referentiel" : {
       "get" : {
-        "description" : "Rend en une seule reponse les operateurs designables avec leurs habilitations, les\nelements sur lesquels on peut encore pointer avec leurs activites en cours et leurs conflits, et les codes\ndes categories de produit dans l'ordre choisi par le gestionnaire, qui range les tuiles. C'est la lecture que le pupitre\nrejoue a chaque synchronisation pour rafraichir son cache local.\n\nLa reponse entiere evite l'assemblage de pages. La lecture se fait dans une transaction unique sous\nREAD COMMITTED : une ecriture concurrente peut changer les faits entre les requetes successives.\nL'instant commun genereLe assure la meme decision d'expiration, sans garantir un instantane commun.\n\nLes operateurs restent designables sans activite, avec leur identite, leur identifiant et leurs habilitations. Les activites a resoudre\nsont exclues des activites en cours et leurs identites sont rendues dans les conflits. Une ouverture coherente\npeut etre en cours a cote d'un conflit. L'expiration des activites se juge a genereLe, echeance incluse.\n\n`genereLe` date l'evaluation. Elle change a chaque appel, y compris quand rien n'a bouge : elle\ndit quand le serveur a produit la reponse, pas quand le referentiel a change pour la derniere fois.\n\nCe que la reponse ne porte pas, et n'a pas a porter : aucun montant — ni taux horaire d'operateur, ni cout\nhoraire de poste —, aucun journal d'evenements, aucun element cloture.\n",
+        "description" : "Rend en une seule reponse les operateurs designables avec leurs habilitations, les\nelements sur lesquels on peut encore pointer avec leurs activites en cours, et les codes\ndes categories de produit dans l'ordre choisi par le gestionnaire, qui range les tuiles. C'est la lecture que le pupitre\nrejoue a chaque synchronisation pour rafraichir son cache local.\n\nLa reponse entiere evite l'assemblage de pages. La lecture se fait dans une transaction unique sous\nREAD COMMITTED : une ecriture concurrente peut changer les faits entre les requetes successives.\nL'instant commun genereLe assure la meme decision d'expiration, sans garantir un instantane commun.\n\nLes operateurs restent designables sans activite, avec leur identite, leur identifiant et leurs habilitations. L'expiration des activites se juge a genereLe, echeance incluse.\n\n`genereLe` date l'evaluation. Elle change a chaque appel, y compris quand rien n'a bouge : elle\ndit quand le serveur a produit la reponse, pas quand le referentiel a change pour la derniere fois.\n\nCe que la reponse ne porte pas, et n'a pas a porter : aucun montant — ni taux horaire d'operateur, ni cout\nhoraire de poste —, aucun journal d'evenements, aucun element cloture.\n",
         "operationId" : "referentiel",
         "responses" : {
           "200" : {
@@ -4814,7 +3541,7 @@
     },
     "/api/syntheses-des-heures/{operateurId}" : {
       "get" : {
-        "description" : "Rend les sept jours de la semaine ISO demandee, vides compris, le journal brut de l'operateur et les durees\nde ses activites terminees, y compris automatiquement. Une activite en cours ne produit aucune duree.\nLes activites interpretees par atelier sont selectionnees par recouvrement de la semaine, puis coupees aux\nminuits locaux. Une heure sur deux elements compte sur chacun. Les elements portant une activite ou un pointage\ndans la semaine sont rendus par premiere apparition puis nom, avec leur fiche et leurs postes relus au referentiel.\nTous les pointages actifs de la semaine sont conserves, meme sans activite interpretable. Leur tri porte sur\nl'heure metier, puis l'intention (fin, transition, ouverture), puis l'identite, jamais l'heure d'enregistrement.\nLa semaine est explicite et l'annee est celle des semaines ISO ; aucun montant n'est calcule.\nL'instant evaluation facultatif decide de l'expiration et des jours atteints par les activites en cours.\nSans parametre, l'heure du serveur est relevee une seule fois. La reponse rend l'instant effectivement utilise.\nUn instant passe est accepte. La borne future est l'heure du serveur plus deux minutes, incluse.\nPasser le meme instant a la feuille et a la synthese assure la meme decision d'expiration ; les faits connus\nrestent lus, meme posterieurs a cet instant. Ce contrat ne garantit ni lecture historique ni transaction commune.\n",
+        "description" : "Rend les sept jours de la semaine ISO demandee, vides compris, le journal brut de l'operateur et les durees\nde ses activites terminees, y compris automatiquement. Une activite en cours ne produit aucune duree.\nLes activites interpretees par atelier sont selectionnees par recouvrement de la semaine, puis coupees aux\nminuits locaux. Une heure sur deux elements compte sur chacun. Les elements portant une activite ou un pointage\ndans la semaine sont rendus par premiere apparition puis nom, avec leur fiche et leurs postes relus au referentiel.\nTous les pointages de la semaine sont conserves, meme sans activite interpretable. Leur tri porte sur\nl'heure metier, puis la fin avant l'ouverture, puis l'identite, jamais l'heure d'enregistrement.\nLa semaine est explicite et l'annee est celle des semaines ISO ; aucun montant n'est calcule.\nL'instant evaluation facultatif decide de l'expiration et des jours atteints par les activites en cours.\nSans parametre, l'heure du serveur est relevee une seule fois. La reponse rend l'instant effectivement utilise.\nUn instant passe est accepte. La borne future est l'heure du serveur plus deux minutes, incluse.\nPasser le meme instant a la feuille et a la synthese assure la meme decision d'expiration ; les faits connus\nrestent lus, meme posterieurs a cet instant. Ce contrat ne garantit ni lecture historique ni transaction commune.\n",
         "operationId" : "get_3",
         "parameters" : [ {
           "description" : "Identifiant de l'operateur dans le referentiel.",
@@ -4900,17 +3627,17 @@
     "bearer-jwt" : [ ]
   } ],
   "tags" : [ {
-    "description" : "Le suivi des elements de fabrication mis en atelier.\n\nDeux publics se partagent ces routes. L'operateur (role USER) consulte le tableau des elements actifs et pointe son\ntravail. Le gestionnaire (role GESTIONNAIRE) engage les elements, les cloture et corrige les saisies.\n\nRien de ce qui se deduit n'est stocke : etat, activites en cours, sequences en conflit et temps sont recalcules du\njournal a chaque lecture, a l'instant de cette lecture. Une activite que rien n'a terminee se termine automatiquement\na son echeance, son debut plus 13 heures, sans qu'aucun evenement ne soit ecrit. Des pointages qui se contredisent\nsont conserves en sequence en conflit, que le gestionnaire resout en corrigeant ou en annulant les faits concernes.\n",
-    "name" : "Atelier - elements engages"
-  }, {
-    "description" : "Ce que le gestionnaire doit trancher : une anomalie de pointage porte une nature. Deux natures : CONFLIT, une sequence en conflit, et FIN_AUTOMATIQUE, une activite terminee a son echeance faute de fin reelle. Le parcours est le meme pour chaque dossier : consulter, previsualiser, confirmer.",
-    "name" : "Atelier - anomalies de pointage"
-  }, {
     "description" : "Les familles dans lesquelles l'entreprise range ce qu'elle fabrique : des moules et des OF chez le client de\nreference, autre chose ailleurs. Une entreprise neuve n'en a aucune.\n\nLe code d'une categorie est a la fois son libelle et le prefixe du nom des produits qui s'y creent\n(MOULE-2026-000001). Il ne se renomme donc jamais.\n\nUne categorie se supprime tant qu'aucun produit n'y est range.\n\nLe gestionnaire declare, reordonne et supprime les categories ; l'operateur (role USER) les consulte.\n",
     "name" : "Categories de produit"
   }, {
+    "description" : "Le suivi des elements de fabrication mis en atelier.\n\nDeux publics se partagent ces routes. L'operateur (role USER) consulte le tableau des elements actifs et pointe son\ntravail. Le gestionnaire (role GESTIONNAIRE) engage les elements, les cloture et rattrape les saisies oubliees.\n\nRien de ce qui se deduit n'est stocke : etat et activites en cours sont recalcules du journal a chaque lecture, a\nl'instant de cette lecture. Une activite que rien n'a terminee se termine automatiquement a son echeance, son debut\nplus la duree maximale d'activite en vigueur a ce debut (celle que le gestionnaire avait fixee, treize heures par\ndefaut), sans qu'aucun evenement ne soit ecrit.\n",
+    "name" : "Atelier - elements engages"
+  }, {
     "description" : "Les reglages que l'entreprise fixe elle-meme, un seul jeu pour toute l'entreprise.\n\nLe gestionnaire les modifie ; l'operateur (role USER) les consulte.\n",
     "name" : "Parametrage"
+  }, {
+    "description" : "Ce que le gestionnaire doit trancher : une activite terminee a son echeance faute de fin reelle.",
+    "name" : "Atelier - anomalies de pointage"
   }, {
     "description" : "Le temps passe sur un element de fabrication, valorise par nature d'operation.",
     "name" : "Couts de revient"

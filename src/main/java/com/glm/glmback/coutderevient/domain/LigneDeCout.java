@@ -22,7 +22,7 @@ public record LigneDeCout(
   TempsPasse temps,
   List<Periode> nonConformites,
   List<Periode> finsAutomatiques,
-  List<PointageDeCout> pointages,
+  List<PointageValorise> pointages,
   Cout cout
 ) {
   private static final Comparator<Periode> PAR_DEBUT = Comparator.comparing(Periode::debut).thenComparing(Periode::fin);
@@ -62,7 +62,7 @@ public record LigneDeCout(
     private TempsPasse temps;
     private List<Periode> nonConformites;
     private List<Periode> finsAutomatiques;
-    private List<PointageDeCout> pointages;
+    private List<PointageValorise> pointages;
     private Cout cout;
 
     @Override
@@ -96,7 +96,7 @@ public record LigneDeCout(
     }
 
     @Override
-    public LigneDeCoutCoutBuilder pointages(List<PointageDeCout> pointages) {
+    public LigneDeCoutCoutBuilder pointages(List<PointageValorise> pointages) {
       this.pointages = pointages;
       return this;
     }
@@ -112,7 +112,7 @@ public record LigneDeCout(
    * La ligne deduite des tranches d'une meme nature, chacune decoupee sur les fenetres de partage de son
    * operateur.
    */
-  static LigneDeCout de(TravailDeLaLigne travail, ChargesDesOperateurs charges, List<SequenceEnConflit> conflits) {
+  static LigneDeCout de(TravailDeLaLigne travail, ChargesDesOperateurs charges) {
     List<TrancheDActivite> tranches = travail.terminees();
     List<PointageValorise> valorises = tranches
       .stream()
@@ -130,47 +130,15 @@ public record LigneDeCout(
       .finsAutomatiques(
         tranches.stream().filter(TrancheDActivite::finAutomatique).map(TrancheDActivite::periode).sorted(PAR_DEBUT).toList()
       )
-      .pointages(pointages(valorises, travail.aResoudre(), conflits))
-      .cout(travail.aResoudre().isEmpty() ? cout(tranches, parts) : new Cout(MontantTotal.incomplet(), MontantTotal.incomplet()));
-  }
-
-  /**
-   * Les pointages de la ligne dans l'ordre ou ils ont commence, ceux a resoudre compris : le detail les montre tous,
-   * sans quoi la somme qu'il justifie aurait des trous. L'ordre de lecture departage deux debuts identiques.
-   */
-  private static List<PointageDeCout> pointages(
-    List<PointageValorise> valorises,
-    List<ActiviteInterpretee> aResoudre,
-    List<SequenceEnConflit> conflits
-  ) {
-    return java.util.stream.Stream.<PointageDeCout>concat(
-      valorises.stream(),
-      aResoudre.stream().map(activite -> new PointageAResoudre(activite, contradictoires(activite, conflits)))
-    )
-      .sorted(Comparator.comparing(PointageDeCout::debut))
-      .toList();
-  }
-
-  private static List<PointageEnConflit> contradictoires(ActiviteInterpretee activite, List<SequenceEnConflit> conflits) {
-    return conflits
-      .stream()
-      .filter(sequence -> sequence.activites().contains(activite.id()))
-      .flatMap(sequence -> sequence.pointages().stream())
-      .distinct()
-      .toList();
+      .pointages(valorises.stream().sorted(Comparator.comparing(PointageValorise::debut)).toList())
+      .cout(cout(tranches, parts));
   }
 
   private static Plage periode(TravailDeLaLigne travail) {
-    Instant debut = java.util.stream.Stream.concat(
-      travail
-        .terminees()
-        .stream()
-        .map(tranche -> tranche.periode().debut()),
-      travail
-        .aResoudre()
-        .stream()
-        .map(activite -> activite.plage().debut())
-    )
+    Instant debut = travail
+      .terminees()
+      .stream()
+      .map(tranche -> tranche.periode().debut())
       .min(Comparator.naturalOrder())
       .orElseThrow();
     Optional<Instant> fin = travail
@@ -182,16 +150,10 @@ public record LigneDeCout(
   }
 
   private static TempsPasse temps(TravailDeLaLigne travail) {
-    return new TempsPasse(duree(travail, CategorieDActivite.TRAVAIL), duree(travail, CategorieDActivite.NON_CONFORMITE));
-  }
-
-  private static DureeTotale duree(TravailDeLaLigne travail, CategorieDActivite categorie) {
-    return travail
-        .aResoudre()
-        .stream()
-        .anyMatch(activite -> activite.activite().categorie() == categorie)
-      ? DureeTotale.incomplet()
-      : DureeTotale.de(duree(travail.terminees(), categorie));
+    return new TempsPasse(
+      duree(travail.terminees(), CategorieDActivite.TRAVAIL),
+      duree(travail.terminees(), CategorieDActivite.NON_CONFORMITE)
+    );
   }
 
   private static Duration duree(List<TrancheDActivite> tranches, CategorieDActivite categorie) {
@@ -221,15 +183,8 @@ public record LigneDeCout(
    */
   private static Cout cout(List<TrancheDActivite> tranches, List<TrancheValorisable> parts) {
     return new Cout(
-      MontantTotal.de(tranches.stream().map(TrancheDActivite::coutMachine).reduce(Montant.ZERO, Montant::plus)),
-      parts.stream().allMatch(part -> part.coutDeMainDOeuvre().isPresent())
-        ? MontantTotal.de(
-            parts
-              .stream()
-              .map(part -> part.coutDeMainDOeuvre().orElseThrow())
-              .reduce(Montant.ZERO, Montant::plus)
-          )
-        : MontantTotal.incomplet()
+      tranches.stream().map(TrancheDActivite::coutMachine).reduce(Montant.ZERO, Montant::plus),
+      parts.stream().map(TrancheValorisable::coutDeMainDOeuvre).reduce(Montant.ZERO, Montant::plus)
     );
   }
 
@@ -254,7 +209,7 @@ public record LigneDeCout(
   }
 
   interface LigneDeCoutPointagesBuilder {
-    LigneDeCoutCoutBuilder pointages(List<PointageDeCout> pointages);
+    LigneDeCoutCoutBuilder pointages(List<PointageValorise> pointages);
   }
 
   interface LigneDeCoutCoutBuilder {

@@ -22,16 +22,17 @@ record RestActiviteEnCours(
   @Schema(description = "Instant depuis lequel cette activite dure.", requiredMode = Schema.RequiredMode.REQUIRED) Instant depuis,
   @Schema(
     description = """
-    Identite de l'activite : l'identifiant de son pointage ouvrant d'origine. C'est elle qu'une fin ou une transition
-    vise dans `cible`, y compris apres la correction de ce pointage.
+    Identite de l'activite : l'identifiant de son pointage ouvrant d'origine. C'est elle que vise la fin d'une
+    regularisation (`activite`).
     """,
     requiredMode = Schema.RequiredMode.REQUIRED
   )
   UUID ouverture,
   @Schema(
     description = """
-    Echeance de l'activite : son debut plus 13 heures ecoulees. Si rien ne la termine avant, elle se termine
-    automatiquement a cet instant, avec une anomalie.
+    Echeance de l'activite : son debut plus la duree maximale d'une activite en vigueur quand elle a commence (celle que
+    le gestionnaire avait fixee, treize heures par defaut), en heures ecoulees. Si aucune fin ne la termine avant, elle se termine automatiquement a cet instant : c'est une fin automatique, que le gestionnaire
+    regularise.
     """,
     requiredMode = Schema.RequiredMode.REQUIRED
   )

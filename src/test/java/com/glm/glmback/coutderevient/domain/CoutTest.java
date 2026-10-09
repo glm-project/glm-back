@@ -29,7 +29,7 @@ class CoutTest {
 
   @Test
   void shouldAddBothParts() {
-    assertThat(new Cout(QUARANTE_CINQ_EUROS, VINGT_EUROS).total().valeur().orElseThrow()).isEqualTo(new Montant(new BigDecimal("65.00")));
+    assertThat(new Cout(QUARANTE_CINQ_EUROS, VINGT_EUROS).total().valeur()).isEqualTo(new Montant(new BigDecimal("65.00")));
   }
 
   @Test
@@ -41,6 +41,6 @@ class CoutTest {
 
   @Test
   void shouldStartFromAucun() {
-    assertThat(Cout.AUCUN.total().valeur().orElseThrow()).isEqualTo(Montant.ZERO);
+    assertThat(Cout.AUCUN.total().valeur()).isEqualTo(Montant.ZERO);
   }
 }

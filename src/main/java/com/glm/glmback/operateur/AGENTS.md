@@ -61,9 +61,9 @@ résolus.
   `ElementEngageableEntity`).
 - **Une page se résout en une requête.** `PostesHabilitables` n'expose que `parIds` : un accès unitaire coûterait
   autant de requêtes que d'habilitations sur la page.
-- **Un opérateur qui a un fait historique d'activité ne se supprime pas**, même si tous ses faits ont été annulés :
+- **Un opérateur qui a un fait historique d'activité ne se supprime pas** :
   le journal conserve son identifiant pour lire l'histoire. La règle vit dans `OperateursService`, derrière le port
-  `OperateursQuiOntPointe`, qui lit les faits sans filtre d'annulation.
+  `OperateursQuiOntPointe`, qui lit les faits du journal.
 - **Domaine immuable** : la révision passe par `Operateur.revise`, qui rend un nouvel agrégat de même identité.
 
 ## Ports sortants

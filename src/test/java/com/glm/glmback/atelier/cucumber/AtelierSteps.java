@@ -9,18 +9,27 @@ import com.glm.glmback.cucumber.EcrituresDuJournalDAtelier;
 import com.glm.glmback.cucumber.EcrituresDuJournalDAtelier.PointageEnvoye;
 import com.glm.glmback.cucumber.rest.CucumberRestClient;
 import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
+import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurityContexts;
+import com.glm.glmback.shared.time.infrastructure.secondary.ExactInstantConverter;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import jakarta.persistence.EntityManager;
+import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -55,6 +64,12 @@ public class AtelierSteps {
 
   @Autowired
   private EcrituresDuJournalDAtelier ecritures;
+
+  @Autowired
+  private TransactionTemplate transactions;
+
+  @Autowired
+  private EntityManager entities;
 
   private final Map<String, String> elements = new HashMap<>();
   private Map<String, Object> suiviSansJournal;
@@ -145,51 +160,99 @@ public class AtelierSteps {
     dernierGesteCorps = pointage.corps();
   }
 
+  /**
+   * Un pointage de mise en place doit etre accepte : un pointage que la regle de reception ignorerait changerait en
+   * silence ce que le scenario raconte.
+   */
   @Given("j'ai pointe sur {string}")
   public void jaiPointeSur(String alias, Map<String, String> donnees) {
     jePointeSur(alias, donnees);
-  }
-
-  @When("je pointe sur {string} sans intention")
-  public void jePointeSurSansIntention(String alias, Map<String, String> donnees) {
-    ecritures.pointeTelQuel(suivis.get(alias), resoluAvecIdentifiant(donnees));
-  }
-
-  @When("je regularise sur {string}")
-  public void jeRegulariseSur(String alias, Map<String, String> donnees) {
-    ecritures.regularise(suivis.get(alias), resolu(donnees));
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage de mise en place doit etre accepte").isTrue();
   }
 
   /**
-   * Regularise un geste qui vise l'activite qu'ouvre l'evenement de ce rang du journal : de quoi viser une activite
-   * ouverte par un acte du gestionnaire, dont l'identifiant vient du serveur.
+   * Un pointage que le serveur recoit a l'heure meme du geste : l'operateur pointe sur son poste, et rien n'en est
+   * deduit de plus.
+   */
+  @When("l'operateur {string} pointe {word} sur {string} au poste {string} a {string}")
+  public void pointeAuPoste(String operateur, String type, String alias, String poste, String geste) {
+    pointeAuPosteRecuA(operateur, type, alias, poste, geste, geste);
+  }
+
+  /**
+   * Un pointage hors ligne, recu par le serveur apres l'heure de son geste.
+   */
+  @When("l'operateur {string} pointe {word} sur {string} au poste {string} a {string} et le serveur le recoit a {string}")
+  public void pointeAuPosteRecuA(String operateur, String type, String alias, String poste, String geste, String recu) {
+    horloge.ilEst(Instant.parse(recu));
+    jePointeSur(alias, Map.of("operateur", operateur, "type", type, "poste", poste, "dateDeSurvenue", geste));
+  }
+
+  @Then("le pointage est accepte")
+  public void lePointageEstAccepte() {
+    assertThatLastResponse().hasHttpStatus(201);
+  }
+
+  @Then("le pointage est ignore")
+  public void lePointageEstIgnore() {
+    assertThatLastResponse().hasHttpStatus(409).hasElement("$.type").withValue("urn:glm:erreur:atelier:pointage-ignore");
+  }
+
+  @Then("le pointage est un rejeu")
+  public void lePointageEstUnRejeu() {
+    assertThatLastResponse().hasHttpStatus(200);
+  }
+
+  /**
+   * Relit la table d'audit en base, faute d'endpoint : une ligne par pointage ignore du suivi. Une colonne absente du
+   * tableau n'est pas verifiee ; {@code dernierAccepte} se donne comme un rang du journal (« evenement 2 »), vide quand
+   * aucun pointage n'etait accepte sur la cle. L'ordre des lignes n'est pas une garantie de la table.
+   */
+  @Then("la table d'audit des pointages ignores de {string} contient")
+  public void laTableDAuditContient(String alias, List<Map<String, String>> attendues) {
+    String suivi = suivis.get(alias);
+    List<String> journal = identifiantsDuJournal(suivi);
+    List<Map<String, String>> lues = auditDuSuivi(suivi, journal);
+
+    assertThat(lues).hasSize(attendues.size());
+    for (Map<String, String> attendue : attendues) {
+      assertThat(lues).anySatisfy(lue ->
+        attendue.forEach((colonne, valeur) -> assertThat(lue.get(colonne)).as(colonne).isEqualTo(attendueEn(colonne, valeur)))
+      );
+    }
+  }
+
+  @Then("la table d'audit des pointages ignores de {string} est vide")
+  public void laTableDAuditEstVide(String alias) {
+    assertThat(auditDuSuivi(suivis.get(alias), List.of())).isEmpty();
+  }
+
+  /**
+   * Regularise la fin de l'activite donnee par son identifiant : le corps ne porte que l'activite et l'heure du fait.
+   */
+  @When("je regularise sur {string}")
+  public void jeRegulariseSur(String alias, Map<String, String> donnees) {
+    PointageEnvoye regularisation = ecritures.regularise(suivis.get(alias), donnees);
+    dernierGesteUri = regularisation.uri();
+    dernierGesteCorps = regularisation.corps();
+  }
+
+  @When("je regularise sur {string} sans identifiant de saisie")
+  public void jeRegulariseSurSansIdentifiant(String alias, Map<String, String> donnees) {
+    ecritures.regulariseTelQuel(suivis.get(alias), donnees);
+  }
+
+  /**
+   * Regularise la fin de l'activite qu'ouvre l'evenement de ce rang du journal.
    */
   @When("je regularise sur {string} en visant l'activite de l'evenement {int}")
-  public void jeRegulariseSurEnVisantLActiviteDe(String alias, int ouvrant, Map<String, String> donnees) {
-    ecritures.regularise(suivis.get(alias), visant(alias, ouvrant, donnees));
+  public void jeRegulariseSurLActiviteDe(String alias, int ouvrant, Map<String, String> donnees) {
+    jeRegulariseSur(alias, visant(alias, ouvrant, donnees));
   }
 
-  @When("je corrige l'evenement {int} de {string} en visant l'activite de l'evenement {int}")
-  public void jeCorrigeLEvenementDeEnVisantLActiviteDe(int rang, String alias, int ouvrant, Map<String, String> donnees) {
-    ecritures.corrige(suivis.get(alias), evenementDAtelier(alias, rang), visant(alias, ouvrant, donnees));
-  }
-
-  @When("j'annule l'evenement {int} de {string}")
-  public void jAnnuleLEvenementDe(int rang, String alias, Map<String, String> donnees) {
-    rest.post(
-      SUIVIS_URI + "/" + suivis.get(alias) + "/evenements/" + evenementDAtelier(alias, rang) + "/annulation",
-      JSON.writeValueAsString(donnees)
-    );
-  }
-
-  @When("j'annule l'evenement inconnu {string} de {string}")
-  public void jAnnuleLEvenementInconnuDe(String evenement, String alias, Map<String, String> donnees) {
-    rest.post(SUIVIS_URI + "/" + suivis.get(alias) + "/evenements/" + evenement + "/annulation", JSON.writeValueAsString(donnees));
-  }
-
-  @When("je corrige l'evenement {int} de {string}")
-  public void jeCorrigeLEvenementDe(int rang, String alias, Map<String, String> donnees) {
-    ecritures.corrige(suivis.get(alias), evenementDAtelier(alias, rang), resolu(donnees));
+  @When("je renvoie la derniere regularisation")
+  public void jeRenvoieLaDerniereRegularisation() {
+    rest.post(dernierGesteUri, dernierGesteCorps);
   }
 
   @When("je cloture {string}")
@@ -220,11 +283,6 @@ public class AtelierSteps {
   @When("je consulte le suivi inconnu {string}")
   public void jeConsulteLeSuiviInconnu(String id) {
     rest.get(SUIVIS_URI + "/" + id);
-  }
-
-  @When("je consulte le temps effectif de {string}")
-  public void jeConsulteLeTempsEffectifDe(String alias) {
-    rest.get(SUIVIS_URI + "/" + suivis.get(alias) + "/temps-effectif");
   }
 
   @When("je tente de supprimer le poste de travail declare {string}")
@@ -322,75 +380,9 @@ public class AtelierSteps {
     assertThatLastResponse().hasElement("$.activitesEnCours").containingExactly(attendues);
   }
 
-  @Then("le suivi porte {int} sequence(s) en conflit")
-  public void leSuiviPorteSequencesEnConflit(int nombre) {
-    assertThatLastResponse().hasElement("$.conflits").withElementsCount(nombre);
-  }
-
-  @Then("le suivi n'a aucune sequence en conflit")
-  public void leSuiviNAAucuneSequenceEnConflit() {
-    assertThatLastResponse().hasElement("$.conflits").withElementsCount(0);
-  }
-
-  /**
-   * Les activites et les pointages de l'unique sequence en conflit du suivi, dans l'ordre ou il les rend : ses
-   * activites dans l'ordre de leur ouverture, ses pointages dans celui du journal.
-   */
-  @Then("le suivi porte une seule sequence en conflit, de {string} sur {string}")
-  public void leSuiviPorteUneSeuleSequenceEnConflit(String operateur, String poste, Map<String, String> sequence) {
-    assertThatLastResponse()
-      .hasElement("$.conflits")
-      .withElementsCount(1)
-      .and()
-      .hasElement("$.conflits[0].operateur.id")
-      .withValue(idDeLOperateur(operateur))
-      .and()
-      .hasElement("$.conflits[0].poste.id")
-      .withValue(postes.get(poste))
-      .and()
-      .hasElement("$.conflits[0].activites")
-      .withValues(identifiants(sequence.get("activites")))
-      .and()
-      .hasElement("$.conflits[0].pointages")
-      .withValues(identifiants(sequence.get("pointages")));
-  }
-
-  @Then("l'evenement {int} du suivi a l'intention {string}")
-  public void lEvenementDuSuiviALIntention(int rang, String intention) {
-    assertThatLastResponse().hasElement("$.journal[" + rang + "].intention").withValue(intention);
-  }
-
-  @Then("l'evenement {int} du suivi ouvre sa propre activite sans en viser aucune")
-  public void lEvenementDuSuiviOuvreSaPropreActivite(int rang) {
-    assertThat(elementDeLaDerniereReponse("$.journal[" + rang + "].activite")).isEqualTo(
-      elementDeLaDerniereReponse("$.journal[" + rang + "].id")
-    );
-    assertThat(CucumberRestTestContext.getElement("$.journal[" + rang + "].cible")).isNull();
-  }
-
-  @Then("l'evenement {int} du suivi vise l'activite de l'evenement {int}")
-  public void lEvenementDuSuiviViseLActiviteDe(int rang, int ouvrant) {
-    assertThat(elementDeLaDerniereReponse("$.journal[" + rang + "].cible"))
-      .isNotNull()
-      .isEqualTo(elementDeLaDerniereReponse("$.journal[" + ouvrant + "].activite"));
-  }
-
   @Then("l'evenement {int} du suivi n'ouvre aucune activite")
   public void lEvenementDuSuiviNOuvreAucuneActivite(int rang) {
     assertThat(CucumberRestTestContext.getElement("$.journal[" + rang + "].activite")).isNull();
-  }
-
-  @Then("l'evenement {int} du suivi ouvre l'activite de l'evenement {int} sous son propre identifiant")
-  public void lEvenementDuSuiviOuvreLActiviteDe(int rang, int corrige) {
-    assertThat(elementDeLaDerniereReponse("$.journal[" + rang + "].activite"))
-      .isNotNull()
-      .isEqualTo(elementDeLaDerniereReponse("$.journal[" + corrige + "].activite"))
-      .isNotEqualTo(elementDeLaDerniereReponse("$.journal[" + rang + "].id"));
-  }
-
-  @Then("l'evenement {int} du suivi est annule avec le motif {string}")
-  public void lEvenementDuSuiviEstAnnuleAvecLeMotif(int rang, String motif) {
-    assertThatLastResponse().hasElement("$.journal[" + rang + "].annulation.motif").withValue(motif);
   }
 
   @Then("l'evenement {int} du suivi est une regularisation de {string} saisie par {string}")
@@ -436,37 +428,20 @@ public class AtelierSteps {
     assertThatLastResponse().hasElement("$.journal[" + rang + "].tauxHoraire").withValue(tauxHoraire);
   }
 
-  @Then("le temps effectif contient")
-  public void leTempsEffectifContient(List<Map<String, String>> attendus) {
-    assertThatLastResponse().hasResponse().containingExactly(attendus);
-  }
-
-  @Then("le temps effectif ne contient aucun intervalle ferme")
-  public void leTempsEffectifNeContientAucunIntervalleFerme() {
-    assertThat(CucumberRestTestContext.countEntries("$[?(@.fin)]")).isZero();
-  }
-
-  @Then("le temps effectif ne contient aucun intervalle ouvert")
-  public void leTempsEffectifNeContientAucunIntervalleOuvert() {
-    assertThat(CucumberRestTestContext.countEntries("$[?(!@.fin)]")).isZero();
-  }
-
-  @Then("je retiens les informations du suivi hors journal et conflits")
+  @Then("je retiens les informations du suivi hors journal")
   @SuppressWarnings("unchecked")
-  public void jeRetiensLesInformationsDuSuiviHorsJournalEtConflits() {
+  public void jeRetiensLesInformationsDuSuiviHorsJournal() {
     suiviSansJournal = new HashMap<>((Map<String, Object>) CucumberRestTestContext.getElement("$"));
     suiviSansJournal.remove("journal");
-    suiviSansJournal.remove("conflits");
   }
 
-  @Then("la grille contient les memes informations sans journal ni conflits")
-  public void laGrilleContientLesMemesInformationsSansJournalNiConflits() {
+  @Then("la grille contient les memes informations sans journal")
+  public void laGrilleContientLesMemesInformationsSansJournal() {
     assertThatLastResponse()
       .hasOkStatus()
       .hasElement("$.content[?(@.id == '" + suiviSansJournal.get("id") + "')]")
       .withValue(List.of(suiviSansJournal));
     assertThatLastResponse().hasElement("$.content[*].journal").withElementsCount(0);
-    assertThatLastResponse().hasElement("$.content[*].conflits").withElementsCount(0);
   }
 
   @Then("la liste des elements engages contient {int} elements")
@@ -527,6 +502,81 @@ public class AtelierSteps {
     return (List<String>) CucumberRestTestContext.getElement("$.journal[*].type");
   }
 
+  private List<String> identifiantsDuJournal(String suivi) {
+    return enBase(() ->
+      entities
+        .createNativeQuery(
+          """
+          select cast(id as varchar) from evenement_d_atelier where suivi_id = :suivi
+          order by date_de_survenue, case when type = 'FIN' then 0 else 1 end, id
+          """,
+          String.class
+        )
+        .setParameter("suivi", UUID.fromString(suivi))
+        .getResultList()
+    );
+  }
+
+  @SuppressWarnings("unchecked")
+  private List<Map<String, String>> auditDuSuivi(String suivi, List<String> journal) {
+    ExactInstantConverter instants = new ExactInstantConverter();
+
+    return enBase(() ->
+      (
+        (List<Object[]>) entities
+          .createNativeQuery(
+            """
+            select cast(id as varchar), cast(operateur_id as varchar), cast(poste_id as varchar), type, date_de_survenue,
+                   date_de_reception, raison, cast(dernier_accepte_id as varchar)
+            from pointage_ignore_d_atelier where suivi_id = :suivi
+            """
+          )
+          .setParameter("suivi", UUID.fromString(suivi))
+          .getResultList()
+      ).stream()
+        .map(ligne -> {
+          Map<String, String> lue = new HashMap<>();
+          lue.put("id", (String) ligne[0]);
+          lue.put("operateur", (String) ligne[1]);
+          lue.put("poste", (String) ligne[2]);
+          lue.put("type", (String) ligne[3]);
+          lue.put("dateDeSurvenue", instants.convertToEntityAttribute((BigDecimal) ligne[4]).toString());
+          lue.put("dateDeReception", instants.convertToEntityAttribute((BigDecimal) ligne[5]).toString());
+          lue.put("raison", (String) ligne[6]);
+          lue.put("dernierAccepte", ligne[7] == null ? null : "evenement " + journal.indexOf(ligne[7]));
+          return lue;
+        })
+        .toList()
+    );
+  }
+
+  private String attendueEn(String colonne, String valeur) {
+    if (valeur == null) {
+      return null;
+    }
+
+    return switch (colonne) {
+      case "operateur" -> idDeLOperateur(valeur);
+      case "poste" -> postes.get(valeur);
+      default -> valeur;
+    };
+  }
+
+  /**
+   * Lit la base de l'entreprise des scenarios depuis le fil du scenario : sans endpoint, la table d'audit ne se relit
+   * que par SQL.
+   */
+  private <T> T enBase(Supplier<T> lecture) {
+    TenantSecurityContexts.authenticateOn("impeccmold");
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(new MockHttpServletRequest()));
+    try {
+      return transactions.execute(status -> lecture.get());
+    } finally {
+      RequestContextHolder.resetRequestAttributes();
+      SecurityContextHolder.clearContext();
+    }
+  }
+
   private String evenementDAtelier(String alias, int rang) {
     rest.get(SUIVIS_URI + "/" + suivis.get(alias));
 
@@ -552,21 +602,14 @@ public class AtelierSteps {
   }
 
   /**
-   * Le corps donne, dont la cible est l'activite qu'ouvre l'evenement de ce rang du journal.
+   * Le corps donne, dont l'activite est celle qu'ouvre l'evenement de ce rang du journal.
    */
   private Map<String, String> visant(String alias, int ouvrant, Map<String, String> donnees) {
     rest.get(SUIVIS_URI + "/" + suivis.get(alias));
-    Map<String, String> corps = resolu(donnees);
-    corps.put("cible", elementDeLaDerniereReponse("$.journal[" + ouvrant + "].activite"));
+    Map<String, String> corps = new HashMap<>(donnees);
+    corps.put("activite", elementDeLaDerniereReponse("$.journal[" + ouvrant + "].activite"));
 
     return corps;
-  }
-
-  /**
-   * Une liste d'identifiants separes par des virgules ; une cellule vide n'en porte aucun.
-   */
-  private static List<String> identifiants(String liste) {
-    return liste == null ? List.of() : Arrays.stream(liste.split(",")).map(String::trim).toList();
   }
 
   private String idDeLOperateur(String alias) {

@@ -50,28 +50,12 @@ class ActiviteDuPupitreEntity {
   @Convert(converter = ExactInstantConverter.class)
   private Instant fin;
 
-  @Column(name = "a_resoudre")
-  private boolean aResoudre;
-
-  @Column(name = "sequence_id")
-  private UUID sequenceId;
-
-  private Integer ordreDansSequence;
-
   protected ActiviteDuPupitreEntity() {
     // Constructeur requis par JPA.
   }
 
   UUID suiviId() {
     return suiviId;
-  }
-
-  UUID sequenceId() {
-    return sequenceId;
-  }
-
-  ActiviteId identite() {
-    return new ActiviteId(id);
   }
 
   ActiviteSansFin toDomain() {

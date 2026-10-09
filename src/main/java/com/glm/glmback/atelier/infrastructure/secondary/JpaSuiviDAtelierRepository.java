@@ -2,6 +2,7 @@ package com.glm.glmback.atelier.infrastructure.secondary;
 
 import com.glm.glmback.atelier.domain.ElementEngageId;
 import com.glm.glmback.atelier.domain.EtatDAtelier;
+import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierCriteria;
@@ -34,10 +35,16 @@ class JpaSuiviDAtelierRepository implements SuiviDAtelierRepository {
   private static final Sort PAR_DATE_D_ENGAGEMENT_DESCENDANTE = Sort.by(Sort.Order.desc("engagementDate"), Sort.Order.asc("id"));
 
   private final SpringDataSuiviDAtelierRepository suivis;
+  private final SpringDataEvenementsDAtelierRepository evenements;
   private final EntityManager entities;
 
-  JpaSuiviDAtelierRepository(SpringDataSuiviDAtelierRepository suivis, EntityManager entities) {
+  JpaSuiviDAtelierRepository(
+    SpringDataSuiviDAtelierRepository suivis,
+    SpringDataEvenementsDAtelierRepository evenements,
+    EntityManager entities
+  ) {
     this.suivis = suivis;
+    this.evenements = evenements;
     this.entities = entities;
   }
 
@@ -89,6 +96,11 @@ class JpaSuiviDAtelierRepository implements SuiviDAtelierRepository {
   }
 
   @Override
+  public boolean contientEvenement(EvenementDAtelierId evenement) {
+    return evenements.existsById(evenement.uuid());
+  }
+
+  @Override
   public Page<SuiviDAtelier> list(SuiviDAtelierCriteria criteria, Pageable pageable) {
     var page = suivis.findAll(correspondA(criteria), PageRequest.of(pageable.page(), pageable.size(), PAR_DATE_D_ENGAGEMENT_DESCENDANTE));
 
@@ -126,8 +138,7 @@ class JpaSuiviDAtelierRepository implements SuiviDAtelierRepository {
 
   /**
    * L'etat d'un suivi, exprime en SQL a l'instant d'evaluation : cloture, sinon en cours s'il porte une activite
-   * interpretable sans fin reelle dont l'echeance n'est pas atteinte, sinon interrompu s'il porte un evenement actif,
-   * sinon en attente. Une activite a resoudre n'est jamais en cours.
+   * sans fin reelle dont l'echeance n'est pas atteinte, sinon interrompu s'il porte un evenement, sinon en attente.
    */
   private record EtatALaLecture(
     Root<SuiviDAtelierEntity> suivi,
@@ -141,10 +152,10 @@ class JpaSuiviDAtelierRepository implements SuiviDAtelierRepository {
         case EN_COURS -> constructeur.and(constructeur.not(cloture()), constructeur.exists(activiteEnCours()));
         case INTERROMPU -> constructeur.and(
           constructeur.not(cloture()),
-          constructeur.exists(evenementActif()),
+          constructeur.exists(evenementDuJournal()),
           constructeur.not(constructeur.exists(activiteEnCours()))
         );
-        case EN_ATTENTE -> constructeur.and(constructeur.not(cloture()), constructeur.not(constructeur.exists(evenementActif())));
+        case EN_ATTENTE -> constructeur.and(constructeur.not(cloture()), constructeur.not(constructeur.exists(evenementDuJournal())));
       };
     }
 
@@ -160,19 +171,16 @@ class JpaSuiviDAtelierRepository implements SuiviDAtelierRepository {
         .select(activite.get("id"))
         .where(
           constructeur.equal(activite.get("suivi"), suivi),
-          constructeur.isFalse(activite.get("aResoudre")),
           constructeur.isNull(activite.get("fin")),
           constructeur.greaterThan(activite.get("echeance"), evaluation)
         );
     }
 
-    private Subquery<UUID> evenementActif() {
+    private Subquery<UUID> evenementDuJournal() {
       Subquery<UUID> sousRequete = requete.subquery(UUID.class);
       Root<EvenementDAtelierEntity> evenement = sousRequete.from(EvenementDAtelierEntity.class);
 
-      return sousRequete
-        .select(evenement.get("id"))
-        .where(constructeur.equal(evenement.get("suivi"), suivi), constructeur.isNull(evenement.get("annulationDate")));
+      return sousRequete.select(evenement.get("id")).where(constructeur.equal(evenement.get("suivi"), suivi));
     }
   }
 }

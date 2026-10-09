@@ -14,9 +14,9 @@ import java.util.UUID;
 @Schema(
   name = "RestSuiviDAtelierEnGrille",
   description = """
-  Une ligne du tableau d'atelier, sans le journal des evenements ni ses sequences en conflit.
+  Une ligne du tableau d'atelier, sans le journal des evenements.
   L'etat et les activites en cours restent deduits du journal a chaque lecture.
-  Le journal complet, annules compris, et ses sequences en conflit se consultent via GET /api/atelier/suivis/{id}.
+  Le journal complet se consulte via GET /api/atelier/suivis/{id}.
   """
 )
 final class RestSyntheseDeSuiviDAtelier {
@@ -70,8 +70,7 @@ final class RestSyntheseDeSuiviDAtelier {
   @JsonProperty
   @Schema(
     description = """
-    Les activites en cours a l'instant de la lecture ; une activite dont l'echeance est atteinte n'y figure plus, ni une
-    activite a resoudre.
+    Les activites en cours a l'instant de la lecture ; une activite dont l'echeance est atteinte n'y figure plus.
     """,
     requiredMode = Schema.RequiredMode.REQUIRED
   )

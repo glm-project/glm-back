@@ -18,8 +18,7 @@ class ActiviteInterpreteeTest {
         new ActiviteId(java.util.UUID.randomUUID()),
         null,
         new Plage(LE_11_MAI_A_8H, Optional.empty()),
-        LE_11_MAI_A_21H,
-        Optional.empty()
+        LE_11_MAI_A_21H
       )
     ).isInstanceOf(AssertionException.class);
   }
@@ -27,7 +26,7 @@ class ActiviteInterpreteeTest {
   @Test
   void shouldRequireBounds() {
     assertThatThrownBy(() ->
-      new ActiviteInterpretee(new ActiviteId(java.util.UUID.randomUUID()), ACTIVITE_FRAISAGE, null, LE_11_MAI_A_21H, Optional.empty())
+      new ActiviteInterpretee(new ActiviteId(java.util.UUID.randomUUID()), ACTIVITE_FRAISAGE, null, LE_11_MAI_A_21H)
     ).isInstanceOf(AssertionException.class);
   }
 
@@ -38,8 +37,7 @@ class ActiviteInterpreteeTest {
         new ActiviteId(java.util.UUID.randomUUID()),
         ACTIVITE_FRAISAGE,
         new Plage(LE_11_MAI_A_8H, Optional.empty()),
-        null,
-        Optional.empty()
+        null
       )
     ).isInstanceOf(AssertionException.class);
   }

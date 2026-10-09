@@ -23,7 +23,8 @@ class RestReferentielDuPupitreTest {
         LE_10_MAI_2026_A_8H,
         List.of(OPERATEUR_DUPONT),
         List.of(suiviOf42Vierge()),
-        List.of(CATEGORIE_MOULE, CATEGORIE_OF)
+        List.of(CATEGORIE_MOULE, CATEGORIE_OF),
+        DUREE_MAXIMALE_TREIZE_HEURES
       )
     );
 
@@ -31,6 +32,7 @@ class RestReferentielDuPupitreTest {
     assertThat(referentiel.operateurs()).hasSize(1);
     assertThat(referentiel.suivis()).hasSize(1);
     assertThat(referentiel.categories()).containsExactly("MOULE", "OF");
+    assertThat(referentiel.dureeMaximaleDActivite()).isEqualTo("PT13H");
   }
 
   @Test
@@ -84,16 +86,6 @@ class RestReferentielDuPupitreTest {
   }
 
   @Test
-  void shouldExposerLesIdentitesDuConflitSeparementDesActivitesCourantes() {
-    RestConflitDuPupitre conflit = RestConflitDuPupitre.from(SEQUENCE_DUPONT_SUR_FRAISEUSE_1);
-
-    assertThat(conflit.operateur()).isEqualTo(OPERATEUR_ID_DUPONT.uuid());
-    assertThat(conflit.poste()).isEqualTo(POSTE_ID_FRAISEUSE_1.uuid());
-    assertThat(conflit.activites()).containsExactly(ACTIVITE_ID_88888888.uuid());
-    assertThat(conflit.pointages()).containsExactly(POINTAGE_ID_99999999.uuid());
-  }
-
-  @Test
   void shouldTaireLaReferenceDUnElementQuiNEnAPas() {
     SuiviDuPupitre sansReference = SuiviDuPupitre.builder()
       .id(SUIVI_ID_OF_42)
@@ -101,7 +93,6 @@ class RestReferentielDuPupitreTest {
       .reference(null)
       .categorie(CATEGORIE_MOULE.value())
       .activites(List.of())
-      .conflits(List.of())
       .dejaPointe(false);
 
     assertThat(RestSuiviDuPupitre.from(sansReference, LE_10_MAI_2026_A_9H).reference()).isNull();

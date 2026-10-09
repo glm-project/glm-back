@@ -1,20 +1,18 @@
 package com.glm.glmback.atelier.infrastructure.secondary;
 
 import com.glm.glmback.atelier.domain.ActiviteId;
-import com.glm.glmback.atelier.domain.Annulation;
 import com.glm.glmback.atelier.domain.Auteur;
 import com.glm.glmback.atelier.domain.CoutHoraire;
 import com.glm.glmback.atelier.domain.EvenementDAtelier;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.Horodatage;
-import com.glm.glmback.atelier.domain.IntentionDePointage;
-import com.glm.glmback.atelier.domain.MotifDAnnulation;
 import com.glm.glmback.atelier.domain.NatureDOperation;
 import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.OrigineDuPointage;
 import com.glm.glmback.atelier.domain.PosteDeTravailId;
 import com.glm.glmback.atelier.domain.TauxHoraire;
 import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
+import com.glm.glmback.shared.activityduration.domain.MaximumActivityDuration;
 import com.glm.glmback.shared.time.infrastructure.secondary.ExactInstantConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -27,6 +25,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,10 +44,6 @@ class EvenementDAtelierEntity {
   @Enumerated(EnumType.STRING)
   @Column(length = 20)
   private TypeDEvenementDAtelier type;
-
-  @Enumerated(EnumType.STRING)
-  @Column(length = 20)
-  private IntentionDePointage intention;
 
   @Column(name = "activite_id")
   private UUID activiteId;
@@ -70,14 +65,14 @@ class EvenementDAtelierEntity {
   @Column(name = "taux_horaire", precision = 10, scale = 2)
   private BigDecimal tauxHoraire;
 
+  @Column(name = "duree_max_secondes")
+  private Long dureeMaxSecondes;
+
   private String auteur;
 
   @Enumerated(EnumType.STRING)
   @Column(length = 20)
   private OrigineDuPointage origine;
-
-  @Column(name = "remplace_evenement_id")
-  private UUID remplaceEvenementId;
 
   @Convert(converter = ExactInstantConverter.class)
   private Instant dateDeSurvenue;
@@ -85,13 +80,6 @@ class EvenementDAtelierEntity {
   @Column(name = "date_d_enregistrement")
   @Convert(converter = ExactInstantConverter.class)
   private Instant dateDEnregistrement;
-
-  private String annulationAuteur;
-
-  @Convert(converter = ExactInstantConverter.class)
-  private Instant annulationDate;
-
-  private String annulationMotif;
 
   protected EvenementDAtelierEntity() {
     // Constructeur requis par JPA.
@@ -101,7 +89,6 @@ class EvenementDAtelierEntity {
     this.suivi = suivi;
     id = evenement.id().uuid();
     type = evenement.type();
-    intention = evenement.intention();
     activiteId = evenement.activite().map(ActiviteId::uuid).orElse(null);
     activiteViseeId = evenement.activiteVisee().map(ActiviteId::uuid).orElse(null);
     operateurId = evenement.operateur().uuid();
@@ -109,12 +96,14 @@ class EvenementDAtelierEntity {
     nature = evenement.nature().map(NatureDOperation::value).orElse(null);
     coutHoraire = evenement.coutHoraire().map(CoutHoraire::value).orElse(null);
     tauxHoraire = evenement.tauxHoraire().map(TauxHoraire::value).orElse(null);
+    dureeMaxSecondes = evenement
+      .dureeMax()
+      .map(duree -> duree.value().toSeconds())
+      .orElse(null);
     auteur = evenement.auteur().value();
     origine = evenement.origine();
-    remplaceEvenementId = evenement.remplace().map(EvenementDAtelierId::uuid).orElse(null);
     dateDeSurvenue = evenement.dateDeSurvenue();
     dateDEnregistrement = evenement.dateDEnregistrement();
-    reporteLAnnulation(evenement);
   }
 
   static EvenementDAtelierEntity from(SuiviDAtelierEntity suivi, EvenementDAtelier evenement) {
@@ -125,27 +114,10 @@ class EvenementDAtelierEntity {
     return id;
   }
 
-  /**
-   * Seule part mutable d'un evenement : le reste est ecrit une fois pour toutes a l'insertion. Reposer des valeurs
-   * identiques ne produit aucun UPDATE, c'est le controle de saletes de Hibernate qui tranche.
-   */
-  void reporteLAnnulation(EvenementDAtelier evenement) {
-    annulationAuteur = evenement
-      .annulation()
-      .map(annulation -> annulation.auteur().value())
-      .orElse(null);
-    annulationDate = evenement.annulation().map(Annulation::date).orElse(null);
-    annulationMotif = evenement
-      .annulation()
-      .map(annulation -> annulation.motif().value())
-      .orElse(null);
-  }
-
   EvenementDAtelier toDomain() {
-    EvenementDAtelier evenement = EvenementDAtelier.builder()
+    return EvenementDAtelier.builder()
       .id(new EvenementDAtelierId(id))
       .type(type)
-      .intention(intention)
       .activite(Optional.ofNullable(activiteId).map(ActiviteId::new))
       .activiteVisee(Optional.ofNullable(activiteViseeId).map(ActiviteId::new))
       .operateur(new OperateurId(operateurId))
@@ -153,19 +125,9 @@ class EvenementDAtelierEntity {
       .nature(Optional.ofNullable(nature).map(NatureDOperation::new))
       .coutHoraire(Optional.ofNullable(coutHoraire).map(CoutHoraire::new))
       .tauxHoraire(Optional.ofNullable(tauxHoraire).map(TauxHoraire::new))
+      .dureeMax(Optional.ofNullable(dureeMaxSecondes).map(secondes -> new MaximumActivityDuration(Duration.ofSeconds(secondes))))
       .auteur(new Auteur(auteur))
       .origine(origine)
-      .remplace(Optional.ofNullable(remplaceEvenementId).map(EvenementDAtelierId::new))
       .horodatage(new Horodatage(dateDeSurvenue, dateDEnregistrement));
-
-    return annulation().map(evenement::annule).orElse(evenement);
-  }
-
-  private Optional<Annulation> annulation() {
-    return Optional.ofNullable(annulationDate).map(date -> new Annulation(new Auteur(annulationAuteur), date, motif()));
-  }
-
-  private MotifDAnnulation motif() {
-    return new MotifDAnnulation(annulationMotif);
   }
 }

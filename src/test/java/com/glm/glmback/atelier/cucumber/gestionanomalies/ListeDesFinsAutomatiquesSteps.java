@@ -24,46 +24,39 @@ public class ListeDesFinsAutomatiquesSteps {
   public void liste(String alias) {
     atelier.jeConsulte(alias);
     var element = (String) CucumberRestTestContext.getElement("$.element");
-    rest.get("/api/atelier/anomalies?nature=FIN_AUTOMATIQUE&element=" + element);
+    rest.get("/api/atelier/anomalies?element=" + element);
   }
 
   @Then("la liste des fins automatiques compte {int} ligne(s)")
   public void compte(int nombre) {
-    assertThatLastResponse().hasOkStatus().hasElement("$.complete").withValue(true).and().hasElement("$.total").withValue(nombre);
-    assertThat((List<?>) CucumberRestTestContext.getElement("$.lignes")).hasSize(nombre);
+    assertThatLastResponse().hasOkStatus().hasElement("$.totalElementsCount").withValue(nombre);
+    assertThat((List<?>) CucumberRestTestContext.getElement("$.content")).hasSize(nombre);
   }
 
   @Then("la ligne de la liste des fins automatiques porte")
   public void ligne(Map<String, String> attendu) {
-    var lignes = (List<?>) CucumberRestTestContext.getElement("$.lignes");
+    var lignes = (List<?>) CucumberRestTestContext.getElement("$.content");
     assertThat(lignes).hasSize(1);
     var champs = Map.of(
-      "nature",
-      "$.lignes[0].nature",
       "pointage",
-      "$.lignes[0].adresse.pointage",
+      "$.content[0].adresse.pointage",
       "activite",
-      "$.lignes[0].activite",
+      "$.content[0].activite",
       "debut",
-      "$.lignes[0].debut",
+      "$.content[0].debut",
       "echeance",
-      "$.lignes[0].echeance"
+      "$.content[0].echeance"
     );
     attendu.forEach((champ, valeur) -> assertThat(CucumberRestTestContext.getElement(champs.get(champ))).isEqualTo(valeur));
   }
 
-  @Then("l'adresse de la ligne de la liste des fins automatiques n'est pas l'activite d'origine")
-  public void adresseDifferenteDeLActivite() {
-    assertThat(CucumberRestTestContext.getElement("$.lignes[0].adresse.pointage")).isNotEqualTo(
-      CucumberRestTestContext.getElement("$.lignes[0].activite")
-    );
-  }
-
-  @Then("le dossier de l'adresse de la ligne de la liste des fins automatiques est a l'etat {string}")
-  public void dossierDeLAdresse(String etat) {
-    var suivi = (String) CucumberRestTestContext.getElement("$.lignes[0].adresse.suivi");
-    var pointage = (String) CucumberRestTestContext.getElement("$.lignes[0].adresse.pointage");
+  @Then("l'adresse de la premiere ligne de la liste des fins automatiques ouvre le dossier de la meme activite")
+  public void adresseOuvreLeDossier() {
+    var suivi = (String) CucumberRestTestContext.getElement("$.content[0].adresse.suivi");
+    var pointage = (String) CucumberRestTestContext.getElement("$.content[0].adresse.pointage");
+    var activite = CucumberRestTestContext.getElement("$.content[0].activite");
     rest.get("/api/atelier/suivis/" + suivi + "/anomalies/" + pointage);
-    assertThatLastResponse().hasOkStatus().hasElement("$.kind").withValue(etat);
+    assertThatLastResponse().hasOkStatus();
+    assertThat(CucumberRestTestContext.getElement("$.activite.activite")).isEqualTo(activite);
   }
 }

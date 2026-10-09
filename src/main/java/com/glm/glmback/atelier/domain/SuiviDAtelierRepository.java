@@ -15,5 +15,11 @@ public interface SuiviDAtelierRepository {
 
   Optional<SuiviDAtelier> getEnCoursPour(ElementEngageId element);
 
+  /**
+   * Vrai si un suivi de l'entreprise porte deja cet evenement : l'identifiant d'un geste est unique dans toute la table,
+   * pas seulement dans le journal d'un suivi.
+   */
+  boolean contientEvenement(EvenementDAtelierId evenement);
+
   Page<SuiviDAtelier> list(SuiviDAtelierCriteria criteria, Pageable pageable);
 }

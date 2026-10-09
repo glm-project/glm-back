@@ -27,8 +27,6 @@ public final class SyntheseHeuresFixture {
   public static final Instant LE_DIMANCHE_10_MAI_2026_A_20H = aParis(10, 20);
   public static final Instant LE_LUNDI_11_MAI_2026_A_7H = aParis(11, 7);
   public static final Instant LE_LUNDI_11_MAI_2026_A_16H = aParis(11, 16);
-  public static final Instant LE_LUNDI_11_MAI_2026_A_20H = aParis(11, 20);
-  public static final Instant LE_LUNDI_11_MAI_2026_A_20H05 = aParis(11, 20).plusSeconds(300);
   public static final Instant LE_MARDI_12_MAI_2026_A_10H = aParis(12, 10);
   public static final Instant LE_MARDI_12_MAI_2026_A_20H = aParis(12, 20);
   public static final Instant LE_DIMANCHE_10_MAI_2026_A_8H = aParis(10, 8);
@@ -130,16 +128,14 @@ public final class SyntheseHeuresFixture {
       .id(ACTIVITE_ID_DU_CARTER)
       .activite(activiteDeTravailDuCarterSurLaDmu50())
       .plage(new Plage(LE_LUNDI_11_MAI_2026_A_8H, Optional.of(LE_LUNDI_11_MAI_2026_A_10H)))
-      .echeance(Instant.parse("2026-05-11T19:00:00Z"))
-      .finAuPlusTard(Optional.empty());
+      .echeance(Instant.parse("2026-05-11T19:00:00Z"));
   }
 
   public static ActiviteLue travailDuCarterLuSur(Plage plage) {
     return ActiviteLue.builder()
       .id(ACTIVITE_ID_DU_CARTER)
       .etat(plage.estOuverte() ? EtatDActivite.EN_COURS : EtatDActivite.TERMINEE)
-      .plage(plage)
-      .finAuPlusTard(Optional.empty());
+      .plage(plage);
   }
 
   private static Instant aParis(int jourDeMai, int heure) {

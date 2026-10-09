@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 interface SpringDataPointagesDAtelierDeLaSyntheseRepository extends JpaRepository<PointageDAtelierDeLaSyntheseEntity, UUID> {
   List<
     PointageDAtelierDeLaSyntheseEntity
-  > findByOperateurIdAndAnnulationDateIsNullAndDateDeSurvenueGreaterThanEqualAndDateDeSurvenueLessThanOrderByDateDeSurvenueAscIdAsc(
+  > findByOperateurIdAndDateDeSurvenueGreaterThanEqualAndDateDeSurvenueLessThanOrderByDateDeSurvenueAscIdAsc(
     UUID operateurId,
     Instant debut,
     Instant finExclusive

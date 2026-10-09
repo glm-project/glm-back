@@ -52,8 +52,6 @@ class SupervisionDAtelierResourceIT {
       TenantSecurityContexts.authenticateOn(tenant);
       transactions.executeWithoutResult(status -> {
         entities.createNativeQuery("delete from activite_d_atelier").executeUpdate();
-        entities.createNativeQuery("delete from pointage_en_conflit").executeUpdate();
-        entities.createNativeQuery("delete from sequence_en_conflit").executeUpdate();
         entities.createNativeQuery("delete from evenement_d_atelier").executeUpdate();
         entities.createNativeQuery("delete from suivi_d_atelier").executeUpdate();
         entities.createNativeQuery("delete from element_de_fabrication").executeUpdate();
@@ -74,8 +72,7 @@ class SupervisionDAtelierResourceIT {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.evaluation").value("2026-09-13T10:00:00Z"))
       .andExpect(jsonPath("$.operateurs").isEmpty())
-      .andExpect(jsonPath("$.activites").isEmpty())
-      .andExpect(jsonPath("$.sequencesEnConflit").isEmpty());
+      .andExpect(jsonPath("$.activites").isEmpty());
   }
 
   @Test
@@ -187,38 +184,7 @@ class SupervisionDAtelierResourceIT {
 
   @Test
   @WithTenant("supervision_fixture")
-  void shouldKeepConflictDescriptionsSeparateFromInterpretableActivitiesAfterTheirDeadline() throws Exception {
-    var travail = debutSansPosteParDupontA(LE_10_MAI_2026_A_8H);
-    var nc = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_12H);
-    var suivi = suiviDAtelierEngage().enregistre(travail).enregistre(nc).enregistre(finDe(travail).a(LE_10_MAI_2026_A_17H));
-    when(clock.now()).thenReturn(LE_11_MAI_2026_A_9H);
-    transactions.executeWithoutResult(status -> suivis.create(suivi));
-
-    rest
-      .perform(get("/api/atelier/supervision"))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.activites").isEmpty())
-      .andExpect(jsonPath("$.sequencesEnConflit.length()").value(1))
-      .andExpect(jsonPath("$.sequencesEnConflit[0].id").value(travail.id().uuid().toString()))
-      .andExpect(jsonPath("$.sequencesEnConflit[0].operateurId").value(OPERATEUR_ID_DUPONT.uuid().toString()))
-      .andExpect(jsonPath("$.sequencesEnConflit[0].poste").doesNotExist())
-      .andExpect(jsonPath("$.sequencesEnConflit[0].activites.length()").value(2))
-      .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].id").value(travail.activite().orElseThrow().uuid().toString()))
-      .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].operateurId").value(OPERATEUR_ID_DUPONT.uuid().toString()))
-      .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].element.nom").value(NOM_OF_2026_000042.value()))
-      .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].element.categorie").value("OF"))
-      .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].categorie").value("TRAVAIL"))
-      .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].debut").value("2026-05-10T08:00:00Z"))
-      .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].echeance").value("2026-05-10T21:00:00Z"))
-      .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].etat").doesNotExist())
-      .andExpect(jsonPath("$.sequencesEnConflit[0].activites[0].finRetenue").doesNotExist())
-      .andExpect(jsonPath("$.sequencesEnConflit[0].activites[1].id").value(nc.activite().orElseThrow().uuid().toString()))
-      .andExpect(jsonPath("$.sequencesEnConflit[0].activites[1].categorie").value("NON_CONFORMITE"));
-  }
-
-  @Test
-  @WithTenant("supervision_fixture")
-  void shouldKeepAnAutomaticEndAfterRelaunchAndClosingThenRemoveItAfterRegularization() throws Exception {
+  void shouldKeepAnAutomaticEndAfterAReopeningAndClosingThenRemoveItAfterRegularization() throws Exception {
     var ancien = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     var reprise = debutSurFraiseuse1ParDupontA(LE_11_MAI_2026_A_8H);
     var suivi = suiviDAtelierEngage().enregistre(ancien).enregistre(reprise).cloture(clotureParLeroyA(LE_11_MAI_2026_A_9H));
@@ -242,61 +208,6 @@ class SupervisionDAtelierResourceIT {
     var regularise = suivi.enregistre(finRegulariseeParLeroyDe(ancien).a(LE_10_MAI_2026_A_17H));
     transactions.executeWithoutResult(status -> suivis.update(regularise));
     rest.perform(get("/api/atelier/supervision")).andExpect(status().isOk()).andExpect(jsonPath("$.activites").isEmpty());
-  }
-
-  @Test
-  @WithTenant("supervision_fixture")
-  void shouldKeepTheOriginalIdentityWhenAStartCorrectionRemovesTheAutomaticEnd() throws Exception {
-    var debut = debutSansPosteParDupontA(LE_10_MAI_2026_A_8H);
-    var suivi = suiviDAtelierEngage().enregistre(debut);
-    when(clock.now()).thenReturn(Instant.parse("2026-05-10T22:00:00Z"));
-    transactions.executeWithoutResult(status -> suivis.create(suivi));
-    rest
-      .perform(get("/api/atelier/supervision"))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.activites[0].etat").value("TERMINEE_AUTOMATIQUEMENT"));
-
-    TenantSecurityContexts.authenticateOn("supervision_fixture");
-    var corrige = suivi.corrige(debut.id(), annulationParLeroy(), debutSansPosteParDupontA(LE_10_MAI_2026_A_12H));
-    transactions.executeWithoutResult(status -> suivis.update(corrige));
-    when(clock.now()).thenReturn(Instant.parse("2026-05-10T22:00:00Z"));
-    rest
-      .perform(get("/api/atelier/supervision"))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.activites.length()").value(1))
-      .andExpect(jsonPath("$.activites[0].id").value(debut.activite().orElseThrow().uuid().toString()))
-      .andExpect(jsonPath("$.activites[0].debut").value("2026-05-10T12:00:00Z"))
-      .andExpect(jsonPath("$.activites[0].echeance").value("2026-05-11T01:00:00Z"))
-      .andExpect(jsonPath("$.activites[0].etat").value("EN_COURS"))
-      .andExpect(jsonPath("$.activites[0].finRetenue").doesNotExist());
-  }
-
-  @Test
-  @WithTenant("supervision_fixture")
-  void shouldKeepAnEmptyConflictAlongsideIndependentWorkAndRemoveItAfterResolution() throws Exception {
-    var debut = debutSansPosteParDupontA(LE_10_MAI_2026_A_8H);
-    var fin = finDe(debut).a(LE_10_MAI_2026_A_9H);
-    var reprise = debutSansPosteParDupontA(LE_11_MAI_2026_A_8H);
-    var suivi = suiviDAtelierEngage().enregistre(debut).enregistre(fin).annule(debut.id(), annulationParLeroy()).enregistre(reprise);
-    when(clock.now()).thenReturn(LE_11_MAI_2026_A_9H);
-    transactions.executeWithoutResult(status -> suivis.create(suivi));
-    rest
-      .perform(get("/api/atelier/supervision"))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.activites.length()").value(1))
-      .andExpect(jsonPath("$.activites[0].id").value(reprise.activite().orElseThrow().uuid().toString()))
-      .andExpect(jsonPath("$.sequencesEnConflit.length()").value(1))
-      .andExpect(jsonPath("$.sequencesEnConflit[0].id").value(fin.id().uuid().toString()))
-      .andExpect(jsonPath("$.sequencesEnConflit[0].operateurId").value(OPERATEUR_ID_DUPONT.uuid().toString()))
-      .andExpect(jsonPath("$.sequencesEnConflit[0].activites").isEmpty());
-
-    TenantSecurityContexts.authenticateOn("supervision_fixture");
-    transactions.executeWithoutResult(status -> suivis.update(suivi.annule(fin.id(), annulationParLeroy())));
-    rest
-      .perform(get("/api/atelier/supervision"))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.activites.length()").value(1))
-      .andExpect(jsonPath("$.sequencesEnConflit").isEmpty());
   }
 
   @Test
@@ -374,7 +285,7 @@ class SupervisionDAtelierResourceIT {
     var autre = suiviDAtelierEngage()
       .enregistre(debut)
       .enregistre(finDe(debut).a(LE_10_MAI_2026_A_9H))
-      .annule(debut.id(), annulationParLeroy());
+      .enregistre(finDe(debut).a(LE_10_MAI_2026_A_12H));
     transactions.executeWithoutResult(status -> {
       entities
         .createNativeQuery("insert into operateur (id,nom,prenom) values (:id,'Martin','Paul')")
@@ -387,8 +298,7 @@ class SupervisionDAtelierResourceIT {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.operateurs.length()").value(1))
       .andExpect(jsonPath("$.operateurs[0].nom").value("Martin"))
-      .andExpect(jsonPath("$.activites").isEmpty())
-      .andExpect(jsonPath("$.sequencesEnConflit.length()").value(1));
+      .andExpect(jsonPath("$.activites").isEmpty());
 
     TenantSecurityContexts.authenticateOn("supervision_fixture");
     rest
@@ -396,8 +306,7 @@ class SupervisionDAtelierResourceIT {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.operateurs.length()").value(1))
       .andExpect(jsonPath("$.operateurs[0].nom").value("Dupont"))
-      .andExpect(jsonPath("$.activites.length()").value(1))
-      .andExpect(jsonPath("$.sequencesEnConflit").isEmpty());
+      .andExpect(jsonPath("$.activites.length()").value(1));
   }
 
   @ParameterizedTest

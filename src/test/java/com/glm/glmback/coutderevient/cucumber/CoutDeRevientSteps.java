@@ -60,7 +60,6 @@ public class CoutDeRevientSteps {
   private final Map<String, String> elements = new HashMap<>();
   private final Map<String, String> suivis = new HashMap<>();
   private final Map<String, String> pointages = new HashMap<>();
-  private final Map<String, Map<String, Object>> corpsDesPointages = new HashMap<>();
 
   @Given("le rapport connait le poste {string} de nature {string} a {string} de l'heure")
   public void leRapportConnaitLePoste(String alias, String nature, String coutHoraire) {
@@ -118,6 +117,7 @@ public class CoutDeRevientSteps {
       postes.get(poste)
     );
     ecritures.pointe(suivis.get(element), corps);
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage doit etre accepte").isTrue();
   }
 
   @Given("{string} pointe {string} sur {string} sans poste a {string}")
@@ -125,6 +125,7 @@ public class CoutDeRevientSteps {
     horloge.ilEst(Instant.parse(instant));
     Map<String, Object> corps = Map.of("id", UUID.randomUUID(), "type", type, "operateur", operateurs.get(operateur));
     ecritures.pointe(suivis.get(element), corps);
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage doit etre accepte").isTrue();
   }
 
   @Given("{string} est cloture a {string}")
@@ -142,81 +143,22 @@ public class CoutDeRevientSteps {
       Map<String, Object> corps = new HashMap<>();
       corps.put("id", identite);
       corps.put("type", pointage.get("type"));
-      corps.put("intention", pointage.get("intention"));
       corps.put("operateur", operateurs.get(pointage.get("operateur")));
       corps.put("dateDeSurvenue", survenue);
       if (pointage.containsKey("poste")) {
         corps.put("poste", postes.get(pointage.get("poste")));
       }
-      if (!java.util.Optional.ofNullable(pointage.get("cible")).orElse("").isEmpty()) {
-        corps.put("cible", pointages.get(pointage.get("cible")));
-      }
       if ("REGULARISATION".equals(pointage.get("acte"))) {
-        corps.remove("id");
-        ecritures.regularise(suivis.get(element), corps);
+        ecritures.regularise(
+          suivis.get(element),
+          Map.of("id", identite, "activite", pointages.get(pointage.get("cible")), "dateDeSurvenue", survenue)
+        );
       } else {
         ecritures.pointe(suivis.get(element), corps);
       }
-      assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage explicite du cout doit etre accepte").isTrue();
-      if ("REGULARISATION".equals(pointage.get("acte"))) {
-        identite = identiteDuPointageActif(survenue, pointage.get("type"), pointage.get("intention"));
-      }
+      EcrituresDuJournalDAtelier.exigeLaReponseAttendue(pointage);
       pointages.put(pointage.get("alias"), identite);
-      corpsDesPointages.put(pointage.get("alias"), corps);
     }
-  }
-
-  @SuppressWarnings("unchecked")
-  private static String identiteDuPointageActif(String survenue, String type, String intention) {
-    List<Map<String, Object>> journal = (List<Map<String, Object>>) CucumberRestTestContext.getElement("$.journal");
-    return journal
-      .stream()
-      .filter(
-        pointage ->
-          survenue.equals(pointage.get("dateDeSurvenue"))
-          && type.equals(pointage.get("type"))
-          && intention.equals(pointage.get("intention"))
-      )
-      .filter(pointage -> pointage.get("annulation") == null)
-      .map(pointage -> (String) pointage.get("id"))
-      .findFirst()
-      .orElseThrow();
-  }
-
-  @Given("pour le cout, le pointage {string} sur {string} est annule a {string}")
-  public void annule(String alias, String element, String reception) {
-    horloge.ilEst(Instant.parse(reception));
-    rest.post(
-      SUIVIS_URI + "/" + suivis.get(element) + "/evenements/" + pointages.get(alias) + "/annulation",
-      JSON.writeValueAsString(Map.of("motif", "saisie en trop"))
-    );
-    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("annulation acceptee").isTrue();
-  }
-
-  @Given("pour le cout, le pointage {string} sur {string} est corrige a {string} vers {string}")
-  public void corrige(String alias, String element, String reception, String survenue) {
-    Map<String, Object> corps = new HashMap<>(corpsDesPointages.get(alias));
-    corps.put("dateDeSurvenue", survenue);
-    corrige(alias, element, reception, corps);
-  }
-
-  @Given("pour le cout, la cible du pointage {string} sur {string} est corrigee vers {string} a {string}")
-  public void corrigeCible(String alias, String element, String cible, String reception) {
-    Map<String, Object> corps = new HashMap<>(corpsDesPointages.get(alias));
-    corps.put("cible", pointages.get(cible));
-    corrige(alias, element, reception, corps);
-  }
-
-  private void corrige(String alias, String element, String reception, Map<String, Object> corps) {
-    horloge.ilEst(Instant.parse(reception));
-    corps.remove("id");
-    corps.put("motif", "saisie erronee");
-    ecritures.corrige(suivis.get(element), pointages.get(alias), corps);
-    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("correction acceptee").isTrue();
-    pointages.put(
-      alias + "-corrige",
-      identiteDuPointageActif((String) corps.get("dateDeSurvenue"), (String) corps.get("type"), (String) corps.get("intention"))
-    );
   }
 
   @Given("pour le cout, le poste {string} est revise a {string} de l'heure et l'operateur {string} a {string} a {string}")
@@ -234,11 +176,6 @@ public class CoutDeRevientSteps {
     ficheOperateur.put("tauxHoraire", taux);
     rest.put(OPERATEURS_URI + "/" + operateurs.get(operateur), JSON.writeValueAsString(ficheOperateur));
     assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).isTrue();
-  }
-
-  @Then("le cout ne porte aucun conflit")
-  public void sansConflit() {
-    assertThat((List<?>) CucumberRestTestContext.getElement("$.conflits")).isEmpty();
   }
 
   @Then("le cout porte {int} fins automatiques")
@@ -260,39 +197,8 @@ public class CoutDeRevientSteps {
     assertThat(lignes).allSatisfy(ligne -> assertThat((List<?>) ligne.get("finsAutomatiques")).isEmpty());
   }
 
-  @Then("le cout porte les conflits")
-  @SuppressWarnings("unchecked")
-  public void conflits(List<Map<String, String>> attendus) {
-    List<Map<String, Object>> lus = (List<Map<String, Object>>) CucumberRestTestContext.getElement("$.conflits");
-    List<Map<String, Object>> esperes = attendus
-      .stream()
-      .map(ligne -> {
-        Map<String, Object> attendu = new java.util.LinkedHashMap<>();
-        attendu.put("element", elements.get(ligne.get("element")));
-        attendu.put("operateur", operateurs.get(ligne.get("operateur")));
-        if (ligne.get("poste") != null) {
-          attendu.put("poste", postes.get(ligne.get("poste")));
-        }
-        attendu.put("activites", identites(ligne.get("activites")));
-        attendu.put("pointages", identites(ligne.get("pointages")));
-        return attendu;
-      })
-      .toList();
-    assertThat(lus).containsExactlyInAnyOrderElementsOf(esperes);
-  }
-
-  private List<String> identites(String aliases) {
-    return aliases == null || aliases.isEmpty() ? List.of() : java.util.Arrays.stream(aliases.split(",")).map(pointages::get).toList();
-  }
-
-  @Then("le total du cout {string} est incomplet sans chiffre")
-  public void incomplet(String chemin) {
-    assertThat(CucumberRestTestContext.getElement(chemin)).isEqualTo(Map.of("complete", false));
-  }
-
-  @Then("le total du cout {string} est complet avec {string}")
-  public void complet(String chemin, String valeur) {
-    assertThat(CucumberRestTestContext.getElement(chemin + ".complete")).isEqualTo(true);
+  @Then("le total du cout {string} vaut {string}")
+  public void vaut(String chemin, String valeur) {
     Object lue = CucumberRestTestContext.getElement(chemin + ".valeur");
     assertThat(lue instanceof Number ? montant(lue) : String.valueOf(lue)).isEqualTo(valeur);
   }
@@ -362,8 +268,8 @@ public class CoutDeRevientSteps {
         resume.put("debut", String.valueOf(pointage.get("debut")));
         resume.put("fin", texte(pointage.get("fin")));
         resume.put("anomalies", String.join(",", (List<String>) pointage.get("anomalies")));
-        resume.put("machine", montantOuIncomplet(((Map<String, Object>) pointage.get("cout")).get("machine")));
-        resume.put("mainDOeuvre", montantOuIncomplet(((Map<String, Object>) pointage.get("cout")).get("mainDOeuvre")));
+        resume.put("machine", montant(((Map<String, Object>) pointage.get("cout")).get("machine")));
+        resume.put("mainDOeuvre", montant(((Map<String, Object>) pointage.get("cout")).get("mainDOeuvre")));
         return resume;
       })
       .toList();
@@ -380,33 +286,13 @@ public class CoutDeRevientSteps {
         resume.put("debut", String.valueOf(part.get("debut")));
         resume.put("fin", String.valueOf(part.get("fin")));
         resume.put("diviseur", texte(part.get("diviseur")));
-        resume.put("mainDOeuvre", montantOuIncomplet(part.get("mainDOeuvre")));
+        resume.put("mainDOeuvre", montant(part.get("mainDOeuvre")));
         resume.put("paralleles", activitesCitees(part.get("paralleles")));
-        resume.put("bloquants", activitesCitees(part.get("bloquants")));
         return resume;
       })
       .toList();
 
     assertThat(lues).isEqualTo(sansCellulesVides(attendues));
-  }
-
-  @SuppressWarnings("unchecked")
-  @Then("le pointage de la ligne {string} commence a {string} est a resoudre, contredit par {string}")
-  public void lePointageEstAResoudre(String nature, String debut, String contradictoires) {
-    Map<String, Object> pointage = pointage(nature, debut);
-    Map<String, String> alias = new HashMap<>();
-    pointages.forEach((nom, id) -> alias.put(id, nom));
-
-    assertThat(pointage.get("anomalies")).isEqualTo(List.of("A_RESOUDRE"));
-    assertThat(pointage.get("fin")).isNull();
-    assertThat(
-      String.join(
-        ",",
-        ((List<Map<String, Object>>) pointage.get("contradictoires")).stream()
-          .map(fait -> alias.get(String.valueOf(fait.get("id"))) + ":" + fait.get("type"))
-          .toList()
-      )
-    ).isEqualTo(contradictoires);
   }
 
   @SuppressWarnings("unchecked")
@@ -448,11 +334,6 @@ public class CoutDeRevientSteps {
       return "sans poste";
     }
     return String.valueOf(((Map<String, Object>) poste).get("libelle")).replaceAll(" \\d+$", "");
-  }
-
-  @SuppressWarnings("unchecked")
-  private static String montantOuIncomplet(Object total) {
-    return Boolean.TRUE.equals(((Map<String, Object>) total).get("complete")) ? montant(total) : "incomplet";
   }
 
   private static String texte(Object valeur) {

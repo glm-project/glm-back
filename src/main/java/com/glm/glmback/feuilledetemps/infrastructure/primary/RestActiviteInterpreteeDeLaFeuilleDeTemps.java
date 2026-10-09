@@ -8,21 +8,22 @@ import java.util.UUID;
 
 @Schema(description = "L'activite entiere interpretee par atelier, avant son decoupage calendaire.")
 record RestActiviteInterpreteeDeLaFeuilleDeTemps(
-  @Schema(description = "Identite stable de l'activite, conservee apres correction.", requiredMode = Schema.RequiredMode.REQUIRED) UUID id,
+  @Schema(
+    description = "Identite stable de l'activite : l'identifiant de son pointage ouvrant d'origine.",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  UUID id,
   @Schema(description = "TERMINEE_AUTOMATIQUEMENT signale l'anomalie de fin automatique.", requiredMode = Schema.RequiredMode.REQUIRED)
   EtatDActivite etat,
   @Schema(description = "Debut de l'activite entiere.", requiredMode = Schema.RequiredMode.REQUIRED) Instant debut,
-  @Schema(description = "Fin de l'activite entiere, seulement si elle est terminee ou terminee automatiquement.") Instant fin,
-  @Schema(description = "Borne possible issue des faits, seulement pour une activite a resoudre ; ce n'est pas une fin reelle.")
-  Instant finAuPlusTard
+  @Schema(description = "Fin de l'activite entiere, seulement si elle est terminee ou terminee automatiquement.") Instant fin
 ) {
   static RestActiviteInterpreteeDeLaFeuilleDeTemps from(ActiviteLue activite) {
     return new RestActiviteInterpreteeDeLaFeuilleDeTemps(
       activite.id().uuid(),
       activite.etat(),
       activite.plage().debut(),
-      activite.plage().fin().orElse(null),
-      activite.finAuPlusTard().orElse(null)
+      activite.plage().fin().orElse(null)
     );
   }
 }

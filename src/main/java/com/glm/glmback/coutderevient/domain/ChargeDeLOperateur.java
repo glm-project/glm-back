@@ -42,16 +42,12 @@ public record ChargeDeLOperateur(List<SousPeriode> sousPeriodes, List<FenetreDeP
    * </p>
    */
   static ChargeDeLOperateur de(List<TrancheDActivite> tranches) {
-    return de(tranches, List.of());
-  }
-
-  static ChargeDeLOperateur de(List<TrancheDActivite> tranches, List<ZoneIncertaine> zones) {
-    List<Instant> bornes = bornes(tranches, zones);
+    List<Instant> bornes = bornes(tranches);
     List<SousPeriode> sousPeriodes = new ArrayList<>();
 
     for (int rang = 0; rang + 1 < bornes.size(); rang++) {
       Periode candidate = new Periode(bornes.get(rang), bornes.get(rang + 1));
-      sousPeriode(tranches, zones, candidate).ifPresent(sousPeriodes::add);
+      sousPeriode(tranches, candidate).ifPresent(sousPeriodes::add);
     }
 
     return new ChargeDeLOperateur(List.copyOf(sousPeriodes), fenetres(tranches, sousPeriodes));
@@ -73,7 +69,7 @@ public record ChargeDeLOperateur(List<SousPeriode> sousPeriodes, List<FenetreDeP
   }
 
   /**
-   * Les sous-periodes adjacentes ou l'operateur occupe le meme ensemble de postes, avec un diviseur connu, ne forment
+   * Les sous-periodes adjacentes ou l'operateur occupe le meme ensemble de postes ne forment
    * qu'une fenetre : une heure qui n'est pas partagee n'est jamais coupee en morceaux arrondis.
    */
   private static List<FenetreDePartage> fenetres(List<TrancheDActivite> tranches, List<SousPeriode> sousPeriodes) {
@@ -81,9 +77,7 @@ public record ChargeDeLOperateur(List<SousPeriode> sousPeriodes, List<FenetreDeP
     for (SousPeriode sousPeriode : sousPeriodes) {
       if (!etendues.isEmpty() && prolonge(tranches, etendues.getLast(), sousPeriode)) {
         SousPeriode precedente = etendues.removeLast();
-        etendues.add(
-          new SousPeriode(new Periode(precedente.periode().debut(), sousPeriode.periode().fin()), precedente.diviseur().orElseThrow())
-        );
+        etendues.add(new SousPeriode(new Periode(precedente.periode().debut(), sousPeriode.periode().fin()), precedente.diviseur()));
       } else {
         etendues.add(sousPeriode);
       }
@@ -93,10 +87,7 @@ public record ChargeDeLOperateur(List<SousPeriode> sousPeriodes, List<FenetreDeP
       .map(etendue ->
         new FenetreDePartage(
           etendue,
-          etendue
-            .diviseur()
-            .map(diviseur -> RepartitionDeMainDOeuvre.de(tranches, etendue.periode(), diviseur))
-            .orElse(RepartitionDeMainDOeuvre.AUCUNE),
+          RepartitionDeMainDOeuvre.de(tranches, etendue.periode(), etendue.diviseur()),
           tranches
             .stream()
             .filter(tranche -> tranche.periode().intersection(etendue.periode()).isPresent())
@@ -109,22 +100,15 @@ public record ChargeDeLOperateur(List<SousPeriode> sousPeriodes, List<FenetreDeP
   private static boolean prolonge(List<TrancheDActivite> tranches, SousPeriode precedente, SousPeriode suivante) {
     return (
       precedente.periode().fin().equals(suivante.periode().debut())
-      && precedente.diviseur().isPresent()
-      && suivante.diviseur().isPresent()
       && postes(tranches, precedente.periode()).equals(postes(tranches, suivante.periode()))
     );
   }
 
-  private static List<Instant> bornes(List<TrancheDActivite> tranches, List<ZoneIncertaine> zones) {
+  private static List<Instant> bornes(List<TrancheDActivite> tranches) {
     TreeSet<Instant> bornes = new TreeSet<>();
     tranches.forEach(tranche -> {
       bornes.add(tranche.periode().debut());
       bornes.add(tranche.periode().fin());
-    });
-
-    zones.forEach(zone -> {
-      bornes.add(zone.periode().debut());
-      bornes.add(zone.periode().fin());
     });
     return List.copyOf(bornes);
   }
@@ -132,19 +116,12 @@ public record ChargeDeLOperateur(List<SousPeriode> sousPeriodes, List<FenetreDeP
   /**
    * Rien n'est rendu la ou l'operateur ne travaillait pas : entre deux pointages, il n'y a aucun diviseur a poser.
    */
-  private static Optional<SousPeriode> sousPeriode(List<TrancheDActivite> tranches, List<ZoneIncertaine> zones, Periode candidate) {
+  private static Optional<SousPeriode> sousPeriode(List<TrancheDActivite> tranches, Periode candidate) {
     Set<Optional<PosteDeTravailId>> postes = postes(tranches, candidate);
     if (postes.isEmpty()) {
       return Optional.empty();
     }
-    Set<ActiviteInterpretee> responsables = zones
-      .stream()
-      .filter(zone -> zone.periode().intersection(candidate).isPresent())
-      .map(ZoneIncertaine::activite)
-      .filter(activite -> !postes.contains(activite.activite().poste()))
-      .collect(Collectors.toSet());
-    Optional<Diviseur> diviseur = responsables.isEmpty() ? Optional.of(new Diviseur(postes.size())) : Optional.empty();
-    return Optional.of(new SousPeriode(candidate, diviseur, responsables));
+    return Optional.of(new SousPeriode(candidate, new Diviseur(postes.size())));
   }
 
   private static Set<Optional<PosteDeTravailId>> postes(List<TrancheDActivite> tranches, Periode periode) {

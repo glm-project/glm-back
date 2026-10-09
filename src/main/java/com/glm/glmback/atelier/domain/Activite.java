@@ -5,57 +5,34 @@ import java.time.Instant;
 import java.util.Optional;
 
 /**
- * Une activite telle que l'interpretation des faits actifs d'une cle la donne : le pointage ouvrant qui la porte
- * aujourd'hui, sa fin reelle quand un fait l'a terminee, et si une sequence en conflit la laisse a resoudre.
+ * Une activite telle que la lecture du journal la donne : le pointage ouvrant qui la porte, et sa fin reelle quand un
+ * fait l'a terminee.
  *
  * <p>
- * Son identite est celle de son pointage ouvrant d'origine ; l'ouvrant, lui, est le fait actif qui la porte, le
- * remplacant d'une correction le cas echeant. Son operateur, son poste, sa nature, sa categorie et son debut sont
+ * Son identite est celle de son pointage ouvrant d'origine ; l'ouvrant, lui, est le fait qui la porte. Son operateur, son poste, sa nature, sa categorie et son debut sont
  * ceux de cet ouvrant.
  * </p>
  *
  * <p>
- * La fin est reelle ou absente : elle vient d'un geste qui termine l'activite, ou de la cloture du suivi. Elle ne
- * depend jamais de l'instant ou on lit. Seule la lecture a un instant d'evaluation, {@link #a(Instant)}, decide si une
- * activite sans fin reelle est encore en cours ou deja terminee automatiquement a son echeance.
- * </p>
- *
- * <p>
- * Une activite a resoudre n'a pas de fin : des pointages contradictoires la concernent, et le systeme ne choisit
- * aucune de leurs lectures. Elle n'est ni en cours ni terminee, et son echeance ne la termine pas : seule une
- * correction ou une annulation du gestionnaire la rend de nouveau interpretable.
+ * La fin est reelle ou absente : elle vient d'une fin pointee, d'une fin regularisee par le gestionnaire, ou de la
+ * cloture du suivi. Elle ne depend jamais de l'instant ou on lit. Seule la lecture a un instant d'evaluation,
+ * {@link #a(Instant)}, decide si une activite sans fin reelle est encore en cours ou deja terminee automatiquement a
+ * son echeance.
  * </p>
  */
-public record Activite(EvenementDAtelier ouvrant, Optional<Instant> fin, Optional<Instant> finAuPlusTard) {
+public record Activite(EvenementDAtelier ouvrant, Optional<Instant> fin) {
   public Activite {
     Assert.notNull("ouvrant", ouvrant);
     Assert.notNull("fin", fin);
     fin.ifPresent(date -> Assert.field("fin", date).afterOrAt(ouvrant.dateDeSurvenue()));
-    Assert.notNull("fin au plus tard", finAuPlusTard);
-    finAuPlusTard.ifPresent(date -> Assert.field("fin au plus tard", date).afterOrAt(ouvrant.dateDeSurvenue()));
-    if (finAuPlusTard.isPresent()) {
-      Assert.field("fin d'une activite a resoudre", fin.stream().toList()).maxSize(0);
-    }
   }
 
   static Activite ouvertePar(EvenementDAtelier ouvrant) {
-    return new Activite(ouvrant, Optional.empty(), Optional.empty());
+    return new Activite(ouvrant, Optional.empty());
   }
 
   Activite termineeA(Instant date) {
-    return new Activite(ouvrant, Optional.of(date), Optional.empty());
-  }
-
-  /**
-   * La meme activite, prise dans une sequence en conflit : elle perd sa fin, que les pointages contradictoires ne
-   * permettent plus d'affirmer.
-   */
-  Activite enConflit(Instant limite) {
-    return new Activite(ouvrant, Optional.empty(), Optional.of(limite));
-  }
-
-  public boolean aResoudre() {
-    return finAuPlusTard.isPresent();
+    return new Activite(ouvrant, Optional.of(date));
   }
 
   public ActiviteId id() {
@@ -74,24 +51,24 @@ public record Activite(EvenementDAtelier ouvrant, Optional<Instant> fin, Optiona
     return ouvrant.dateDeSurvenue();
   }
 
+  /**
+   * Le debut plus la duree maximale que l'ouvrant a portee, c'est-a-dire celle qui etait en vigueur quand l'activite a
+   * commence, quoi que le gestionnaire ait fixe depuis.
+   */
   public Echeance echeance() {
-    return Echeance.apres(debut());
+    return Echeance.apres(debut(), ouvrant.dureeMax().orElseThrow());
   }
 
   /**
-   * L'activite telle qu'elle se lit a l'instant d'evaluation : a resoudre si une sequence en conflit la concerne ;
-   * sinon terminee a sa fin reelle si un fait l'a terminee ; sinon terminee automatiquement a son echeance, avec une
-   * anomalie, des que l'echeance est atteinte ; sinon en cours. C'est ici que le domaine applique l'instant de
+   * L'activite telle qu'elle se lit a l'instant d'evaluation : terminee a sa fin reelle si un fait l'a terminee ;
+   * sinon terminee automatiquement a son echeance, avec une anomalie, des que l'echeance est atteinte ; sinon en
+   * cours. C'est ici que le domaine applique l'instant de
    * lecture. La regle d'echeance a trois lecteurs : le domaine ({@code Activite.a}), la supervision
    * ({@code ActiviteDeSupervision.a}) et le SQL de la liste des fins automatiques, qui ne peut pas appeler
    * {@link Echeance} et en recopie la comparaison. Leur parite est tenue par l'execution :
    * {@code ListeDesFinsAutomatiquesDAtelierIT} confronte ce SQL a {@code Activite.a}, a tout instant d'evaluation.
    */
   public IntervalleDActivite a(Instant evaluation) {
-    if (aResoudre()) {
-      return intervalle(Optional.empty(), false);
-    }
-
     if (fin.isEmpty() && echeance().estAtteinteA(evaluation)) {
       return intervalle(Optional.of(echeance().value()), true);
     }
@@ -100,11 +77,10 @@ public record Activite(EvenementDAtelier ouvrant, Optional<Instant> fin, Optiona
   }
 
   /**
-   * Vrai si l'activite est interpretable, qu'aucun fait ne l'a terminee et que son echeance n'est pas encore atteinte a
-   * l'instant d'evaluation.
+   * Vrai si aucun fait n'a termine l'activite et que son echeance n'est pas encore atteinte a l'instant d'evaluation.
    */
   public boolean estEnCoursA(Instant evaluation) {
-    return !aResoudre() && fin.isEmpty() && !echeance().estAtteinteA(evaluation);
+    return fin.isEmpty() && !echeance().estAtteinteA(evaluation);
   }
 
   private IntervalleDActivite intervalle(Optional<Instant> bornee, boolean finAutomatique) {
@@ -117,7 +93,6 @@ public record Activite(EvenementDAtelier ouvrant, Optional<Instant> fin, Optiona
       .categorie(categorie())
       .debut(debut())
       .fin(bornee)
-      .finAutomatique(finAutomatique)
-      .aResoudre(aResoudre());
+      .finAutomatique(finAutomatique);
   }
 }

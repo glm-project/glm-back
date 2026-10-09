@@ -13,18 +13,9 @@ interface SpringDataActivitesDeLaSyntheseRepository extends JpaRepository<Activi
     join fetch activite.suivi
     where activite.operateurId = :operateur
       and activite.debut < :finExclusive
-      and coalesce(activite.fin, activite.finAuPlusTard, activite.echeance) > :debut
+      and coalesce(activite.fin, activite.echeance) > :debut
     order by activite.debut, activite.id
     """
   )
   List<ActiviteDeLaSyntheseEntity> recouvrant(UUID operateur, Instant debut, Instant finExclusive);
-
-  @Query(
-    """
-    select activite from ActiviteDeLaSyntheseEntity activite
-    where activite.operateurId = :operateur and activite.sequenceId is not null
-    order by activite.sequenceId, activite.ordreDansSequence
-    """
-  )
-  List<ActiviteDeLaSyntheseEntity> enConflitDe(UUID operateur);
 }

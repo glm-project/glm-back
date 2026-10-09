@@ -118,7 +118,7 @@ class ChargeDeLOperateurTest {
     List<TrancheValorisable> parts = charge.decoupe(surFraiseuse(LE_11_MAI_A_9H, LE_11_MAI_A_11H));
 
     assertThat(parts)
-      .extracting(part -> part.diviseur().orElseThrow())
+      .extracting(part -> part.diviseur())
       .containsExactly(new Diviseur(1), new Diviseur(2));
     assertThat(parts)
       .extracting(part -> part.tranche().periode())
@@ -139,10 +139,10 @@ class ChargeDeLOperateurTest {
     assertThat(charge.sousPeriodes()).hasSize(3);
     assertThat(charge.decoupe(premierElement))
       .singleElement()
-      .satisfies(part -> assertThat(part.coutDeMainDOeuvre()).contains(new Montant(new BigDecimal("20.00"))));
+      .satisfies(part -> assertThat(part.coutDeMainDOeuvre()).isEqualTo(new Montant(new BigDecimal("20.00"))));
     assertThat(charge.decoupe(secondElement))
       .singleElement()
-      .satisfies(part -> assertThat(part.coutDeMainDOeuvre()).contains(new Montant(new BigDecimal("6.67"))));
+      .satisfies(part -> assertThat(part.coutDeMainDOeuvre()).isEqualTo(new Montant(new BigDecimal("6.67"))));
   }
 
   @Test
@@ -160,41 +160,7 @@ class ChargeDeLOperateurTest {
       );
     assertThat(charge.decoupe(fraisage))
       .extracting(TrancheValorisable::coutDeMainDOeuvre)
-      .containsExactly(Optional.of(new Montant(new BigDecimal("20.00"))), Optional.of(new Montant(new BigDecimal("10.00"))));
-  }
-
-  /**
-   * Un tour peut-etre occupe de 10 h a 12 h rend le diviseur inconnu de 10 h a 11 h : cette sous-periode reste seule,
-   * sans repartition, et l'heure certaine qui la precede garde son montant.
-   */
-  @Test
-  void shouldKeepAnUncertainSousPeriodeAfterACertainOneAlone() {
-    TrancheDActivite fraisage = surFraiseuse(LE_11_MAI_A_9H, LE_11_MAI_A_11H);
-    ZoneIncertaine tour = new ZoneIncertaine(
-      activiteInterpreteeDeTournage(new Plage(LE_11_MAI_A_10H, Optional.empty())),
-      new Periode(LE_11_MAI_A_10H, LE_11_MAI_A_12H)
-    );
-
-    ChargeDeLOperateur charge = ChargeDeLOperateur.de(List.of(fraisage), List.of(tour));
-
-    assertThat(charge.decoupe(fraisage))
-      .extracting(TrancheValorisable::coutDeMainDOeuvre)
-      .containsExactly(Optional.of(new Montant(new BigDecimal("20.00"))), Optional.empty());
-  }
-
-  @Test
-  void shouldKeepAnUncertainSousPeriodeBeforeACertainOneAlone() {
-    TrancheDActivite fraisage = surFraiseuse(LE_11_MAI_A_9H, LE_11_MAI_A_11H);
-    ZoneIncertaine tour = new ZoneIncertaine(
-      activiteInterpreteeDeTournage(new Plage(LE_11_MAI_A_8H, Optional.empty())),
-      new Periode(LE_11_MAI_A_8H, LE_11_MAI_A_10H)
-    );
-
-    ChargeDeLOperateur charge = ChargeDeLOperateur.de(List.of(fraisage), List.of(tour));
-
-    assertThat(charge.decoupe(fraisage))
-      .extracting(TrancheValorisable::coutDeMainDOeuvre)
-      .containsExactly(Optional.empty(), Optional.of(new Montant(new BigDecimal("20.00"))));
+      .containsExactly(new Montant(new BigDecimal("20.00")), new Montant(new BigDecimal("10.00")));
   }
 
   /**

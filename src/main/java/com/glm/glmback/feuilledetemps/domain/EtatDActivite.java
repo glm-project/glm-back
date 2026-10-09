@@ -5,5 +5,4 @@ public enum EtatDActivite {
   TERMINEE,
   TERMINEE_AUTOMATIQUEMENT,
   EN_COURS,
-  A_RESOUDRE,
 }

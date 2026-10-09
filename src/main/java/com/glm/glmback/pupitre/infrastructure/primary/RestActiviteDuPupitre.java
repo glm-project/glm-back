@@ -12,8 +12,7 @@ import java.util.UUID;
   description = """
   Une activite ouverte sur cet element : qui travaille, sur quel poste, dans quel etat, depuis quand.
 
-  Une transition ouvre une activite distincte de l autre categorie. Les activites a resoudre et celles dont
-  l echeance est atteinte ne sont pas actionnables et ne figurent pas ici.
+  Les activites dont l echeance est atteinte ne sont pas actionnables et ne figurent pas ici.
   """
 )
 record RestActiviteDuPupitre(
@@ -22,7 +21,7 @@ record RestActiviteDuPupitre(
   @Schema(description = "TRAVAIL ou NON_CONFORMITE.", requiredMode = Schema.RequiredMode.REQUIRED) CategorieDActivite categorie,
   @Schema(description = "Instant depuis lequel cette activite dure.", requiredMode = Schema.RequiredMode.REQUIRED) Instant depuis,
   @Schema(
-    description = "Identite stable de l activite, conservee apres correction de son ouvrant.",
+    description = "Identite stable de l activite : l identifiant de son pointage ouvrant.",
     requiredMode = Schema.RequiredMode.REQUIRED
   )
   UUID ouverture,

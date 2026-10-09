@@ -2,27 +2,23 @@ package com.glm.glmback.atelier.domain;
 
 import com.glm.glmback.shared.error.domain.Assert;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Le suivi en atelier d'un element engage : son journal, et ce que ce journal permet de deduire.
  *
  * <p>
  * Pointage et regularisation sont le meme acte du domaine, {@link #enregistre(EvenementDAtelier)} : ils ne different
- * que par la provenance de la date de survenue, decidee en amont. C'est ce qui rend la correction sure, elle repasse
- * par exactement les memes invariants.
+ * que par la provenance de la date de survenue, decidee en amont.
  * </p>
  *
  * <p>
  * Ses activites ne dependent que du journal. Tout ce qui depend de l'heure a laquelle on lit — l'etat, les activites
- * en cours, les intervalles — se lit a un instant d'evaluation explicite, que l'appelant fournit : une activite que
+ * en cours — se lit a un instant d'evaluation explicite, que l'appelant fournit : une activite que
  * rien n'a terminee y est terminee automatiquement des que son echeance est atteinte.
- * </p>
- *
- * <p>
- * Ses intervalles sont le temps effectif de l'element, que rend {@link TempsDAtelierService} : chaque activite est
- * bornee par ses faits et son echeance.
  * </p>
  */
 public record SuiviDAtelier(
@@ -63,18 +59,6 @@ public record SuiviDAtelier(
     return new SuiviDAtelier(id, element, engagement, journal.enregistre(evenement), cloture, revision);
   }
 
-  public SuiviDAtelier annule(EvenementDAtelierId evenement, Annulation annulation) {
-    return new SuiviDAtelier(id, element, engagement, journal.annule(evenement, annulation), cloture, revision);
-  }
-
-  /**
-   * Annule un evenement et lui substitue sa version corrigee, en un seul acte : le remplacant d'un ouvrant garde
-   * l'activite qu'il ouvrait, et les gestes qui la visent y restent rattaches.
-   */
-  public SuiviDAtelier corrige(EvenementDAtelierId evenement, Annulation annulation, EvenementDAtelier remplacant) {
-    return new SuiviDAtelier(id, element, engagement, journal.corrige(evenement, annulation, remplacant), cloture, revision);
-  }
-
   public SuiviDAtelier cloture(Cloture cloture) {
     return new SuiviDAtelier(id, element, engagement, journal, Optional.of(cloture), revision);
   }
@@ -84,26 +68,66 @@ public record SuiviDAtelier(
   }
 
   /**
-   * Refuse un geste qui vise une activite qu'aucun pointage de ce suivi n'a ouverte, ou celle d'un autre operateur ou
-   * d'un autre poste. Le refus precede toute autre decision sur le geste, absorption comprise.
+   * Juge un pointage de la cle donnee, survenu a cette heure, selon la regle de reception : anterieur au dernier
+   * accepte de la cle, echeance de sa derniere activite, puis le tableau. Il est accepte, ou ignore pour l'une des
+   * quatre raisons de {@link RaisonDePointageIgnore} ; le suivi ne change pas.
    */
-  public void exigeLActiviteViseePar(EvenementDAtelier geste) {
-    journal.exigeLActiviteViseePar(geste);
+  public VerdictDeReception juge(CleDActivite cle, TypeDEvenementDAtelier type, Instant survenue) {
+    return RegleDeReception.juge(journal, cloture.map(Cloture::dateDeSurvenue), cle, type, survenue);
+  }
+
+  /**
+   * L'activite dont le gestionnaire peut regulariser la fin, a l'heure de fin donnee et a l'instant present.
+   *
+   * <p>
+   * Elle doit exister dans ce suivi, ne pas etre deja regularisee, et etre une fin automatique : sans fin reelle et
+   * echue a l'instant present. La fin ne vient pas du futur, est posterieure au debut de l'activite (aucune activite de duree nulle) et ne depasse pas sa
+   * borne. Elle peut en revanche depasser l'echeance : c'est ce que la regularisation a de particulier.
+   * </p>
+   */
+  public Activite exigeUneFinRegularisable(ActiviteId id, Instant fin, Instant maintenant) {
+    Activite activite = activites()
+      .stream()
+      .filter(candidate -> candidate.id().equals(id))
+      .findFirst()
+      .orElseThrow(() -> new ActiviteViseeIntrouvableException(id));
+    if (estRegularisee(id)) {
+      throw new ActiviteDejaRegulariseeException(id);
+    }
+    if (!activite.a(maintenant).finAutomatique()) {
+      throw new ActiviteNonEchueException(id);
+    }
+    if (fin.isAfter(maintenant)) {
+      throw new DateDeSurvenueFutureException(fin);
+    }
+    if (!fin.isAfter(activite.debut())) {
+      throw new FinAvantDebutException(id, fin, activite.debut());
+    }
+    borne(activite)
+      .filter(fin::isAfter)
+      .ifPresent(borne -> {
+        throw new FinApresBorneException(id, fin, borne);
+      });
+
+    return activite;
+  }
+
+  /**
+   * Le plus tot de l'ouverture suivante sur la cle de l'activite et de la cloture, ou rien : la fin de l'activite ne
+   * peut pas les depasser.
+   */
+  public Optional<Instant> borneDeFin(ActiviteId id) {
+    return borne(
+      activites()
+        .stream()
+        .filter(candidate -> candidate.id().equals(id))
+        .findFirst()
+        .orElseThrow()
+    );
   }
 
   public List<Activite> activites() {
     return journal.activites(cloture.map(Cloture::dateDeSurvenue));
-  }
-
-  public List<SequenceEnConflit> conflits() {
-    return journal.conflits(cloture.map(Cloture::dateDeSurvenue));
-  }
-
-  public List<IntervalleDActivite> intervalles(Instant evaluation) {
-    return activites()
-      .stream()
-      .map(activite -> activite.a(evaluation))
-      .toList();
   }
 
   public List<ActiviteEnCours> activitesEnCours(Instant evaluation) {
@@ -115,16 +139,8 @@ public record SuiviDAtelier(
   }
 
   /**
-   * Vrai si le suivi est cloture avant la survenue de l'evenement : la cloture a deja termine ce que l'evenement
-   * pretendrait terminer.
-   */
-  public boolean estClotureAvant(EvenementDAtelier evenement) {
-    return cloture.filter(fin -> evenement.dateDeSurvenue().isAfter(fin.dateDeSurvenue())).isPresent();
-  }
-
-  /**
-   * L'etat a l'instant d'evaluation, juge sur les seules activites interpretables : une activite a resoudre n'est pas
-   * en cours, et la sequence en conflit se lit a part, sans etat qui lui soit propre.
+   * L'etat a l'instant d'evaluation : cloture, en cours si une activite l'est, interrompu si le journal porte un fait,
+   * en attente sinon.
    */
   public EtatDAtelier etat(Instant evaluation) {
     if (estCloture()) {
@@ -135,7 +151,26 @@ public record SuiviDAtelier(
       return EtatDAtelier.EN_COURS;
     }
 
-    return journal.actifs().isEmpty() ? EtatDAtelier.EN_ATTENTE : EtatDAtelier.INTERROMPU;
+    return journal.evenements().isEmpty() ? EtatDAtelier.EN_ATTENTE : EtatDAtelier.INTERROMPU;
+  }
+
+  private boolean estRegularisee(ActiviteId id) {
+    return journal
+      .evenements()
+      .stream()
+      .anyMatch(evenement -> evenement.activiteVisee().filter(id::equals).isPresent());
+  }
+
+  private Optional<Instant> borne(Activite activite) {
+    Optional<Instant> debutSuivant = activites()
+      .stream()
+      .filter(candidate -> candidate.cle().equals(activite.cle()))
+      .dropWhile(candidate -> !candidate.id().equals(activite.id()))
+      .skip(1)
+      .findFirst()
+      .map(Activite::debut);
+
+    return Stream.concat(debutSuivant.stream(), cloture.map(Cloture::dateDeSurvenue).stream()).min(Comparator.naturalOrder());
   }
 
   public boolean estCloture() {

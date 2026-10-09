@@ -4,9 +4,15 @@
 
 Accepted on 3 October 2026 for workshop journal facts and their projections.
 
+Amended on 9 October 2026 (glm-front#254): two sentences referred to concepts that no longer exist. In the Context, "the
+correction contract" became "the workshop contract", since corrections are gone. In the Decision, "The textual
+offline-event registry remains unchanged. No correction link is inferred from old dates." became "The migration infers
+nothing from old dates.", since the event identity registry and the correction links were removed. The decision itself
+is unchanged.
+
 ## Context
 
-The correction contract preserves Java `Instant` values at nanosecond precision. An integration test writing
+The workshop contract preserves Java `Instant` values at nanosecond precision. An integration test writing
 `2042-01-06T08:00:00.123456789Z` observes `.123457Z` after the PostgreSQL timestamp round-trip. Two facts one
 nanosecond apart must retain their business order in both the journal and downstream readers.
 
@@ -28,7 +34,7 @@ same converted columns, preserving context boundaries.
 
 The Liquibase migration converts the existing UTC timestamp values using `extract(epoch ... AT TIME ZONE 'UTC')`.
 It preserves the precision still present in those values, without reconstructing lost nanoseconds. New facts retain
-all nine digits. The textual offline-event registry remains unchanged. No correction link is inferred from old dates.
+all nine digits. The migration infers nothing from old dates.
 
 ## Consequences
 

@@ -8,7 +8,7 @@ import java.util.Optional;
  * Ce que l'ecran d'atelier affiche : qui fait quoi, dans quel etat, depuis quand, et jusqu'a quand au plus tard.
  *
  * <p>
- * L'identite de l'activite est celle qu'une fin ou une transition visera ; son echeance, l'instant ou elle se terminera
+ * L'identite de l'activite est celle de son pointage ouvrant ; son echeance, l'instant ou elle se terminera
  * automatiquement si rien ne la termine avant.
  * </p>
  */

@@ -15,10 +15,6 @@ public record AnomaliesDAtelierCriteria(String operateur, String element) {
     element = element.toLowerCase(Locale.ROOT);
   }
 
-  public boolean matches(ConflitEnListe ligne, AnnuaireDAtelier annuaire) {
-    return matches(ligne.cle(), ligne.element(), annuaire);
-  }
-
   public boolean matches(FinAutomatiqueEnListe ligne, AnnuaireDAtelier annuaire) {
     return matches(ligne.cle(), ligne.element(), annuaire);
   }

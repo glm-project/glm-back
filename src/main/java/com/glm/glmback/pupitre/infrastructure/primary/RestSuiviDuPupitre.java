@@ -32,14 +32,12 @@ record RestSuiviDuPupitre(
   String reference,
   @Schema(description = "Categorie de l'element, copiee a l'engagement.", requiredMode = Schema.RequiredMode.REQUIRED) String categorie,
   @Schema(
-    description = "EN_ATTENTE, EN_COURS ou INTERROMPU. Juge sur les seules activites interpretables a genereLe.",
+    description = "EN_ATTENTE, EN_COURS ou INTERROMPU. Juge sur les activites projetees a genereLe.",
     requiredMode = Schema.RequiredMode.REQUIRED
   )
   EtatDuSuivi etat,
   @Schema(description = "Les activites ouvertes a cet instant.", requiredMode = Schema.RequiredMode.REQUIRED)
-  List<RestActiviteDuPupitre> activites,
-  @Schema(description = "Sequences en conflit a resoudre par le gestionnaire.", requiredMode = Schema.RequiredMode.REQUIRED)
-  List<RestConflitDuPupitre> conflits
+  List<RestActiviteDuPupitre> activites
 ) {
   static RestSuiviDuPupitre from(SuiviDuPupitre suivi, Instant evaluation) {
     return new RestSuiviDuPupitre(
@@ -48,8 +46,7 @@ record RestSuiviDuPupitre(
       suivi.reference().map(ReferenceDElement::value).orElse(null),
       suivi.categorie().value(),
       suivi.etatA(evaluation),
-      suivi.activitesEnCoursA(evaluation).stream().map(RestActiviteDuPupitre::from).toList(),
-      suivi.conflits().stream().map(RestConflitDuPupitre::from).toList()
+      suivi.activitesEnCoursA(evaluation).stream().map(RestActiviteDuPupitre::from).toList()
     );
   }
 }

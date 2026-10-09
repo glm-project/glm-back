@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted on 5 October 2026 for Atelier dossiers of automatic ends.
+Superseded on 9 October 2026 by [ADR 0011](0011-regularise-an-automatic-end-directly.md) (glm-front#254). Accepted on
+5 October 2026 for Atelier dossiers of automatic ends.
+
+The guided proposals, the address states, `enConflit` and the continuations described below were removed with the
+conflicts. The dossier of an automatic end survives, reduced to the element, the expired activity, the punches of its key
+and the bound of the end. The text is kept as the record of that protocol.
 
 ## Context
 

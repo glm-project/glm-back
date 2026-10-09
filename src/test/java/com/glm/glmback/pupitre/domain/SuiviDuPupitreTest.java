@@ -23,7 +23,6 @@ class SuiviDuPupitreTest {
       .reference("M-1187")
       .categorie(CATEGORIE_OF.value())
       .activites(List.of())
-      .conflits(List.of())
       .dejaPointe(false);
     assertThat(suivi.id()).isEqualTo(SUIVI_ID_OF_42);
     assertThat(suivi.nom()).isEqualTo(NOM_OF_42);
@@ -42,7 +41,6 @@ class SuiviDuPupitreTest {
         .reference(null)
         .categorie(CATEGORIE_MOULE.value())
         .activites(List.of())
-        .conflits(List.of())
         .dejaPointe(false)
     ).isExactlyInstanceOf(MissingMandatoryValueException.class);
     assertThatThrownBy(() ->
@@ -52,18 +50,10 @@ class SuiviDuPupitreTest {
         .reference(null)
         .categorie(CATEGORIE_MOULE.value())
         .activites(List.of())
-        .conflits(List.of())
         .dejaPointe(false)
     ).isExactlyInstanceOf(MissingMandatoryValueException.class);
     assertThatThrownBy(() ->
-      SuiviDuPupitre.builder()
-        .id(SUIVI_ID_OF_42)
-        .nom(NOM_OF_42)
-        .reference(null)
-        .categorie(null)
-        .activites(List.of())
-        .conflits(List.of())
-        .dejaPointe(false)
+      SuiviDuPupitre.builder().id(SUIVI_ID_OF_42).nom(NOM_OF_42).reference(null).categorie(null).activites(List.of()).dejaPointe(false)
     ).isExactlyInstanceOf(MissingMandatoryValueException.class);
     assertThatThrownBy(() -> suiviOf42Pointe(null))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
@@ -81,7 +71,6 @@ class SuiviDuPupitreTest {
       .reference(null)
       .categorie(CATEGORIE_MOULE.value())
       .activites(List.of())
-      .conflits(List.of())
       .dejaPointe(false);
     assertThat(suivi.reference()).isEmpty();
   }
@@ -93,48 +82,6 @@ class SuiviDuPupitreTest {
     activites.clear();
     assertThat(suivi.activites()).containsExactly(travailDeDupontSurFraiseuse1Depuis8H());
     assertThatThrownBy(() -> suivi.activites().clear()).isExactlyInstanceOf(UnsupportedOperationException.class);
-  }
-
-  @Test
-  void shouldGarderLesConflitsSeparesDesActivitesCourantes() {
-    List<SequenceEnConflitDuPupitre> conflits = new ArrayList<>(List.of(SEQUENCE_DUPONT_SUR_FRAISEUSE_1));
-    SuiviDuPupitre suivi = SuiviDuPupitre.builder()
-      .id(SUIVI_ID_OF_42)
-      .nom(NOM_OF_42)
-      .reference(null)
-      .categorie(CATEGORIE_MOULE.value())
-      .activites(List.of())
-      .conflits(conflits)
-      .dejaPointe(true);
-    conflits.clear();
-    assertThat(suivi.conflits()).containsExactly(SEQUENCE_DUPONT_SUR_FRAISEUSE_1);
-    assertThat(suivi.activitesEnCoursA(LE_10_MAI_2026_A_9H)).isEmpty();
-    assertThat(suivi.etatA(LE_10_MAI_2026_A_9H)).isEqualTo(EtatDuSuivi.INTERROMPU);
-    assertThatThrownBy(() -> suivi.conflits().clear()).isExactlyInstanceOf(UnsupportedOperationException.class);
-  }
-
-  @Test
-  void shouldRefuserLesConflitsManquantsOuLeursTrous() {
-    assertThatThrownBy(() ->
-      SuiviDuPupitre.builder()
-        .id(SUIVI_ID_OF_42)
-        .nom(NOM_OF_42)
-        .reference(null)
-        .categorie(CATEGORIE_MOULE.value())
-        .activites(List.of())
-        .conflits(null)
-        .dejaPointe(false)
-    ).isExactlyInstanceOf(MissingMandatoryValueException.class);
-    assertThatThrownBy(() ->
-      SuiviDuPupitre.builder()
-        .id(SUIVI_ID_OF_42)
-        .nom(NOM_OF_42)
-        .reference(null)
-        .categorie(CATEGORIE_MOULE.value())
-        .activites(List.of())
-        .conflits(Arrays.asList(SEQUENCE_DUPONT_SUR_FRAISEUSE_1, null))
-        .dejaPointe(false)
-    ).isExactlyInstanceOf(NullElementInCollectionException.class);
   }
 
   @Test

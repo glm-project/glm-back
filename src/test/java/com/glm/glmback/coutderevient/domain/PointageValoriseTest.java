@@ -7,7 +7,6 @@ import com.glm.glmback.UnitTest;
 import com.glm.glmback.shared.error.domain.MissingMandatoryValueException;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 @UnitTest
@@ -47,30 +46,12 @@ class PointageValoriseTest {
     assertThat(pointage.activite()).isEqualTo(ACTIVITE_FRAISAGE);
     assertThat(pointage.debut()).isEqualTo(LE_11_MAI_A_9H);
     assertThat(pointage.machine()).isEqualTo(new Montant(new BigDecimal("90.00")));
-    assertThat(pointage.mainDOeuvre()).contains(new Montant(new BigDecimal("30.00")));
-    assertThat(pointage.partageInconnu()).isFalse();
+    assertThat(pointage.mainDOeuvre()).isEqualTo(new Montant(new BigDecimal("30.00")));
     assertThat(pointage.finAutomatique()).isFalse();
-    assertThat(pointage.fin()).contains(LE_11_MAI_A_11H);
+    assertThat(pointage.fin()).isEqualTo(LE_11_MAI_A_11H);
     assertThat(pointage.duree()).isEqualTo(DureeTotale.de(java.time.Duration.ofHours(2)));
     assertThat(pointage.cout()).isEqualTo(new Cout(new Montant(new BigDecimal("90.00")), new Montant(new BigDecimal("30.00"))));
     assertThat(pointage.anomalies()).isEmpty();
-  }
-
-  @Test
-  void shouldNotSumAShareWaitingForAnUnknownDiviseur() {
-    ZoneIncertaine tour = new ZoneIncertaine(
-      activiteInterpreteeDeTournage(new Plage(LE_11_MAI_A_10H, Optional.empty())),
-      new Periode(LE_11_MAI_A_10H, LE_11_MAI_A_12H)
-    );
-    ChargeDeLOperateur charge = ChargeDeLOperateur.de(List.of(FRAISAGE_DE_9H_A_11H), List.of(tour));
-
-    PointageValorise pointage = new PointageValorise(FRAISAGE_DE_9H_A_11H, charge.decoupe(FRAISAGE_DE_9H_A_11H));
-
-    assertThat(pointage.partageInconnu()).isTrue();
-    assertThat(pointage.mainDOeuvre()).isEmpty();
-    assertThat(pointage.cout().machine().complete()).isTrue();
-    assertThat(pointage.cout().mainDOeuvre().complete()).isFalse();
-    assertThat(pointage.anomalies()).containsExactly(AnomalieDuPointage.PARTAGE_INCONNU);
   }
 
   @Test

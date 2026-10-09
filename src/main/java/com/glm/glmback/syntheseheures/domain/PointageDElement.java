@@ -10,8 +10,6 @@ import java.util.Optional;
  */
 public record PointageDElement(
   PointageId id,
-  IntentionDePointage intention,
-  Optional<ActiviteId> cible,
   TypeDEvenementDAtelier type,
   ElementId element,
   Optional<PosteDeTravailId> poste,
@@ -20,8 +18,6 @@ public record PointageDElement(
 ) {
   public PointageDElement {
     Assert.notNull("id du pointage", id);
-    Assert.notNull("intention", intention);
-    Assert.notNull("cible", cible);
     Assert.notNull("type", type);
     Assert.notNull("element", element);
     Assert.notNull("poste de travail", poste);
@@ -31,23 +27,11 @@ public record PointageDElement(
 
   public static PointageDElementIdentiteBuilder builder() {
     return id ->
-      intention ->
-        cible ->
-          type ->
-            element ->
-              poste -> nature -> dateDeSurvenue -> new PointageDElement(id, intention, cible, type, element, poste, nature, dateDeSurvenue);
+      type -> element -> poste -> nature -> dateDeSurvenue -> new PointageDElement(id, type, element, poste, nature, dateDeSurvenue);
   }
 
   public interface PointageDElementIdentiteBuilder {
-    PointageDElementIntentionBuilder id(PointageId id);
-  }
-
-  public interface PointageDElementIntentionBuilder {
-    PointageDElementCibleBuilder intention(IntentionDePointage intention);
-  }
-
-  public interface PointageDElementCibleBuilder {
-    PointageDElementTypeBuilder cible(Optional<ActiviteId> cible);
+    PointageDElementTypeBuilder id(PointageId id);
   }
 
   public interface PointageDElementTypeBuilder {

@@ -4,28 +4,27 @@ import static com.glm.glmback.atelier.domain.AtelierFixture.*;
 import static org.springframework.http.HttpStatus.*;
 
 import com.glm.glmback.UnitTest;
+import com.glm.glmback.atelier.domain.ActiviteDejaRegulariseeException;
 import com.glm.glmback.atelier.domain.ActiviteId;
-import com.glm.glmback.atelier.domain.ActiviteViseeIncoherenteException;
+import com.glm.glmback.atelier.domain.ActiviteNonEchueException;
 import com.glm.glmback.atelier.domain.ActiviteViseeIntrouvableException;
 import com.glm.glmback.atelier.domain.DateDeSurvenueFutureException;
 import com.glm.glmback.atelier.domain.ElementDejaEngageException;
 import com.glm.glmback.atelier.domain.ElementEngageableIntrouvableException;
 import com.glm.glmback.atelier.domain.EvenementAvantEngagementException;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
-import com.glm.glmback.atelier.domain.EvenementDAtelierIntrouvableException;
-import com.glm.glmback.atelier.domain.EvenementDejaAnnuleException;
-import com.glm.glmback.atelier.domain.IdentifiantDEvenementReutiliseException;
+import com.glm.glmback.atelier.domain.FinApresBorneException;
+import com.glm.glmback.atelier.domain.FinAvantDebutException;
 import com.glm.glmback.atelier.domain.OperateurDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.OperateurNonHabiliteException;
+import com.glm.glmback.atelier.domain.PointageIgnoreException;
 import com.glm.glmback.atelier.domain.PosteDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierClotureException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
-import com.glm.glmback.atelier.domain.gestionanomalies.ApercuObsoleteException;
-import com.glm.glmback.atelier.domain.gestionanomalies.ConfirmationReutiliseeException;
-import com.glm.glmback.atelier.domain.gestionanomalies.NatureDAnomalieInvalideException;
-import com.glm.glmback.atelier.domain.gestionanomalies.PropositionInvalideException;
+import com.glm.glmback.atelier.domain.gestionanomalies.AdresseDossierAnomalie;
+import com.glm.glmback.atelier.domain.gestionanomalies.FinAutomatiqueIntrouvableException;
 import com.glm.glmback.shared.error.infrastructure.primary.ExceptionAdviceContract;
 import com.glm.glmback.shared.error.infrastructure.primary.PublishedProblem;
 import java.util.stream.Stream;
@@ -41,26 +40,14 @@ class AtelierExceptionAdviceTest extends ExceptionAdviceContract {
   @Override
   protected Stream<PublishedProblem> erreursPubliees() {
     return Stream.of(
-      new PublishedProblem(new PropositionInvalideException(), "urn:glm:erreur:atelier:proposition-invalide", BAD_REQUEST),
-      new PublishedProblem(
-        new NatureDAnomalieInvalideException("INCONNUE"),
-        "urn:glm:erreur:atelier:nature-d-anomalie-invalide",
-        BAD_REQUEST
-      ),
-      new PublishedProblem(new ApercuObsoleteException(), "urn:glm:erreur:atelier:apercu-obsolete", CONFLICT),
-      new PublishedProblem(
-        new ConfirmationReutiliseeException(java.util.UUID.randomUUID()),
-        "urn:glm:erreur:atelier:confirmation-reutilisee",
-        CONFLICT
-      ),
       new PublishedProblem(
         new SuiviDAtelierIntrouvableException(SuiviDAtelierId.newId()),
         "urn:glm:erreur:atelier:suivi-d-atelier-introuvable",
         NOT_FOUND
       ),
       new PublishedProblem(
-        new EvenementDAtelierIntrouvableException(EvenementDAtelierId.newId()),
-        "urn:glm:erreur:atelier:evenement-d-atelier-introuvable",
+        new FinAutomatiqueIntrouvableException(new AdresseDossierAnomalie(SuiviDAtelierId.newId(), EvenementDAtelierId.newId())),
+        "urn:glm:erreur:atelier:fin-automatique-introuvable",
         NOT_FOUND
       ),
       new PublishedProblem(
@@ -79,20 +66,9 @@ class AtelierExceptionAdviceTest extends ExceptionAdviceContract {
         NOT_FOUND
       ),
       new PublishedProblem(
-        new ActiviteViseeIntrouvableException(
-          debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H),
-          new ActiviteId(java.util.UUID.randomUUID())
-        ),
+        new ActiviteViseeIntrouvableException(new ActiviteId(java.util.UUID.randomUUID())),
         "urn:glm:erreur:atelier:activite-visee-introuvable",
         NOT_FOUND
-      ),
-      new PublishedProblem(
-        new ActiviteViseeIncoherenteException(
-          debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H),
-          new ActiviteId(java.util.UUID.randomUUID())
-        ),
-        "urn:glm:erreur:atelier:activite-visee-incoherente",
-        CONFLICT
       ),
       new PublishedProblem(
         new OperateurNonHabiliteException(OPERATEUR_ID_DUPONT, POSTE_ID_FRAISEUSE_1),
@@ -100,11 +76,6 @@ class AtelierExceptionAdviceTest extends ExceptionAdviceContract {
         CONFLICT
       ),
       new PublishedProblem(new ElementDejaEngageException(ELEMENT_OF_2026_000042), "urn:glm:erreur:atelier:element-deja-engage", CONFLICT),
-      new PublishedProblem(
-        new EvenementDejaAnnuleException(EvenementDAtelierId.newId()),
-        "urn:glm:erreur:atelier:evenement-deja-annule",
-        CONFLICT
-      ),
       new PublishedProblem(
         new SuiviDAtelierClotureException(SuiviDAtelierId.newId()),
         "urn:glm:erreur:atelier:suivi-d-atelier-cloture",
@@ -115,12 +86,28 @@ class AtelierExceptionAdviceTest extends ExceptionAdviceContract {
         "urn:glm:erreur:atelier:evenement-anterieur-a-l-engagement",
         CONFLICT
       ),
-      new PublishedProblem(new SaisieConcurrenteException(SuiviDAtelierId.newId()), "urn:glm:erreur:atelier:saisie-concurrente", CONFLICT),
       new PublishedProblem(
-        new IdentifiantDEvenementReutiliseException(java.util.UUID.randomUUID()),
-        "urn:glm:erreur:atelier:identifiant-evenement-reutilise",
+        new ActiviteNonEchueException(new ActiviteId(java.util.UUID.randomUUID())),
+        "urn:glm:erreur:atelier:activite-non-echue",
         CONFLICT
       ),
+      new PublishedProblem(
+        new ActiviteDejaRegulariseeException(new ActiviteId(java.util.UUID.randomUUID())),
+        "urn:glm:erreur:atelier:activite-deja-regularisee",
+        CONFLICT
+      ),
+      new PublishedProblem(
+        new FinAvantDebutException(new ActiviteId(java.util.UUID.randomUUID()), LE_10_MAI_2026_A_8H, LE_10_MAI_2026_A_9H),
+        "urn:glm:erreur:atelier:fin-avant-debut",
+        CONFLICT
+      ),
+      new PublishedProblem(
+        new FinApresBorneException(new ActiviteId(java.util.UUID.randomUUID()), LE_10_MAI_2026_A_9H, LE_10_MAI_2026_A_8H),
+        "urn:glm:erreur:atelier:fin-apres-borne",
+        CONFLICT
+      ),
+      new PublishedProblem(new SaisieConcurrenteException(SuiviDAtelierId.newId()), "urn:glm:erreur:atelier:saisie-concurrente", CONFLICT),
+      new PublishedProblem(new PointageIgnoreException(EvenementDAtelierId.newId()), "urn:glm:erreur:atelier:pointage-ignore", CONFLICT),
       new PublishedProblem(
         new DateDeSurvenueFutureException(LE_10_MAI_2026_A_8H),
         "urn:glm:erreur:atelier:date-de-survenue-future",

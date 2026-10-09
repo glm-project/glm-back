@@ -13,30 +13,37 @@ class ReferentielDuPupitreTest {
 
   @Test
   void shouldNotBuildWithoutDateDeGeneration() {
-    assertThatThrownBy(() -> new ReferentielDuPupitre(null, List.of(), List.of(), List.of()))
+    assertThatThrownBy(() -> new ReferentielDuPupitre(null, List.of(), List.of(), List.of(), DUREE_MAXIMALE_TREIZE_HEURES))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("date de generation");
   }
 
   @Test
   void shouldNotBuildWithoutOperateurs() {
-    assertThatThrownBy(() -> new ReferentielDuPupitre(LE_10_MAI_2026_A_8H, null, List.of(), List.of()))
+    assertThatThrownBy(() -> new ReferentielDuPupitre(LE_10_MAI_2026_A_8H, null, List.of(), List.of(), DUREE_MAXIMALE_TREIZE_HEURES))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("operateurs");
   }
 
   @Test
   void shouldNotBuildWithoutSuivis() {
-    assertThatThrownBy(() -> new ReferentielDuPupitre(LE_10_MAI_2026_A_8H, List.of(), null, List.of()))
+    assertThatThrownBy(() -> new ReferentielDuPupitre(LE_10_MAI_2026_A_8H, List.of(), null, List.of(), DUREE_MAXIMALE_TREIZE_HEURES))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("suivis");
   }
 
   @Test
   void shouldNotBuildWithoutCategories() {
-    assertThatThrownBy(() -> new ReferentielDuPupitre(LE_10_MAI_2026_A_8H, List.of(), List.of(), null))
+    assertThatThrownBy(() -> new ReferentielDuPupitre(LE_10_MAI_2026_A_8H, List.of(), List.of(), null, DUREE_MAXIMALE_TREIZE_HEURES))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("categories");
+  }
+
+  @Test
+  void shouldNotBuildWithoutDureeMaximaleDActivite() {
+    assertThatThrownBy(() -> new ReferentielDuPupitre(LE_10_MAI_2026_A_8H, List.of(), List.of(), List.of(), null))
+      .isExactlyInstanceOf(MissingMandatoryValueException.class)
+      .hasMessageContaining("duree maximale d'activite");
   }
 
   /**
@@ -48,12 +55,14 @@ class ReferentielDuPupitreTest {
       LE_10_MAI_2026_A_8H,
       List.of(OPERATEUR_DUPONT),
       List.of(suiviOf42Vierge()),
-      List.of(CATEGORIE_MOULE, CATEGORIE_OF)
+      List.of(CATEGORIE_MOULE, CATEGORIE_OF),
+      DUREE_MAXIMALE_TREIZE_HEURES
     );
 
     assertThat(referentiel.genereLe()).isEqualTo(LE_10_MAI_2026_A_8H);
     assertThat(referentiel.operateurs()).containsExactly(OPERATEUR_DUPONT);
     assertThat(referentiel.suivis()).containsExactly(suiviOf42Vierge());
     assertThat(referentiel.categories()).containsExactly(CATEGORIE_MOULE, CATEGORIE_OF);
+    assertThat(referentiel.dureeMaximaleDActivite()).isEqualTo(DUREE_MAXIMALE_TREIZE_HEURES);
   }
 }

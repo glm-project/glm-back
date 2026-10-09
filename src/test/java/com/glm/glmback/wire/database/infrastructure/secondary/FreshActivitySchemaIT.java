@@ -5,9 +5,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.GlmprojectApp;
 import com.glm.glmback.atelier.application.SuivisDAtelierApplicationService;
-import com.glm.glmback.atelier.domain.ActiviteId;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
-import com.glm.glmback.atelier.domain.IntentionDePointage;
 import com.glm.glmback.atelier.domain.PointageAEnregistrer;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
@@ -61,14 +59,11 @@ class FreshActivitySchemaIT {
     "compteur_d_elements_de_fabrication",
     "element_de_fabrication",
     "evenement_d_atelier",
-    "identite_evenement_atelier",
     "operateur",
     "operateur_poste",
     "parametrage",
-    "pointage_en_conflit",
+    "pointage_ignore_d_atelier",
     "poste_de_travail",
-    "recu_d_acte",
-    "sequence_en_conflit",
     "suivi_d_atelier"
   );
 
@@ -237,10 +232,11 @@ class FreshActivitySchemaIT {
     assertThat(tables(database, schema)).containsExactlyInAnyOrderElementsOf(expectedTables);
     List<String> history = query(database, "SELECT id || ':' || exectype FROM \"" + schema + "\".databasechangelog ORDER BY orderexecuted");
     assertThat(history.getFirst()).isEqualTo("initialisation_schema_neuf:EXECUTED");
-    assertThat(history).containsOnlyOnce("initialisation_schema_neuf:EXECUTED").contains("activite_d_atelier_fin_au_plus_tard:EXECUTED");
+    assertThat(history).containsOnlyOnce("initialisation_schema_neuf:EXECUTED").contains("pointage_ignore_d_atelier:EXECUTED");
+    assertThat(history).noneMatch(entry -> entry.matches("(?s).*(conflit|a_resoudre|fin_au_plus_tard|remplacement|identite_evenement).*"));
     assertThat(
-      query(database, "SELECT filename FROM \"" + schema + "\".databasechangelog WHERE id = 'activite_d_atelier_fin_au_plus_tard'")
-    ).containsExactly("config/liquibase/changelog/2026/09/013-activite_d_atelier_fin_au_plus_tard.xml");
+      query(database, "SELECT filename FROM \"" + schema + "\".databasechangelog WHERE id = 'pointage_ignore_d_atelier'")
+    ).containsExactly("config/liquibase/changelog/2026/10/013-pointage_ignore_d_atelier.xml");
     assertThat(
       query(
         database,
@@ -250,40 +246,38 @@ class FreshActivitySchemaIT {
       )
     ).contains(
       "evenement_d_atelier.origine:NO",
-      "evenement_d_atelier.intention:NO",
       "evenement_d_atelier.activite_id:YES",
       "evenement_d_atelier.activite_visee_id:YES",
       "evenement_d_atelier.cout_horaire:YES",
       "evenement_d_atelier.taux_horaire:YES",
-      "activite_d_atelier.echeance:NO",
-      "activite_d_atelier.a_resoudre:NO",
-      "activite_d_atelier.fin_au_plus_tard:YES",
-      "activite_d_atelier.sequence_id:YES",
-      "activite_d_atelier.ordre_dans_sequence:YES"
+      "activite_d_atelier.echeance:NO"
+    );
+    assertThat(
+      query(database, "SELECT table_name || '.' || column_name FROM information_schema.columns WHERE table_schema = '" + schema + "'")
+    ).doesNotContain(
+      "evenement_d_atelier.intention",
+      "evenement_d_atelier.annulation_auteur",
+      "evenement_d_atelier.annulation_date",
+      "evenement_d_atelier.annulation_motif",
+      "evenement_d_atelier.remplace_evenement_id",
+      "activite_d_atelier.a_resoudre",
+      "activite_d_atelier.fin_au_plus_tard",
+      "activite_d_atelier.sequence_id",
+      "activite_d_atelier.ordre_dans_sequence"
     );
     assertThat(query(database, "SELECT indexname FROM pg_indexes WHERE schemaname = '" + schema + "'")).contains(
       "ux_operateur_identite",
       "ux_operateur_identifiant",
       "ix_operateur_poste_poste",
       "ix_activite_d_atelier_suivi",
-      "ix_activite_d_atelier_operateur",
-      "ix_sequence_en_conflit_suivi",
-      "ix_activite_d_atelier_sequence"
+      "ix_activite_d_atelier_operateur"
     );
     assertThat(
       query(
         database,
         "SELECT conname FROM pg_constraint c JOIN pg_namespace n ON n.oid = c.connamespace WHERE n.nspname = '" + schema + "'"
       )
-    ).contains(
-      "pk_operateur_poste",
-      "fk_activite_d_atelier_suivi",
-      "fk_sequence_en_conflit_suivi",
-      "fk_pointage_en_conflit_sequence",
-      "fk_pointage_en_conflit_evenement",
-      "uk_pointage_en_conflit_ordre",
-      "fk_activite_d_atelier_sequence"
-    );
+    ).contains("pk_operateur_poste", "fk_activite_d_atelier_suivi");
   }
 
   private static SuiviDAtelierId createActivity(ConfigurableApplicationContext application, String tenant) {
@@ -309,8 +303,6 @@ class FreshActivitySchemaIT {
       var opening = PointageAEnregistrer.pupitreBuilder()
         .suivi(followup.id())
         .type(TypeDEvenementDAtelier.DEBUT)
-        .intention(IntentionDePointage.OUVERTURE)
-        .activiteVisee(Optional.empty())
         .operateur(OPERATEUR_ID_DUPONT)
         .poste(Optional.empty())
         .auteur(AUTEUR_DUPONT)
@@ -320,8 +312,6 @@ class FreshActivitySchemaIT {
       var finish = PointageAEnregistrer.pupitreBuilder()
         .suivi(followup.id())
         .type(TypeDEvenementDAtelier.FIN)
-        .intention(IntentionDePointage.FIN)
-        .activiteVisee(Optional.of(new ActiviteId(opening.evenement().uuid())))
         .operateur(OPERATEUR_ID_DUPONT)
         .poste(Optional.empty())
         .auteur(AUTEUR_DUPONT)
@@ -337,7 +327,7 @@ class FreshActivitySchemaIT {
     onTenant(tenant, () -> {
       var atelier = application.getBean(SuivisDAtelierApplicationService.class);
       assertThat(atelier.get(followup).suivi().journal().evenements()).hasSize(2);
-      assertThat(atelier.tempsEffectif(followup)).hasSize(1);
+      assertThat(atelier.get(followup).suivi().activites()).hasSize(1);
       var sheet = application
         .getBean(FeuillesDeTempsApplicationService.class)
         .historique(
@@ -360,12 +350,11 @@ class FreshActivitySchemaIT {
           new com.glm.glmback.syntheseheures.domain.SemaineCalendaire(2026, 19),
           Optional.of(LE_11_MAI_2026_A_9H15)
         );
-      assertThat(hours.dureeOperationnelleTotale().valeur()).contains(Duration.ofHours(9));
-      assertThat(hours.conflits()).isEmpty();
+      assertThat(hours.dureeOperationnelleTotale().valeur()).isEqualTo(Duration.ofHours(9));
       var cost = application
         .getBean(CoutsDeRevientApplicationService.class)
         .rapport(new com.glm.glmback.coutderevient.domain.ElementId(ELEMENT_OF_2026_000042.uuid()));
-      assertThat(cost.temps().total().valeur()).contains(Duration.ofHours(9));
+      assertThat(cost.temps().total().valeur()).isEqualTo(Duration.ofHours(9));
       assertThat(cost.lignes()).hasSize(1);
       var terminal = application.getBean(ReferentielsDuPupitreApplicationService.class).referentiel();
       assertThat(terminal.operateurs()).hasSize(1);

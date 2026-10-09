@@ -12,7 +12,6 @@ import com.glm.glmback.atelier.domain.Horodatage;
 import com.glm.glmback.atelier.domain.JournalDAtelier;
 import com.glm.glmback.atelier.domain.NomDElement;
 import com.glm.glmback.atelier.domain.RevisionDuSuivi;
-import com.glm.glmback.atelier.domain.SequenceEnConflit;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.shared.time.infrastructure.secondary.ExactInstantConverter;
@@ -26,11 +25,9 @@ import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -83,9 +80,6 @@ class SuiviDAtelierEntity {
   @OneToMany(mappedBy = "suivi", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<ActiviteDAtelierEntity> activites = new ArrayList<>();
 
-  @OneToMany(mappedBy = "suivi", cascade = CascadeType.ALL, orphanRemoval = true)
-  private List<SequenceEnConflitDAtelierEntity> conflits = new ArrayList<>();
-
   protected SuiviDAtelierEntity() {
     // Constructeur requis par JPA.
   }
@@ -121,9 +115,8 @@ class SuiviDAtelierEntity {
    *
    * <p>
    * L'element et l'engagement ne changent jamais apres la creation, ils ne sont donc pas retouches. Le journal, lui,
-   * se rapproche par identifiant : un evenement inconnu est insere, un evenement connu ne peut avoir gagne que son
-   * annulation, et aucun n'est jamais supprime — une annulation marque l'evenement, elle ne le retire pas. Le cout
-   * d'un pointage est donc d'une ligne, quelle que soit la longueur du journal.
+   * se rapproche par identifiant : un evenement inconnu est insere, un evenement connu ne change jamais, et aucun
+   * n'est jamais supprime. Le cout d'un pointage est donc d'une ligne, quelle que soit la longueur du journal.
    * </p>
    *
    * <p>
@@ -143,7 +136,7 @@ class SuiviDAtelierEntity {
       .journal()
       .evenements()
       .forEach(evenement -> rapproche(connus, evenement));
-    projette(suivi.activites(), suivi.conflits());
+    projette(suivi.activites());
   }
 
   SuiviDAtelier toDomain() {
@@ -157,73 +150,29 @@ class SuiviDAtelierEntity {
   }
 
   /**
-   * Reecrit la projection des activites, rapprochee elle aussi par identifiant : une activite que l'interpretation ne
-   * donne plus disparait, une activite connue recoit ses valeurs courantes, une nouvelle est inseree. Supprimer puis
-   * reinserer la meme identite dans un seul flush violerait la cle primaire, Hibernate ordonnant les insertions avant
-   * les suppressions.
+   * Reecrit la projection des activites, rapprochee elle aussi par identifiant : le journal ne perd jamais un evenement, donc
+   * aucune activite ne disparait ; une activite connue recoit ses valeurs courantes, une nouvelle est inseree.
    */
-  private void projette(List<Activite> interpretees, List<SequenceEnConflit> sequences) {
-    Map<UUID, RattachementAuConflit> rattachements = projetteLesConflits(sequences);
-    Map<UUID, Activite> parIdentite = interpretees
-      .stream()
-      .collect(Collectors.toMap(activite -> activite.id().uuid(), Function.identity()));
-    activites.removeIf(projetee -> !parIdentite.containsKey(projetee.id()));
+  private void projette(List<Activite> lues) {
     Map<UUID, ActiviteDAtelierEntity> projetees = activites
       .stream()
       .collect(Collectors.toMap(ActiviteDAtelierEntity::id, Function.identity()));
 
-    interpretees.forEach(activite -> {
+    lues.forEach(activite -> {
       ActiviteDAtelierEntity projetee = projetees.get(activite.id().uuid());
       if (projetee == null) {
-        projetee = ActiviteDAtelierEntity.from(this, activite);
-        activites.add(projetee);
+        activites.add(ActiviteDAtelierEntity.from(this, activite));
       } else {
         projetee.reporte(activite);
       }
-      RattachementAuConflit rattachement = rattachements.get(activite.id().uuid());
-      if (rattachement == null) {
-        projetee.rattacheA(null, null);
-      } else {
-        projetee.rattacheA(rattachement.sequence(), rattachement.ordre());
-      }
     });
   }
-
-  private Map<UUID, RattachementAuConflit> projetteLesConflits(List<SequenceEnConflit> sequences) {
-    Set<UUID> identites = sequences
-      .stream()
-      .map(sequence -> sequence.pointages().getFirst().uuid())
-      .collect(Collectors.toSet());
-    conflits.removeIf(projete -> !identites.contains(projete.id()));
-    Map<UUID, SequenceEnConflitDAtelierEntity> connus = conflits
-      .stream()
-      .collect(Collectors.toMap(SequenceEnConflitDAtelierEntity::id, Function.identity()));
-    Map<UUID, RattachementAuConflit> rattachements = new HashMap<>();
-    sequences.forEach(sequence -> {
-      UUID idSequence = sequence.pointages().getFirst().uuid();
-      SequenceEnConflitDAtelierEntity projetee = connus.get(idSequence);
-      if (projetee == null) {
-        projetee = SequenceEnConflitDAtelierEntity.from(this, sequence);
-        conflits.add(projetee);
-      } else {
-        projetee.reporte(sequence);
-      }
-      for (int ordre = 0; ordre < sequence.activites().size(); ordre++) {
-        rattachements.put(sequence.activites().get(ordre).uuid(), new RattachementAuConflit(projetee, ordre));
-      }
-    });
-    return rattachements;
-  }
-
-  private record RattachementAuConflit(SequenceEnConflitDAtelierEntity sequence, int ordre) {}
 
   private void rapproche(Map<UUID, EvenementDAtelierEntity> connus, EvenementDAtelier evenement) {
     EvenementDAtelierEntity connu = connus.get(evenement.id().uuid());
 
     if (connu == null) {
       journal.add(EvenementDAtelierEntity.from(this, evenement));
-    } else {
-      connu.reporteLAnnulation(evenement);
     }
   }
 

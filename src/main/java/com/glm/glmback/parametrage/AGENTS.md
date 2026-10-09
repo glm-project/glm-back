@@ -11,8 +11,10 @@ d'une activité et le logo de l'entreprise. Les lire, et les modifier pour le ge
 
 ## Ce dont il ne s'occupe pas
 
-- **Appliquer un réglage.** La fin automatique d'une activité appartient à `atelier`, qui lira la durée par un port ;
-  ce contexte ne connaît ni les activités ni leur échéance.
+- **Appliquer un réglage.** La fin automatique d'une activité appartient à `atelier`, et le référentiel du pupitre
+  relaie la durée : ils la reçoivent par le port `MaximumActivityDurations` du noyau partagé `shared/activityduration`,
+  que ce contexte implémente (`DureeMaximaleDActiviteParametree`). Ce contexte ne connaît ni les activités ni leur
+  échéance, et n'importe pas plus `atelier` ou `pupitre` qu'ils ne l'importent.
 - **La configuration technique d'une entreprise** (schéma, base, pool) : c'est le registre `public.tenant`, hors des
   schémas d'entreprise.
 
@@ -44,6 +46,11 @@ pas le charger. Il partage la ligne unique du paramétrage (colonnes `logo_*`), 
 ## Ports sortants
 
 `ParametrageRepository`, `LogoRepository`, `DecodeurDImage`.
+
+Port du noyau partagé qu'il implémente : `MaximumActivityDurations`, la durée max en vigueur — par défaut ou fixée —,
+lue à chaque appel. Elle est le seul endroit qui connaît le treize heures par défaut et les bornes ; `atelier` en copie
+la valeur sur chaque activité qu'il ouvre, de sorte qu'un changement du gestionnaire ne s'applique qu'aux activités
+ouvertes ensuite.
 
 ## Structure
 

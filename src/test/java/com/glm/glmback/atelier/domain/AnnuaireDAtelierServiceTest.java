@@ -33,16 +33,4 @@ class AnnuaireDAtelierServiceTest {
     assertThat(annuaire.operateurs()).containsOnlyKeys(OPERATEUR_ID_DUPONT, OPERATEUR_ID_MARTIN);
     assertThat(annuaire.postes()).containsOnlyKeys(POSTE_ID_FRAISEUSE_1);
   }
-
-  @Test
-  void shouldResoudreLesRessourcesDesIntervalles() {
-    List<IntervalleDActivite> intervalles = suiviDAtelierEngage()
-      .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))
-      .intervalles(LE_10_MAI_2026_A_17H);
-
-    AnnuaireDAtelier annuaire = annuaires.pourIntervalles(intervalles);
-
-    assertThat(annuaire.operateur(OPERATEUR_ID_DUPONT)).contains(OPERATEUR_CONNU_DUPONT);
-    assertThat(annuaire.poste(POSTE_ID_FRAISEUSE_1)).contains(POSTE_CONNU_FRAISEUSE_1);
-  }
 }

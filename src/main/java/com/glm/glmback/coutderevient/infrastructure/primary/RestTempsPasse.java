@@ -8,7 +8,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
   Le temps passe, separe en bon travail et en reprise de non conformite.
 
   La reprise d'une piece ratee se compte a part sur le meme element. Ses tarifs sont ceux de son propre fait
-  ouvrant actif, captures par atelier.
+  ouvrant, captures par atelier.
   """
 )
 record RestTempsPasse(

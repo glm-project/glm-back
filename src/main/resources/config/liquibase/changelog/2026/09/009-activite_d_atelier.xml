@@ -8,12 +8,13 @@
     <comment>
       Les activites qu'interprete le journal d'un suivi, projetees a chaque ecriture depuis le domaine et jamais
       relues pour reconstruire l'agregat : le journal reste la seule source de verite. Chaque ligne ne porte que des
-      valeurs independantes de l'instant de lecture - debut, echeance (debut plus 13 heures) et fin reelle -, jamais
+      valeurs independantes de l'instant de lecture - debut, echeance (debut plus la duree maximale en vigueur au debut) et fin
+      reelle -, jamais
       une fin automatique ni une anomalie : un lecteur juge a son propre instant qu'une activite sans fin reelle est en
       cours tant que son echeance n'est pas atteinte, et terminee automatiquement ensuite. id est l'identite de
       l'activite, celle de son pointage ouvrant d'origine ; ouverture_id, le pointage actif qui la porte.
 
-      La colonne suivi_d_atelier.etat disparait : un etat juge sans instant deviendrait faux treize heures apres la
+      La colonne suivi_d_atelier.etat disparait : un etat juge sans instant deviendrait faux a l'echeance, longtemps apres la
       derniere ecriture. Le filtre de l'ecran d'atelier se juge desormais sur cette table, a l'instant de lecture.
       La garde de bootstrap refuse une base qui porte deja un historique avant toute DDL metier ; ce changeset
       installe un schema neuf.

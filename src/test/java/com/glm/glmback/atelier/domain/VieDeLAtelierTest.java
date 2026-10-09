@@ -4,7 +4,9 @@ import static com.glm.glmback.atelier.domain.AtelierFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
+import com.glm.glmback.shared.activityduration.domain.MaximumActivityDuration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -18,7 +20,7 @@ import org.junit.jupiter.api.Test;
  * <p>
  * La ou les tests voisins verifient chacun une mecanique isolee, celui-ci enonce le fonctionnement demande par le
  * client : un operateur pointe ses ordres de fabrication, mene deux machines de front, et sa pause de midi arrete puis
- * relance tout ce qui est en cours. Il tient lieu de scenario metier tant que le contexte n'a ni adapter primaire ni
+ * reprend tout ce qui est en cours. Il tient lieu de scenario metier tant que le contexte n'a ni adapter primaire ni
  * feature Gherkin.
  * </p>
  *
@@ -35,7 +37,9 @@ class VieDeLAtelierTest {
   private static final Instant LE_11_MAI_2026_A_2H = Instant.parse("2026-05-11T02:00:00Z");
 
   private final AtomicReference<Instant> maintenant = new AtomicReference<>(LE_10_MAI_2026_A_7H);
+  private final AtomicReference<MaximumActivityDuration> dureeMaximale = new AtomicReference<>(DUREE_MAXIMALE_TREIZE_HEURES);
   private final SuivisDAtelierEnMemoire suivis = new SuivisDAtelierEnMemoire();
+  private final PointagesIgnoresEnMemoire pointagesIgnores = new PointagesIgnoresEnMemoire();
   private final RessourcesDAtelierEnMemoire ressources = RessourcesDAtelierEnMemoire.deLAtelier();
   private final SuivisDAtelierService atelier = SuivisDAtelierService.builder()
     .repository(suivis)
@@ -43,8 +47,9 @@ class VieDeLAtelierTest {
     .operateurs(ressources.operateurs())
     .postes(ressources.postes())
     .habilitations(ressources.habilitations())
+    .pointagesIgnores(pointagesIgnores)
+    .dureeMaximaleDActivite(dureeMaximale::get)
     .clock(maintenant::get);
-  private final TempsDAtelierService temps = new TempsDAtelierService(suivis);
 
   private SuiviDAtelierId premierOrdre;
   private SuiviDAtelierId secondOrdre;
@@ -81,13 +86,13 @@ class VieDeLAtelierTest {
   }
 
   /**
-   * Le test qui porte le modele : la pause de midi scinde l'OF 42 par sa fin et son debut, puis, apres sa relance a
+   * Le test qui porte le modele : la pause de midi scinde l'OF 42 par sa fin et son debut, puis, apres sa reprise a
    * 13 h, l'OF 42 n'a plus recu le moindre pointage. Rien ne le borne a 17 h : il se termine automatiquement a son
    * echeance, 13 heures apres son debut, avec une anomalie.
    */
   @Test
   void shouldScinderLePremierOrdreASaPauseEtLeTerminerAutomatiquementASonEcheance() {
-    assertThat(temps.tempsEffectif(premierOrdre, maintenant.get()))
+    assertThat(intervallesDe(premierOrdre))
       .extracting(IntervalleDActivite::poste, IntervalleDActivite::debut, IntervalleDActivite::fin, IntervalleDActivite::finAutomatique)
       .containsExactly(
         tuple(Optional.of(POSTE_ID_FRAISEUSE_1), LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H), false),
@@ -101,7 +106,7 @@ class VieDeLAtelierTest {
    */
   @Test
   void shouldArreterLeSecondOrdreASaPropreFin() {
-    assertThat(temps.tempsEffectif(secondOrdre, maintenant.get()))
+    assertThat(intervallesDe(secondOrdre))
       .extracting(IntervalleDActivite::poste, IntervalleDActivite::debut, IntervalleDActivite::fin)
       .containsExactly(
         tuple(Optional.of(POSTE_ID_FRAISEUSE_2), LE_10_MAI_2026_A_9H, Optional.of(LE_10_MAI_2026_A_12H)),
@@ -118,16 +123,13 @@ class VieDeLAtelierTest {
     atelier.regularise(
       RegularisationAEnregistrer.builder()
         .suivi(premierOrdre)
-        .type(TypeDEvenementDAtelier.FIN)
-        .intention(IntentionDePointage.FIN)
-        .activiteVisee(Optional.of(ActiviteId.ouvertePar(premierApresMidi.evenement())))
-        .operateur(OPERATEUR_ID_DUPONT)
-        .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
+        .evenement(EvenementDAtelierId.newId())
+        .activite(ActiviteId.ouvertePar(premierApresMidi.evenement()))
         .auteur(AUTEUR_LEROY)
         .dateDeSurvenue(LE_10_MAI_2026_A_17H)
     );
 
-    assertThat(temps.tempsEffectif(premierOrdre, maintenant.get()))
+    assertThat(intervallesDe(premierOrdre))
       .last()
       .satisfies(intervalle -> {
         assertThat(intervalle.fin()).contains(LE_10_MAI_2026_A_17H);
@@ -142,11 +144,11 @@ class VieDeLAtelierTest {
    */
   @Test
   void shouldEstampillerLeCoutEtLeTauxHoraireALaSaisie() {
-    assertThat(atelier.get(premierOrdre).journal().actifs()).allSatisfy(evenement -> {
+    assertThat(atelier.get(premierOrdre).journal().evenements()).allSatisfy(evenement -> {
       assertThat(evenement.coutHoraire()).contains(COUT_HORAIRE_FRAISEUSE_1);
       assertThat(evenement.tauxHoraire()).contains(TAUX_HORAIRE_DUPONT);
     });
-    assertThat(atelier.get(secondOrdre).journal().actifs()).allSatisfy(evenement -> {
+    assertThat(atelier.get(secondOrdre).journal().evenements()).allSatisfy(evenement -> {
       assertThat(evenement.coutHoraire()).isEmpty();
       assertThat(evenement.tauxHoraire()).contains(TAUX_HORAIRE_DUPONT);
     });
@@ -158,10 +160,10 @@ class VieDeLAtelierTest {
    */
   @Test
   void shouldPorterLaPauseDeMidiDansLeJournalDeChaqueOrdre() {
-    assertThat(atelier.get(premierOrdre).journal().actifs())
+    assertThat(atelier.get(premierOrdre).journal().evenements())
       .extracting(EvenementDAtelier::type)
       .containsExactly(TypeDEvenementDAtelier.DEBUT, TypeDEvenementDAtelier.FIN, TypeDEvenementDAtelier.DEBUT);
-    assertThat(atelier.get(secondOrdre).journal().actifs())
+    assertThat(atelier.get(secondOrdre).journal().evenements())
       .extracting(EvenementDAtelier::type)
       .containsExactly(TypeDEvenementDAtelier.DEBUT, TypeDEvenementDAtelier.FIN, TypeDEvenementDAtelier.DEBUT, TypeDEvenementDAtelier.FIN);
   }
@@ -178,22 +180,18 @@ class VieDeLAtelierTest {
     return PointageAEnregistrer.builder()
       .suivi(suivi)
       .type(TypeDEvenementDAtelier.DEBUT)
-      .intention(IntentionDePointage.OUVERTURE)
-      .activiteVisee(Optional.empty())
       .operateur(OPERATEUR_ID_DUPONT)
       .poste(Optional.of(poste))
       .auteur(AUTEUR_DUPONT);
   }
 
   /**
-   * La fin de l'activite qu'a ouverte ce debut, sur le meme ordre et le meme poste, telle que le pupitre la pointe.
+   * La fin de l'activite en cours sur le meme ordre et le meme poste que ce debut, telle que le pupitre la pointe.
    */
   private static PointageAEnregistrer fin(PointageAEnregistrer debut) {
     return PointageAEnregistrer.builder()
       .suivi(debut.suivi())
       .type(TypeDEvenementDAtelier.FIN)
-      .intention(IntentionDePointage.FIN)
-      .activiteVisee(Optional.of(ActiviteId.ouvertePar(debut.evenement())))
       .operateur(debut.operateur())
       .poste(debut.poste())
       .auteur(debut.auteur());
@@ -212,5 +210,15 @@ class VieDeLAtelierTest {
     public Optional<ElementEngage> get(ElementEngageId id) {
       return Optional.ofNullable(ELEMENTS.get(id));
     }
+  }
+
+  private List<IntervalleDActivite> intervallesDe(SuiviDAtelierId id) {
+    return suivis
+      .get(id)
+      .orElseThrow()
+      .activites()
+      .stream()
+      .map(activite -> activite.a(maintenant.get()))
+      .toList();
   }
 }

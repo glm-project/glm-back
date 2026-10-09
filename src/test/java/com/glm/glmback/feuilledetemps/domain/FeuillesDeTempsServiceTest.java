@@ -124,8 +124,7 @@ class FeuillesDeTempsServiceTest {
       .id(ACTIVITE_ID_DU_CARTER)
       .activite(activiteDeTravailDuCarterSurLaDmu50())
       .plage(new Plage(LE_LUNDI_11_MAI_2026_A_8H, Optional.of(LE_LUNDI_11_MAI_2026_A_23H)))
-      .echeance(Instant.parse("2026-05-11T19:00:00Z"))
-      .finAuPlusTard(Optional.empty());
+      .echeance(Instant.parse("2026-05-11T19:00:00Z"));
 
     FeuilleDeTemps feuille = historiqueDeDupont(ActivitesEnMemoire.avec(List.of(travail)));
 
@@ -135,43 +134,6 @@ class FeuillesDeTempsServiceTest {
         assertThat(intervalle.plage().fin()).contains(LE_LUNDI_11_MAI_2026_A_23H);
         assertThat(intervalle.lecture().etat()).isEqualTo(EtatDActivite.TERMINEE);
       });
-  }
-
-  @Test
-  void shouldLaisserAResoudreUneActiviteQueLEcheanceNeTerminePas() {
-    ActiviteInterpretee conflit = ActiviteInterpretee.builder()
-      .id(ACTIVITE_ID_DU_CARTER)
-      .activite(activiteDeTravailDuCarterSurLaDmu50())
-      .plage(new Plage(LE_LUNDI_11_MAI_2026_A_8H, Optional.empty()))
-      .echeance(Instant.parse("2026-05-11T19:00:00Z"))
-      .finAuPlusTard(Optional.of(Instant.parse("2026-05-11T19:00:00Z")));
-
-    FeuilleDeTemps feuille = historiqueDeDupont(ActivitesEnMemoire.avec(List.of(conflit)));
-
-    assertThat(activitesDu(feuille, LUNDI_11_MAI_2026))
-      .singleElement()
-      .satisfies(intervalle -> {
-        assertThat(intervalle.plage().fin()).isEmpty();
-        assertThat(intervalle.lecture().etat()).isEqualTo(EtatDActivite.A_RESOUDRE);
-      });
-  }
-
-  @Test
-  void shouldLimiterLesJoursPossiblesALInstantSansPlageInversee() {
-    ActiviteInterpretee conflit = ActiviteInterpretee.builder()
-      .id(ACTIVITE_ID_DU_CARTER)
-      .activite(activiteDeTravailDuCarterSurLaDmu50())
-      .plage(new Plage(LE_LUNDI_11_MAI_2026_A_8H, Optional.empty()))
-      .echeance(Instant.parse("2026-05-11T19:00:00Z"))
-      .finAuPlusTard(Optional.of(Instant.parse("2026-05-13T08:00:00Z")));
-    FeuillesDeTempsService service = service(ActivitesEnMemoire.avec(List.of(conflit)), LE_MARDI_12_MAI_2026_A_10H);
-
-    FeuilleDeTemps avant = service.historique(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026, Optional.of(Instant.parse("2026-05-11T05:00:00Z")));
-    assertThat(avant.jours()).allSatisfy(jour -> assertThat(jour.activites()).isEmpty());
-    FeuilleDeTemps pendant = service.historique(OPERATEUR_ID_DUPONT, SEMAINE_20_DE_2026);
-    assertThat(activitesDu(pendant, LUNDI_11_MAI_2026)).hasSize(1);
-    assertThat(activitesDu(pendant, MARDI_12_MAI_2026)).hasSize(1);
-    assertThat(activitesDu(pendant, LocalDate.parse("2026-05-13"))).isEmpty();
   }
 
   @Test
@@ -197,8 +159,7 @@ class FeuillesDeTempsServiceTest {
       .id(ACTIVITE_ID_DU_CARTER)
       .activite(activiteDeTravailDuCarterSurLaDmu50())
       .plage(new Plage(Instant.parse("2026-05-10T20:00:00Z"), Optional.empty()))
-      .echeance(Instant.parse("2026-05-11T09:00:00Z"))
-      .finAuPlusTard(Optional.empty());
+      .echeance(Instant.parse("2026-05-11T09:00:00Z"));
     FeuillesDeTempsService service = FeuillesDeTempsService.builder()
       .operateurs(REFERENTIEL)
       .fuseau(A_PARIS)
@@ -229,14 +190,12 @@ class FeuillesDeTempsServiceTest {
       .id(ACTIVITE_ID_DE_LA_BRIDE)
       .activite(activiteDeTravailDeLaBrideSurLaDmu50())
       .plage(travailDuCarterDe8HA10H().plage())
-      .echeance(travailDuCarterDe8HA10H().echeance())
-      .finAuPlusTard(Optional.empty());
+      .echeance(travailDuCarterDe8HA10H().echeance());
     ActiviteInterpretee autreTravailDuCarter = ActiviteInterpretee.builder()
       .id(ACTIVITE_ID_DE_LA_BRIDE)
       .activite(activiteDeTravailDuCarterSurLaDmu50())
       .plage(travailDuCarterDe8HA10H().plage())
-      .echeance(travailDuCarterDe8HA10H().echeance())
-      .finAuPlusTard(Optional.empty());
+      .echeance(travailDuCarterDe8HA10H().echeance());
     FeuilleDeTemps feuille = historiqueDeDupont(ActivitesEnMemoire.avec(List.of(bride, autreTravailDuCarter, travailDuCarterDe8HA10H())));
 
     assertThat(activitesDu(feuille, LUNDI_11_MAI_2026))

@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.*;
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.shared.error.domain.MissingMandatoryValueException;
 import com.glm.glmback.shared.error.domain.NotAfterTimeException;
-import com.glm.glmback.shared.error.domain.TooManyElementsException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -17,7 +16,7 @@ class ActiviteTest {
 
   @Test
   void shouldNotBuildWithoutOuvrant() {
-    assertThatThrownBy(() -> new Activite(null, Optional.empty(), Optional.empty()))
+    assertThatThrownBy(() -> new Activite(null, Optional.empty()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("ouvrant");
   }
@@ -26,25 +25,9 @@ class ActiviteTest {
   void shouldNotBuildWithoutFin() {
     EvenementDAtelier ouvrant = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
 
-    assertThatThrownBy(() -> new Activite(ouvrant, null, Optional.empty()))
+    assertThatThrownBy(() -> new Activite(ouvrant, null))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("fin");
-  }
-
-  @Test
-  void shouldNotBuildWithoutFinAuPlusTard() {
-    assertThatThrownBy(() -> new Activite(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H), Optional.empty(), null))
-      .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("fin au plus tard");
-  }
-
-  @Test
-  void shouldNotBornerUnConflitAvantSonDebut() {
-    assertThatThrownBy(() ->
-      new Activite(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H), Optional.empty(), Optional.of(LE_10_MAI_2026_A_7H))
-    )
-      .isExactlyInstanceOf(NotAfterTimeException.class)
-      .hasMessageContaining("fin au plus tard");
   }
 
   @Test
@@ -52,52 +35,9 @@ class ActiviteTest {
     EvenementDAtelier ouvrant = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     Optional<Instant> avantLeDebut = Optional.of(LE_10_MAI_2026_A_7H);
 
-    assertThatThrownBy(() -> new Activite(ouvrant, avantLeDebut, Optional.empty()))
+    assertThatThrownBy(() -> new Activite(ouvrant, avantLeDebut))
       .isExactlyInstanceOf(NotAfterTimeException.class)
       .hasMessageContaining("fin");
-  }
-
-  @Test
-  void shouldNotBuildAResoudreAvecUneFin() {
-    EvenementDAtelier ouvrant = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    Optional<Instant> fin = Optional.of(LE_10_MAI_2026_A_12H);
-
-    assertThatThrownBy(() -> new Activite(ouvrant, fin, Optional.of(LE_10_MAI_2026_A_17H)))
-      .isExactlyInstanceOf(TooManyElementsException.class)
-      .hasMessageContaining("fin d'une activite a resoudre");
-  }
-
-  /**
-   * Une activite prise dans une sequence en conflit perd sa fin : les pointages contradictoires ne permettent plus de
-   * l'affirmer.
-   */
-  @Test
-  void shouldPerdreSaFinDansUneSequenceEnConflit() {
-    Activite terminee = Activite.ouvertePar(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)).termineeA(LE_10_MAI_2026_A_12H);
-
-    Activite enConflit = terminee.enConflit(LE_10_MAI_2026_A_17H);
-
-    assertThat(enConflit.aResoudre()).isTrue();
-    assertThat(enConflit.fin()).isEmpty();
-    assertThat(enConflit.ouvrant()).isEqualTo(terminee.ouvrant());
-  }
-
-  /**
-   * Une activite a resoudre n'est ni en cours ni terminee, et son echeance ne la termine pas : lue avant comme apres,
-   * elle n'a ni fin ni anomalie de fin automatique.
-   */
-  @Test
-  void shouldSeLireAResoudreAvantCommeApresSonEcheance() {
-    Activite aResoudre = Activite.ouvertePar(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)).enConflit(LE_10_MAI_2026_A_17H);
-
-    assertThat(List.of(LE_10_MAI_2026_A_9H, LE_11_MAI_2026_A_9H15)).allSatisfy(lecture -> {
-      assertThat(aResoudre.estEnCoursA(lecture)).isFalse();
-      assertThat(aResoudre.a(lecture)).satisfies(lue -> {
-        assertThat(lue.aResoudre()).isTrue();
-        assertThat(lue.fin()).isEmpty();
-        assertThat(lue.finAutomatique()).isFalse();
-      });
-    });
   }
 
   /**
@@ -115,7 +55,6 @@ class ActiviteTest {
     assertThat(activite.categorie()).isEqualTo(CategorieDActivite.NON_CONFORMITE);
     assertThat(activite.debut()).isEqualTo(LE_10_MAI_2026_A_8H);
     assertThat(activite.fin()).isEmpty();
-    assertThat(activite.aResoudre()).isFalse();
   }
 
   @Test
@@ -132,7 +71,34 @@ class ActiviteTest {
   void shouldEcheoirTreizeHeuresApresSonDebut() {
     Activite activite = Activite.ouvertePar(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H));
 
-    assertThat(activite.echeance()).isEqualTo(Echeance.apres(LE_10_MAI_2026_A_8H));
+    assertThat(activite.echeance()).isEqualTo(Echeance.apres(LE_10_MAI_2026_A_8H, DUREE_MAXIMALE_TREIZE_HEURES));
+  }
+
+  /**
+   * L'echeance tient de la duree que porte l'ouvrant : celle que le gestionnaire avait fixee au debut de l'activite.
+   */
+  @Test
+  void shouldEcheoirLaDureeQuePorteSonOuvrant() {
+    Activite activite = Activite.ouvertePar(debutSurFraiseuse1ParDupontSousHuitHeuresA(LE_10_MAI_2026_A_8H));
+
+    assertThat(activite.echeance()).isEqualTo(Echeance.apres(LE_10_MAI_2026_A_8H, DUREE_MAXIMALE_HUIT_HEURES));
+    assertThat(activite.echeance().value()).isEqualTo(LE_10_MAI_2026_A_16H);
+  }
+
+  /**
+   * Activite a 08:00 sous huit heures, lue a 16:00 : elle est terminee automatiquement a 16:00, quand une activite
+   * sous treize heures serait encore en cours.
+   */
+  @Test
+  void shouldSeTerminerAutomatiquementApresLaDureeQuePorteSonOuvrant() {
+    Activite sousHuitHeures = Activite.ouvertePar(debutSurFraiseuse1ParDupontSousHuitHeuresA(LE_10_MAI_2026_A_8H));
+    Activite sousTreizeHeures = Activite.ouvertePar(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H));
+
+    IntervalleDActivite lue = sousHuitHeures.a(LE_10_MAI_2026_A_16H);
+
+    assertThat(lue.fin()).contains(LE_10_MAI_2026_A_16H);
+    assertThat(lue.finAutomatique()).isTrue();
+    assertThat(sousTreizeHeures.a(LE_10_MAI_2026_A_16H).estOuvert()).isTrue();
   }
 
   /**

@@ -1,21 +1,18 @@
 package com.glm.glmback.cucumber;
 
+import static org.assertj.core.api.Assertions.*;
+
 import com.glm.glmback.cucumber.rest.CucumberRestClient;
 import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
-import java.time.Instant;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Les trois ecritures du journal d'un element engage, telles que les scenarios les envoient a l'API d'atelier :
- * pointage, regularisation et correction.
+ * Les deux ecritures du journal d'un element engage, telles que les scenarios les envoient a l'API d'atelier :
+ * pointage et regularisation d'une fin.
  *
  * <p>
  * Chaque contexte qui relit ce journal y pointe par ici plutot que de composer sa propre requete : le corps d'une
@@ -24,26 +21,20 @@ import tools.jackson.databind.json.JsonMapper;
  * </p>
  *
  * <p>
- * Un corps qui porte son intention part tel quel : c'est le cas de tout scenario qui eprouve l'intention ou la cible.
- * Les scenarios ecrits avant que le contrat ne l'exige ne la portent pas ; elle est alors deduite du journal relu,
- * comme le pupitre le ferait, sur le couple operateur/poste du geste et a son heure. Une fin vise l'activite ouverte en
- * dernier. Un debut ou une non conformite remplace l'activite en cours si elle est de l'autre categorie, et ouvre sinon
- * une activite. Cette deduction ne sert qu'a ces scenarios anterieurs : un nouveau scenario donne son intention, et sa
- * cible.
+ * Le corps d'un pointage part tel que le scenario le donne : un type, un operateur, un poste, une heure. Le serveur
+ * juge chaque pointage selon la regle de reception, et rien n'en est deduit ici : un scenario qui veut passer du travail
+ * a la non conformite pointe une fin, puis la non conformite, a la meme heure.
  * </p>
  */
 public class EcrituresDuJournalDAtelier {
 
   private static final String SUIVIS_URI = "/api/atelier/suivis/";
-  private static final Set<Object> OUVRANTS = Set.of("OUVERTURE", "TRANSITION");
   private static final ObjectMapper JSON = JsonMapper.builder().build();
 
   private final CucumberRestClient rest;
-  private final CucumberClock horloge;
 
-  public EcrituresDuJournalDAtelier(CucumberRestClient rest, CucumberClock horloge) {
+  public EcrituresDuJournalDAtelier(CucumberRestClient rest) {
     this.rest = rest;
-    this.horloge = horloge;
   }
 
   /**
@@ -51,86 +42,46 @@ public class EcrituresDuJournalDAtelier {
    * rejouerait.
    */
   public PointageEnvoye pointe(String suivi, Map<String, ?> corps) {
-    return envoie(suivi, avecIntention(suivi, corps, Optional.empty()));
+    return envoieA(SUIVIS_URI + suivi + "/pointages", corps);
   }
 
   /**
-   * Pointe sur un suivi exactement le corps donne, sans rien en deduire : de quoi eprouver le refus d'un corps sans
-   * intention.
+   * Regularise la fin d'une activite echue : le corps ne porte que l'activite et l'heure, et l'identifiant que le client
+   * fournit, tire ici quand le scenario n'en donne pas. Rend la requete telle qu'elle est partie, de quoi la renvoyer.
    */
-  public PointageEnvoye pointeTelQuel(String suivi, Map<String, ?> corps) {
-    return envoie(suivi, corps);
-  }
-
-  public void regularise(String suivi, Map<String, ?> corps) {
-    rest.post(SUIVIS_URI + suivi + "/regularisations", JSON.writeValueAsString(avecIntention(suivi, corps, Optional.empty())));
-  }
-
-  public void corrige(String suivi, String evenement, Map<String, ?> corps) {
-    rest.put(SUIVIS_URI + suivi + "/evenements/" + evenement, JSON.writeValueAsString(avecIntention(suivi, corps, Optional.of(evenement))));
-  }
-
-  private PointageEnvoye envoie(String suivi, Map<String, ?> corps) {
-    PointageEnvoye pointage = new PointageEnvoye(SUIVIS_URI + suivi + "/pointages", JSON.writeValueAsString(corps));
-    rest.post(pointage.uri(), pointage.corps());
-
-    return pointage;
-  }
-
-  private Map<String, Object> avecIntention(String suivi, Map<String, ?> corps, Optional<String> corrige) {
+  public PointageEnvoye regularise(String suivi, Map<String, ?> corps) {
     Map<String, Object> complet = new HashMap<>(corps);
-    if (corps.containsKey("intention")) {
-      return complet;
-    }
+    complet.putIfAbsent("id", UUID.randomUUID().toString());
 
-    String type = String.valueOf(corps.get("type"));
-    List<Map<String, Object>> precedents = precedents(suivi, corps, corrige);
-    Optional<Map<String, Object>> dernierOuvrant = precedents
-      .stream()
-      .filter(evenement -> OUVRANTS.contains(evenement.get("intention")))
-      .reduce((premier, second) -> second);
-    boolean enCours = !precedents.isEmpty() && OUVRANTS.contains(precedents.getLast().get("intention"));
-
-    if ("FIN".equals(type)) {
-      complet.put("intention", "FIN");
-      complet.put("cible", dernierOuvrant.map(ouvrant -> ouvrant.get("activite")).orElseGet(() -> UUID.randomUUID().toString()));
-    } else if (enCours && !type.equals(precedents.getLast().get("type"))) {
-      complet.put("intention", "TRANSITION");
-      complet.put("cible", precedents.getLast().get("activite"));
-    } else {
-      complet.put("intention", "OUVERTURE");
-    }
-
-    return complet;
+    return envoieA(SUIVIS_URI + suivi + "/regularisations", complet);
   }
 
   /**
-   * Les pointages actifs du couple operateur/poste du geste, survenus au plus tard a son heure, dans l'ordre du
-   * journal. Le fait corrige n'en est pas : il va etre annule.
+   * Regularise exactement le corps donne, sans identifiant tire : de quoi eprouver le refus d'un corps incomplet.
    */
-  @SuppressWarnings("unchecked")
-  private List<Map<String, Object>> precedents(String suivi, Map<String, ?> corps, Optional<String> corrige) {
-    rest.get(SUIVIS_URI + suivi);
-    if (!CucumberRestTestContext.getStatus().is2xxSuccessful()) {
-      return List.of();
-    }
-
-    Instant heure = Optional.ofNullable(corps.get("dateDeSurvenue")).map(String::valueOf).map(Instant::parse).orElseGet(horloge::instant);
-    String operateur = String.valueOf(corps.get("operateur"));
-    String poste = Optional.ofNullable(corps.get("poste")).map(String::valueOf).orElse(null);
-
-    return ((List<Map<String, Object>>) CucumberRestTestContext.getElement("$.journal")).stream()
-      .filter(evenement -> evenement.get("annulation") == null)
-      .filter(evenement -> corrige.filter(evenement.get("id")::equals).isEmpty())
-      .filter(evenement -> operateur.equals(identifiant(evenement.get("operateur"))))
-      .filter(evenement -> Objects.equals(poste, identifiant(evenement.get("poste"))))
-      .filter(evenement -> !Instant.parse(String.valueOf(evenement.get("dateDeSurvenue"))).isAfter(heure))
-      .toList();
+  public PointageEnvoye regulariseTelQuel(String suivi, Map<String, ?> corps) {
+    return envoieA(SUIVIS_URI + suivi + "/regularisations", corps);
   }
 
-  @SuppressWarnings("unchecked")
-  private static String identifiant(Object ressource) {
-    return ressource == null ? null : String.valueOf(((Map<String, Object>) ressource).get("id"));
+  /**
+   * Verifie la reponse du dernier pointage d'un tableau de mise en place : accepte par defaut, ignore par la regle de
+   * reception quand la ligne porte {@code reponse = ignore}. Un pointage ignore n'entre pas au journal : le scenario le
+   * dit, plutot que de le laisser changer en silence ce qu'il raconte.
+   */
+  public static void exigeLaReponseAttendue(Map<String, String> pointage) {
+    if ("ignore".equals(pointage.get("reponse"))) {
+      assertThat(CucumberRestTestContext.getStatus().value()).as("le pointage doit etre ignore").isEqualTo(409);
+      assertThat(CucumberRestTestContext.getElement("$.type")).isEqualTo("urn:glm:erreur:atelier:pointage-ignore");
+    } else {
+      assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("le pointage doit etre accepte").isTrue();
+    }
+  }
+
+  private PointageEnvoye envoieA(String uri, Map<String, ?> corps) {
+    PointageEnvoye envoye = new PointageEnvoye(uri, JSON.writeValueAsString(corps));
+    rest.post(envoye.uri(), envoye.corps());
+
+    return envoye;
   }
 
   public record PointageEnvoye(String uri, String corps) {}

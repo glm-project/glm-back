@@ -5,10 +5,7 @@ import com.glm.glmback.coutderevient.domain.AnnuaireDuCout;
 import com.glm.glmback.coutderevient.domain.NatureDOperation;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(
-  name = "RestActiviteCiteeDuCout",
-  description = "Une autre activite du meme operateur, menee de front ou responsable d'un partage inconnu, tous elements confondus."
-)
+@Schema(name = "RestActiviteCiteeDuCout", description = "Une autre activite du meme operateur, menee de front, tous elements confondus.")
 record RestActiviteCitee(
   @Schema(description = "Element sur lequel portait l'activite, ce meme element compris.", requiredMode = Schema.RequiredMode.REQUIRED)
   RestElementCite element,

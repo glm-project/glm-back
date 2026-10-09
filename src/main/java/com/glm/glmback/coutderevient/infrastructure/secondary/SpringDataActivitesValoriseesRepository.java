@@ -20,17 +20,9 @@ interface SpringDataActivitesValoriseesRepository extends JpaRepository<Activite
     """
     select activite from ActiviteValoriseeEntity activite join fetch activite.ouverture join fetch activite.suivi
     where activite.operateurId in :operateurs and activite.debut <= :fin
-      and coalesce(activite.fin, activite.finAuPlusTard, activite.echeance) >= :debut
+      and coalesce(activite.fin, activite.echeance) >= :debut
     order by activite.debut, activite.id
     """
   )
   List<ActiviteValoriseeEntity> occupation(Set<UUID> operateurs, Instant debut, Instant fin);
-
-  @Query(
-    """
-    select activite from ActiviteValoriseeEntity activite where activite.sequenceId in :sequences
-    order by activite.sequenceId, activite.ordreDansSequence, activite.id
-    """
-  )
-  List<ActiviteValoriseeEntity> dansConflits(Set<UUID> sequences);
 }

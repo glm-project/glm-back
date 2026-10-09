@@ -51,7 +51,7 @@ class FeuilleDeTempsResource {
     une activite commencee avant la semaine reste visible. Chaque portion
     porte l'identite stable, l'etat et les bornes entieres de l'activite, en plus de ses bornes coupees a minuit et a
     la semaine. Une fin reelle est conservee ; sans elle, l'activite est terminee automatiquement a son echeance des
-    qu'elle est atteinte. Cet etat signale l'anomalie. Une activite en cours ou a resoudre n'a pas de fin.
+    qu'elle est atteinte. Cet etat signale l'anomalie. Une activite en cours n'a pas de fin.
     Une activite en cours rend une indication sans fin sur chaque jour atteint a l'instant de lecture, dans la
     semaine. Son debut entier permet de lire « en cours depuis dimanche » sur lundi, sans fin fabriquee a minuit.
 

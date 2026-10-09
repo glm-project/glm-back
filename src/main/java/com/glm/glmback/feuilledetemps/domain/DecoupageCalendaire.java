@@ -69,23 +69,10 @@ public final class DecoupageCalendaire {
     List<PlageDUnJour> portions =
       intervalle.lecture().etat() == EtatDActivite.EN_COURS
         ? ouverteSurChaqueJour(intervalle.plage(), evaluation)
-        : intervalle.lecture().etat() == EtatDActivite.A_RESOUDRE
-          ? aResoudreSurChaqueJour(intervalle, evaluation)
-          : plages(intervalle.plage());
+        : plages(intervalle.plage());
     return portions
       .stream()
       .map(plage -> new IntervalleDUnJour(plage.jour(), intervalle.sur(plage.plage())))
-      .toList();
-  }
-
-  private List<PlageDUnJour> aResoudreSurChaqueJour(IntervalleDActivite intervalle, Instant evaluation) {
-    Instant limite = intervalle.lecture().finAuPlusTard().orElseThrow();
-    Instant fin = evaluation.isBefore(limite) ? evaluation : limite;
-    return scindee(
-      new Plage(intervalle.plage().debut(), Optional.of(fin.isBefore(intervalle.plage().debut()) ? intervalle.plage().debut() : fin))
-    )
-      .stream()
-      .map(portion -> new PlageDUnJour(portion.jour(), new Plage(portion.plage().debut(), Optional.empty())))
       .toList();
   }
 

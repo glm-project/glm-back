@@ -27,14 +27,17 @@ class DossierAnomalieResource {
 
   @GetMapping("/{id}/anomalies/{pointage}")
   @Operation(
-    summary = "Consulter un dossier d'anomalie par un pointage",
-    description = "Le journal, la revision et les consequences interpretees du suivi a un instant d'evaluation. L'adresse ne redirige jamais vers une autre sequence : une ancre absente, annulee ou active sans anomalie garde son etat et l'historique accessible."
+    summary = "Consulter le dossier d'une fin automatique",
+    description = "Le dossier de l'activite echue que le pointage ouvre : l'activite et les pointages de sa cle, a l'instant d'evaluation. Une fin automatique deja regularisee n'a plus de dossier."
   )
-  @ApiResponse(responseCode = "200", description = "Le dossier et l'etat de son adresse, pour USER ou GESTIONNAIRE.")
-  @ApiResponse(responseCode = "404", description = "Suivi introuvable dans l'entreprise courante.")
+  @ApiResponse(responseCode = "200", description = "Le dossier de la fin automatique non regularisee, pour USER ou GESTIONNAIRE.")
+  @ApiResponse(
+    responseCode = "404",
+    description = "Suivi introuvable dans l'entreprise courante, ou pointage qui n'ouvre aucune fin automatique non regularisee."
+  )
   RestDossierAnomalie dossier(@PathVariable UUID id, @PathVariable UUID pointage) {
     var lecture = applicationService.get(new SuiviDAtelierId(id));
-    var dossier = new LectureDossierAnomalie(new AdresseDossierAnomalie(lecture.suivi().id(), new EvenementDAtelierId(pointage)), lecture);
+    var dossier = LectureDossierAnomalie.de(new AdresseDossierAnomalie(lecture.suivi().id(), new EvenementDAtelierId(pointage)), lecture);
     return RestDossierAnomalie.from(dossier, applicationService.annuairePour(lecture.suivi()));
   }
 }

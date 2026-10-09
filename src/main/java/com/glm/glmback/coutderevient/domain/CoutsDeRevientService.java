@@ -15,7 +15,6 @@ public final class CoutsDeRevientService {
   private final ElementsValorisables elements;
   private final TravailDeLElement travaux;
   private final OccupationDesOperateurs occupations;
-  private final ConflitsDuCout conflits;
   private final OperateursNommes operateursNommes;
   private final PostesNommes postesNommes;
   private final Clock clock;
@@ -24,7 +23,6 @@ public final class CoutsDeRevientService {
     ElementsValorisables elements,
     TravailDeLElement travaux,
     OccupationDesOperateurs occupations,
-    ConflitsDuCout conflits,
     OperateursNommes operateursNommes,
     PostesNommes postesNommes,
     Clock clock
@@ -32,7 +30,6 @@ public final class CoutsDeRevientService {
     this.elements = elements;
     this.travaux = travaux;
     this.occupations = occupations;
-    this.conflits = conflits;
     this.operateursNommes = operateursNommes;
     this.postesNommes = postesNommes;
     this.clock = clock;
@@ -42,10 +39,8 @@ public final class CoutsDeRevientService {
     return elements ->
       travaux ->
         occupations ->
-          conflits ->
-            operateursNommes ->
-              postesNommes ->
-                clock -> new CoutsDeRevientService(elements, travaux, occupations, conflits, operateursNommes, postesNommes, clock);
+          operateursNommes ->
+            postesNommes -> clock -> new CoutsDeRevientService(elements, travaux, occupations, operateursNommes, postesNommes, clock);
   }
 
   public CoutDeRevient rapport(ElementId id) {
@@ -58,46 +53,27 @@ public final class CoutsDeRevientService {
       Math.toIntExact(
         activites
           .stream()
-          .filter(activite -> !activite.aResoudre() && activite.termineeA(evaluation).isEmpty())
+          .filter(activite -> activite.termineeA(evaluation).isEmpty())
           .count()
       )
     );
-    List<ActiviteInterpretee> aResoudre = activites.stream().filter(ActiviteInterpretee::aResoudre).toList();
-    List<SequenceEnConflit> propres = conflits.deLElement(id);
     if (tranches.isEmpty()) {
       return CoutDeRevient.builder()
         .element(element)
         .tranches(tranches)
-        .aResoudre(aResoudre)
         .charges(ChargesDesOperateurs.de(List.of()))
         .lecture(lecture)
-        .conflits(propres)
         .annuaire(annuaire(activites));
     }
     Set<OperateurId> operateurs = tranches.stream().map(TrancheDActivite::operateur).collect(Collectors.toSet());
     List<ActiviteInterpretee> occupation = occupationDesFenetres(operateurs, tranches, evaluation);
     List<TrancheDActivite> menees = terminees(occupation, evaluation);
-    List<ZoneIncertaine> zones = Stream.concat(activites.stream(), occupation.stream())
-      .flatMap(activite -> activite.zoneA(evaluation).stream())
-      .toList();
-    ChargesDesOperateurs charges = ChargesDesOperateurs.de(Stream.concat(tranches.stream(), menees.stream()).toList(), zones);
-    Set<ActiviteId> responsables = charges.responsables(tranches);
-    List<SequenceEnConflit> dependances = Stream.concat(
-      propres.stream(),
-      conflits
-        .desOperateurs(operateurs)
-        .stream()
-        .filter(sequence -> sequence.concerne(responsables))
-    )
-      .distinct()
-      .toList();
+    ChargesDesOperateurs charges = ChargesDesOperateurs.de(Stream.concat(tranches.stream(), menees.stream()).toList());
     return CoutDeRevient.builder()
       .element(element)
       .tranches(tranches)
-      .aResoudre(aResoudre)
       .charges(charges)
       .lecture(lecture)
-      .conflits(dependances)
       .annuaire(annuaire(Stream.concat(activites.stream(), occupation.stream()).toList()));
   }
 
@@ -169,11 +145,7 @@ public final class CoutsDeRevientService {
   }
 
   public interface OccupationsBuilder {
-    ConflitsBuilder occupations(OccupationDesOperateurs occupations);
-  }
-
-  public interface ConflitsBuilder {
-    OperateursNommesBuilder conflits(ConflitsDuCout conflits);
+    OperateursNommesBuilder occupations(OccupationDesOperateurs occupations);
   }
 
   public interface OperateursNommesBuilder {

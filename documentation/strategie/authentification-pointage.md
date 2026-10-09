@@ -26,16 +26,16 @@ La troisième est réglée : `Habilitations` refuse un pointage sur un poste où
 
 L'application se scinde en deux fronts, qui n'ont ni le même public, ni le même régime d'accès.
 
-|                               | Back-office                                                     | Pupitre                                         |
-| ----------------------------- | --------------------------------------------------------------- | ----------------------------------------------- |
-| Public                        | gestionnaires, administrateurs                                  | opérateurs                                      |
-| Réseau                        | cloud                                                           | cloud                                           |
-| Authentification              | OIDC nominative, Keycloak                                       | **identité d'appareil, aucune session humaine** |
-| Identification de la personne | le jeton                                                        | code saisi, ou signature de l'opérateur         |
-| Actes                         | lecture, rapports, paramétrage, engagement, clôture, correction | pointage seul                                   |
-| Rôles                         | `GESTIONNAIRE`, `ADMIN`                                         | `USER`                                          |
+|                               | Back-office                                                         | Pupitre                                         |
+| ----------------------------- | ------------------------------------------------------------------- | ----------------------------------------------- |
+| Public                        | gestionnaires, administrateurs                                      | opérateurs                                      |
+| Réseau                        | cloud                                                               | cloud                                           |
+| Authentification              | OIDC nominative, Keycloak                                           | **identité d'appareil, aucune session humaine** |
+| Identification de la personne | le jeton                                                            | code saisi, ou signature de l'opérateur         |
+| Actes                         | lecture, rapports, paramétrage, engagement, clôture, régularisation | pointage seul                                   |
+| Rôles                         | `GESTIONNAIRE`, `ADMIN`                                             | `USER`                                          |
 
-La ligne « actes » recoupe exactement le partage `@Secured` déjà en place : les trois écritures de correction — régularisation, annulation, correction — sont `GESTIONNAIRE`, le pointage est `USER`. **La scission des fronts ne demande aucune règle d'autorisation nouvelle : elle rend structurelle celle qui existe.**
+La ligne « actes » recoupe exactement le partage `@Secured` déjà en place : la régularisation, seule écriture du gestionnaire sur le journal, est `GESTIONNAIRE`, le pointage est `USER`. **La scission des fronts ne demande aucune règle d'autorisation nouvelle : elle rend structurelle celle qui existe.**
 
 Le coût est assumé : deux applications à construire, versionner et déployer. La contrepartie est double. Une ergonomie de kiosque — gros boutons, gants, un seul écran, aucune navigation — que le back-office n'aurait jamais. Et la disparition, sur le poste d'atelier, de la session OIDC humaine, qui est la principale fragilité hors ligne d'une application web.
 
@@ -172,8 +172,8 @@ La dégradation n'est pas uniforme, et c'est ce qui rend le problème tenable.
 
 ## Le rejeu
 
-- **Idempotence : l’identifiant de l’événement naît au geste au pupitre.** Le contrat livré et son registre sont décrits dans l’[ADR 0001](../adr/0001-generate-event-identities-in-the-offline-first-pupitre.md). Les autres pistes de cette section restent des propositions de continuité.
-- **L'horodatage bitemporel est exactement la couture qu'il faut**, et il est déjà là. Un pointage rejoué garde sa date de survenue au moment du geste et sa date d'enregistrement **au moment de la saisie au pupitre**. Le serveur ne réhorodate jamais la survenue. L'écart qui en résulte avec la date d'enregistrement ne fait pas du pointage une régularisation : `estUneRegularisation()` lit l'origine conservée sur l'événement, que seuls la régularisation et la correction du gestionnaire portent.
+- **Idempotence : l’identifiant de l’événement naît au geste au pupitre.** Le contrat livré est décrit dans l’[ADR 0001](../adr/0001-generate-event-identities-in-the-offline-first-pupitre.md). Les autres pistes de cette section restent des propositions de continuité.
+- **L'horodatage bitemporel est exactement la couture qu'il faut**, et il est déjà là. Un pointage rejoué garde sa date de survenue au moment du geste et sa date d'enregistrement **au moment de la saisie au pupitre**. Le serveur ne réhorodate jamais la survenue. L'écart qui en résulte avec la date d'enregistrement ne fait pas du pointage une régularisation : `estUneRegularisation()` lit l'origine conservée sur l'événement, que seule la régularisation du gestionnaire porte.
 - **Le rejeu peut échouer pour des raisons métier**, et c'est le risque le plus sérieux : habilitation retirée entre-temps, suivi clôturé, saisie concurrente, ou date de survenue devenue future si l'horloge du poste a dérivé. Il faut une issue **côté serveur** — mise en quarantaine et reprise explicite par un gestionnaire —, jamais un rejet silencieux ni une file qui grossit sur une machine que personne ne regarde. Le rejeu respecte par ailleurs l'ordre par agrégat : l'automate d'état en dépend.
 - **La file locale est le seul point de perte du dispositif**, et le pupitre en est le porteur : un poste remplacé emporte ses saisies non acquittées. La supervision n'est donc pas un confort — le serveur alerte quand un pupitre n'a plus rien poussé, et l'écran affiche sa désynchronisation. **Une coupure silencieuse de trois semaines est le vrai scénario de perte de données**, bien plus que la panne franche.
 - **Décalage de versions** : entre un pupitre resté en arrière et un serveur qui a évolué, l'API de poussée doit être versionnée et tolérante.

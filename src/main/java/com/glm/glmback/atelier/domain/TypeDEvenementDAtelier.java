@@ -7,14 +7,22 @@ import java.util.Optional;
  *
  * <p>
  * Aucun type propre a la pause : le pupitre la pointe par une fin sur chaque activite en cours, et la reprise par une
- * ouverture en debut, ou en non conformite pour l'activite qui en etait une. Le type ne dit pas non plus s'il ouvre ou
- * remplace une activite : c'est l'{@link IntentionDePointage} qui le dit.
+ * ouverture en debut, ou en non conformite pour l'activite qui en etait une. Un debut et une non conformite ouvrent une
+ * activite ; une fin ferme celle qui est en cours sur la cle.
  * </p>
  */
 public enum TypeDEvenementDAtelier {
   DEBUT,
   NON_CONFORMITE,
   FIN;
+
+  /**
+   * Vrai pour un debut et une non conformite, qui ouvrent une activite ; faux pour une fin, qui ferme celle qui est en
+   * cours sur la cle.
+   */
+  public boolean ouvreUneActivite() {
+    return this != FIN;
+  }
 
   /**
    * La categorie de l'activite qu'ouvre un pointage de ce type : aucune pour une fin.

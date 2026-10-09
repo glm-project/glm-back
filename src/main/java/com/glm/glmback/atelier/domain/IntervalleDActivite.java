@@ -8,9 +8,8 @@ import java.util.Optional;
  * Du temps affecte a un operateur, un poste de travail et une categorie : une activite lue a un instant d'evaluation.
  *
  * <p>
- * Un intervalle sans fin est encore en cours a cet instant, sauf s'il est a resoudre : une sequence en conflit ne
- * permet alors d'affirmer ni sa fin ni sa duree. Une fin automatique est l'echeance d'une activite que rien n'a
- * terminee avant qu'elle ne tombe : elle porte une anomalie, que seule une fin reelle retire.
+ * Un intervalle sans fin est encore en cours a cet instant. Une fin automatique est l'echeance d'une activite que
+ * rien n'a terminee avant qu'elle ne tombe : elle porte une anomalie, que seule une fin reelle retire.
  * </p>
  */
 public record IntervalleDActivite(
@@ -22,8 +21,7 @@ public record IntervalleDActivite(
   CategorieDActivite categorie,
   Instant debut,
   Optional<Instant> fin,
-  boolean finAutomatique,
-  boolean aResoudre
+  boolean finAutomatique
 ) {
   public IntervalleDActivite {
     Assert.notNull("evenement", evenement);
@@ -47,19 +45,7 @@ public record IntervalleDActivite(
                 debut ->
                   fin ->
                     finAutomatique ->
-                      aResoudre ->
-                        new IntervalleDActivite(
-                          evenement,
-                          activite,
-                          operateur,
-                          poste,
-                          nature,
-                          categorie,
-                          debut,
-                          fin,
-                          finAutomatique,
-                          aResoudre
-                        );
+                      new IntervalleDActivite(evenement, activite, operateur, poste, nature, categorie, debut, fin, finAutomatique);
   }
 
   public boolean estOuvert() {
@@ -103,10 +89,6 @@ public record IntervalleDActivite(
   }
 
   interface IntervalleDActiviteFinAutomatiqueBuilder {
-    IntervalleDActiviteAResoudreBuilder finAutomatique(boolean finAutomatique);
-  }
-
-  interface IntervalleDActiviteAResoudreBuilder {
-    IntervalleDActivite aResoudre(boolean aResoudre);
+    IntervalleDActivite finAutomatique(boolean finAutomatique);
   }
 }

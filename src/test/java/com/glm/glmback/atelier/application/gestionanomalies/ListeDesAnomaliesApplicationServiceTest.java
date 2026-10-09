@@ -9,7 +9,6 @@ import com.glm.glmback.UnitTest;
 import com.glm.glmback.atelier.domain.OperateursConnus;
 import com.glm.glmback.atelier.domain.PostesConnus;
 import com.glm.glmback.atelier.domain.gestionanomalies.AnomaliesDAtelierCriteria;
-import com.glm.glmback.atelier.domain.gestionanomalies.ConflitsDAtelier;
 import com.glm.glmback.atelier.domain.gestionanomalies.FinAutomatiqueEnListe;
 import com.glm.glmback.atelier.domain.gestionanomalies.FinsAutomatiquesDAtelier;
 import com.glm.glmback.shared.pagination.domain.Page;
@@ -24,7 +23,6 @@ class ListeDesAnomaliesApplicationServiceTest {
   private final OperateursConnus operateurs = mock(OperateursConnus.class);
   private final PostesConnus postes = mock(PostesConnus.class);
   private final ListeDesAnomaliesApplicationService service = new ListeDesAnomaliesApplicationService(
-    mock(ConflitsDAtelier.class),
     finsAutomatiques,
     operateurs,
     postes,

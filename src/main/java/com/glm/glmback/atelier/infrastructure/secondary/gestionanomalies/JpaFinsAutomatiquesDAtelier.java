@@ -28,8 +28,8 @@ import java.util.UUID;
 import org.springframework.stereotype.Repository;
 
 /**
- * Les fins automatiques se jugent entierement en SQL sur la projection des activites : sans fin reelle, hors des
- * activites a resoudre, echeance atteinte a l'instant d'evaluation, borne comprise. Aucun journal n'est rejoue.
+ * Les fins automatiques se jugent entierement en SQL sur la projection des activites : sans fin reelle, echeance
+ * atteinte a l'instant d'evaluation, borne comprise. Aucun journal n'est rejoue.
  */
 @Repository
 class JpaFinsAutomatiquesDAtelier implements FinsAutomatiquesDAtelier {
@@ -43,7 +43,7 @@ class JpaFinsAutomatiquesDAtelier implements FinsAutomatiquesDAtelier {
       from activite_d_atelier activite
       join suivi_d_atelier suivi on suivi.id = activite.suivi_id
       left join operateur on operateur.id = activite.operateur_id
-      where activite.fin is null and not activite.a_resoudre and activite.echeance <= :evaluation
+      where activite.fin is null and activite.echeance <= :evaluation
         and (lower(coalesce(operateur.prenom || ' ' || operateur.nom, '')) like :operateur escape '\\'
         or cast(activite.operateur_id as varchar) like :operateur escape '\\')
         and (lower(suivi.element_nom) like :element escape '\\' or cast(suivi.element_id as varchar) like :element escape '\\')

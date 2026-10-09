@@ -12,7 +12,6 @@ import java.util.List;
   Rien n'est stocke : le rapport est recalcule a chaque lecture depuis les activites interpretees par atelier, pour qu'une saisie
   regularisee apres coup compte a l'heure ou le travail a eu lieu.
 
-  Chaque total complet est chiffre ; un total incomplet ne porte aucune somme partielle.
   La main d'oeuvre est arrondie par fenetre de partage puis repartie au centime, la machine une fois par activite ;
   lignes et rapport additionnent ces montants.
   """
@@ -26,8 +25,6 @@ record RestCoutDeRevient(
   int activitesEnCours,
   @Schema(description = "L'element de fabrication, tous ses passages en atelier confondus.") RestElement element,
   @Schema(description = "Une ligne par nature, la ligne sans nature en dernier.") List<RestLigneDeCout> lignes,
-  @Schema(description = "Conflits de l'element et sequences responsables de valeurs incompletes, meme sur un autre element.")
-  List<RestConflitDuCout> conflits,
   @Schema(description = "Temps total passe sur l'element.") RestTempsPasse temps,
   @Schema(description = "Cout total de l'element.") RestCout cout
 ) {
@@ -41,7 +38,6 @@ record RestCoutDeRevient(
         .stream()
         .map(ligne -> RestLigneDeCout.from(ligne, rapport.annuaire()))
         .toList(),
-      rapport.conflits().stream().map(RestConflitDuCout::from).toList(),
       RestTempsPasse.from(rapport.temps()),
       RestCout.from(rapport.cout())
     );

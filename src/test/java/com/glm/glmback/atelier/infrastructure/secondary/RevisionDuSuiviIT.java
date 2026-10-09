@@ -4,7 +4,6 @@ import static com.glm.glmback.atelier.domain.AtelierFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.IntegrationTest;
-import com.glm.glmback.atelier.domain.Annulation;
 import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
@@ -30,14 +29,14 @@ class RevisionDuSuiviIT {
 
   @Test
   @WithTenant("impeccmold")
-  void shouldRefuserUneClotureQuiPerdraitUneAnnulationConcurrente() throws Exception {
+  void shouldRefuserUneClotureQuiPerdraitUneFinConcurrente() throws Exception {
     // GIVEN
     var debut = debutSansPosteParDupontA(LE_10_MAI_2026_A_8H);
     var suivi = inTransaction(() -> suivis.create(suiviDAtelierEngage().enregistre(debut)));
     var authentication = SecurityContextHolder.getContext().getAuthentication();
     var requete = RequestContextHolder.getRequestAttributes();
     var lecture = new CountDownLatch(1);
-    var annulation = new CountDownLatch(1);
+    var ecriture = new CountDownLatch(1);
     try (var executor = Executors.newSingleThreadExecutor()) {
       var ancienneCloture = executor.submit(() -> {
         var contexte = SecurityContextHolder.createEmptyContext();
@@ -49,7 +48,7 @@ class RevisionDuSuiviIT {
             inTransaction(() -> {
               SuiviDAtelier ancien = suivis.get(suivi.id()).orElseThrow();
               lecture.countDown();
-              attend(annulation);
+              attend(ecriture);
               return suivis.update(ancien.cloture(clotureParLeroyA(LE_10_MAI_2026_A_17H)));
             })
           );
@@ -61,16 +60,14 @@ class RevisionDuSuiviIT {
       try {
         attend(lecture);
         // WHEN
-        inTransaction(() ->
-          suivis.update(suivi.annule(debut.id(), new Annulation(AUTEUR_LEROY, LE_11_MAI_2026_A_9H15, MOTIF_ERREUR_DE_SAISIE)))
-        );
+        inTransaction(() -> suivis.update(suivi.enregistre(finDe(debut).a(LE_10_MAI_2026_A_12H))));
       } finally {
-        annulation.countDown();
+        ecriture.countDown();
       }
       // THEN
       assertThat(ancienneCloture.get(10, TimeUnit.SECONDS)).isExactlyInstanceOf(SaisieConcurrenteException.class);
       var relu = inTransaction(() -> suivis.get(suivi.id())).orElseThrow();
-      assertThat(relu.journal().actifs()).isEmpty();
+      assertThat(relu.journal().evenements()).hasSize(2);
       assertThat(relu.cloture()).isEmpty();
     }
   }
@@ -97,7 +94,7 @@ class RevisionDuSuiviIT {
     var authentication = SecurityContextHolder.getContext().getAuthentication();
     var requete = RequestContextHolder.getRequestAttributes();
     var lecture = new CountDownLatch(1);
-    var annulation = new CountDownLatch(1);
+    var ecriture = new CountDownLatch(1);
     try (var executor = Executors.newSingleThreadExecutor()) {
       var relecture = executor.submit(() -> {
         var contexte = SecurityContextHolder.createEmptyContext();
@@ -108,7 +105,7 @@ class RevisionDuSuiviIT {
           return inTransaction(() -> {
             suivis.get(suivi.id()).orElseThrow();
             lecture.countDown();
-            attend(annulation);
+            attend(ecriture);
             return suivis.getForUpdate(suivi.id()).orElseThrow();
           });
         } finally {
@@ -119,15 +116,13 @@ class RevisionDuSuiviIT {
       try {
         attend(lecture);
         // WHEN
-        inTransaction(() ->
-          suivis.update(suivi.annule(debut.id(), new Annulation(AUTEUR_LEROY, LE_11_MAI_2026_A_9H15, MOTIF_ERREUR_DE_SAISIE)))
-        );
+        inTransaction(() -> suivis.update(suivi.enregistre(finDe(debut).a(LE_10_MAI_2026_A_12H))));
       } finally {
-        annulation.countDown();
+        ecriture.countDown();
       }
       // THEN
       var relu = relecture.get(10, TimeUnit.SECONDS);
-      assertThat(relu.journal().actifs()).isEmpty();
+      assertThat(relu.journal().evenements()).hasSize(2);
       assertThat(relu.revision().value()).isEqualTo(1);
     }
   }

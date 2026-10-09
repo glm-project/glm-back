@@ -1,6 +1,5 @@
 package com.glm.glmback.coutderevient.application;
 
-import com.glm.glmback.coutderevient.domain.ConflitsDuCout;
 import com.glm.glmback.coutderevient.domain.CoutDeRevient;
 import com.glm.glmback.coutderevient.domain.CoutsDeRevientService;
 import com.glm.glmback.coutderevient.domain.ElementId;
@@ -30,7 +29,6 @@ public class CoutsDeRevientApplicationService {
     ElementsValorisables elements,
     TravailDeLElement travaux,
     OccupationDesOperateurs occupations,
-    ConflitsDuCout conflits,
     OperateursNommes operateursNommes,
     PostesNommes postesNommes,
     Clock clock
@@ -39,7 +37,6 @@ public class CoutsDeRevientApplicationService {
       .elements(elements)
       .travaux(travaux)
       .occupations(occupations)
-      .conflits(conflits)
       .operateursNommes(operateursNommes)
       .postesNommes(postesNommes)
       .clock(clock);

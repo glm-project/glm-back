@@ -30,7 +30,7 @@ class ActiviteEnCoursTest {
   }
 
   /**
-   * L'ecran lit l'identite que visera une fin ou une transition, et l'instant ou l'activite se terminera d'elle-meme.
+   * L'ecran lit l'identite de l'activite, celle de son pointage ouvrant, et l'instant ou l'activite se terminera d'elle-meme.
    */
   @Test
   void shouldDonnerSonPointageOuvrantEtSonEcheance() {

@@ -5,7 +5,6 @@ import com.glm.glmback.atelier.domain.CategorieDActivite;
 import com.glm.glmback.atelier.domain.NatureDOperation;
 import com.glm.glmback.atelier.domain.PosteDeTravailId;
 import com.glm.glmback.shared.time.infrastructure.secondary.ExactInstantConverter;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -23,9 +22,9 @@ import java.util.UUID;
  * Une activite interpretee du journal d'un suivi, projetee a chaque ecriture et jamais relue par le domaine.
  *
  * <p>
- * Elle ne porte que ce qui ne depend pas de l'instant de lecture : son debut, son echeance, sa fin reelle, et si une
- * sequence en conflit la laisse a resoudre, auquel cas elle n'a pas de fin. Qu'une activite interpretable soit en cours
- * ou terminee automatiquement se juge a la lecture, en comparant l'echeance a l'instant d'evaluation.
+ * Elle ne porte que ce qui ne depend pas de l'instant de lecture : son debut, son echeance et sa fin reelle. Qu'une
+ * activite soit en cours ou terminee automatiquement se juge a la lecture, en comparant l'echeance a l'instant
+ * d'evaluation.
  * </p>
  */
 @Entity
@@ -63,19 +62,6 @@ class ActiviteDAtelierEntity {
   @Convert(converter = ExactInstantConverter.class)
   private Instant fin;
 
-  @Column(name = "fin_au_plus_tard")
-  @Convert(converter = ExactInstantConverter.class)
-  private Instant finAuPlusTard;
-
-  @Column(name = "a_resoudre")
-  private boolean aResoudre;
-
-  @ManyToOne(fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
-  @JoinColumn(name = "sequence_id")
-  private SequenceEnConflitDAtelierEntity sequence;
-
-  private Integer ordreDansSequence;
-
   protected ActiviteDAtelierEntity() {
     // Constructeur requis par JPA.
   }
@@ -90,18 +76,12 @@ class ActiviteDAtelierEntity {
     return new ActiviteDAtelierEntity(suivi, activite);
   }
 
-  void rattacheA(SequenceEnConflitDAtelierEntity conflit, Integer ordre) {
-    sequence = conflit;
-    ordreDansSequence = ordre;
-  }
-
   UUID id() {
     return id;
   }
 
   /**
-   * Reporte l'interpretation courante de l'activite : un debut corrige deplace son echeance, un geste lui donne une fin
-   * reelle, le remplacant d'une correction en devient l'ouverture, et une contradiction la laisse a resoudre.
+   * Reporte la lecture courante de l'activite : un geste lui donne une fin reelle.
    */
   void reporte(Activite activite) {
     ouvertureId = activite.ouvrant().id().uuid();
@@ -112,7 +92,5 @@ class ActiviteDAtelierEntity {
     debut = activite.debut();
     echeance = activite.echeance().value();
     fin = activite.fin().orElse(null);
-    finAuPlusTard = activite.finAuPlusTard().orElse(null);
-    aResoudre = activite.aResoudre();
   }
 }

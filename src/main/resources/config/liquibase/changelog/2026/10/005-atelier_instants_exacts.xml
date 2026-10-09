@@ -16,13 +16,9 @@
       ZONE 'UTC');
       ALTER TABLE evenement_d_atelier ALTER COLUMN date_d_enregistrement TYPE NUMERIC(30, 9) USING extract(epoch FROM date_d_enregistrement
       AT TIME ZONE 'UTC');
-      ALTER TABLE evenement_d_atelier ALTER COLUMN annulation_date TYPE NUMERIC(30, 9) USING extract(epoch FROM annulation_date AT TIME
-      ZONE 'UTC');
       ALTER TABLE activite_d_atelier ALTER COLUMN debut TYPE NUMERIC(30, 9) USING extract(epoch FROM debut AT TIME ZONE 'UTC');
       ALTER TABLE activite_d_atelier ALTER COLUMN echeance TYPE NUMERIC(30, 9) USING extract(epoch FROM echeance AT TIME ZONE 'UTC');
       ALTER TABLE activite_d_atelier ALTER COLUMN fin TYPE NUMERIC(30, 9) USING extract(epoch FROM fin AT TIME ZONE 'UTC');
-      ALTER TABLE activite_d_atelier ALTER COLUMN fin_au_plus_tard TYPE NUMERIC(30, 9) USING extract(epoch FROM fin_au_plus_tard AT TIME
-      ZONE 'UTC');
     </sql>
   </changeSet>
 </databaseChangeLog>

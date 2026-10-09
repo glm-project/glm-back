@@ -20,15 +20,15 @@ public final class SynthesesDesHeuresService {
 
   private static final Duration TOLERANCE_FUTURE = Duration.ofMinutes(2);
 
+  /** L'heure metier, la fin avant l'ouverture a heure egale, puis l'identite. */
   private static final Comparator<PointageDElement> PAR_ORDRE_DU_JOURNAL = Comparator.comparing(PointageDElement::dateDeSurvenue)
-    .thenComparingInt(pointage -> pointage.intention().rangAHeureEgale())
+    .thenComparingInt(pointage -> pointage.type() == TypeDEvenementDAtelier.FIN ? 0 : 1)
     .thenComparing(PointageDElement::id);
 
   private final OperateursConnus operateurs;
   private final FuseauHoraireDeLEntreprise fuseau;
   private final ActivitesDeLOperateur activites;
   private final JournalDeLOperateur journal;
-  private final ConflitsDeLOperateur conflits;
   private final ElementsDeFabrication elements;
   private final PostesDeTravail postes;
   private final Clock clock;
@@ -38,7 +38,6 @@ public final class SynthesesDesHeuresService {
     FuseauHoraireDeLEntreprise fuseau,
     ActivitesDeLOperateur activites,
     JournalDeLOperateur journal,
-    ConflitsDeLOperateur conflits,
     ElementsDeFabrication elements,
     PostesDeTravail postes,
     Clock clock
@@ -47,7 +46,6 @@ public final class SynthesesDesHeuresService {
     this.fuseau = fuseau;
     this.activites = activites;
     this.journal = journal;
-    this.conflits = conflits;
     this.elements = elements;
     this.postes = postes;
     this.clock = clock;
@@ -58,9 +56,7 @@ public final class SynthesesDesHeuresService {
       fuseau ->
         activites ->
           journal ->
-            conflits ->
-              elements ->
-                postes -> clock -> new SynthesesDesHeuresService(operateurs, fuseau, activites, journal, conflits, elements, postes, clock);
+            elements -> postes -> clock -> new SynthesesDesHeuresService(operateurs, fuseau, activites, journal, elements, postes, clock);
   }
 
   public SyntheseDesHeures synthese(OperateurId operateur, SemaineCalendaire semaine) {
@@ -90,12 +86,6 @@ public final class SynthesesDesHeuresService {
       .sorted(PAR_ORDRE_DU_JOURNAL)
       .toList();
 
-    Set<ActiviteId> activitesRendues = intervalles
-      .stream()
-      .map(intervalle -> intervalle.intervalle().lecture().id())
-      .collect(Collectors.toSet());
-    Set<PointageId> pointagesRendus = pointagesDElement.stream().map(PointageDElement::id).collect(Collectors.toSet());
-
     return SyntheseDesHeures.builder()
       .operateur(connu)
       .semaine(semaine)
@@ -107,13 +97,6 @@ public final class SynthesesDesHeuresService {
           intervalles,
           pointagesDElement
         )
-      )
-      .conflits(
-        conflits
-          .de(operateur)
-          .stream()
-          .filter(sequence -> sequence.concerne(activitesRendues, pointagesRendus))
-          .toList()
       );
   }
 
@@ -268,13 +251,10 @@ public final class SynthesesDesHeuresService {
   private record UsageDePoste(Instant date, Optional<PosteDeTravailId> poste, Optional<NatureDOperation> nature) {}
 
   private static DureeTotale somme(List<IntervalleDActivite> travail, Predicate<IntervalleDActivite> retenu) {
-    List<IntervalleDActivite> retenus = travail.stream().filter(retenu).toList();
-    if (retenus.stream().anyMatch(intervalle -> intervalle.lecture().etat() == EtatDActivite.A_RESOUDRE)) {
-      return DureeTotale.incomplete();
-    }
     return DureeTotale.de(
-      retenus
+      travail
         .stream()
+        .filter(retenu)
         .map(IntervalleDActivite::plage)
         .filter(plage -> !plage.estOuverte())
         .map(SynthesesDesHeuresService::duree)
@@ -303,11 +283,7 @@ public final class SynthesesDesHeuresService {
   }
 
   public interface SynthesesDesHeuresServiceJournalBuilder {
-    SynthesesDesHeuresServiceConflitsBuilder journal(JournalDeLOperateur journal);
-  }
-
-  public interface SynthesesDesHeuresServiceConflitsBuilder {
-    SynthesesDesHeuresServiceElementsBuilder conflits(ConflitsDeLOperateur conflits);
+    SynthesesDesHeuresServiceElementsBuilder journal(JournalDeLOperateur journal);
   }
 
   public interface SynthesesDesHeuresServiceElementsBuilder {

@@ -1,5 +1,7 @@
 package com.glm.glmback.pupitre.domain;
 
+import com.glm.glmback.shared.activityduration.domain.MaximumActivityDuration;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -9,6 +11,9 @@ public final class PupitreFixture {
 
   public static final CategorieDElement CATEGORIE_OF = new CategorieDElement("OF");
   public static final CategorieDElement CATEGORIE_MOULE = new CategorieDElement("MOULE");
+
+  public static final MaximumActivityDuration DUREE_MAXIMALE_TREIZE_HEURES = new MaximumActivityDuration(Duration.ofHours(13));
+  public static final MaximumActivityDuration DUREE_MAXIMALE_HUIT_HEURES = new MaximumActivityDuration(Duration.ofHours(8));
 
   public static final Instant LE_10_MAI_2026_A_7H = Instant.parse("2026-05-10T07:00:00Z");
   public static final Instant LE_10_MAI_2026_A_8H = Instant.parse("2026-05-10T08:00:00Z");
@@ -22,8 +27,6 @@ public final class PupitreFixture {
   public static final PosteDeTravailId POSTE_ID_FRAISEUSE_2 = new PosteDeTravailId(UUID.fromString("66666666-6666-6666-6666-666666666666"));
   public static final SuiviDuPupitreId SUIVI_ID_OF_42 = new SuiviDuPupitreId(UUID.fromString("77777777-7777-7777-7777-777777777777"));
   public static final ActiviteId ACTIVITE_ID_88888888 = new ActiviteId(UUID.fromString("88888888-8888-8888-8888-888888888888"));
-
-  public static final PointageId POINTAGE_ID_99999999 = new PointageId(UUID.fromString("99999999-9999-9999-9999-999999999999"));
 
   public static final Nom NOM_DUPONT = new Nom("Dupont");
   public static final Prenom PRENOM_JEAN = new Prenom("Jean");
@@ -47,12 +50,6 @@ public final class PupitreFixture {
   public static final PosteHabilite POSTE_HABILITE_FRAISEUSE_2 = new PosteHabilite(POSTE_ID_FRAISEUSE_2, LIBELLE_FRAISEUSE_2);
 
   public static final OperateurDuPupitre OPERATEUR_DUPONT = operateurDupont();
-
-  public static final SequenceEnConflitDuPupitre SEQUENCE_DUPONT_SUR_FRAISEUSE_1 = new SequenceEnConflitDuPupitre(
-    ACTIVITE_DUPONT_SUR_FRAISEUSE_1,
-    List.of(ACTIVITE_ID_88888888),
-    List.of(POINTAGE_ID_99999999)
-  );
 
   private PupitreFixture() {}
 
@@ -87,7 +84,6 @@ public final class PupitreFixture {
       .reference(REFERENCE_M_1187.value())
       .categorie(CATEGORIE_OF.value())
       .activites(List.of())
-      .conflits(List.of())
       .dejaPointe(false);
   }
 
@@ -101,7 +97,6 @@ public final class PupitreFixture {
       .reference(REFERENCE_M_1187.value())
       .categorie(CATEGORIE_OF.value())
       .activites(activites)
-      .conflits(List.of())
       .dejaPointe(true);
   }
 }

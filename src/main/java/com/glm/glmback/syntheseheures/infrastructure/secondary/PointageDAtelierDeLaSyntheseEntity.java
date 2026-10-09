@@ -1,9 +1,7 @@
 package com.glm.glmback.syntheseheures.infrastructure.secondary;
 
 import com.glm.glmback.shared.time.infrastructure.secondary.ExactInstantConverter;
-import com.glm.glmback.syntheseheures.domain.ActiviteId;
 import com.glm.glmback.syntheseheures.domain.ElementId;
-import com.glm.glmback.syntheseheures.domain.IntentionDePointage;
 import com.glm.glmback.syntheseheures.domain.NatureDOperation;
 import com.glm.glmback.syntheseheures.domain.PointageDElement;
 import com.glm.glmback.syntheseheures.domain.PointageId;
@@ -26,8 +24,7 @@ import org.hibernate.annotations.Immutable;
  *
  * <p>
  * Les colonnes reprennent le style de nommage des entites de l'atelier, colonne par colonne : deux noms logiques pour
- * une meme colonne physique empecheraient Hibernate de demarrer. {@code annulationDate} n'est jamais exposee au
- * domaine : seule sa nullite compte, pour ecarter des la requete les evenements annules.
+ * une meme colonne physique empecheraient Hibernate de demarrer.
  * </p>
  */
 @Entity
@@ -48,23 +45,13 @@ class PointageDAtelierDeLaSyntheseEntity {
   @Column(name = "operateur_id")
   private UUID operateurId;
 
-  @Enumerated(EnumType.STRING)
-  @Column(length = 20)
-  private IntentionDePointage intention;
-
   @Column(name = "poste_id")
   private UUID posteId;
 
   private String nature;
 
-  @Column(name = "activite_visee_id")
-  private UUID activiteViseeId;
-
   @Convert(converter = ExactInstantConverter.class)
   private Instant dateDeSurvenue;
-
-  @Convert(converter = ExactInstantConverter.class)
-  private Instant annulationDate;
 
   protected PointageDAtelierDeLaSyntheseEntity() {
     // Constructeur requis par JPA.
@@ -77,8 +64,6 @@ class PointageDAtelierDeLaSyntheseEntity {
   PointageDElement toDomain(ElementId element) {
     return PointageDElement.builder()
       .id(new PointageId(id))
-      .intention(intention)
-      .cible(Optional.ofNullable(activiteViseeId).map(ActiviteId::new))
       .type(type)
       .element(element)
       .poste(Optional.ofNullable(posteId).map(PosteDeTravailId::new))

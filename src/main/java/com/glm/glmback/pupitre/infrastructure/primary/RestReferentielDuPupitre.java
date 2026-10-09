@@ -31,7 +31,17 @@ record RestReferentielDuPupitre(
     requiredMode = Schema.RequiredMode.REQUIRED,
     example = "[\"MOULE\", \"OF\"]"
   )
-  List<String> categories
+  List<String> categories,
+  @Schema(
+    description = """
+    La duree maximale d'une activite, au format ISO 8601, telle que le gestionnaire l'a fixee (treize heures tant qu'il
+    n'a rien fixe) : l'echeance d'une activite est son debut plus cette duree. Une activite que rien n'a terminee a cette
+    echeance se termine automatiquement ; le pupitre hors ligne la lit ici plutot que de la coder.
+    """,
+    requiredMode = Schema.RequiredMode.REQUIRED,
+    example = "PT13H"
+  )
+  String dureeMaximaleDActivite
 ) {
   static RestReferentielDuPupitre from(ReferentielDuPupitre referentiel) {
     return new RestReferentielDuPupitre(
@@ -42,7 +52,8 @@ record RestReferentielDuPupitre(
         .stream()
         .map(suivi -> RestSuiviDuPupitre.from(suivi, referentiel.genereLe()))
         .toList(),
-      referentiel.categories().stream().map(CategorieDElement::value).toList()
+      referentiel.categories().stream().map(CategorieDElement::value).toList(),
+      referentiel.dureeMaximaleDActivite().value().toString()
     );
   }
 }

@@ -11,9 +11,9 @@ import java.util.UUID;
 
 @Schema(
   name = "RestFinAutomatiqueEnListe",
-  description = "Une activite terminee a son echeance faute de fin reelle, issue des projections courantes, sans journal. L'adresse est celle de l'ouvrant actif ; activite est l'identite d'origine que visent les actes."
+  description = "Une activite terminee a son echeance faute de fin reelle, issue des projections courantes, sans journal. L'adresse est celle du pointage qui ouvre l'activite ; activite est l'identite de l'activite, que vise la regularisation."
 )
-final class RestFinAutomatiqueEnListe implements RestAnomalieEnListe {
+final class RestFinAutomatiqueEnListe {
 
   @JsonProperty
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
