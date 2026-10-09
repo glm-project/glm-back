@@ -19,9 +19,11 @@ import java.util.stream.Stream;
  *
  * <p>
  * A heure metier egale, la fin passe avant l'ouverture, puis l'identifiant departage : jamais la date
- * d'enregistrement, qui ferait dependre le journal de l'ordre de reception. La regle de reception ignore une fin a
- * l'heure du debut de l'activite qu'elle fermerait, si bien que le journal ne porte jamais une fin et l'ouverture
- * qu'elle fermerait a la meme heure : l'ordre est sans ambiguite.
+ * d'enregistrement, qui ferait dependre le journal de l'ordre de reception. L'ordre est sans ambiguite parce que le
+ * journal ne porte jamais une fin et l'ouverture qu'elle fermerait a la meme heure : la regle de reception ignore une
+ * fin du pupitre a l'heure du debut de l'activite qu'elle fermerait (ANTERIEUR), et la regularisation refuse une fin
+ * qui n'est pas posterieure au debut de son activite (fin-avant-debut). Cette garantie vient de ces deux controles, pas
+ * du journal, qui ne refuse rien.
  * </p>
  */
 public record JournalDAtelier(List<EvenementDAtelier> evenements) {

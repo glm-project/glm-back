@@ -457,7 +457,7 @@ suivi tel qu'il est, et n'écrit rien — y compris quand l'activité est désor
 | 409    | `activite-deja-regularisee`  | Une régularisation vise déjà cette activité.                                                        |
 | 409    | `activite-non-echue`         | L'activité n'est pas une fin automatique : échéance non atteinte, ou terminée par un pointage.      |
 | 400    | `date-de-survenue-future`    | L'heure dépasse l'instant présent.                                                                  |
-| 409    | `fin-avant-debut`            | L'heure précède le début de l'activité.                                                             |
+| 409    | `fin-avant-debut`            | L'heure n'est pas postérieure au début de l'activité (une activité n'a jamais une durée nulle).     |
 | 409    | `fin-apres-borne`            | L'heure dépasse le début suivant sur la clé (opérateur et poste) ou la clôture : voir `borneDeFin`. |
 
 `saisie-concurrente` (409) reste le refus de concurrence : un pointage s'est glissé entre la lecture et l'écriture,

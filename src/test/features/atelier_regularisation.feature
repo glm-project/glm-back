@@ -129,6 +129,11 @@ Feature: Regularisation directe de la fin d'une activite echue
     And la reponse porte le code d'erreur "urn:glm:erreur:atelier:fin-avant-debut"
     When je regularise sur "Regul 9006" en visant l'activite de l'evenement 0
       | dateDeSurvenue | 2044-05-06T08:00:00Z |
+    # Aucune activite de duree nulle : une fin a l'heure du debut n'est pas posterieure a ce debut.
+    Then la reponse a le statut http 409
+    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:fin-avant-debut"
+    When je regularise sur "Regul 9006" en visant l'activite de l'evenement 0
+      | dateDeSurvenue | 2044-05-06T08:00:01Z |
     Then la reponse a le statut http 201
 
   Scenario: La fin ne depasse pas maintenant

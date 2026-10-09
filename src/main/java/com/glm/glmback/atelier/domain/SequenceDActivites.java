@@ -11,8 +11,9 @@ import java.util.Optional;
  * seule interpretation du journal.
  *
  * <p>
- * Les faits arrivent dans l'ordre du journal, et au plus une activite est en cours sur la cle. Un debut ou une non
- * conformite ouvre une activite. Une fin pointee ferme l'activite en cours de la cle ; une fin regularisee ferme celle
+ * Les faits arrivent dans l'ordre du journal. Cette lecture suppose qu'au plus une activite est en cours sur la cle :
+ * c'est la regle de reception qui le garantit, en ignorant tout debut ou toute non conformite pointe pendant une
+ * activite en cours. Un debut ou une non conformite ouvre une activite. Une fin pointee ferme l'activite en cours de la cle ; une fin regularisee ferme celle
  * qu'elle cible. La cloture, a defaut, ferme l'activite restee en cours.
  * </p>
  *

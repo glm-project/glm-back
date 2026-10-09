@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -107,13 +108,27 @@ class SuiviDAtelierRegularisationTest {
   }
 
   @Test
-  void shouldRefuserUneFinAvantLeDebutDeLActivite() {
+  void shouldRefuserUneFinQuiNEstPasPosterieureAuDebutDeLActivite() {
     SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(travail);
 
-    assertThatThrownBy(() -> suivi.exigeUneFinRegularisable(activite, LE_10_MAI_2026_A_8H.minusNanos(1), A_22H))
-      .isExactlyInstanceOf(FinAvantDebutException.class)
-      .hasMessageContaining(activite.uuid().toString());
-    assertThat(suivi.exigeUneFinRegularisable(activite, LE_10_MAI_2026_A_8H, A_22H).ouvrant()).isEqualTo(travail);
+    for (Instant fin : List.of(LE_10_MAI_2026_A_8H.minusNanos(1), LE_10_MAI_2026_A_8H)) {
+      assertThatThrownBy(() -> suivi.exigeUneFinRegularisable(activite, fin, A_22H))
+        .isExactlyInstanceOf(FinAvantDebutException.class)
+        .hasMessageContaining(activite.uuid().toString());
+    }
+    assertThat(suivi.exigeUneFinRegularisable(activite, LE_10_MAI_2026_A_8H.plusNanos(1), A_22H).ouvrant()).isEqualTo(travail);
+  }
+
+  @Test
+  void shouldLireLaFinReelleDUneRegularisationUneSecondeApresLeDebut() {
+    EvenementDAtelier regularisation = finRegulariseeParLeroyDe(travail).a(LE_10_MAI_2026_A_8H.plusSeconds(1));
+    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(travail);
+    suivi.exigeUneFinRegularisable(activite, regularisation.dateDeSurvenue(), A_22H);
+
+    SuiviDAtelier regularise = suivi.enregistre(regularisation);
+
+    assertThat(regularise.activites()).singleElement().extracting(Activite::fin).isEqualTo(Optional.of(LE_10_MAI_2026_A_8H.plusSeconds(1)));
+    assertThat(regularise.activites().getFirst().a(A_22H).finAutomatique()).isFalse();
   }
 
   @Test

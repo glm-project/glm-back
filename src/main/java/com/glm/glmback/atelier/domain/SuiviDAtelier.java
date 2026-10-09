@@ -81,7 +81,7 @@ public record SuiviDAtelier(
    *
    * <p>
    * Elle doit exister dans ce suivi, ne pas etre deja regularisee, et etre une fin automatique : sans fin reelle et
-   * echue a l'instant present. La fin ne vient pas du futur, ne precede pas le debut de l'activite et ne depasse pas sa
+   * echue a l'instant present. La fin ne vient pas du futur, est posterieure au debut de l'activite (aucune activite de duree nulle) et ne depasse pas sa
    * borne. Elle peut en revanche depasser l'echeance : c'est ce que la regularisation a de particulier.
    * </p>
    */
@@ -100,7 +100,7 @@ public record SuiviDAtelier(
     if (fin.isAfter(maintenant)) {
       throw new DateDeSurvenueFutureException(fin);
     }
-    if (fin.isBefore(activite.debut())) {
+    if (!fin.isAfter(activite.debut())) {
       throw new FinAvantDebutException(id, fin, activite.debut());
     }
     borne(activite)

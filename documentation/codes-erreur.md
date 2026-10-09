@@ -92,7 +92,7 @@ aucune fin automatique non régularisée : le front revient à la liste.
 Les quatre refus de `POST /api/atelier/suivis/{id}/regularisations` propres à la régularisation directe, avec
 `activite-visee-introuvable` (404) et `date-de-survenue-future` (400) : `activite-non-echue` (l'activité n'est pas une
 fin automatique : échéance non atteinte, ou terminée par un pointage), `activite-deja-regularisee` (une régularisation
-vise déjà l'activité), `fin-avant-debut` (l'heure précède le début de l'activité) et `fin-apres-borne` (l'heure dépasse
+vise déjà l'activité), `fin-avant-debut` (l'heure n'est pas postérieure au début de l'activité : aucune activité n'a une durée nulle) et `fin-apres-borne` (l'heure dépasse
 le début suivant sur la clé ou la clôture, `borneDeFin` du dossier). Un renvoi du même `id` déjà dans la table des événements répond 200 avant toute
 règle. Hors ce cas, `activite-non-echue` tant que l'échéance n'est pas atteinte n'est pas définitif : le même geste
 rejoué après l'échéance est accepté. `activite-deja-regularisee`, `fin-avant-debut` et `fin-apres-borne` ne changent
