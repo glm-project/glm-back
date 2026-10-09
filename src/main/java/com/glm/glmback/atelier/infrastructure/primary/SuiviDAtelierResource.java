@@ -115,8 +115,9 @@ class SuiviDAtelierResource {
     designe aucune activite : un debut ou une non conformite en ouvre une, une fin ferme celle qui est en cours sur la cle
     (operateur, element, poste).
 
-    Le serveur juge chaque pointage a son arrivee. Apres les controles habituels (operateur, poste, habilitation, element
-    cloture), un pointage plus ancien que le dernier pointage accepte de la cle est ignore (`ANTERIEUR`, a heure egale
+    Le serveur juge chaque pointage a son arrivee. L'identifiant est cherche d'abord : un renvoi deja accepte repond 200,
+    meme si l'element a ete cloture depuis. Apres les controles habituels (element cloture, date future, operateur,
+    poste, habilitation), un pointage plus ancien que le dernier pointage accepte de la cle est ignore (`ANTERIEUR`, a heure egale
     il passe), ainsi qu'une fin qui n'est pas posterieure au debut de l'activite qu'elle fermerait (`ANTERIEUR`) ; une activite dont l'echeance est atteinte a l'heure du geste (debut plus 13 heures, borne comprise) compte
     comme terminee ; puis : rien en cours accepte un debut ou une non conformite et ignore une fin (`APRES_ECHEANCE` si
     la derniere activite est echue sans fin, sinon `AUCUNE_ACTIVITE`) ; une activite en cours ignore un debut ou une non
@@ -174,7 +175,7 @@ class SuiviDAtelierResource {
   @ApiResponse(
     responseCode = "409",
     description = """
-    Activite non echue (ou deja terminee par un pointage) ou deja regularisee, fin avant le debut de l'activite ou apres sa
+    Activite non echue (ou deja terminee par une fin reelle, pointage ou cloture) ou deja regularisee, fin avant le debut de l'activite ou apres sa
     borne, operateur non habilite sur ce poste, ou saisie concurrente (le dossier est a relire).
     """
   )

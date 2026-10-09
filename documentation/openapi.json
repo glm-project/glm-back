@@ -2039,7 +2039,7 @@
         "type" : "object"
       },
       "RestTempsPasse" : {
-        "description" : "Le temps passe, separe en bon travail et en reprise de non conformite.\n\nLa reprise d'une piece ratee se compte a part sur le meme element. Ses tarifs sont ceux de son propre fait\nouvrant actif, captures par atelier.\n",
+        "description" : "Le temps passe, separe en bon travail et en reprise de non conformite.\n\nLa reprise d'une piece ratee se compte a part sur le meme element. Ses tarifs sont ceux de son propre fait\nouvrant, captures par atelier.\n",
         "properties" : {
           "nonConformite" : {
             "$ref" : "#/components/schemas/RestDureeDuCout",
@@ -2401,7 +2401,7 @@
     },
     "/api/atelier/suivis/{id}/pointages" : {
       "post" : {
-        "description" : "Le geste de l'operateur, date a l'instant present ou a l'heure de son geste (`dateDeSurvenue`, hors ligne). Il ne\ndesigne aucune activite : un debut ou une non conformite en ouvre une, une fin ferme celle qui est en cours sur la cle\n(operateur, element, poste).\n\nLe serveur juge chaque pointage a son arrivee. Apres les controles habituels (operateur, poste, habilitation, element\ncloture), un pointage plus ancien que le dernier pointage accepte de la cle est ignore (`ANTERIEUR`, a heure egale\nil passe), ainsi qu'une fin qui n'est pas posterieure au debut de l'activite qu'elle fermerait (`ANTERIEUR`) ; une activite dont l'echeance est atteinte a l'heure du geste (debut plus 13 heures, borne comprise) compte\ncomme terminee ; puis : rien en cours accepte un debut ou une non conformite et ignore une fin (`APRES_ECHEANCE` si\nla derniere activite est echue sans fin, sinon `AUCUNE_ACTIVITE`) ; une activite en cours ignore un debut ou une non\nconformite (`DEJA_EN_COURS`) et accepte une fin. Un pointage ignore n'entre pas au journal : il laisse une ligne\nd'audit en base, et la reponse est le refus 409 `pointage-ignore`, qui ne s'affiche pas a l'operateur.\n\nUne pause se pointe par une fin pour chaque activite en cours, puis un debut ou une non conformite a la reprise.\n",
+        "description" : "Le geste de l'operateur, date a l'instant present ou a l'heure de son geste (`dateDeSurvenue`, hors ligne). Il ne\ndesigne aucune activite : un debut ou une non conformite en ouvre une, une fin ferme celle qui est en cours sur la cle\n(operateur, element, poste).\n\nLe serveur juge chaque pointage a son arrivee. L'identifiant est cherche d'abord : un renvoi deja accepte repond 200,\nmeme si l'element a ete cloture depuis. Apres les controles habituels (element cloture, date future, operateur,\nposte, habilitation), un pointage plus ancien que le dernier pointage accepte de la cle est ignore (`ANTERIEUR`, a heure egale\nil passe), ainsi qu'une fin qui n'est pas posterieure au debut de l'activite qu'elle fermerait (`ANTERIEUR`) ; une activite dont l'echeance est atteinte a l'heure du geste (debut plus 13 heures, borne comprise) compte\ncomme terminee ; puis : rien en cours accepte un debut ou une non conformite et ignore une fin (`APRES_ECHEANCE` si\nla derniere activite est echue sans fin, sinon `AUCUNE_ACTIVITE`) ; une activite en cours ignore un debut ou une non\nconformite (`DEJA_EN_COURS`) et accepte une fin. Un pointage ignore n'entre pas au journal : il laisse une ligne\nd'audit en base, et la reponse est le refus 409 `pointage-ignore`, qui ne s'affiche pas a l'operateur.\n\nUne pause se pointe par une fin pour chaque activite en cours, puis un debut ou une non conformite a la reprise.\n",
         "operationId" : "pointe",
         "parameters" : [ {
           "in" : "path",
@@ -2550,7 +2550,7 @@
                 }
               }
             },
-            "description" : "Activite non echue (ou deja terminee par un pointage) ou deja regularisee, fin avant le debut de l'activite ou apres sa\nborne, operateur non habilite sur ce poste, ou saisie concurrente (le dossier est a relire).\n"
+            "description" : "Activite non echue (ou deja terminee par une fin reelle, pointage ou cloture) ou deja regularisee, fin avant le debut de l'activite ou apres sa\nborne, operateur non habilite sur ce poste, ou saisie concurrente (le dossier est a relire).\n"
           }
         },
         "summary" : "Regulariser la fin d'une activite echue",
