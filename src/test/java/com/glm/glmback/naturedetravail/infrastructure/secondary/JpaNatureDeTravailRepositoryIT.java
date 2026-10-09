@@ -84,6 +84,33 @@ class JpaNatureDeTravailRepositoryIT {
 
   @Test
   @WithTenant(NATURES_FIXTURE)
+  void shouldDeleteNature() {
+    NatureDeTravail nature = natureDeTest("Peinture");
+    inTransaction(() -> natures.create(nature));
+
+    inTransaction(() -> {
+      natures.delete(nature.id());
+      return null;
+    });
+
+    assertThat(inTransaction(() -> natures.get(nature.id()))).isEmpty();
+  }
+
+  @Test
+  @WithTenant(NATURES_FIXTURE)
+  void shouldNotDeleteUnknownNature() {
+    NatureDeTravailId inconnue = NatureDeTravailId.newId();
+
+    assertThatThrownBy(() ->
+      inTransaction(() -> {
+        natures.delete(inconnue);
+        return null;
+      })
+    ).isExactlyInstanceOf(NatureIntrouvableException.class);
+  }
+
+  @Test
+  @WithTenant(NATURES_FIXTURE)
   void shouldFindIdByKey() {
     NatureDeTravail nature = natureDeTest("Fraisage");
     inTransaction(() -> natures.create(nature));

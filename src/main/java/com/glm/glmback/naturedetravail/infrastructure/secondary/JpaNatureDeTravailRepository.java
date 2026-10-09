@@ -45,6 +45,14 @@ class JpaNatureDeTravailRepository implements NatureDeTravailRepository {
   }
 
   @Override
+  public void delete(NatureDeTravailId id) {
+    if (!natures.existsById(id.uuid())) {
+      throw new NatureIntrouvableException(id);
+    }
+    natures.deleteById(id.uuid());
+  }
+
+  @Override
   public Optional<NatureDeTravail> get(NatureDeTravailId id) {
     return natures.findById(id.uuid()).map(NatureDeTravailEntity::toDomain);
   }

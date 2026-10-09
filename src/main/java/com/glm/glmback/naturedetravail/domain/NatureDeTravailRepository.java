@@ -9,6 +9,8 @@ public interface NatureDeTravailRepository {
 
   NatureDeTravail update(NatureDeTravail nature);
 
+  void delete(NatureDeTravailId id);
+
   Optional<NatureDeTravail> get(NatureDeTravailId id);
 
   Optional<NatureDeTravailId> idPourCle(CleDeNature cle);

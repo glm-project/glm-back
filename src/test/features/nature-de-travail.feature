@@ -99,3 +99,26 @@ Feature: Natures de travail
     And I am logged in as "user" with role "USER"
     When je renomme la nature de travail "Dessin CNO" en "Dessin industriel CNO"
     Then la reponse a le statut http 403
+
+  Scenario: Suppression d'une nature de travail
+    Given j'ai declare la nature de travail "Peinture CNP"
+    When je supprime la nature de travail "Peinture CNP"
+    Then la reponse a le statut http 204
+    And la nature de travail "Peinture CNP" n'est plus listee
+
+  Scenario: Une nature supprimee peut etre declaree a nouveau
+    Given j'ai declare la nature de travail "Peinture CNQ"
+    And j'ai supprime la nature de travail "Peinture CNQ"
+    When je declare la nature de travail "Peinture CNQ"
+    Then la reponse a le statut http 201
+
+  Scenario: Suppression d'une nature inexistante renvoie 404
+    When je supprime une nature de travail inconnue
+    Then la reponse a le statut http 404
+    And la reponse porte le code d'erreur "urn:glm:erreur:nature-de-travail:nature-introuvable"
+
+  Scenario: Suppression refusee a un utilisateur simple
+    Given j'ai declare la nature de travail "Peinture CNR"
+    And I am logged in as "user" with role "USER"
+    When je supprime la nature de travail "Peinture CNR"
+    Then la reponse a le statut http 403

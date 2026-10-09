@@ -34,6 +34,12 @@ public class NaturesDeTravailApplicationService {
     return natures.renomme(id, libelle);
   }
 
+  @Secured("ROLE_GESTIONNAIRE")
+  @Transactional
+  public void delete(NatureDeTravailId id) {
+    natures.delete(id);
+  }
+
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
   @Transactional(readOnly = true)
   public Page<NatureDeTravailListee> list(Pageable pageable) {

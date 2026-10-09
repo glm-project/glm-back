@@ -2,6 +2,7 @@ package com.glm.glmback.naturedetravail.infrastructure.primary;
 
 import com.glm.glmback.naturedetravail.domain.NatureDejaExistanteException;
 import com.glm.glmback.naturedetravail.domain.NatureIntrouvableException;
+import com.glm.glmback.naturedetravail.domain.NatureUtiliseeException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.ProblemDetail;
@@ -20,5 +21,10 @@ class NatureDeTravailExceptionAdvice {
   @ExceptionHandler(NatureDejaExistanteException.class)
   ProblemDetail handleNatureDejaExistante(NatureDejaExistanteException e) {
     return ErreurDeNatureDeTravail.NATURE_DEJA_EXISTANTE.problem(e);
+  }
+
+  @ExceptionHandler(NatureUtiliseeException.class)
+  ProblemDetail handleNatureUtilisee(NatureUtiliseeException e) {
+    return ErreurDeNatureDeTravail.NATURE_UTILISEE.problem(e);
   }
 }

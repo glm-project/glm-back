@@ -53,6 +53,19 @@ public final class NaturesDeTravailService {
   }
 
   /**
+   * Une nature qui sert deja ne se supprime pas : un poste la porte, ou des heures pointees la citent.
+   */
+  public void delete(NatureDeTravailId id) {
+    if (repository.get(id).isEmpty()) {
+      throw new NatureIntrouvableException(id);
+    }
+    if (usages.estUtilisee(id)) {
+      throw new NatureUtiliseeException(id);
+    }
+    repository.delete(id);
+  }
+
+  /**
    * L'unicite se juge sur la cle, pas sur le libelle : « Soudage » et « soudâge » sont la meme nature. A la creation,
    * l'identifiant vient d'etre tire et ne peut detenir aucune cle ; au renommage, la nature ne se heurte pas a elle-meme.
    */

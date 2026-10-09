@@ -36,6 +36,14 @@ final class NaturesDeTravailEnMemoire implements NatureDeTravailRepository {
   }
 
   @Override
+  public void delete(NatureDeTravailId id) {
+    NatureDeTravail supprimee = natures.remove(id);
+    if (supprimee == null) {
+      throw new NatureIntrouvableException(id);
+    }
+  }
+
+  @Override
   public Optional<NatureDeTravail> get(NatureDeTravailId id) {
     return Optional.ofNullable(natures.get(id));
   }

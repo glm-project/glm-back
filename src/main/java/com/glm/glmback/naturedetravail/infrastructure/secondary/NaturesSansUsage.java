@@ -14,6 +14,11 @@ import org.springframework.stereotype.Repository;
 class NaturesSansUsage implements NaturesEnUsage {
 
   @Override
+  public boolean estUtilisee(NatureDeTravailId nature) {
+    return false;
+  }
+
+  @Override
   public Set<NatureDeTravailId> utiliseesParmi(Collection<NatureDeTravailId> natures) {
     return Set.of();
   }

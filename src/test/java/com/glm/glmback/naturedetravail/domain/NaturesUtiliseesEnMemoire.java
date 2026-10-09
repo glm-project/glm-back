@@ -18,6 +18,11 @@ final class NaturesUtiliseesEnMemoire implements NaturesEnUsage {
   }
 
   @Override
+  public boolean estUtilisee(NatureDeTravailId nature) {
+    return utilisees.contains(nature);
+  }
+
+  @Override
   public Set<NatureDeTravailId> utiliseesParmi(Collection<NatureDeTravailId> natures) {
     return natures.stream().filter(utilisees::contains).collect(Collectors.toUnmodifiableSet());
   }

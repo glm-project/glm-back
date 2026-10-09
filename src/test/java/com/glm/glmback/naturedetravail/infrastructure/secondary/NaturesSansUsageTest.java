@@ -11,6 +11,11 @@ import org.junit.jupiter.api.Test;
 class NaturesSansUsageTest {
 
   @Test
+  void shouldNotSeeNatureAsUsed() {
+    assertThat(new NaturesSansUsage().estUtilisee(NATURE_DE_TRAVAIL_ID_SOUDAGE)).isFalse();
+  }
+
+  @Test
   void shouldSeeNoUsedNature() {
     assertThat(new NaturesSansUsage().utiliseesParmi(List.of(NATURE_DE_TRAVAIL_ID_SOUDAGE))).isEmpty();
   }

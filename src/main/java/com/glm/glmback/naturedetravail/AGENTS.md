@@ -6,8 +6,8 @@ Responsabilité, frontières et invariants de ce contexte. Les règles de code c
 
 ## Ce dont ce contexte s'occupe
 
-Le **référentiel des métiers exercés dans l'atelier** : soudage, tournage, fraisage, dessin. Déclarer et renommer les
-natures, et les lister par ordre alphabétique, en disant pour chacune si elle sert déjà.
+Le **référentiel des métiers exercés dans l'atelier** : soudage, tournage, fraisage, dessin. Déclarer, renommer et
+supprimer les natures, et les lister par ordre alphabétique, en disant pour chacune si elle sert déjà.
 
 ## Ce dont il ne s'occupe pas
 
@@ -30,8 +30,10 @@ natures, et les lister par ordre alphabétique, en disant pour chacune si elle s
   nature peut reprendre sa propre clé, pour changer la casse ou les accents de son libellé.
 - **Le libellé est rogné à la construction** : de 1 à 50 caractères une fois les espaces qui l'entourent retirés.
 - **L'ordre de lecture est total** : clé, puis identifiant.
-- **Les usages d'une page se lisent en une requête** (`NaturesEnUsage.utiliseesParmi`). Rien ne référence encore une
-  nature : l'adapter `NaturesSansUsage` répond qu'aucune ne sert, jusqu'à ce que les postes puis les pointages en
+- **Une nature qui sert ne se supprime pas** (`NatureUtiliseeException`, 409). La règle vit dans le domaine, derrière
+  le port `NaturesEnUsage`, et la liste dit pour chaque nature si elle sert, pour que l'écran ne propose pas une
+  suppression vouée au refus. Les usages d'une page se lisent en une requête (`NaturesEnUsage.utiliseesParmi`).
+- Rien ne référence encore une nature : l'adapter `NaturesSansUsage` répond qu'aucune ne sert, jusqu'à ce que les postes puis les pointages en
   portent l'identifiant.
 
 ## Ports sortants

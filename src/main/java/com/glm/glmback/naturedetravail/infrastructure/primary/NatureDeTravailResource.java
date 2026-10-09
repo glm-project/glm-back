@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,7 +34,9 @@ import org.springframework.web.bind.annotation.RestController;
 
   Renommer une nature ne modifie qu'elle : son nouveau libelle s'affiche partout, rapports passes compris.
 
-  Le gestionnaire declare et renomme les natures ; l'operateur (role USER) les consulte.
+  Une nature se supprime tant qu'aucun poste ni aucun pointage ne s'en sert.
+
+  Le gestionnaire declare, renomme et supprime les natures ; l'operateur (role USER) les consulte.
   """
 )
 class NatureDeTravailResource {
@@ -79,5 +82,15 @@ class NatureDeTravailResource {
   @ApiResponse(responseCode = "409", description = "Une autre nature porte deja ce libelle, a la casse ou aux accents pres.")
   RestNatureDeTravail renomme(@PathVariable UUID id, @RequestBody @Valid RestLibelleDeNature request) {
     return RestNatureDeTravail.from(applicationService.renomme(new NatureDeTravailId(id), request.toDomain()));
+  }
+
+  @DeleteMapping("/{id}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @Operation(summary = "Supprimer une nature de travail", description = "Refuse tant qu'un poste ou un pointage s'en sert.")
+  @ApiResponse(responseCode = "204", description = "La nature est supprimee.")
+  @ApiResponse(responseCode = "404", description = "Nature de travail introuvable.")
+  @ApiResponse(responseCode = "409", description = "Un poste ou un pointage se sert de cette nature.")
+  void delete(@PathVariable UUID id) {
+    applicationService.delete(new NatureDeTravailId(id));
   }
 }

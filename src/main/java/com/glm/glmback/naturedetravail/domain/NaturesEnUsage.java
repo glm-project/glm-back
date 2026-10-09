@@ -8,6 +8,8 @@ import java.util.Set;
  * contextes.
  */
 public interface NaturesEnUsage {
+  boolean estUtilisee(NatureDeTravailId nature);
+
   /**
    * Les natures, parmi celles donnees, qui servent deja : une seule lecture pour toute une page.
    */

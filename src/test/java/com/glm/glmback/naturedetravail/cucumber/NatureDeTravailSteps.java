@@ -43,6 +43,28 @@ public class NatureDeTravailSteps {
     rest.put(BASE_URI + "/" + ids.get(libelle), JSON.writeValueAsString(Map.of("libelle", nouveauLibelle)));
   }
 
+  @When("je supprime la nature de travail {string}")
+  public void jeSupprimeLaNatureDeTravail(String libelle) {
+    rest.delete(BASE_URI + "/" + ids.get(libelle));
+  }
+
+  @Given("j'ai supprime la nature de travail {string}")
+  public void jaiSupprimeLaNatureDeTravail(String libelle) {
+    jeSupprimeLaNatureDeTravail(libelle);
+    assertThatLastResponse().hasHttpStatus(204);
+  }
+
+  @When("je supprime une nature de travail inconnue")
+  public void jeSupprimeUneNatureDeTravailInconnue() {
+    rest.delete(BASE_URI + "/" + UUID.randomUUID());
+  }
+
+  @Then("la nature de travail {string} n'est plus listee")
+  public void laNatureDeTravailNEstPlusListee(String libelle) {
+    jeListeLesNaturesDeTravail();
+    assertThat(CucumberRestTestContext.getElement("$.content[?(@.id == '" + ids.get(libelle) + "')]")).isEqualTo(List.of());
+  }
+
   @When("je renomme une nature de travail inconnue en {string}")
   public void jeRenommeUneNatureDeTravailInconnueEn(String nouveauLibelle) {
     rest.put(BASE_URI + "/" + UUID.randomUUID(), JSON.writeValueAsString(Map.of("libelle", nouveauLibelle)));

@@ -91,6 +91,41 @@ class NaturesDeTravailServiceTest {
   }
 
   @Test
+  void shouldDeleteUnusedNature() {
+    repository.create(natureDeTravailSoudage());
+
+    natures.delete(NATURE_DE_TRAVAIL_ID_SOUDAGE);
+
+    assertThat(repository.get(NATURE_DE_TRAVAIL_ID_SOUDAGE)).isEmpty();
+  }
+
+  @Test
+  void shouldNotDeleteUnknownNature() {
+    assertThatThrownBy(() -> natures.delete(NATURE_DE_TRAVAIL_ID_SOUDAGE))
+      .isExactlyInstanceOf(NatureIntrouvableException.class)
+      .hasMessageContaining(NATURE_DE_TRAVAIL_ID_SOUDAGE.uuid().toString());
+  }
+
+  @Test
+  void shouldNotDeleteUsedNature() {
+    repository.create(natureDeTravailSoudage());
+    usages.utilise(NATURE_DE_TRAVAIL_ID_SOUDAGE);
+
+    assertThatThrownBy(() -> natures.delete(NATURE_DE_TRAVAIL_ID_SOUDAGE))
+      .isExactlyInstanceOf(NatureUtiliseeException.class)
+      .hasMessageContaining(NATURE_DE_TRAVAIL_ID_SOUDAGE.uuid().toString());
+    assertThat(repository.get(NATURE_DE_TRAVAIL_ID_SOUDAGE)).contains(natureDeTravailSoudage());
+  }
+
+  @Test
+  void shouldDeclareAgainDeletedNature() {
+    NatureDeTravail declaree = natures.declare(LIBELLE_SOUDAGE);
+    natures.delete(declaree.id());
+
+    assertThat(natures.declare(LIBELLE_SOUDAGE).libelle()).isEqualTo(LIBELLE_SOUDAGE);
+  }
+
+  @Test
   void shouldListNaturesByKey() {
     repository.create(natureDeTravailTournage());
     repository.create(natureDeTravailSoudage());
