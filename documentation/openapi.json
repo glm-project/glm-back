@@ -1242,13 +1242,19 @@
             "example" : "Soudage",
             "type" : "string"
           },
+          "postes" : {
+            "description" : "Nombre de postes qui portent la nature. Une nature sans poste peut rester utilisee, si du temps a ete pointe sous elle.",
+            "example" : 3,
+            "format" : "int32",
+            "type" : "integer"
+          },
           "utilisee" : {
             "description" : "Un poste ou un pointage se sert de la nature : elle ne peut pas etre supprimee.",
             "example" : true,
             "type" : "boolean"
           }
         },
-        "required" : [ "id", "libelle", "utilisee" ],
+        "required" : [ "id", "libelle", "postes", "utilisee" ],
         "type" : "object"
       },
       "RestOperateur" : {

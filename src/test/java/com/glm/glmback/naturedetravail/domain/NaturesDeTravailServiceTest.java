@@ -51,7 +51,7 @@ class NaturesDeTravailServiceTest {
     NatureDeTravailListee renommee = natures.renomme(NATURE_DE_TRAVAIL_ID_SOUDAGE, new LibelleDeNature("Soudure"));
 
     NatureDeTravail attendue = new NatureDeTravail(NATURE_DE_TRAVAIL_ID_SOUDAGE, new LibelleDeNature("Soudure"));
-    assertThat(renommee).isEqualTo(new NatureDeTravailListee(attendue, false));
+    assertThat(renommee).isEqualTo(new NatureDeTravailListee(attendue, false, 0));
     assertThat(repository.get(NATURE_DE_TRAVAIL_ID_SOUDAGE)).contains(attendue);
   }
 
@@ -133,7 +133,7 @@ class NaturesDeTravailServiceTest {
     repository.create(natureDeTravailSoudage());
     usages.pointe(NATURE_DE_TRAVAIL_ID_SOUDAGE);
 
-    assertThat(natures.list(firstPageOfTen()).content()).containsExactly(new NatureDeTravailListee(natureDeTravailSoudage(), true));
+    assertThat(natures.list(firstPageOfTen()).content()).containsExactly(new NatureDeTravailListee(natureDeTravailSoudage(), true, 0));
   }
 
   @Test
@@ -172,9 +172,28 @@ class NaturesDeTravailServiceTest {
     usages.utilise(NATURE_DE_TRAVAIL_ID_SOUDAGE);
 
     assertThat(natures.list(firstPageOfTen()).content()).containsExactly(
-      new NatureDeTravailListee(natureDeTravailSoudage(), true),
-      new NatureDeTravailListee(natureDeTravailTournage(), false)
+      new NatureDeTravailListee(natureDeTravailSoudage(), true, 1),
+      new NatureDeTravailListee(natureDeTravailTournage(), false, 0)
     );
+  }
+
+  @Test
+  void shouldCountPostesOfListedNatures() {
+    repository.create(natureDeTravailSoudage());
+    usages.utilise(NATURE_DE_TRAVAIL_ID_SOUDAGE);
+    usages.utilise(NATURE_DE_TRAVAIL_ID_SOUDAGE);
+    usages.utilise(NATURE_DE_TRAVAIL_ID_SOUDAGE);
+
+    assertThat(natures.list(firstPageOfTen()).content()).extracting(NatureDeTravailListee::postes).containsExactly(3);
+  }
+
+  @Test
+  void shouldTellPostesOfRenamedNature() {
+    repository.create(natureDeTravailSoudage());
+    usages.utilise(NATURE_DE_TRAVAIL_ID_SOUDAGE);
+    usages.utilise(NATURE_DE_TRAVAIL_ID_SOUDAGE);
+
+    assertThat(natures.renomme(NATURE_DE_TRAVAIL_ID_SOUDAGE, LIBELLE_TOURNAGE).postes()).isEqualTo(2);
   }
 
   @Test
@@ -184,7 +203,7 @@ class NaturesDeTravailServiceTest {
 
     Page<NatureDeTravailListee> page = natures.list(new Pageable(1, 1));
 
-    assertThat(page.content()).containsExactly(new NatureDeTravailListee(natureDeTravailTournage(), false));
+    assertThat(page.content()).containsExactly(new NatureDeTravailListee(natureDeTravailTournage(), false, 0));
     assertThat(page.currentPage()).isEqualTo(1);
     assertThat(page.pageSize()).isEqualTo(1);
     assertThat(page.totalElementsCount()).isEqualTo(2);

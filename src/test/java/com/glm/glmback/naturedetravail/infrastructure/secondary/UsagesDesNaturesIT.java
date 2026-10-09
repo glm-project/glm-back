@@ -118,6 +118,24 @@ class UsagesDesNaturesIT {
 
   @Test
   @WithTenant(NATURES_FIXTURE)
+  void shouldCountPostesOfGivenNatures() {
+    NatureDeTravailId deuxPostes = natureDeclaree();
+    NatureDeTravailId pointeeSansPoste = natureDeclaree();
+    posteDeLaNature(deuxPostes);
+    posteDeLaNature(deuxPostes);
+    pointageDeLaNature(pointeeSansPoste);
+
+    assertThat(inTransaction(() -> usages.postesParmi(List.of(deuxPostes, pointeeSansPoste)))).containsExactly(entry(deuxPostes, 2));
+  }
+
+  @Test
+  @WithTenant(NATURES_FIXTURE)
+  void shouldCountNoPosteAmongNone() {
+    assertThat(inTransaction(() -> usages.postesParmi(List.of()))).isEmpty();
+  }
+
+  @Test
+  @WithTenant(NATURES_FIXTURE)
   void shouldSeeNoUsedNatureAmongNone() {
     assertThat(inTransaction(() -> usages.utiliseesParmi(List.of()))).isEmpty();
   }
