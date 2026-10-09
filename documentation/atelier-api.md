@@ -94,7 +94,8 @@ Ces libellés sont **relus à chaque appel**, jamais figés : une fiche corrigé
 l'historique. Ne pas les mettre en cache côté front au-delà de la session d'écran.
 
 La `nature` fait exception : elle est **copiée au moment de la saisie**, et elle vient du **poste**, pas de la personne.
-Un poste requalifié plus tard ne requalifie pas les heures déjà passées.
+Un poste requalifié plus tard ne requalifie pas les heures déjà passées. Le journal en retient l'identifiant et le champ
+`nature` en donne le libellé courant : une nature renommée s'affiche renommée, rapports passés compris.
 
 `coutHoraire` et `tauxHoraire` suivent exactement la même règle : copiés sur l'événement au moment du pointage
 (coût du poste, taux de l'opérateur), jamais recalculés à la lecture. Ils sont absents quand la source du référentiel

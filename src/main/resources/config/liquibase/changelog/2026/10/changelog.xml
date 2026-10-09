@@ -15,4 +15,5 @@
   <include file="013-pointage_ignore_d_atelier.xml" relativeToChangelogFile="true" />
   <include file="014-nature_de_travail.xml" relativeToChangelogFile="true" />
   <include file="015-poste_reference_sa_nature.xml" relativeToChangelogFile="true" />
+  <include file="016-pointage_recopie_id_de_nature.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>

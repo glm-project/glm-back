@@ -13,9 +13,11 @@ import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
+import jakarta.persistence.EntityManager;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -30,6 +32,9 @@ class InstantsDAtelierExactsIT {
   private TransactionTemplate transactions;
 
   @Autowired
+  private EntityManager entities;
+
+  @Autowired
   private com.glm.glmback.feuilledetemps.domain.ActivitesDeLOperateur feuille;
 
   @Autowired
@@ -40,6 +45,11 @@ class InstantsDAtelierExactsIT {
 
   @Autowired
   private com.glm.glmback.pupitre.domain.SuivisOuvertsDuPupitre pupitre;
+
+  @BeforeEach
+  void declarerLesNaturesDesFixtures() {
+    NaturesDesFixtures.declarer(entities, transactions, "impeccmold");
+  }
 
   @Test
   @WithTenant("impeccmold")

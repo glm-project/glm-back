@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.Immutable;
 
 /** Lecture privee des activites interpretees par atelier et de leurs tarifs captures. */
@@ -31,6 +32,10 @@ class ActiviteValoriseeEntity {
   @Column(name = "poste_id")
   private UUID posteId;
 
+  /**
+   * Le libelle courant de la nature : le pointage n'en recopie que l'identifiant.
+   */
+  @Formula("(select referentiel.libelle from nature_de_travail referentiel where referentiel.id = nature_id)")
   private String nature;
 
   @Enumerated(EnumType.STRING)

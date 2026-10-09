@@ -22,6 +22,7 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.Immutable;
 
 /** Vue privee en lecture seule de l'interpretation possedee par atelier. */
@@ -43,6 +44,10 @@ class ActiviteDeLaFeuilleDeTempsEntity {
   @Column(name = "poste_id")
   private UUID posteId;
 
+  /**
+   * Le libelle courant de la nature : le pointage n'en recopie que l'identifiant.
+   */
+  @Formula("(select referentiel.libelle from nature_de_travail referentiel where referentiel.id = nature_id)")
   private String nature;
 
   @Enumerated(EnumType.STRING)

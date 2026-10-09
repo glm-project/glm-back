@@ -8,9 +8,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.glm.glmback.IntegrationTest;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
+import com.glm.glmback.atelier.infrastructure.secondary.NaturesDesFixtures;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.time.domain.Clock;
+import jakarta.persistence.EntityManager;
 import java.time.Instant;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -31,8 +34,16 @@ class DossierAnomalieResourceIT {
   @Autowired
   private TransactionTemplate transactions;
 
+  @Autowired
+  private EntityManager entities;
+
   @MockitoBean
   private Clock clock;
+
+  @BeforeEach
+  void declarerLesNaturesDesFixtures() {
+    NaturesDesFixtures.declarer(entities, transactions, "dossier_fixture");
+  }
 
   @Test
   @WithTenant("dossier_fixture")

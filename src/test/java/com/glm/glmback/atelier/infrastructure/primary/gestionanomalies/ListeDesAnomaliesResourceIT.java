@@ -8,9 +8,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.glm.glmback.IntegrationTest;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
+import com.glm.glmback.atelier.infrastructure.secondary.NaturesDesFixtures;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
+import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -32,6 +35,14 @@ class ListeDesAnomaliesResourceIT {
 
   @Autowired
   private TransactionTemplate transactions;
+
+  @Autowired
+  private EntityManager entities;
+
+  @BeforeEach
+  void declarerLesNaturesDesFixtures() {
+    NaturesDesFixtures.declarer(entities, transactions, "impeccmold");
+  }
 
   @Test
   @WithTenant("impeccmold")

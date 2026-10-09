@@ -13,6 +13,7 @@ import com.glm.glmback.atelier.domain.LectureDeSupervision;
 import com.glm.glmback.atelier.domain.LecturesDeSupervision;
 import com.glm.glmback.atelier.domain.LibelleDePoste;
 import com.glm.glmback.atelier.domain.NatureDOperation;
+import com.glm.glmback.atelier.domain.NatureDOperationId;
 import com.glm.glmback.atelier.domain.Nom;
 import com.glm.glmback.atelier.domain.NomDElement;
 import com.glm.glmback.atelier.domain.OperateurConnu;
@@ -60,7 +61,7 @@ class JpaLecturesDeSupervision implements LecturesDeSupervision {
     List<?> rows = entities.createNativeQuery("select id, nom, prenom from operateur order by id", Tuple.class).getResultList();
     List<?> habilitations = entities
       .createNativeQuery(
-        "select distinct op.operateur_id, n.libelle as nature from operateur_poste op join poste_de_travail p on p.id = op.poste_id join nature_de_travail n on n.id = p.nature_id order by op.operateur_id, n.libelle",
+        "select distinct op.operateur_id, n.id as nature_id, n.libelle as nature from operateur_poste op join poste_de_travail p on p.id = op.poste_id join nature_de_travail n on n.id = p.nature_id order by op.operateur_id, n.libelle",
         Tuple.class
       )
       .getResultList();
@@ -70,7 +71,10 @@ class JpaLecturesDeSupervision implements LecturesDeSupervision {
       .collect(
         Collectors.groupingBy(
           row -> row.get("operateur_id", UUID.class),
-          Collectors.mapping(row -> new NatureDOperation(row.get("nature", String.class)), Collectors.toList())
+          Collectors.mapping(
+            row -> new NatureDOperation(new NatureDOperationId(row.get("nature_id", UUID.class)), row.get("nature", String.class)),
+            Collectors.toList()
+          )
         )
       );
     return rows
@@ -86,7 +90,7 @@ class JpaLecturesDeSupervision implements LecturesDeSupervision {
         """
         select a.id as id, a.operateurId as operateurId, a.categorie as categorie, a.debut as debut, a.echeance as echeance,
         s.elementId as elementId, s.elementNom as elementNom, s.elementCategorie as elementCategorie, e.reference as reference,
-          a.posteId as posteId, p.libelle as posteLibelle, a.nature as nature
+          a.posteId as posteId, p.libelle as posteLibelle, a.natureId as natureId, a.nature as nature
         from ActiviteDAtelierEntity a join a.suivi s
           left join ElementEngageableEntity e on e.id = s.elementId
           left join PosteConnuEntity p on p.id = a.posteId
@@ -118,7 +122,9 @@ class JpaLecturesDeSupervision implements LecturesDeSupervision {
       new PosteDeSupervision(
         new PosteDeTravailId(id),
         new LibelleDePoste(row.get("posteLibelle", String.class)),
-        Optional.ofNullable(row.get("nature", String.class)).map(NatureDOperation::new)
+        Optional.ofNullable(row.get("natureId", UUID.class)).map(natureId ->
+          new NatureDOperation(new NatureDOperationId(natureId), row.get("nature", String.class))
+        )
       )
     );
   }

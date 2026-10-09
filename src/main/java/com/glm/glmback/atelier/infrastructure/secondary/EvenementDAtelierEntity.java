@@ -7,6 +7,7 @@ import com.glm.glmback.atelier.domain.EvenementDAtelier;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.Horodatage;
 import com.glm.glmback.atelier.domain.NatureDOperation;
+import com.glm.glmback.atelier.domain.NatureDOperationId;
 import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.OrigineDuPointage;
 import com.glm.glmback.atelier.domain.PosteDeTravailId;
@@ -29,6 +30,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import org.hibernate.annotations.Formula;
 
 @Entity
 @Table(name = "evenement_d_atelier")
@@ -57,6 +59,13 @@ class EvenementDAtelierEntity {
   @Column(name = "poste_id")
   private UUID posteId;
 
+  @Column(name = "nature_id")
+  private UUID natureId;
+
+  /**
+   * Le libelle courant de la nature : le pointage n'en recopie que l'identifiant.
+   */
+  @Formula("(select referentiel.libelle from nature_de_travail referentiel where referentiel.id = nature_id)")
   private String nature;
 
   @Column(name = "cout_horaire", precision = 10, scale = 2)
@@ -93,7 +102,12 @@ class EvenementDAtelierEntity {
     activiteViseeId = evenement.activiteVisee().map(ActiviteId::uuid).orElse(null);
     operateurId = evenement.operateur().uuid();
     posteId = evenement.poste().map(PosteDeTravailId::uuid).orElse(null);
-    nature = evenement.nature().map(NatureDOperation::value).orElse(null);
+    natureId = evenement
+      .nature()
+      .map(nature -> nature.id().uuid())
+      .orElse(null);
+    // Jamais ecrit : garde le libelle pour une relecture dans la meme session, avant que la jointure ne le recalcule.
+    nature = evenement.nature().map(NatureDOperation::libelle).orElse(null);
     coutHoraire = evenement.coutHoraire().map(CoutHoraire::value).orElse(null);
     tauxHoraire = evenement.tauxHoraire().map(TauxHoraire::value).orElse(null);
     dureeMaxSecondes = evenement
@@ -122,7 +136,7 @@ class EvenementDAtelierEntity {
       .activiteVisee(Optional.ofNullable(activiteViseeId).map(ActiviteId::new))
       .operateur(new OperateurId(operateurId))
       .poste(Optional.ofNullable(posteId).map(PosteDeTravailId::new))
-      .nature(Optional.ofNullable(nature).map(NatureDOperation::new))
+      .nature(Optional.ofNullable(natureId).map(id -> new NatureDOperation(new NatureDOperationId(id), nature)))
       .coutHoraire(Optional.ofNullable(coutHoraire).map(CoutHoraire::new))
       .tauxHoraire(Optional.ofNullable(tauxHoraire).map(TauxHoraire::new))
       .dureeMax(Optional.ofNullable(dureeMaxSecondes).map(secondes -> new MaximumActivityDuration(Duration.ofSeconds(secondes))))

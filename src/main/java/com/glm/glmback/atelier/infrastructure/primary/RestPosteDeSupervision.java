@@ -11,6 +11,10 @@ record RestPosteDeSupervision(
   String nature
 ) {
   static RestPosteDeSupervision from(PosteDeSupervision poste) {
-    return new RestPosteDeSupervision(poste.id().uuid(), poste.libelle().value(), poste.nature().map(NatureDOperation::value).orElse(null));
+    return new RestPosteDeSupervision(
+      poste.id().uuid(),
+      poste.libelle().value(),
+      poste.nature().map(NatureDOperation::libelle).orElse(null)
+    );
   }
 }

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <changeSet id="pointage_recopie_id_de_nature" author="glm">
+    <preConditions
+      onFail="HALT"
+      onError="HALT"
+      onFailMessage="Des pointages portent une nature en texte libre, d'avant le referentiel des natures. Aucun client n'etant deploye, ce schema se remet a zero : supprimer le schema de l'entreprise (DROP SCHEMA ... CASCADE), en gardant public.tenant, puis redemarrer. Voir glm-back#129."
+    >
+      <sqlCheck expectedResult="0">select (select count(*) from evenement_d_atelier) + (select count(*) from activite_d_atelier)</sqlCheck>
+    </preConditions>
+    <comment>
+      Le journal ne recopie plus le libelle de la nature du poste mais son identifiant, toujours au moment de la
+      saisie : changer la nature d'un poste ne touche pas les pointages passes. Le libelle se relit par jointure, si
+      bien qu'un ordre pointe avant et apres le renommage d'une nature ne la compte qu'une fois. La nature reste
+      facultative. Comme operateur_id et poste_id, nature_id ne porte aucune cle etrangere : le journal ne depend
+      d'aucun referentiel par le schema, et c'est le domaine du referentiel qui refuse de supprimer une nature pointee.
+      L'index sert cette question de presence.
+    </comment>
+
+    <dropColumn tableName="evenement_d_atelier" columnName="nature" />
+    <addColumn tableName="evenement_d_atelier">
+      <column name="nature_id" type="${uuidType}" />
+    </addColumn>
+    <createIndex indexName="ix_evenement_d_atelier_nature" tableName="evenement_d_atelier">
+      <column name="nature_id" />
+    </createIndex>
+
+    <dropColumn tableName="activite_d_atelier" columnName="nature" />
+    <addColumn tableName="activite_d_atelier">
+      <column name="nature_id" type="${uuidType}" />
+    </addColumn>
+  </changeSet>
+</databaseChangeLog>
