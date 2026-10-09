@@ -6,14 +6,14 @@ Les règles communes sont dans [glm-back/AGENTS.md](../../../../../../../AGENTS.
 ## Responsabilité et vocabulaire
 
 Relever le temps opérationnel d'un opérateur sur une semaine ISO explicite : sept jours du lundi au dimanche,
-le journal brut des gestes actifs et les éléments touchés. Cette projection est purement lectrice et ne possède
+le journal brut des pointages et les éléments touchés. Cette projection est purement lectrice et ne possède
 aucune table. Elle ne calcule aucun montant.
 
 `SyntheseDesHeures` porte l'opérateur résolu, la semaine, les `JourDeSynthese` et les `ElementDeLaSynthese`.
 Le jour porte ses pointages et sa durée opérationnelle. L'élément porte son identité engagée, sa fiche relue,
 sa durée totale, sa part de non-conformité et ses couples poste/nature. `DureeTotale` porte une valeur certaine.
 
-Atelier possède l'interprétation des gestes et les corrections. `ActiviteInterpretee` reçoit cette interprétation ;
+Atelier possède l'interprétation des gestes et la régularisation. `ActiviteInterpretee` reçoit cette interprétation ;
 `ActiviteLue` conserve son identité, son état et ses bornes entières après évaluation. `DecoupageCalendaire` produit
 les portions dont la synthèse additionne les durées. Le journal brut est lu séparément, sans déduire ses pointages
 à partir des activités sélectionnées.
@@ -21,7 +21,7 @@ les portions dont la synthèse additionne les durées. Le journal brut est lu s�
 ## Invariants
 
 - `ActivitesDeLOperateur` lit `activite_d_atelier` par une entité propre `@Immutable`, jointe au suivi pour
-  l'élément engagé. La sélection porte sur le recouvrement de la semaine par le début et la fin réelle, ou l'échéance, hors activité que le moteur juge à résoudre (`a_resoudre = false`),
+  l'élément engagé. La sélection porte sur le recouvrement de la semaine par le début et la fin réelle, ou l'échéance,
   sans borne basse fixe du début : une régularisation peut dépasser 13 h, voire une semaine.
 - `SynthesesDesHeuresService` reçoit l'instant facultatif `evaluation`. L'heure du serveur est relevée une seule
   fois pour l'instant par défaut et la borne future ; l'instant utilisé gouverne l'expiration, le découpage des
@@ -43,7 +43,7 @@ les portions dont la synthèse additionne les durées. Le journal brut est lu s�
   Somme des jours = somme des éléments = durée opérationnelle de la semaine.
 - Le total du jour, de l'élément et de la semaine comprend travail et NC ; la part de NC dépend seulement de la NC.
   Une activité en cours ne contribue pas à la durée.
-- `JournalDeLOperateur` rend tous les pointages actifs datés de la semaine, même sans activité interprétable.
+- `JournalDeLOperateur` rend tous les pointages datés de la semaine, même sans activité.
   Chaque geste porte son identité, son type, son élément et son poste. Le tri est total : heure métier, la fin avant l'ouverture, identité du pointage. L'heure
   d'enregistrement et l'identité de l'élément ne départagent jamais les gestes simultanés.
 - Tout élément portant une portion d'activité ou un pointage dans la semaine est rendu, par première apparition
@@ -65,8 +65,8 @@ et les postes sont chacun lus par lots.
 
 `src/test/features/synthese_des_heures.feature` écrit réellement par l'API d'atelier avec
 `EcrituresDuJournalDAtelier`, puis lit la synthèse. Les tableaux d'activité sont parallèles à ceux de
-`feuille_de_temps.feature` : mêmes heures et mêmes décisions pour relances, transitions, fins tardives,
-régularisations, corrections, annulations et clôtures. `DecoupageCalendaireTest` conserve les preuves de semaines ISO,
+`feuille_de_temps.feature` : mêmes heures et mêmes décisions pour les fins pointées, les fins automatiques,
+les régularisations et les clôtures. `DecoupageCalendaireTest` conserve les preuves de semaines ISO,
 minuit et changements d'heure. Les textes de steps Cucumber doivent rester uniques dans tout le dépôt.
 
 ## Lecture d’un poste de nuit

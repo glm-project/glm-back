@@ -6,6 +6,9 @@ Accepted on 8 October 2026, first applied to the product categories (glm-back#10
 #107 contracted. `shared/elementtype/LegacyElementType`, cited below as the translation of that first application, was
 removed with the old field.
 
+Amended on 9 October 2026 with one dated exception, [glm-front#254](#exception-removal-of-the-conflict-contract-glm-front254).
+The rule is unchanged for every other change.
+
 ## Context
 
 glm-front consumes the API through types generated from `documentation/openapi.json`. The back and the front are
@@ -68,3 +71,28 @@ these three steps.
 - An error code is part of the API, but a response carries only one `type`. Renaming one therefore inverts the
   first two steps: the front first recognises both codes, then the back returns the new one, then the front forgets
   the old one.
+
+## Exception: removal of the conflict contract (glm-front#254)
+
+On 9 October 2026 the back removed in a single step the routes and fields of the conflict model, instead of expanding,
+migrating and contracting:
+
+- routes: `…/anomalies/{pointage}/apercus`, `…/confirmations-de-resolution`, `…/evenements/{id}/annulation`,
+  `PUT …/evenements/{id}` and `GET …/suivis/{id}/temps-effectif`, and the `nature` parameter of the list of anomalies;
+- fields: `conflits`, `sequencesEnConflit`, `intention`, `cible`, `contradictoires`, `bloquants`, `finAuPlusTard`,
+  `PARTAGE_INCONNU`, the `A_RESOUDRE` states and the `complete` flag of the totals, and most of the dossier of an
+  anomaly (`kind`, `enConflit`, `diagnostics`, `sequence`, `perimetre`, `continuations`);
+- shapes: the list of anomalies became a `Page` of `RestFinAutomatiqueEnListe`, and a punch no longer carries
+  `intention` or `cible`.
+
+Three conditions made the exception acceptable, and none of them is a general licence:
+
+1. **One deployment window.** The back is deployed in the same window as the merge of the single front PR, which goes
+   to production on every push to `main`. No deployed front ever meets a back that lacks what it reads.
+2. **Purged databases.** Every database is purged before the new model, so no data carries the removed concepts and no
+   migration or compatibility field is needed.
+3. **Reset pupitres.** Each pupitre is reset at deployment, without migration code, so none keeps an older bundle or a
+   queue of gestures in the old shape.
+
+Expand, migrate, contract would have kept the whole conflict engine alive for two releases to serve a contract that no
+client would use after the window. The next change that an existing client would notice follows the three steps again.

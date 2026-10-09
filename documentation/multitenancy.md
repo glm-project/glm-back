@@ -189,7 +189,7 @@ Le realm `glmproject` contient six utilisateurs d'entreprise, mot de passe egal 
 Les utilisateurs historiques `admin` et `user` portent `tenant: impeccmold`.
 
 **C'est `ROLE_GESTIONNAIRE`, et non `ROLE_ADMIN`, qui ouvre les actes metier** (creation, modification, suppression,
-engagement, cloture, corrections). `ROLE_ADMIN` est reserve a l'administration technique — `/api/admin/**` et
+engagement, cloture, regularisation). `ROLE_ADMIN` est reserve a l'administration technique — `/api/admin/**` et
 `/management/**` — et ne donne aucun acces au metier : un `admin.*` ne peut que lire, via son `ROLE_USER`. Pour
 travailler sur l'API metier en developpement, se connecter en `gestionnaire.*`.
 

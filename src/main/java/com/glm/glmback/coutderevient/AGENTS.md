@@ -7,7 +7,7 @@ Les règles communes sont dans [AGENTS.md](../../../../../../../AGENTS.md), la j
 
 Lire le coût d'un élément de fabrication, tous ses passages en atelier confondus, une ligne par nature.
 Le contexte possède son modèle de lecture et ses entités JPA `@Immutable`, sans table ni écriture.
-La capture, les corrections et l'interprétation des faits appartiennent à `atelier` : lire ses projections,
+La capture, la régularisation et l'interprétation des faits appartiennent à `atelier` : lire ses projections,
 sans importer son domaine ni rejouer son journal. Les références de l'élément restent relues au référentiel.
 Le calendrier appartient aux lecteurs hebdomadaires ; la valorisation utilise les tarifs figés sur les faits.
 
@@ -21,12 +21,11 @@ dès celle-ci, borne incluse, avec sa période dans `finsAutomatiques` pour sign
 
 Une activité en cours est entièrement exclue du temps, des coûts et du diviseur. Le rapport rend son nombre
 via `activitesEnCours`. Ne jamais fabriquer une fin à l'instant de lecture pour la valoriser.
-Les transitions, fins reçues tardivement, régularisations, corrections, annulations et clôtures sont déjà
-interprétées par atelier ; le coût lit leurs nouvelles bornes à chaque appel.
+Les fins pointées, les régularisations et les clôtures sont déjà interprétées par atelier ; le coût lit leurs
+bornes à chaque appel.
 
-Les tarifs viennent du **fait ouvrant actif** de l'activité, figés à sa saisie. Son identité reste celle de
-l'ouverture d'origine après correction ; lire `ouverture_id` pour les tarifs, jamais le tarif courant du poste
-ou de l'opérateur, ni un ancien ouvrant annulé.
+Les tarifs viennent du **fait ouvrant** de l'activité, figés à sa saisie ; lire `ouverture_id` pour les tarifs, jamais
+le tarif courant du poste ou de l'opérateur.
 
 ## Valorisation
 
@@ -42,13 +41,10 @@ ou de l'opérateur, ni un ancien ouvrant annulé.
   ([ADR 0004](../../../../../../../documentation/adr/0004-split-the-operator-cost-to-the-cent.md)). Arrondir la
   machine une fois par activité. La ligne et le rapport n'additionnent que des montants déjà arrondis.
 
-## Activités à résoudre
+## Valeurs
 
-Une activité que le moteur d'atelier juge à résoudre n'est lue par aucun calcul : les requêtes de `activite_d_atelier`
-filtrent `a_resoudre = false`, et le rapport ne rend ni conflit ni pointage contradictoire. Le filtre reste jusqu'à
-ce que le moteur disparaisse. Un taux absent donne zéro, indépendant du diviseur. Aucun tarif ne doit être inventé.
-
-Chaque durée et montant porte sa `valeur`, toujours connue.
+Chaque durée et montant porte sa `valeur`, toujours connue. Un taux absent donne zéro, indépendant du diviseur.
+Aucun tarif ne doit être inventé.
 
 ## Contrat et vérification
 

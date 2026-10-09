@@ -30,11 +30,11 @@ contrôleur. Un 403 inexpliqué en développement, c'est presque toujours ça.
 
 ### Les trois rôles
 
-| Rôle           | Ce qu'il ouvre                                                                                        |
-| -------------- | ----------------------------------------------------------------------------------------------------- |
-| `USER`         | L'opérateur : pointer ses activités, lire.                                                            |
-| `GESTIONNAIRE` | Tout ce que fait un `USER`, plus engager, clôturer et corriger (`regularise` / `annule` / `corrige`). |
-| `ADMIN`        | Administration technique (`/api/admin/**`, `/management/**`) uniquement. **Aucun accès métier.**      |
+| Rôle           | Ce qu'il ouvre                                                                                   |
+| -------------- | ------------------------------------------------------------------------------------------------ |
+| `USER`         | L'opérateur : pointer ses activités, lire.                                                       |
+| `GESTIONNAIRE` | Tout ce que fait un `USER`, plus engager, clôturer et régulariser la fin d'une activité échue.   |
+| `ADMIN`        | Administration technique (`/api/admin/**`, `/management/**`) uniquement. **Aucun accès métier.** |
 
 Un `admin.*` qui appelle une route de gestion reçoit 403 : c'est voulu. Utilisateurs de développement (mot de passe
 égal au login) : `gestionnaire.impeccmold`, `user.impeccmold`, `gestionnaire.katilys`, `user.katilys`.
@@ -51,7 +51,7 @@ qui saisit n'est pas forcément celui dont on compte le temps.
 
 Le détail d'atelier reconstruit son agrégat depuis les faits du journal. Atelier réconcilie aussi ses projections
 d'activités à chaque écriture ; la feuille, la synthèse, le coût et le référentiel pupitre lisent
-cette interprétation et évaluent l'expiration à leur instant explicite. Une correction recalcule donc les bornes
+cette interprétation et évaluent l'expiration à leur instant explicite. Une régularisation recalcule donc les bornes
 et leurs conséquences dans les rapports.
 
 Conséquence directe pour le front : après toute écriture, la réponse contient déjà l'agrégat entièrement recalculé.
@@ -73,8 +73,7 @@ Un affichage honnête montre l'heure métier, et signale la saisie différée pa
 
 Cet écart ne fait pas une régularisation : un pointage rejoué par un pupitre resté hors ligne arrive lui aussi après
 coup. Le booléen `estUneRegularisation` dit l'**acte** qui a porté le fait au journal : vrai pour une régularisation
-(`POST …/regularisations`) et pour le remplaçant d'une correction (`PUT …/evenements/{evtId}`), même saisis à l'heure
-du fait ; faux pour tout ce qui passe par `POST …/pointages`, quels que soient le rôle de l'utilisateur et la
+(`POST …/regularisations`), même saisie à l'heure du fait ; faux pour tout ce qui passe par `POST …/pointages`, quels que soient le rôle de l'utilisateur et la
 `dateDeSurvenue` fournie. Jamais l'identité de l'auteur.
 
 Le booléen `estSaisiParUnTiers` **n'existe plus** : l'auteur est un identifiant de connexion et l'opérateur une fiche du
@@ -108,19 +107,17 @@ sans arrondi implicite.
 
 ### L'habilitation est une règle dure
 
-Pointer sur un poste où l'opérateur n'est pas déclaré répond **409**. C'est vrai du pointage comme de la régularisation
-et de la correction. Un écran de pupitre doit donc **ne proposer que les postes de l'opérateur choisi**, lisibles dans
+Pointer sur un poste où l'opérateur n'est pas déclaré répond **409**. C'est vrai du pointage comme de la régularisation. Un écran de pupitre doit donc **ne proposer que les postes de l'opérateur choisi**, lisibles dans
 `GET /api/operateurs/{id}`, plutôt que laisser le serveur refuser.
 
 La règle ne joue que si un poste est fourni : sans parc machine, il n'y a rien à habiliter.
 
-### Un événement annulé reste au journal
+### Le journal ne se réécrit jamais
 
-`annule` ne supprime rien : l'événement demeure, porteur de son objet `annulation` (auteur, date, motif), et le repli
-l'écarte du calcul. Le `journal` rendu par l'API **contient donc les événements annulés**.
-
-Pour un écran d'atelier, filtrer sur `annulation == null`. Pour un écran d'audit, tout montrer — c'est là tout
-l'intérêt de les conserver.
+Aucun événement n'est annulé, corrigé ni supprimé : le `journal` rendu par l'API contient tous les faits acceptés, et
+rien d'autre. Un pointage ignoré n'y entre pas (voir [Un pointage est jugé à sa
+réception](#un-pointage-est-jugé-à-sa-réception)). Le gestionnaire ne fait qu'une chose sur le journal : régulariser la
+fin d'une activité échue.
 
 ### La pause se traduit en faits d'activité
 
@@ -154,7 +151,7 @@ La même échéance vaut pour les gestes, jugés sur leur heure métier, quel qu
   la nouvelle activité s'ouvre à son heure, et rien n'est compté entre les deux ;
 - une **clôture** postérieure à l'échéance ne prolonge rien ;
 - seul le gestionnaire établit une fin réelle au-delà de l'échéance, en **régularisant** la fin
-  (`POST …/regularisations`). Corriger un début déplace l'échéance : l'activité peut redevenir en cours.
+  (`POST …/regularisations`).
 
 ### Un pointage est jugé à sa réception
 
@@ -207,8 +204,7 @@ Pour le gestionnaire, un pointage ignoré ne crée aucune anomalie : il ne trait
 
 ### Le journal se lit par clé, une seule fois
 
-Le journal est la source de vérité, et sa lecture est la seule interprétation : il n'y a ni séquence en conflit, ni activité
-« à résoudre ». Les faits de chaque clé (opérateur, poste) se lisent dans l'ordre de l'heure du geste, la `FIN` avant
+Le journal est la source de vérité, et sa lecture est la seule interprétation. Les faits de chaque clé (opérateur, poste) se lisent dans l'ordre de l'heure du geste, la `FIN` avant
 l'ouverture à heure égale, puis par identifiant — jamais par l'ordre de réception :
 
 - une `FIN` du pupitre ferme l'activité en cours de sa clé, sans la désigner ;
@@ -244,7 +240,7 @@ valeur `null`). Tous les autres champs sont conservés : `id`, `element`, `nom`,
 `etat`, `cloturePar`, `clotureLe` et `activitesEnCours`. L'état et les activités restent calculés par le serveur depuis
 le journal ; ce changement allège la réponse HTTP et le cache du pupitre, pas la relecture en base.
 
-Le journal complet, **événements annulés compris**, se lit via `GET /api/atelier/suivis/{id}`, qui conserve
+Le journal complet se lit via `GET /api/atelier/suivis/{id}`, qui conserve
 `RestSuiviDAtelier`, comme les réponses des actes métier. Un consommateur qui lisait le journal dans la liste doit
 utiliser le détail. Côté `glm-front`, générer le contrat depuis la révision backend épinglée avec
 `npm run api:generate`, conformément à son guide API. La limite de pagination de la grille reste un suivi côté front.
@@ -285,10 +281,10 @@ Les états d'un élément :
 
 | `etat`       | Sens                                                                                        |
 | ------------ | ------------------------------------------------------------------------------------------- |
-| `EN_ATTENTE` | Engagé, aucun pointage actif. Personne n'y a encore touché.                                 |
+| `EN_ATTENTE` | Engagé, aucun pointage. Personne n'y a encore touché.                                       |
 | `EN_COURS`   | Au moins une activité en cours à l'instant de la lecture — **y compris en non conformité**. |
 | `INTERROMPU` | Il y a eu du travail, mais plus aucune activité n'est en cours : terminée, ou échue.        |
-| `CLOTURE`    | Clôturé. N'accepte plus de pointage (409), mais reste corrigeable.                          |
+| `CLOTURE`    | Clôturé. N'accepte plus d'ouverture (409), mais la régularisation reste possible.           |
 
 Attention : une non conformité **ne fait pas** passer à `INTERROMPU`. L'activité reste ouverte — ce temps-là se compte
 aussi —, seule sa `categorie` change. Pour signaler visuellement une non conformité, lire
@@ -318,9 +314,8 @@ l'activité ; requalifier le poste ne réécrit pas cette nature historique.
 Avant l'échéance, l'état est `EN_COURS`, sans `finRetenue`. Dès l'échéance, borne incluse, il est
 `TERMINEE_AUTOMATIQUEMENT` et `finRetenue` porte cette échéance. Cette anomalie reste rendue après une reprise ou
 la clôture du suivi : une ouverture de 8 h oubliée garde sa fin automatique de 21 h, même si un autre travail
-commence le lendemain. Une fin recevable ou régularisée retire l'anomalie ; une correction de l'ouverture peut
-repousser l'échéance et rendre la même activité en cours. Les activités terminées réellement sortent de cette
-collection.
+commence le lendemain. Une fin réelle, pointée avant l'échéance ou régularisée, retire l'anomalie. Les activités terminées réellement sortent
+de cette collection.
 
 La lecture consomme `activite_d_atelier`, sans rejouer les journaux. Elle utilise une
 transaction unique en `READ COMMITTED` : l'évaluation est commune, mais les requêtes peuvent observer une écriture
@@ -401,14 +396,14 @@ tuiles par catégorie, dans cet ordre, et la liste est vide tant que l'entrepris
   terminée par un fait ou échue est absente d'`activites`. `ouverture` est l'identité stable de l'activité, celle de son
   pointage ouvrant, que cible la fin régularisée ; `echeance` permet l'expiration hors ligne, à cet
   instant inclus, sans fabriquer de fin. `etat` vaut `EN_COURS` s'il reste une activité interprétable en cours,
-  sinon `INTERROMPU` s'il existe un pointage actif, sinon `EN_ATTENTE`.
+  sinon `INTERROMPU` s'il existe un pointage, sinon `EN_ATTENTE`.
 - **`dureeMaximaleDActivite` est la durée maximale d'une activité** (`"PT13H"`, ISO 8601) : l'échéance de chaque activité
   est son début plus cette durée. Le pupitre la lit ici au lieu de coder 13 h ; le serveur n'en a qu'une source,
   qu'il partage avec sa règle de réception.
 - **Aucun montant.** Ni `tauxHoraire` d'opérateur, ni `coutHoraire` de poste : un écran d'atelier partagé n'a pas à
   les recevoir, et `GET /api/couts-de-revient/{elementId}` reste réservé au `GESTIONNAIRE`.
-- **Aucun élément clôturé, aucun journal.** `etat` ne vaut donc jamais `CLOTURE` ici. Le journal complet, événements
-  annulés compris, se lit toujours par `GET /api/atelier/suivis/{id}` — c'est aussi lui qu'on relit après un
+- **Aucun élément clôturé, aucun journal.** `etat` ne vaut donc jamais `CLOTURE` ici. Le journal complet se lit
+  toujours par `GET /api/atelier/suivis/{id}` — c'est aussi lui qu'on relit après un
   `saisie-concurrente`.
 - **`nom` et `reference` ne suivent pas la même règle.** `nom` est celui copié à l'engagement, figé ; `reference`
   est celle du référentiel, relue à chaque appel. Un élément supprimé du référentiel garde sa tuile et perd sa seule
@@ -465,7 +460,7 @@ relire le dossier. Le dossier d'une fin automatique nomme l'élément de fabrica
 clé et de la clôture, ou rien ; l'instant présent borne toujours la fin.
 
 **La clôture ne fige rien pour le gestionnaire** : la régularisation reste possible ensuite, et la clôture elle-même
-se déplace (`PUT`) ou s'annule (`DELETE`). Ne pas griser la régularisation sur un élément clôturé.
+se déplace (`PUT`) ou se rouvre (`DELETE`). Ne pas griser la régularisation sur un élément clôturé.
 
 ### Évaluer le relevé des heures
 
@@ -506,8 +501,7 @@ séparée ne dépend que des NC. Une activité en cours ne contribue pas à la d
 
 Le journal brut `jours[].pointages[]` porte `id`, `type`, `dateDeSurvenue`, `element` et `poste`. Son ordre est l'heure
 métier, puis la fin avant l'ouverture, puis l'identité ; il ne suit jamais l'ordre de réception.
-Une FIN ordinaire après l'échéance seule conserve les 13 h complètes et l'anomalie automatique dans la feuille,
-sans nouvelle qualification « sans effet » dans le journal.
+Une `FIN` pointée à l'échéance ou après est ignorée : la feuille garde les 13 h complètes et l'anomalie automatique.
 
 ## 4. Erreurs
 
@@ -525,7 +519,7 @@ Deux statuts du tableau ci-dessous n'en portent pas : le **400** de Bean Validat
 | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 400    | Corps invalide (Bean Validation) — détail par champ dans `errors` — ou date de survenue future.                                                                        |
 | 403    | Jeton sans entreprise connue, ou rôle insuffisant.                                                                                                                     |
-| 404    | Suivi, événement, opérateur, poste, élément de fabrication ou activité visée (régularisation) introuvable.                                                             |
+| 404    | Suivi, opérateur, poste, élément de fabrication, activité visée (régularisation) ou fin automatique (dossier) introuvable.                                             |
 | 409    | Élément déjà engagé, élément clôturé, **pointage ignoré** (`pointage-ignore`), événement antérieur à l'engagement, refus de la régularisation, **saisie concurrente**. |
 
 Un pointage qui ne s'accorde pas à l'état de sa clé n'est pas une erreur à afficher : le serveur l'ignore (409
@@ -552,9 +546,9 @@ répond 400 avec le code stable `date-de-survenue-future`. Le pupitre peut alors
   et main d'œuvre. Deux différences à connaître avant de brancher un écran dessus : il s'appelle avec l'identifiant
   de l'**élément de fabrication**, pas celui du suivi, et il est réservé au rôle `GESTIONNAIRE`.
 - **Régulariser sur un poste dont l'opérateur a été dé-habilité depuis est refusé** (409), l'habilitation étant
-  vérifiée sur les trois actes de correction. Retirer une habilitation ferme donc aussi la porte au rattrapage des
+  vérifiée sur les deux écritures du journal. Retirer une habilitation ferme donc aussi la porte au rattrapage des
   saisies passées sur ce poste.
-- **Ni un opérateur ni un poste ayant un fait historique d’activité, même annulé, ne se supprime** : `DELETE /api/operateurs/{id}` et
+- **Ni un opérateur ni un poste ayant un fait historique d’activité ne se supprime** : `DELETE /api/operateurs/{id}` et
   `DELETE /api/postes-de-travail/{id}` répondent 409. Un écran d'administration doit le prévoir plutôt que le
   découvrir.
 
@@ -568,7 +562,7 @@ conserve cette borne.
 
 La machine coûte l'intervalle terminé entier ; la main d'œuvre se partage par postes distincts occupés par
 les seules activités terminées du même opérateur, tous éléments confondus. Une fin nouvellement reçue peut
-modifier ce partage sur un autre élément. Les tarifs viennent du fait ouvrant actif figé par atelier.
+modifier ce partage sur un autre élément. Les tarifs viennent du fait ouvrant, figés par atelier.
 
 Les champs de durée et de montant des lignes et du rapport sont des objets `{ "valeur": ... }`, y compris zéro. Un taux absent produit zéro, indépendamment du diviseur.
 
@@ -580,78 +574,49 @@ Cette route ne prend pas de paramètre d'évaluation et ne garantit pas un insta
 
 ## Anomalies de pointage
 
+Une **anomalie de pointage** est une **fin automatique** : une activité que rien n'a terminée avant son échéance. C'est
+la seule chose que le gestionnaire traite. Un pointage incohérent n'en crée aucune : le serveur l'ignore à la réception
+(voir [Un pointage est jugé à sa réception](#un-pointage-est-jugé-à-sa-réception)).
+
 Ces routes sont décrites dans le [contrat OpenAPI généré](openapi.json) et éprouvées par les scénarios REST.
 
-| Capacité             | Route                                                                           | Droit                    |
-| -------------------- | ------------------------------------------------------------------------------- | ------------------------ |
-| Liste paginée        | `GET /api/atelier/anomalies?nature=CONFLIT&operateur=…&element=…&page=0&size=5` | `USER` ou `GESTIONNAIRE` |
-| Liste des fins auto. | `GET /api/atelier/anomalies?nature=FIN_AUTOMATIQUE&…`                           | `USER` ou `GESTIONNAIRE` |
-| Dossier adressé      | `GET /api/atelier/suivis/{suivi}/anomalies/{pointage}`                          | `USER` ou `GESTIONNAIRE` |
+| Capacité       | Route                                                             | Droit                    |
+| -------------- | ----------------------------------------------------------------- | ------------------------ |
+| Liste paginée  | `GET /api/atelier/anomalies?operateur=…&element=…&page=0&size=20` | `USER` ou `GESTIONNAIRE` |
+| Dossier        | `GET /api/atelier/suivis/{suivi}/anomalies/{pointage}`            | `USER` ou `GESTIONNAIRE` |
+| Régularisation | `POST /api/atelier/suivis/{suivi}/regularisations`                | `GESTIONNAIRE`           |
 
-Une **anomalie de pointage** est ce que le gestionnaire doit trancher. Elle porte une `nature` : `CONFLIT`
-(une séquence en conflit) ou `FIN_AUTOMATIQUE` (une activité terminée à son échéance faute de fin réelle). Les anciennes routes
-`/api/atelier/conflits` et `/api/atelier/suivis/{suivi}/conflits/{pointage}` sont supprimées : elles répondent 404,
-sans redirection.
+La liste n'a ni paramètre `nature` ni discriminant. Il n'y a ni conflit, ni aperçu, ni confirmation, ni reçu : la
+régularisation est un seul appel (voir [Écran back-office](#écran-back-office-rôle-gestionnaire)).
 
-`nature` est un paramètre de requête obligatoire de la liste, valant `CONFLIT` ou `FIN_AUTOMATIQUE` (schéma
-`NatureDAnomalie` dans le contrat). Absent ou inconnu — la casse compte —, il est refusé en 400 par un `ProblemDetail` au code stable
-des erreurs métier, sans ligne de page :
+### Liste des fins automatiques
 
-```json
-{
-  "type": "urn:glm:erreur:atelier:nature-d-anomalie-invalide",
-  "title": "nature d'anomalie invalide",
-  "status": 400,
-  "message": "La nature d'anomalie 'INCONNUE' est inconnue. Valeurs possibles : CONFLIT, FIN_AUTOMATIQUE."
-}
-```
+`GET /api/atelier/anomalies` rend une page `Page` de `RestFinAutomatiqueEnListe` : `content`, `currentPage` (à partir de
+0), `pageSize` et `totalElementsCount`. `operateur` et `element` cherchent du texte partiel sans casse, y compris dans
+les identifiants, et se combinent avant `page` et `size` ; `%`, `_` et `\` restent littéraux. Le tri porte sur `debut`,
+puis le suivi, puis l'ouvrant.
 
-Le `message` d'une nature absente est « La nature d'anomalie est obligatoire. Valeurs possibles : CONFLIT, FIN_AUTOMATIQUE. ». Le client
-teste `type`, jamais `message` (voir [les codes d'erreur](codes-erreur.md)). Ce refus ne passe pas par le 400 de Bean
-Validation, qui ne porte pas de `type` et ne traite pas un paramètre de requête manquant.
+Une fin automatique est lue dans `activite_d_atelier`, sans rejouer aucun journal : sans fin réelle (`fin` nulle), avec
+une `echeance` inférieure ou égale à l'instant de lecture, borne comprise et à la nanoseconde (les instants sont des
+décimaux exacts, `:evaluation` est converti de la même façon). L'instant de lecture est celui de l'horloge du service, lu
+une seule fois pour toute la page ; la route ne prend pas de paramètre d'évaluation. Une fin pointée à l'échéance ou
+après est ignorée : l'activité reste listée tant que le gestionnaire ne l'a pas régularisée. Une activité en cours, ou
+terminée — fin réelle, fin régularisée, clôture avant l'échéance —, n'y figure pas. Une fin automatique n'est jamais
+stockée.
 
-### Liste des anomalies
+Une ligne porte :
 
-`GET /api/atelier/anomalies?nature=…` rend une page `RestPageDesAnomalies` : `lignes`, `total`, `complete`, `page`
-(à partir de 0) et `size`. `total` et `lignes` viennent d'une même acquisition SQL sur les projections ; `complete`
-vaut `true` pour toute lecture réussie, même sans ligne. Les droits, la pagination et les filtres sont les mêmes pour
-les deux natures : `operateur` et `element` cherchent du texte partiel sans casse, y compris dans les identifiants, et
-se combinent avant `page` et `size` ; `%`, `_` et `\` restent littéraux.
-
-Chaque ligne est discriminée par sa `nature`, celle demandée : le contrat est une union `oneOf` de
-`RestConflitEnListe` (`nature: CONFLIT`) et de `RestFinAutomatiqueEnListe` (`nature: FIN_AUTOMATIQUE`), que
-`openapi-typescript` rend en union TypeScript discriminée. Côté serveur, les deux lignes restent deux types de domaine
-(`ConflitEnListe`, `FinAutomatiqueEnListe`) ; l'union n'existe que dans la réponse.
-
-| Nature            | Une ligne est…                       | Tri                                 |
-| ----------------- | ------------------------------------ | ----------------------------------- |
-| `CONFLIT`         | une séquence en conflit              | premier pointage, puis suivi, ancre |
-| `FIN_AUTOMATIQUE` | une activité terminée à son échéance | `debut`, puis suivi, puis ouvrant   |
-
-Une **fin automatique** est lue dans `activite_d_atelier`, sans rejouer aucun journal : sans fin réelle (`fin` nulle),
-hors des activités à résoudre, avec une `echeance` inférieure ou égale à l'instant de lecture, borne comprise et à la
-nanoseconde (les instants sont des décimaux exacts, `:evaluation` est converti de la même façon). L'instant de lecture
-est celui de l'horloge du service, lu une seule fois pour toute la page ; la route ne prend pas de paramètre
-d'évaluation. Une fin réelle pointée après l'échéance ne retire pas l'activité de la liste : elle garde sa fin
-automatique tant que le gestionnaire ne l'a pas corrigée. Une activité en cours, à résoudre ou terminée — fin réelle,
-fin régularisée, clôture avant l'échéance — n'y figure pas. Une fin automatique n'est jamais stockée.
-
-Une ligne de fin automatique porte :
-
-- `adresse` : le `suivi` et le `pointage` de l'**ouvrant actif** (`activite_d_atelier.ouverture_id`), qui adresse le
-  dossier ;
-- `activite` : l'identité d'**origine** de l'activité (`ActiviteId`), que visent les actes. Elle diffère de
-  `adresse.pointage` dès qu'une correction a remplacé l'ouvrant : un client ne confond jamais les deux ;
+- `adresse` : le `suivi` et le `pointage` qui ouvre l'activité, qui adressent le dossier ;
+- `activite` : l'identité de l'activité, que vise la régularisation. C'est l'identifiant de son pointage ouvrant, donc
+  la même valeur que `adresse.pointage` ;
 - `revision` du suivi, `elementId` et `designation`, `operateurId` et `operateur` (fiche, absente si inconnue),
   `posteId` et `poste` facultatifs ;
 - `debut` et `echeance`, instants exacts à la nanoseconde. Aucune durée n'est calculée ni exposée.
 
 ```json
 {
-  "complete": true,
-  "lignes": [
+  "content": [
     {
-      "nature": "FIN_AUTOMATIQUE",
       "activite": "aaaaaaaa-0000-4000-8000-000000000001",
       "adresse": {
         "suivi": "97379b3a-1f98-4f92-97f2-a4b4d66449ac",
@@ -668,113 +633,72 @@ Une ligne de fin automatique porte :
       "revision": 0
     }
   ],
-  "page": 0,
-  "size": 20,
-  "total": 1
+  "currentPage": 0,
+  "pageSize": 20,
+  "totalElementsCount": 1
 }
 ```
-
-Une ligne de conflit garde ses champs (`datePremierPointage`, `nombrePointages`, sans `activite`, `debut` ni
-`echeance`) et porte en plus `"nature": "CONFLIT"`.
-
-### Le dossier d'une adresse
-
-L'adresse d'un dossier est le couple suivi/pointage ; une identité technique de projection n'est pas
-une adresse. Le résultat porte `EN_CONFLIT`, `INTROUVABLE`, `ANCRE_ANNULEE`, `FIN_AUTOMATIQUE` ou `SANS_ANOMALIE` (ancre
-active sans anomalie ; ce résultat s'appelait `HORS_CONFLIT`). L'ordre de décision est celui de cette phrase :
-`FIN_AUTOMATIQUE` vaut pour une ancre active qui ouvre une activité que l'évaluation lit terminée automatiquement,
-sans séquence en conflit.
-Un suivi absent du tenant courant répond 404 sans journal. Un suivi accessible conserve son journal
-dans les résultats d'adresse sans conflit ; aucun de ces résultats ne redirige implicitement.
-
-Le dossier et son avant/après portent la `revision` numérique du suivi évalué, son `evaluation`, le
-journal complet, les activités concernées et les conflits restants. `sequence` décrit la séquence
-active contenant l’ancre ; `perimetre` conserve les faits concernés après un acte, même si l’ancre
-est annulée. Le booléen `enConflit` est calculé par le domaine sur ce périmètre : il peut rester vrai
-sans intervalle d’activité, ou être faux avec d’autres conflits indépendants dans `continuations`.
-Les continuations donnent les adresses actives explicites ; elles ne changent jamais l’adresse demandée. Chaque
-élément de `continuations[]` est une ligne de conflit au schéma `RestConflitEnListe`, celui de la liste : il porte donc
-désormais `"nature": "CONFLIT"`, champ requis ajouté au dossier avec la liste des anomalies.
 
 ### Le dossier d'une fin automatique
 
-Le dossier porte aussi `borneDeFin` (instant, absent quand rien ne borne la fin) : le plus tôt du début suivant sur la
-clé de l'activité et de la clôture, que la régularisation de sa fin ne peut pas dépasser.
+L'adresse d'un dossier est le couple suivi/pointage, où le pointage est celui qui ouvre l'activité. Le dossier répond
+**200** pour une fin automatique non régularisée, et **404** `fin-automatique-introuvable` pour tout autre pointage :
+activité en cours, déjà terminée, déjà régularisée, ou pointage qui n'ouvre rien. Un 404 ramène à la liste, sans écran
+intermédiaire. Un suivi absent de l'entreprise courante répond 404 `suivi-d-atelier-introuvable`.
 
-Une activité que rien n'a terminée s'arrête à son échéance, treize heures écoulées après son début, borne incluse.
-Ce n'est pas un conflit : le dossier de son ouvrant actif (`activite_d_atelier.ouverture_id`) répond
-`FIN_AUTOMATIQUE`. L'échéance se juge à l'instant d'évaluation, à la nanoseconde, et n'est jamais stockée : liste et
-dossier la jugent chacun au leur. Lue à 20:59:59.999999999 pour un début à 08:00, l'adresse est `SANS_ANOMALIE` ; lue à 21:00:00, elle
-est `FIN_AUTOMATIQUE`.
+Il ne contient que ce qui sert à régulariser :
 
-Deux identifiants restent distincts. L'**adresse** du dossier est l'`EvenementDAtelierId` de l'ouvrant actif ; l'**activité
-visée** par un acte est l'`ActiviteId` d'origine, que rend `activites[].activite`. Le front envoie le second dans
-`activiteVisee` et jamais l'identifiant d'événement.
-
-Ce dossier n'a pas de `sequence` : `perimetre` porte les faits qui ouvrent ou visent l'activité, gestes tardifs
-compris, et `activites` l'activité échue (`etat` `ECHUE`, `fin` à l'échéance, `duree` de treize heures). Une activité
-encore en cours n'entre pas dans le dossier d'une adresse `SANS_ANOMALIE`. `enConflit` reste calculé sur le périmètre :
-il devient vrai si un geste tardif appartient à une autre séquence en conflit.
-
-`finAutomatique` est calculé sur le même périmètre : il est vrai tant qu'une activité concernée reste terminée
-automatiquement, quel que soit l'état de l'adresse. « Anomalie traitée » se lit donc `enConflit` faux **et**
-`finAutomatique` faux, y compris quand l'adresse devient `ANCRE_ANNULEE` (un début corrigé qui repousse l'échéance
-rend `finAutomatique` faux ; un début corrigé mais encore échu le laisse vrai, et le remplaçant ouvre son propre
-dossier `FIN_AUTOMATIQUE`).
-
-L'ensemble des activités concernées est stable avant et après un acte : c'est l'activité de l'ancre, identifiée par
-son `ActiviteId` d'origine, que la correction de l'ouvrant conserve. Seul le dossier d'une séquence en conflit
-s'élargit aux activités que les faits d'un acte ajoutent. La transition tardive qu'on corrige ouvre une autre
-activité, avec sa propre adresse et sa propre ligne de liste : même échue à l'évaluation, elle n'entre pas dans ce
-dossier, et `finAutomatique` ne juge que l'anomalie du dossier. `perimetre` liste des faits : `perimetre.activites`
-peut encore nommer l'activité qu'ouvre ce geste, que `activites[]` ne contient pas.
-
-Dossier d'une fin automatique :
+- `adresse`, `revision` (celle du suivi évalué), `evaluation`, `elementId` et `designation` ;
+- `activite` : l'activité échue — `evenement` et `activite` (le même identifiant), `operateurId` et `operateur`, `posteId`
+  et `poste`, `categorie`, `debut`, `fin` (l'échéance) et `duree` (`PT13H`) ;
+- `pointages` : les pointages du suivi qui portent la clé de l'activité, du plus ancien au plus récent ;
+- `borneDeFin` : le plus tôt du début suivant sur la clé (opérateur et poste) et de la clôture, absent quand rien ne
+  borne la fin. L'instant présent borne toujours la fin.
 
 ```json
 {
-  "kind": "FIN_AUTOMATIQUE",
-  "enConflit": false,
-  "finAutomatique": true,
   "adresse": { "suivi": "3e1d8181-…", "pointage": "ab8f8dba-…" },
   "revision": 0,
   "evaluation": "2026-05-10T22:00:00Z",
-  "diagnostics": [],
-  "activites": [
-    {
-      "evenement": "ab8f8dba-…",
-      "activite": "ab8f8dba-…",
-      "operateurId": "33333333-…",
-      "posteId": "55555555-…",
-      "categorie": "TRAVAIL",
-      "debut": "2026-05-10T08:00:00Z",
-      "fin": "2026-05-10T21:00:00Z",
-      "etat": "ECHUE",
-      "duree": "PT13H"
-    }
-  ],
-  "perimetre": { "activites": ["ab8f8dba-…"], "pointages": ["ab8f8dba-…"], "nombrePointages": 1, "…": "…" },
-  "continuations": []
+  "elementId": "0abc06ce-…",
+  "designation": "OF M24-0655",
+  "activite": {
+    "evenement": "ab8f8dba-…",
+    "activite": "ab8f8dba-…",
+    "operateurId": "33333333-…",
+    "posteId": "55555555-…",
+    "categorie": "TRAVAIL",
+    "debut": "2026-05-10T08:00:00Z",
+    "fin": "2026-05-10T21:00:00Z",
+    "duree": "PT13H"
+  },
+  "pointages": [{ "id": "ab8f8dba-…", "type": "DEBUT", "dateDeSurvenue": "2026-05-10T08:00:00Z", "…": "…" }],
+  "borneDeFin": "2026-05-11T07:00:00Z"
 }
 ```
 
-Le détail adressé lit le journal, la clôture et la révision d’une même version committée du suivi,
-sans verrouiller les rédacteurs. Une écriture concurrente peut rendre cette version ancienne après sa lecture ;
-l'écriture contrôle toujours la révision sous verrou. Cette garantie ne constitue pas un instantané entre
-plusieurs appels ni avec les libellés du référentiel. Voir [l’ADR 0007](adr/0007-read-addressed-workshop-aggregates-coherently.md).
+L'échéance se juge à l'instant d'évaluation, à la nanoseconde, et n'est jamais stockée : liste et dossier la jugent
+chacun au leur. Pour un début à 08:00, l'adresse lue à 20:59:59.999999999 n'a pas de dossier (404) ; lue à 21:00:00, elle
+en a un.
 
-La révision commence à zéro à l'engagement et progresse à chaque modification effective du journal ou de la clôture, par toutes
-les routes, pointages Pupitre compris. Un rejeu strict ou un geste absorbé ne la fait pas progresser.
-La valeur Java est `RevisionDuSuivi`, séparée des identités de faits et du nombre d'événements.
+Les pointages portent leurs identifiants bruts d'opérateur et de poste indépendamment de la résolution des fiches,
+l'activité qu'ils ouvrent (absente pour une fin), leur auteur, leurs dates de survenue et d'enregistrement et leur origine
+(`estUneRegularisation`). Le poste absent est distinct d'une fiche absente pour un poste identifié. Les neuf décimales
+d'un instant sont conservées.
 
-Les faits portent leurs IDs bruts opérateur/poste indépendamment de la résolution des fiches, leur
-activité créée et visée, auteur, survenue, enregistrement, origine, annulation et lien `remplace`.
-Le poste absent est distinct d'une fiche absente pour un poste identifié. Les activités exposent
-`EN_COURS`, `TERMINEE` ou `ECHUE` ; seuls les états terminés
-portent une durée définitive ISO 8601. Les neuf décimales d'un instant sont conservées.
+Le détail adressé lit le journal, la clôture et la révision d'une même version committée du suivi, sans verrouiller les
+rédacteurs. Une écriture concurrente peut rendre cette version ancienne après sa lecture ; l'écriture contrôle toujours la
+révision sous verrou, et `saisie-concurrente` dit de relire le dossier. Cette garantie ne constitue pas un instantané
+entre plusieurs appels ni avec les libellés du référentiel. Voir
+[l'ADR 0007](adr/0007-read-addressed-workshop-aggregates-coherently.md).
 
-Le diagnostic vient de l'interprétation du domaine au moment de la contradiction. Il identifie le
-geste, sa cible, l'ouvrant actif ou annulé, le fait qui a terminé ou remplacé la cible et une raison
-structurée. Les premières familles sont cible remplacée, déjà terminée, pas encore ouverte, ouvrant
-annulé, même catégorie, cible échue avec une autre activité en cours et contradiction avec une
-régularisation. Le mapper REST ne rejoue aucun automate.
+La révision commence à zéro à l'engagement et progresse à chaque modification effective du journal ou de la clôture, par
+toutes les routes, pointages du pupitre compris. Un renvoi ou un pointage ignoré ne la fait pas progresser. La valeur
+Java est `RevisionDuSuivi`, séparée des identités de faits et du nombre d'événements.
+
+### La régularisation
+
+Le corps, les refus et l'idempotence sont décrits dans [Écran back-office](#écran-back-office-rôle-gestionnaire). La fin se
+place après le début de l'activité (exclu) et jusqu'à `borneDeFin` (inclus), sans dépasser l'instant présent. Une fois
+régularisée, l'activité n'a plus de dossier (404) et quitte la liste ; un 409 `saisie-concurrente` dit de relire le
+dossier.

@@ -12,7 +12,7 @@ explicite, sept jours du lundi au dimanche, vides compris. Ce contexte est purem
 `IntervalleDActivite` : affectation (`Activite`), bornes de portion (`Plage`) et identité, état et bornes de
 l'activité entière (`ActiviteLue`). `ActiviteInterpretee` est la projection reçue du port et évaluée à la lecture.
 
-Atelier possède le pointage, sa correction et l'interprétation. La feuille évalue les activités projetées et les
+Atelier possède le pointage, la régularisation et l'interprétation. La feuille évalue les activités projetées et les
 découpe au calendrier ; les durées appartiennent à la synthèse et la valorisation au coût. Le référentiel possède
 l'opérateur ; la feuille expose les identifiants de poste et d'élément sans lire leurs libellés.
 
@@ -37,8 +37,6 @@ l'opérateur ; la feuille expose les identifiants de poste et d'élément sans l
   les deux états terminés. Le découpage aux minuits locaux et aux limites de semaine ne déplace jamais ces bornes.
 - Une activité en cours rend une indication sans fin sur chaque jour atteint à l'instant de lecture, dans la semaine.
   Son début entier permet de lire « en cours depuis dimanche » sur lundi, sans durée à compter.
-- Une activité que le moteur d'atelier juge à résoudre n'est pas lue : la requête filtre `a_resoudre = false`,
-  tant que le moteur existe.
 - Une activité porte l'élément, jamais le suivi : un élément réengagé après clôture reste le même élément.
 - Les portions sont triées par début, élément puis identité stable de l'activité.
 - `DecoupageCalendaire` est le seul détenteur du calendrier. Le fuseau passe par `FuseauHoraireDeLEntreprise` ;
@@ -46,9 +44,8 @@ l'opérateur ; la feuille expose les identifiants de poste et d'élément sans l
 
 ## Couture et noms techniques
 
-`src/test/features/feuille_de_temps.feature` écrit réellement par l'API d'atelier puis lit la feuille : relances,
-transitions ciblées, fins tardives, régularisations, corrections, annulations et clôtures doivent rendre les faits
-projetés par leur propriétaire. `DecoupageCalendaireTest` prouve les semaines ISO et les minuits locaux, y compris
+`src/test/features/feuille_de_temps.feature` écrit réellement par l'API d'atelier puis lit la feuille : fins pointées,
+fins automatiques, régularisations et clôtures doivent rendre les faits projetés par leur propriétaire. `DecoupageCalendaireTest` prouve les semaines ISO et les minuits locaux, y compris
 les changements d'heure.
 
 Spring et Hibernate utilisent les noms simples des beans et entités : les noms propres à la feuille évitent les

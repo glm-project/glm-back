@@ -5,6 +5,9 @@
 Accepted on 2 October 2026 for the cost price report (glm-back#72). It replaces the rule "round once per line"
 of the [business guide](../contexte-metier.md#partage-et-arrondi).
 
+Amended on 9 October 2026 (glm-front#254): an activity to resolve no longer exists, so the divisor of a window is always
+known and the case of an unknown human cost is gone.
+
 ## Context
 
 The client wants to justify every euro of a cost price by unfolding a nature and reading each clocking, with
@@ -38,8 +41,7 @@ Identical parts in a window, the same workstation over the same period at the sa
 receive the same amount. This keeps the existing client rule: several activities on one workstation count as one
 workstation, and each element still pays the full share.
 
-A part without a human rate is worth zero. A window made uncertain by an activity to resolve keeps an unknown
-human cost, as before.
+A part without a human rate is worth zero.
 
 The machine cost is never shared: it is rounded once per clocking. A line and the report only add amounts that
 are already rounded.

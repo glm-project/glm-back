@@ -24,10 +24,13 @@ Its precondition requires zero rows in the tenant's `databasechangelog`, qualifi
 success; it does not run again on restart. Keep the identities, authors and paths of the activity changesets the model
 still uses, such as `2026/09/009-activite_d_atelier.xml` and `2026/09/011-activite_d_atelier_operateur.xml`.
 
-Amended on 9 October 2026, when conflict sequences were removed from the model: the changesets that only built what
-the model dropped were deleted or edited in place rather than followed by a dropping changeset, because every database
-is purged before the new model. Deleted: `2026/09/001` and `008` (event identity registry), `010` (resolvable-activity
-flag), `012` (conflict sequence tables), `013` (latest-end column) and `2026/10/004` (replaced-event link). Edited:
+Amended on 9 October 2026 (glm-front#254), when conflict sequences, the identity registry and the resolution receipts
+were removed from the model: the changesets that only built what the model dropped were deleted or edited in place
+rather than followed by a dropping changeset, because every database is purged before the new model. Deleted:
+`2026/09/001` and `008` (event identity registry), `010` (resolvable-activity flag), `012` (conflict sequence tables),
+`013` (latest-end column), `2026/10/004` (replaced-event link) and `2026/10/006` and `007` (resolution receipt and
+confirmed proposal). `2026/10/011-pointage_ignore_d_atelier.xml` is the one table the new model adds: the audit of
+ignored punches, with no key and no constraint. Edited:
 `2026/08/002` (no cancellation columns), `2026/09/007` (no intention column; renamed `007-evenement_d_atelier_activites.xml`, changeset `evenement_d_atelier_activites`) and `2026/10/005` (no instant to convert
 for a dropped column). `013` was the example of a useful changeset kept by this decision; it no longer is, so the rule
 above names the changesets that survive instead.

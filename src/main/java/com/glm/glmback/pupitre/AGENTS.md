@@ -17,9 +17,11 @@ purement lecteur, qui ne possède aucune table, n'écrit rien, et recalcule tout
 
 ## Ce dont il ne s'occupe pas
 
-- **Le pointage lui-même et sa correction** : le pupitre écrit par l'API d'`atelier`, jamais par ici. Ce contexte ne
-  propose aucune écriture, et n'en proposera pas — le chemin d'écriture idempotent existe déjà chez `atelier`
-  (identifiants de geste créés au pupitre, rejeu à 200 quand l'identifiant figure déjà dans les événements).
+- **Le pointage lui-même et son jugement** : le pupitre écrit par l'API d'`atelier`, jamais par ici. Ce contexte ne
+  propose aucune écriture, et n'en proposera pas — le chemin d'écriture existe déjà chez `atelier` : identifiants de
+  geste créés au pupitre, rejeu à 200 quand l'identifiant figure déjà dans les événements, et règle de réception qui
+  ignore (409 `pointage-ignore`) un pointage qui ne s'accorde pas à l'état de sa clé. Le pupitre n'applique pas cette
+  règle, il s'y recale : il retire l'effet local d'un pointage ignoré et relit le référentiel.
 - **Le référentiel lui-même** : créer, modifier ou supprimer un opérateur, un poste ou un élément appartient à
   `operateur`, `postedetravail` et `elementdefabrication`.
 - **La valorisation** — ni taux horaire d'opérateur, ni coût horaire de poste. Ces montants ne sont même pas mappés
@@ -37,9 +39,13 @@ identité, aucune persistance — l'objet naît et meurt dans l'appel.
 
 `ReferentielsDuPupitreService` assemble les opérateurs, les suivis et les catégories, et les date par le port `Clock`.
 
-`SuiviDuPupitre` lit les activités interprétables sans fin projetées par atelier. `ActiviteSansFin` transmet
-leur identité stable et leur échéance ; `etatA` et `activitesEnCoursA` évaluent leur expiration à `genereLe`.
-Un événement actif distingue `INTERROMPU` de `EN_ATTENTE` quand aucune activité n’est en cours.
+`SuiviDuPupitre` lit les activités sans fin projetées par atelier. `ActiviteSansFin` transmet leur identité (celle de
+leur pointage ouvrant) et leur échéance ; `etatA` et `activitesEnCoursA` évaluent leur expiration à `genereLe`.
+Un pointage au journal distingue `INTERROMPU` de `EN_ATTENTE` quand aucune activité n'est en cours.
+
+**La durée maximale d'une activité** (`dureeMaximaleDActivite`, `"PT13H"`, ISO 8601) vient du noyau partagé
+`shared/activityduration`, que lit aussi l'échéance d'atelier : le pupitre n'importe pas `atelier`, et le serveur n'a
+qu'une source de ce délai. Le pupitre la lit ici au lieu de coder 13 h.
 
 ## Invariants à ne pas casser
 
@@ -61,10 +67,9 @@ Un événement actif distingue `INTERROMPU` de `EN_ATTENTE` quand aucune activit
   supposerait d'horodater les modifications d'`operateur`, `poste_de_travail` et `operateur_poste`, qui ne portent
   aucune colonne de modification.
 - **L'interprétation appartient à atelier.** Ce lecteur relit `activite_d_atelier`, sans replier le journal.
-  Les activités à résoudre et celles ayant une fin réelle sont écartées ; l'échéance inclusive est jugée à
-  `genereLe`. Une correction conserve l'identité de l'activité et peut déplacer son début et son échéance.
-  L'identité rendue dans `ouverture` vient d'`activite_d_atelier.id`, jamais de l'ouvrant actif corrigé.
-  `cloture_date_de_survenue` continue d'écarter les suivis clôturés.
+  Les activités ayant une fin réelle sont écartées ; l'échéance inclusive est jugée à `genereLe`. L'identité rendue
+  dans `ouverture` vient d'`activite_d_atelier.id`, celle du pointage ouvrant. `cloture_date_de_survenue` continue
+  d'écarter les suivis clôturés.
 - **Un opérateur sans activité n'est jamais omis.** La liste rend l'identité, l'identifiant éventuel et les postes
   habilités des opérateurs désignables, indépendamment des pointages.
 - **Les lectures se font par ensembles.** Opérateurs et habilitations, activités et références se lisent
@@ -107,7 +112,7 @@ Les quatre couches sont livrées, pour la seule route `GET /api/pupitre/referent
 `infrastructure/secondary` n'a **aucun test dédié**, comme chez `feuilledetemps`, `coutderevient` et
 `syntheseheures`, hormis `CategoriesDuReferentielDuPupitreIT`, qui tient l'ordre et l'entreprise sans catégorie,
 deux cas que le schéma partagé des scénarios ne sait pas isoler. Pour le reste, sa correction est vérifiée par `src/test/features/pupitre_referentiel.feature`, qui engage,
-pointe, annule et clôture par l'API d'`atelier` puis relit par celle-ci — il échoue dès que les deux contextes
+pointe et clôture par l'API d'`atelier` puis relit par celle-ci — il échoue dès que les deux contextes
 cessent de lire les mêmes colonnes.
 
 Ce que le front en attend, et ce qu'il en fait, est décrit dans
