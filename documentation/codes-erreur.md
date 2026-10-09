@@ -151,6 +151,15 @@ segment de contexte, et lui seul, qui les distingue.
 | `categorie-utilisee`       | 409    | categorie utilisee       | `CategorieUtiliseeException`      |
 | `ordre-incomplet`          | 409    | ordre incomplet          | `OrdreIncompletException`         |
 
+### `parametrage` — `urn:glm:erreur:parametrage:`
+
+| Code            | Statut | `title`       | Exception               |
+| --------------- | ------ | ------------- | ----------------------- |
+| `logo-invalide` | 400    | logo invalide | `LogoInvalideException` |
+
+`logo-invalide` refuse un fichier trop lourd, illisible, d'un autre format que PNG ou JPEG, ou d'autres dimensions
+que 50 x 50 pixels. Son `message` dit laquelle de ces règles il enfreint, avec la valeur reçue : il s'affiche tel quel.
+
 ### `feuille-de-temps` — `urn:glm:erreur:feuille-de-temps:`
 
 | Code                    | Statut | `title`                    | Exception                   |

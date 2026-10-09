@@ -52,3 +52,33 @@ Feature: Parametrage de l'entreprise
     Given I am logged in as "user" with role "USER" for tenant "parametrage_fixture"
     When je fixe la duree max d'une activite a "PT10H"
     Then la reponse a le statut http 403
+
+  Scenario Outline: Le gestionnaire depose un logo PNG ou JPEG de 50 x 50
+    Given I am logged in as "gestionnaire" with role "GESTIONNAIRE" for tenant "parametrage_fixture"
+    When je depose comme logo "<fichier>"
+    Then la reponse a le statut http 200
+    And le logo depose a une version
+
+    Examples:
+      | fichier            |
+      | un PNG de 50 x 50  |
+      | un JPEG de 50 x 50 |
+
+  Scenario Outline: Logo refuse
+    Given I am logged in as "gestionnaire" with role "GESTIONNAIRE" for tenant "parametrage_fixture"
+    When je depose comme logo "<fichier>"
+    Then la reponse a le statut http 400
+    And la reponse porte le code d'erreur "urn:glm:erreur:parametrage:logo-invalide"
+    And le refus du logo dit "<raison>"
+
+    Examples:
+      | fichier                    | raison                                                |
+      | un GIF de 50 x 50          | Le logo doit etre une image PNG ou JPEG (recu : gif)  |
+      | un PNG de 120 x 80         | Le logo doit mesurer 50 x 50 pixels (recu : 120 x 80) |
+      | un PNG de 50 x 50 de 25 Ko | Le logo pese 25600 octets, au plus 20480              |
+      | un fichier texte           | Le fichier n'est pas une image lisible                |
+
+  Scenario: Depot du logo refuse a un utilisateur simple
+    Given I am logged in as "user" with role "USER" for tenant "parametrage_fixture"
+    When je depose comme logo "un PNG de 50 x 50"
+    Then la reponse a le statut http 403

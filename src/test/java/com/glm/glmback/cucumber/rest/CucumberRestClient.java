@@ -1,11 +1,15 @@
 package com.glm.glmback.cucumber.rest;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.http.MediaType.MULTIPART_FORM_DATA;
 
 import java.util.Map;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.test.web.servlet.client.RestTestClient;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 public class CucumberRestClient {
 
@@ -29,6 +33,20 @@ public class CucumberRestClient {
 
   public void put(String uri, String content) {
     restClient.put().uri(uri).accept(APPLICATION_JSON).contentType(APPLICATION_JSON).body(content).exchange();
+  }
+
+  public void putFile(String uri, String part, byte[] content) {
+    MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+    body.add(
+      part,
+      new ByteArrayResource(content) {
+        @Override
+        public String getFilename() {
+          return part;
+        }
+      }
+    );
+    restClient.put().uri(uri).accept(APPLICATION_JSON).contentType(MULTIPART_FORM_DATA).body(body).exchange();
   }
 
   public void delete(String uri) {

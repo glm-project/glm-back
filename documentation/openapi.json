@@ -1760,6 +1760,18 @@
         "required" : [ "pointages" ],
         "type" : "object"
       },
+      "RestLogo" : {
+        "description" : "Le logo de l'entreprise.",
+        "properties" : {
+          "version" : {
+            "description" : "Empreinte du contenu du logo : elle change avec le logo, et entre dans l'adresse de l'image pour que le navigateur la garde en cache.",
+            "example" : "3f2a9c41b07d58e6",
+            "type" : "string"
+          }
+        },
+        "required" : [ "version" ],
+        "type" : "object"
+      },
       "RestModificationElementDeFabrication" : {
         "properties" : {
           "description" : {
@@ -4479,6 +4491,52 @@
           }
         },
         "summary" : "Fixer la duree max d'une activite",
+        "tags" : [ "Parametrage" ]
+      }
+    },
+    "/api/parametrage/logo" : {
+      "put" : {
+        "description" : "Le fichier, dans la partie logo, remplace le logo courant. Il s'affiche tel quel en en-tete de la supervision, du\npupitre et des PDF : une image PNG ou JPEG de 50 x 50 pixels exactement, de 20 Ko au plus. Le format se juge sur\nle contenu, jamais sur le nom du fichier ni sur le type annonce.\n",
+        "operationId" : "deposeLeLogo",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "properties" : {
+                  "logo" : {
+                    "format" : "binary",
+                    "type" : "string"
+                  }
+                },
+                "required" : [ "logo" ],
+                "type" : "object"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestLogo"
+                }
+              }
+            },
+            "description" : "Le logo est depose ; sa version entre dans l'adresse de l'image."
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestLogo"
+                }
+              }
+            },
+            "description" : "Fichier absent, illisible, trop lourd, d'un autre format ou d'autres dimensions."
+          }
+        },
+        "summary" : "Deposer le logo de l'entreprise",
         "tags" : [ "Parametrage" ]
       }
     },
