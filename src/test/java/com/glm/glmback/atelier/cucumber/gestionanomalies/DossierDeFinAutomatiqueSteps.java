@@ -29,6 +29,7 @@ public class DossierDeFinAutomatiqueSteps {
   @Autowired
   private AtelierSteps atelier;
 
+  private Map<String, Object> suivi;
   private List<Map<String, Object>> journal;
 
   @When("je consulte le dossier d'anomalie de {string} depuis l'evenement {int}")
@@ -36,6 +37,7 @@ public class DossierDeFinAutomatiqueSteps {
   public void consulte(String alias, int rang) {
     atelier.jeConsulte(alias);
     var suiviLu = (Map<String, Object>) CucumberRestTestContext.getElement("$");
+    suivi = suiviLu;
     journal = (List<Map<String, Object>>) suiviLu.get("journal");
     rest.get("/api/atelier/suivis/" + suiviLu.get("id") + "/anomalies/" + journal.get(rang).get("id"));
   }
@@ -50,6 +52,12 @@ public class DossierDeFinAutomatiqueSteps {
           : CucumberRestTestContext.getElement("$.activite." + champ);
         assertThat(lue).as(champ).hasToString(valeur);
       });
+  }
+
+  @Then("le dossier d'anomalie donne l'element du suivi")
+  public void element() {
+    assertThat(CucumberRestTestContext.getElement("$.designation")).hasToString(String.valueOf(suivi.get("nom")));
+    assertThat(CucumberRestTestContext.getElement("$.elementId")).hasToString(String.valueOf(suivi.get("element")));
   }
 
   @Then("le dossier d'anomalie donne les pointages des evenements {string}")

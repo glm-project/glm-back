@@ -591,7 +591,7 @@
         "type" : "object"
       },
       "RestDossierAnomalie" : {
-        "description" : "Le dossier d'une fin automatique non regularisee : l'activite echue, les pointages de sa cle, a l'instant d'evaluation, et la borne de la fin a regulariser.",
+        "description" : "Le dossier d'une fin automatique non regularisee : l'element de fabrication concerne, l'activite echue, les pointages de sa cle, a l'instant d'evaluation, et la borne de la fin a regulariser.",
         "properties" : {
           "activite" : {
             "$ref" : "#/components/schemas/RestActiviteDuDossier"
@@ -602,6 +602,15 @@
           "borneDeFin" : {
             "description" : "L'instant que la fin regularisee ne peut pas depasser : le plus tot du debut suivant sur la cle (operateur et poste)\net de la cloture. Absent quand rien ne borne la fin ; la regularisation reste de toute facon bornee par l'instant\npresent.\n",
             "format" : "date-time",
+            "type" : "string"
+          },
+          "designation" : {
+            "description" : "Designation de l'element de fabrication, copiee a l'engagement.",
+            "type" : "string"
+          },
+          "elementId" : {
+            "description" : "Identifiant de l'element de fabrication du suivi.",
+            "format" : "uuid",
             "type" : "string"
           },
           "evaluation" : {
@@ -620,7 +629,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "activite", "adresse", "evaluation", "pointages", "revision" ],
+        "required" : [ "activite", "adresse", "designation", "elementId", "evaluation", "pointages", "revision" ],
         "type" : "object"
       },
       "RestDureeDeSynthese" : {

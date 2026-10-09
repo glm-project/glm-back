@@ -6,14 +6,18 @@ import com.glm.glmback.atelier.infrastructure.primary.RestEvenementDAtelier;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 @Schema(
-  description = "Le dossier d'une fin automatique non regularisee : l'activite echue, les pointages de sa cle, a l'instant d'evaluation, et la borne de la fin a regulariser."
+  description = "Le dossier d'une fin automatique non regularisee : l'element de fabrication concerne, l'activite echue, les pointages de sa cle, a l'instant d'evaluation, et la borne de la fin a regulariser."
 )
 record RestDossierAnomalie(
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestAdresseDossierAnomalie adresse,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) long revision,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) Instant evaluation,
+  @Schema(description = "Identifiant de l'element de fabrication du suivi.", requiredMode = Schema.RequiredMode.REQUIRED) UUID elementId,
+  @Schema(description = "Designation de l'element de fabrication, copiee a l'engagement.", requiredMode = Schema.RequiredMode.REQUIRED)
+  String designation,
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED) RestActiviteDuDossier activite,
   @Schema(
     requiredMode = Schema.RequiredMode.REQUIRED,
@@ -34,6 +38,8 @@ record RestDossierAnomalie(
       new RestAdresseDossierAnomalie(dossier.adresse().suivi().uuid(), dossier.adresse().pointage().uuid()),
       dossier.lecture().suivi().revision().value(),
       dossier.lecture().evaluation(),
+      dossier.lecture().suivi().element().id().uuid(),
+      dossier.lecture().suivi().element().nom().value(),
       RestActiviteDuDossier.from(dossier.activite(), annuaire),
       dossier
         .pointages()

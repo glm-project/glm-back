@@ -28,6 +28,8 @@ Feature: Dossier d'une fin automatique
       | evenement | debut                | fin                  | duree |
       | 0         | 2044-03-01T08:00:00Z | 2044-03-01T21:00:00Z | PT13H |
     And le dossier d'anomalie donne les pointages des evenements "0"
+    # L'en-tete du dossier nomme l'element de fabrication concerne.
+    And le dossier d'anomalie donne l'element du suivi
 
   Scenario Outline: L'echeance se juge a l'instant de lecture, borne incluse, a la nanoseconde
     Given il est "2044-03-02T06:00:00Z"

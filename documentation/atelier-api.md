@@ -461,7 +461,7 @@ suivi tel qu'il est, et n'écrit rien — y compris quand l'activité est désor
 | 409    | `fin-apres-borne`            | L'heure dépasse le début suivant sur la clé (opérateur et poste) ou la clôture : voir `borneDeFin`. |
 
 `saisie-concurrente` (409) reste le refus de concurrence : un pointage s'est glissé entre la lecture et l'écriture,
-relire le dossier. Le dossier d'une fin automatique donne la borne `borneDeFin` : le plus tôt du début suivant sur la
+relire le dossier. Le dossier d'une fin automatique nomme l'élément de fabrication (`elementId`, `designation`, comme la ligne de la liste) et donne la borne `borneDeFin` : le plus tôt du début suivant sur la
 clé et de la clôture, ou rien ; l'instant présent borne toujours la fin.
 
 **La clôture ne fige rien pour le gestionnaire** : la régularisation reste possible ensuite, et la clôture elle-même
