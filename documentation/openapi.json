@@ -1760,6 +1760,18 @@
         "required" : [ "pointages" ],
         "type" : "object"
       },
+      "RestLogo" : {
+        "description" : "Le logo de l'entreprise.",
+        "properties" : {
+          "version" : {
+            "description" : "Empreinte du contenu du logo : elle change avec le logo, et entre dans l'adresse de l'image pour que le navigateur la garde en cache.",
+            "example" : "3f2a9c41b07d58e6",
+            "type" : "string"
+          }
+        },
+        "required" : [ "version" ],
+        "type" : "object"
+      },
       "RestModificationElementDeFabrication" : {
         "properties" : {
           "description" : {
@@ -2102,6 +2114,10 @@
             "description" : "Duree au bout de laquelle une activite que rien n'a terminee se termine automatiquement, en ISO-8601. Treize heures tant que l'entreprise ne l'a pas fixee.",
             "example" : "PT13H",
             "type" : "string"
+          },
+          "logo" : {
+            "$ref" : "#/components/schemas/RestLogo",
+            "description" : "Le logo de l'entreprise, absent tant qu'aucun n'est depose. Son image se lit a l'adresse /api/parametrage/logo/{version}."
           }
         },
         "required" : [ "dureeMaxDActivite" ],
@@ -4482,6 +4498,116 @@
         "tags" : [ "Parametrage" ]
       }
     },
+    "/api/parametrage/logo" : {
+      "delete" : {
+        "description" : "Les en-tetes reviennent au logo de GLM. Sans effet si l'entreprise n'a pas de logo.",
+        "operationId" : "retireLeLogo",
+        "responses" : {
+          "204" : {
+            "description" : "L'entreprise n'a plus de logo."
+          }
+        },
+        "summary" : "Retirer le logo de l'entreprise",
+        "tags" : [ "Parametrage" ]
+      },
+      "put" : {
+        "description" : "Le fichier, dans la partie logo, remplace le logo courant. Il s'affiche tel quel en en-tete de la supervision, du\npupitre et des PDF : une image PNG ou JPEG de 50 x 50 pixels exactement, de 20 Ko au plus. Le format se juge sur\nle contenu, jamais sur le nom du fichier ni sur le type annonce.\n",
+        "operationId" : "deposeLeLogo",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "properties" : {
+                  "logo" : {
+                    "format" : "binary",
+                    "type" : "string"
+                  }
+                },
+                "required" : [ "logo" ],
+                "type" : "object"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestLogo"
+                }
+              }
+            },
+            "description" : "Le logo est depose ; sa version entre dans l'adresse de l'image."
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestLogo"
+                }
+              }
+            },
+            "description" : "Fichier absent, illisible, trop lourd, d'un autre format ou d'autres dimensions."
+          }
+        },
+        "summary" : "Deposer le logo de l'entreprise",
+        "tags" : [ "Parametrage" ]
+      }
+    },
+    "/api/parametrage/logo/{version}" : {
+      "get" : {
+        "description" : "L'image du logo courant, a l'adresse de sa version, lue dans le parametrage. La reponse se garde en cache sans\nlimite (Cache-Control: private, max-age d'un an, immutable) : un nouveau logo change d'adresse, l'ancienne ne\nrend plus rien.\n",
+        "operationId" : "lisLeLogo",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "version",
+          "required" : true,
+          "schema" : {
+            "pattern" : "^[0-9a-f]{16}$",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "image/jpeg" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              },
+              "image/png" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "L'image, en PNG ou en JPEG."
+          },
+          "404" : {
+            "content" : {
+              "image/jpeg" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              },
+              "image/png" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "Cette version n'est pas celle du logo courant, ou l'entreprise n'a pas de logo."
+          }
+        },
+        "summary" : "Lire l'image du logo",
+        "tags" : [ "Parametrage" ]
+      }
+    },
     "/api/postes-de-travail" : {
       "get" : {
         "description" : "La page demandee, triee par libelle. Le filtre sur la nature est facultatif ; absent, il ne filtre rien.\n",
@@ -4783,11 +4909,11 @@
     "description" : "Les familles dans lesquelles l'entreprise range ce qu'elle fabrique : des moules et des OF chez le client de\nreference, autre chose ailleurs. Une entreprise neuve n'en a aucune.\n\nLe code d'une categorie est a la fois son libelle et le prefixe du nom des produits qui s'y creent\n(MOULE-2026-000001). Il ne se renomme donc jamais.\n\nUne categorie se supprime tant qu'aucun produit n'y est range.\n\nLe gestionnaire declare, reordonne et supprime les categories ; l'operateur (role USER) les consulte.\n",
     "name" : "Categories de produit"
   }, {
-    "description" : "Le temps passe sur un element de fabrication, valorise par nature d'operation.",
-    "name" : "Couts de revient"
-  }, {
     "description" : "Les reglages que l'entreprise fixe elle-meme, un seul jeu pour toute l'entreprise.\n\nLe gestionnaire les modifie ; l'operateur (role USER) les consulte.\n",
     "name" : "Parametrage"
+  }, {
+    "description" : "Le temps passe sur un element de fabrication, valorise par nature d'operation.",
+    "name" : "Couts de revient"
   }, {
     "description" : "Le referentiel de ce sur quoi les operateurs pointent : une machine, un etabli, un four, une salle.\n\nChaque poste porte la nature du travail qui s'y fait. C'est de la que vient le metier exerce a un instant donne :\nl'operateur qui demarre sur le poste de soudure soude, celui qui demarre sur un tour tourne. Rien de tout cela n'est\ndeclare sur la personne.\n\nLe gestionnaire declare et revise les postes ; l'operateur (role USER) les consulte.\n",
     "name" : "Postes de travail"

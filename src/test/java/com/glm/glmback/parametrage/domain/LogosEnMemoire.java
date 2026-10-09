@@ -1,0 +1,30 @@
+package com.glm.glmback.parametrage.domain;
+
+import java.util.Optional;
+
+public final class LogosEnMemoire implements LogoRepository {
+
+  private Logo logo;
+
+  @Override
+  public Optional<Logo> get() {
+    return Optional.ofNullable(logo);
+  }
+
+  @Override
+  public Optional<VersionDuLogo> version() {
+    return get().map(Logo::version);
+  }
+
+  @Override
+  public Logo update(Logo nouveau) {
+    logo = nouveau;
+
+    return nouveau;
+  }
+
+  @Override
+  public void delete() {
+    logo = null;
+  }
+}

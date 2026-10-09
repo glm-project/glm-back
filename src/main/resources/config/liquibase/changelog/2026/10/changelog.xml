@@ -14,4 +14,5 @@
   <include file="009-colonnes_de_categorie.xml" relativeToChangelogFile="true" />
   <include file="010-element_dans_une_categorie.xml" relativeToChangelogFile="true" />
   <include file="011-parametrage.xml" relativeToChangelogFile="true" />
+  <include file="012-parametrage_logo.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>
