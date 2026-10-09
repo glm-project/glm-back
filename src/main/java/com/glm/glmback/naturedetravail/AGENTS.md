@@ -11,8 +11,8 @@ supprimer les natures, et les lister par ordre alphabétique, en disant pour cha
 
 ## Ce dont il ne s'occupe pas
 
-- **La nature d'un poste** — elle appartient à `postedetravail`, qui ne connaîtra de ce contexte que l'identifiant,
-  lu par la donnée.
+- **La nature d'un poste** — elle appartient à `postedetravail`, qui ne retient de ce contexte que l'identifiant et
+  relit le libellé par la donnée.
 - **Recopier un libellé ailleurs**. Un renommage ne réécrira jamais d'autre table : ceux qui se servent d'une nature
   en retiendront l'identifiant et liront le libellé courant.
 - **Des natures par défaut**. Une entreprise neuve n'en a aucune.
@@ -33,8 +33,9 @@ supprimer les natures, et les lister par ordre alphabétique, en disant pour cha
 - **Une nature qui sert ne se supprime pas** (`NatureUtiliseeException`, 409). La règle vit dans le domaine, derrière
   le port `NaturesEnUsage`, et la liste dit pour chaque nature si elle sert, pour que l'écran ne propose pas une
   suppression vouée au refus. Les usages d'une page se lisent en une requête (`NaturesEnUsage.utiliseesParmi`).
-- Rien ne référence encore une nature : l'adapter `NaturesSansUsage` répond qu'aucune ne sert, jusqu'à ce que les postes puis les pointages en
-  portent l'identifiant.
+- **Une nature sert dès qu'un poste la porte.** L'adapter `PostesDesNatures` lit `poste_de_travail.nature_id` par une
+  entité en lecture seule (patron `ElementCategoriseEntity`), sans importer `postedetravail` ; la clé étrangère
+  `fk_poste_de_travail_nature` est le filet. Les pointages s'y ajouteront avec glm-back#129.
 
 ## Ports sortants
 

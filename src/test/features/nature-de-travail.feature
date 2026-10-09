@@ -122,3 +122,22 @@ Feature: Natures de travail
     And I am logged in as "user" with role "USER"
     When je supprime la nature de travail "Peinture CNR"
     Then la reponse a le statut http 403
+
+  Scenario: Une nature portee par un poste est listee comme utilisee
+    Given j'ai declare la nature de travail "Soudage CNS"
+    And le poste de travail "Poste CNS" porte la nature de travail "Soudage CNS"
+    Then la nature de travail "Soudage CNS" est listee comme utilisee
+
+  Scenario: Suppression refusee si un poste porte la nature
+    Given j'ai declare la nature de travail "Soudage CNT"
+    And le poste de travail "Poste CNT" porte la nature de travail "Soudage CNT"
+    When je supprime la nature de travail "Soudage CNT"
+    Then la reponse a le statut http 409
+    And la reponse porte le code d'erreur "urn:glm:erreur:nature-de-travail:nature-utilisee"
+
+  Scenario: Renommer une nature renomme celle de ses postes
+    Given j'ai declare la nature de travail "Soudure CNU"
+    And le poste de travail "Poste CNU" porte la nature de travail "Soudure CNU"
+    When je renomme la nature de travail "Soudure CNU" en "Soudage CNU"
+    And je liste les postes de travail de nature "Soudage CNU"
+    Then la reponse ne contient que des postes de travail de nature "Soudage CNU"
