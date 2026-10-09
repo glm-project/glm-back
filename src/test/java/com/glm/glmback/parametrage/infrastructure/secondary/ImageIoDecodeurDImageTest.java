@@ -14,7 +14,7 @@ class ImageIoDecodeurDImageTest {
 
   @Test
   void shouldReadPngFormatAndDimensions() {
-    assertThat(decodeur.lis(pngDe120Sur80())).contains(new ImageLue("png", 120, 80));
+    assertThat(decodeur.lis(pngDe300Sur80())).contains(new ImageLue("png", 300, 80));
   }
 
   @Test

@@ -78,13 +78,13 @@ class ParametrageResource {
   @Operation(
     summary = "Deposer le logo de l'entreprise",
     description = """
-    Le fichier, dans la partie logo, remplace le logo courant. Il s'affiche tel quel en en-tete de la supervision, du
-    pupitre et des PDF : une image PNG ou JPEG de 50 x 50 pixels exactement, de 20 Ko au plus. Le format se juge sur
-    le contenu, jamais sur le nom du fichier ni sur le type annonce.
+    Le fichier, dans la partie logo, remplace le logo courant. Il s'affiche en en-tete de la supervision, du pupitre et
+    des PDF, ajuste a chaque case sans etre deforme : une image PNG ou JPEG qui tient dans 256 x 256 pixels, de 20 Ko au
+    plus. Le format se juge sur le contenu, jamais sur le nom du fichier ni sur le type annonce.
     """
   )
   @ApiResponse(responseCode = "200", description = "Le logo est depose ; sa version entre dans l'adresse de l'image.")
-  @ApiResponse(responseCode = "400", description = "Fichier absent, illisible, trop lourd, d'un autre format ou d'autres dimensions.")
+  @ApiResponse(responseCode = "400", description = "Fichier absent, illisible, trop lourd, d'un autre format ou trop grand.")
   RestLogo deposeLeLogo(@RequestPart("logo") MultipartFile logo) throws IOException {
     return RestLogo.from(applicationService.deposeLeLogo(logo.getBytes()).version());
   }

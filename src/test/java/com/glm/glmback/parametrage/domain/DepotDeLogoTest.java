@@ -63,17 +63,27 @@ class DepotDeLogoTest {
   }
 
   @Test
-  void shouldRefuserUneAutreLargeur() {
-    assertThatThrownBy(() -> depot(new ImageLue("png", 51, 50)).depose(pngCarre50()))
-      .isExactlyInstanceOf(LogoInvalideException.class)
-      .hasMessage("Le logo doit mesurer 50 x 50 pixels (recu : 51 x 50)");
+  void shouldDeposerUnLogoRectangulaire() {
+    assertThat(depot(new ImageLue("png", 256, 100)).depose(pngCarre50())).isEqualTo(logos.get().orElseThrow());
   }
 
   @Test
-  void shouldRefuserUneAutreHauteur() {
-    assertThatThrownBy(() -> depot(new ImageLue("png", 50, 49)).depose(pngCarre50()))
+  void shouldDeposerUnLogoDe256Sur256() {
+    assertThat(depot(new ImageLue("png", 256, 256)).depose(pngCarre50())).isEqualTo(logos.get().orElseThrow());
+  }
+
+  @Test
+  void shouldRefuserUneLargeurAuDelaDe256() {
+    assertThatThrownBy(() -> depot(new ImageLue("png", 257, 100)).depose(pngCarre50()))
       .isExactlyInstanceOf(LogoInvalideException.class)
-      .hasMessage("Le logo doit mesurer 50 x 50 pixels (recu : 50 x 49)");
+      .hasMessage("Le logo doit tenir dans 256 x 256 pixels (recu : 257 x 100)");
+  }
+
+  @Test
+  void shouldRefuserUneHauteurAuDelaDe256() {
+    assertThatThrownBy(() -> depot(new ImageLue("png", 100, 257)).depose(pngCarre50()))
+      .isExactlyInstanceOf(LogoInvalideException.class)
+      .hasMessage("Le logo doit tenir dans 256 x 256 pixels (recu : 100 x 257)");
     assertThat(logos.get()).isEmpty();
   }
 
