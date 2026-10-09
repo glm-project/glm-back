@@ -12,9 +12,19 @@ import java.util.stream.Collectors;
 final class NaturesUtiliseesEnMemoire implements NaturesEnUsage {
 
   private final Set<NatureDeTravailId> utilisees = new HashSet<>();
+  private final Set<NatureDeTravailId> pointees = new HashSet<>();
 
   void utilise(NatureDeTravailId id) {
     utilisees.add(id);
+  }
+
+  void pointe(NatureDeTravailId id) {
+    pointees.add(id);
+  }
+
+  @Override
+  public boolean estPointee(NatureDeTravailId nature) {
+    return pointees.contains(nature);
   }
 
   @Override
@@ -24,6 +34,9 @@ final class NaturesUtiliseesEnMemoire implements NaturesEnUsage {
 
   @Override
   public Set<NatureDeTravailId> utiliseesParmi(Collection<NatureDeTravailId> natures) {
-    return natures.stream().filter(utilisees::contains).collect(Collectors.toUnmodifiableSet());
+    return natures
+      .stream()
+      .filter(nature -> utilisees.contains(nature) || pointees.contains(nature))
+      .collect(Collectors.toUnmodifiableSet());
   }
 }

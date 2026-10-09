@@ -2,7 +2,6 @@ package com.glm.glmback.atelier.infrastructure.secondary;
 
 import com.glm.glmback.atelier.domain.Activite;
 import com.glm.glmback.atelier.domain.CategorieDActivite;
-import com.glm.glmback.atelier.domain.NatureDOperation;
 import com.glm.glmback.atelier.domain.PosteDeTravailId;
 import com.glm.glmback.shared.time.infrastructure.secondary.ExactInstantConverter;
 import jakarta.persistence.Column;
@@ -17,6 +16,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
+import org.hibernate.annotations.Formula;
 
 /**
  * Une activite interpretee du journal d'un suivi, projetee a chaque ecriture et jamais relue par le domaine.
@@ -47,6 +47,13 @@ class ActiviteDAtelierEntity {
   @Column(name = "poste_id")
   private UUID posteId;
 
+  @Column(name = "nature_id")
+  private UUID natureId;
+
+  /**
+   * Le libelle courant de la nature : le pointage n'en recopie que l'identifiant.
+   */
+  @Formula("(select referentiel.libelle from nature_de_travail referentiel where referentiel.id = nature_id)")
   private String nature;
 
   @Enumerated(EnumType.STRING)
@@ -87,7 +94,11 @@ class ActiviteDAtelierEntity {
     ouvertureId = activite.ouvrant().id().uuid();
     operateurId = activite.cle().operateur().uuid();
     posteId = activite.cle().poste().map(PosteDeTravailId::uuid).orElse(null);
-    nature = activite.ouvrant().nature().map(NatureDOperation::value).orElse(null);
+    natureId = activite
+      .ouvrant()
+      .nature()
+      .map(nature -> nature.id().uuid())
+      .orElse(null);
     categorie = activite.categorie();
     debut = activite.debut();
     echeance = activite.echeance().value();

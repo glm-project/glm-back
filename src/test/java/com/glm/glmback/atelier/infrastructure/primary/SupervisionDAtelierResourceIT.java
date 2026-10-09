@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.glm.glmback.IntegrationTest;
 import com.glm.glmback.atelier.domain.*;
+import com.glm.glmback.atelier.infrastructure.secondary.NaturesDesFixtures;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurityContexts;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.time.domain.Clock;
@@ -16,6 +17,7 @@ import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -45,6 +47,11 @@ class SupervisionDAtelierResourceIT {
 
   @Autowired
   private SuiviDAtelierRepository suivis;
+
+  @BeforeEach
+  void declarerLesNaturesDesFixtures() {
+    NaturesDesFixtures.declarer(entities, transactions, "supervision_fixture", "supervision_voisine");
+  }
 
   @AfterEach
   void cleanupFixture() {
@@ -166,7 +173,7 @@ class SupervisionDAtelierResourceIT {
       .andExpect(jsonPath("$.activites[0].element.reference").value("M-43"))
       .andExpect(jsonPath("$.activites[0].poste.id").value(POSTE_ID_FRAISEUSE_1.uuid().toString()))
       .andExpect(jsonPath("$.activites[0].poste.libelle").value("Fraiseuse 1"))
-      .andExpect(jsonPath("$.activites[0].poste.nature").value(NATURE_FRAISAGE.value()));
+      .andExpect(jsonPath("$.activites[0].poste.nature").value(NATURE_FRAISAGE.libelle()));
   }
 
   @Test

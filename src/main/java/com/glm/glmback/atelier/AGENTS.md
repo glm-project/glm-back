@@ -211,6 +211,9 @@ glissé entre la lecture et l'écriture : le front relit le dossier.
 - **La nature ne bloque rien**, et elle vient **du poste**, jamais de la personne. Elle n'est qu'un axe d'agrégation
   pour la synthèse ; avec le coût horaire du poste et le taux horaire de l'opérateur, c'est tout ce que le journal
   copie du référentiel, pour qu'un poste requalifié ou un tarif révisé ne réécrivent pas les heures déjà passées.
+- **De la nature, le journal ne copie que l'identifiant** (`nature_id`, sans clé étrangère, comme `operateur_id` et
+  `poste_id`). `NatureDOperation` porte cet identifiant et le libellé courant, relu par jointure (`@Formula`) : une
+  nature renommée l'est dans tout le journal, et un ordre pointé avant et après le renommage n'a qu'une nature.
 - **Le coût horaire du poste et le taux horaire de l'opérateur sont copiés au moment de la saisie**, sur le même
   patron que la nature : jamais relus depuis le référentiel après coup. Ils restent, comme la nature, entièrement
   facultatifs, et ne servent qu'à figer une valeur qui pourrait changer chez le voisin — le calcul lui-même n'entre

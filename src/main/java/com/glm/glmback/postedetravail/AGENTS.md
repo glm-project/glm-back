@@ -20,7 +20,7 @@ l'atelier : une machine chez le client de référence, un établi, un four, une 
   contexte ne fait rien d'autre que le stocker et le restituer : aucun calcul, aucune répartition. `atelier` ne le lit
   pas encore — c'est le lot « coût de revient » qui posera ce port.
 - **Le pointage** lui-même, qui appartient à `atelier`. Celui-ci ne connaît de ce contexte que l'identifiant, lu par
-  port, et n'en copie que la nature au moment de la saisie.
+  port, et n'en copie que l'identifiant de la nature au moment de la saisie.
 
 ## Agrégat
 

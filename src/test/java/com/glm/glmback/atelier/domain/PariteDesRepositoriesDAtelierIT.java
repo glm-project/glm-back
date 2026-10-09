@@ -4,9 +4,11 @@ import static com.glm.glmback.atelier.domain.AtelierFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.IntegrationTest;
+import com.glm.glmback.atelier.infrastructure.secondary.NaturesDesFixtures;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
+import jakarta.persistence.EntityManager;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -14,6 +16,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -46,11 +49,19 @@ class PariteDesRepositoriesDAtelierIT {
   @Autowired
   private TransactionTemplate transactions;
 
+  @Autowired
+  private EntityManager entities;
+
   /**
    * L'etat se juge a l'instant d'evaluation des criteres : juste avant l'echeance de l'activite de mardi, puis a
    * l'echeance pile, ou elle cesse d'etre en cours sans aucune ecriture. Le jeu couvre chaque etat, y compris un suivi
    * en attente sans pointage, et une activite terminee au-dela de son echeance par une regularisation.
    */
+  @BeforeEach
+  void declarerLesNaturesDesFixtures() {
+    NaturesDesFixtures.declarer(entities, transactions, "impeccmold");
+  }
+
   @Test
   @WithTenant("impeccmold")
   void shouldRendreLesMemesSuivisQueLeDoubleEnMemoire() {

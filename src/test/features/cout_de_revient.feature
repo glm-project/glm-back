@@ -205,6 +205,23 @@ Feature: Cout de revient d'un element de fabrication
       | fraisage | PT1H    | PT0S          | 45.00   | 20.00       |
       | tournage | PT1H    | PT0S          | 60.00   | 20.00       |
 
+  Scenario: Renommer une nature pendant un ordre garde une seule ligne, au nouveau libelle
+    Given le rapport connait le poste "soudeuse" de nature "soudure CRA" a "50.00" de l'heure
+    And le rapport connait l'operateur "martin" a "20.00" de l'heure, habilite sur
+      | soudeuse |
+    And l'entreprise fabrique "OF 3011"
+    And "OF 3011" est mis en atelier a "2026-05-11T07:00:00Z"
+    And "martin" pointe "DEBUT" sur "OF 3011" au poste "soudeuse" a "2026-05-11T09:00:00Z"
+    And "martin" pointe "FIN" sur "OF 3011" au poste "soudeuse" a "2026-05-11T10:00:00Z"
+    And la nature de travail "soudure CRA" est renommee en "soudage CRA"
+    And "martin" pointe "DEBUT" sur "OF 3011" au poste "soudeuse" a "2026-05-11T10:30:00Z"
+    And "martin" pointe "FIN" sur "OF 3011" au poste "soudeuse" a "2026-05-11T11:30:00Z"
+    When je consulte le cout de revient de "OF 3011" a "2026-05-11T18:00:00Z"
+    Then la reponse a le statut http 200
+    And le rapport porte les lignes
+      | nature      | travail | nonConformite | machine | mainDOeuvre |
+      | soudage CRA | PT2H    | PT0S          | 100.00  | 40.00       |
+
   Scenario: Un element inconnu renvoie 404
     When je consulte le cout de revient de l'element inconnu "11111111-2222-3333-4444-555555555555"
     Then la reponse a le statut http 404

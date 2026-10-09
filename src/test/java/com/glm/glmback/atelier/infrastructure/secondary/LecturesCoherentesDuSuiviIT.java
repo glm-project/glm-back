@@ -17,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.hibernate.resource.jdbc.spi.StatementInspector;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.hibernate.autoconfigure.HibernatePropertiesCustomizer;
@@ -45,6 +46,11 @@ class LecturesCoherentesDuSuiviIT {
 
   @Autowired
   private EntityManager entities;
+
+  @BeforeEach
+  void declarerLesNaturesDesFixtures() {
+    NaturesDesFixtures.declarer(entities, transactions, "impeccmold");
+  }
 
   @Test
   @WithTenant("impeccmold")

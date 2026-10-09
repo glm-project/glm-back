@@ -82,7 +82,7 @@ public record RestEvenementDAtelier(
         .map(poste -> poste.uuid())
         .orElse(null),
       RestPosteDeTravail.resolu(annuaire, evenement.poste()),
-      evenement.nature().map(NatureDOperation::value).orElse(null),
+      evenement.nature().map(NatureDOperation::libelle).orElse(null),
       HourlyRatesAuthorization.disclose(evenement.coutHoraire().map(CoutHoraire::value)),
       HourlyRatesAuthorization.disclose(evenement.tauxHoraire().map(TauxHoraire::value)),
       evenement.auteur().value(),

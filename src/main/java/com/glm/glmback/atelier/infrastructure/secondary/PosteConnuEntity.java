@@ -2,6 +2,7 @@ package com.glm.glmback.atelier.infrastructure.secondary;
 
 import com.glm.glmback.atelier.domain.LibelleDePoste;
 import com.glm.glmback.atelier.domain.NatureDOperation;
+import com.glm.glmback.atelier.domain.NatureDOperationId;
 import com.glm.glmback.atelier.domain.PosteConnu;
 import com.glm.glmback.atelier.domain.PosteDeTravailId;
 import jakarta.persistence.Column;
@@ -31,6 +32,9 @@ class PosteConnuEntity {
 
   private String libelle;
 
+  @Column(name = "nature_id")
+  private UUID natureId;
+
   /**
    * Le libelle courant de la nature du poste : le poste n'en porte que l'identifiant.
    */
@@ -48,7 +52,7 @@ class PosteConnuEntity {
     return PosteConnu.builder()
       .id(new PosteDeTravailId(id))
       .libelle(new LibelleDePoste(libelle))
-      .nature(new NatureDOperation(nature))
+      .nature(new NatureDOperation(new NatureDOperationId(natureId), nature))
       .coutHoraire(coutHoraire);
   }
 }

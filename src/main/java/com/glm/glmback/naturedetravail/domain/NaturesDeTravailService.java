@@ -53,7 +53,9 @@ public final class NaturesDeTravailService {
   }
 
   /**
-   * Une nature qui sert deja ne se supprime pas : un poste la porte, ou des heures pointees la citent.
+   * Deux raisons distinctes de refuser : un poste qui porte encore la nature, et du temps deja pointe sous elle. La
+   * seconde est definitive — changer la nature des postes ne rendra jamais la nature supprimable, sous peine de laisser
+   * des heures de travail sans metier.
    */
   public void delete(NatureDeTravailId id) {
     if (repository.get(id).isEmpty()) {
@@ -61,6 +63,9 @@ public final class NaturesDeTravailService {
     }
     if (usages.estUtilisee(id)) {
       throw new NatureUtiliseeException(id);
+    }
+    if (usages.estPointee(id)) {
+      throw new NaturePointeeException(id);
     }
     repository.delete(id);
   }

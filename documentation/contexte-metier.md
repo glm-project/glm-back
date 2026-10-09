@@ -43,7 +43,7 @@ Gère le **référentiel des natures de travail** : les métiers exercés dans l
 
 Une `NatureDeTravail` porte un **identifiant** et un **libellé**. Le libellé est unique à la casse, aux accents et aux espaces près : sa **clé** (minuscules, sans accents, espaces réduits) est ce qui distingue deux natures, et « Soudage » et « soudâge » ne peuvent pas coexister. La liste se lit dans l'ordre de cette clé, donc par ordre alphabétique sans égard aux accents, et dit pour chaque nature si elle sert déjà.
 
-Le gestionnaire peut **renommer** une nature, y compris pour n'en corriger que la casse ou les accents. Ceux qui se servent d'une nature n'en retiendront que l'**identifiant** : un renommage ne modifiera que la ligne de la nature, jamais l'historique, et le nouveau libellé s'affichera partout, rapports passés compris. Une nature **ne se supprime pas** tant qu'un poste la porte ou qu'un pointage la cite ; la liste le dit pour chacune.
+Le gestionnaire peut **renommer** une nature, y compris pour n'en corriger que la casse ou les accents. Ceux qui se servent d'une nature n'en retiendront que l'**identifiant** : un renommage ne modifiera que la ligne de la nature, jamais l'historique, et le nouveau libellé s'affichera partout, rapports passés compris. Une nature **ne se supprime pas** tant qu'un poste la porte, et **plus jamais** dès qu'un pointage l'a recopiée : le journal n'en garde que l'identifiant. La liste dit, pour chacune, si elle sert.
 
 ## parametrage
 
@@ -142,7 +142,7 @@ tombe à sa place.
 - Il est **facultatif** : une entreprise sans parc machine laisse l'`Optional` vide et retrouve une activité unique par opérateur.
 - C'est **lui**, et non la nature de l'opération, qui identifie l'activité. L'érosionniste qui met deux pièces du même élément sur deux machines mène ainsi deux activités indépendantes — cas que le client détaille explicitement, et qu'une clé fondée sur la fonction refuserait.
 
-La `NatureDOperation` (fraisage, tournage, érosion, dessin) est **recopiée du poste** au moment de la saisie, par le port `PostesConnus`, comme le nom de l'élément est recopié à l'engagement : un poste requalifié plus tard ne réécrit pas l'histoire de l'atelier. Elle vient du poste et non de la personne, parce que c'est le poste qui dit quel métier s'y exerce — un opérateur polyvalent déclenche un pointage par poste. Elle ne porte **aucun invariant** : elle n'est qu'un axe d'agrégation pour la synthèse par catégorie de travail, et elle reste facultative comme le poste.
+La `NatureDOperation` (fraisage, tournage, érosion, dessin) est **recopiée du poste** au moment de la saisie, par le port `PostesConnus` : un poste requalifié plus tard ne réécrit pas l'histoire de l'atelier. Le journal n'en retient que l'**identifiant** dans le référentiel des natures, comme il ne retient que celui de l'opérateur et du poste, et en relit le libellé courant : renommer une nature ne touche que sa ligne, et un ordre pointé avant et après le renommage ne compte qu'une nature. Comme `operateur_id` et `poste_id`, `nature_id` ne porte aucune clé étrangère ; c'est `naturedetravail` qui refuse de supprimer une nature pointée. Elle vient du poste et non de la personne, parce que c'est le poste qui dit quel métier s'y exerce — un opérateur polyvalent déclenche un pointage par poste. Elle ne porte **aucun invariant** : elle n'est qu'un axe d'agrégation pour la synthèse par catégorie de travail, et elle reste facultative comme le poste.
 
 ### Le référentiel, atteint par identifiant
 

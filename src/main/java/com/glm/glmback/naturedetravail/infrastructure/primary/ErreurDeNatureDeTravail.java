@@ -6,7 +6,8 @@ import org.springframework.http.HttpStatus;
 enum ErreurDeNatureDeTravail implements ProblemCode {
   NATURE_INTROUVABLE(HttpStatus.NOT_FOUND, "nature introuvable"),
   NATURE_DEJA_EXISTANTE(HttpStatus.CONFLICT, "nature deja existante"),
-  NATURE_UTILISEE(HttpStatus.CONFLICT, "nature utilisee");
+  NATURE_UTILISEE(HttpStatus.CONFLICT, "nature utilisee"),
+  NATURE_POINTEE(HttpStatus.CONFLICT, "nature pointee");
 
   private final HttpStatus status;
   private final String title;

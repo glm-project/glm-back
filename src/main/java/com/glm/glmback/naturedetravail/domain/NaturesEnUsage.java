@@ -8,10 +8,19 @@ import java.util.Set;
  * contextes.
  */
 public interface NaturesEnUsage {
+  /**
+   * Un poste porte la nature.
+   */
   boolean estUtilisee(NatureDeTravailId nature);
 
   /**
-   * Les natures, parmi celles donnees, qui servent deja : une seule lecture pour toute une page.
+   * Un pointage a recopie la nature : c'est definitif.
+   */
+  boolean estPointee(NatureDeTravailId nature);
+
+  /**
+   * Les natures, parmi celles donnees, qu'un poste porte ou qu'un pointage a recopiees : une seule lecture pour toute
+   * une page.
    */
   Set<NatureDeTravailId> utiliseesParmi(Collection<NatureDeTravailId> natures);
 }

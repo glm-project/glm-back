@@ -18,6 +18,7 @@ import com.glm.glmback.atelier.domain.gestionanomalies.AdresseDossierAnomalie;
 import com.glm.glmback.atelier.domain.gestionanomalies.AnomaliesDAtelierCriteria;
 import com.glm.glmback.atelier.domain.gestionanomalies.FinAutomatiqueEnListe;
 import com.glm.glmback.atelier.domain.gestionanomalies.FinsAutomatiquesDAtelier;
+import com.glm.glmback.atelier.infrastructure.secondary.NaturesDesFixtures;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -49,6 +51,11 @@ class ListeDesFinsAutomatiquesDAtelierIT {
 
   @Autowired
   private EntityManager entities;
+
+  @BeforeEach
+  void declarerLesNaturesDesFixtures() {
+    NaturesDesFixtures.declarer(entities, transactions, "impeccmold");
+  }
 
   /**
    * L'echeance que la liste juge est celle de la duree que le debut a portee : sous huit heures, la fin automatique

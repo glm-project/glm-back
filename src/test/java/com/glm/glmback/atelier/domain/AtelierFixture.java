@@ -46,8 +46,14 @@ public final class AtelierFixture {
   public static final Auteur AUTEUR_DUPONT = new Auteur("dupont");
   public static final Auteur AUTEUR_MARTIN = new Auteur("martin");
   public static final Auteur AUTEUR_LEROY = new Auteur("leroy");
-  public static final NatureDOperation NATURE_FRAISAGE = new NatureDOperation("fraisage");
-  public static final NatureDOperation NATURE_TOURNAGE = new NatureDOperation("tournage");
+  public static final NatureDOperationId NATURE_D_OPERATION_ID_FRAISAGE = new NatureDOperationId(
+    UUID.fromString("3e9b2f10-6c4d-4a7e-8b15-2d0f1a9c7e01")
+  );
+  public static final NatureDOperationId NATURE_D_OPERATION_ID_TOURNAGE = new NatureDOperationId(
+    UUID.fromString("3e9b2f10-6c4d-4a7e-8b15-2d0f1a9c7e02")
+  );
+  public static final NatureDOperation NATURE_FRAISAGE = new NatureDOperation(NATURE_D_OPERATION_ID_FRAISAGE, "fraisage");
+  public static final NatureDOperation NATURE_TOURNAGE = new NatureDOperation(NATURE_D_OPERATION_ID_TOURNAGE, "tournage");
   public static final CoutHoraire COUT_HORAIRE_FRAISEUSE_1 = new CoutHoraire(new BigDecimal("45.50"));
   public static final TauxHoraire TAUX_HORAIRE_DUPONT = new TauxHoraire(new BigDecimal("22.00"));
   public static final OperateurConnu OPERATEUR_CONNU_DUPONT = OperateurConnu.builder()

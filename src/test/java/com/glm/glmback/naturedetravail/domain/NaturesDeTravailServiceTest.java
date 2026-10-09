@@ -118,6 +118,25 @@ class NaturesDeTravailServiceTest {
   }
 
   @Test
+  void shouldNotDeletePointedNature() {
+    repository.create(natureDeTravailSoudage());
+    usages.pointe(NATURE_DE_TRAVAIL_ID_SOUDAGE);
+
+    assertThatThrownBy(() -> natures.delete(NATURE_DE_TRAVAIL_ID_SOUDAGE))
+      .isExactlyInstanceOf(NaturePointeeException.class)
+      .hasMessageContaining(NATURE_DE_TRAVAIL_ID_SOUDAGE.uuid().toString());
+    assertThat(repository.get(NATURE_DE_TRAVAIL_ID_SOUDAGE)).contains(natureDeTravailSoudage());
+  }
+
+  @Test
+  void shouldListPointedNatureAsUsed() {
+    repository.create(natureDeTravailSoudage());
+    usages.pointe(NATURE_DE_TRAVAIL_ID_SOUDAGE);
+
+    assertThat(natures.list(firstPageOfTen()).content()).containsExactly(new NatureDeTravailListee(natureDeTravailSoudage(), true));
+  }
+
+  @Test
   void shouldDeclareAgainDeletedNature() {
     NatureDeTravail declaree = natures.declare(LIBELLE_SOUDAGE);
     natures.delete(declaree.id());

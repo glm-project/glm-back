@@ -17,7 +17,7 @@ record RestOperateurDeSupervision(
       supervise.operateur().id().uuid(),
       supervise.operateur().nom().value(),
       supervise.operateur().prenom().value(),
-      supervise.metiers().stream().map(NatureDOperation::value).toList()
+      supervise.metiers().stream().map(NatureDOperation::libelle).toList()
     );
   }
 }

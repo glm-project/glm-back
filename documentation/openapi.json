@@ -3161,7 +3161,7 @@
             "description" : "Nature de travail introuvable."
           },
           "409" : {
-            "description" : "Un poste ou un pointage se sert de cette nature."
+            "description" : "Un poste porte cette nature (nature-utilisee), ou du temps a ete pointe sous elle (nature-pointee, definitif)."
           }
         },
         "summary" : "Supprimer une nature de travail",
