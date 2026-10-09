@@ -16,7 +16,6 @@ import com.glm.glmback.atelier.domain.EvenementAvantEngagementException;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.FinApresBorneException;
 import com.glm.glmback.atelier.domain.FinAvantDebutException;
-import com.glm.glmback.atelier.domain.IdentifiantDEvenementReutiliseException;
 import com.glm.glmback.atelier.domain.OperateurDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.OperateurNonHabiliteException;
 import com.glm.glmback.atelier.domain.PointageIgnoreException;
@@ -121,11 +120,6 @@ class AtelierExceptionAdviceTest extends ExceptionAdviceContract {
       ),
       new PublishedProblem(new SaisieConcurrenteException(SuiviDAtelierId.newId()), "urn:glm:erreur:atelier:saisie-concurrente", CONFLICT),
       new PublishedProblem(new PointageIgnoreException(EvenementDAtelierId.newId()), "urn:glm:erreur:atelier:pointage-ignore", CONFLICT),
-      new PublishedProblem(
-        new IdentifiantDEvenementReutiliseException(java.util.UUID.randomUUID()),
-        "urn:glm:erreur:atelier:identifiant-evenement-reutilise",
-        CONFLICT
-      ),
       new PublishedProblem(
         new DateDeSurvenueFutureException(LE_10_MAI_2026_A_8H),
         "urn:glm:erreur:atelier:date-de-survenue-future",

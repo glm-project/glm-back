@@ -10,7 +10,6 @@ import com.glm.glmback.atelier.domain.ElementEngageableIntrouvableException;
 import com.glm.glmback.atelier.domain.EvenementAvantEngagementException;
 import com.glm.glmback.atelier.domain.FinApresBorneException;
 import com.glm.glmback.atelier.domain.FinAvantDebutException;
-import com.glm.glmback.atelier.domain.IdentifiantDEvenementReutiliseException;
 import com.glm.glmback.atelier.domain.OperateurDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.OperateurNonHabiliteException;
 import com.glm.glmback.atelier.domain.PointageIgnoreException;
@@ -112,11 +111,6 @@ class AtelierExceptionAdvice {
   @ExceptionHandler(PointageIgnoreException.class)
   ProblemDetail handlePointageIgnore(PointageIgnoreException e) {
     return ErreurDAtelier.POINTAGE_IGNORE.problem(e);
-  }
-
-  @ExceptionHandler(IdentifiantDEvenementReutiliseException.class)
-  ProblemDetail handleIdentifiantDEvenementReutilise(IdentifiantDEvenementReutiliseException e) {
-    return ErreurDAtelier.IDENTIFIANT_EVENEMENT_REUTILISE.problem(e);
   }
 
   @ExceptionHandler(DateDeSurvenueFutureException.class)
