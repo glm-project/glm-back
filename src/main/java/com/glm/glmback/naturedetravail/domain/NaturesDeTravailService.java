@@ -3,6 +3,7 @@ package com.glm.glmback.naturedetravail.domain;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public final class NaturesDeTravailService {
@@ -29,22 +30,26 @@ public final class NaturesDeTravailService {
     NatureDeTravail existante = repository.get(id).orElseThrow(() -> new NatureIntrouvableException(id));
     verifierLibelleLibre(id, libelle);
 
-    return new NatureDeTravailListee(repository.update(existante.renomme(libelle)), !usages.utiliseesParmi(List.of(id)).isEmpty());
+    NatureDeTravail renommee = repository.update(existante.renomme(libelle));
+
+    return listee(renommee, usages.utiliseesParmi(List.of(id)), usages.postesParmi(List.of(id)));
   }
 
   /**
-   * Chaque nature dit si elle sert deja, pour que l'ecran ne propose pas une suppression vouee au refus. Les usages de
-   * la page sont lus en une fois.
+   * Chaque nature dit si elle sert deja, pour que l'ecran ne propose pas une suppression vouee au refus, et combien de
+   * postes la portent. Les usages de la page sont lus en une fois.
    */
   public Page<NatureDeTravailListee> list(Pageable pageable) {
     Page<NatureDeTravail> page = repository.list(pageable);
-    Set<NatureDeTravailId> utilisees = usages.utiliseesParmi(page.content().stream().map(NatureDeTravail::id).toList());
+    List<NatureDeTravailId> ids = page.content().stream().map(NatureDeTravail::id).toList();
+    Set<NatureDeTravailId> utilisees = usages.utiliseesParmi(ids);
+    Map<NatureDeTravailId, Integer> postes = usages.postesParmi(ids);
 
     return new Page<>(
       page
         .content()
         .stream()
-        .map(nature -> new NatureDeTravailListee(nature, utilisees.contains(nature.id())))
+        .map(nature -> listee(nature, utilisees, postes))
         .toList(),
       page.currentPage(),
       page.pageSize(),
@@ -68,6 +73,14 @@ public final class NaturesDeTravailService {
       throw new NaturePointeeException(id);
     }
     repository.delete(id);
+  }
+
+  private static NatureDeTravailListee listee(
+    NatureDeTravail nature,
+    Set<NatureDeTravailId> utilisees,
+    Map<NatureDeTravailId, Integer> postes
+  ) {
+    return new NatureDeTravailListee(nature, utilisees.contains(nature.id()), postes.getOrDefault(nature.id(), 0));
   }
 
   /**

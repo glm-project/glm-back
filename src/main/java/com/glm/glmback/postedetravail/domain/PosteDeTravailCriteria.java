@@ -8,15 +8,24 @@ import java.util.Optional;
  *
  * <p>
  * La correspondance vit ici, dans le domaine, pour que le double en memoire et l'adapter de persistance ne puissent pas
- * diverger. Une nature absente ne filtre rien.
+ * diverger. Un critere absent ne filtre rien ; deux criteres donnes se cumulent. La nature se designe par son libelle
+ * ou par son identifiant.
  * </p>
  */
-public record PosteDeTravailCriteria(Optional<NatureDeTravail> nature) {
+public record PosteDeTravailCriteria(Optional<NatureDeTravail> nature, Optional<NatureDeTravailId> natureId) {
   public PosteDeTravailCriteria {
     Assert.notNull("nature de travail", nature);
+    Assert.notNull("id de la nature de travail", natureId);
+  }
+
+  public static PosteDeTravailCriteria tous() {
+    return new PosteDeTravailCriteria(Optional.empty(), Optional.empty());
   }
 
   public boolean matches(PosteDeTravail poste) {
-    return nature.map(attendue -> attendue.equals(poste.nature().libelle())).orElse(true);
+    return (
+      nature.map(attendue -> attendue.equals(poste.nature().libelle())).orElse(true)
+      && natureId.map(attendu -> attendu.equals(poste.nature().id())).orElse(true)
+    );
   }
 }

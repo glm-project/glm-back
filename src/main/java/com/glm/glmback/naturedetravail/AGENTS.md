@@ -7,7 +7,8 @@ Responsabilité, frontières et invariants de ce contexte. Les règles de code c
 ## Ce dont ce contexte s'occupe
 
 Le **référentiel des métiers exercés dans l'atelier** : soudage, tournage, fraisage, dessin. Déclarer, renommer et
-supprimer les natures, et les lister par ordre alphabétique, en disant pour chacune si elle sert déjà.
+supprimer les natures, et les lister par ordre alphabétique, en disant pour chacune si elle sert déjà et combien de
+postes la portent.
 
 ## Ce dont il ne s'occupe pas
 

@@ -1,6 +1,7 @@
 package com.glm.glmback.naturedetravail.domain;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -23,4 +24,9 @@ public interface NaturesEnUsage {
    * une page.
    */
   Set<NatureDeTravailId> utiliseesParmi(Collection<NatureDeTravailId> natures);
+
+  /**
+   * Le nombre de postes qui portent chacune des natures donnees ; une nature qu'aucun poste ne porte est absente.
+   */
+  Map<NatureDeTravailId, Integer> postesParmi(Collection<NatureDeTravailId> natures);
 }

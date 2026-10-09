@@ -292,3 +292,11 @@ Feature: Referentiel des postes de travail
     When je declare le poste de travail "Tour PNC" d'une nature inconnue
     Then la reponse a le statut http 422
     And la reponse porte le code d'erreur "urn:glm:erreur:poste-de-travail:nature-inconnue"
+
+  Scenario: Liste des postes d'une nature choisie par son identifiant
+    When je declare le poste de travail "Tour PNE 1" de la nature declaree "Tournage PNE"
+    And je declare le poste de travail "Tour PNE 2" de la nature declaree "Tournage PNE"
+    And je declare le poste de travail "Fraiseuse PNE" de la nature declaree "Fraisage PNE"
+    And je liste les postes de travail de la nature declaree "Tournage PNE"
+    Then la reponse a le statut http 200
+    And la reponse ne contient que les postes de travail "Tour PNE 1, Tour PNE 2"

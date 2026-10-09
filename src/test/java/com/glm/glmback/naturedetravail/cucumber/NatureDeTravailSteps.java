@@ -66,6 +66,12 @@ public class NatureDeTravailSteps {
     assertThat(CucumberRestTestContext.getElement("$.content[?(@.id == '" + ids.get(libelle) + "')].utilisee")).isEqualTo(List.of(true));
   }
 
+  @Then("la nature de travail {string} est listee avec {int} poste(s)")
+  public void laNatureDeTravailEstListeeAvecPostes(String libelle, int postes) {
+    jeListeLesNaturesDeTravail();
+    assertThat(CucumberRestTestContext.getElement("$.content[?(@.id == '" + ids.get(libelle) + "')].postes")).isEqualTo(List.of(postes));
+  }
+
   @Given("la nature de travail {string} est renommee en {string}")
   public void laNatureDeTravailEstRenommeeEn(String libelle, String nouveauLibelle) {
     jeListeLesNaturesDeTravail();

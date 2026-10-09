@@ -1,10 +1,10 @@
 package com.glm.glmback.postedetravail.application;
 
-import com.glm.glmback.postedetravail.domain.NatureDeTravail;
 import com.glm.glmback.postedetravail.domain.NaturesDeclarees;
 import com.glm.glmback.postedetravail.domain.PosteDeTravail;
 import com.glm.glmback.postedetravail.domain.PosteDeTravailACreer;
 import com.glm.glmback.postedetravail.domain.PosteDeTravailAModifier;
+import com.glm.glmback.postedetravail.domain.PosteDeTravailCriteria;
 import com.glm.glmback.postedetravail.domain.PosteDeTravailId;
 import com.glm.glmback.postedetravail.domain.PosteDeTravailRepository;
 import com.glm.glmback.postedetravail.domain.PostesDeTravailService;
@@ -12,7 +12,6 @@ import com.glm.glmback.postedetravail.domain.PostesEnUsage;
 import com.glm.glmback.postedetravail.domain.PostesPointes;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
-import java.util.Optional;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,8 +44,8 @@ public class PostesDeTravailApplicationService {
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
   @Transactional(readOnly = true)
-  public Page<PosteDeTravail> list(Optional<NatureDeTravail> nature, Pageable pageable) {
-    return postesDeTravail.list(nature, pageable);
+  public Page<PosteDeTravail> list(PosteDeTravailCriteria criteria, Pageable pageable) {
+    return postesDeTravail.list(criteria, pageable);
   }
 
   @Secured("ROLE_GESTIONNAIRE")
