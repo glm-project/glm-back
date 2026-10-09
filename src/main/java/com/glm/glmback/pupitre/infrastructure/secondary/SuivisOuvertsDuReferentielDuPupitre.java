@@ -16,7 +16,7 @@ import org.springframework.stereotype.Repository;
  * jamais importer leur code.
  *
  * <p>
- * Les suivis non clotures, leurs activites interpretables sans fin, l existence de pointages et les
+ * Les suivis non clotures, leurs activites sans fin, l existence de pointages et les
  * references de leurs elements se lisent par ensembles, jamais une requete par element.
  * </p>
  */

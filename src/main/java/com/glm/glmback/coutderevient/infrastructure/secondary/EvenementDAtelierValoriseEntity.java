@@ -11,7 +11,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.hibernate.annotations.Immutable;
 
-/** Tarifs captures sur le fait ouvrant actif, jamais relus au referentiel. */
+/** Tarifs captures sur le fait ouvrant, jamais relus au referentiel. */
 @Entity
 @Immutable
 @Table(name = "evenement_d_atelier")

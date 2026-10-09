@@ -52,7 +52,7 @@ class SyntheseDesHeuresResource {
     Les activites interpretees par atelier sont selectionnees par recouvrement de la semaine, puis coupees aux
     minuits locaux. Une heure sur deux elements compte sur chacun. Les elements portant une activite ou un pointage
     dans la semaine sont rendus par premiere apparition puis nom, avec leur fiche et leurs postes relus au referentiel.
-    Tous les pointages actifs de la semaine sont conserves, meme sans activite interpretable. Leur tri porte sur
+    Tous les pointages de la semaine sont conserves, meme sans activite interpretable. Leur tri porte sur
     l'heure metier, puis la fin avant l'ouverture, puis l'identite, jamais l'heure d'enregistrement.
     La semaine est explicite et l'annee est celle des semaines ISO ; aucun montant n'est calcule.
     L'instant evaluation facultatif decide de l'expiration et des jours atteints par les activites en cours.

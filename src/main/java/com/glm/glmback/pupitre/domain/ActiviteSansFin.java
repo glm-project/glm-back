@@ -5,7 +5,7 @@ import java.time.Instant;
 import java.util.Optional;
 
 /**
- * Une activite interpretable qu'aucun fait n'a terminee, telle que l'atelier la projette : qui travaille, sur quel
+ * Une activite qu'aucun fait n'a terminee, telle que l'atelier la projette : qui travaille, sur quel
  * poste, dans quelle categorie, depuis quand, et jusqu'a quand au plus tard.
  *
  * <p>

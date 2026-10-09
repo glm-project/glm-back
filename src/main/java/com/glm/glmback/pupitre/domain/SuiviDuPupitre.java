@@ -58,8 +58,8 @@ public record SuiviDuPupitre(
   }
 
   /**
-   * L'etat a cet instant, juge sur les seules activites interpretables, comme l'atelier le juge : en cours si l'une
-   * l'est, sinon interrompu des qu'un pointage actif existe, sinon en attente. Jamais {@code CLOTURE} : un element
+   * L'etat a cet instant, juge sur les activites sans fin reelle, comme l'atelier le juge : en cours si l'une
+   * l'est, sinon interrompu des qu'un pointage existe, sinon en attente. Jamais {@code CLOTURE} : un element
    * cloture n'accepte plus de pointage et ne figure pas au referentiel du pupitre.
    */
   public EtatDuSuivi etatA(Instant instant) {

@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Repository;
 
-/** Tous les pointages actifs de la periode, meme lorsqu'ils ne laissent aucun travail. */
+/** Tous les pointages de la periode, meme lorsqu'ils ne laissent aucun travail. */
 @Repository
 class JournalDeLaSynthese implements JournalDeLOperateur {
 

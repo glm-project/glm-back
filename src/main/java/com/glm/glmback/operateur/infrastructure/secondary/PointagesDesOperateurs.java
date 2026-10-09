@@ -5,7 +5,7 @@ import com.glm.glmback.operateur.domain.OperateursQuiOntPointe;
 import org.springframework.stereotype.Repository;
 
 /**
- * Ce qui empeche de supprimer un operateur : tout fait historique du journal d'atelier a son nom, meme annule.
+ * Ce qui empeche de supprimer un operateur : tout fait historique du journal d'atelier a son nom.
  */
 @Repository
 class PointagesDesOperateurs implements OperateursQuiOntPointe {

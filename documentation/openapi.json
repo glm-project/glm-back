@@ -342,7 +342,7 @@
             "type" : "string"
           },
           "echeance" : {
-            "description" : "Echeance de l'activite : son debut plus 13 heures ecoulees. Si rien ne la termine avant, elle se termine\nautomatiquement a cet instant, avec une anomalie.\n",
+            "description" : "Echeance de l'activite : son debut plus la duree maximale d'une activite (13 heures ecoulees). Si aucune fin ne la\ntermine avant, elle se termine automatiquement a cet instant : c'est une fin automatique, que le gestionnaire\nregularise.\n",
             "format" : "date-time",
             "type" : "string"
           },
@@ -351,7 +351,7 @@
             "description" : "Operateur en activite, absent si la fiche n'est plus resolue au referentiel."
           },
           "ouverture" : {
-            "description" : "Identite de l'activite : l'identifiant de son pointage ouvrant d'origine. C'est elle qu'une fin ou une transition\nvise dans `cible`.\n",
+            "description" : "Identite de l'activite : l'identifiant de son pointage ouvrant d'origine. C'est elle que vise la fin d'une\nregularisation (`activite`).\n",
             "format" : "uuid",
             "type" : "string"
           },
@@ -382,7 +382,7 @@
             "type" : "string"
           },
           "id" : {
-            "description" : "Identite stable de l'activite, conservee apres correction.",
+            "description" : "Identite stable de l'activite : l'identifiant de son pointage ouvrant d'origine.",
             "format" : "uuid",
             "type" : "string"
           }
@@ -925,7 +925,7 @@
         "type" : "object"
       },
       "RestFinAutomatiqueEnListe" : {
-        "description" : "Une activite terminee a son echeance faute de fin reelle, issue des projections courantes, sans journal. L'adresse est celle de l'ouvrant actif ; activite est l'identite d'origine que visent les actes.",
+        "description" : "Une activite terminee a son echeance faute de fin reelle, issue des projections courantes, sans journal. L'adresse est celle du pointage qui ouvre l'activite ; activite est l'identite de l'activite, que vise la regularisation.",
         "properties" : {
           "activite" : {
             "format" : "uuid",
@@ -1005,7 +1005,7 @@
             "type" : "string"
           },
           "pointages" : {
-            "description" : "Tous les pointages actifs de l'operateur dates de ce jour, meme sans activite interpretable.",
+            "description" : "Tous les pointages de l'operateur dates de ce jour, meme sans activite interpretable.",
             "items" : {
               "$ref" : "#/components/schemas/RestPointageDeSyntheseDesHeures"
             },
@@ -1520,7 +1520,7 @@
             "type" : "string"
           },
           "id" : {
-            "description" : "Identite du pointage actif.",
+            "description" : "Identite du pointage.",
             "format" : "uuid",
             "type" : "string"
           },
@@ -1879,7 +1879,7 @@
         "description" : "Une ligne du tableau d'atelier, sans le journal des evenements.\nL'etat et les activites en cours restent deduits du journal a chaque lecture.\nLe journal complet se consulte via GET /api/atelier/suivis/{id}.\n",
         "properties" : {
           "activitesEnCours" : {
-            "description" : "Les activites en cours a l'instant de la lecture ; une activite dont l'echeance est atteinte n'y figure plus, ni une\nactivite a resoudre.\n",
+            "description" : "Les activites en cours a l'instant de la lecture ; une activite dont l'echeance est atteinte n'y figure plus.\n",
             "items" : {
               "$ref" : "#/components/schemas/RestActiviteEnCours"
             },
@@ -1947,7 +1947,7 @@
             "type" : "string"
           },
           "etat" : {
-            "description" : "EN_ATTENTE, EN_COURS ou INTERROMPU. Juge sur les seules activites interpretables a genereLe.",
+            "description" : "EN_ATTENTE, EN_COURS ou INTERROMPU. Juge sur les activites projetees a genereLe.",
             "enum" : [ "EN_ATTENTE", "EN_COURS", "INTERROMPU" ],
             "type" : "string"
           },
@@ -2079,7 +2079,7 @@
   "paths" : {
     "/api/atelier/anomalies" : {
       "get" : {
-        "description" : "Les activites sans fin reelle, hors activites a resoudre, dont l'echeance est atteinte a l'instant de la lecture,\nborne comprise. Chaque ligne porte l'adresse du dossier (suivi et pointage ouvrant actif), l'activite d'origine, son\ndebut et son echeance, sans duree. Le tri porte sur le debut, puis le suivi et l'ouvrant.\nLes recherches partielles operateur (nom, prenom ou identifiant) et element (designation ou identifiant)\nsont combinees sans tenir compte de la casse avant pagination. Pourcent, soulignement et antislash sont litteraux.\nUne acquisition en echec reste une erreur HTTP.\n",
+        "description" : "Les activites sans fin reelle dont l'echeance est atteinte a l'instant de la lecture, borne comprise. Chaque ligne\nporte l'adresse du dossier (suivi et pointage ouvrant), l'activite, son debut et son echeance, sans duree. Le tri\nporte sur le debut, puis le suivi et l'ouvrant.\nLes recherches partielles operateur (nom, prenom ou identifiant) et element (designation ou identifiant)\nsont combinees sans tenir compte de la casse avant pagination. Pourcent, soulignement et antislash sont litteraux.\nUne acquisition en echec reste une erreur HTTP.\n",
         "operationId" : "list_5",
         "parameters" : [ {
           "in" : "query",
@@ -2709,7 +2709,7 @@
     },
     "/api/couts-de-revient/{elementId}" : {
       "get" : {
-        "description" : "Rend une ligne par nature d'operation — fraisage, tournage, erosion —, chacune portant le temps de bon travail,\nle temps passe en non conformite avec ses periodes datees, et le cout separe en machine et main d'oeuvre.\n\nL'entree se fait par l'element, non par son suivi d'atelier : un element reengage apres cloture additionne ses\npassages.\n\nDeux regles a connaitre avant d'afficher les montants. Le cout horaire de chaque poste actif court **en entier**,\nmeme quand l'operateur en mene plusieurs de front ; son taux horaire, lui, est **divise** par le nombre de postes\nqu'il occupait a cet instant, tous elements confondus. Un operateur sur trois elements avec une seule machine\nn'est donc pas divise. Le decoupage se fait aux bornes de chaque pointage, si bien que seul le chevauchement reel\nest divise.\n\nUne activite encore en cours est entierement exclue du temps, des couts et du diviseur. A son echeance\nprojetee, elle compte jusqu'a sa fin automatique avec une anomalie et sa periode datee. L'horloge est relevee\nune seule fois par rapport ; cet instant est rendu dans evaluation.\n\nChaque duree et montant porte complete et sa valeur.\n",
+        "description" : "Rend une ligne par nature d'operation — fraisage, tournage, erosion —, chacune portant le temps de bon travail,\nle temps passe en non conformite avec ses periodes datees, et le cout separe en machine et main d'oeuvre.\n\nL'entree se fait par l'element, non par son suivi d'atelier : un element reengage apres cloture additionne ses\npassages.\n\nDeux regles a connaitre avant d'afficher les montants. Le cout horaire de chaque poste actif court **en entier**,\nmeme quand l'operateur en mene plusieurs de front ; son taux horaire, lui, est **divise** par le nombre de postes\nqu'il occupait a cet instant, tous elements confondus. Un operateur sur trois elements avec une seule machine\nn'est donc pas divise. Le decoupage se fait aux bornes de chaque pointage, si bien que seul le chevauchement reel\nest divise.\n\nUne activite encore en cours est entierement exclue du temps, des couts et du diviseur. A son echeance\nprojetee, elle compte jusqu'a sa fin automatique avec une anomalie et sa periode datee. L'horloge est relevee\nune seule fois par rapport ; cet instant est rendu dans evaluation.\n\nChaque duree et montant porte sa valeur.\n",
         "operationId" : "get_5",
         "parameters" : [ {
           "description" : "Identifiant de l'element de fabrication.",
@@ -3569,7 +3569,7 @@
     },
     "/api/syntheses-des-heures/{operateurId}" : {
       "get" : {
-        "description" : "Rend les sept jours de la semaine ISO demandee, vides compris, le journal brut de l'operateur et les durees\nde ses activites terminees, y compris automatiquement. Une activite en cours ne produit aucune duree.\nLes activites interpretees par atelier sont selectionnees par recouvrement de la semaine, puis coupees aux\nminuits locaux. Une heure sur deux elements compte sur chacun. Les elements portant une activite ou un pointage\ndans la semaine sont rendus par premiere apparition puis nom, avec leur fiche et leurs postes relus au referentiel.\nTous les pointages actifs de la semaine sont conserves, meme sans activite interpretable. Leur tri porte sur\nl'heure metier, puis la fin avant l'ouverture, puis l'identite, jamais l'heure d'enregistrement.\nLa semaine est explicite et l'annee est celle des semaines ISO ; aucun montant n'est calcule.\nL'instant evaluation facultatif decide de l'expiration et des jours atteints par les activites en cours.\nSans parametre, l'heure du serveur est relevee une seule fois. La reponse rend l'instant effectivement utilise.\nUn instant passe est accepte. La borne future est l'heure du serveur plus deux minutes, incluse.\nPasser le meme instant a la feuille et a la synthese assure la meme decision d'expiration ; les faits connus\nrestent lus, meme posterieurs a cet instant. Ce contrat ne garantit ni lecture historique ni transaction commune.\n",
+        "description" : "Rend les sept jours de la semaine ISO demandee, vides compris, le journal brut de l'operateur et les durees\nde ses activites terminees, y compris automatiquement. Une activite en cours ne produit aucune duree.\nLes activites interpretees par atelier sont selectionnees par recouvrement de la semaine, puis coupees aux\nminuits locaux. Une heure sur deux elements compte sur chacun. Les elements portant une activite ou un pointage\ndans la semaine sont rendus par premiere apparition puis nom, avec leur fiche et leurs postes relus au referentiel.\nTous les pointages de la semaine sont conserves, meme sans activite interpretable. Leur tri porte sur\nl'heure metier, puis la fin avant l'ouverture, puis l'identite, jamais l'heure d'enregistrement.\nLa semaine est explicite et l'annee est celle des semaines ISO ; aucun montant n'est calcule.\nL'instant evaluation facultatif decide de l'expiration et des jours atteints par les activites en cours.\nSans parametre, l'heure du serveur est relevee une seule fois. La reponse rend l'instant effectivement utilise.\nUn instant passe est accepte. La borne future est l'heure du serveur plus deux minutes, incluse.\nPasser le meme instant a la feuille et a la synthese assure la meme decision d'expiration ; les faits connus\nrestent lus, meme posterieurs a cet instant. Ce contrat ne garantit ni lecture historique ni transaction commune.\n",
         "operationId" : "get_3",
         "parameters" : [ {
           "description" : "Identifiant de l'operateur dans le referentiel.",

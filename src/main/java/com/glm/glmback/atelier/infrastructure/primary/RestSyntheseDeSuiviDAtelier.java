@@ -70,8 +70,7 @@ final class RestSyntheseDeSuiviDAtelier {
   @JsonProperty
   @Schema(
     description = """
-    Les activites en cours a l'instant de la lecture ; une activite dont l'echeance est atteinte n'y figure plus, ni une
-    activite a resoudre.
+    Les activites en cours a l'instant de la lecture ; une activite dont l'echeance est atteinte n'y figure plus.
     """,
     requiredMode = Schema.RequiredMode.REQUIRED
   )

@@ -32,7 +32,7 @@ record RestSuiviDuPupitre(
   String reference,
   @Schema(description = "Categorie de l'element, copiee a l'engagement.", requiredMode = Schema.RequiredMode.REQUIRED) String categorie,
   @Schema(
-    description = "EN_ATTENTE, EN_COURS ou INTERROMPU. Juge sur les seules activites interpretables a genereLe.",
+    description = "EN_ATTENTE, EN_COURS ou INTERROMPU. Juge sur les activites projetees a genereLe.",
     requiredMode = Schema.RequiredMode.REQUIRED
   )
   EtatDuSuivi etat,

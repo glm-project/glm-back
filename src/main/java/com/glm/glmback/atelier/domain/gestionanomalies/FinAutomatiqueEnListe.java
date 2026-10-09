@@ -11,8 +11,8 @@ import java.time.Instant;
  * Une activite terminee a son echeance faute de fin reelle, lue dans les projections sans reconstituer son journal.
  *
  * <p>
- * L'adresse du dossier est celle de l'ouvrant actif ; {@code activite} est l'identite d'origine de l'activite, que
- * visent les actes. La ligne donne le debut et l'echeance : aucune duree n'est calculee ici.
+ * L'adresse du dossier est celle du pointage qui ouvre l'activite ; {@code activite} est l'identite de l'activite, que
+ * vise la regularisation. La ligne donne le debut et l'echeance : aucune duree n'est calculee ici.
  * </p>
  */
 public record FinAutomatiqueEnListe(

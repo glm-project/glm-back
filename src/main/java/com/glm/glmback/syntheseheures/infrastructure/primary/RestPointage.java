@@ -13,7 +13,7 @@ import java.util.UUID;
   """
 )
 record RestPointage(
-  @Schema(description = "Identite du pointage actif.", requiredMode = Schema.RequiredMode.REQUIRED) UUID id,
+  @Schema(description = "Identite du pointage.", requiredMode = Schema.RequiredMode.REQUIRED) UUID id,
   @Schema(description = "Nature du pointage.", requiredMode = Schema.RequiredMode.REQUIRED) RestTypeDePointage type,
   @Schema(description = "Heure metier a laquelle le pointage a eu lieu.", requiredMode = Schema.RequiredMode.REQUIRED)
   Instant dateDeSurvenue,

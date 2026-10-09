@@ -8,7 +8,11 @@ import java.util.UUID;
 
 @Schema(description = "L'activite entiere interpretee par atelier, avant son decoupage calendaire.")
 record RestActiviteInterpreteeDeLaFeuilleDeTemps(
-  @Schema(description = "Identite stable de l'activite, conservee apres correction.", requiredMode = Schema.RequiredMode.REQUIRED) UUID id,
+  @Schema(
+    description = "Identite stable de l'activite : l'identifiant de son pointage ouvrant d'origine.",
+    requiredMode = Schema.RequiredMode.REQUIRED
+  )
+  UUID id,
   @Schema(description = "TERMINEE_AUTOMATIQUEMENT signale l'anomalie de fin automatique.", requiredMode = Schema.RequiredMode.REQUIRED)
   EtatDActivite etat,
   @Schema(description = "Debut de l'activite entiere.", requiredMode = Schema.RequiredMode.REQUIRED) Instant debut,

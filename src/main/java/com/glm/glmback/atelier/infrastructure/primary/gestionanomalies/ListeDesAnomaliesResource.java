@@ -30,9 +30,9 @@ class ListeDesAnomaliesResource {
   @Operation(
     summary = "Lister les fins automatiques",
     description = """
-    Les activites sans fin reelle, hors activites a resoudre, dont l'echeance est atteinte a l'instant de la lecture,
-    borne comprise. Chaque ligne porte l'adresse du dossier (suivi et pointage ouvrant actif), l'activite d'origine, son
-    debut et son echeance, sans duree. Le tri porte sur le debut, puis le suivi et l'ouvrant.
+    Les activites sans fin reelle dont l'echeance est atteinte a l'instant de la lecture, borne comprise. Chaque ligne
+    porte l'adresse du dossier (suivi et pointage ouvrant), l'activite, son debut et son echeance, sans duree. Le tri
+    porte sur le debut, puis le suivi et l'ouvrant.
     Les recherches partielles operateur (nom, prenom ou identifiant) et element (designation ou identifiant)
     sont combinees sans tenir compte de la casse avant pagination. Pourcent, soulignement et antislash sont litteraux.
     Une acquisition en echec reste une erreur HTTP.

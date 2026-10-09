@@ -19,7 +19,7 @@ import org.hibernate.annotations.Immutable;
  * <p>
  * La cloture est un fait :
  * {@code clotureDateDeSurvenue} suffit a ecarter des la requete les elements qui n'acceptent plus de pointage. L'etat
- * rendu au pupitre se juge sur les activites interpretables projetees par l atelier.
+ * rendu au pupitre se juge sur les activites projetees par l atelier.
  * </p>
  *
  * <p>

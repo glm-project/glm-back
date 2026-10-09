@@ -43,7 +43,7 @@ class CoutDeRevientResource {
     projetee, elle compte jusqu'a sa fin automatique avec une anomalie et sa periode datee. L'horloge est relevee
     une seule fois par rapport ; cet instant est rendu dans evaluation.
 
-    Chaque duree et montant porte complete et sa valeur.
+    Chaque duree et montant porte sa valeur.
     """
   )
   @ApiResponse(responseCode = "200", description = "Le rapport de l'element. Vide s'il n'a jamais ete engage en atelier.")
