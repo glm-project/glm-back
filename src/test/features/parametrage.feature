@@ -73,11 +73,11 @@ Feature: Parametrage de l'entreprise
     And le refus du logo dit "<raison>"
 
     Examples:
-      | fichier                    | raison                                                       |
-      | un GIF de 50 x 50          | Le logo doit etre une image PNG ou JPEG (recu : gif)         |
-      | un PNG de 300 x 80         | Le logo doit tenir dans 256 x 256 pixels (recu : 300 x 80)   |
-      | un PNG de 50 x 50 de 60 Ko | Le logo pese 61440 octets, au plus 51200                     |
-      | un fichier texte           | Le fichier n'est pas une image lisible                       |
+      | fichier                    | raison                                                     |
+      | un GIF de 50 x 50          | Le logo doit etre une image PNG ou JPEG (recu : gif)       |
+      | un PNG de 300 x 80         | Le logo doit tenir dans 256 x 256 pixels (recu : 300 x 80) |
+      | un PNG de 50 x 50 de 60 Ko | Le logo pese 61440 octets, au plus 51200                   |
+      | un fichier texte           | Le fichier n'est pas une image lisible                     |
 
   Scenario: Depot du logo refuse a un utilisateur simple
     Given I am logged in as "user" with role "USER" for tenant "parametrage_fixture"

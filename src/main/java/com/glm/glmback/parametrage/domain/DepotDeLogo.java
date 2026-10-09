@@ -31,12 +31,7 @@ public final class DepotDeLogo {
     );
     if (image.largeur() > COTE_MAXIMAL || image.hauteur() > COTE_MAXIMAL) {
       throw new LogoInvalideException(
-        "Le logo doit tenir dans %d x %d pixels (recu : %d x %d)".formatted(
-          COTE_MAXIMAL,
-          COTE_MAXIMAL,
-          image.largeur(),
-          image.hauteur()
-        )
+        "Le logo doit tenir dans %d x %d pixels (recu : %d x %d)".formatted(COTE_MAXIMAL, COTE_MAXIMAL, image.largeur(), image.hauteur())
       );
     }
 
