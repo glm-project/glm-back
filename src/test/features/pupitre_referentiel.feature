@@ -97,7 +97,7 @@ Feature: Le referentiel que le pupitre met en cache
     Then "OF 4007" ne figure pas au referentiel du pupitre
 
   Scenario: Une activite que rien n'a terminee quitte les activites en cours a son echeance
-    # Chaque activite porte son ouverture, que visera une fin ou une transition, et son echeance, son debut plus
+    # Chaque activite porte son ouverture, que vise la fin regularisee par le gestionnaire, et son echeance, son debut plus
     # 13 heures : le pupitre hors ligne la sait expiree a cet instant sans attendre le referentiel suivant.
     Given le pupitre fabrique "OF 4101"
     And "OF 4101" est engage au pupitre a "2026-05-18T07:00:00Z"

@@ -286,6 +286,36 @@ Feature: Echeance et fin automatique des activites
       | evenement | debut                | fin                  | duree |
       | 0         | 2026-06-17T08:00:00Z | 2026-06-17T21:00:00Z | PT13H |
 
+  Scenario: Un demarrage pointe exactement a l'echeance est accepte et laisse a l'activite precedente une fin automatique
+    Given il est "2026-06-27T07:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 5017"
+      | categorie | OF   |
+      | reference | 5017 |
+    And j'ai engage l'element "OF 5017" en atelier
+    And il est "2026-06-27T08:00:00Z"
+    And j'ai pointe sur "OF 5017"
+      | id        | 00000000-0000-0000-0000-000000000601 |
+      | type      | DEBUT                                |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
+    Given il est "2026-06-27T21:00:00Z"
+    When je pointe sur "OF 5017"
+      | id        | 00000000-0000-0000-0000-000000000602 |
+      | type      | DEBUT                                |
+      | operateur | dupont                               |
+      | poste     | fraiseuse-1                          |
+    # L'echeance est atteinte a 21:00 : le travail de 08:00 compte comme termine, et le demarrage a la meme heure est
+    # accepte. La lecture donne au premier une fin automatique a 21:00, jamais une fin reelle qu'un demarrage n'etablit pas.
+    Then la reponse a le statut http 201
+    And les activites en cours sont
+      | categorie | depuis               | ouverture                            | echeance             |
+      | TRAVAIL   | 2026-06-27T21:00:00Z | 00000000-0000-0000-0000-000000000602 | 2026-06-28T10:00:00Z |
+    When je consulte le dossier d'anomalie de "OF 5017" depuis l'evenement 0
+    Then la reponse a le statut http 200
+    And le dossier d'anomalie donne l'activite
+      | evenement | debut                | fin                  | duree |
+      | 0         | 2026-06-27T08:00:00Z | 2026-06-27T21:00:00Z | PT13H |
+
   Scenario: Une fin puis une non conformite pointees a 12 h et recues le lendemain sont rejouees a leur heure
     Given il est "2026-06-19T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 5013"

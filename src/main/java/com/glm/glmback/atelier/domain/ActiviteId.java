@@ -7,7 +7,7 @@ import java.util.UUID;
  * L'identite d'une activite : celle du pointage qui l'a ouverte.
  *
  * <p>
- * C'est elle que visent la fin et la transition, jamais l'identifiant technique de l'ouvrant. Les deux sont
+ * C'est elle que cible la fin d'une regularisation, jamais l'identifiant technique de l'ouvrant. Les deux sont
  * aujourd'hui le meme identifiant.
  * </p>
  */

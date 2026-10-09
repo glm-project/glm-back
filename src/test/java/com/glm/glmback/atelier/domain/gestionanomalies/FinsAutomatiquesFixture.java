@@ -13,7 +13,6 @@ import com.glm.glmback.atelier.domain.Engagement;
 import com.glm.glmback.atelier.domain.EvenementDAtelier;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.Horodatage;
-import com.glm.glmback.atelier.domain.IntentionDePointage;
 import com.glm.glmback.atelier.domain.JournalDAtelier;
 import com.glm.glmback.atelier.domain.Nom;
 import com.glm.glmback.atelier.domain.NomDElement;
@@ -130,7 +129,6 @@ public final class FinsAutomatiquesFixture {
     return EvenementDAtelier.builder()
       .id(id)
       .type(TypeDEvenementDAtelier.DEBUT)
-      .intention(IntentionDePointage.OUVERTURE)
       .activite(Optional.of(ActiviteId.ouvertePar(id)))
       .activiteVisee(Optional.empty())
       .operateur(operateur)
@@ -155,7 +153,6 @@ public final class FinsAutomatiquesFixture {
     return EvenementDAtelier.builder()
       .id(id)
       .type(TypeDEvenementDAtelier.DEBUT)
-      .intention(IntentionDePointage.OUVERTURE)
       .activite(Optional.of(ActiviteId.ouvertePar(id)))
       .activiteVisee(Optional.empty())
       .operateur(OPERATEUR_ID_DUPONT)

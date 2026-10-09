@@ -247,7 +247,6 @@ class FreshActivitySchemaIT {
       )
     ).contains(
       "evenement_d_atelier.origine:NO",
-      "evenement_d_atelier.intention:NO",
       "evenement_d_atelier.activite_id:YES",
       "evenement_d_atelier.activite_visee_id:YES",
       "evenement_d_atelier.cout_horaire:YES",

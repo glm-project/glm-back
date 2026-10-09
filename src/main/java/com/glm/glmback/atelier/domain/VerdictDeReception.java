@@ -8,14 +8,10 @@ import java.util.Optional;
  */
 public sealed interface VerdictDeReception {
   /**
-   * Un pointage accepte entre au journal. Une fin termine l'activite en cours de sa cle, que ce verdict designe ; un
-   * debut ou une non conformite en ouvre une nouvelle et n'en designe aucune.
+   * Un pointage accepte entre au journal. Une fin ferme l'activite en cours de sa cle sans la designer ; un debut ou
+   * une non conformite en ouvre une nouvelle.
    */
-  record Accepte(Optional<ActiviteId> activiteTerminee) implements VerdictDeReception {
-    public Accepte {
-      Assert.notNull("activite terminee", activiteTerminee);
-    }
-  }
+  record Accepte() implements VerdictDeReception {}
 
   /**
    * Un pointage ignore ne change rien au journal. Il garde la raison, et le dernier pointage accepte de sa cle auquel la

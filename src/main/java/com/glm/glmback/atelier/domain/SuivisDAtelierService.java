@@ -142,7 +142,7 @@ public final class SuivisDAtelierService {
         EvenementDAtelier evenement = evenement(
           commande.evenement(),
           commande.type(),
-          accepte.activiteTerminee(),
+          Optional.empty(),
           ressources,
           commande.auteur(),
           OrigineDuPointage.POINTAGE,
@@ -225,7 +225,7 @@ public final class SuivisDAtelierService {
   private static EvenementDAtelier evenement(
     EvenementDAtelierId evenement,
     TypeDEvenementDAtelier type,
-    Optional<ActiviteId> activiteTerminee,
+    Optional<ActiviteId> cible,
     Ressources ressources,
     Auteur auteur,
     OrigineDuPointage origine,
@@ -236,9 +236,8 @@ public final class SuivisDAtelierService {
     return EvenementDAtelier.builder()
       .id(evenement)
       .type(type)
-      .intention(ouvre ? IntentionDePointage.OUVERTURE : IntentionDePointage.FIN)
       .activite(ouvre ? Optional.of(ActiviteId.ouvertePar(evenement)) : Optional.empty())
-      .activiteVisee(activiteTerminee)
+      .activiteVisee(cible)
       .operateur(ressources.operateur().id())
       .poste(ressources.poste().map(PosteConnu::id))
       .nature(ressources.poste().map(PosteConnu::nature))

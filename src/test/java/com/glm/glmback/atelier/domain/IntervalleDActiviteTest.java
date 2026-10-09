@@ -34,7 +34,6 @@ class IntervalleDActiviteTest {
         CategorieDActivite.TRAVAIL,
         LE_10_MAI_2026_A_8H,
         Optional.empty(),
-        false,
         false
       )
     )
@@ -68,7 +67,6 @@ class IntervalleDActiviteTest {
         CategorieDActivite.TRAVAIL,
         LE_10_MAI_2026_A_8H,
         Optional.empty(),
-        false,
         false
       )
     )
@@ -88,7 +86,6 @@ class IntervalleDActiviteTest {
         CategorieDActivite.TRAVAIL,
         LE_10_MAI_2026_A_8H,
         Optional.empty(),
-        false,
         false
       )
     )
@@ -108,7 +105,6 @@ class IntervalleDActiviteTest {
         CategorieDActivite.TRAVAIL,
         LE_10_MAI_2026_A_8H,
         Optional.empty(),
-        false,
         false
       )
     )
@@ -128,7 +124,6 @@ class IntervalleDActiviteTest {
         null,
         LE_10_MAI_2026_A_8H,
         Optional.empty(),
-        false,
         false
       )
     )
@@ -178,7 +173,6 @@ class IntervalleDActiviteTest {
       .categorie(CategorieDActivite.TRAVAIL)
       .debut(debut)
       .fin(fin)
-      .finAutomatique(false)
-      .aResoudre(false);
+      .finAutomatique(false);
   }
 }

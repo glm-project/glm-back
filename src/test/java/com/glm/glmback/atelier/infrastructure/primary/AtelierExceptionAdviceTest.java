@@ -7,7 +7,6 @@ import com.glm.glmback.UnitTest;
 import com.glm.glmback.atelier.domain.ActiviteDejaRegulariseeException;
 import com.glm.glmback.atelier.domain.ActiviteId;
 import com.glm.glmback.atelier.domain.ActiviteNonEchueException;
-import com.glm.glmback.atelier.domain.ActiviteViseeIncoherenteException;
 import com.glm.glmback.atelier.domain.ActiviteViseeIntrouvableException;
 import com.glm.glmback.atelier.domain.DateDeSurvenueFutureException;
 import com.glm.glmback.atelier.domain.ElementDejaEngageException;
@@ -67,20 +66,9 @@ class AtelierExceptionAdviceTest extends ExceptionAdviceContract {
         NOT_FOUND
       ),
       new PublishedProblem(
-        new ActiviteViseeIntrouvableException(
-          debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H),
-          new ActiviteId(java.util.UUID.randomUUID())
-        ),
+        new ActiviteViseeIntrouvableException(new ActiviteId(java.util.UUID.randomUUID())),
         "urn:glm:erreur:atelier:activite-visee-introuvable",
         NOT_FOUND
-      ),
-      new PublishedProblem(
-        new ActiviteViseeIncoherenteException(
-          debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H),
-          new ActiviteId(java.util.UUID.randomUUID())
-        ),
-        "urn:glm:erreur:atelier:activite-visee-incoherente",
-        CONFLICT
       ),
       new PublishedProblem(
         new OperateurNonHabiliteException(OPERATEUR_ID_DUPONT, POSTE_ID_FRAISEUSE_1),

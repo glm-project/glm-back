@@ -57,7 +57,7 @@ final class RegleDeReception {
           return new VerdictDeReception.Ignore(RaisonDePointageIgnore.ANTERIEUR, dernierAccepte);
         }
 
-        return new VerdictDeReception.Accepte(enCours.map(Activite::id));
+        return new VerdictDeReception.Accepte();
       }
 
       return new VerdictDeReception.Ignore(
@@ -70,6 +70,6 @@ final class RegleDeReception {
       return new VerdictDeReception.Ignore(RaisonDePointageIgnore.DEJA_EN_COURS, dernierAccepte);
     }
 
-    return new VerdictDeReception.Accepte(Optional.empty());
+    return new VerdictDeReception.Accepte();
   }
 }

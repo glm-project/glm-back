@@ -41,19 +41,15 @@ class JournalDAtelierOrdreMetierTest {
   }
 
   @Test
-  void shouldOrdonnerLesFinsAvantLesTransitionsPuisLesOuverturesSimultanees() {
+  void shouldOrdonnerLesFinsAvantLesOuverturesSimultanees() {
     var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     var fin = finDe(travail).a(LE_10_MAI_2026_A_12H);
-    var transition = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_12H);
-    var ouverture = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H);
-    var journal = new JournalDAtelier(List.of(ouverture, transition, fin, travail));
+    var ouverture = nonConformiteSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H);
+    var journal = new JournalDAtelier(List.of(ouverture, fin, travail));
 
-    assertThat(journal.evenements()).containsExactly(travail, fin, transition, ouverture);
+    assertThat(journal.evenements()).containsExactly(travail, fin, ouverture);
     assertThat(journal.activites(Optional.empty())).isEqualTo(
-      new JournalDAtelier(List.of(travail, fin, transition, ouverture)).activites(Optional.empty())
-    );
-    assertThat(journal.diagnostics(Optional.empty())).isEqualTo(
-      new JournalDAtelier(List.of(transition, travail, ouverture, fin)).diagnostics(Optional.empty())
+      new JournalDAtelier(List.of(travail, fin, ouverture)).activites(Optional.empty())
     );
   }
 }

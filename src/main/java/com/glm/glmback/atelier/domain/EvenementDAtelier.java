@@ -8,9 +8,9 @@ import java.util.Optional;
  * Un fait du journal d'atelier : tel operateur a fait telle action sur tel poste de travail, a telle heure.
  *
  * <p>
- * Son intention dit ce qu'il fait d'une activite. Une ouverture et une transition ouvrent une activite, dont elles
- * portent l'identite ; une transition et une fin visent l'activite qu'elles remplacent ou terminent. Seule une fin se
- * pointe FIN. Le fait qui ouvre une activite en porte l'identite : la sienne.
+ * Son type dit ce qu'il fait d'une activite. Un debut et une non conformite ouvrent une activite, dont ils portent
+ * l'identite : la leur. Une fin n'en ouvre aucune et ferme l'activite en cours de sa cle, sans la designer ; seule la
+ * fin que le gestionnaire regularise porte une cible, l'activite echue dont elle etablit la fin.
  * </p>
  *
  * <p>
@@ -28,7 +28,6 @@ import java.util.Optional;
 public record EvenementDAtelier(
   EvenementDAtelierId id,
   TypeDEvenementDAtelier type,
-  IntentionDePointage intention,
   Optional<ActiviteId> activite,
   Optional<ActiviteId> activiteVisee,
   OperateurId operateur,
@@ -43,7 +42,6 @@ public record EvenementDAtelier(
   public EvenementDAtelier {
     Assert.notNull("id", id);
     Assert.notNull("type", type);
-    Assert.notNull("intention", intention);
     Assert.notNull("activite", activite);
     Assert.notNull("activite visee", activiteVisee);
     Assert.notNull("operateur", operateur);
@@ -54,14 +52,13 @@ public record EvenementDAtelier(
     Assert.notNull("auteur", auteur);
     Assert.notNull("origine", origine);
     Assert.notNull("horodatage", horodatage);
-    exigeUneIntentionCoherente(type, intention, activite, activiteVisee);
+    exigeLesActivitesDuType(type, activite, activiteVisee, origine);
   }
 
   private EvenementDAtelier(EvenementDAtelierBuilder builder) {
     this(
       builder.id,
       builder.type,
-      builder.intention,
       builder.activite,
       builder.activiteVisee,
       builder.operateur,
@@ -103,18 +100,19 @@ public record EvenementDAtelier(
     return horodatage.dateDEnregistrement();
   }
 
-  private static void exigeUneIntentionCoherente(
+  /**
+   * Seul un debut ou une non conformite ouvre une activite, et seule la fin d'une regularisation en cible une : un
+   * pointage ne designe jamais l'activite qu'il ferme, la cle la donne.
+   */
+  private static void exigeLesActivitesDuType(
     TypeDEvenementDAtelier type,
-    IntentionDePointage intention,
     Optional<ActiviteId> activite,
-    Optional<ActiviteId> activiteVisee
+    Optional<ActiviteId> activiteVisee,
+    OrigineDuPointage origine
   ) {
-    if (
-      !intention.admet(type)
-      || activite.isPresent() != intention.ouvreUneActivite()
-      || activiteVisee.isPresent() != intention.viseUneActivite()
-    ) {
-      throw new IntentionDePointageIncoherenteException(type, intention);
+    boolean fin = type == TypeDEvenementDAtelier.FIN;
+    if (activite.isPresent() == fin || activiteVisee.isPresent() != (fin && origine == OrigineDuPointage.REGULARISATION)) {
+      throw new EvenementDAtelierIncoherentException(type, origine);
     }
   }
 
@@ -122,7 +120,6 @@ public record EvenementDAtelier(
     implements
       EvenementDAtelierIdBuilder,
       EvenementDAtelierTypeBuilder,
-      EvenementDAtelierIntentionBuilder,
       EvenementDAtelierActiviteBuilder,
       EvenementDAtelierActiviteViseeBuilder,
       EvenementDAtelierOperateurBuilder,
@@ -137,7 +134,6 @@ public record EvenementDAtelier(
 
     private EvenementDAtelierId id;
     private TypeDEvenementDAtelier type;
-    private IntentionDePointage intention;
     private Optional<ActiviteId> activite;
     private Optional<ActiviteId> activiteVisee;
     private OperateurId operateur;
@@ -157,15 +153,8 @@ public record EvenementDAtelier(
     }
 
     @Override
-    public EvenementDAtelierIntentionBuilder type(TypeDEvenementDAtelier type) {
+    public EvenementDAtelierActiviteBuilder type(TypeDEvenementDAtelier type) {
       this.type = type;
-
-      return this;
-    }
-
-    @Override
-    public EvenementDAtelierActiviteBuilder intention(IntentionDePointage intention) {
-      this.intention = intention;
 
       return this;
     }
@@ -246,11 +235,7 @@ public record EvenementDAtelier(
   }
 
   public interface EvenementDAtelierTypeBuilder {
-    EvenementDAtelierIntentionBuilder type(TypeDEvenementDAtelier type);
-  }
-
-  public interface EvenementDAtelierIntentionBuilder {
-    EvenementDAtelierActiviteBuilder intention(IntentionDePointage intention);
+    EvenementDAtelierActiviteBuilder type(TypeDEvenementDAtelier type);
   }
 
   public interface EvenementDAtelierActiviteBuilder {

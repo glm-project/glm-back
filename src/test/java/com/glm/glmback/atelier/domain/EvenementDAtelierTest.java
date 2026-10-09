@@ -36,7 +36,6 @@ class EvenementDAtelierTest {
     EvenementDAtelier evenement = EvenementDAtelier.builder()
       .id(ID)
       .type(TypeDEvenementDAtelier.DEBUT)
-      .intention(IntentionDePointage.OUVERTURE)
       .activite(Optional.of(ACTIVITE))
       .activiteVisee(Optional.empty())
       .operateur(OPERATEUR_ID_DUPONT)
@@ -50,7 +49,6 @@ class EvenementDAtelierTest {
 
     assertThat(evenement.id()).isEqualTo(ID);
     assertThat(evenement.type()).isEqualTo(TypeDEvenementDAtelier.DEBUT);
-    assertThat(evenement.intention()).isEqualTo(IntentionDePointage.OUVERTURE);
     assertThat(evenement.activite()).contains(ACTIVITE);
     assertThat(evenement.activiteVisee()).isEmpty();
     assertThat(evenement.operateur()).isEqualTo(OPERATEUR_ID_DUPONT);
@@ -68,7 +66,6 @@ class EvenementDAtelierTest {
     EvenementDAtelier evenement = EvenementDAtelier.builder()
       .id(ID)
       .type(TypeDEvenementDAtelier.DEBUT)
-      .intention(IntentionDePointage.OUVERTURE)
       .activite(Optional.of(ACTIVITE))
       .activiteVisee(Optional.empty())
       .operateur(OPERATEUR_ID_DUPONT)
@@ -89,7 +86,7 @@ class EvenementDAtelierTest {
 
   @Test
   void shouldReadDatesFromHorodatage() {
-    EvenementDAtelier evenement = debutSurFraiseuse1RegulariseParLeroyA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier evenement = finRegulariseeParLeroyDe(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_7H)).a(LE_10_MAI_2026_A_8H);
 
     assertThat(evenement.dateDeSurvenue()).isEqualTo(LE_10_MAI_2026_A_8H);
     assertThat(evenement.dateDEnregistrement()).isEqualTo(LE_11_MAI_2026_A_9H15);
@@ -109,7 +106,7 @@ class EvenementDAtelierTest {
 
   @Test
   void shouldBeUneRegularisationWhenRegulariseParLeGestionnaire() {
-    EvenementDAtelier evenement = debutSurFraiseuse1RegulariseParLeroyA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier evenement = finRegulariseeParLeroyDe(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_7H)).a(LE_10_MAI_2026_A_8H);
 
     assertThat(evenement.estUneRegularisation()).isTrue();
   }
@@ -137,39 +134,38 @@ class EvenementDAtelierTest {
   }
 
   @Test
-  void shouldBuildUneTransitionQuiOuvreUneActiviteEtEnViseUneAutre() {
-    EvenementDAtelier transition = geste(
-      TypeDEvenementDAtelier.NON_CONFORMITE,
-      IntentionDePointage.TRANSITION,
-      Optional.of(ACTIVITE),
+  void shouldBuildUneFinRegulariseeQuiCibleUneActiviteSansEnOuvrir() {
+    EvenementDAtelier fin = geste(
+      TypeDEvenementDAtelier.FIN,
+      OrigineDuPointage.REGULARISATION,
+      Optional.empty(),
       Optional.of(ACTIVITE_VISEE)
     );
 
-    assertThat(transition.intention()).isEqualTo(IntentionDePointage.TRANSITION);
-    assertThat(transition.activite()).contains(ACTIVITE);
-    assertThat(transition.activiteVisee()).contains(ACTIVITE_VISEE);
+    assertThat(fin.activite()).isEmpty();
+    assertThat(fin.activiteVisee()).contains(ACTIVITE_VISEE);
   }
 
   @Test
-  void shouldBuildUneFinQuiViseUneActiviteSansEnOuvrir() {
-    EvenementDAtelier fin = geste(TypeDEvenementDAtelier.FIN, IntentionDePointage.FIN, Optional.empty(), Optional.of(ACTIVITE_VISEE));
+  void shouldBuildUneFinPointeeSansCibleNiActivite() {
+    EvenementDAtelier fin = geste(TypeDEvenementDAtelier.FIN, OrigineDuPointage.POINTAGE, Optional.empty(), Optional.empty());
 
     assertThat(fin.activite()).isEmpty();
-    assertThat(fin.activiteVisee()).contains(ACTIVITE_VISEE);
+    assertThat(fin.activiteVisee()).isEmpty();
   }
 
   @ParameterizedTest
   @MethodSource("gestesIncoherents")
   void shouldNotBuildUnGesteIncoherent(
     TypeDEvenementDAtelier type,
-    IntentionDePointage intention,
+    OrigineDuPointage origine,
     Optional<ActiviteId> activite,
     Optional<ActiviteId> activiteVisee
   ) {
-    assertThatThrownBy(() -> geste(type, intention, activite, activiteVisee))
-      .isExactlyInstanceOf(IntentionDePointageIncoherenteException.class)
+    assertThatThrownBy(() -> geste(type, origine, activite, activiteVisee))
+      .isExactlyInstanceOf(EvenementDAtelierIncoherentException.class)
       .hasMessageContaining(type.name())
-      .hasMessageContaining(intention.name());
+      .hasMessageContaining(origine.name());
   }
 
   private static Stream<Arguments> gestesIncoherents() {
@@ -178,14 +174,13 @@ class EvenementDAtelierTest {
     Optional<ActiviteId> visee = Optional.of(ACTIVITE_VISEE);
 
     return Stream.of(
-      Arguments.of(TypeDEvenementDAtelier.FIN, IntentionDePointage.OUVERTURE, ouverte, aucune),
-      Arguments.of(TypeDEvenementDAtelier.FIN, IntentionDePointage.TRANSITION, ouverte, visee),
-      Arguments.of(TypeDEvenementDAtelier.DEBUT, IntentionDePointage.FIN, aucune, visee),
-      Arguments.of(TypeDEvenementDAtelier.DEBUT, IntentionDePointage.OUVERTURE, aucune, aucune),
-      Arguments.of(TypeDEvenementDAtelier.DEBUT, IntentionDePointage.OUVERTURE, ouverte, visee),
-      Arguments.of(TypeDEvenementDAtelier.NON_CONFORMITE, IntentionDePointage.TRANSITION, ouverte, aucune),
-      Arguments.of(TypeDEvenementDAtelier.FIN, IntentionDePointage.FIN, aucune, aucune),
-      Arguments.of(TypeDEvenementDAtelier.FIN, IntentionDePointage.FIN, ouverte, visee)
+      Arguments.of(TypeDEvenementDAtelier.FIN, OrigineDuPointage.POINTAGE, ouverte, aucune),
+      Arguments.of(TypeDEvenementDAtelier.FIN, OrigineDuPointage.POINTAGE, aucune, visee),
+      Arguments.of(TypeDEvenementDAtelier.FIN, OrigineDuPointage.REGULARISATION, aucune, aucune),
+      Arguments.of(TypeDEvenementDAtelier.FIN, OrigineDuPointage.REGULARISATION, ouverte, visee),
+      Arguments.of(TypeDEvenementDAtelier.DEBUT, OrigineDuPointage.POINTAGE, aucune, aucune),
+      Arguments.of(TypeDEvenementDAtelier.DEBUT, OrigineDuPointage.POINTAGE, ouverte, visee),
+      Arguments.of(TypeDEvenementDAtelier.NON_CONFORMITE, OrigineDuPointage.REGULARISATION, ouverte, visee)
     );
   }
 
@@ -193,9 +188,8 @@ class EvenementDAtelierTest {
     return Stream.of(
       construction(() -> evenement(null, TypeDEvenementDAtelier.DEBUT, OPERATEUR_ID_DUPONT, SUR_FRAISEUSE_1, EN_FRAISAGE), "id"),
       construction(() -> evenement(ID, null, OPERATEUR_ID_DUPONT, SUR_FRAISEUSE_1, EN_FRAISAGE), "type"),
-      construction(() -> geste(null, Optional.of(ACTIVITE), Optional.empty()), "intention"),
-      construction(() -> geste(IntentionDePointage.OUVERTURE, null, Optional.empty()), "activite"),
-      construction(() -> geste(IntentionDePointage.OUVERTURE, Optional.of(ACTIVITE), null), "activite visee"),
+      construction(() -> geste(null, Optional.empty()), "activite"),
+      construction(() -> geste(Optional.of(ACTIVITE), null), "activite visee"),
       construction(() -> evenement(ID, TypeDEvenementDAtelier.DEBUT, null, SUR_FRAISEUSE_1, EN_FRAISAGE), "operateur"),
       construction(() -> evenement(ID, TypeDEvenementDAtelier.DEBUT, OPERATEUR_ID_DUPONT, null, EN_FRAISAGE), "poste de travail"),
       construction(() -> evenement(ID, TypeDEvenementDAtelier.DEBUT, OPERATEUR_ID_DUPONT, SUR_FRAISEUSE_1, null), "nature de l'operation"),
@@ -204,7 +198,6 @@ class EvenementDAtelierTest {
           new EvenementDAtelier(
             ID,
             TypeDEvenementDAtelier.DEBUT,
-            IntentionDePointage.OUVERTURE,
             Optional.of(ACTIVITE),
             Optional.empty(),
             OPERATEUR_ID_DUPONT,
@@ -223,7 +216,6 @@ class EvenementDAtelierTest {
           new EvenementDAtelier(
             ID,
             TypeDEvenementDAtelier.DEBUT,
-            IntentionDePointage.OUVERTURE,
             Optional.of(ACTIVITE),
             Optional.empty(),
             OPERATEUR_ID_DUPONT,
@@ -242,7 +234,6 @@ class EvenementDAtelierTest {
           new EvenementDAtelier(
             ID,
             TypeDEvenementDAtelier.DEBUT,
-            IntentionDePointage.OUVERTURE,
             Optional.of(ACTIVITE),
             Optional.empty(),
             OPERATEUR_ID_DUPONT,
@@ -261,7 +252,6 @@ class EvenementDAtelierTest {
           new EvenementDAtelier(
             ID,
             TypeDEvenementDAtelier.DEBUT,
-            IntentionDePointage.OUVERTURE,
             Optional.of(ACTIVITE),
             Optional.empty(),
             OPERATEUR_ID_DUPONT,
@@ -280,7 +270,6 @@ class EvenementDAtelierTest {
           new EvenementDAtelier(
             ID,
             TypeDEvenementDAtelier.DEBUT,
-            IntentionDePointage.OUVERTURE,
             Optional.of(ACTIVITE),
             Optional.empty(),
             OPERATEUR_ID_DUPONT,
@@ -311,7 +300,6 @@ class EvenementDAtelierTest {
     new EvenementDAtelier(
       id,
       type,
-      IntentionDePointage.OUVERTURE,
       Optional.of(ACTIVITE),
       Optional.empty(),
       operateur,
@@ -325,20 +313,19 @@ class EvenementDAtelierTest {
     );
   }
 
-  private static void geste(IntentionDePointage intention, Optional<ActiviteId> activite, Optional<ActiviteId> activiteVisee) {
-    geste(TypeDEvenementDAtelier.DEBUT, intention, activite, activiteVisee);
+  private static void geste(Optional<ActiviteId> activite, Optional<ActiviteId> activiteVisee) {
+    geste(TypeDEvenementDAtelier.DEBUT, OrigineDuPointage.POINTAGE, activite, activiteVisee);
   }
 
   private static EvenementDAtelier geste(
     TypeDEvenementDAtelier type,
-    IntentionDePointage intention,
+    OrigineDuPointage origine,
     Optional<ActiviteId> activite,
     Optional<ActiviteId> activiteVisee
   ) {
     return new EvenementDAtelier(
       ID,
       type,
-      intention,
       activite,
       activiteVisee,
       OPERATEUR_ID_DUPONT,
@@ -347,7 +334,7 @@ class EvenementDAtelierTest {
       COUT_HORAIRE,
       TAUX_HORAIRE,
       AUTEUR_DUPONT,
-      OrigineDuPointage.POINTAGE,
+      origine,
       HORODATAGE
     );
   }
@@ -356,7 +343,6 @@ class EvenementDAtelierTest {
     return EvenementDAtelier.builder()
       .id(ID)
       .type(TypeDEvenementDAtelier.DEBUT)
-      .intention(IntentionDePointage.OUVERTURE)
       .activite(Optional.of(ACTIVITE))
       .activiteVisee(Optional.empty())
       .operateur(OPERATEUR_ID_DUPONT)

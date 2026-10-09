@@ -11,7 +11,6 @@ enum ErreurDAtelier implements ProblemCode {
   POSTE_DE_TRAVAIL_INTROUVABLE(HttpStatus.NOT_FOUND, "poste de travail introuvable"),
   ACTIVITE_VISEE_INTROUVABLE(HttpStatus.NOT_FOUND, "activite visee introuvable"),
   OPERATEUR_NON_HABILITE(HttpStatus.CONFLICT, "operateur non habilite"),
-  ACTIVITE_VISEE_INCOHERENTE(HttpStatus.CONFLICT, "activite visee incoherente"),
   ELEMENT_DEJA_ENGAGE(HttpStatus.CONFLICT, "element deja engage"),
   SUIVI_D_ATELIER_CLOTURE(HttpStatus.CONFLICT, "suivi d'atelier cloture"),
   EVENEMENT_ANTERIEUR_A_L_ENGAGEMENT(HttpStatus.CONFLICT, "evenement anterieur a l'engagement"),

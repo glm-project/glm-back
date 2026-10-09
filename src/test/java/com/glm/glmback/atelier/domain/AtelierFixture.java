@@ -125,7 +125,7 @@ public final class AtelierFixture {
     return List.of(
       suiviDAtelierEngage(),
       enCours,
-      enCours.enregistre(passageEnNonConformiteDe(debut).a(LE_10_MAI_2026_A_9H)),
+      enCours.enregistre(finDe(debut).a(LE_10_MAI_2026_A_9H)).enregistre(nonConformiteSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H)),
       enCours.enregistre(finDe(debut).a(LE_10_MAI_2026_A_9H)),
       enCours.cloture(clotureParLeroyA(LE_10_MAI_2026_A_9H)),
       suiviDAtelierEngage().enregistre(debutSansPosteParDupontA(LE_10_MAI_2026_A_8H))
@@ -150,8 +150,8 @@ public final class AtelierFixture {
     return suivi
       .enregistre(debutDeDupont)
       .enregistre(debutDeMartin)
-      .enregistre(passageEnNonConformiteDe(debutDeDupont).a(debut.plusSeconds(120)))
-      .enregistre(passageEnNonConformiteDe(debutDeMartin).a(debut.plusSeconds(180)));
+      .enregistre(finDe(debutDeDupont).a(debut.plusSeconds(120)))
+      .enregistre(nonConformiteSurFraiseuse1ParDupontA(debut.plusSeconds(120)));
   }
 
   public static CleDActivite cleDeFraiseuse1DeDupont() {
@@ -163,7 +163,7 @@ public final class AtelierFixture {
   }
 
   /**
-   * Une non conformite ouverte d'emblee, sans remplacer aucune activite : celle qu'on reprend apres une pause.
+   * Une non conformite ouverte d'emblee : celle qu'on pointe apres la fin d'une activite, ou a la reprise d'une pause.
    */
   public static EvenementDAtelier nonConformiteSurFraiseuse1ParDupontA(Instant date) {
     return ouvertureDeDupont(TypeDEvenementDAtelier.NON_CONFORMITE, POSTE_ID_FRAISEUSE_1, date);
@@ -176,7 +176,6 @@ public final class AtelierFixture {
   public static EvenementDAtelier debutSansPosteParDupontA(Instant date) {
     return pointageDAtelier(
       TypeDEvenementDAtelier.DEBUT,
-      IntentionDePointage.OUVERTURE,
       Optional.empty(),
       new CleDActivite(OPERATEUR_ID_DUPONT, Optional.empty()),
       AUTEUR_DUPONT,
@@ -189,7 +188,6 @@ public final class AtelierFixture {
     return EvenementDAtelier.builder()
       .id(id)
       .type(TypeDEvenementDAtelier.DEBUT)
-      .intention(IntentionDePointage.OUVERTURE)
       .activite(Optional.of(ActiviteId.ouvertePar(id)))
       .activiteVisee(Optional.empty())
       .operateur(OPERATEUR_ID_DUPONT)
@@ -205,7 +203,6 @@ public final class AtelierFixture {
   public static EvenementDAtelier debutSurFraiseuse1ParMartinA(Instant date) {
     return pointageDAtelier(
       TypeDEvenementDAtelier.DEBUT,
-      IntentionDePointage.OUVERTURE,
       Optional.empty(),
       new CleDActivite(OPERATEUR_ID_MARTIN, Optional.of(POSTE_ID_FRAISEUSE_1)),
       AUTEUR_MARTIN,
@@ -213,70 +210,22 @@ public final class AtelierFixture {
     );
   }
 
-  public static EvenementDAtelier debutSurFraiseuse1RegulariseParLeroyA(Instant date) {
-    return regularisationParLeroy(TypeDEvenementDAtelier.DEBUT, IntentionDePointage.OUVERTURE, Optional.empty()).a(date);
-  }
-
   /**
-   * La fin pointee sur l'activite qu'ouvre ce debut, par celui qui l'a ouverte : il ne reste qu'a la dater.
+   * La fin pointee sur la cle de l'activite qu'ouvre ce debut, par celui qui l'a ouverte : elle ferme l'activite en
+   * cours de la cle sans la designer, et il ne reste qu'a la dater.
    */
   public static GesteADater finDe(EvenementDAtelier ouvrant) {
-    return gesteVisant(ouvrant, TypeDEvenementDAtelier.FIN, IntentionDePointage.FIN);
+    return date -> pointageDAtelier(TypeDEvenementDAtelier.FIN, Optional.empty(), ouvrant.cle(), ouvrant.auteur(), Horodatage.saisiA(date));
   }
 
   /**
-   * Le passage en non conformite de l'activite qu'ouvre ce debut : il la remplace par une non conformite.
-   */
-  public static GesteADater passageEnNonConformiteDe(EvenementDAtelier ouvrant) {
-    return gesteVisant(ouvrant, TypeDEvenementDAtelier.NON_CONFORMITE, IntentionDePointage.TRANSITION);
-  }
-
-  /**
-   * La reprise du travail apres cette non conformite : elle la remplace par un travail.
-   */
-  public static GesteADater passageEnTravailDe(EvenementDAtelier ouvrant) {
-    return gesteVisant(ouvrant, TypeDEvenementDAtelier.DEBUT, IntentionDePointage.TRANSITION);
-  }
-
-  /**
-   * Le passage en non conformite que le gestionnaire regularise sur l'activite de Dupont qu'ouvre ce debut.
-   */
-  public static GesteADater passageEnNonConformiteRegulariseParLeroyDe(EvenementDAtelier ouvrant) {
-    return regularisationParLeroy(TypeDEvenementDAtelier.NON_CONFORMITE, IntentionDePointage.TRANSITION, ouvrant.activite());
-  }
-
-  /**
-   * La fin que le gestionnaire regularise sur l'activite de Dupont qu'ouvre ce debut.
+   * La fin que le gestionnaire regularise sur l'activite de Dupont qu'ouvre ce debut : la seule fin qui porte une cible.
    */
   public static GesteADater finRegulariseeParLeroyDe(EvenementDAtelier ouvrant) {
-    return regularisationParLeroy(TypeDEvenementDAtelier.FIN, IntentionDePointage.FIN, ouvrant.activite());
-  }
-
-  private static EvenementDAtelier ouvertureDeDupont(TypeDEvenementDAtelier type, PosteDeTravailId poste, Instant date) {
-    return pointageDAtelier(
-      type,
-      IntentionDePointage.OUVERTURE,
-      Optional.empty(),
-      new CleDActivite(OPERATEUR_ID_DUPONT, Optional.of(poste)),
-      AUTEUR_DUPONT,
-      Horodatage.saisiA(date)
-    );
-  }
-
-  private static GesteADater gesteVisant(EvenementDAtelier ouvrant, TypeDEvenementDAtelier type, IntentionDePointage intention) {
-    return date -> pointageDAtelier(type, intention, ouvrant.activite(), ouvrant.cle(), ouvrant.auteur(), Horodatage.saisiA(date));
-  }
-
-  private static GesteADater regularisationParLeroy(
-    TypeDEvenementDAtelier type,
-    IntentionDePointage intention,
-    Optional<ActiviteId> activiteVisee
-  ) {
     return date ->
       evenementDAtelier(
-        type,
-        intention,
-        activiteVisee,
+        TypeDEvenementDAtelier.FIN,
+        ouvrant.activite(),
         cleDeFraiseuse1DeDupont(),
         AUTEUR_LEROY,
         OrigineDuPointage.REGULARISATION,
@@ -284,20 +233,28 @@ public final class AtelierFixture {
       );
   }
 
+  private static EvenementDAtelier ouvertureDeDupont(TypeDEvenementDAtelier type, PosteDeTravailId poste, Instant date) {
+    return pointageDAtelier(
+      type,
+      Optional.empty(),
+      new CleDActivite(OPERATEUR_ID_DUPONT, Optional.of(poste)),
+      AUTEUR_DUPONT,
+      Horodatage.saisiA(date)
+    );
+  }
+
   private static EvenementDAtelier pointageDAtelier(
     TypeDEvenementDAtelier type,
-    IntentionDePointage intention,
     Optional<ActiviteId> activiteVisee,
     CleDActivite cle,
     Auteur auteur,
     Horodatage horodatage
   ) {
-    return evenementDAtelier(type, intention, activiteVisee, cle, auteur, OrigineDuPointage.POINTAGE, horodatage);
+    return evenementDAtelier(type, activiteVisee, cle, auteur, OrigineDuPointage.POINTAGE, horodatage);
   }
 
   private static EvenementDAtelier evenementDAtelier(
     TypeDEvenementDAtelier type,
-    IntentionDePointage intention,
     Optional<ActiviteId> activiteVisee,
     CleDActivite cle,
     Auteur auteur,
@@ -309,8 +266,7 @@ public final class AtelierFixture {
     return EvenementDAtelier.builder()
       .id(id)
       .type(type)
-      .intention(intention)
-      .activite(intention.ouvreUneActivite() ? Optional.of(ActiviteId.ouvertePar(id)) : Optional.empty())
+      .activite(type == TypeDEvenementDAtelier.FIN ? Optional.empty() : Optional.of(ActiviteId.ouvertePar(id)))
       .activiteVisee(activiteVisee)
       .operateur(cle.operateur())
       .poste(cle.poste())

@@ -116,8 +116,8 @@ class SuivisDAtelierServiceTest {
   }
 
   /**
-   * Le pointage qui ouvre une activite lui donne son identite : la sienne. C'est elle que viseront sa fin ou sa
-   * transition.
+   * Le pointage qui ouvre une activite lui donne son identite : la sienne. C'est elle que vise la fin que le
+   * gestionnaire regularise.
    */
   @Test
   void shouldDonnerAUneOuvertureLIdentiteDeSonActivite() {
@@ -129,7 +129,7 @@ class SuivisDAtelierServiceTest {
     assertThat(pointe.journal().evenements())
       .singleElement()
       .satisfies(evenement -> {
-        assertThat(evenement.intention()).isEqualTo(IntentionDePointage.OUVERTURE);
+        assertThat(evenement.type()).isEqualTo(TypeDEvenementDAtelier.DEBUT);
         assertThat(evenement.activite()).contains(ActiviteId.ouvertePar(debut.evenement()));
         assertThat(evenement.activiteVisee()).isEmpty();
       });
@@ -412,7 +412,6 @@ class SuivisDAtelierServiceTest {
       .satisfies(evenement -> {
         assertThat(evenement.id()).isEqualTo(commande.evenement());
         assertThat(evenement.type()).isEqualTo(TypeDEvenementDAtelier.FIN);
-        assertThat(evenement.intention()).isEqualTo(IntentionDePointage.FIN);
         assertThat(evenement.activite()).isEmpty();
         assertThat(evenement.activiteVisee()).contains(commande.activite());
         assertThat(evenement.operateur()).isEqualTo(OPERATEUR_ID_DUPONT);

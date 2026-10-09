@@ -26,27 +26,21 @@ class SuiviDAtelierReceptionTest {
   void shouldAccepterUnDebutQuandRienNEstEnCours() {
     SuiviDAtelier suivi = suiviDAtelierEngage();
 
-    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.DEBUT, LE_10_MAI_2026_A_8H)).isEqualTo(
-      new VerdictDeReception.Accepte(Optional.empty())
-    );
+    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.DEBUT, LE_10_MAI_2026_A_8H)).isEqualTo(new VerdictDeReception.Accepte());
   }
 
   @Test
   void shouldAccepterUneNonConformiteQuandRienNEstEnCours() {
     SuiviDAtelier suivi = suiviDAtelierEngage();
 
-    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.NON_CONFORMITE, LE_10_MAI_2026_A_8H)).isEqualTo(
-      new VerdictDeReception.Accepte(Optional.empty())
-    );
+    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.NON_CONFORMITE, LE_10_MAI_2026_A_8H)).isEqualTo(new VerdictDeReception.Accepte());
   }
 
   @Test
   void shouldAccepterUnDebutApresUneFinReelle() {
     SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(travail).enregistre(finDe(travail).a(LE_10_MAI_2026_A_12H));
 
-    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.DEBUT, LE_10_MAI_2026_A_13H)).isEqualTo(
-      new VerdictDeReception.Accepte(Optional.empty())
-    );
+    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.DEBUT, LE_10_MAI_2026_A_13H)).isEqualTo(new VerdictDeReception.Accepte());
   }
 
   @Test
@@ -75,9 +69,7 @@ class SuiviDAtelierReceptionTest {
   void shouldAccepterUneFinQuiTermineLActiviteEnCours() {
     SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(travail);
 
-    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.FIN, LE_10_MAI_2026_A_12H)).isEqualTo(
-      new VerdictDeReception.Accepte(travail.activite())
-    );
+    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.FIN, LE_10_MAI_2026_A_12H)).isEqualTo(new VerdictDeReception.Accepte());
   }
 
   @Test
@@ -126,9 +118,7 @@ class SuiviDAtelierReceptionTest {
     assertThat(suivi.juge(cle, TypeDEvenementDAtelier.FIN, LE_10_MAI_2026_A_8H)).isEqualTo(
       new VerdictDeReception.Ignore(RaisonDePointageIgnore.ANTERIEUR, Optional.of(travail.id()))
     );
-    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.FIN, LE_10_MAI_2026_A_8H.plusNanos(1))).isEqualTo(
-      new VerdictDeReception.Accepte(travail.activite())
-    );
+    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.FIN, LE_10_MAI_2026_A_8H.plusNanos(1))).isEqualTo(new VerdictDeReception.Accepte());
   }
 
   @Test
@@ -138,13 +128,13 @@ class SuiviDAtelierReceptionTest {
     SuiviDAtelier apresLaFin = suiviDAtelierEngage().enregistre(travail).enregistre(fin);
 
     assertThat(suiviDAtelierEngage().enregistre(travail).juge(cle, TypeDEvenementDAtelier.FIN, LE_10_MAI_2026_A_12H)).isEqualTo(
-      new VerdictDeReception.Accepte(travail.activite())
+      new VerdictDeReception.Accepte()
     );
     assertThat(apresLaFin.juge(cle, TypeDEvenementDAtelier.NON_CONFORMITE, LE_10_MAI_2026_A_12H)).isEqualTo(
-      new VerdictDeReception.Accepte(Optional.empty())
+      new VerdictDeReception.Accepte()
     );
     assertThat(apresLaFin.enregistre(nonConformite).juge(cle, TypeDEvenementDAtelier.FIN, LE_10_MAI_2026_A_13H)).isEqualTo(
-      new VerdictDeReception.Accepte(nonConformite.activite())
+      new VerdictDeReception.Accepte()
     );
   }
 
@@ -169,9 +159,7 @@ class SuiviDAtelierReceptionTest {
     assertThat(suivi.juge(cle, TypeDEvenementDAtelier.FIN, A_21H)).isEqualTo(
       new VerdictDeReception.Ignore(RaisonDePointageIgnore.APRES_ECHEANCE, Optional.of(travail.id()))
     );
-    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.FIN, A_21H.minusNanos(1))).isEqualTo(
-      new VerdictDeReception.Accepte(travail.activite())
-    );
+    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.FIN, A_21H.minusNanos(1))).isEqualTo(new VerdictDeReception.Accepte());
   }
 
   @Test
@@ -190,8 +178,8 @@ class SuiviDAtelierReceptionTest {
   void shouldAccepterUnDebutQuandLActiviteEnCoursEstEchue() {
     SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(travail);
 
-    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.DEBUT, A_21H)).isEqualTo(new VerdictDeReception.Accepte(Optional.empty()));
-    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.NON_CONFORMITE, A_22H)).isEqualTo(new VerdictDeReception.Accepte(Optional.empty()));
+    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.DEBUT, A_21H)).isEqualTo(new VerdictDeReception.Accepte());
+    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.NON_CONFORMITE, A_22H)).isEqualTo(new VerdictDeReception.Accepte());
     assertThat(suivi.juge(cle, TypeDEvenementDAtelier.DEBUT, A_21H.minusNanos(1))).isEqualTo(
       new VerdictDeReception.Ignore(RaisonDePointageIgnore.DEJA_EN_COURS, Optional.of(travail.id()))
     );
@@ -205,9 +193,7 @@ class SuiviDAtelierReceptionTest {
     EvenementDAtelier relance = debutSurFraiseuse1ParDupontA(LE_11_MAI_2026_A_7H);
     SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(travail).enregistre(relance);
 
-    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.FIN, LE_11_MAI_2026_A_8H)).isEqualTo(
-      new VerdictDeReception.Accepte(relance.activite())
-    );
+    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.FIN, LE_11_MAI_2026_A_8H)).isEqualTo(new VerdictDeReception.Accepte());
   }
 
   @Test
@@ -229,9 +215,7 @@ class SuiviDAtelierReceptionTest {
     CleDActivite autrePoste = new CleDActivite(OPERATEUR_ID_DUPONT, Optional.of(POSTE_ID_FRAISEUSE_2));
     CleDActivite autreOperateur = new CleDActivite(OPERATEUR_ID_MARTIN, Optional.of(POSTE_ID_FRAISEUSE_1));
 
-    assertThat(suivi.juge(autrePoste, TypeDEvenementDAtelier.DEBUT, LE_10_MAI_2026_A_7H)).isEqualTo(
-      new VerdictDeReception.Accepte(Optional.empty())
-    );
+    assertThat(suivi.juge(autrePoste, TypeDEvenementDAtelier.DEBUT, LE_10_MAI_2026_A_7H)).isEqualTo(new VerdictDeReception.Accepte());
     assertThat(suivi.juge(autreOperateur, TypeDEvenementDAtelier.FIN, LE_10_MAI_2026_A_9H)).isEqualTo(
       new VerdictDeReception.Ignore(RaisonDePointageIgnore.AUCUNE_ACTIVITE, Optional.empty())
     );
@@ -248,12 +232,8 @@ class SuiviDAtelierReceptionTest {
     assertThat(suivi.juge(cle, TypeDEvenementDAtelier.FIN, LE_10_MAI_2026_A_13H)).isEqualTo(
       new VerdictDeReception.Ignore(RaisonDePointageIgnore.AUCUNE_ACTIVITE, Optional.of(travail.id()))
     );
-    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.FIN, LE_10_MAI_2026_A_12H)).isEqualTo(
-      new VerdictDeReception.Accepte(travail.activite())
-    );
-    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.FIN, LE_10_MAI_2026_A_9H)).isEqualTo(
-      new VerdictDeReception.Accepte(travail.activite())
-    );
+    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.FIN, LE_10_MAI_2026_A_12H)).isEqualTo(new VerdictDeReception.Accepte());
+    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.FIN, LE_10_MAI_2026_A_9H)).isEqualTo(new VerdictDeReception.Accepte());
   }
 
   /**

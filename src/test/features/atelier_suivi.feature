@@ -499,7 +499,7 @@ Feature: Suivi des elements engages en atelier
       | operateur | dupont      |
       | poste     | fraiseuse-2 |
 
-    # L'OF 42 n'a recu aucun pointage apres sa relance a 13 h : sa pause le scinde a midi, et rien ne le borne a
+    # L'OF 42 n'a recu aucun pointage apres sa reprise a 13 h : sa pause le scinde a midi, et rien ne le borne a
     # 17 h. Il se termine automatiquement a son echeance, 13 heures apres son debut, avec une anomalie.
     Given il est "2026-05-11T09:15:00Z"
     When je consulte le dossier d'anomalie de "OF 42" depuis l'evenement 2
@@ -568,7 +568,7 @@ Feature: Suivi des elements engages en atelier
       | operateur | dupont      |
       | poste     | fraiseuse-1 |
 
-    # L'activite oubliee lundi s'est terminee automatiquement a son echeance, a 02:00 : la relance de mardi ne la
+    # L'activite oubliee lundi s'est terminee automatiquement a son echeance, a 02:00 : la reprise de mardi ne la
     # prolonge pas.
     When je consulte le dossier d'anomalie de "OF 44" depuis l'evenement 2
     Then la reponse a le statut http 200

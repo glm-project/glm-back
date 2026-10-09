@@ -186,23 +186,7 @@ class SupervisionDAtelierResourceIT {
 
   @Test
   @WithTenant("supervision_fixture")
-  void shouldNotExposeAnActivityTheEngineJudgesToResolveEvenAfterItsDeadline() throws Exception {
-    var travail = debutSansPosteParDupontA(LE_10_MAI_2026_A_8H);
-    var nc = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_12H);
-    var suivi = suiviDAtelierEngage().enregistre(travail).enregistre(nc).enregistre(finDe(travail).a(LE_10_MAI_2026_A_17H));
-    when(clock.now()).thenReturn(LE_11_MAI_2026_A_9H);
-    transactions.executeWithoutResult(status -> suivis.create(suivi));
-
-    rest
-      .perform(get("/api/atelier/supervision"))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.activites").isEmpty())
-      .andExpect(jsonPath("$.sequencesEnConflit").doesNotExist());
-  }
-
-  @Test
-  @WithTenant("supervision_fixture")
-  void shouldKeepAnAutomaticEndAfterRelaunchAndClosingThenRemoveItAfterRegularization() throws Exception {
+  void shouldKeepAnAutomaticEndAfterAReopeningAndClosingThenRemoveItAfterRegularization() throws Exception {
     var ancien = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     var reprise = debutSurFraiseuse1ParDupontA(LE_11_MAI_2026_A_8H);
     var suivi = suiviDAtelierEngage().enregistre(ancien).enregistre(reprise).cloture(clotureParLeroyA(LE_11_MAI_2026_A_9H));

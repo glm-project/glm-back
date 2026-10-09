@@ -84,11 +84,10 @@ class ListeDesFinsAutomatiquesDAtelierIT {
 
   @Test
   @WithTenant("impeccmold")
-  void shouldExclureLEnCoursLAResoudreEtLesActivitesTerminees() {
+  void shouldExclureLEnCoursEtLesActivitesTerminees() {
     var element = elementDeFinAutomatiqueNomme("FINAUTO_EXCLUSIONS_2026");
     var tardive = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     var enCours = debutSurFraiseuse1ParDupontA(LE_11_MAI_2026_A_8H);
-    var aResoudre = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     var reelle = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     var regularisee = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     var cloturee = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
@@ -96,17 +95,13 @@ class ListeDesFinsAutomatiquesDAtelierIT {
       .enregistre(tardive)
       .enregistre(finDe(tardive).a(Instant.parse("2026-05-10T23:00:00Z")));
     var suiviEnCours = suiviEngageLe1erJanvier2025Pour(element).enregistre(enCours);
-    var suiviAResoudre = suiviEngageLe1erJanvier2025Pour(element)
-      .enregistre(aResoudre)
-      .enregistre(finDe(aResoudre).a(LE_10_MAI_2026_A_9H))
-      .enregistre(finDe(aResoudre).a(LE_10_MAI_2026_A_12H));
     var suiviReel = suiviEngageLe1erJanvier2025Pour(element).enregistre(reelle).enregistre(finDe(reelle).a(LE_10_MAI_2026_A_9H));
     var suiviRegularise = suiviEngageLe1erJanvier2025Pour(element)
       .enregistre(regularisee)
       .enregistre(finRegulariseeParLeroyDe(regularisee).a(LE_10_MAI_2026_A_17H));
     var suiviCloture = suiviEngageLe1erJanvier2025Pour(element).enregistre(cloturee).cloture(clotureParLeroyA(LE_10_MAI_2026_A_20H));
     transactions.executeWithoutResult(transaction ->
-      List.of(suiviTardif, suiviEnCours, suiviAResoudre, suiviReel, suiviRegularise, suiviCloture).forEach(suivis::create)
+      List.of(suiviTardif, suiviEnCours, suiviReel, suiviRegularise, suiviCloture).forEach(suivis::create)
     );
 
     var page = lit(new AnomaliesDAtelierCriteria("", element.id().uuid().toString()), LE_11_MAI_2026_A_9H, new Pageable(0, 10));
@@ -285,20 +280,23 @@ class ListeDesFinsAutomatiquesDAtelierIT {
       insere(berthe);
       insere(charles);
     });
-    var ouverteParTransition = debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE));
-    var transition = passageEnNonConformiteDe(ouverteParTransition).a(LE_9_JANVIER_2043_A.plusSeconds(12 * HEURE));
-    var aResoudre = debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE));
+    var suivieDUneNonConformite = debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE));
+    var nonConformite = nonConformiteSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(12 * HEURE));
+    var doubleFin = debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE));
     var terminee = debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE));
     var finTardive = debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE));
     var clotureeAvant = debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE));
     var clotureeApres = debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE));
     var jeu = List.of(
       suiviEngageLe1erJanvier2025Pour(element).enregistre(debutSurFraiseuse1ParDupontA(LE_9_JANVIER_2043_A.plusSeconds(8 * HEURE))),
-      suiviEngageLe1erJanvier2025Pour(element).enregistre(ouverteParTransition).enregistre(transition),
       suiviEngageLe1erJanvier2025Pour(element)
-        .enregistre(aResoudre)
-        .enregistre(finDe(aResoudre).a(LE_9_JANVIER_2043_A.plusSeconds(9 * HEURE)))
-        .enregistre(finDe(aResoudre).a(LE_9_JANVIER_2043_A.plusSeconds(12 * HEURE))),
+        .enregistre(suivieDUneNonConformite)
+        .enregistre(finDe(suivieDUneNonConformite).a(LE_9_JANVIER_2043_A.plusSeconds(12 * HEURE)))
+        .enregistre(nonConformite),
+      suiviEngageLe1erJanvier2025Pour(element)
+        .enregistre(doubleFin)
+        .enregistre(finDe(doubleFin).a(LE_9_JANVIER_2043_A.plusSeconds(9 * HEURE)))
+        .enregistre(finDe(doubleFin).a(LE_9_JANVIER_2043_A.plusSeconds(12 * HEURE))),
       suiviEngageLe1erJanvier2025Pour(element)
         .enregistre(terminee)
         .enregistre(finDe(terminee).a(LE_9_JANVIER_2043_A.plusSeconds(9 * HEURE))),

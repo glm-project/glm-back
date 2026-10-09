@@ -6,18 +6,13 @@
 >
   <changeSet id="evenement_d_atelier_intention" author="glm">
     <comment>
-      Ce qu'un pointage d'atelier fait d'une activite, que son type seul ne dit pas : OUVERTURE, TRANSITION ou FIN.
-      activite_id porte l'identite de l'activite qu'ouvre une ouverture ou une transition : l'id de ce pointage, ou
-      celle de l'ouvrant corrige pour le remplacant d'une correction. activite_visee_id porte l'activite que vise une
-      transition ou une fin. Aucune valeur par
-      defaut n'est posee, l'intention d'un fait deja enregistre ne se deduisant pas de son type : la garde de bootstrap refuse un
-      historique anterieur avant toute DDL metier.
+      Les activites qu'un pointage d'atelier ouvre ou cible. activite_id porte l'identite de l'activite qu'ouvre un debut
+      ou une non conformite : l'id de ce pointage. activite_visee_id n'est renseignee que par la fin d'une
+      regularisation, qui cible l'activite echue dont elle etablit la fin ; une fin pointee ne designe aucune activite,
+      c'est la cle (operateur, poste) qui la donne. Le type du fait dit le reste : aucune colonne d'intention.
     </comment>
 
     <addColumn tableName="evenement_d_atelier">
-      <column name="intention" type="varchar(20)">
-        <constraints nullable="false" />
-      </column>
       <column name="activite_id" type="uuid" />
       <column name="activite_visee_id" type="uuid" />
     </addColumn>

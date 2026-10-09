@@ -6,7 +6,6 @@ import com.glm.glmback.atelier.domain.CoutHoraire;
 import com.glm.glmback.atelier.domain.EvenementDAtelier;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.Horodatage;
-import com.glm.glmback.atelier.domain.IntentionDePointage;
 import com.glm.glmback.atelier.domain.NatureDOperation;
 import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.OrigineDuPointage;
@@ -43,10 +42,6 @@ class EvenementDAtelierEntity {
   @Enumerated(EnumType.STRING)
   @Column(length = 20)
   private TypeDEvenementDAtelier type;
-
-  @Enumerated(EnumType.STRING)
-  @Column(length = 20)
-  private IntentionDePointage intention;
 
   @Column(name = "activite_id")
   private UUID activiteId;
@@ -89,7 +84,6 @@ class EvenementDAtelierEntity {
     this.suivi = suivi;
     id = evenement.id().uuid();
     type = evenement.type();
-    intention = evenement.intention();
     activiteId = evenement.activite().map(ActiviteId::uuid).orElse(null);
     activiteViseeId = evenement.activiteVisee().map(ActiviteId::uuid).orElse(null);
     operateurId = evenement.operateur().uuid();
@@ -115,7 +109,6 @@ class EvenementDAtelierEntity {
     return EvenementDAtelier.builder()
       .id(new EvenementDAtelierId(id))
       .type(type)
-      .intention(intention)
       .activite(Optional.ofNullable(activiteId).map(ActiviteId::new))
       .activiteVisee(Optional.ofNullable(activiteViseeId).map(ActiviteId::new))
       .operateur(new OperateurId(operateurId))

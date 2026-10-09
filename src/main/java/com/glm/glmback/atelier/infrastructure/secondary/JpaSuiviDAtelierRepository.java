@@ -138,8 +138,7 @@ class JpaSuiviDAtelierRepository implements SuiviDAtelierRepository {
 
   /**
    * L'etat d'un suivi, exprime en SQL a l'instant d'evaluation : cloture, sinon en cours s'il porte une activite
-   * interpretable sans fin reelle dont l'echeance n'est pas atteinte, sinon interrompu s'il porte un evenement actif,
-   * sinon en attente. Une activite a resoudre n'est jamais en cours.
+   * sans fin reelle dont l'echeance n'est pas atteinte, sinon interrompu s'il porte un evenement, sinon en attente.
    */
   private record EtatALaLecture(
     Root<SuiviDAtelierEntity> suivi,
@@ -172,7 +171,6 @@ class JpaSuiviDAtelierRepository implements SuiviDAtelierRepository {
         .select(activite.get("id"))
         .where(
           constructeur.equal(activite.get("suivi"), suivi),
-          constructeur.isFalse(activite.get("aResoudre")),
           constructeur.isNull(activite.get("fin")),
           constructeur.greaterThan(activite.get("echeance"), evaluation)
         );

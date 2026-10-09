@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.IntegrationTest;
 import com.glm.glmback.atelier.domain.ActiviteId;
-import com.glm.glmback.atelier.domain.CleDActivite;
 import com.glm.glmback.atelier.domain.Cloture;
 import com.glm.glmback.atelier.domain.CoutHoraire;
 import com.glm.glmback.atelier.domain.ElementEngage;
@@ -16,15 +15,12 @@ import com.glm.glmback.atelier.domain.EtatDAtelier;
 import com.glm.glmback.atelier.domain.EvenementDAtelier;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.Horodatage;
-import com.glm.glmback.atelier.domain.IntentionDePointage;
 import com.glm.glmback.atelier.domain.JournalDAtelier;
 import com.glm.glmback.atelier.domain.NatureDOperation;
-import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.OrigineDuPointage;
 import com.glm.glmback.atelier.domain.Periode;
 import com.glm.glmback.atelier.domain.PosteDeTravailId;
 import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
-import com.glm.glmback.atelier.domain.SequenceEnConflit;
 import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierCriteria;
 import com.glm.glmback.atelier.domain.SuiviDAtelierDejaExistantException;
@@ -172,34 +168,32 @@ class JpaSuiviDAtelierRepositoryIT {
   }
 
   /**
-   * L'intention et les activites d'un fait survivent au round-trip base : l'ouverture porte son activite, la transition
-   * la sienne et celle qu'elle remplace, la fin seulement celle qu'elle termine.
+   * Les activites d'un fait survivent au round-trip base : l'ouverture porte la sienne, la fin pointee aucune, et la fin
+   * regularisee seulement celle qu'elle cible.
    */
   @Test
   @WithTenant(IMPECCMOLD)
-  void shouldRelireLIntentionEtLesActivitesDeChaqueEvenement() {
+  void shouldRelireLesActivitesDeChaqueEvenement() {
     Instant engagement = Instant.parse("2040-01-06T11:00:00Z");
     EvenementDAtelier debut = debutSurFraiseuse1A(engagement.plusSeconds(3600));
-    EvenementDAtelier nonConformite = passageEnNonConformiteDe(debut).a(engagement.plusSeconds(7200));
+    EvenementDAtelier nonConformite = nonConformiteSurFraiseuse1ParDupontA(engagement.plusSeconds(10800));
     SuiviDAtelier engage = suiviEngageA(engagement)
       .enregistre(debut)
+      .enregistre(finDe(debut).a(engagement.plusSeconds(7200)))
       .enregistre(nonConformite)
-      .enregistre(finDe(nonConformite).a(engagement.plusSeconds(10800)));
+      .enregistre(finRegulariseeParLeroyDe(nonConformite, engagement.plusSeconds(14400)));
 
     inTransaction(() -> suivis.create(engage));
 
     SuiviDAtelier relu = inTransaction(() -> suivis.get(engage.id())).orElseThrow();
     assertThat(relu).isEqualTo(engage);
     assertThat(relu.journal().evenements())
-      .extracting(EvenementDAtelier::intention, EvenementDAtelier::activite, EvenementDAtelier::activiteVisee)
+      .extracting(EvenementDAtelier::type, EvenementDAtelier::activite, EvenementDAtelier::activiteVisee)
       .containsExactly(
-        tuple(IntentionDePointage.OUVERTURE, Optional.of(ActiviteId.ouvertePar(debut.id())), Optional.empty()),
-        tuple(
-          IntentionDePointage.TRANSITION,
-          Optional.of(ActiviteId.ouvertePar(nonConformite.id())),
-          Optional.of(ActiviteId.ouvertePar(debut.id()))
-        ),
-        tuple(IntentionDePointage.FIN, Optional.empty(), Optional.of(ActiviteId.ouvertePar(nonConformite.id())))
+        tuple(TypeDEvenementDAtelier.DEBUT, Optional.of(ActiviteId.ouvertePar(debut.id())), Optional.empty()),
+        tuple(TypeDEvenementDAtelier.FIN, Optional.empty(), Optional.empty()),
+        tuple(TypeDEvenementDAtelier.NON_CONFORMITE, Optional.of(ActiviteId.ouvertePar(nonConformite.id())), Optional.empty()),
+        tuple(TypeDEvenementDAtelier.FIN, Optional.empty(), Optional.of(ActiviteId.ouvertePar(nonConformite.id())))
       );
   }
 
@@ -396,27 +390,6 @@ class JpaSuiviDAtelierRepositoryIT {
     assertThat(liste(jour, EtatDAtelier.EN_COURS, a22h)).containsExactly(avecRelance);
   }
 
-  /**
-   * Un suivi dont la seule activite sans fin est a resoudre n'est pas en cours : la projection porte la sequence en
-   * conflit, et le filtre juge l'etat sur les seules activites interpretables.
-   */
-  @Test
-  @WithTenant(IMPECCMOLD)
-  void shouldNePasCompterEnCoursUneActiviteAResoudre() {
-    Instant engagement = Instant.parse("2040-03-10T07:00:00Z");
-    EvenementDAtelier premiere = debutSurFraiseuse1A(engagement.plusSeconds(3600));
-    SuiviDAtelier enConflit = suiviEngageA(engagement)
-      .enregistre(premiere)
-      .enregistre(debutSurFraiseuse1A(engagement.plusSeconds(7200)))
-      .enregistre(finDe(premiere).a(engagement.plusSeconds(10800)));
-    inTransaction(() -> suivis.create(enConflit));
-    Periode jour = new Periode(engagement, engagement);
-    Instant lecture = engagement.plus(Duration.ofHours(5));
-
-    assertThat(liste(jour, EtatDAtelier.EN_COURS, lecture)).isEmpty();
-    assertThat(liste(jour, EtatDAtelier.INTERROMPU, lecture)).containsExactly(enConflit);
-  }
-
   @Test
   @WithTenant(IMPECCMOLD)
   void shouldListerSansAucunFiltre() {
@@ -460,136 +433,6 @@ class JpaSuiviDAtelierRepositoryIT {
 
     assertThat(chezKatilys).isEmpty();
     assertThat(pageChezKatilys.content()).isEmpty();
-  }
-
-  @Test
-  @WithTenant(IMPECCMOLD)
-  void shouldProjeterFidelementLesSequencesEnConflit() {
-    Instant engagement = Instant.parse("2041-03-10T07:00:00Z");
-    EvenementDAtelier premiere = debutSurFraiseuse1A(engagement.plusSeconds(3600));
-    EvenementDAtelier relance = debutSurFraiseuse1A(engagement.plusSeconds(7200));
-    SuiviDAtelier enConflit = suiviEngageA(engagement)
-      .enregistre(premiere)
-      .enregistre(relance)
-      .enregistre(finDe(premiere).a(engagement.plusSeconds(10800)));
-    inTransaction(() -> suivis.create(enConflit));
-
-    assertThat(conflitsProjetes(enConflit.id())).isEqualTo(enConflit.conflits());
-  }
-
-  @Test
-  @WithTenant(IMPECCMOLD)
-  void shouldProjeterEtReecrireLaFinAuPlusTardDuConflit() {
-    Instant engagement = Instant.parse("2041-03-14T07:00:00Z");
-    EvenementDAtelier premiere = debutSurFraiseuse1A(engagement.plusSeconds(3600));
-    EvenementDAtelier relance = debutSurFraiseuse1A(engagement.plusSeconds(7200));
-    SuiviDAtelier enConflit = suiviEngageA(engagement)
-      .enregistre(premiere)
-      .enregistre(relance)
-      .enregistre(finDe(premiere).a(engagement.plusSeconds(10800)));
-    inTransaction(() -> suivis.create(enConflit));
-
-    assertThat(finsAuPlusTard(enConflit.id())).containsExactly(engagement.plusSeconds(50400), engagement.plusSeconds(54000));
-
-    SuiviDAtelier closAEnregistrer = enConflit.cloture(clotureParLeroyA(engagement.plusSeconds(18000)));
-    SuiviDAtelier clos = inTransaction(() -> suivis.update(closAEnregistrer));
-    assertThat(finsAuPlusTard(clos.id())).containsExactly(engagement.plusSeconds(18000), engagement.plusSeconds(18000));
-  }
-
-  private List<Instant> finsAuPlusTard(SuiviDAtelierId suivi) {
-    return inTransaction(() ->
-      entities
-        .createQuery(
-          "select activite.finAuPlusTard from ActiviteDAtelierEntity activite "
-            + "where activite.suivi.id = :suivi and activite.finAuPlusTard is not null order by activite.debut",
-          Instant.class
-        )
-        .setParameter("suivi", suivi.uuid())
-        .getResultList()
-    );
-  }
-
-  @Test
-  @WithTenant(IMPECCMOLD)
-  void shouldReecrireLaProjectionDuConflit() {
-    Instant engagement = Instant.parse("2041-03-11T07:00:00Z");
-    EvenementDAtelier premiere = debutSurFraiseuse1A(engagement.plusSeconds(3600));
-    EvenementDAtelier relance = debutSurFraiseuse1A(engagement.plusSeconds(7200));
-    SuiviDAtelier enConflit = suiviEngageA(engagement)
-      .enregistre(premiere)
-      .enregistre(relance)
-      .enregistre(finDe(premiere).a(engagement.plusSeconds(10800)));
-    inTransaction(() -> suivis.create(enConflit));
-    SuiviDAtelier encoreEnConflitAEnregistrer = enConflit.enregistre(finDe(relance).a(engagement.plusSeconds(14400)));
-    SuiviDAtelier encoreEnConflit = inTransaction(() -> suivis.update(encoreEnConflitAEnregistrer));
-    assertThat(conflitsProjetes(encoreEnConflit.id())).isEqualTo(encoreEnConflit.conflits());
-    assertThat(inTransaction(() -> suivis.get(encoreEnConflit.id()))).contains(encoreEnConflit);
-  }
-
-  /**
-   * Une fin tardive, datee avant l'ouvrant qu'elle vise, devient le premier pointage de la sequence : l'identite de la
-   * sequence change, et la ligne projetee sous l'ancienne identite doit disparaitre.
-   */
-  @Test
-  @WithTenant(IMPECCMOLD)
-  void shouldReancrerLaProjectionDuConflitSurUneFinTardiveAvantLOuvrant() {
-    Instant engagement = Instant.parse("2041-03-15T07:00:00Z");
-    EvenementDAtelier ouvrant = debutSurFraiseuse1A(engagement.plusSeconds(3 * 3600));
-    SuiviDAtelier enConflit = suiviEngageA(engagement)
-      .enregistre(ouvrant)
-      .enregistre(finDe(ouvrant).a(engagement.plusSeconds(5 * 3600)))
-      .enregistre(finDe(ouvrant).a(engagement.plusSeconds(6 * 3600)));
-    inTransaction(() -> suivis.create(enConflit));
-    assertThat(enConflit.conflits().getFirst().pointages().getFirst()).isEqualTo(ouvrant.id());
-
-    EvenementDAtelier finTardive = finDe(ouvrant).a(engagement.plusSeconds(2 * 3600));
-    SuiviDAtelier reancreAEnregistrer = enConflit.enregistre(finTardive);
-    SuiviDAtelier reancre = inTransaction(() -> suivis.update(reancreAEnregistrer));
-
-    assertThat(reancre.conflits())
-      .singleElement()
-      .satisfies(sequence -> assertThat(sequence.pointages().getFirst()).isEqualTo(finTardive.id()));
-    assertThat(conflitsProjetes(reancre.id())).isEqualTo(reancre.conflits());
-  }
-
-  private List<SequenceEnConflit> conflitsProjetes(SuiviDAtelierId suivi) {
-    return inTransaction(() ->
-      lignes("select id, operateur_id, poste_id from sequence_en_conflit where suivi_id = :suivi order by id", suivi.uuid())
-        .stream()
-        .map(ligne -> {
-          UUID sequence = (UUID) ligne[0];
-          List<ActiviteId> activites = identites(
-            "select id from activite_d_atelier where sequence_id = :suivi order by ordre_dans_sequence",
-            sequence
-          )
-            .stream()
-            .map(ActiviteId::new)
-            .toList();
-          List<EvenementDAtelierId> pointages = identites(
-            "select evenement_id from pointage_en_conflit where sequence_id = :suivi order by ordre",
-            sequence
-          )
-            .stream()
-            .map(EvenementDAtelierId::new)
-            .toList();
-          return new SequenceEnConflit(
-            new CleDActivite(new OperateurId((UUID) ligne[1]), Optional.ofNullable((UUID) ligne[2]).map(PosteDeTravailId::new)),
-            activites,
-            pointages
-          );
-        })
-        .toList()
-    );
-  }
-
-  @SuppressWarnings("unchecked")
-  private List<Object[]> lignes(String sql, UUID identite) {
-    return entities.createNativeQuery(sql).setParameter("suivi", identite).getResultList();
-  }
-
-  @SuppressWarnings("unchecked")
-  private List<UUID> identites(String sql, UUID identite) {
-    return entities.createNativeQuery(sql, UUID.class).setParameter("suivi", identite).getResultList();
   }
 
   private List<SuiviDAtelier> liste(Periode periode, EtatDAtelier etat, Instant evaluation) {
@@ -649,7 +492,6 @@ class JpaSuiviDAtelierRepositoryIT {
     return EvenementDAtelier.builder()
       .id(EvenementDAtelierId.newId())
       .type(TypeDEvenementDAtelier.FIN)
-      .intention(IntentionDePointage.FIN)
       .activite(Optional.empty())
       .activiteVisee(ouvrant.activite())
       .operateur(OPERATEUR_ID_DUPONT)
@@ -675,7 +517,6 @@ class JpaSuiviDAtelierRepositoryIT {
     return EvenementDAtelier.builder()
       .id(id)
       .type(type)
-      .intention(IntentionDePointage.OUVERTURE)
       .activite(Optional.of(ActiviteId.ouvertePar(id)))
       .activiteVisee(Optional.empty())
       .operateur(OPERATEUR_ID_DUPONT)

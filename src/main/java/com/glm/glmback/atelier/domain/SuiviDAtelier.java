@@ -130,10 +130,6 @@ public record SuiviDAtelier(
     return journal.activites(cloture.map(Cloture::dateDeSurvenue));
   }
 
-  public List<SequenceEnConflit> conflits() {
-    return journal.conflits(cloture.map(Cloture::dateDeSurvenue));
-  }
-
   public List<ActiviteEnCours> activitesEnCours(Instant evaluation) {
     return activites()
       .stream()
@@ -143,8 +139,8 @@ public record SuiviDAtelier(
   }
 
   /**
-   * L'etat a l'instant d'evaluation, juge sur les seules activites interpretables : une activite a resoudre n'est pas
-   * en cours, et la sequence en conflit se lit a part, sans etat qui lui soit propre.
+   * L'etat a l'instant d'evaluation : cloture, en cours si une activite l'est, interrompu si le journal porte un fait,
+   * en attente sinon.
    */
   public EtatDAtelier etat(Instant evaluation) {
     if (estCloture()) {
@@ -162,7 +158,7 @@ public record SuiviDAtelier(
     return journal
       .evenements()
       .stream()
-      .anyMatch(evenement -> evenement.estUneRegularisation() && evenement.activiteVisee().filter(id::equals).isPresent());
+      .anyMatch(evenement -> evenement.activiteVisee().filter(id::equals).isPresent());
   }
 
   private Optional<Instant> borne(Activite activite) {

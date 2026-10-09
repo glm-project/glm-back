@@ -19,7 +19,6 @@ class SuiviDAtelierTest {
 
   private static final Instant A_20H59 = Instant.parse("2026-05-10T20:59:00Z");
   private static final Instant A_21H = Instant.parse("2026-05-10T21:00:00Z");
-  private static final Instant A_22H = Instant.parse("2026-05-10T22:00:00Z");
   private static final Instant LE_11_MAI_2026_A_1H = Instant.parse("2026-05-11T01:00:00Z");
 
   @ParameterizedTest
@@ -60,32 +59,19 @@ class SuiviDAtelierTest {
       .hasMessageContaining("posterieur a la cloture");
   }
 
-  @Test
-  void shouldRefermerLIntervallePrecedentSurUneSaisieOubliee() {
-    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(debut).enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_17H));
-
-    SuiviDAtelier regularise = suivi.enregistre(passageEnNonConformiteDe(debut).a(LE_10_MAI_2026_A_12H));
-
-    assertThat(regularise.activites())
-      .extracting(Activite::debut, Activite::fin, Activite::categorie)
-      .containsExactly(
-        tuple(LE_10_MAI_2026_A_8H, Optional.of(LE_10_MAI_2026_A_12H), CategorieDActivite.TRAVAIL),
-        tuple(LE_10_MAI_2026_A_12H, Optional.of(LE_10_MAI_2026_A_17H), CategorieDActivite.NON_CONFORMITE),
-        tuple(LE_10_MAI_2026_A_17H, Optional.empty(), CategorieDActivite.TRAVAIL)
-      );
-  }
-
   /**
-   * Une transition termine l'activite qu'elle vise et en ouvre une distincte, de l'autre categorie : c'est elle qui
-   * est desormais en cours.
+   * Une fin ferme l'activite en cours et l'ouverture de la meme heure en ouvre une distincte, de l'autre categorie :
+   * c'est elle qui est desormais en cours.
    */
   @Test
-  void shouldOuvrirUneActiviteDistincteParUneTransition() {
+  void shouldOuvrirUneActiviteDistincteApresUneFinDeLaMemeHeure() {
     EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    EvenementDAtelier nonConformite = passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_12H);
+    EvenementDAtelier nonConformite = nonConformiteSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H);
 
-    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(travail).enregistre(nonConformite);
+    SuiviDAtelier suivi = suiviDAtelierEngage()
+      .enregistre(travail)
+      .enregistre(finDe(travail).a(LE_10_MAI_2026_A_12H))
+      .enregistre(nonConformite);
 
     assertThat(suivi.activites())
       .extracting(Activite::ouvrant, Activite::fin)
@@ -96,82 +82,6 @@ class SuiviDAtelierTest {
         assertThat(activite.categorie()).isEqualTo(CategorieDActivite.NON_CONFORMITE);
         assertThat(activite.depuis()).isEqualTo(LE_10_MAI_2026_A_12H);
       });
-  }
-
-  /**
-   * Une fin ne termine que l'activite qu'elle vise : celle qu'une relance a remplacee ne lui laisse rien a terminer.
-   * Conservee, elle laisse la premiere activite et sa relance a resoudre : plus rien n'est en cours, et le suivi, juge
-   * sur ses seules activites interpretables, est interrompu.
-   */
-  @Test
-  void shouldNeTerminerQueLActiviteViseeParUneFin() {
-    EvenementDAtelier premiere = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    EvenementDAtelier seconde = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H);
-    SuiviDAtelier relance = suiviDAtelierEngage().enregistre(premiere).enregistre(seconde);
-    EvenementDAtelier finDeLaPremiere = finDe(premiere).a(LE_10_MAI_2026_A_12H);
-
-    SuiviDAtelier conserve = relance.enregistre(finDeLaPremiere);
-
-    assertThat(conserve.activitesEnCours(LE_10_MAI_2026_A_17H)).isEmpty();
-    assertThat(conserve.etat(LE_10_MAI_2026_A_17H)).isEqualTo(EtatDAtelier.INTERROMPU);
-    assertThat(conserve.conflits())
-      .singleElement()
-      .satisfies(conflit -> {
-        assertThat(conflit.operateur()).isEqualTo(OPERATEUR_ID_DUPONT);
-        assertThat(conflit.poste()).contains(POSTE_ID_FRAISEUSE_1);
-        assertThat(conflit.activites()).containsExactly(premiere.activite().orElseThrow(), seconde.activite().orElseThrow());
-        assertThat(conflit.pointages()).containsExactly(premiere.id(), seconde.id(), finDeLaPremiere.id());
-      });
-  }
-
-  /**
-   * L'etat se juge sur les seules activites interpretables : l'ouverture pointee apres une sequence en conflit est en
-   * cours, et le suivi avec elle.
-   */
-  @Test
-  void shouldEtreEnCoursParUneActiviteInterpretableMalgreUneSequenceEnConflit() {
-    EvenementDAtelier premiere = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    EvenementDAtelier nouvelle = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H);
-    SuiviDAtelier suivi = suiviDAtelierEngage()
-      .enregistre(premiere)
-      .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H))
-      .enregistre(finDe(premiere).a(LE_10_MAI_2026_A_12H))
-      .enregistre(nouvelle);
-
-    assertThat(suivi.etat(LE_10_MAI_2026_A_17H)).isEqualTo(EtatDAtelier.EN_COURS);
-    assertThat(suivi.activitesEnCours(LE_10_MAI_2026_A_17H))
-      .extracting(ActiviteEnCours::ouverture)
-      .containsExactly(nouvelle.activite().orElseThrow());
-    assertThat(suivi.conflits()).hasSize(1);
-  }
-
-  /**
-   * Une activite a resoudre n'a ni fin ni fin automatique, meme lue apres son echeance : la regle des 13 h ne tranche
-   * pas un conflit.
-   */
-  @Test
-  void shouldLireSansFinNiFinAutomatiqueUneActiviteAResoudre() {
-    EvenementDAtelier premiere = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    SuiviDAtelier suivi = suiviDAtelierEngage()
-      .enregistre(premiere)
-      .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H))
-      .enregistre(finDe(premiere).a(LE_10_MAI_2026_A_12H));
-
-    assertThat(intervalles(suivi, LE_11_MAI_2026_A_9H15))
-      .hasSize(2)
-      .allSatisfy(intervalle -> {
-        assertThat(intervalle.aResoudre()).isTrue();
-        assertThat(intervalle.fin()).isEmpty();
-        assertThat(intervalle.finAutomatique()).isFalse();
-      });
-  }
-
-  @Test
-  void shouldRefuserUnGesteQuiViseUneActiviteAbsenteDuSuivi() {
-    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H));
-    EvenementDAtelier finDAilleurs = finDe(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)).a(LE_10_MAI_2026_A_12H);
-
-    assertThatThrownBy(() -> suivi.enregistre(finDAilleurs)).isExactlyInstanceOf(ActiviteViseeIntrouvableException.class);
   }
 
   /**
@@ -225,44 +135,6 @@ class SuiviDAtelierTest {
     assertThat(suivi.etat(LE_10_MAI_2026_A_17H)).isEqualTo(EtatDAtelier.INTERROMPU);
   }
 
-  @Test
-  void shouldGarderUneSeuleActiviteEnCoursApresUneRelance() {
-    SuiviDAtelier suivi = suiviDAtelierEngage()
-      .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))
-      .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H));
-
-    assertThat(suivi.etat(LE_10_MAI_2026_A_17H)).isEqualTo(EtatDAtelier.EN_COURS);
-    assertThat(suivi.activitesEnCours(LE_10_MAI_2026_A_17H))
-      .singleElement()
-      .satisfies(activite -> {
-        assertThat(activite.cle()).isEqualTo(cleDeFraiseuse1DeDupont());
-        assertThat(activite.categorie()).isEqualTo(CategorieDActivite.TRAVAIL);
-        assertThat(activite.depuis()).isEqualTo(LE_10_MAI_2026_A_13H);
-      });
-  }
-
-  @Test
-  void shouldEtreInterrompuQuandUneActiviteRelanceeEstArretee() {
-    EvenementDAtelier relance = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H);
-    SuiviDAtelier suivi = suiviDAtelierEngage()
-      .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))
-      .enregistre(relance)
-      .enregistre(finDe(relance).a(LE_10_MAI_2026_A_17H));
-
-    assertThat(suivi.etat(LE_10_MAI_2026_A_17H)).isEqualTo(EtatDAtelier.INTERROMPU);
-    assertThat(suivi.activitesEnCours(LE_10_MAI_2026_A_17H)).isEmpty();
-  }
-
-  @Test
-  void shouldRefuserUneRelanceApresLaCloture() {
-    SuiviDAtelier suivi = suiviDAtelierEngage()
-      .enregistre(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H))
-      .cloture(clotureParLeroyA(LE_10_MAI_2026_A_12H));
-    EvenementDAtelier relance = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H);
-
-    assertThatThrownBy(() -> suivi.enregistre(relance)).isExactlyInstanceOf(SuiviDAtelierClotureException.class);
-  }
-
   /**
    * Activite a 08:00, lecture a 20:59 : l'element est en cours, et l'activite parmi les activites en cours.
    */
@@ -301,9 +173,12 @@ class SuiviDAtelierTest {
    * cours, jusqu'a sa propre echeance, a 01 h le lendemain.
    */
   @Test
-  void shouldRelancerLEcheanceAChaqueTransition() {
+  void shouldRelancerLEcheanceAChaqueOuverture() {
     EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(travail).enregistre(passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_12H));
+    SuiviDAtelier suivi = suiviDAtelierEngage()
+      .enregistre(travail)
+      .enregistre(finDe(travail).a(LE_10_MAI_2026_A_12H))
+      .enregistre(nonConformiteSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H));
 
     assertThat(intervalles(suivi, A_21H))
       .extracting(IntervalleDActivite::categorie, IntervalleDActivite::fin, IntervalleDActivite::finAutomatique)
@@ -315,15 +190,17 @@ class SuiviDAtelierTest {
   }
 
   /**
-   * Transition NC 12 h recue le lendemain : rejouee a son heure metier, elle termine le travail a 12 h et en retire
-   * l'anomalie ; la non conformite, lue le lendemain, porte la sienne, a 01 h.
+   * Fin puis NC de 12 h recues le lendemain : rejouees a leur heure metier, elles terminent le travail a 12 h et en
+   * retirent l'anomalie ; la non conformite, lue le lendemain, porte la sienne, a 01 h.
    */
   @Test
-  void shouldRejouerASonHeureMetierUneTransitionRecueLeLendemain() {
+  void shouldRejouerASonHeureMetierUneFinEtUneOuvertureRecuesLeLendemain() {
     EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(travail);
 
-    SuiviDAtelier rejoue = suivi.enregistre(passageEnNonConformiteDe(travail).a(LE_10_MAI_2026_A_12H));
+    SuiviDAtelier rejoue = suivi
+      .enregistre(finDe(travail).a(LE_10_MAI_2026_A_12H))
+      .enregistre(nonConformiteSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H));
 
     assertThat(intervalles(rejoue, LE_11_MAI_2026_A_9H15))
       .extracting(IntervalleDActivite::debut, IntervalleDActivite::fin, IntervalleDActivite::finAutomatique)

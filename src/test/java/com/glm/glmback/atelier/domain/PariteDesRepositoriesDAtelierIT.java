@@ -49,8 +49,7 @@ class PariteDesRepositoriesDAtelierIT {
   /**
    * L'etat se juge a l'instant d'evaluation des criteres : juste avant l'echeance de l'activite de mardi, puis a
    * l'echeance pile, ou elle cesse d'etre en cours sans aucune ecriture. Le jeu couvre chaque etat, y compris un suivi
-   * en attente sans pointage, une activite terminee au-dela de son echeance par une regularisation,
-   * et une sequence en conflit dont les activites a resoudre ne sont pas en cours.
+   * en attente sans pointage, et une activite terminee au-dela de son echeance par une regularisation.
    */
   @Test
   @WithTenant("impeccmold")
@@ -61,16 +60,13 @@ class PariteDesRepositoriesDAtelierIT {
     Instant echeanceDeMardi = mardi.plusSeconds(3600).plus(Duration.ofHours(13));
     EvenementDAtelier termine = debutA(lundi.plusSeconds(3600 * 3));
     EvenementDAtelier prolonge = debutA(lundi.plusSeconds(3600 * 4));
-    EvenementDAtelier remplacee = debutA(mardi.plusSeconds(3600 * 2));
+    EvenementDAtelier terminee = debutA(mardi.plusSeconds(3600 * 2));
     List<SuiviDAtelier> jeu = List.of(
       suiviEngageA(lundi),
       suiviEngageA(lundi.plusSeconds(3600 * 2)).enregistre(termine).enregistre(finDe(termine).a(lundi.plusSeconds(3600 * 5))),
       suiviEngageA(lundi.plusSeconds(3600 * 3)).enregistre(prolonge).enregistre(finRegulariseeA(prolonge, mercredi)),
       suiviEngageA(mardi).enregistre(debutA(mardi.plusSeconds(3600))),
-      suiviEngageA(mardi.plusSeconds(3600))
-        .enregistre(remplacee)
-        .enregistre(debutA(mardi.plusSeconds(3600 * 3)))
-        .enregistre(finDe(remplacee).a(mardi.plusSeconds(3600 * 4))),
+      suiviEngageA(mardi.plusSeconds(3600)).enregistre(terminee).enregistre(finDe(terminee).a(mardi.plusSeconds(3600 * 4))),
       suiviEngageA(mercredi).cloture(new Cloture(AUTEUR_LEROY, Horodatage.saisiA(mercredi.plusSeconds(36000))))
     );
 
@@ -124,7 +120,6 @@ class PariteDesRepositoriesDAtelierIT {
     return EvenementDAtelier.builder()
       .id(EvenementDAtelierId.newId())
       .type(TypeDEvenementDAtelier.FIN)
-      .intention(IntentionDePointage.FIN)
       .activite(Optional.empty())
       .activiteVisee(ouvrant.activite())
       .operateur(OPERATEUR_ID_DUPONT)
@@ -143,7 +138,6 @@ class PariteDesRepositoriesDAtelierIT {
     return EvenementDAtelier.builder()
       .id(id)
       .type(TypeDEvenementDAtelier.DEBUT)
-      .intention(IntentionDePointage.OUVERTURE)
       .activite(Optional.of(ActiviteId.ouvertePar(id)))
       .activiteVisee(Optional.empty())
       .operateur(OPERATEUR_ID_DUPONT)

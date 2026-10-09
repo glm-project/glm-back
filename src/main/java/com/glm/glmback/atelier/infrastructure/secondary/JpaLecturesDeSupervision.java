@@ -90,7 +90,7 @@ class JpaLecturesDeSupervision implements LecturesDeSupervision {
         from ActiviteDAtelierEntity a join a.suivi s
           left join ElementEngageableEntity e on e.id = s.elementId
           left join PosteConnuEntity p on p.id = a.posteId
-        where a.fin is null and a.aResoudre = false order by a.debut, a.id
+        where a.fin is null order by a.debut, a.id
         """,
         Tuple.class
       )

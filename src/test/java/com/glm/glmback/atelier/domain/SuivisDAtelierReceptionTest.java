@@ -46,14 +46,13 @@ class SuivisDAtelierReceptionTest {
     assertThat(fin.issue()).isEqualTo(IssueDePointage.ACCEPTE);
     assertThat(fin.suivi().journal().evenements()).satisfiesExactly(
       ouvrant -> {
-        assertThat(ouvrant.intention()).isEqualTo(IntentionDePointage.OUVERTURE);
         assertThat(ouvrant.activite()).contains(ActiviteId.ouvertePar(debut.evenement()));
         assertThat(ouvrant.activiteVisee()).isEmpty();
       },
       terminant -> {
-        assertThat(terminant.intention()).isEqualTo(IntentionDePointage.FIN);
+        assertThat(terminant.type()).isEqualTo(TypeDEvenementDAtelier.FIN);
         assertThat(terminant.activite()).isEmpty();
-        assertThat(terminant.activiteVisee()).contains(ActiviteId.ouvertePar(debut.evenement()));
+        assertThat(terminant.activiteVisee()).isEmpty();
       }
     );
     assertThat(pointagesIgnores.lignes()).isEmpty();
@@ -203,11 +202,11 @@ class SuivisDAtelierReceptionTest {
 
   /**
    * Sur cette suite de gestes — un double debut, un double arret, une fin rejouee avant le dernier accepte, une fin a
-   * l'heure du debut de l'activite qu'elle fermerait —, le journal ne laisse aucune activite a resoudre : la regle
-   * ecarte chaque geste qui contredirait le precedent. La suite ne prouve que ces cas, pas une propriete generale.
+   * l'heure du debut de l'activite qu'elle fermerait —, le journal ne garde que les gestes acceptes : la regle ecarte
+   * chaque geste qui contredirait le precedent. La suite ne prouve que ces cas, pas une propriete generale.
    */
   @Test
-  void shouldNeLaisserAucuneActiviteAResoudreSurCetteSuiteDeGestes() {
+  void shouldNeGarderQueLesActivitesDesGestesAcceptes() {
     SuiviDAtelier engage = engage();
     pointeA(pointage(engage.id(), TypeDEvenementDAtelier.DEBUT), LE_10_MAI_2026_A_8H);
     pointeA(pointage(engage.id(), TypeDEvenementDAtelier.DEBUT), LE_10_MAI_2026_A_9H);
@@ -217,7 +216,12 @@ class SuivisDAtelierReceptionTest {
     pointeA(pointage(engage.id(), TypeDEvenementDAtelier.NON_CONFORMITE), LE_10_MAI_2026_A_13H);
     pointeA(pointage(engage.id(), TypeDEvenementDAtelier.FIN), LE_10_MAI_2026_A_13H);
 
-    assertThat(suivis.get(engage.id()).orElseThrow().activites()).hasSize(2).noneMatch(Activite::aResoudre);
+    assertThat(suivis.get(engage.id()).orElseThrow().activites())
+      .extracting(Activite::categorie, Activite::fin)
+      .containsExactly(
+        tuple(CategorieDActivite.TRAVAIL, Optional.of(LE_10_MAI_2026_A_12H)),
+        tuple(CategorieDActivite.NON_CONFORMITE, Optional.empty())
+      );
     assertThat(pointagesIgnores.lignes()).hasSize(4);
   }
 
