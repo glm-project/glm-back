@@ -25,6 +25,15 @@ class ParametrageEntity {
     // Constructeur requis par JPA.
   }
 
+  private ParametrageEntity(Parametrage parametrage) {
+    id = UNIQUE;
+    dureeMaxDActiviteSecondes = parametrage.dureeMaxDActivite().value().toSeconds();
+  }
+
+  static ParametrageEntity from(Parametrage parametrage) {
+    return new ParametrageEntity(parametrage);
+  }
+
   Parametrage toDomain() {
     return new Parametrage(
       Optional.ofNullable(dureeMaxDActiviteSecondes)

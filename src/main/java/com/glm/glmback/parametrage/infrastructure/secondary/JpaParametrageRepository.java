@@ -17,4 +17,11 @@ class JpaParametrageRepository implements ParametrageRepository {
   public Parametrage get() {
     return parametrages.findById(ParametrageEntity.UNIQUE).orElseThrow().toDomain();
   }
+
+  @Override
+  public Parametrage update(Parametrage parametrage) {
+    parametrages.save(ParametrageEntity.from(parametrage));
+
+    return parametrage;
+  }
 }

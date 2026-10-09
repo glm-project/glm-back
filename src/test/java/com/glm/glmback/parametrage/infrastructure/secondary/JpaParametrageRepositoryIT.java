@@ -1,5 +1,6 @@
 package com.glm.glmback.parametrage.infrastructure.secondary;
 
+import static com.glm.glmback.parametrage.domain.ParametrageFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.IntegrationTest;
@@ -33,5 +34,14 @@ class JpaParametrageRepositoryIT {
     Parametrage parametrage = transactions.execute(status -> parametrages.get());
 
     assertThat(parametrage).isEqualTo(new Parametrage(DureeMaxDActivite.parDefaut()));
+  }
+
+  @Test
+  @WithTenant("parametrage_fixture")
+  void shouldUpdateParametrage() {
+    transactions.execute(status -> parametrages.update(parametrageDixHeures()));
+
+    Parametrage relu = transactions.execute(status -> parametrages.get());
+    assertThat(relu).isEqualTo(parametrageDixHeures());
   }
 }

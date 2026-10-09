@@ -9,4 +9,8 @@ public record Parametrage(DureeMaxDActivite dureeMaxDActivite) {
   public Parametrage {
     Assert.notNull("dureeMaxDActivite", dureeMaxDActivite);
   }
+
+  public Parametrage fixeLaDureeMaxDActivite(DureeMaxDActivite duree) {
+    return new Parametrage(duree);
+  }
 }

@@ -1223,6 +1223,18 @@
         "required" : [ "complete" ],
         "type" : "object"
       },
+      "RestDureeMaxDActivite" : {
+        "description" : "La duree max d'une activite que l'entreprise fixe.",
+        "properties" : {
+          "dureeMaxDActivite" : {
+            "description" : "Duree au bout de laquelle une activite que rien n'a terminee se termine automatiquement, en ISO-8601 : d'une heure (PT1H) a vingt-quatre heures (PT24H), bornes comprises.",
+            "example" : "PT10H",
+            "type" : "string"
+          }
+        },
+        "required" : [ "dureeMaxDActivite" ],
+        "type" : "object"
+      },
       "RestElement" : {
         "description" : "L'element de fabrication dont le cout de revient est lu, relu au referentiel a chaque appel.",
         "properties" : {
@@ -4430,6 +4442,46 @@
         "tags" : [ "Parametrage" ]
       }
     },
+    "/api/parametrage/duree-max-d-activite" : {
+      "put" : {
+        "description" : "Le temps au bout duquel une activite que rien n'a terminee se termine automatiquement, d'une heure a\nvingt-quatre heures.\n",
+        "operationId" : "fixeLaDureeMaxDActivite",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RestDureeMaxDActivite"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestParametrage"
+                }
+              }
+            },
+            "description" : "Le parametrage, avec la duree fixee."
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestParametrage"
+                }
+              }
+            },
+            "description" : "Duree absente, illisible, ou hors des bornes."
+          }
+        },
+        "summary" : "Fixer la duree max d'une activite",
+        "tags" : [ "Parametrage" ]
+      }
+    },
     "/api/postes-de-travail" : {
       "get" : {
         "description" : "La page demandee, triee par libelle. Le filtre sur la nature est facultatif ; absent, il ne filtre rien.\n",
@@ -4722,9 +4774,6 @@
     "bearer-jwt" : [ ]
   } ],
   "tags" : [ {
-    "description" : "Les reglages que l'entreprise fixe elle-meme, un seul jeu pour toute l'entreprise.\n\nLe gestionnaire et l'operateur (role USER) les consultent.\n",
-    "name" : "Parametrage"
-  }, {
     "description" : "Le suivi des elements de fabrication mis en atelier.\n\nDeux publics se partagent ces routes. L'operateur (role USER) consulte le tableau des elements actifs et pointe son\ntravail. Le gestionnaire (role GESTIONNAIRE) engage les elements, les cloture et corrige les saisies.\n\nRien de ce qui se deduit n'est stocke : etat, activites en cours, sequences en conflit et temps sont recalcules du\njournal a chaque lecture, a l'instant de cette lecture. Une activite que rien n'a terminee se termine automatiquement\na son echeance, son debut plus 13 heures, sans qu'aucun evenement ne soit ecrit. Des pointages qui se contredisent\nsont conserves en sequence en conflit, que le gestionnaire resout en corrigeant ou en annulant les faits concernes.\n",
     "name" : "Atelier - elements engages"
   }, {
@@ -4736,6 +4785,9 @@
   }, {
     "description" : "Le temps passe sur un element de fabrication, valorise par nature d'operation.",
     "name" : "Couts de revient"
+  }, {
+    "description" : "Les reglages que l'entreprise fixe elle-meme, un seul jeu pour toute l'entreprise.\n\nLe gestionnaire les modifie ; l'operateur (role USER) les consulte.\n",
+    "name" : "Parametrage"
   }, {
     "description" : "Le referentiel de ce sur quoi les operateurs pointent : une machine, un etabli, un four, une salle.\n\nChaque poste porte la nature du travail qui s'y fait. C'est de la que vient le metier exerce a un instant donne :\nl'operateur qui demarre sur le poste de soudure soude, celui qui demarre sur un tour tourne. Rien de tout cela n'est\ndeclare sur la personne.\n\nLe gestionnaire declare et revise les postes ; l'operateur (role USER) les consulte.\n",
     "name" : "Postes de travail"

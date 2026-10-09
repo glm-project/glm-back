@@ -4,7 +4,10 @@ import com.glm.glmback.parametrage.application.ParametrageApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -15,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
   description = """
   Les reglages que l'entreprise fixe elle-meme, un seul jeu pour toute l'entreprise.
 
-  Le gestionnaire et l'operateur (role USER) les consultent.
+  Le gestionnaire les modifie ; l'operateur (role USER) les consulte.
   """
 )
 class ParametrageResource {
@@ -31,5 +34,19 @@ class ParametrageResource {
   @ApiResponse(responseCode = "200", description = "Le parametrage de l'entreprise.")
   RestParametrage lisLeParametrage() {
     return RestParametrage.from(applicationService.get());
+  }
+
+  @PutMapping("/duree-max-d-activite")
+  @Operation(
+    summary = "Fixer la duree max d'une activite",
+    description = """
+    Le temps au bout duquel une activite que rien n'a terminee se termine automatiquement, d'une heure a
+    vingt-quatre heures.
+    """
+  )
+  @ApiResponse(responseCode = "200", description = "Le parametrage, avec la duree fixee.")
+  @ApiResponse(responseCode = "400", description = "Duree absente, illisible, ou hors des bornes.")
+  RestParametrage fixeLaDureeMaxDActivite(@RequestBody @Valid RestDureeMaxDActivite request) {
+    return RestParametrage.from(applicationService.fixeLaDureeMaxDActivite(request.toDomain()));
   }
 }

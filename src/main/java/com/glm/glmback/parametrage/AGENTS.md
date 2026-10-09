@@ -7,7 +7,7 @@ Responsabilité, frontières et invariants de ce contexte. Les règles de code c
 ## Ce dont ce contexte s'occupe
 
 Les **réglages que l'entreprise fixe elle-même**, un seul jeu pour toute l'entreprise : aujourd'hui la durée max
-d'une activité. Les lire.
+d'une activité. Les lire, et les modifier pour le gestionnaire.
 
 ## Ce dont il ne s'occupe pas
 
