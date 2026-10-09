@@ -29,8 +29,10 @@ engine that read them was the largest part of the contexts that depend on the wo
 key is the operator, the follow-up (the OF) and the workstation, and a key has at most one running activity. A `FIN`
 closes the running activity of its key.
 
-**The server judges the punch at its arrival**, first come first served, after the existing controls (body, operator or
-workstation unknown, habilitation, closed follow-up for a `DEBUT` or a `NON_CONFORMITE`):
+**The server judges the punch at its arrival**, first come first served. It first looks the identifier up
+([ADR 0001](0001-generate-event-identities-in-the-offline-first-pupitre.md)): a replay answers 200 even if the follow-up
+has been closed since. Then come the existing controls (body, closed follow-up for a `DEBUT` or a `NON_CONFORMITE`,
+future gesture time, operator or workstation unknown, habilitation), and only then:
 
 1. `ANTERIEUR`: the gesture time is strictly older than the latest accepted time of the key, regularisations included.
    An equal time passes. A `FIN` that is not later than the start of the activity it would close is also `ANTERIEUR`:
@@ -63,7 +65,9 @@ importing `atelier`. The referential sends it as `dureeMaximaleDActivite: "PT13H
 standard value later.
 
 **Idempotence** follows [ADR 0001](0001-generate-event-identities-in-the-offline-first-pupitre.md): the event table,
-then the audit, then the judgement.
+then the audit, then the judgement. The table also covers a punch that arrives after the closure: it closes the running
+activity of the key, so a later `FIN` finds nothing running (`AUCUNE_ACTIVITE`, or `APRES_ECHEANCE` if the activity had
+already expired).
 
 ## Consequences
 

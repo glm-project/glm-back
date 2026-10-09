@@ -162,16 +162,19 @@ et un opérateur qui mène plusieurs éléments ou plusieurs postes a une clé p
 
 Le serveur juge chaque pointage à son arrivée, premier arrivé premier servi, dans cet ordre :
 
-1. **les contrôles existants** : corps invalide (400), suivi, opérateur ou poste introuvable (404), opérateur non habilité
-   (409), et un `DEBUT` ou une `NON_CONFORMITE` sur un élément clôturé (409 `suivi-d-atelier-cloture`, seul refus à
-   afficher à l'opérateur) ;
-2. **`ANTERIEUR`** : l'heure du geste est strictement plus ancienne que celle du dernier pointage accepté de la clé
+1. **l'idempotence**, dès que le suivi est trouvé (404 sinon) : l'`id` déjà présent dans la table des événements répond
+   200, l'`id` déjà présent dans l'audit répond 409 `pointage-ignore`. Un renvoi accepté répond donc 200 même si le suivi
+   a été clôturé depuis ;
+2. **les contrôles existants** : corps invalide (400), un `DEBUT` ou une `NON_CONFORMITE` sur un élément clôturé (409
+   `suivi-d-atelier-cloture`, seul refus à afficher à l'opérateur), date de survenue future (400), opérateur ou poste
+   introuvable (404), opérateur non habilité (409) ;
+3. **`ANTERIEUR`** : l'heure du geste est strictement plus ancienne que celle du dernier pointage accepté de la clé
    (régularisations comprises), ou bien c'est une `FIN` qui n'est pas postérieure au début de l'activité qu'elle fermerait
    (une activité de durée nulle n'existe pas : elle reste en cours). Pour un `DEBUT` ou une `NON_CONFORMITE`, une heure
    égale passe ; la `FIN` d'un geste composé, à t, ferme une activité ouverte avant t ;
-3. **l'échéance**, jugée sur l'heure du geste : atteinte quand elle est supérieure ou égale au début plus 13 h. Une
+4. **l'échéance**, jugée sur l'heure du geste : atteinte quand elle est supérieure ou égale au début plus 13 h. Une
    activité qui l'a atteinte compte comme terminée ;
-4. **le tableau** :
+5. **le tableau** :
 
 | État de la clé                                              | `DEBUT`                   | `NON_CONFORMITE`         | `FIN`                                                                                                      |
 | ----------------------------------------------------------- | ------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------- |
@@ -179,7 +182,8 @@ Le serveur juge chaque pointage à son arrivée, premier arrivé premier servi, 
 | Activité en cours (travail ou NC)                           | ignoré : `DEJA_EN_COURS`  | ignoré : `DEJA_EN_COURS` | accepté, termine l'activité en cours                                                                       |
 
 Les quatre raisons d'un pointage ignoré sont `DEJA_EN_COURS`, `AUCUNE_ACTIVITE`, `APRES_ECHEANCE` et `ANTERIEUR`.
-La clôture ferme les activités : une `FIN` postérieure à la clôture est ignorée (`AUCUNE_ACTIVITE`), et une `FIN`
+La clôture ferme les activités encore en cours : une `FIN` postérieure à la clôture tombe donc dans la ligne « rien en
+cours » du tableau (`AUCUNE_ACTIVITE`, ou `APRES_ECHEANCE` si l'activité était déjà échue à la clôture), et une `FIN`
 survenue avant la clôture mais reçue après elle est acceptée à son heure.
 
 Ce que le pupitre reçoit :
@@ -196,7 +200,7 @@ accepté comparé), consultée en base, sans endpoint ni écran. **Aucune clé, 
 renvoi sont acceptées. L'audit est écrit avant le refus (le refus est levé après la validation de la transaction) et
 un pointage ignoré prend, comme tout pointage, le verrou du suivi.
 
-**Idempotence**, avant toute règle : (1) l'`id` est dans la table des événements → 200 ; (2) sinon il est dans l'audit →
+**Idempotence**, avant toute règle (étape 1 ci-dessus) : (1) l'`id` est dans la table des événements → 200 ; (2) sinon il est dans l'audit →
 même refus `pointage-ignore` ; (3) sinon le pointage est jugé. Un `id` ne se réutilise donc jamais avec un autre contenu :
 le premier arrivé fait foi. La régularisation applique le même contrôle global (étape 1).
 
@@ -260,8 +264,8 @@ POST /api/atelier/suivis/{id}/pointages    { "id": "<uuid C>", "type": "NON_CONF
 - **Passer du travail à la NC (ou l'inverse) se pointe en deux gestes** à la même heure, la `FIN` d'abord : `FIN` puis
   `NON_CONFORMITE`, ou `FIN` puis `DEBUT`. Il n'existe ni transition ni type « reprise » ; la `categorie` de l'activité
   ouverte (`TRAVAIL` ou `NON_CONFORMITE`) est celle du type pointé.
-- **Arrêter un élément après sa clôture est ignoré** (`409 pointage-ignore`, `AUCUNE_ACTIVITE`) : la clôture l'a déjà
-  arrêté. Une fin survenue avant la clôture, mais reçue après elle, est acceptée à son heure (`201`). Démarrer ou pointer une non conformité sur un élément clôturé reste
+- **Arrêter un élément après sa clôture est ignoré** (`409 pointage-ignore`, `AUCUNE_ACTIVITE`, ou `APRES_ECHEANCE` si
+  l'activité était déjà échue) : la clôture l'a déjà arrêté. Une fin survenue avant la clôture, mais reçue après elle, est acceptée à son heure (`201`). Démarrer ou pointer une non conformité sur un élément clôturé reste
   refusé (`409 suivi-d-atelier-cloture`) : c'est le seul refus à afficher à l'opérateur, « OF clôturé, vous ne pouvez
   plus pointer dessus ».
 - **Deux saisies simultanées ne sont plus un refus** : le serveur juge les pointages d'un suivi l'un après l'autre.
@@ -446,14 +450,14 @@ suivi tel qu'il est, et n'écrit rien — y compris quand l'activité est désor
 
 **Refus**, par ordre de vérification (le code est dans `type`, voir [codes-erreur.md](codes-erreur.md)) :
 
-| Statut | Code                         | Cas                                                                                                 |
-| ------ | ---------------------------- | --------------------------------------------------------------------------------------------------- |
-| 404    | `activite-visee-introuvable` | Aucun pointage de ce suivi n'a ouvert cette activité.                                               |
-| 409    | `activite-deja-regularisee`  | Une régularisation vise déjà cette activité.                                                        |
-| 409    | `activite-non-echue`         | L'activité n'est pas une fin automatique : échéance non atteinte, ou terminée par un pointage.      |
-| 400    | `date-de-survenue-future`    | L'heure dépasse l'instant présent.                                                                  |
-| 409    | `fin-avant-debut`            | L'heure n'est pas postérieure au début de l'activité (une activité n'a jamais une durée nulle).     |
-| 409    | `fin-apres-borne`            | L'heure dépasse le début suivant sur la clé (opérateur et poste) ou la clôture : voir `borneDeFin`. |
+| Statut | Code                         | Cas                                                                                                                     |
+| ------ | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| 404    | `activite-visee-introuvable` | Aucun pointage de ce suivi n'a ouvert cette activité.                                                                   |
+| 409    | `activite-deja-regularisee`  | Une régularisation vise déjà cette activité.                                                                            |
+| 409    | `activite-non-echue`         | L'activité n'est pas une fin automatique : échéance non atteinte, ou terminée par une fin réelle (pointage ou clôture). |
+| 400    | `date-de-survenue-future`    | L'heure dépasse l'instant présent.                                                                                      |
+| 409    | `fin-avant-debut`            | L'heure n'est pas postérieure au début de l'activité (une activité n'a jamais une durée nulle).                         |
+| 409    | `fin-apres-borne`            | L'heure dépasse le début suivant sur la clé (opérateur et poste) ou la clôture : voir `borneDeFin`.                     |
 
 `saisie-concurrente` (409) reste le refus de concurrence : un pointage s'est glissé entre la lecture et l'écriture,
 relire le dossier. Le dossier d'une fin automatique nomme l'élément de fabrication (`elementId`, `designation`, comme la ligne de la liste) et donne la borne `borneDeFin` : le plus tôt du début suivant sur la

@@ -26,7 +26,8 @@ activity has no such consequence: the end can only fall between the start of the
 ## Decision
 
 **The dossier** (`GET /api/atelier/suivis/{id}/anomalies/{pointage}`) answers 200 for an automatic end that is not yet
-regularised, and 404 (`fin-automatique-introuvable`) otherwise; the front goes back to the list. It holds the element
+regularised. An unknown follow-up answers 404 `suivi-d-atelier-introuvable`, any other punch 404
+`fin-automatique-introuvable`; the front goes back to the list. It holds the element
 (`elementId`, `designation`), the expired activity, the punches of its key, and `borneDeFin`: the earlier of the next
 start on the key and the closure, or nothing.
 
@@ -38,7 +39,7 @@ deduced from the activity. The write does not go through the reception rule, may
 `REGULARISATION`. It answers 201, or 200 when the identifier is already in `evenement_d_atelier`, before any rule.
 
 **The refusals**, in the order they are checked: `activite-visee-introuvable` (404), `activite-deja-regularisee`,
-`activite-non-echue` (not an automatic end: the deadline is not reached, or a punch ended the activity),
+`activite-non-echue` (not an automatic end: the deadline is not reached, or a real end, a punch or the closure, ended the activity),
 `date-de-survenue-future` (400), `fin-avant-debut` (the time is not later than the start), `fin-apres-borne` (the time
 passes the earlier of the next start on the key and the closure) and `saisie-concurrente`, after which the front
 rereads the dossier. Only a `FIN` of a regularisation carries a target (`activiteVisee`).

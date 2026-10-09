@@ -83,7 +83,15 @@ migrating and contracting:
   `PARTAGE_INCONNU`, the `A_RESOUDRE` states and the `complete` flag of the totals, and most of the dossier of an
   anomaly (`kind`, `enConflit`, `diagnostics`, `sequence`, `perimetre`, `continuations`);
 - shapes: the list of anomalies became a `Page` of `RestFinAutomatiqueEnListe`, and a punch no longer carries
-  `intention` or `cible`.
+  `intention` or `cible`. The body of `POST …/regularisations` lost `operateur`, `poste`, `type`, `intention` and
+  `cible`, and gained `id` and `activite`;
+- error codes: `apercu-obsolete`, `confirmation-reutilisee`, `proposition-invalide`, `evenement-deja-annule`,
+  `evenement-d-atelier-introuvable`, `activite-visee-incoherente`, `identifiant-evenement-reutilise` and
+  `nature-d-anomalie-invalide` are no longer emitted (compared with `ErreurDAtelier` at the base of the branch;
+  `activite-visee-introuvable` stays, for the regularisation). Since a response carries one `type`, a client that
+  branched on one of them now meets another code or none;
+- behaviour: `POST …/pointages` can now answer 409 `pointage-ignore`, a refusal the pupitre never displays
+  ([ADR 0010](0010-judge-each-punch-when-it-is-received.md)).
 
 Three conditions made the exception acceptable, and none of them is a general licence:
 

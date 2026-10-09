@@ -47,39 +47,27 @@ bounded context et n'ont pas d'`AGENTS.md` propre : la section « Gestion des an
 
 ## La règle de réception
 
-Le serveur juge chaque pointage du pupitre par **clé** : l'opérateur, le suivi (l'OF) et le poste. `CleDActivite` porte
-l'opérateur et le poste ; le suivi qui la contient complète la clé. Il y a au plus une activité en cours par clé ; un
-opérateur qui mène plusieurs éléments ou plusieurs postes a une clé par élément et par poste, jugées à part. La règle
-vit dans le domaine : `SuiviDAtelier.juge` appelle `RegleDeReception`, qui rend un `VerdictDeReception` — `Accepte`, ou
-`Ignore` avec sa raison et le dernier pointage accepté auquel il a été comparé. Un pointage ignoré ne change pas
-l'agrégat.
+Le serveur juge chaque pointage du pupitre à son arrivée, par clé (opérateur, suivi, poste). Le tableau, l'ordre des
+vérifications (`ANTERIEUR`, échéance, tableau), les quatre raisons et la clôture sont décrits dans
+[contexte-metier.md](../../../../../../../documentation/contexte-metier.md#la-règle-de-réception) ; le contrat HTTP,
+dans [atelier-api.md](../../../../../../../documentation/atelier-api.md#un-pointage-est-jugé-à-sa-réception). Ne pas les
+recopier ici.
 
-Les contrôles existants viennent d'abord, dans `SuivisDAtelierService.pointe` : corps invalide, opérateur ou poste
-introuvable, habilitation, clôture. Un `DEBUT` ou une `NON_CONFORMITE` sur un suivi clôturé est refusé
-(409 `suivi-d-atelier-cloture`), seul refus que le pupitre affiche à l'opérateur. Un `DEBUT` ou une `NON_CONFORMITE`
-antérieur à l'engagement reste refusé (409 `evenement-anterieur-a-l-engagement`) ; une `FIN` antérieure à l'engagement
-n'a rien à fermer et part en audit.
+Côté code : la règle vit dans le domaine. `SuiviDAtelier.juge` appelle `RegleDeReception`, qui rend un
+`VerdictDeReception` — `Accepte`, ou `Ignore` avec sa `RaisonDePointageIgnore` et le dernier pointage accepté auquel il a
+été comparé. Un pointage ignoré ne change pas l'agrégat. Rien n'est jamais rejugé.
 
-Ensuite, dans cet ordre :
+`SuivisDAtelierService.pointe` enchaîne, dans cet ordre :
 
-1. **`ANTERIEUR`** : l'heure du geste est strictement plus ancienne que celle du dernier pointage accepté de la clé,
-   régularisations comprises. Une heure égale passe. Une `FIN` qui n'est pas postérieure au début de l'activité en cours
-   qu'elle fermerait est aussi `ANTERIEUR` : **il n'existe pas d'activité de durée nulle**. Un geste composé reste
-   accepté, car sa `FIN` à t ferme une activité ouverte avant t, puis l'ouverture part à t.
-2. **L'échéance**, jugée sur l'heure du geste : atteinte quand elle est supérieure ou égale au début plus la durée
-   maximale. Une activité échue compte comme terminée.
-3. **Le tableau** :
-
-| État de la clé                                              | `DEBUT`                  | `NON_CONFORMITE`         | `FIN`                                                                                                      |
-| ----------------------------------------------------------- | ------------------------ | ------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| Rien en cours (jamais ouverte, terminée, clôturée ou échue) | accepté                  | accepté                  | ignoré : `APRES_ECHEANCE` si la dernière activité de la clé est échue et sans fin, sinon `AUCUNE_ACTIVITE` |
-| Activité en cours (travail ou NC)                           | ignoré : `DEJA_EN_COURS` | ignoré : `DEJA_EN_COURS` | accepté, ferme l'activité en cours                                                                         |
-
-Les quatre raisons (`RaisonDePointageIgnore`) sont `DEJA_EN_COURS`, `AUCUNE_ACTIVITE`, `APRES_ECHEANCE` et `ANTERIEUR`.
-La clôture ferme les activités : une `FIN` postérieure à la clôture est ignorée (`AUCUNE_ACTIVITE`). Une `FIN` survenue
-avant la clôture et reçue après elle est acceptée à son heure.
-
-Un pointage est jugé à son arrivée : premier arrivé, premier servi. Rien n'est jamais rejugé.
+1. le verrou du suivi (`getForUpdate`), pris dès l'entrée, pour un pointage ignoré comme pour un autre ; un suivi absent
+   répond 404 ;
+2. **l'idempotence**, avant toute autre vérification (voir ci-dessous). Un renvoi d'un pointage accepté répond donc 200
+   même si le suivi a été clôturé depuis ;
+3. la clôture : un `DEBUT` ou une `NON_CONFORMITE` sur un suivi clôturé est refusé (409 `suivi-d-atelier-cloture`), seul
+   refus que le pupitre affiche à l'opérateur ;
+4. la date de survenue (400 `date-de-survenue-future`), puis l'opérateur, le poste et l'habilitation ;
+5. le jugement. Un `DEBUT` ou une `NON_CONFORMITE` antérieur à l'engagement reste refusé (409
+   `evenement-anterieur-a-l-engagement`) ; une `FIN` antérieure à l'engagement n'a rien à fermer et part en audit.
 
 **Le pointage ignoré n'entre pas au journal.** `PointagesIgnores` l'écrit dans la table d'audit
 `pointage_ignore_d_atelier` : une ligne par pointage ignoré (identifiant, suivi, opérateur, poste, type, heure du geste,
@@ -91,10 +79,9 @@ relue, seulement écrite.
 
 Le refus est la réponse au pupitre : 409 `urn:glm:erreur:atelier:pointage-ignore` (`PointageIgnoreException`). Il est
 levé par `SuivisDAtelierApplicationService.pointeDuPupitre` **après** la validation de la transaction qui a écrit
-l'audit : le lever dedans l'aurait annulée, audit compris. Un pointage ignoré prend, comme tout pointage, le verrou du
-suivi (`getForUpdate`) dès l'entrée du jugement.
+l'audit : le lever dedans l'aurait annulée, audit compris.
 
-**Idempotence**, avant toute règle :
+**Idempotence**, pour un pointage comme pour une régularisation :
 
 1. l'identifiant est dans `evenement_d_atelier` — toute la table, le journal de n'importe quel suivi — : réponse 200,
    rien n'est écrit, quel que soit le contenu renvoyé ;
@@ -165,8 +152,8 @@ Une ligne porte l'adresse du dossier, l'activité, son début et son échéance,
 identifiant de l'ouvrant sont aujourd'hui la même valeur).
 
 **Le dossier** (`GET /api/atelier/suivis/{id}/anomalies/{pointage}`, `LectureDossierAnomalie`) répond 200 pour une fin
-automatique non régularisée, et 404 `fin-automatique-introuvable` sinon : le front revient à la liste, sans écran
-intermédiaire. Il porte :
+automatique non régularisée. Un suivi absent répond 404 `suivi-d-atelier-introuvable` ; tout autre pointage répond 404
+`fin-automatique-introuvable`, et le front revient à la liste, sans écran intermédiaire. Il porte :
 
 - l'adresse, la révision, l'instant d'évaluation, et l'élément concerné (`elementId`, `designation`, comme la ligne de la
   liste) ;
@@ -183,8 +170,8 @@ intermédiaire. Il porte :
 
 - `activite-visee-introuvable` (404) : aucun pointage de ce suivi n'a ouvert cette activité ;
 - `activite-deja-regularisee` (409) : une régularisation vise déjà l'activité ;
-- `activite-non-echue` (409) : l'activité n'est pas une fin automatique, échéance non atteinte ou terminée par un
-  pointage. Ce refus n'est pas définitif tant que l'échéance n'est pas atteinte ;
+- `activite-non-echue` (409) : l'activité n'est pas une fin automatique, échéance non atteinte ou terminée par une
+  fin réelle (pointage ou clôture). Ce refus n'est pas définitif tant que l'échéance n'est pas atteinte ;
 - `date-de-survenue-future` (400) : l'heure dépasse maintenant ;
 - `fin-avant-debut` (409) : l'heure n'est pas postérieure au début de l'activité — aucune activité n'a une durée nulle ;
 - `fin-apres-borne` (409) : l'heure dépasse la borne, le début suivant sur la clé ou la clôture.

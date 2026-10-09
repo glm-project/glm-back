@@ -4,6 +4,12 @@
 
 Accepted on 3 October 2026 for workshop journal facts and their projections.
 
+Amended on 9 October 2026 (glm-front#254): two sentences referred to concepts that no longer exist. In the Context, "the
+correction contract" became "the workshop contract", since corrections are gone. In the Decision, "The textual
+offline-event registry remains unchanged. No correction link is inferred from old dates." became "The migration infers
+nothing from old dates.", since the event identity registry and the correction links were removed. The decision itself
+is unchanged.
+
 ## Context
 
 The workshop contract preserves Java `Instant` values at nanosecond precision. An integration test writing

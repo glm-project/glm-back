@@ -119,8 +119,8 @@ pointage plus récent). Travail à 7 h et arrêt à 12 h, puis un passage en non
 il est ignoré, et le travail reste compté de 7 h à 12 h.
 
 Une fin survenue avant la clôture de l'élément, mais reçue après elle, est enregistrée à son heure : la clôture ne prime
-pas sur un geste qui l'a précédée. Survenue après, elle est ignorée (`AUCUNE_ACTIVITE`), la clôture ayant déjà tout
-arrêté. Un `DEBUT` ou une `NON_CONFORMITE` sur un élément clôturé reste refusé (409 `suivi-d-atelier-cloture`) : c'est
+pas sur un geste qui l'a précédée. Survenue après, elle est ignorée, la clôture ayant déjà arrêté l'activité encore en cours (`AUCUNE_ACTIVITE`, ou
+`APRES_ECHEANCE` si l'activité était déjà échue). Un `DEBUT` ou une `NON_CONFORMITE` sur un élément clôturé reste refusé (409 `suivi-d-atelier-cloture`) : c'est
 le seul refus que l'opérateur voit.
 
 Le journal se relit par heure du geste, la fin avant l'ouverture à heure égale, puis par identifiant. Grâce à

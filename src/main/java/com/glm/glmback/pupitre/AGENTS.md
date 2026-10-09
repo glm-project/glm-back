@@ -34,18 +34,15 @@ purement lecteur, qui ne possède aucune table, n'écrit rien, et recalcule tout
 
 `ReferentielDuPupitre` : un `genereLe`, une liste d'`OperateurDuPupitre`, une liste de `SuiviDuPupitre`, la liste
 ordonnée des `CategorieDElement` de l'entreprise, qui range les tuiles, et la durée maximale d'une activité
-(`dureeMaximaleDActivite`, du noyau partagé `shared/activityduration` que lit aussi l'échéance d'atelier). Aucune
-identité, aucune persistance — l'objet naît et meurt dans l'appel.
+(`dureeMaximaleDActivite`, `"PT13H"` en ISO 8601). Elle vient du noyau partagé `shared/activityduration` que lit aussi
+l'échéance d'atelier : le pupitre n'importe pas `atelier`, et le serveur n'a qu'une source de ce délai. Le pupitre la lit
+ici au lieu de coder 13 h. Aucune identité, aucune persistance — l'objet naît et meurt dans l'appel.
 
 `ReferentielsDuPupitreService` assemble les opérateurs, les suivis et les catégories, et les date par le port `Clock`.
 
 `SuiviDuPupitre` lit les activités sans fin projetées par atelier. `ActiviteSansFin` transmet leur identité (celle de
 leur pointage ouvrant) et leur échéance ; `etatA` et `activitesEnCoursA` évaluent leur expiration à `genereLe`.
 Un pointage au journal distingue `INTERROMPU` de `EN_ATTENTE` quand aucune activité n'est en cours.
-
-**La durée maximale d'une activité** (`dureeMaximaleDActivite`, `"PT13H"`, ISO 8601) vient du noyau partagé
-`shared/activityduration`, que lit aussi l'échéance d'atelier : le pupitre n'importe pas `atelier`, et le serveur n'a
-qu'une source de ce délai. Le pupitre la lit ici au lieu de coder 13 h.
 
 ## Invariants à ne pas casser
 
@@ -73,7 +70,7 @@ qu'une source de ce délai. Le pupitre la lit ici au lieu de coder 13 h.
 - **Un opérateur sans activité n'est jamais omis.** La liste rend l'identité, l'identifiant éventuel et les postes
   habilités des opérateurs désignables, indépendamment des pointages.
 - **Les lectures se font par ensembles.** Opérateurs et habilitations, activités et références se lisent
-  sans requête par opérateur, suivi ou séquence.
+  sans requête par opérateur ou par suivi.
 - **Un élément clôturé est absent**, et `EtatDuSuivi` ne porte donc pas de valeur `CLOTURE` : elle n'aurait aucun
   porteur.
 - **Le nom de l'élément vient du suivi, sa référence du référentiel.** Le nom est copié à l'engagement — un élément
