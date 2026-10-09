@@ -9,12 +9,13 @@ import java.util.Optional;
  *
  * <p>
  * Il n'est jamais divise : le client enonce la regle deux fois, le cout de chaque machine active court en entier,
- * meme quand l'operateur en mene plusieurs de front. Facultatif comme sa source, absent plutot qu'a zero.
+ * meme quand l'operateur en mene plusieurs de front. Facultatif comme sa source. A zero, le poste ne demande que de la
+ * main d'oeuvre : sa machine ne coute rien, ce qui reste distinct d'un poste qui n'est pas valorise.
  * </p>
  */
 public record CoutHoraire(BigDecimal value) {
   public CoutHoraire {
-    Assert.field("cout horaire", value).notNull().strictlyPositive();
+    Assert.field("cout horaire", value).notNull().positive();
   }
 
   public static Optional<CoutHoraire> of(BigDecimal value) {

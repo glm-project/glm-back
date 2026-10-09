@@ -65,6 +65,7 @@ public final class CoutDeRevientFixture {
 
   public static final CoutHoraire COUT_HORAIRE_DE_45_EUROS = new CoutHoraire(new BigDecimal("45.00"));
   public static final CoutHoraire COUT_HORAIRE_DE_60_EUROS = new CoutHoraire(new BigDecimal("60.00"));
+  public static final CoutHoraire COUT_HORAIRE_DE_0_EURO = new CoutHoraire(BigDecimal.ZERO);
   public static final TauxHoraire TAUX_HORAIRE_DE_20_EUROS = new TauxHoraire(new BigDecimal("20.00"));
 
   public static final Activite ACTIVITE_FRAISAGE = Activite.builder()

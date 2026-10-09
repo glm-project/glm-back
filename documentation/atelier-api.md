@@ -102,8 +102,9 @@ Un poste requalifié plus tard ne requalifie pas les heures déjà passées. Le 
 n'est pas valorisée, ou quand aucun poste n'est fourni pour `coutHoraire`. Seul le `GESTIONNAIRE` les reçoit,
 y compris dans les réponses de pointage et de rejeu ; les lectures `USER` conservent le journal et ses identités,
 avec les champs de tarifs absents. La même confidentialité vaut pour les tarifs courants des référentiels
-opérateur et poste. Les tarifs saisis restent exactement représentables en centimes, strictement positifs
-et inférieurs à 100 000 000 : création et révision refusent toute perte de précision ou dépassement par un 400,
+opérateur et poste. Les tarifs saisis restent exactement représentables en centimes, inférieurs à 100 000 000,
+strictement positifs pour le taux de l'opérateur et positifs ou nuls pour le coût du poste — `0` pour un poste qui ne
+demande que de la main d'œuvre, distinct d'un coût absent : création et révision refusent toute perte de précision ou dépassement par un 400,
 sans arrondi implicite.
 
 ### L'habilitation est une règle dure
