@@ -22,7 +22,7 @@ les portions dont la synthèse additionne les durées. Le journal brut est lu s�
 
 - `ActivitesDeLOperateur` lit `activite_d_atelier` par une entité propre `@Immutable`, jointe au suivi pour
   l'élément engagé. La sélection porte sur le recouvrement de la semaine par le début et la fin réelle, ou l'échéance,
-  sans borne basse fixe du début : une régularisation peut dépasser 13 h, voire une semaine.
+  sans borne basse fixe du début : une régularisation peut dépasser la durée maximale d'activité, voire une semaine.
 - `SynthesesDesHeuresService` reçoit l'instant facultatif `evaluation`. L'heure du serveur est relevée une seule
   fois pour l'instant par défaut et la borne future ; l'instant utilisé gouverne l'expiration, le découpage des
   activités en cours, et la réponse

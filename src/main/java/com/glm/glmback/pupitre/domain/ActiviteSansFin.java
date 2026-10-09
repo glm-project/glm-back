@@ -10,8 +10,8 @@ import java.util.Optional;
  *
  * <p>
  * Elle est en cours jusqu'a son echeance, et terminee automatiquement des que l'echeance est atteinte, a l'echeance
- * pile comprise. L'echeance est celle que l'atelier a calculee, son debut plus 13 heures : ce contexte ne la recalcule
- * pas, il la lit et la transmet au pupitre, qui juge lui-meme l'expiration hors ligne.
+ * pile comprise. L'echeance est celle que l'atelier a calculee, son debut plus la duree maximale en vigueur a ce debut :
+ * ce contexte ne la recalcule pas, il la lit et la transmet au pupitre, qui juge lui-meme l'expiration hors ligne.
  * </p>
  */
 public record ActiviteSansFin(ActiviteId ouverture, CleDActivite activite, CategorieDActivite categorie, Instant depuis, Instant echeance) {

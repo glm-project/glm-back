@@ -21,7 +21,7 @@ l'opérateur ; la feuille expose les identifiants de poste et d'élément sans l
 - `ActivitesDeLOperateur` lit `activite_d_atelier` par une entité propre `@Immutable`, jointe au suivi pour son élément.
   Aucun import des contextes `atelier`, `operateur` ou `postedetravail`, tous annotés `@BusinessContext`.
 - La sélection porte sur le recouvrement de la semaine par le début et la fin réelle, ou l'échéance. Aucune borne
-  basse fixe du début : une régularisation peut établir plus de 13 h, voire plus d'une semaine.
+  basse fixe du début : une régularisation peut établir plus que la durée maximale d'activité, voire plus d'une semaine.
 - `FeuillesDeTempsService` reçoit l'instant facultatif `evaluation`. Sans lui, l'heure du serveur est relevée
   une seule fois ; l'instant utilisé gouverne l'expiration et le découpage des activités en cours, et la réponse
   le rend. Passer le même instant à la feuille et à la synthèse assure la même décision d'expiration.

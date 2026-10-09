@@ -11,3 +11,4 @@
 - [0009 — Evolve the API without breaking its clients](0009-evolve-the-api-without-breaking-its-clients.md)
 - [0010 — Judge each punch when it is received](0010-judge-each-punch-when-it-is-received.md)
 - [0011 — Regularise an automatic end directly](0011-regularise-an-automatic-end-directly.md)
+- [0012 — Freeze the maximum duration on the opening punch](0012-freeze-the-maximum-duration-on-the-opening-punch.md)

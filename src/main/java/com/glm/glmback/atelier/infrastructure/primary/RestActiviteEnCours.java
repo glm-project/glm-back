@@ -30,8 +30,8 @@ record RestActiviteEnCours(
   UUID ouverture,
   @Schema(
     description = """
-    Echeance de l'activite : son debut plus la duree maximale d'une activite (13 heures ecoulees). Si aucune fin ne la
-    termine avant, elle se termine automatiquement a cet instant : c'est une fin automatique, que le gestionnaire
+    Echeance de l'activite : son debut plus la duree maximale d'une activite en vigueur quand elle a commence (celle que
+    le gestionnaire avait fixee, treize heures par defaut), en heures ecoulees. Si aucune fin ne la termine avant, elle se termine automatiquement a cet instant : c'est une fin automatique, que le gestionnaire
     regularise.
     """,
     requiredMode = Schema.RequiredMode.REQUIRED

@@ -59,10 +59,12 @@ ignored punch takes it too.
 `ANTERIEUR` this equals the order of arrival for the punches of the pupitre, and a regularisation that arrives late
 falls in its place. The deadline is read the same way, without a reading instant.
 
-**The maximum duration has one source**, a small shared kernel (`shared/activityduration`, in English like the rest of
-`shared/`). The deadline of the workshop and the referential of the pupitre both read it, which keeps `pupitre` from
-importing `atelier`. The referential sends it as `dureeMaximaleDActivite: "PT13H"`. A settings table will replace the
-standard value later.
+**The maximum duration has one source**, the company setting of the `parametrage` context (13 hours until the manager
+sets another one). It reaches the workshop and the pupitre through a port of a small shared kernel
+(`shared/activityduration`, in English like the rest of `shared/`), which `parametrage` implements: neither `atelier`
+nor `pupitre` imports the other, or `parametrage`, and no domain codes a constant. The referential sends it as
+`dureeMaximaleDActivite`, an ISO 8601 string such as `"PT13H"` or `"PT8H"`. An activity keeps the duration in force
+when it began ([ADR 0012](0012-freeze-the-maximum-duration-on-the-opening-punch.md)).
 
 **Idempotence** follows [ADR 0001](0001-generate-event-identities-in-the-offline-first-pupitre.md): the event table,
 then the audit, then the judgement. The table also covers a punch that arrives after the closure: it closes the running

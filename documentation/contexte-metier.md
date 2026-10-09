@@ -41,7 +41,7 @@ Le **rang** porte l'ordre d'affichage choisi par l'entreprise : celui des bouton
 
 Gère les **réglages que l'entreprise fixe elle-même**, sans développeur : un seul jeu pour toute l'entreprise, que le gestionnaire modifie et que tout utilisateur lit. GLM est une trame, et une donnée qui varie d'un client à l'autre ne s'écrit pas en constante.
 
-Le premier réglage est la **durée max d'une activité** : le temps au bout duquel une activité que rien n'a terminée se termine automatiquement (voir « La fin automatique à l'échéance » dans `atelier`). Elle vaut **treize heures** tant que l'entreprise ne l'a pas fixée, et reste comprise entre une heure et vingt-quatre heures. Un réglage jamais fixé n'est pas recopié en base : la valeur par défaut n'existe qu'à un endroit, le domaine.
+Le premier réglage est la **durée max d'une activité** : le temps au bout duquel une activité que rien n'a terminée se termine automatiquement (voir « La fin automatique à l'échéance » dans `atelier`). Elle vaut **treize heures** tant que l'entreprise ne l'a pas fixée, et reste comprise entre une heure et vingt-quatre heures. Un réglage jamais fixé n'est pas recopié en base : la valeur par défaut n'existe qu'à un endroit, le domaine. `atelier` et le référentiel du pupitre ne la connaissent pas : ils la reçoivent par un port du noyau partagé, que `parametrage` implémente.
 
 Le second est le **logo de l'entreprise**, qui s'affiche en en-tête de la supervision, du pupitre et des PDF, dans une case de 50 x 50 pixels. Il y entre tel quel : une image PNG ou JPEG de 50 x 50 pixels exactement, de 20 Ko au plus, sans recadrage ni conversion par GLM. Le refus dit ce qui ne va pas, avec la valeur reçue, pour que le gestionnaire corrige son fichier. Sa **version** est l'empreinte de son contenu : elle entre dans l'adresse de l'image, que le navigateur garde en cache tant que le logo ne change pas.
 
@@ -84,7 +84,7 @@ automatique.
 
 ### La fin automatique à l'échéance
 
-Une activité encore en cours ne compte rien. Oubliée, elle ne court pas pour autant indéfiniment : **son échéance est son début plus 13 heures écoulées** (`Echeance`), jamais 13 heures d'horloge murale — le passage à l'heure d'été ou d'hiver ne l'allonge ni ne la raccourcit. Elle est atteinte dès que l'instant est supérieur ou égal à ce terme. Une activité que rien n'a terminée avant son échéance est **terminée automatiquement** à cet instant, et porte une **anomalie** : c'est la `FIN_AUTOMATIQUE` (`finAutomatique`), la seule anomalie que le gestionnaire traite. Le coût de revient dit `AnomalieDuPointage` ce qui rend un pointage suspect : `FIN_AUTOMATIQUE` en est la seule valeur, et c'est la même, sans type partagé. Travail à 8 h sans aucune fin : lu à 20 h 59, il est en cours ; lu à 21 h, ou le lendemain, il est terminé à 21 h. Le délai vient d'un noyau partagé (`MaximumActivityDuration`) que lit aussi le pupitre : c'est la règle de l'atelier, une table de paramètres le remplacera plus tard.
+Une activité encore en cours ne compte rien. Oubliée, elle ne court pas pour autant indéfiniment : **son échéance est son début plus la durée max d'une activité** (`Echeance`), en heures écoulées, jamais en heures d'horloge murale — le passage à l'heure d'été ou d'hiver ne l'allonge ni ne la raccourcit. Elle est atteinte dès que l'instant est supérieur ou égal à ce terme. Une activité que rien n'a terminée avant son échéance est **terminée automatiquement** à cet instant, et porte une **anomalie** : c'est la `FIN_AUTOMATIQUE` (`finAutomatique`), la seule anomalie que le gestionnaire traite. Le coût de revient dit `AnomalieDuPointage` ce qui rend un pointage suspect : `FIN_AUTOMATIQUE` en est la seule valeur, et c'est la même, sans type partagé. Avec les treize heures par défaut, un travail à 8 h sans aucune fin, lu à 20 h 59, est en cours ; lu à 21 h, ou le lendemain, il est terminé à 21 h ; la durée fixée à 8 h, il est terminé à 16 h. La durée est le réglage de l'entreprise (voir `parametrage`) : `atelier` la reçoit par un port du noyau partagé (`MaximumActivityDurations`), que lit aussi le pupitre, et **la copie sur le pointage qui ouvre l'activité**. Une activité garde donc la durée en vigueur à son début : le gestionnaire qui la change ne modifie que les activités ouvertes ensuite, sans rétroactivité. La copie est nécessaire parce que les projections d'activité sont recalculées à chaque geste du suivi : une durée lue en direct à ce moment-là s'appliquerait à une activité déjà ouverte.
 
 **Rien n'est écrit.** Ni événement de clôture automatique ni traitement planifié : l'interprétation du journal donne des activités qui ne dépendent que des faits, avec leur fin réelle quand un geste ou la clôture les a terminées. Seule leur lecture, à un **instant d'évaluation** explicite, décide si une activité sans fin réelle est encore en cours ou déjà terminée automatiquement. Cet instant vient de l'horloge du service applicatif. La première lecture après une indisponibilité retrouve donc la même borne, sans rattrapage.
 
@@ -114,7 +114,7 @@ Le pupitre ne pointe que trois choses : `DEBUT`, `NON_CONFORMITE` et `FIN`. Un p
 | Activité en cours (travail ou NC)                           | ignoré : `DEJA_EN_COURS` | ignoré : `DEJA_EN_COURS` | accepté                                                                                                    |
 
 Les quatre raisons d'audit sont `DEJA_EN_COURS` (un double appui), `AUCUNE_ACTIVITE` (un deuxième arrêt),
-`APRES_ECHEANCE` (un arrêt plus de 13 heures après le début) et `ANTERIEUR` (un pointage hors ligne arrivé après un
+`APRES_ECHEANCE` (un arrêt à l'échéance ou après, la durée max d'activité après le début) et `ANTERIEUR` (un pointage hors ligne arrivé après un
 pointage plus récent). Travail à 7 h et arrêt à 12 h, puis un passage en non conformité pointé à 10 h qui arrive après :
 il est ignoré, et le travail reste compté de 7 h à 12 h.
 
@@ -234,7 +234,7 @@ porte le contrat détaillé et les limites de cohérence face aux écritures con
 5. **Le cycle de vie de l'élément lui-même.** La clôture existe côté atelier, sur le suivi. Reste à trancher si l'élément de fabrication porte en propre un statut, ou si son activité se lit entièrement par la présence ou l'absence d'un suivi non clôturé.
 6. **Aucune garde d'unicité en base** sur « un seul suivi non clôturé par élément », contrairement à ce que `elementdefabrication` fait pour la `Reference`. La règle vit dans le service, mais une contrainte partielle transformerait en 500 un état que le domaine admet aujourd'hui : rouvrir la clôture d'un suivi dont l'élément a été réengagé depuis. À trancher côté domaine avant de poser la contrainte.
 7. **L'écriture du journal rapproche par identifiant**, ce qui coûte une lecture indexée de la collection à chaque pointage. Si un journal devenait assez long pour que cette lecture pèse, la sortie est un upsert natif gardé (`on conflict (id) do update ... where ... is distinct from ...`), qui épargne à PostgreSQL toute version de tuple sur les lignes inchangées — au prix d'une scission permanente entre lecture JPA et écriture JDBC.
-8. **L'audit reste à faire.** Les pointages ignorés se lisent en base, sans endpoint ni écran ; les actes du gestionnaire ne sont pas audités, et ceux qui seraient incohérents ne sont pas refusés au-delà de la borne de fin ; la durée maximale d'une activité attend sa table de paramètres.
+8. **L'audit reste à faire.** Les pointages ignorés se lisent en base, sans endpoint ni écran ; les actes du gestionnaire ne sont pas audités, et ceux qui seraient incohérents ne sont pas refusés au-delà de la borne de fin .
 
 ## postedetravail
 
@@ -316,7 +316,7 @@ La semaine est toujours explicite, jamais « la semaine courante ».
 Chaque jour rend les portions d'activité : élément, poste et nature facultatifs, catégorie travail ou
 non-conformité, début et fin éventuelle. La sélection porte sur les activités qui **recouvrent** la semaine,
 même commencées avant elle et sans pointage de la semaine. Une régularisation peut établir une fin bien au-delà
-de 13 h, voire de la semaine : aucune borne basse fixe sur le début ne permet de les retrouver toutes.
+de la durée max d'une activité, voire de la semaine : aucune borne basse fixe sur le début ne permet de les retrouver toutes.
 
 La feuille accepte un instant `evaluation` facultatif et rend celui effectivement utilisé. Sans paramètre,
 l'heure du serveur est relevée une seule fois. Cet instant gouverne l'expiration et les jours atteints par les
@@ -375,7 +375,7 @@ exclue du temps, des coûts et du diviseur ; `activitesEnCours` explique leur no
 Sans fin réelle, l'activité devient comptabilisable dès son échéance projetée par atelier, borne incluse, jusqu'à cette
 borne fixe, même lors d'une lecture ultérieure. `finsAutomatiques` expose ses périodes et l'anomalie active.
 Les fins pointées, les régularisations et les clôtures sont relues selon l'interprétation d'atelier, sans
-fermeture à l'heure de lecture. Une régularisation peut établir plus de treize heures.
+fermeture à l'heure de lecture. Une régularisation peut établir plus que la durée max d'une activité.
 
 ### Partage et arrondi
 
@@ -406,7 +406,7 @@ Le coût lit les projections d'activités d'atelier par ses entités JPA `@Immut
 contextes et sans repli concurrent du journal. Les tarifs sont ceux du fait ouvrant, figés à la saisie,
 jamais ceux du référentiel courant.
 L'occupation est sélectionnée par recouvrement, même commencée avant la période valorisée : une
-régularisation peut dépasser treize heures, donc aucune borne basse fixe sur le début n'est sûre.
+régularisation peut dépasser la durée max d'une activité, donc aucune borne basse fixe sur le début n'est sûre.
 
 L'horloge est relevée une seule fois par rapport et cet instant est rendu dans `evaluation`.
 L'instant gouverne l'expiration ; les faits connus restent lus, même postérieurs. Cette route ne prend
@@ -438,7 +438,7 @@ y compris entre deux semaines ; le changement d’heure conserve la durée réel
 22 h à lundi 3 h donne 2 h puis 3 h dans les deux semaines ISO ; minuit ne termine pas l’activité.
 
 Les activités sont sélectionnées par **recouvrement**, même commencées avant la semaine et sans pointage en son
-sein. Une régularisation peut établir une fin supérieure à 13 h, voire à une semaine : aucune borne basse fixe
+sein. Une régularisation peut établir une fin supérieure à la durée max d'une activité, voire à une semaine : aucune borne basse fixe
 sur le début ne les retrouve toutes. La synthèse reçoit `evaluation` facultatif et rend l'instant effectivement
 utilisé pour l'expiration et le découpage des activités en cours. Sans paramètre, l'heure du serveur est relevée
 une seule fois. Le client transmet le même instant aux deux lectures pour composer le relevé.
@@ -512,7 +512,7 @@ Quatre défauts en découlaient, tous du ressort du back :
 ### Ce que la route rend, et ce qu'elle ne rend pas
 
 Les opérateurs désignables — identité, identifiant, postes habilités —, les éléments encore pointables — identité,
-nom d'atelier, référence, type, état, activités en cours —, `genereLe` et la durée maximale d'une activité (`dureeMaximaleDActivite`, `PT13H`), que le pupitre lit au lieu de la coder. Un opérateur sans activité
+nom d'atelier, référence, catégorie, état, activités en cours —, `genereLe` et la durée maximale d'une activité (`dureeMaximaleDActivite`, ISO 8601 : `PT13H` par défaut, la valeur fixée par le gestionnaire sinon), que le pupitre lit au lieu de la coder. Un opérateur sans activité
 reste rendu avec toutes ses habilitations.
 
 La liste des opérateurs dépend du référentiel et des habilitations, indépendamment des pointages.
@@ -551,7 +551,7 @@ s'approprier l'acquisition de connexion du multi-tenant ; le détail est dans le
 `atelier`, `operateur`, `postedetravail` et `elementdefabrication` étant annotés `@BusinessContext`, ce contexte
 porte ses propres entités JPA en lecture seule. Il lit l'interprétation projetée dans `activite_d_atelier`, sans
 rejouer le journal d'atelier : seules les activités interprétables sans fin réelle peuvent être courantes.
-L'échéance est inclusive : à début plus 13 h pile, l'activité disparaît de la liste. L'identité de l'activité, rendue dans `ouverture`, est celle de son pointage ouvrant. Le suivi est `EN_COURS` si l'une de ces activités l'est à `genereLe`,
+L'échéance est inclusive : à début plus la durée de l'activité pile, elle disparaît de la liste. L'identité de l'activité, rendue dans `ouverture`, est celle de son pointage ouvrant. Le suivi est `EN_COURS` si l'une de ces activités l'est à `genereLe`,
 sinon `INTERROMPU` s'il porte un pointage, sinon `EN_ATTENTE`.
 
 Les scénarios Cucumber écrivent par l'API d'atelier puis relisent par le référentiel, avec échéance et régularisation :

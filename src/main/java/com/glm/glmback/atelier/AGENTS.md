@@ -68,6 +68,8 @@ Côté code : la règle vit dans le domaine. `SuiviDAtelier.juge` appelle `Regle
 4. la date de survenue (400 `date-de-survenue-future`), puis l'opérateur, le poste et l'habilitation ;
 5. le jugement. Un `DEBUT` ou une `NON_CONFORMITE` antérieur à l'engagement reste refusé (409
    `evenement-anterieur-a-l-engagement`) ; une `FIN` antérieure à l'engagement n'a rien à fermer et part en audit.
+6. si le verdict est `Accepte` pour un `DEBUT` ou une `NON_CONFORMITE`, la lecture de la durée maximale en vigueur
+   (`MaximumActivityDurations`), copiée sur l'événement écrit (voir « L'échéance »).
 
 **Le pointage ignoré n'entre pas au journal.** `PointagesIgnores` l'écrit dans la table d'audit
 `pointage_ignore_d_atelier` : une ligne par pointage ignoré (identifiant, suivi, opérateur, poste, type, heure du geste,
@@ -117,12 +119,23 @@ rien n'est refusé à la lecture.
 ## L'échéance
 
 Une activité que rien n'a terminée se termine automatiquement à son échéance : son début plus la durée maximale
-d'activité, 13 heures écoulées (`Echeance`), neutres au changement d'heure. La durée vient du noyau partagé
-`shared/activityduration` (`MaximumActivityDuration`), que lit aussi le référentiel du pupitre (`dureeMaximaleDActivite`,
-`"PT13H"`) : le contexte `pupitre` n'importe pas `atelier`. `MaximumActivityDuration.standard()` rend la valeur de
-l'atelier en attendant le port de paramétrage ; la durée est strictement positive. Le domaine ne code aucun autre 13.
+d'activité **en vigueur quand elle a commencé**, en heures écoulées (`Echeance`), neutres au changement d'heure. Cette
+durée est un **réglage de l'entreprise** que le gestionnaire fixe (de 1 à 24 heures, 13 heures tant qu'il n'a rien fixé) :
+le contexte `parametrage` le possède, ainsi que sa valeur par défaut et ses bornes. L'atelier le reçoit par le port
+`MaximumActivityDurations` du noyau partagé `shared/activityduration` (`MaximumActivityDuration`, strictement positive),
+que `parametrage` implémente et que lit aussi le référentiel du pupitre (`dureeMaximaleDActivite`, `"PT13H"`). Aucun des
+contextes n'importe un autre, et le domaine ne code aucun 13 : il n'y en a qu'une source, le paramétrage.
 
-L'échéance est **atteinte** quand l'instant est supérieur ou égal au début plus la durée. Rien n'est écrit ni planifié :
+**La durée est copiée sur l'événement ouvrant.** `SuivisDAtelierService.pointe` lit le port quand un `DEBUT` ou une
+`NON_CONFORMITE` est accepté, et seulement alors, puis écrit la durée sur l'événement (`EvenementDAtelier.dureeMax`,
+colonne `duree_max_secondes`). `Activite.echeance()` la tient de son ouvrant : `Echeance.apres(début, durée)`. **Pas de
+rétroactivité** : une activité garde la durée en vigueur à son début, quoi que le gestionnaire fixe ensuite. La copie est
+nécessaire — la projection `activite_d_atelier.echeance` est recalculée à chaque geste du suivi, et une durée lue en
+direct à ce moment-là s'appliquerait à une activité déjà ouverte. Seule une ouverture porte la durée (invariant de
+`EvenementDAtelier`) : une fin, une régularisation et un pointage ignoré ne lisent rien. Il n'y a pas de repli pour un
+ouvrant sans durée : les bases sont purgées avec cette PR.
+
+L'échéance est **atteinte** quand l'instant est supérieur ou égal au début plus la durée de l'activité. Rien n'est écrit ni planifié :
 `Activite` ne dépend que des faits, et seule sa lecture à un instant d'évaluation (`Activite.a`) la dit en cours,
 terminée à sa fin réelle, ou terminée automatiquement à l'échéance. Cette fin automatique est l'anomalie que le
 gestionnaire régularise ; seule une fin réelle la retire. L'instant vient de l'horloge du service applicatif
@@ -216,7 +229,8 @@ glissé entre la lecture et l'écriture : le front relit le dossier.
 ## Ports sortants
 
 `SuiviDAtelierRepository`, `ElementsEngageables`, `OperateursConnus`, `PostesConnus`, `Habilitations`,
-`PointagesIgnores`, `LecturesDeSupervision`, `Clock`.
+`PointagesIgnores`, `LecturesDeSupervision`, `MaximumActivityDurations` (noyau partagé, implémenté par `parametrage`),
+`Clock`.
 
 `OperateursConnus.get` résout la fiche pour copier le taux horaire au fait ; `parIds` résout les libellés d'une page.
 `SuiviDAtelierRepository.contientEvenement` répond sur toute la table des événements ; `getForUpdate` prend le verrou du

@@ -127,10 +127,14 @@ Le pupitre envoie une `FIN` par activité en cours ; la reprise ouvre une nouvel
 
 ### Une activité oubliée se termine automatiquement à son échéance
 
-Une activité que rien n'a terminée se termine automatiquement à son **échéance** : son début plus 13 heures écoulées,
-sans fuseau — le passage à l'heure d'été ne l'allonge ni ne la raccourcit. Rien n'est écrit au journal : la fin
-automatique se juge à l'instant d'évaluation de la lecture. Un travail commencé à 8 h et jamais arrêté est en cours à 20 h 59 ;
-à 21 h, et à toute lecture ultérieure, il est terminé à 21 h, avec une anomalie.
+Une activité que rien n'a terminée se termine automatiquement à son **échéance** : son début plus la **durée max d'une
+activité en vigueur à ce début**, en heures écoulées et sans fuseau — le passage à l'heure d'été ne l'allonge ni ne la
+raccourcit. Cette durée est un réglage de l'entreprise que le gestionnaire fixe (`PUT /api/parametrage/duree-max-d-activite`,
+de 1 à 24 heures, 13 heures tant qu'il n'a rien fixé). Le serveur la copie sur le pointage qui ouvre l'activité : **une
+activité garde la durée de son début**, le gestionnaire qui la change ne modifie que les activités ouvertes ensuite. Rien
+n'est écrit au journal pour la fin automatique : elle se juge à l'instant d'évaluation de la lecture. Avec la durée par
+défaut, un travail commencé à 8 h et jamais arrêté est en cours à 20 h 59 ; à 21 h, et à toute lecture ultérieure, il est
+terminé à 21 h, avec une anomalie. Fixée à 8 h, la même activité est terminée à 16 h.
 
 Ce que les réponses en montrent :
 
@@ -142,11 +146,12 @@ Ce que les réponses en montrent :
 La même échéance vaut pour les gestes, jugés sur leur heure métier, quel que soit le moment où ils arrivent (voir
 [Un pointage est jugé à sa réception](#un-pointage-est-jugé-à-sa-réception)) :
 
-- l'échéance est atteinte quand l'heure du geste est **supérieure ou égale** au début plus 13 h. Une fin pointée
+- l'échéance est atteinte quand l'heure du geste est **supérieure ou égale** au début plus la durée de l'activité (13 h
+  par défaut). Une fin pointée
   **avant** l'échéance termine l'activité à son heure, même reçue le lendemain : la fin pointée à 17 h et publiée après
   une coupure réseau remplace la fin automatique et retire l'anomalie ;
-- une **fin pointée à l'échéance ou après** est ignorée (`APRES_ECHEANCE`, `409 pointage-ignore`) : l'activité garde ses
-  13 h et son anomalie, et la ligne d'audit le dit. Un geste pile à l'échéance n'emporte plus ;
+- une **fin pointée à l'échéance ou après** est ignorée (`APRES_ECHEANCE`, `409 pointage-ignore`) : l'activité garde sa
+  durée et son anomalie, et la ligne d'audit le dit. Un geste pile à l'échéance n'emporte plus ;
 - un **début ou une non conformité** pointé à l'échéance ou après est accepté : l'activité échue compte comme terminée,
   la nouvelle activité s'ouvre à son heure, et rien n'est compté entre les deux ;
 - une **clôture** postérieure à l'échéance ne prolonge rien ;
@@ -172,8 +177,8 @@ Le serveur juge chaque pointage à son arrivée, premier arrivé premier servi, 
    (régularisations comprises), ou bien c'est une `FIN` qui n'est pas postérieure au début de l'activité qu'elle fermerait
    (une activité de durée nulle n'existe pas : elle reste en cours). Pour un `DEBUT` ou une `NON_CONFORMITE`, une heure
    égale passe ; la `FIN` d'un geste composé, à t, ferme une activité ouverte avant t ;
-4. **l'échéance**, jugée sur l'heure du geste : atteinte quand elle est supérieure ou égale au début plus 13 h. Une
-   activité qui l'a atteinte compte comme terminée ;
+4. **l'échéance**, jugée sur l'heure du geste : atteinte quand elle est supérieure ou égale au début plus la durée max que cette
+   activité a reçue à son début (13 h par défaut). Une activité qui l'a atteinte compte comme terminée ;
 5. **le tableau** :
 
 | État de la clé                                              | `DEBUT`                   | `NON_CONFORMITE`         | `FIN`                                                                                                      |
@@ -213,7 +218,7 @@ l'ouverture à heure égale, puis par identifiant — jamais par l'ordre de réc
 
 - une `FIN` du pupitre ferme l'activité en cours de sa clé, sans la désigner ;
 - la `FIN` d'une régularisation ferme l'activité qu'elle cible, seule `FIN` à porter une cible ;
-- une activité atteint son échéance à son début plus 13 h, borne comprise : elle compte alors comme terminée
+- une activité atteint son échéance à son début plus sa durée max (13 h par défaut), borne comprise : elle compte alors comme terminée
   automatiquement. Un `DEBUT` pile à l'échéance est accepté et laisse à l'activité précédente sa fin automatique, jamais
   une fin réelle ; une `FIN` pile à l'échéance n'a aucun effet, comme la règle de réception qui l'ignore.
 
@@ -401,9 +406,11 @@ tuiles par catégorie, dans cet ordre, et la liste est vide tant que l'entrepris
   pointage ouvrant, que cible la fin régularisée ; `echeance` permet l'expiration hors ligne, à cet
   instant inclus, sans fabriquer de fin. `etat` vaut `EN_COURS` s'il reste une activité interprétable en cours,
   sinon `INTERROMPU` s'il existe un pointage, sinon `EN_ATTENTE`.
-- **`dureeMaximaleDActivite` est la durée maximale d'une activité** (`"PT13H"`, ISO 8601) : l'échéance de chaque activité
-  est son début plus cette durée. Le pupitre la lit ici au lieu de coder 13 h ; le serveur n'en a qu'une source,
-  qu'il partage avec sa règle de réception.
+- **`dureeMaximaleDActivite` est la durée maximale d'une activité** (chaîne ISO 8601 : `"PT13H"` par défaut, `"PT8H"` ou
+  `"PT8H30M"` une fois fixée par le gestionnaire) : l'échéance d'une activité ouverte à partir de maintenant est son
+  début plus cette durée. Le pupitre la lit ici au lieu de la coder ; elle est relue à chaque référentiel, et le serveur
+  n'en a qu'une source, le paramétrage de l'entreprise, qu'il partage avec sa règle de réception. Une activité déjà
+  ouverte garde l'`echeance` que le serveur lui a donnée : un changement de la durée n'y touche pas.
 - **Aucun montant.** Ni `tauxHoraire` d'opérateur, ni `coutHoraire` de poste : un écran d'atelier partagé n'a pas à
   les recevoir, et `GET /api/couts-de-revient/{elementId}` reste réservé au `GESTIONNAIRE`.
 - **Aucun élément clôturé, aucun journal.** `etat` ne vaut donc jamais `CLOTURE` ici. Le journal complet se lit
@@ -505,7 +512,7 @@ séparée ne dépend que des NC. Une activité en cours ne contribue pas à la d
 
 Le journal brut `jours[].pointages[]` porte `id`, `type`, `dateDeSurvenue`, `element` et `poste`. Son ordre est l'heure
 métier, puis la fin avant l'ouverture, puis l'identité ; il ne suit jamais l'ordre de réception.
-Une `FIN` pointée à l'échéance ou après est ignorée : la feuille garde les 13 h complètes et l'anomalie automatique.
+Une `FIN` pointée à l'échéance ou après est ignorée : la feuille garde la durée complète de l'activité (13 h par défaut) et l'anomalie automatique.
 
 ## 4. Erreurs
 
@@ -654,7 +661,7 @@ Il ne contient que ce qui sert à régulariser :
 
 - `adresse`, `revision` (celle du suivi évalué), `evaluation`, `elementId` et `designation` ;
 - `activite` : l'activité échue — `evenement` et `activite` (le même identifiant), `operateurId` et `operateur`, `posteId`
-  et `poste`, `categorie`, `debut`, `fin` (l'échéance) et `duree` (`PT13H`) ;
+  et `poste`, `categorie`, `debut`, `fin` (l'échéance) et `duree` (la durée max de l'activité, `PT13H` par défaut) ;
 - `pointages` : les pointages du suivi qui portent la clé de l'activité, du plus ancien au plus récent ;
 - `borneDeFin` : le plus tôt du début suivant sur la clé (opérateur et poste) et de la clôture, absent quand rien ne
   borne la fin. L'instant présent borne toujours la fin.

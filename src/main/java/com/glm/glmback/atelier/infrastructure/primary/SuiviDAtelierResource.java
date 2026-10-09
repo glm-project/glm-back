@@ -42,7 +42,8 @@ import org.springframework.web.bind.annotation.RestController;
 
   Rien de ce qui se deduit n'est stocke : etat et activites en cours sont recalcules du journal a chaque lecture, a
   l'instant de cette lecture. Une activite que rien n'a terminee se termine automatiquement a son echeance, son debut
-  plus 13 heures, sans qu'aucun evenement ne soit ecrit.
+  plus la duree maximale d'activite en vigueur a ce debut (celle que le gestionnaire avait fixee, treize heures par
+  defaut), sans qu'aucun evenement ne soit ecrit.
   """
 )
 class SuiviDAtelierResource {
@@ -118,7 +119,7 @@ class SuiviDAtelierResource {
     Le serveur juge chaque pointage a son arrivee. L'identifiant est cherche d'abord : un renvoi deja accepte repond 200,
     meme si l'element a ete cloture depuis. Apres les controles habituels (element cloture, date future, operateur,
     poste, habilitation), un pointage plus ancien que le dernier pointage accepte de la cle est ignore (`ANTERIEUR`, a heure egale
-    il passe), ainsi qu'une fin qui n'est pas posterieure au debut de l'activite qu'elle fermerait (`ANTERIEUR`) ; une activite dont l'echeance est atteinte a l'heure du geste (debut plus 13 heures, borne comprise) compte
+    il passe), ainsi qu'une fin qui n'est pas posterieure au debut de l'activite qu'elle fermerait (`ANTERIEUR`) ; une activite dont l'echeance est atteinte a l'heure du geste (debut plus la duree maximale de cette activite, borne comprise) compte
     comme terminee ; puis : rien en cours accepte un debut ou une non conformite et ignore une fin (`APRES_ECHEANCE` si
     la derniere activite est echue sans fin, sinon `AUCUNE_ACTIVITE`) ; une activite en cours ignore un debut ou une non
     conformite (`DEJA_EN_COURS`) et accepte une fin. Un pointage ignore n'entre pas au journal : il laisse une ligne

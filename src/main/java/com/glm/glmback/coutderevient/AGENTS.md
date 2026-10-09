@@ -35,7 +35,7 @@ le tarif courant du poste ou de l'opérateur.
 - Découper aux changements d'occupation. Bâtir la charge sur l'union du travail valorisé et de l'occupation lue
   pour que chaque tranche valorisée ait un diviseur. Acquérir aussi les activités adjacentes et prolonger
   la couverture jusqu’aux bornes des activités terminées découvertes : couper une fenêtre change ses centimes.
-  Aucune borne basse fixe sur le début : une régularisation peut dépasser treize heures.
+  Aucune borne basse fixe sur le début : une régularisation peut dépasser la durée maximale d'activité.
 - Arrondir le coût humain une fois par **fenêtre de partage** (ensemble de postes constant, diviseur connu),
   puis le répartir en centimes entiers : plus forts restes, puis activité commencée la première
   ([ADR 0004](../../../../../../../documentation/adr/0004-split-the-operator-cost-to-the-cent.md)). Arrondir la
