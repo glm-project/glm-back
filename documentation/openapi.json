@@ -1375,34 +1375,6 @@
         "required" : [ "codes" ],
         "type" : "object"
       },
-      "RestPageDesAnomalies" : {
-        "description" : "Une page et son total acquis ensemble dans les projections courantes.",
-        "properties" : {
-          "complete" : {
-            "type" : "boolean"
-          },
-          "lignes" : {
-            "items" : {
-              "$ref" : "#/components/schemas/RestAnomalieEnListe"
-            },
-            "type" : "array"
-          },
-          "page" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "size" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "total" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        },
-        "required" : [ "complete", "lignes", "page", "size", "total" ],
-        "type" : "object"
-      },
       "RestParametrage" : {
         "description" : "Les reglages de l'entreprise.",
         "properties" : {
@@ -1872,7 +1844,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "activitesEnCours", "categorie", "conflits", "element", "engageLe", "engagePar", "etat", "id", "journal", "nom" ],
+        "required" : [ "activitesEnCours", "categorie", "element", "engageLe", "engagePar", "etat", "id", "journal", "nom" ],
         "type" : "object"
       },
       "RestSuiviDAtelierEnGrille" : {
@@ -1967,7 +1939,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "activites", "categorie", "conflits", "etat", "id", "nom" ],
+        "required" : [ "activites", "categorie", "etat", "id", "nom" ],
         "type" : "object"
       },
       "RestSupervisionDAtelier" : {
@@ -3658,8 +3630,14 @@
     "description" : "Les familles dans lesquelles l'entreprise range ce qu'elle fabrique : des moules et des OF chez le client de\nreference, autre chose ailleurs. Une entreprise neuve n'en a aucune.\n\nLe code d'une categorie est a la fois son libelle et le prefixe du nom des produits qui s'y creent\n(MOULE-2026-000001). Il ne se renomme donc jamais.\n\nUne categorie se supprime tant qu'aucun produit n'y est range.\n\nLe gestionnaire declare, reordonne et supprime les categories ; l'operateur (role USER) les consulte.\n",
     "name" : "Categories de produit"
   }, {
+    "description" : "Le suivi des elements de fabrication mis en atelier.\n\nDeux publics se partagent ces routes. L'operateur (role USER) consulte le tableau des elements actifs et pointe son\ntravail. Le gestionnaire (role GESTIONNAIRE) engage les elements, les cloture et rattrape les saisies oubliees.\n\nRien de ce qui se deduit n'est stocke : etat et activites en cours sont recalcules du journal a chaque lecture, a\nl'instant de cette lecture. Une activite que rien n'a terminee se termine automatiquement a son echeance, son debut\nplus 13 heures, sans qu'aucun evenement ne soit ecrit.\n",
+    "name" : "Atelier - elements engages"
+  }, {
     "description" : "Les reglages que l'entreprise fixe elle-meme, un seul jeu pour toute l'entreprise.\n\nLe gestionnaire les modifie ; l'operateur (role USER) les consulte.\n",
     "name" : "Parametrage"
+  }, {
+    "description" : "Ce que le gestionnaire doit trancher : une activite terminee a son echeance faute de fin reelle.",
+    "name" : "Atelier - anomalies de pointage"
   }, {
     "description" : "Le temps passe sur un element de fabrication, valorise par nature d'operation.",
     "name" : "Couts de revient"
