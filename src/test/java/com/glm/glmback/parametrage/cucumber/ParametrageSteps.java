@@ -37,6 +37,8 @@ public class ParametrageSteps {
   @Autowired
   private CucumberRestClient rest;
 
+  private String versionRetenue;
+
   @When("je lis le parametrage de l'entreprise")
   public void jeLisLeParametrageDeLEntreprise() {
     rest.get(BASE_URI);
@@ -71,5 +73,54 @@ public class ParametrageSteps {
   @Then("le refus du logo dit {string}")
   public void leRefusDuLogoDit(String raison) {
     assertThat(CucumberRestTestContext.getElement("$.message")).isEqualTo(raison);
+  }
+
+  @Given("j'ai depose comme logo {string}")
+  public void jaiDeposeCommeLogo(String fichier) {
+    jeDeposeCommeLogo(fichier);
+    assertThatLastResponse().hasHttpStatus(200);
+  }
+
+  @When("je lis le logo a sa version")
+  public void jeLisLeLogoASaVersion() {
+    rest.get(BASE_URI + "/logo/" + versionLue());
+  }
+
+  @When("je lis le logo a la version {string}")
+  public void jeLisLeLogoALaVersion(String version) {
+    rest.get(BASE_URI + "/logo/" + version);
+  }
+
+  @When("je retiens la version du logo")
+  public void jeRetiensLaVersionDuLogo() {
+    versionRetenue = versionLue();
+  }
+
+  @When("je lis le logo a la version retenue")
+  public void jeLisLeLogoALaVersionRetenue() {
+    rest.get(BASE_URI + "/logo/" + versionRetenue);
+  }
+
+  @Then("le parametrage porte la version du logo depose")
+  public void leParametragePorteLaVersionDuLogoDepose() {
+    String deposee = (String) CucumberRestTestContext.getElement("$.version");
+    jeLisLeParametrageDeLEntreprise();
+    assertThat(CucumberRestTestContext.getElement("$.logo.version")).isEqualTo(deposee);
+  }
+
+  @Then("le parametrage n'a pas de logo")
+  public void leParametrageNAPasDeLogo() {
+    assertThat(CucumberRestTestContext.getElement("$.logo")).isNull();
+  }
+
+  @Then("le logo est servi en {string} et garde en cache")
+  public void leLogoEstServiEnEtGardeEnCache(String type) {
+    assertThat(CucumberRestTestContext.getResponseHeader("Content-Type")).containsExactly(type);
+    assertThat(CucumberRestTestContext.getResponseHeader("Cache-Control")).containsExactly("max-age=31536000, private, immutable");
+  }
+
+  private String versionLue() {
+    jeLisLeParametrageDeLEntreprise();
+    return (String) CucumberRestTestContext.getElement("$.logo.version");
   }
 }

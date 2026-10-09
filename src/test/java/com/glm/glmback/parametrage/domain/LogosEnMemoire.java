@@ -12,6 +12,11 @@ public final class LogosEnMemoire implements LogoRepository {
   }
 
   @Override
+  public Optional<VersionDuLogo> version() {
+    return get().map(Logo::version);
+  }
+
+  @Override
   public Logo update(Logo nouveau) {
     logo = nouveau;
 

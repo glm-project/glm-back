@@ -2114,6 +2114,10 @@
             "description" : "Duree au bout de laquelle une activite que rien n'a terminee se termine automatiquement, en ISO-8601. Treize heures tant que l'entreprise ne l'a pas fixee.",
             "example" : "PT13H",
             "type" : "string"
+          },
+          "logo" : {
+            "$ref" : "#/components/schemas/RestLogo",
+            "description" : "Le logo de l'entreprise, absent tant qu'aucun n'est depose. Son image se lit a l'adresse /api/parametrage/logo/{version}."
           }
         },
         "required" : [ "dureeMaxDActivite" ],
@@ -4537,6 +4541,59 @@
           }
         },
         "summary" : "Deposer le logo de l'entreprise",
+        "tags" : [ "Parametrage" ]
+      }
+    },
+    "/api/parametrage/logo/{version}" : {
+      "get" : {
+        "description" : "L'image du logo courant, a l'adresse de sa version, lue dans le parametrage. La reponse se garde en cache sans\nlimite (Cache-Control: private, max-age d'un an, immutable) : un nouveau logo change d'adresse, l'ancienne ne\nrend plus rien.\n",
+        "operationId" : "lisLeLogo",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "version",
+          "required" : true,
+          "schema" : {
+            "pattern" : "^[0-9a-f]{16}$",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "image/jpeg" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              },
+              "image/png" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "L'image, en PNG ou en JPEG."
+          },
+          "404" : {
+            "content" : {
+              "image/jpeg" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              },
+              "image/png" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "Cette version n'est pas celle du logo courant, ou l'entreprise n'a pas de logo."
+          }
+        },
+        "summary" : "Lire l'image du logo",
         "tags" : [ "Parametrage" ]
       }
     },

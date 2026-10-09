@@ -3,7 +3,9 @@ package com.glm.glmback.parametrage.infrastructure.primary;
 import static org.springframework.http.HttpStatus.*;
 
 import com.glm.glmback.UnitTest;
+import com.glm.glmback.parametrage.domain.LogoIntrouvableException;
 import com.glm.glmback.parametrage.domain.LogoInvalideException;
+import com.glm.glmback.parametrage.domain.ParametrageFixture;
 import com.glm.glmback.shared.error.infrastructure.primary.ExceptionAdviceContract;
 import com.glm.glmback.shared.error.infrastructure.primary.PublishedProblem;
 import java.util.stream.Stream;
@@ -23,6 +25,11 @@ class ParametrageExceptionAdviceTest extends ExceptionAdviceContract {
         new LogoInvalideException("Le fichier n'est pas une image lisible"),
         "urn:glm:erreur:parametrage:logo-invalide",
         BAD_REQUEST
+      ),
+      new PublishedProblem(
+        new LogoIntrouvableException(ParametrageFixture.VERSION_DU_LOGO_0123),
+        "urn:glm:erreur:parametrage:logo-introuvable",
+        NOT_FOUND
       )
     );
   }

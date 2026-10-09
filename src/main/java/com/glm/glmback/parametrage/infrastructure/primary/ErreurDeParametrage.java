@@ -4,7 +4,8 @@ import com.glm.glmback.shared.error.infrastructure.primary.ProblemCode;
 import org.springframework.http.HttpStatus;
 
 enum ErreurDeParametrage implements ProblemCode {
-  LOGO_INVALIDE(HttpStatus.BAD_REQUEST, "logo invalide");
+  LOGO_INVALIDE(HttpStatus.BAD_REQUEST, "logo invalide"),
+  LOGO_INTROUVABLE(HttpStatus.NOT_FOUND, "logo introuvable");
 
   private final HttpStatus status;
   private final String title;

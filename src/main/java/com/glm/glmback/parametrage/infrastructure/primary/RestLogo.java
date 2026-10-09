@@ -1,6 +1,6 @@
 package com.glm.glmback.parametrage.infrastructure.primary;
 
-import com.glm.glmback.parametrage.domain.Logo;
+import com.glm.glmback.parametrage.domain.VersionDuLogo;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "Le logo de l'entreprise.")
@@ -12,7 +12,7 @@ record RestLogo(
   )
   String version
 ) {
-  static RestLogo from(Logo logo) {
-    return new RestLogo(logo.version().value());
+  static RestLogo from(VersionDuLogo version) {
+    return new RestLogo(version.value());
   }
 }

@@ -2,6 +2,7 @@ package com.glm.glmback.parametrage.infrastructure.secondary;
 
 import com.glm.glmback.parametrage.domain.Logo;
 import com.glm.glmback.parametrage.domain.LogoRepository;
+import com.glm.glmback.parametrage.domain.VersionDuLogo;
 import java.util.Optional;
 import org.springframework.stereotype.Repository;
 
@@ -17,6 +18,11 @@ class JpaLogoRepository implements LogoRepository {
   @Override
   public Optional<Logo> get() {
     return logos.findById(ParametrageEntity.UNIQUE).orElseThrow().toDomain();
+  }
+
+  @Override
+  public Optional<VersionDuLogo> version() {
+    return logos.findVersion().map(VersionDuLogo::new);
   }
 
   @Override

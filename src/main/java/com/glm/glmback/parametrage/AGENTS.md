@@ -35,7 +35,9 @@ pas le charger. Il partage la ligne unique du paramétrage (colonnes `logo_*`), 
   juge avant tout décodage ; le format et les dimensions viennent du contenu, lu par le port `DecodeurDImage`, jamais
   du nom du fichier ni du type annoncé. Aucun recadrage ni aucune conversion : le logo s'affiche tel qu'il a été déposé.
 - **La version d'un logo est l'empreinte de son contenu** (`VersionDuLogo`) : elle change avec lui. C'est une clé de
-  cache, pas une preuve d'intégrité.
+  cache, pas une preuve d'intégrité. L'image se sert à l'adresse de sa version, en cache privé d'un an et immuable ;
+  une version qui n'est plus la courante répond 404 (`LectureDuLogo`), jamais par le logo courant, sans quoi une
+  adresse gardée en cache montrerait un autre logo que celui qu'elle nomme.
 
 ## Ports sortants
 

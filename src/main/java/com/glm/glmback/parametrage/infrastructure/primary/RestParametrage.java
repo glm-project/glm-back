@@ -1,6 +1,6 @@
 package com.glm.glmback.parametrage.infrastructure.primary;
 
-import com.glm.glmback.parametrage.domain.Parametrage;
+import com.glm.glmback.parametrage.application.ParametrageLu;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Duration;
 
@@ -11,9 +11,13 @@ record RestParametrage(
     example = "PT13H",
     requiredMode = Schema.RequiredMode.REQUIRED
   )
-  Duration dureeMaxDActivite
+  Duration dureeMaxDActivite,
+  @Schema(
+    description = "Le logo de l'entreprise, absent tant qu'aucun n'est depose. Son image se lit a l'adresse /api/parametrage/logo/{version}."
+  )
+  RestLogo logo
 ) {
-  static RestParametrage from(Parametrage parametrage) {
-    return new RestParametrage(parametrage.dureeMaxDActivite().value());
+  static RestParametrage from(ParametrageLu lu) {
+    return new RestParametrage(lu.parametrage().dureeMaxDActivite().value(), lu.versionDuLogo().map(RestLogo::from).orElse(null));
   }
 }

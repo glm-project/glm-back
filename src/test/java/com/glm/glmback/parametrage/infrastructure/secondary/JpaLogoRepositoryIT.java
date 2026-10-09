@@ -8,6 +8,7 @@ import com.glm.glmback.parametrage.domain.Logo;
 import com.glm.glmback.parametrage.domain.LogoRepository;
 import com.glm.glmback.parametrage.domain.Parametrage;
 import com.glm.glmback.parametrage.domain.ParametrageRepository;
+import com.glm.glmback.parametrage.domain.VersionDuLogo;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
@@ -37,8 +38,19 @@ class JpaLogoRepositoryIT {
   @WithTenant("parametrage_vierge")
   void shouldHaveNoLogoInANewTenant() {
     Optional<Logo> logo = transactions.execute(status -> logos.get());
+    Optional<VersionDuLogo> version = transactions.execute(status -> logos.version());
 
     assertThat(logo).isEmpty();
+    assertThat(version).isEmpty();
+  }
+
+  @Test
+  @WithTenant("parametrage_logo")
+  void shouldReadTheVersionWithoutTheContenu() {
+    transactions.execute(status -> logos.update(logoPngBleu()));
+
+    Optional<VersionDuLogo> version = transactions.execute(status -> logos.version());
+    assertThat(version).contains(VERSION_DU_LOGO_0123);
   }
 
   @Test
