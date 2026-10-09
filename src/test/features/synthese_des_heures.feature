@@ -5,8 +5,8 @@ Feature: Synthese des heures hebdomadaire d'un operateur
   Background:
     Given I am logged in as "gestionnaire" with role "GESTIONNAIRE"
     And la synthese des heures suit l'operateur "dupont"
-    And la synthese des heures connait le poste "DMU 50" de nature "Fraisage"
-    And la synthese des heures connait le poste "Tour" de nature "Tournage"
+    And la synthese des heures connait le poste "DMU 50" de nature "fraisage"
+    And la synthese des heures connait le poste "Tour" de nature "tournage"
     And la synthese des heures suit l'operateur "martin" habilite sur
       | DMU 50 |
       | Tour   |
@@ -88,8 +88,8 @@ Feature: Synthese des heures hebdomadaire d'un operateur
     When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
     Then l'element "carter" de la synthese porte les postes
       | poste  | nature   |
-      | DMU 50 | Fraisage |
-      | Tour   | Tournage |
+      | DMU 50 | fraisage |
+      | Tour   | tournage |
 
   Scenario: Un element reengage apres cloture reste un seul element
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"

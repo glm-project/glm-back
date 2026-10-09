@@ -11,8 +11,8 @@ Feature: Cout de revient d'un element de fabrication
   # Ces scenarios ecrivent par l'API d'atelier et relisent sa projection interpretee par le cout, sans import Java.
   Background:
     Given I am logged in as "gestionnaire" with role "GESTIONNAIRE"
-    And le rapport connait le poste "fraiseuse" de nature "Fraisage" a "45.00" de l'heure
-    And le rapport connait le poste "tour" de nature "Tournage" a "60.00" de l'heure
+    And le rapport connait le poste "fraiseuse" de nature "fraisage" a "45.00" de l'heure
+    And le rapport connait le poste "tour" de nature "tournage" a "60.00" de l'heure
     And le rapport connait l'operateur "dupont" a "20.00" de l'heure, habilite sur
       | fraiseuse |
       | tour      |
@@ -34,7 +34,7 @@ Feature: Cout de revient d'un element de fabrication
     # 45 EUR de machine et 20 EUR d'operateur, pendant deux heures.
     And le rapport porte les lignes
       | nature   | travail | nonConformite | machine | mainDOeuvre |
-      | Fraisage | PT2H    | PT0S          | 90.00   | 40.00       |
+      | fraisage | PT2H    | PT0S          | 90.00   | 40.00       |
 
   Scenario: La pause de midi retire son creux du temps valorise
     Given l'entreprise fabrique "OF 3003"
@@ -49,7 +49,7 @@ Feature: Cout de revient d'un element de fabrication
     # dans le journal de l'element.
     And le rapport porte les lignes
       | nature   | travail | nonConformite | machine | mainDOeuvre |
-      | Fraisage | PT3H    | PT0S          | 135.00  | 60.00       |
+      | fraisage | PT3H    | PT0S          | 135.00  | 60.00       |
 
   Scenario: La reprise de non conformite se compte a part, datee
     Given l'entreprise fabrique "OF 3004"
@@ -63,7 +63,7 @@ Feature: Cout de revient d'un element de fabrication
     # Une piece ratee se refait au meme tarif : le cout ne bouge pas, seul le partage du temps change.
     And le rapport porte les lignes
       | nature   | travail | nonConformite | machine | mainDOeuvre |
-      | Fraisage | PT1H    | PT1H          | 90.00   | 40.00       |
+      | fraisage | PT1H    | PT1H          | 90.00   | 40.00       |
     And le rapport porte la non conformite de "2026-05-11T10:00:00Z" a "2026-05-11T11:00:00Z"
 
   Scenario: Un double appui sur demarrer ne valorise rien de plus
@@ -79,7 +79,7 @@ Feature: Cout de revient d'un element de fabrication
     Then la reponse a le statut http 200
     And le rapport porte les lignes
       | nature   | travail | nonConformite | machine | mainDOeuvre |
-      | Fraisage | PT2H    | PT0S          | 90.00   | 40.00       |
+      | fraisage | PT2H    | PT0S          | 90.00   | 40.00       |
 
   Scenario: Un ordre relance le lendemain valorise les deux journees, sans la nuit
     # Les deux activites ont chacune leurs faits ouvrant et fermant : le rapport valorise deux heures lundi et une mardi.
@@ -93,7 +93,7 @@ Feature: Cout de revient d'un element de fabrication
     Then la reponse a le statut http 200
     And le rapport porte les lignes
       | nature   | travail | nonConformite | machine | mainDOeuvre |
-      | Fraisage | PT3H    | PT0S          | 135.00  | 60.00       |
+      | fraisage | PT3H    | PT0S          | 135.00  | 60.00       |
 
   Scenario: Deux machines menees de front divisent l'operateur, jamais les machines
     Given l'entreprise fabrique "OF 3005"
@@ -108,10 +108,10 @@ Feature: Cout de revient d'un element de fabrication
     # elle reste entiere. Les deux machines, elles, courent leur temps entier — 3 h de fraiseuse et 1 h de tour.
     And le rapport porte les lignes
       | nature   | travail | nonConformite | machine | mainDOeuvre |
-      | Fraisage | PT3H    | PT0S          | 135.00  | 50.00       |
-      | Tournage | PT1H    | PT0S          | 60.00   | 10.00       |
+      | fraisage | PT3H    | PT0S          | 135.00  | 50.00       |
+      | tournage | PT1H    | PT0S          | 60.00   | 10.00       |
     # Le detail nomme le tour comme parallele, meme quand il porte sur le meme ordre.
-    And le pointage de la ligne "Fraisage" commence a "2026-05-11T09:00:00Z" se partage en
+    And le pointage de la ligne "fraisage" commence a "2026-05-11T09:00:00Z" se partage en
       | debut                | fin                  | diviseur | mainDOeuvre | paralleles   |
       | 2026-05-11T09:00:00Z | 2026-05-11T10:00:00Z | 1        | 20.00       |              |
       | 2026-05-11T10:00:00Z | 2026-05-11T11:00:00Z | 2        | 10.00       | tour@OF 3005 |
@@ -129,10 +129,10 @@ Feature: Cout de revient d'un element de fabrication
     When je consulte le cout de revient de "OF D1" a "2026-05-11T18:00:00Z"
     # La machine court ses trois heures ; l'operateur est divise par deux de 10 h a 11 h, ou il menait aussi le tour
     # de l'OF D2 : 20,00 + 10,00 + 20,00 EUR.
-    Then la ligne "Fraisage" detaille les pointages
+    Then la ligne "fraisage" detaille les pointages
       | operateur | poste     | debut                | fin                  | anomalies | machine | mainDOeuvre |
       | dupont    | fraiseuse | 2026-05-11T09:00:00Z | 2026-05-11T12:00:00Z |           | 135.00  | 50.00       |
-    And le pointage de la ligne "Fraisage" commence a "2026-05-11T09:00:00Z" se partage en
+    And le pointage de la ligne "fraisage" commence a "2026-05-11T09:00:00Z" se partage en
       | debut                | fin                  | diviseur | mainDOeuvre | paralleles |
       | 2026-05-11T09:00:00Z | 2026-05-11T10:00:00Z | 1        | 20.00       |            |
       | 2026-05-11T10:00:00Z | 2026-05-11T11:00:00Z | 2        | 10.00       | tour@OF D2 |
@@ -157,11 +157,11 @@ Feature: Cout de revient d'un element de fabrication
     When je consulte le cout de revient de "OF 3020" a "2026-05-11T18:00:00Z"
     Then le rapport porte les lignes
       | nature   | travail | nonConformite | machine | mainDOeuvre |
-      | Fraisage | PT1H20M | PT0S          | 60.00   | 22.23       |
+      | fraisage | PT1H20M | PT0S          | 60.00   | 22.23       |
     When je consulte le cout de revient de "OF 3021" a "2026-05-11T18:00:00Z"
     Then le rapport porte les lignes
       | nature   | travail | nonConformite | machine | mainDOeuvre |
-      | Tournage | PT20M   | PT0S          | 20.00   | 2.22        |
+      | tournage | PT20M   | PT0S          | 20.00   | 2.22        |
     When je consulte le cout de revient de "OF 3022" a "2026-05-11T18:00:00Z"
     Then le rapport porte les lignes
       | nature | travail | nonConformite | machine | mainDOeuvre |
@@ -176,7 +176,7 @@ Feature: Cout de revient d'un element de fabrication
     Then la reponse a le statut http 200
     And le rapport porte les lignes
       | nature   | travail | nonConformite | machine | mainDOeuvre |
-      | Fraisage | PT1H    | PT0S          | 45.00   | 20.00       |
+      | fraisage | PT1H    | PT0S          | 45.00   | 20.00       |
 
   Scenario: Un pointage sans poste n'a ni nature ni cout machine
     Given l'entreprise fabrique "OF 3008"
@@ -202,8 +202,8 @@ Feature: Cout de revient d'un element de fabrication
     # Rien n'est mene de front : chaque heure est payee entiere, et les lignes sortent dans l'ordre des natures.
     And le rapport porte les lignes
       | nature   | travail | nonConformite | machine | mainDOeuvre |
-      | Fraisage | PT1H    | PT0S          | 45.00   | 20.00       |
-      | Tournage | PT1H    | PT0S          | 60.00   | 20.00       |
+      | fraisage | PT1H    | PT0S          | 45.00   | 20.00       |
+      | tournage | PT1H    | PT0S          | 60.00   | 20.00       |
 
   Scenario: Un element inconnu renvoie 404
     When je consulte le cout de revient de l'element inconnu "11111111-2222-3333-4444-555555555555"
@@ -231,7 +231,7 @@ Feature: Cout de revient d'un element de fabrication
     When je consulte le cout de revient de "OF T7 A" a "2026-05-11T10:00:00Z"
     Then le rapport porte les lignes
       | nature   | travail | nonConformite | machine | mainDOeuvre |
-      | Fraisage | PT2H    | PT0S          | 90.00   | 40.00       |
+      | fraisage | PT2H    | PT0S          | 90.00   | 40.00       |
     And le cout est evalue a "2026-05-11T10:00:00Z" avec 0 activites en cours exclues
     When je consulte le cout de revient de "OF T7 B" a "2026-05-11T10:00:00Z"
     Then le rapport ne porte aucune ligne
@@ -243,11 +243,11 @@ Feature: Cout de revient d'un element de fabrication
     When je consulte le cout de revient de "OF T7 A" a "2026-05-11T11:00:00Z"
     Then le rapport porte les lignes
       | nature   | travail | nonConformite | machine | mainDOeuvre |
-      | Fraisage | PT2H    | PT0S          | 90.00   | 30.00       |
+      | fraisage | PT2H    | PT0S          | 90.00   | 30.00       |
     When je consulte le cout de revient de "OF T7 B" a "2026-05-11T11:00:00Z"
     Then le rapport porte les lignes
       | nature   | travail | nonConformite | machine | mainDOeuvre |
-      | Tournage | PT2H    | PT0S          | 120.00  | 30.00       |
+      | tournage | PT2H    | PT0S          | 120.00  | 30.00       |
 
   Scenario: La fin automatique compte treize heures exactement et rend sa periode
     Given l'entreprise fabrique "OF T7 auto"
@@ -261,10 +261,10 @@ Feature: Cout de revient d'un element de fabrication
     When je consulte le cout de revient de "OF T7 auto" a "2026-05-11T21:00:00Z"
     Then le rapport porte les lignes
       | nature   | travail | nonConformite | machine | mainDOeuvre |
-      | Fraisage | PT13H   | PT0S          | 585.00  | 260.00      |
+      | fraisage | PT13H   | PT0S          | 585.00  | 260.00      |
     And le cout est evalue a "2026-05-11T21:00:00Z" avec 0 activites en cours exclues
     And le cout porte la fin automatique de "2026-05-11T08:00:00Z" a "2026-05-11T21:00:00Z"
-    And la ligne "Fraisage" detaille les pointages
+    And la ligne "fraisage" detaille les pointages
       | operateur | poste     | debut                | fin                  | anomalies       | machine | mainDOeuvre |
       | dupont    | fraiseuse | 2026-05-11T08:00:00Z | 2026-05-11T21:00:00Z | FIN_AUTOMATIQUE | 585.00  | 260.00      |
     When je consulte le cout de revient de "OF T7 auto" a "2026-05-12T10:00:00Z"
@@ -284,7 +284,7 @@ Feature: Cout de revient d'un element de fabrication
     When je consulte le cout de revient de "fin tardive" a "2026-05-12T09:00:00Z"
     Then le rapport porte les lignes
       | nature   | travail | nonConformite | machine   | mainDOeuvre |
-      | Fraisage | <temps> | PT0S          | <machine> | <humain>    |
+      | fraisage | <temps> | PT0S          | <machine> | <humain>    |
     And le cout porte <auto> fins automatiques
 
     Examples:
@@ -306,7 +306,7 @@ Feature: Cout de revient d'un element de fabrication
     When je consulte le cout de revient de "fin puis NC tardives" a "2026-05-12T01:00:00Z"
     Then le rapport porte les lignes
       | nature   | travail | nonConformite | machine   | mainDOeuvre |
-      | Fraisage | <temps> | PT1H          | <machine> | <humain>    |
+      | fraisage | <temps> | PT1H          | <machine> | <humain>    |
     And le cout porte <auto> fins automatiques
     And le rapport porte la non conformite de "2026-05-11T23:00:00Z" a "2026-05-12T00:00:00Z"
 
@@ -326,13 +326,13 @@ Feature: Cout de revient d'un element de fabrication
     When je consulte le cout de revient de "fin puis NC" a "2026-05-11T21:00:00Z"
     Then le rapport porte les lignes
       | nature   | travail | nonConformite | machine | mainDOeuvre |
-      | Fraisage | PT4H    | PT0S          | 180.00  | 80.00       |
+      | fraisage | PT4H    | PT0S          | 180.00  | 80.00       |
     And le cout est evalue a "2026-05-11T21:00:00Z" avec 1 activites en cours exclues
     And le cout ne porte aucune fin automatique
     When je consulte le cout de revient de "fin puis NC" a "2026-05-12T01:00:00Z"
     Then le rapport porte les lignes
       | nature   | travail | nonConformite | machine | mainDOeuvre |
-      | Fraisage | PT4H    | PT13H         | 765.00  | 340.00      |
+      | fraisage | PT4H    | PT13H         | 765.00  | 340.00      |
     And le cout porte 1 fins automatiques
     And le rapport porte la non conformite de "2026-05-11T12:00:00Z" a "2026-05-12T01:00:00Z"
 
@@ -380,11 +380,11 @@ Feature: Cout de revient d'un element de fabrication
     When je consulte le cout de revient de "OF RELAIS A 2045" a "2045-05-11T18:00:00Z"
     Then le rapport porte les lignes
       | nature   | travail | nonConformite | machine | mainDOeuvre |
-      | Fraisage | PT1M    | PT0S          | 0.75    | 0.04        |
+      | fraisage | PT1M    | PT0S          | 0.75    | 0.04        |
     When je consulte le cout de revient de "OF RELAIS C 2045" a "2045-05-11T18:00:00Z"
     Then le rapport porte les lignes
       | nature   | travail | nonConformite | machine | mainDOeuvre |
-      | Fraisage | PT1M    | PT0S          | 0.75    | 0.03        |
+      | fraisage | PT1M    | PT0S          | 0.75    | 0.03        |
 
   Scenario: Le tarif capture a la saisie reste fige apres une revision des tarifs
     Given l'entreprise fabrique "tarif fige"
@@ -397,4 +397,4 @@ Feature: Cout de revient d'un element de fabrication
     When je consulte le cout de revient de "tarif fige" a "2026-05-11T12:00:00Z"
     Then le rapport porte les lignes
       | nature   | travail | nonConformite | machine | mainDOeuvre |
-      | Fraisage | PT2H    | PT0S          | 90.00   | 40.00       |
+      | fraisage | PT2H    | PT0S          | 90.00   | 40.00       |

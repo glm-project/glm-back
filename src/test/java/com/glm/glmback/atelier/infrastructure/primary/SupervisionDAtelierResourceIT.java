@@ -57,6 +57,7 @@ class SupervisionDAtelierResourceIT {
         entities.createNativeQuery("delete from element_de_fabrication").executeUpdate();
         entities.createNativeQuery("delete from operateur_poste").executeUpdate();
         entities.createNativeQuery("delete from poste_de_travail").executeUpdate();
+        entities.createNativeQuery("delete from nature_de_travail").executeUpdate();
         entities.createNativeQuery("delete from operateur").executeUpdate();
       });
     });
@@ -148,8 +149,9 @@ class SupervisionDAtelierResourceIT {
         .setParameter("date", LE_10_MAI_2026_A_7H)
         .executeUpdate();
       entities
-        .createNativeQuery("insert into poste_de_travail (id, libelle, nature) values (:id, 'Fraiseuse 1', 'Tournage')")
+        .createNativeQuery("insert into poste_de_travail (id, libelle, nature_id) values (:id, 'Fraiseuse 1', :nature)")
         .setParameter("id", POSTE_ID_FRAISEUSE_1.uuid())
+        .setParameter("nature", nature("Tournage"))
         .executeUpdate();
       suivis.create(suivi);
     });
@@ -191,8 +193,9 @@ class SupervisionDAtelierResourceIT {
     when(clock.now()).thenReturn(LE_11_MAI_2026_A_9H);
     transactions.executeWithoutResult(status -> {
       entities
-        .createNativeQuery("insert into poste_de_travail (id, libelle, nature) values (:id, 'Fraiseuse 1', 'fraisage')")
+        .createNativeQuery("insert into poste_de_travail (id, libelle, nature_id) values (:id, 'Fraiseuse 1', :nature)")
         .setParameter("id", POSTE_ID_FRAISEUSE_1.uuid())
+        .setParameter("nature", nature("fraisage"))
         .executeUpdate();
       suivis.create(suivi);
     });
@@ -221,8 +224,9 @@ class SupervisionDAtelierResourceIT {
         .setParameter("id", OPERATEUR_ID_DUPONT.uuid())
         .executeUpdate();
       entities
-        .createNativeQuery("insert into poste_de_travail (id, libelle, nature) values (:id, 'Fraiseuse 1', 'fraisage')")
+        .createNativeQuery("insert into poste_de_travail (id, libelle, nature_id) values (:id, 'Fraiseuse 1', :nature)")
         .setParameter("id", POSTE_ID_FRAISEUSE_1.uuid())
+        .setParameter("nature", nature("fraisage"))
         .executeUpdate();
       entities
         .createNativeQuery("insert into operateur_poste (operateur_id,poste_id) values (:operateur,:poste)")
@@ -251,7 +255,10 @@ class SupervisionDAtelierResourceIT {
     TenantSecurityContexts.authenticateOn("supervision_fixture");
     transactions.executeWithoutResult(status -> {
       entities.createNativeQuery("update operateur set nom='Durand', prenom='Camille'").executeUpdate();
-      entities.createNativeQuery("update poste_de_travail set libelle='Centre 1', nature='tournage'").executeUpdate();
+      entities
+        .createNativeQuery("update poste_de_travail set libelle='Centre 1', nature_id=:nature")
+        .setParameter("nature", nature("tournage"))
+        .executeUpdate();
       entities.createNativeQuery("update element_de_fabrication set reference='R-43', nom='OF-renomme'").executeUpdate();
     });
     when(clock.now()).thenReturn(LE_10_MAI_2026_A_12H);
@@ -370,8 +377,9 @@ class SupervisionDAtelierResourceIT {
     when(clock.now()).thenReturn(LE_10_MAI_2026_A_9H);
     transactions.executeWithoutResult(status -> {
       entities
-        .createNativeQuery("insert into poste_de_travail (id,libelle,nature) values (:id,'Fraiseuse 1','fraisage')")
+        .createNativeQuery("insert into poste_de_travail (id,libelle,nature_id) values (:id,'Fraiseuse 1',:nature)")
         .setParameter("id", POSTE_ID_FRAISEUSE_1.uuid())
+        .setParameter("nature", nature("fraisage"))
         .executeUpdate();
       suivis.create(suivi);
     });
@@ -395,8 +403,10 @@ class SupervisionDAtelierResourceIT {
         .executeUpdate();
       entities
         .createNativeQuery(
-          "insert into poste_de_travail (id, libelle, nature) values ('00000000-0000-0000-0000-000000000001', 'Tour 1', 'Tournage'), ('00000000-0000-0000-0000-000000000002', 'Tour 2', 'Tournage'), ('00000000-0000-0000-0000-000000000003', 'Fraiseuse', 'Fraisage')"
+          "insert into poste_de_travail (id, libelle, nature_id) values ('00000000-0000-0000-0000-000000000001', 'Tour 1', :tournage), ('00000000-0000-0000-0000-000000000002', 'Tour 2', :tournage), ('00000000-0000-0000-0000-000000000003', 'Fraiseuse', :fraisage)"
         )
+        .setParameter("tournage", nature("Tournage"))
+        .setParameter("fraisage", nature("Fraisage"))
         .executeUpdate();
       entities
         .createNativeQuery(
@@ -442,5 +452,24 @@ class SupervisionDAtelierResourceIT {
     return jwt()
       .jwt(token -> token.claim("tenant", tenant))
       .authorities(new SimpleGrantedAuthority("ROLE_USER"));
+  }
+
+  /**
+   * Un poste ne porte que l'identifiant de sa nature : celle-ci est declaree dans le referentiel si elle manque. A
+   * appeler dans une transaction.
+   */
+  private UUID nature(String libelle) {
+    entities
+      .createNativeQuery(
+        "insert into nature_de_travail (id, libelle, cle) values (:id, :libelle, lower(:libelle)) on conflict (cle) do nothing"
+      )
+      .setParameter("id", UUID.randomUUID())
+      .setParameter("libelle", libelle)
+      .executeUpdate();
+
+    return (UUID) entities
+      .createNativeQuery("select id from nature_de_travail where cle = lower(:libelle)")
+      .setParameter("libelle", libelle)
+      .getSingleResult();
   }
 }

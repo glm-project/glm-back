@@ -254,6 +254,8 @@ Le terme reste volontairement générique, comme dans l'atelier : une machine ch
 
 **La nature est obligatoire ici**, alors qu'elle reste facultative dans l'atelier. Ce n'est pas une contradiction : l'atelier doit fonctionner pour une entreprise sans parc machine ni métiers distincts, qui n'ouvrira simplement pas cet écran. Mais un poste qui serait déclaré sans dire quel travail s'y fait ne servirait à rien — c'est précisément ce que ce contexte apporte.
 
+**Le poste ne porte que l'identifiant de sa nature**, choisie dans le référentiel de `naturedetravail` : la `NatureDuPoste` réunit cet identifiant et le libellé courant, relu par jointure à chaque lecture. Renommer une nature renomme donc celle de tous ses postes sans toucher leur ligne. Le port `NaturesDeclarees` lit le référentiel par la donnée. Pendant la transition du front, le libellé saisi en texte reste accepté : il désigne la nature de même clé (casse, accents et espaces ignorés), déclarée à la volée si elle manque — chemin déprécié, retiré par glm-back#130.
+
 **Un poste encore habilité ne se supprime pas** : cela laisserait des opérateurs pointer sur du vide. La règle vit dans le domaine, derrière le port `PostesEnUsage`, dont l'adapter lit la table `operateur_poste` par une entité en lecture seule — sans jamais importer `operateur`, annoté `@BusinessContext`.
 
 **Un poste sur lequel du temps a été pointé ne se supprime plus du tout**, et ce second refus est définitif là où le premier se lève en retirant l'habilitation : le journal d'atelier ne retenant que l'identifiant du poste, sa disparition laisserait des heures de travail sans machine. Le port `PostesPointes` lit `evenement_d_atelier` de la même façon.

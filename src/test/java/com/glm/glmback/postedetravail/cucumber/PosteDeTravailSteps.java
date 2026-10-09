@@ -9,6 +9,7 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -26,6 +27,8 @@ public class PosteDeTravailSteps {
 
   private UUID dernierIdDeclare;
 
+  private final Map<String, String> naturesDeclarees = new HashMap<>();
+
   @When("je declare un poste de travail")
   public void jeDeclareUnPosteDeTravail(Map<String, String> donnees) {
     rest.post(BASE_URI, JSON.writeValueAsString(donnees));
@@ -35,6 +38,38 @@ public class PosteDeTravailSteps {
   public void jaiDeclareUnPosteDeTravail(Map<String, String> donnees) {
     rest.post(BASE_URI, JSON.writeValueAsString(donnees));
     dernierIdDeclare = idDeLaDerniereReponse();
+  }
+
+  @When("je declare le poste de travail {string} de la nature declaree {string}")
+  public void jeDeclareLePosteDeTravailDeLaNatureDeclaree(String libelle, String nature) {
+    rest.post(BASE_URI, JSON.writeValueAsString(Map.of("libelle", libelle, "natureId", natureDeclaree(nature))));
+  }
+
+  @When("je declare le poste de travail {string} d'une nature inconnue")
+  public void jeDeclareLePosteDeTravailDUneNatureInconnue(String libelle) {
+    rest.post(BASE_URI, JSON.writeValueAsString(Map.of("libelle", libelle, "natureId", UUID.randomUUID())));
+  }
+
+  @When("je revise ce poste de travail en {string} de la nature declaree {string}")
+  public void jeReviseCePosteDeTravailDeLaNatureDeclaree(String libelle, String nature) {
+    rest.put(BASE_URI + "/" + dernierIdDeclare, JSON.writeValueAsString(Map.of("libelle", libelle, "natureId", natureDeclaree(nature))));
+  }
+
+  @Then("le poste de travail porte la nature declaree {string}")
+  public void lePosteDeTravailPorteLaNatureDeclaree(String nature) {
+    assertThat(CucumberRestTestContext.getElement("$.natureId")).isEqualTo(naturesDeclarees.get(nature));
+    assertThat(CucumberRestTestContext.getElement("$.nature")).isEqualTo(nature);
+  }
+
+  /**
+   * La nature est declaree dans le referentiel, et son identifiant retenu pour le scenario.
+   */
+  private String natureDeclaree(String libelle) {
+    return naturesDeclarees.computeIfAbsent(libelle, nouvelle -> {
+      rest.post("/api/natures-de-travail", JSON.writeValueAsString(Map.of("libelle", nouvelle)));
+      assertThatLastResponse().hasHttpStatus(201);
+      return (String) CucumberRestTestContext.getElement("$.id");
+    });
   }
 
   @When("je consulte ce poste de travail")

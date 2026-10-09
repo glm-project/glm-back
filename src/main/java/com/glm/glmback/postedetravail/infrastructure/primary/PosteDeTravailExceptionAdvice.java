@@ -1,6 +1,7 @@
 package com.glm.glmback.postedetravail.infrastructure.primary;
 
 import com.glm.glmback.postedetravail.domain.LibelleDejaUtiliseException;
+import com.glm.glmback.postedetravail.domain.NatureInconnueException;
 import com.glm.glmback.postedetravail.domain.PosteDeTravailIntrouvableException;
 import com.glm.glmback.postedetravail.domain.PosteDeTravailPointeException;
 import com.glm.glmback.postedetravail.domain.PosteDeTravailUtiliseException;
@@ -27,6 +28,11 @@ class PosteDeTravailExceptionAdvice {
   @ExceptionHandler(PosteDeTravailPointeException.class)
   ProblemDetail handlePosteDeTravailPointe(PosteDeTravailPointeException e) {
     return ErreurDePosteDeTravail.POSTE_DE_TRAVAIL_POINTE.problem(e);
+  }
+
+  @ExceptionHandler(NatureInconnueException.class)
+  ProblemDetail handleNatureInconnue(NatureInconnueException e) {
+    return ErreurDePosteDeTravail.NATURE_INCONNUE.problem(e);
   }
 
   @ExceptionHandler(PosteDeTravailUtiliseException.class)
