@@ -1,0 +1,52 @@
+package com.glm.glmback.parametrage.infrastructure.primary;
+
+import com.glm.glmback.parametrage.application.ParametrageApplicationService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/parametrage")
+@Tag(
+  name = "Parametrage",
+  description = """
+  Les reglages que l'entreprise fixe elle-meme, un seul jeu pour toute l'entreprise.
+
+  Le gestionnaire les modifie ; l'operateur (role USER) les consulte.
+  """
+)
+class ParametrageResource {
+
+  private final ParametrageApplicationService applicationService;
+
+  ParametrageResource(ParametrageApplicationService applicationService) {
+    this.applicationService = applicationService;
+  }
+
+  @GetMapping
+  @Operation(summary = "Lire le parametrage de l'entreprise", description = "Un reglage jamais fixe vaut sa valeur par defaut.")
+  @ApiResponse(responseCode = "200", description = "Le parametrage de l'entreprise.")
+  RestParametrage lisLeParametrage() {
+    return RestParametrage.from(applicationService.get());
+  }
+
+  @PutMapping("/duree-max-d-activite")
+  @Operation(
+    summary = "Fixer la duree max d'une activite",
+    description = """
+    Le temps au bout duquel une activite que rien n'a terminee se termine automatiquement, d'une heure a
+    vingt-quatre heures.
+    """
+  )
+  @ApiResponse(responseCode = "200", description = "Le parametrage, avec la duree fixee.")
+  @ApiResponse(responseCode = "400", description = "Duree absente, illisible, ou hors des bornes.")
+  RestParametrage fixeLaDureeMaxDActivite(@RequestBody @Valid RestDureeMaxDActivite request) {
+    return RestParametrage.from(applicationService.fixeLaDureeMaxDActivite(request.toDomain()));
+  }
+}

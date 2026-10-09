@@ -1223,6 +1223,18 @@
         "required" : [ "complete" ],
         "type" : "object"
       },
+      "RestDureeMaxDActivite" : {
+        "description" : "La duree max d'une activite que l'entreprise fixe.",
+        "properties" : {
+          "dureeMaxDActivite" : {
+            "description" : "Duree au bout de laquelle une activite que rien n'a terminee se termine automatiquement, en ISO-8601 : d'une heure (PT1H) a vingt-quatre heures (PT24H), bornes comprises.",
+            "example" : "PT10H",
+            "type" : "string"
+          }
+        },
+        "required" : [ "dureeMaxDActivite" ],
+        "type" : "object"
+      },
       "RestElement" : {
         "description" : "L'element de fabrication dont le cout de revient est lu, relu au referentiel a chaque appel.",
         "properties" : {
@@ -2081,6 +2093,18 @@
           }
         },
         "required" : [ "complete", "lignes", "page", "size", "total" ],
+        "type" : "object"
+      },
+      "RestParametrage" : {
+        "description" : "Les reglages de l'entreprise.",
+        "properties" : {
+          "dureeMaxDActivite" : {
+            "description" : "Duree au bout de laquelle une activite que rien n'a terminee se termine automatiquement, en ISO-8601. Treize heures tant que l'entreprise ne l'a pas fixee.",
+            "example" : "PT13H",
+            "type" : "string"
+          }
+        },
+        "required" : [ "dureeMaxDActivite" ],
         "type" : "object"
       },
       "RestPartDuPointageDuCout" : {
@@ -4398,6 +4422,66 @@
         "tags" : [ "Operateurs" ]
       }
     },
+    "/api/parametrage" : {
+      "get" : {
+        "description" : "Un reglage jamais fixe vaut sa valeur par defaut.",
+        "operationId" : "lisLeParametrage",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestParametrage"
+                }
+              }
+            },
+            "description" : "Le parametrage de l'entreprise."
+          }
+        },
+        "summary" : "Lire le parametrage de l'entreprise",
+        "tags" : [ "Parametrage" ]
+      }
+    },
+    "/api/parametrage/duree-max-d-activite" : {
+      "put" : {
+        "description" : "Le temps au bout duquel une activite que rien n'a terminee se termine automatiquement, d'une heure a\nvingt-quatre heures.\n",
+        "operationId" : "fixeLaDureeMaxDActivite",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RestDureeMaxDActivite"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestParametrage"
+                }
+              }
+            },
+            "description" : "Le parametrage, avec la duree fixee."
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestParametrage"
+                }
+              }
+            },
+            "description" : "Duree absente, illisible, ou hors des bornes."
+          }
+        },
+        "summary" : "Fixer la duree max d'une activite",
+        "tags" : [ "Parametrage" ]
+      }
+    },
     "/api/postes-de-travail" : {
       "get" : {
         "description" : "La page demandee, triee par libelle. Le filtre sur la nature est facultatif ; absent, il ne filtre rien.\n",
@@ -4701,6 +4785,9 @@
   }, {
     "description" : "Le temps passe sur un element de fabrication, valorise par nature d'operation.",
     "name" : "Couts de revient"
+  }, {
+    "description" : "Les reglages que l'entreprise fixe elle-meme, un seul jeu pour toute l'entreprise.\n\nLe gestionnaire les modifie ; l'operateur (role USER) les consulte.\n",
+    "name" : "Parametrage"
   }, {
     "description" : "Le referentiel de ce sur quoi les operateurs pointent : une machine, un etabli, un four, une salle.\n\nChaque poste porte la nature du travail qui s'y fait. C'est de la que vient le metier exerce a un instant donne :\nl'operateur qui demarre sur le poste de soudure soude, celui qui demarre sur un tour tourne. Rien de tout cela n'est\ndeclare sur la personne.\n\nLe gestionnaire declare et revise les postes ; l'operateur (role USER) les consulte.\n",
     "name" : "Postes de travail"
