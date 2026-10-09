@@ -1,6 +1,7 @@
 package com.glm.glmback.postedetravail.infrastructure.secondary;
 
 import com.glm.glmback.postedetravail.domain.NatureDeTravail;
+import com.glm.glmback.postedetravail.domain.NatureDeTravailId;
 import com.glm.glmback.postedetravail.domain.NatureDuPoste;
 import com.glm.glmback.postedetravail.domain.NaturesDeclarees;
 import java.util.Optional;
@@ -17,6 +18,11 @@ class NaturesDuReferentiel implements NaturesDeclarees {
 
   NaturesDuReferentiel(SpringDataNaturesDuReferentielRepository natures) {
     this.natures = natures;
+  }
+
+  @Override
+  public Optional<NatureDuPoste> get(NatureDeTravailId id) {
+    return natures.findById(id.uuid()).map(NatureDuReferentielEntity::toDomain);
   }
 
   @Override

@@ -7,7 +7,8 @@ enum ErreurDePosteDeTravail implements ProblemCode {
   POSTE_DE_TRAVAIL_INTROUVABLE(HttpStatus.NOT_FOUND, "poste de travail introuvable"),
   LIBELLE_DEJA_UTILISE(HttpStatus.CONFLICT, "libelle deja utilise"),
   POSTE_DE_TRAVAIL_POINTE(HttpStatus.CONFLICT, "poste de travail pointe"),
-  POSTE_DE_TRAVAIL_UTILISE(HttpStatus.CONFLICT, "poste de travail utilise");
+  POSTE_DE_TRAVAIL_UTILISE(HttpStatus.CONFLICT, "poste de travail utilise"),
+  NATURE_INCONNUE(HttpStatus.UNPROCESSABLE_CONTENT, "nature inconnue");
 
   private final HttpStatus status;
   private final String title;

@@ -50,6 +50,24 @@ class NaturesDuReferentielIT {
 
   @Test
   @WithTenant(NATURES_FIXTURE)
+  void shouldGetDeclaredNatureById() {
+    NatureDuPoste nature = new NatureDuPoste(NatureDeTravailId.newId(), new NatureDeTravail("Ébavurage " + UUID.randomUUID()));
+    inTransaction(() -> {
+      natures.declare(nature);
+      return null;
+    });
+
+    assertThat(inTransaction(() -> natures.get(nature.id()))).contains(nature);
+  }
+
+  @Test
+  @WithTenant(NATURES_FIXTURE)
+  void shouldNotGetUnknownNature() {
+    assertThat(inTransaction(() -> natures.get(NatureDeTravailId.newId()))).isEmpty();
+  }
+
+  @Test
+  @WithTenant(NATURES_FIXTURE)
   void shouldNotFindUnknownNature() {
     assertThat(inTransaction(() -> natures.parLibelle(new NatureDeTravail("Inconnue " + UUID.randomUUID())))).isEmpty();
   }

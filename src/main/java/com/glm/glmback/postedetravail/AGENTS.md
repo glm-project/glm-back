@@ -41,7 +41,9 @@ aucune inversion ne compile. `builder()` est public parce que la relecture depui
 - **Le poste ne persiste que l'identifiant de sa nature** (`nature_id`, clé étrangère vers `nature_de_travail`). Le
   libellé de `NatureDuPoste` est relu par jointure (`@Formula`) : renommer la nature ne touche aucune ligne de poste.
   Le référentiel n'est atteint que par la donnée, port `NaturesDeclarees`.
-- **Chemin de transition, déprécié** : un libellé saisi en texte désigne la nature de même clé — `NatureDeTravail.cle`,
+- **La nature se choisit, elle ne se crée pas depuis le poste** : `NatureChoisie.ParIdentifiant` doit désigner une
+  nature déclarée, sinon `NatureInconnueException` (422).
+- **Chemin de transition, déprécié** (`NatureChoisie.ParLibelle`) : un libellé saisi en texte désigne la nature de même clé — `NatureDeTravail.cle`,
   copie de `naturedetravail.CleDeNature` — et la déclare si elle manque. Il disparaît avec glm-back#130, et la copie de
   la clé avec lui.
 - **Le coût horaire est facultatif et strictement positif** quand il est renseigné, sur le patron d'`Identifiant` :

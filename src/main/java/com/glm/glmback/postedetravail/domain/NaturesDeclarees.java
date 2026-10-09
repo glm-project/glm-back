@@ -6,6 +6,8 @@ import java.util.Optional;
  * Ce que ce contexte sait du referentiel des natures de travail, sans jamais dependre de son contexte.
  */
 public interface NaturesDeclarees {
+  Optional<NatureDuPoste> get(NatureDeTravailId id);
+
   /**
    * La nature qui porte ce libelle a la casse, aux accents et aux espaces pres.
    *

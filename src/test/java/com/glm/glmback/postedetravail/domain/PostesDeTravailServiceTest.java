@@ -25,6 +25,9 @@ class PostesDeTravailServiceTest {
     habilitations = new HabilitationsEnMemoire();
     pointages = new PointagesEnMemoire();
     natures = new NaturesDeclareesEnMemoire();
+    natures.declare(NATURE_DU_POSTE_TOURNAGE);
+    natures.declare(NATURE_DU_POSTE_SOUDAGE);
+    natures.declare(NATURE_DU_POSTE_FRAISAGE);
     postes = new PostesDeTravailService(repository, habilitations, pointages, natures);
   }
 
@@ -38,17 +41,53 @@ class PostesDeTravailServiceTest {
   }
 
   @Test
-  void shouldDeclareMissingNatureOfCreatedPosteDeTravail() {
+  void shouldGivePosteDeTravailTheChosenNature() {
     PosteDeTravail cree = postes.create(posteDeTravailACreerTour1());
 
-    assertThat(natures.parLibelle(NATURE_TOURNAGE)).contains(cree.nature());
+    assertThat(cree.nature()).isEqualTo(NATURE_DU_POSTE_TOURNAGE);
   }
 
   @Test
-  void shouldReuseNatureOfSameKeyForCreatedPosteDeTravail() {
-    natures.declare(NATURE_DU_POSTE_TOURNAGE);
+  void shouldNotCreatePosteDeTravailWithUnknownNature() {
+    NatureDeTravailId inconnue = NatureDeTravailId.newId();
+    PosteDeTravailACreer aCreer = new PosteDeTravailACreer(LIBELLE_TOUR_1, new NatureChoisie.ParIdentifiant(inconnue), Optional.empty());
 
-    PosteDeTravail cree = postes.create(new PosteDeTravailACreer(LIBELLE_TOUR_1, new NatureDeTravail(" TOURNÂGE "), Optional.empty()));
+    assertThatThrownBy(() -> postes.create(aCreer))
+      .isExactlyInstanceOf(NatureInconnueException.class)
+      .hasMessageContaining(inconnue.uuid().toString());
+  }
+
+  @Test
+  void shouldNotUpdatePosteDeTravailWithUnknownNature() {
+    PosteDeTravail cree = postes.create(posteDeTravailACreerTour1());
+    PosteDeTravailAModifier aModifier = new PosteDeTravailAModifier(
+      cree.id(),
+      LIBELLE_TOUR_1,
+      new NatureChoisie.ParIdentifiant(NatureDeTravailId.newId()),
+      Optional.empty()
+    );
+
+    assertThatThrownBy(() -> postes.update(aModifier)).isExactlyInstanceOf(NatureInconnueException.class);
+    assertThat(postes.get(cree.id())).isEqualTo(cree);
+  }
+
+  @Test
+  @SuppressWarnings("removal")
+  void shouldDeclareMissingNatureGivenByLibelle() {
+    NatureDeTravail dessin = new NatureDeTravail("dessin");
+
+    PosteDeTravail cree = postes.create(new PosteDeTravailACreer(LIBELLE_TOUR_1, new NatureChoisie.ParLibelle(dessin), Optional.empty()));
+
+    assertThat(cree.nature().libelle()).isEqualTo(dessin);
+    assertThat(natures.parLibelle(dessin)).contains(cree.nature());
+  }
+
+  @Test
+  @SuppressWarnings("removal")
+  void shouldReuseNatureOfSameKeyGivenByLibelle() {
+    PosteDeTravail cree = postes.create(
+      new PosteDeTravailACreer(LIBELLE_TOUR_1, new NatureChoisie.ParLibelle(new NatureDeTravail(" TOURNÂGE ")), Optional.empty())
+    );
 
     assertThat(cree.nature()).isEqualTo(NATURE_DU_POSTE_TOURNAGE);
   }

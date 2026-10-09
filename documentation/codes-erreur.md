@@ -137,6 +137,9 @@ segment de contexte, et lui seul, qui les distingue.
 | `libelle-deja-utilise`         | 409    | libelle deja utilise         | `LibelleDejaUtiliseException`        |
 | `poste-de-travail-pointe`      | 409    | poste de travail pointe      | `PosteDeTravailPointeException`      |
 | `poste-de-travail-utilise`     | 409    | poste de travail utilise     | `PosteDeTravailUtiliseException`     |
+| `nature-inconnue`              | 422    | nature inconnue              | `NatureInconnueException`            |
+
+`nature-inconnue` refuse un `natureId` absent du référentiel des natures de l'entreprise.
 
 ### `element-de-fabrication` — `urn:glm:erreur:element-de-fabrication:`
 

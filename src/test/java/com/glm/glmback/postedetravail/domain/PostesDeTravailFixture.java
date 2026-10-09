@@ -28,6 +28,10 @@ public final class PostesDeTravailFixture {
   public static final NatureDuPoste NATURE_DU_POSTE_SOUDAGE = new NatureDuPoste(NATURE_DE_TRAVAIL_ID_SOUDAGE, NATURE_SOUDAGE);
   public static final NatureDuPoste NATURE_DU_POSTE_FRAISAGE = new NatureDuPoste(NATURE_DE_TRAVAIL_ID_FRAISAGE, NATURE_FRAISAGE);
 
+  public static final NatureChoisie NATURE_CHOISIE_TOURNAGE = new NatureChoisie.ParIdentifiant(NATURE_DE_TRAVAIL_ID_TOURNAGE);
+  public static final NatureChoisie NATURE_CHOISIE_SOUDAGE = new NatureChoisie.ParIdentifiant(NATURE_DE_TRAVAIL_ID_SOUDAGE);
+  public static final NatureChoisie NATURE_CHOISIE_FRAISAGE = new NatureChoisie.ParIdentifiant(NATURE_DE_TRAVAIL_ID_FRAISAGE);
+
   public static final CoutHoraire COUT_HORAIRE_45_50 = new CoutHoraire(new BigDecimal("45.50"));
   public static final CoutHoraire COUT_HORAIRE_60 = new CoutHoraire(new BigDecimal("60.00"));
 
@@ -58,27 +62,27 @@ public final class PostesDeTravailFixture {
   }
 
   public static PosteDeTravailACreer posteDeTravailACreerTour1() {
-    return new PosteDeTravailACreer(LIBELLE_TOUR_1, NATURE_TOURNAGE, Optional.empty());
+    return new PosteDeTravailACreer(LIBELLE_TOUR_1, NATURE_CHOISIE_TOURNAGE, Optional.empty());
   }
 
   public static PosteDeTravailACreer posteDeTravailACreerTour1AvecCoutHoraire() {
-    return new PosteDeTravailACreer(LIBELLE_TOUR_1, NATURE_TOURNAGE, Optional.of(COUT_HORAIRE_45_50));
+    return new PosteDeTravailACreer(LIBELLE_TOUR_1, NATURE_CHOISIE_TOURNAGE, Optional.of(COUT_HORAIRE_45_50));
   }
 
   public static PosteDeTravailACreer posteDeTravailACreerPosteDeSoudure() {
-    return new PosteDeTravailACreer(LIBELLE_POSTE_DE_SOUDURE, NATURE_SOUDAGE, Optional.empty());
+    return new PosteDeTravailACreer(LIBELLE_POSTE_DE_SOUDURE, NATURE_CHOISIE_SOUDAGE, Optional.empty());
   }
 
   public static PosteDeTravailAModifier posteDeTravailAModifierFraiseuse1(PosteDeTravailId id) {
-    return new PosteDeTravailAModifier(id, LIBELLE_FRAISEUSE_1, NATURE_FRAISAGE, Optional.empty());
+    return new PosteDeTravailAModifier(id, LIBELLE_FRAISEUSE_1, NATURE_CHOISIE_FRAISAGE, Optional.empty());
   }
 
   public static PosteDeTravailAModifier posteDeTravailAModifierTour1(PosteDeTravailId id) {
-    return new PosteDeTravailAModifier(id, LIBELLE_TOUR_1, NATURE_TOURNAGE, Optional.empty());
+    return new PosteDeTravailAModifier(id, LIBELLE_TOUR_1, NATURE_CHOISIE_TOURNAGE, Optional.empty());
   }
 
   public static PosteDeTravailAModifier posteDeTravailAModifierTour1AvecCoutHoraire(PosteDeTravailId id) {
-    return new PosteDeTravailAModifier(id, LIBELLE_TOUR_1, NATURE_TOURNAGE, Optional.of(COUT_HORAIRE_60));
+    return new PosteDeTravailAModifier(id, LIBELLE_TOUR_1, NATURE_CHOISIE_TOURNAGE, Optional.of(COUT_HORAIRE_60));
   }
 
   public static PosteDeTravailCriteria criteresDeTournage() {

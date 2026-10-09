@@ -604,14 +604,20 @@
             "type" : "string"
           },
           "nature" : {
-            "description" : "Libelle de la nature du poste, designee a la casse, aux accents et aux espaces pres ; declaree dans le referentiel si elle manque. Metier qui s'exerce sur ce poste. Obligatoire : un poste est declare pour dire quel travail s'y fait.",
+            "deprecated" : true,
+            "description" : "Deprecie, remplace par natureId et retire par glm-back#130. Libelle de la nature du poste, designee a la casse, aux accents et aux espaces pres ; declaree dans le referentiel si elle manque.",
             "example" : "tournage",
             "maxLength" : 50,
             "minLength" : 0,
             "type" : "string"
+          },
+          "natureId" : {
+            "description" : "Identifiant de la nature du poste, choisie dans le referentiel des natures de travail. Obligatoire, sauf pendant la transition ou le libelle `nature` est encore accepte ; l'emporte sur lui quand les deux sont donnes.",
+            "format" : "uuid",
+            "type" : "string"
           }
         },
-        "required" : [ "libelle", "nature" ],
+        "required" : [ "libelle" ],
         "type" : "object"
       },
       "RestDossierAnomalie" : {
@@ -1195,14 +1201,20 @@
             "type" : "string"
           },
           "nature" : {
-            "description" : "Libelle de la nature du poste, designee a la casse, aux accents et aux espaces pres ; declaree dans le referentiel si elle manque. Metier qui s'exerce sur ce poste.",
+            "deprecated" : true,
+            "description" : "Deprecie, remplace par natureId et retire par glm-back#130. Libelle de la nature du poste, designee a la casse, aux accents et aux espaces pres ; declaree dans le referentiel si elle manque.",
             "example" : "tournage",
             "maxLength" : 50,
             "minLength" : 0,
             "type" : "string"
+          },
+          "natureId" : {
+            "description" : "Identifiant de la nature du poste, choisie dans le referentiel des natures de travail. Obligatoire, sauf pendant la transition ou le libelle `nature` est encore accepte ; l'emporte sur lui quand les deux sont donnes.",
+            "format" : "uuid",
+            "type" : "string"
           }
         },
-        "required" : [ "libelle", "nature" ],
+        "required" : [ "libelle" ],
         "type" : "object"
       },
       "RestMontantDuCout" : {
