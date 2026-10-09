@@ -37,6 +37,14 @@ Le **rang** porte l'ordre d'affichage choisi par l'entreprise : celui des bouton
 
 **Une catégorie qui range des produits ne se supprime pas** : leur nom porte son code, et ils resteraient rangés dans une famille disparue. La règle vit dans le domaine, derrière le port `CategoriesUtilisees`, dont l'adapter lit la table `element_de_fabrication` par une entité en lecture seule — sans jamais importer `elementdefabrication`. Une catégorie vide, elle, se supprime et peut être déclarée à nouveau.
 
+## parametrage
+
+Gère les **réglages que l'entreprise fixe elle-même**, sans développeur : un seul jeu pour toute l'entreprise, que le gestionnaire modifie et que tout utilisateur lit. GLM est une trame, et une donnée qui varie d'un client à l'autre ne s'écrit pas en constante.
+
+Le premier réglage est la **durée max d'une activité** : le temps au bout duquel une activité que rien n'a terminée se termine automatiquement (voir « La fin automatique à l'échéance » dans `atelier`). Elle vaut **treize heures** tant que l'entreprise ne l'a pas fixée, et reste comprise entre une heure et vingt-quatre heures. Un réglage jamais fixé n'est pas recopié en base : la valeur par défaut n'existe qu'à un endroit, le domaine.
+
+Le `Parametrage` n'a pas d'identifiant : chaque schéma d'entreprise porte une seule ligne, créée avec lui. Un réglage n'est donc jamais créé ni supprimé, seulement modifié.
+
 ## atelier
 
 Gère l'exécution en atelier de ce que `elementdefabrication` a déclaré. Le gestionnaire y met un élément en atelier, les opérateurs y pointent leurs activités, le gestionnaire clôture et corrige.

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <changeSet id="parametrage" author="glm">
+    <comment>
+      Les reglages de l'entreprise, une seule ligne par schema. Elle existe des la creation du schema, pour que
+      chaque reglage ne soit qu'une mise a jour. Un reglage vide vaut sa valeur par defaut, que seul le domaine
+      connait : la duree max d'une activite, treize heures, n'est ecrite qu'une fois.
+    </comment>
+
+    <createTable tableName="parametrage">
+      <column name="id" type="int">
+        <constraints nullable="false" primaryKey="true" />
+      </column>
+
+      <column name="duree_max_d_activite_secondes" type="bigint" />
+    </createTable>
+
+    <sql>alter table parametrage add constraint ck_parametrage_unique check (id = 1)</sql>
+
+    <insert tableName="parametrage">
+      <column name="id" valueNumeric="1" />
+    </insert>
+  </changeSet>
+</databaseChangeLog>

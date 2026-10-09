@@ -2083,6 +2083,18 @@
         "required" : [ "complete", "lignes", "page", "size", "total" ],
         "type" : "object"
       },
+      "RestParametrage" : {
+        "description" : "Les reglages de l'entreprise.",
+        "properties" : {
+          "dureeMaxDActivite" : {
+            "description" : "Duree au bout de laquelle une activite que rien n'a terminee se termine automatiquement, en ISO-8601. Treize heures tant que l'entreprise ne l'a pas fixee.",
+            "example" : "PT13H",
+            "type" : "string"
+          }
+        },
+        "required" : [ "dureeMaxDActivite" ],
+        "type" : "object"
+      },
       "RestPartDuPointageDuCout" : {
         "description" : "Une part d'un pointage termine : la periode ou l'operateur occupait le meme ensemble de postes.\n\nSa main d'oeuvre vaut taux horaire x duree / diviseur, deja repartie au centime dans la fenetre de partage. Elle est\nincomplete, sans diviseur, quand un pointage a resoudre de l'operateur, sur un autre poste, empeche de la partager.\n",
         "properties" : {
@@ -4398,6 +4410,26 @@
         "tags" : [ "Operateurs" ]
       }
     },
+    "/api/parametrage" : {
+      "get" : {
+        "description" : "Un reglage jamais fixe vaut sa valeur par defaut.",
+        "operationId" : "lisLeParametrage",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestParametrage"
+                }
+              }
+            },
+            "description" : "Le parametrage de l'entreprise."
+          }
+        },
+        "summary" : "Lire le parametrage de l'entreprise",
+        "tags" : [ "Parametrage" ]
+      }
+    },
     "/api/postes-de-travail" : {
       "get" : {
         "description" : "La page demandee, triee par libelle. Le filtre sur la nature est facultatif ; absent, il ne filtre rien.\n",
@@ -4690,6 +4722,9 @@
     "bearer-jwt" : [ ]
   } ],
   "tags" : [ {
+    "description" : "Les reglages que l'entreprise fixe elle-meme, un seul jeu pour toute l'entreprise.\n\nLe gestionnaire et l'operateur (role USER) les consultent.\n",
+    "name" : "Parametrage"
+  }, {
     "description" : "Le suivi des elements de fabrication mis en atelier.\n\nDeux publics se partagent ces routes. L'operateur (role USER) consulte le tableau des elements actifs et pointe son\ntravail. Le gestionnaire (role GESTIONNAIRE) engage les elements, les cloture et corrige les saisies.\n\nRien de ce qui se deduit n'est stocke : etat, activites en cours, sequences en conflit et temps sont recalcules du\njournal a chaque lecture, a l'instant de cette lecture. Une activite que rien n'a terminee se termine automatiquement\na son echeance, son debut plus 13 heures, sans qu'aucun evenement ne soit ecrit. Des pointages qui se contredisent\nsont conserves en sequence en conflit, que le gestionnaire resout en corrigeant ou en annulant les faits concernes.\n",
     "name" : "Atelier - elements engages"
   }, {

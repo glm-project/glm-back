@@ -64,5 +64,10 @@
       <column name="schema_name" value="entreprise_suspendue" />
       <column name="status" value="SUSPENDED" />
     </insert>
+    <insert tableName="tenant">
+      <column name="id" value="parametrage_vierge" />
+      <column name="schema_name" value="parametrage_vierge" />
+      <column name="status" value="ACTIVE" />
+    </insert>
   </changeSet>
 </databaseChangeLog>

@@ -64,6 +64,7 @@ class FreshActivitySchemaIT {
     "identite_evenement_atelier",
     "operateur",
     "operateur_poste",
+    "parametrage",
     "pointage_en_conflit",
     "poste_de_travail",
     "recu_d_acte",
