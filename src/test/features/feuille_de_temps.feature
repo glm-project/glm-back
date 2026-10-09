@@ -142,7 +142,7 @@ Feature: Feuille de temps hebdomadaire d'un operateur
       | carter  | 2026-05-10T22:00:00Z | 2026-05-11T06:00:00Z |
 
   # Le travail par element est coupe aux minuits locaux.
-  Scenario: Une fin coupe le travail et un debut le relance
+  Scenario: Une fin coupe le travail et un debut le reprend
     Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And "martin" pointe "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:05:00Z"
     And "martin" pointe "FIN" sur l'element "carter" au poste "DMU 50" a "2026-05-11T10:00:00Z"

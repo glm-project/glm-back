@@ -17,6 +17,14 @@ public enum TypeDEvenementDAtelier {
   FIN;
 
   /**
+   * Vrai pour un debut et une non conformite, qui ouvrent une activite ; faux pour une fin, qui ferme celle qui est en
+   * cours sur la cle.
+   */
+  public boolean ouvreUneActivite() {
+    return this != FIN;
+  }
+
+  /**
    * La categorie de l'activite qu'ouvre un pointage de ce type : aucune pour une fin.
    */
   public Optional<CategorieDActivite> categorie() {

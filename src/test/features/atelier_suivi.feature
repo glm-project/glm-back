@@ -531,8 +531,8 @@ Feature: Suivi des elements engages en atelier
     And je consulte le dossier d'anomalie de "OF 42" depuis l'evenement 2
     Then la reponse a le statut http 404
 
-  Scenario: Un ordre reste en cours la veille est relance le lendemain
-    # Dupont oublie d'arreter l'OF 44 ; sa relance du lendemain ouvre une nouvelle activite apres l'echeance.
+  Scenario: Un ordre reste en cours la veille est repris le lendemain
+    # Dupont oublie d'arreter l'OF 44 ; sa reprise du lendemain ouvre une nouvelle activite apres l'echeance.
     Given il est "2026-05-10T07:00:00Z"
     And l'entreprise a cree l'element de fabrication "OF 44"
       | categorie | OF   |

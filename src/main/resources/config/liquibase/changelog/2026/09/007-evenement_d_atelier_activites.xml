@@ -4,7 +4,7 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
 >
-  <changeSet id="evenement_d_atelier_intention" author="glm">
+  <changeSet id="evenement_d_atelier_activites" author="glm">
     <comment>
       Les activites qu'un pointage d'atelier ouvre ou cible. activite_id porte l'identite de l'activite qu'ouvre un debut
       ou une non conformite : l'id de ce pointage. activite_visee_id n'est renseignee que par la fin d'une

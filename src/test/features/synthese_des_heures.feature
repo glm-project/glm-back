@@ -59,7 +59,7 @@ Feature: Synthese des heures hebdomadaire d'un operateur
       | 2026-05-11T21:02:04.999999999Z | 2026-05-11T21:02:04.999999999Z |
       | 2026-05-11T23:02:05+02:00      | 2026-05-11T21:02:05Z           |
 
-  Scenario: Une fin coupe le travail, un debut le relance, et la coupure ne compte pas
+  Scenario: Une fin coupe le travail, un debut le reprend, et la coupure ne compte pas
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And "martin" enregistre "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:05:00Z"
     And "martin" enregistre "FIN" sur l'element "carter" au poste "DMU 50" a "2026-05-11T10:00:00Z"

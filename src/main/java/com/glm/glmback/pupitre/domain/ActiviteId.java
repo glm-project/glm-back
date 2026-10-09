@@ -7,8 +7,7 @@ import java.util.UUID;
  * L'identite d'une activite : celle de son pointage ouvrant d'origine.
  *
  * <p>
- * C'est elle qu'une fin ou une transition vise dans {@code cible}, y compris apres la correction de ce pointage : le
- * pupitre la recoit du referentiel et la renvoie telle quelle.
+ * C'est elle que cible la fin d'une regularisation : le pupitre la recoit du referentiel et la renvoie telle quelle.
  * </p>
  */
 public record ActiviteId(UUID uuid) {

@@ -145,7 +145,7 @@ public class PupitreSteps {
 
   /**
    * Une ouverture nommee, dont l'identifiant de geste est l'identite de l'activite qu'elle ouvre : c'est lui que
-   * visent ensuite une fin ou une transition, et que le referentiel rend dans {@code ouverture}.
+   * cible la fin d'une regularisation, et que le referentiel rend dans {@code ouverture}.
    */
   @Given("au pupitre, {string} ouvre {string} en {string} sur {string} au poste {string} a {string}")
   public void ouvre(String operateur, String geste, String type, String element, String poste, String instant) {

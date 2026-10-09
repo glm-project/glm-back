@@ -110,8 +110,11 @@ public record EvenementDAtelier(
     Optional<ActiviteId> activiteVisee,
     OrigineDuPointage origine
   ) {
-    boolean fin = type == TypeDEvenementDAtelier.FIN;
-    if (activite.isPresent() == fin || activiteVisee.isPresent() != (fin && origine == OrigineDuPointage.REGULARISATION)) {
+    boolean ouvre = type.ouvreUneActivite();
+    if (activite.isPresent() != ouvre) {
+      throw new EvenementDAtelierIncoherentException(type, origine);
+    }
+    if (activiteVisee.isPresent() != (!ouvre && origine == OrigineDuPointage.REGULARISATION)) {
       throw new EvenementDAtelierIncoherentException(type, origine);
     }
   }

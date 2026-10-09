@@ -28,7 +28,7 @@ import java.util.stream.Stream;
  */
 public record JournalDAtelier(List<EvenementDAtelier> evenements) {
   private static final Comparator<EvenementDAtelier> PAR_ORDRE_CHRONOLOGIQUE = Comparator.comparing(EvenementDAtelier::dateDeSurvenue)
-    .thenComparing(evenement -> evenement.type() != TypeDEvenementDAtelier.FIN)
+    .thenComparing(evenement -> evenement.type().ouvreUneActivite())
     .thenComparing(EvenementDAtelier::id);
 
   private static final Comparator<Activite> PAR_DEBUT = Comparator.comparing(Activite::debut).thenComparing(activite ->

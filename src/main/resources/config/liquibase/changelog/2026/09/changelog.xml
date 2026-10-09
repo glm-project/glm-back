@@ -5,7 +5,7 @@
   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
 >
   <include file="006-evenement_d_atelier_origine.xml" relativeToChangelogFile="true" />
-  <include file="007-evenement_d_atelier_intention.xml" relativeToChangelogFile="true" />
+  <include file="007-evenement_d_atelier_activites.xml" relativeToChangelogFile="true" />
   <include file="009-activite_d_atelier.xml" relativeToChangelogFile="true" />
   <include file="011-activite_d_atelier_operateur.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>

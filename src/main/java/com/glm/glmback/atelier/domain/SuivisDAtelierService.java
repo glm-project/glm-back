@@ -125,7 +125,7 @@ public final class SuivisDAtelierService {
     if (pointagesIgnores.contient(commande.evenement())) {
       return new PointageDAtelierTraite(suivi, IssueDePointage.IGNORE);
     }
-    if (suivi.estCloture() && commande.type() != TypeDEvenementDAtelier.FIN) {
+    if (suivi.estCloture() && commande.type().ouvreUneActivite()) {
       throw new SuiviDAtelierClotureException(suivi.id());
     }
 
@@ -138,7 +138,7 @@ public final class SuivisDAtelierService {
         pointagesIgnores.enregistre(new PointageIgnore(commande, horodatage, ignore));
         yield new PointageDAtelierTraite(suivi, IssueDePointage.IGNORE);
       }
-      case VerdictDeReception.Accepte accepte -> {
+      case VerdictDeReception.Accepte _ -> {
         EvenementDAtelier evenement = evenement(
           commande.evenement(),
           commande.type(),
@@ -231,12 +231,10 @@ public final class SuivisDAtelierService {
     OrigineDuPointage origine,
     Horodatage horodatage
   ) {
-    boolean ouvre = type != TypeDEvenementDAtelier.FIN;
-
     return EvenementDAtelier.builder()
       .id(evenement)
       .type(type)
-      .activite(ouvre ? Optional.of(ActiviteId.ouvertePar(evenement)) : Optional.empty())
+      .activite(type.ouvreUneActivite() ? Optional.of(ActiviteId.ouvertePar(evenement)) : Optional.empty())
       .activiteVisee(cible)
       .operateur(ressources.operateur().id())
       .poste(ressources.poste().map(PosteConnu::id))

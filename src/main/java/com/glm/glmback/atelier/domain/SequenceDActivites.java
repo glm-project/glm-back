@@ -49,12 +49,12 @@ final class SequenceDActivites {
 
   private void lit(EvenementDAtelier fait) {
     atteintLEcheance(fait.dateDeSurvenue());
-    if (fait.type() == TypeDEvenementDAtelier.FIN) {
-      arrete(fait);
-    } else {
+    if (fait.type().ouvreUneActivite()) {
       Activite ouverte = Activite.ouvertePar(fait);
       activites.put(ouverte.id(), ouverte);
       courante = Optional.of(ouverte.id());
+    } else {
+      arrete(fait);
     }
   }
 

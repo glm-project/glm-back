@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
  * <p>
  * La ou les tests voisins verifient chacun une mecanique isolee, celui-ci enonce le fonctionnement demande par le
  * client : un operateur pointe ses ordres de fabrication, mene deux machines de front, et sa pause de midi arrete puis
- * relance tout ce qui est en cours. Il tient lieu de scenario metier tant que le contexte n'a ni adapter primaire ni
+ * reprend tout ce qui est en cours. Il tient lieu de scenario metier tant que le contexte n'a ni adapter primaire ni
  * feature Gherkin.
  * </p>
  *
@@ -83,7 +83,7 @@ class VieDeLAtelierTest {
   }
 
   /**
-   * Le test qui porte le modele : la pause de midi scinde l'OF 42 par sa fin et son debut, puis, apres sa relance a
+   * Le test qui porte le modele : la pause de midi scinde l'OF 42 par sa fin et son debut, puis, apres sa reprise a
    * 13 h, l'OF 42 n'a plus recu le moindre pointage. Rien ne le borne a 17 h : il se termine automatiquement a son
    * echeance, 13 heures apres son debut, avec une anomalie.
    */

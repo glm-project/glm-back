@@ -51,7 +51,7 @@ final class RegleDeReception {
       .filter(derniere -> derniere.fin().isEmpty());
     Optional<Activite> enCours = sansFin.filter(derniere -> !derniere.echeance().estAtteinteA(survenue));
 
-    if (type == TypeDEvenementDAtelier.FIN) {
+    if (!type.ouvreUneActivite()) {
       if (enCours.isPresent()) {
         if (!survenue.isAfter(enCours.orElseThrow().debut())) {
           return new VerdictDeReception.Ignore(RaisonDePointageIgnore.ANTERIEUR, dernierAccepte);

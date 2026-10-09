@@ -19,6 +19,13 @@ class TypeDEvenementDAtelierTest {
   }
 
   @Test
+  void shouldOuvrirUneActiviteParUnDebutEtUneNonConformiteMaisPasParUneFin() {
+    assertThat(TypeDEvenementDAtelier.DEBUT.ouvreUneActivite()).isTrue();
+    assertThat(TypeDEvenementDAtelier.NON_CONFORMITE.ouvreUneActivite()).isTrue();
+    assertThat(TypeDEvenementDAtelier.FIN.ouvreUneActivite()).isFalse();
+  }
+
+  @Test
   void shouldNOuvrirAucuneCategorieParUneFin() {
     assertThat(TypeDEvenementDAtelier.FIN.categorie()).isEmpty();
   }
