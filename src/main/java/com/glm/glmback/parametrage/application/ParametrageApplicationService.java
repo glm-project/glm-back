@@ -50,4 +50,10 @@ public class ParametrageApplicationService {
   public Logo logo(VersionDuLogo version) {
     return lecture.enVersion(version);
   }
+
+  @Secured("ROLE_GESTIONNAIRE")
+  @Transactional
+  public void retireLeLogo() {
+    logos.delete();
+  }
 }

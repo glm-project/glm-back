@@ -40,6 +40,14 @@ class LogoEntity {
     version = logo.version().value();
   }
 
+  private LogoEntity(int id) {
+    this.id = id;
+  }
+
+  static LogoEntity aucun() {
+    return new LogoEntity(ParametrageEntity.UNIQUE);
+  }
+
   static LogoEntity from(Logo logo) {
     return new LogoEntity(logo);
   }

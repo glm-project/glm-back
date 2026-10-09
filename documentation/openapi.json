@@ -4499,6 +4499,17 @@
       }
     },
     "/api/parametrage/logo" : {
+      "delete" : {
+        "description" : "Les en-tetes reviennent au logo de GLM. Sans effet si l'entreprise n'a pas de logo.",
+        "operationId" : "retireLeLogo",
+        "responses" : {
+          "204" : {
+            "description" : "L'entreprise n'a plus de logo."
+          }
+        },
+        "summary" : "Retirer le logo de l'entreprise",
+        "tags" : [ "Parametrage" ]
+      },
       "put" : {
         "description" : "Le fichier, dans la partie logo, remplace le logo courant. Il s'affiche tel quel en en-tete de la supervision, du\npupitre et des PDF : une image PNG ou JPEG de 50 x 50 pixels exactement, de 20 Ko au plus. Le format se juge sur\nle contenu, jamais sur le nom du fichier ni sur le type annonce.\n",
         "operationId" : "deposeLeLogo",
@@ -4898,11 +4909,11 @@
     "description" : "Les familles dans lesquelles l'entreprise range ce qu'elle fabrique : des moules et des OF chez le client de\nreference, autre chose ailleurs. Une entreprise neuve n'en a aucune.\n\nLe code d'une categorie est a la fois son libelle et le prefixe du nom des produits qui s'y creent\n(MOULE-2026-000001). Il ne se renomme donc jamais.\n\nUne categorie se supprime tant qu'aucun produit n'y est range.\n\nLe gestionnaire declare, reordonne et supprime les categories ; l'operateur (role USER) les consulte.\n",
     "name" : "Categories de produit"
   }, {
-    "description" : "Le temps passe sur un element de fabrication, valorise par nature d'operation.",
-    "name" : "Couts de revient"
-  }, {
     "description" : "Les reglages que l'entreprise fixe elle-meme, un seul jeu pour toute l'entreprise.\n\nLe gestionnaire les modifie ; l'operateur (role USER) les consulte.\n",
     "name" : "Parametrage"
+  }, {
+    "description" : "Le temps passe sur un element de fabrication, valorise par nature d'operation.",
+    "name" : "Couts de revient"
   }, {
     "description" : "Le referentiel de ce sur quoi les operateurs pointent : une machine, un etabli, un four, une salle.\n\nChaque poste porte la nature du travail qui s'y fait. C'est de la que vient le metier exerce a un instant donne :\nl'operateur qui demarre sur le poste de soudure soude, celui qui demarre sur un tour tourne. Rien de tout cela n'est\ndeclare sur la personne.\n\nLe gestionnaire declare et revise les postes ; l'operateur (role USER) les consulte.\n",
     "name" : "Postes de travail"

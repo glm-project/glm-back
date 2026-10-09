@@ -38,6 +38,8 @@ pas le charger. Il partage la ligne unique du paramétrage (colonnes `logo_*`), 
   cache, pas une preuve d'intégrité. L'image se sert à l'adresse de sa version, en cache privé d'un an et immuable ;
   une version qui n'est plus la courante répond 404 (`LectureDuLogo`), jamais par le logo courant, sans quoi une
   adresse gardée en cache montrerait un autre logo que celui qu'elle nomme.
+- **Retirer le logo vide ses colonnes** et laisse la ligne en place ; sans logo, retirer est sans effet. Les en-têtes
+  reviennent alors au logo de GLM, côté front.
 
 ## Ports sortants
 

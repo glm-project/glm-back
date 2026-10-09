@@ -13,14 +13,17 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
 import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -104,5 +107,16 @@ class ParametrageResource {
       .contentType(TYPES.get(logo.format()))
       .cacheControl(CacheControl.maxAge(UN_AN).cachePrivate().immutable())
       .body(logo.contenu());
+  }
+
+  @DeleteMapping("/logo")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @Operation(
+    summary = "Retirer le logo de l'entreprise",
+    description = "Les en-tetes reviennent au logo de GLM. Sans effet si l'entreprise n'a pas de logo."
+  )
+  @ApiResponse(responseCode = "204", description = "L'entreprise n'a plus de logo.")
+  void retireLeLogo() {
+    applicationService.retireLeLogo();
   }
 }

@@ -76,4 +76,18 @@ class JpaLogoRepositoryIT {
     Optional<Logo> logo = transactions.execute(status -> logos.get());
     assertThat(logo).contains(logoPngBleu());
   }
+
+  @Test
+  @WithTenant("parametrage_logo")
+  void shouldDeleteTheLogoWithoutTouchingTheOtherSettings() {
+    transactions.execute(status -> parametrages.update(parametrageDixHeures()));
+    transactions.execute(status -> logos.update(logoPngBleu()));
+
+    transactions.executeWithoutResult(status -> logos.delete());
+
+    Optional<Logo> logo = transactions.execute(status -> logos.get());
+    Parametrage parametrage = transactions.execute(status -> parametrages.get());
+    assertThat(logo).isEmpty();
+    assertThat(parametrage).isEqualTo(parametrageDixHeures());
+  }
 }

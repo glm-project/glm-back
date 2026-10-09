@@ -31,4 +31,9 @@ class JpaLogoRepository implements LogoRepository {
 
     return logo;
   }
+
+  @Override
+  public void delete() {
+    logos.save(LogoEntity.aucun());
+  }
 }

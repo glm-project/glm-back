@@ -120,3 +120,26 @@ Feature: Parametrage de l'entreprise
     Given I am logged in as "user" with role "USER" for tenant "parametrage_fixture"
     When je lis le logo a la version "LOGO"
     Then la reponse a le statut http 400
+
+  Scenario: Le gestionnaire retire le logo
+    Given I am logged in as "gestionnaire" with role "GESTIONNAIRE" for tenant "parametrage_fixture"
+    And j'ai depose comme logo "un PNG de 50 x 50"
+    And je retiens la version du logo
+    When je retire le logo
+    Then la reponse a le statut http 204
+    When je lis le parametrage de l'entreprise
+    Then le parametrage n'a pas de logo
+    When je lis le logo a la version retenue
+    Then la reponse a le statut http 404
+
+  Scenario: Retirer un logo absent est sans effet
+    Given I am logged in as "gestionnaire" with role "GESTIONNAIRE" for tenant "parametrage_fixture"
+    And j'ai depose comme logo "un PNG de 50 x 50"
+    And je retire le logo
+    When je retire le logo
+    Then la reponse a le statut http 204
+
+  Scenario: Retrait du logo refuse a un utilisateur simple
+    Given I am logged in as "user" with role "USER" for tenant "parametrage_fixture"
+    When je retire le logo
+    Then la reponse a le statut http 403

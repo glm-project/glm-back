@@ -22,4 +22,9 @@ public final class LogosEnMemoire implements LogoRepository {
 
     return nouveau;
   }
+
+  @Override
+  public void delete() {
+    logo = null;
+  }
 }

@@ -123,4 +123,9 @@ public class ParametrageSteps {
     jeLisLeParametrageDeLEntreprise();
     return (String) CucumberRestTestContext.getElement("$.logo.version");
   }
+
+  @When("je retire le logo")
+  public void jeRetireLeLogo() {
+    rest.delete(BASE_URI + "/logo");
+  }
 }
