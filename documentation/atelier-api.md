@@ -169,7 +169,9 @@ Le serveur juge chaque pointage à son arrivée, premier arrivé premier servi, 
    (409), et un `DEBUT` ou une `NON_CONFORMITE` sur un élément clôturé (409 `suivi-d-atelier-cloture`, seul refus à
    afficher à l'opérateur) ;
 2. **`ANTERIEUR`** : l'heure du geste est strictement plus ancienne que celle du dernier pointage accepté de la clé
-   (régularisations comprises). Une heure égale passe ;
+   (régularisations comprises), ou bien c'est une `FIN` qui n'est pas postérieure au début de l'activité qu'elle fermerait
+   (une activité de durée nulle n'existe pas : elle reste en cours). Pour un `DEBUT` ou une `NON_CONFORMITE`, une heure
+   égale passe ; la `FIN` d'un geste composé, à t, ferme une activité ouverte avant t ;
 3. **l'échéance**, jugée sur l'heure du geste : atteinte quand elle est supérieure ou égale au début plus 13 h. Une
    activité qui l'a atteinte compte comme terminée ;
 4. **le tableau** :

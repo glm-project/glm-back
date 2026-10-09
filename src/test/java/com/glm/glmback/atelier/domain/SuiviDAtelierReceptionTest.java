@@ -115,6 +115,40 @@ class SuiviDAtelierReceptionTest {
   }
 
   /**
+   * Une activite de duree nulle n'existe pas : une fin qui n'est pas posterieure au debut de l'activite qu'elle fermerait
+   * est anterieure, et l'activite reste en cours. Une fin a t qui ferme une activite ouverte avant t, suivie d'une
+   * ouverture a t, reste acceptee : les gestes composes du pupitre.
+   */
+  @Test
+  void shouldIgnorerCommeAnterieureUneFinALHeureDuDebutDeLActiviteEnCours() {
+    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(travail);
+
+    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.FIN, LE_10_MAI_2026_A_8H)).isEqualTo(
+      new VerdictDeReception.Ignore(RaisonDePointageIgnore.ANTERIEUR, Optional.of(travail.id()))
+    );
+    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.FIN, LE_10_MAI_2026_A_8H.plusNanos(1))).isEqualTo(
+      new VerdictDeReception.Accepte(travail.activite())
+    );
+  }
+
+  @Test
+  void shouldAccepterLesGestesComposesALaMemeHeure() {
+    EvenementDAtelier fin = finDe(travail).a(LE_10_MAI_2026_A_12H);
+    EvenementDAtelier nonConformite = nonConformiteSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_12H);
+    SuiviDAtelier apresLaFin = suiviDAtelierEngage().enregistre(travail).enregistre(fin);
+
+    assertThat(suiviDAtelierEngage().enregistre(travail).juge(cle, TypeDEvenementDAtelier.FIN, LE_10_MAI_2026_A_12H)).isEqualTo(
+      new VerdictDeReception.Accepte(travail.activite())
+    );
+    assertThat(apresLaFin.juge(cle, TypeDEvenementDAtelier.NON_CONFORMITE, LE_10_MAI_2026_A_12H)).isEqualTo(
+      new VerdictDeReception.Accepte(Optional.empty())
+    );
+    assertThat(apresLaFin.enregistre(nonConformite).juge(cle, TypeDEvenementDAtelier.FIN, LE_10_MAI_2026_A_13H)).isEqualTo(
+      new VerdictDeReception.Accepte(nonConformite.activite())
+    );
+  }
+
+  /**
    * A heure egale, le journal range la fin avant l'ouverture : le dernier accepte comparable est donc l'ouverture.
    */
   @Test

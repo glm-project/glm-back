@@ -20,8 +20,9 @@ public enum RaisonDePointageIgnore {
    */
   APRES_ECHEANCE,
   /**
-   * Un pointage dont l'heure de geste precede celle du dernier pointage accepte de la cle, regularisations comprises :
-   * premier arrive, premier servi.
+   * Un pointage dont l'heure de geste precede strictement celle du dernier pointage accepte de la cle, regularisations
+   * comprises (premier arrive, premier servi), ou une fin qui n'est pas posterieure au debut de l'activite qu'elle
+   * fermerait : une activite de duree nulle n'existe pas, elle reste en cours.
    */
   ANTERIEUR,
 }

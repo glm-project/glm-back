@@ -8,7 +8,8 @@ import java.util.Optional;
  * La regle qui juge un pointage a son arrivee, sur la cle (operateur, poste) d'un suivi.
  *
  * <p>
- * Elle verifie dans l'ordre : le pointage n'est pas plus ancien que le dernier accepte de la cle ; l'echeance de la
+ * Elle verifie dans l'ordre : le pointage n'est pas plus ancien que le dernier accepte de la cle, et une fin est
+ * posterieure au debut de l'activite qu'elle fermerait (pas d'activite de duree nulle) ; l'echeance de la
  * derniere activite, jugee sur l'heure du geste ; puis le tableau. Rien n'est en cours quand la cle n'a jamais ete
  * ouverte, ou que sa derniere activite est terminee — par une fin, par la cloture, ou par son echeance, atteinte
  * lorsque l'heure du geste est superieure ou egale au debut plus la duree maximale. Une fin ferme l'activite en cours ;
@@ -52,6 +53,10 @@ final class RegleDeReception {
 
     if (type == TypeDEvenementDAtelier.FIN) {
       if (enCours.isPresent()) {
+        if (!survenue.isAfter(enCours.orElseThrow().debut())) {
+          return new VerdictDeReception.Ignore(RaisonDePointageIgnore.ANTERIEUR, dernierAccepte);
+        }
+
         return new VerdictDeReception.Accepte(enCours.map(Activite::id));
       }
 

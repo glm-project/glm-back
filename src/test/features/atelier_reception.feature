@@ -2,7 +2,8 @@
 Feature: Regle de reception des pointages
 
   # Le serveur juge chaque pointage a son arrivee, par cle (operateur, OF, poste), dans cet ordre : les controles
-  # existants (operateur, poste, habilitation, cloture), puis ANTERIEUR, puis l'echeance, puis le tableau.
+  # existants (operateur, poste, habilitation, cloture), puis ANTERIEUR (y compris une fin a l'heure du debut de
+  # l'activite qu'elle fermerait), puis l'echeance, puis le tableau.
   #
   #   | Etat de la cle                         | DEBUT                  | NON_CONFORMITE         | FIN                                    |
   #   | Rien en cours (jamais ouvert, termine, | accepte                | accepte                | ignore : APRES_ECHEANCE si la derniere |
@@ -246,6 +247,28 @@ Feature: Regle de reception des pointages
       | type           | raison    | dateDeSurvenue       | dateDeReception      | dernierAccepte |
       | FIN            | ANTERIEUR | 2046-03-03T10:00:00Z | 2046-03-03T12:05:00Z | evenement 1    |
       | NON_CONFORMITE | ANTERIEUR | 2046-03-03T10:00:00Z | 2046-03-03T12:05:00Z | evenement 1    |
+
+  Scenario: Une fin a l'heure du debut de l'activite en cours est ignoree comme anterieure
+    # Une activite de duree nulle n'existe pas : la fin n'est pas posterieure au debut qu'elle fermerait, l'activite
+    # reste en cours. Les gestes composes restent acceptes (situations 1 et 8) : une fin a t ferme une activite ouverte
+    # avant t.
+    Given il est "2046-03-03T06:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 1042 duree nulle"
+      | categorie | OF       |
+      | reference | REC1042S |
+    And j'ai engage l'element "OF 1042 duree nulle" en atelier
+    And I am logged in as "user" with role "USER"
+    When l'operateur "paul-reception" pointe DEBUT sur "OF 1042 duree nulle" au poste "fraiseuse-reception" a "2046-03-03T07:00:00Z"
+    Then le pointage est accepte
+    When l'operateur "paul-reception" pointe FIN sur "OF 1042 duree nulle" au poste "fraiseuse-reception" a "2046-03-03T07:00:00Z"
+    Then le pointage est ignore
+    When je consulte "OF 1042 duree nulle"
+    Then le journal du suivi contient 1 evenements
+    And le suivi a l'etat "EN_COURS"
+    And l'activite en cours est de categorie "TRAVAIL" depuis "2046-03-03T07:00:00Z"
+    And la table d'audit des pointages ignores de "OF 1042 duree nulle" contient
+      | type | raison    | dateDeSurvenue       | dernierAccepte |
+      | FIN  | ANTERIEUR | 2046-03-03T07:00:00Z | evenement 0    |
 
   Scenario: Situation 8, NC sans travail : NC de 08 h a 09 h, puis travail jusqu'a 10 h
     Given il est "2046-03-03T06:00:00Z"
