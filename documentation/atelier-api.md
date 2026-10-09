@@ -131,7 +131,10 @@ Une activité que rien n'a terminée se termine automatiquement à son **échéa
 activité en vigueur à ce début**, en heures écoulées et sans fuseau — le passage à l'heure d'été ne l'allonge ni ne la
 raccourcit. Cette durée est un réglage de l'entreprise que le gestionnaire fixe (`PUT /api/parametrage/duree-max-d-activite`,
 de 1 à 24 heures, 13 heures tant qu'il n'a rien fixé). Le serveur la copie sur le pointage qui ouvre l'activité : **une
-activité garde la durée de son début**, le gestionnaire qui la change ne modifie que les activités ouvertes ensuite. Rien
+activité garde la durée lue à la réception de son début**, le gestionnaire qui la change ne modifie que les activités dont
+le début est reçu ensuite. Attention : c'est l'heure de réception qui compte, pas l'heure du geste — un `DEBUT` pointé hors
+ligne avant le changement et reçu après prend la nouvelle durée, et le gestionnaire rattrape un écart éventuel par la
+régularisation. Rien
 n'est écrit au journal pour la fin automatique : elle se juge à l'instant d'évaluation de la lecture. Avec la durée par
 défaut, un travail commencé à 8 h et jamais arrêté est en cours à 20 h 59 ; à 21 h, et à toute lecture ultérieure, il est
 terminé à 21 h, avec une anomalie. Fixée à 8 h, la même activité est terminée à 16 h.

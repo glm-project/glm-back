@@ -63,8 +63,8 @@ falls in its place. The deadline is read the same way, without a reading instant
 sets another one). It reaches the workshop and the pupitre through a port of a small shared kernel
 (`shared/activityduration`, in English like the rest of `shared/`), which `parametrage` implements: neither `atelier`
 nor `pupitre` imports the other, or `parametrage`, and no domain codes a constant. The referential sends it as
-`dureeMaximaleDActivite`, an ISO 8601 string such as `"PT13H"` or `"PT8H"`. An activity keeps the duration in force
-when it began ([ADR 0012](0012-freeze-the-maximum-duration-on-the-opening-punch.md)).
+`dureeMaximaleDActivite`, an ISO 8601 string such as `"PT13H"` or `"PT8H"`. An activity keeps the duration read when
+its opening punch was received ([ADR 0012](0012-freeze-the-maximum-duration-on-the-opening-punch.md)).
 
 **Idempotence** follows [ADR 0001](0001-generate-event-identities-in-the-offline-first-pupitre.md): the event table,
 then the audit, then the judgement. The table also covers a punch that arrives after the closure: it closes the running

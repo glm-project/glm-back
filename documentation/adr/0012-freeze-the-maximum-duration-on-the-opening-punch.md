@@ -20,6 +20,9 @@ from the journal at every new gesture on the follow-up.
   readers would need the setting as a parameter.
 - Apply a change to the activities already open, by recomputing the projection — rejected: a reader at 20:59 could see
   an activity running that an earlier reader saw ended.
+- A port owned by the consumer, with an `@Immutable` entity reading the `parametrage` table — rejected: the entity would have
+  to copy the default value for an empty column, whereas `parametrage/AGENTS.md` wants a single default, known only to its
+  domain. The shared-kernel port, implemented by `parametrage`, keeps that single source.
 - Copy the duration in force on the event that opens the activity, and derive the deadline from it — **kept**.
 
 ## Decision
@@ -29,7 +32,7 @@ A `DEBUT` or a `NON_CONFORMITE` that the reception rule accepts reads the durati
 column `duree_max_secondes`). The activity takes its deadline from its opening event: `Echeance.apres(start, duration)`.
 Nothing else reads the setting: an end, a regularisation and an ignored punch carry no duration and call no port.
 
-**There is no retroactivity.** An activity keeps the duration in force when it began; the manager's change applies to
+**There is no retroactivity.** An activity keeps the duration read when its opening punch was received; the manager's change applies to
 the activities opened afterwards. The same copy pattern already holds the hourly cost, the hourly rate and the nature
 of the operation.
 
@@ -48,3 +51,7 @@ exist without it.
 - A shorter duration does not end the activities already open earlier than their deadline: the manager waits for them or
   regularises them once they are due.
 - One column more on every opening event.
+- The duration is read when the opening punch is **received**, not at the time of the gesture. A `DEBUT` punched offline
+  before the manager changes the setting, then received after the change, takes the new duration. The manager recovers
+  the difference through the direct regularisation of the automatic end
+  ([ADR 0011](0011-regularise-an-automatic-end-directly.md)); the mechanism is deliberately left as it is.
