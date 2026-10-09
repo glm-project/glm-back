@@ -59,6 +59,7 @@ class FreshActivitySchemaIT {
     "compteur_d_elements_de_fabrication",
     "element_de_fabrication",
     "evenement_d_atelier",
+    "nature_de_travail",
     "operateur",
     "operateur_poste",
     "parametrage",
