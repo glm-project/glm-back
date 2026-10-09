@@ -95,6 +95,22 @@ class TrancheDActiviteTest {
   }
 
   @Test
+  void shouldCostAMachineAtZeroEuroToZero() {
+    Activite surUnPosteSansMachine = Activite.builder()
+      .operateur(OPERATEUR_ID_DUPONT)
+      .element(ELEMENT_ID_OF)
+      .poste(Optional.of(POSTE_ID_FRAISEUSE))
+      .nature(Optional.of(NATURE_FRAISAGE))
+      .coutHoraire(Optional.of(COUT_HORAIRE_DE_0_EURO))
+      .tauxHoraire(Optional.of(TAUX_HORAIRE_DE_20_EUROS))
+      .categorie(CategorieDActivite.TRAVAIL);
+
+    assertThat(new TrancheDActivite(surUnPosteSansMachine, new Periode(LE_11_MAI_A_9H, LE_11_MAI_A_11H)).coutMachine()).isEqualTo(
+      Montant.ZERO
+    );
+  }
+
+  @Test
   void shouldExposeOperateurOfItsActivite() {
     TrancheDActivite tranche = new TrancheDActivite(TOURNAGE_DE_DUPONT, new Periode(LE_11_MAI_A_9H, LE_11_MAI_A_10H));
 
