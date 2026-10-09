@@ -174,8 +174,8 @@ sert.
 | `logo-invalide`    | 400    | logo invalide    | `LogoInvalideException`    |
 | `logo-introuvable` | 404    | logo introuvable | `LogoIntrouvableException` |
 
-`logo-invalide` refuse un fichier trop lourd, illisible, d'un autre format que PNG ou JPEG, ou d'autres dimensions
-que 50 x 50 pixels. Son `message` dit laquelle de ces règles il enfreint, avec la valeur reçue : il s'affiche tel quel.
+`logo-invalide` refuse un fichier trop lourd, illisible, d'un autre format que PNG ou JPEG, ou qui ne tient pas
+dans 256 x 256 pixels. Son `message` dit laquelle de ces règles il enfreint, avec la valeur reçue : il s'affiche tel quel.
 `logo-introuvable` répond à une adresse d'image dont la version n'est plus celle du logo courant, ou à une entreprise
 sans logo : le client relit la version dans `GET /api/parametrage`.
 

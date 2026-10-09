@@ -1,13 +1,14 @@
 package com.glm.glmback.parametrage.domain;
 
 /**
- * Le logo s'affiche en en-tete de la supervision, du pupitre et des PDF, dans une case de 50 x 50 pixels : il y entre
- * tel quel, sans recadrage ni conversion, et reste assez leger pour etre garde hors ligne par le pupitre.
+ * Le logo tient dans un carre de 256 x 256 pixels, dans les proportions de son choix : chaque en-tete (supervision,
+ * pupitre, PDF) l'ajuste a sa case sans le deformer. GLM ne le recadre ni ne le convertit, et il reste assez leger
+ * pour etre garde hors ligne par le pupitre.
  */
 public final class DepotDeLogo {
 
-  private static final int COTE = 50;
-  private static final int POIDS_MAXIMAL = 20 * 1024;
+  private static final int COTE_MAXIMAL = 256;
+  private static final int POIDS_MAXIMAL = 50 * 1024;
 
   private final DecodeurDImage decodeur;
   private final LogoRepository logos;
@@ -28,9 +29,9 @@ public final class DepotDeLogo {
     FormatDImage format = FormatDImage.depuis(image.format()).orElseThrow(() ->
       new LogoInvalideException("Le logo doit etre une image PNG ou JPEG (recu : %s)".formatted(image.format()))
     );
-    if (image.largeur() != COTE || image.hauteur() != COTE) {
+    if (image.largeur() > COTE_MAXIMAL || image.hauteur() > COTE_MAXIMAL) {
       throw new LogoInvalideException(
-        "Le logo doit mesurer %d x %d pixels (recu : %d x %d)".formatted(COTE, COTE, image.largeur(), image.hauteur())
+        "Le logo doit tenir dans %d x %d pixels (recu : %d x %d)".formatted(COTE_MAXIMAL, COTE_MAXIMAL, image.largeur(), image.hauteur())
       );
     }
 

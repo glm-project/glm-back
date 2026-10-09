@@ -12,7 +12,7 @@ import java.util.Arrays;
  */
 public final class ImagesFixture {
 
-  private static final int POIDS_AU_DELA_DU_MAXIMUM = 25 * 1024;
+  private static final int POIDS_AU_DELA_DU_MAXIMUM = 60 * 1024;
 
   private ImagesFixture() {}
 
@@ -32,8 +32,12 @@ public final class ImagesFixture {
     return image("gif", 50, 50, Color.BLUE);
   }
 
-  public static byte[] pngDe120Sur80() {
-    return image("png", 120, 80, Color.BLUE);
+  public static byte[] pngDe256Sur100() {
+    return image("png", 256, 100, Color.BLUE);
+  }
+
+  public static byte[] pngDe300Sur80() {
+    return image("png", 300, 80, Color.BLUE);
   }
 
   /**
