@@ -55,6 +55,16 @@ public class PosteDeTravailSteps {
     rest.put(BASE_URI + "/" + dernierIdDeclare, JSON.writeValueAsString(Map.of("libelle", libelle, "natureId", natureDeclaree(nature))));
   }
 
+  @When("je liste les postes de travail de la nature declaree {string}")
+  public void jeListeLesPostesDeTravailDeLaNatureDeclaree(String nature) {
+    rest.get(BASE_URI + "?size=100&natureId=" + natureDeclaree(nature));
+  }
+
+  @Then("la reponse ne contient que les postes de travail {string}")
+  public void laReponseNeContientQueLesPostesDeTravail(String libelles) {
+    assertThat(textes("$.content..libelle")).containsExactlyInAnyOrder(libelles.split("\\s*,\\s*"));
+  }
+
   @Then("le poste de travail porte la nature declaree {string}")
   public void lePosteDeTravailPorteLaNatureDeclaree(String nature) {
     assertThat(CucumberRestTestContext.getElement("$.natureId")).isEqualTo(naturesDeclarees.get(nature));

@@ -3597,13 +3597,21 @@
     },
     "/api/postes-de-travail" : {
       "get" : {
-        "description" : "La page demandee, triee par libelle. Le filtre sur la nature est facultatif ; absent, il ne filtre rien.\n",
+        "description" : "La page demandee, triee par libelle. La nature se filtre par son identifiant (natureId) ou par son libelle exact\n(nature) ; un filtre absent ne filtre rien, deux filtres donnes se cumulent. Un natureId inconnu rend une page vide.\n",
         "operationId" : "list",
         "parameters" : [ {
           "in" : "query",
           "name" : "nature",
           "required" : false,
           "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "natureId",
+          "required" : false,
+          "schema" : {
+            "format" : "uuid",
             "type" : "string"
           }
         }, {

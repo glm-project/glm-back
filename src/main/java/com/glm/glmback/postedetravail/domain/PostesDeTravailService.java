@@ -2,7 +2,6 @@ package com.glm.glmback.postedetravail.domain;
 
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
-import java.util.Optional;
 
 public final class PostesDeTravailService {
 
@@ -40,8 +39,8 @@ public final class PostesDeTravailService {
     return repository.get(id).orElseThrow(() -> new PosteDeTravailIntrouvableException(id));
   }
 
-  public Page<PosteDeTravail> list(Optional<NatureDeTravail> nature, Pageable pageable) {
-    return repository.list(new PosteDeTravailCriteria(nature), pageable);
+  public Page<PosteDeTravail> list(PosteDeTravailCriteria criteria, Pageable pageable) {
+    return repository.list(criteria, pageable);
   }
 
   public PosteDeTravail update(PosteDeTravailAModifier aModifier) {

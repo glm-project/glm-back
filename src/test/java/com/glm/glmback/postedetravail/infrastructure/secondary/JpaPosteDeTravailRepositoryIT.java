@@ -168,7 +168,7 @@ class JpaPosteDeTravailRepositoryIT {
     inTransaction(() -> postes.create(soudage));
 
     Page<PosteDeTravail> page = inTransaction(() ->
-      postes.list(new PosteDeTravailCriteria(Optional.of(soudure.libelle())), firstPageOfTen())
+      postes.list(new PosteDeTravailCriteria(Optional.of(soudure.libelle()), Optional.empty()), firstPageOfTen())
     );
 
     assertThat(page.content()).contains(soudage).doesNotContain(tournage);
@@ -199,7 +199,7 @@ class JpaPosteDeTravailRepositoryIT {
     inTransaction(() -> postes.create(premier));
 
     Page<PosteDeTravail> page = inTransaction(() ->
-      postes.list(new PosteDeTravailCriteria(Optional.of(natureDuTest.libelle())), firstPageOfTen())
+      postes.list(new PosteDeTravailCriteria(Optional.empty(), Optional.of(natureDuTest.id())), firstPageOfTen())
     );
 
     assertThat(page.content()).containsExactly(premier, second);

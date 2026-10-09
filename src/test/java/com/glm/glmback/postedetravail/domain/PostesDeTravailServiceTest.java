@@ -213,7 +213,7 @@ class PostesDeTravailServiceTest {
     postes.create(posteDeTravailACreerTour1());
     postes.create(posteDeTravailACreerPosteDeSoudure());
 
-    Page<PosteDeTravail> page = postes.list(Optional.empty(), firstPageOfTen());
+    Page<PosteDeTravail> page = postes.list(criteresSansFiltre(), firstPageOfTen());
 
     assertThat(
       page
@@ -229,7 +229,7 @@ class PostesDeTravailServiceTest {
     postes.create(posteDeTravailACreerTour1());
     postes.create(posteDeTravailACreerPosteDeSoudure());
 
-    Page<PosteDeTravail> page = postes.list(Optional.of(NATURE_TOURNAGE), firstPageOfTen());
+    Page<PosteDeTravail> page = postes.list(criteresDeTournage(), firstPageOfTen());
 
     assertThat(
       page
