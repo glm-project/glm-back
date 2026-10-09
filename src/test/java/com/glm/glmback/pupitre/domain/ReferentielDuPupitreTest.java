@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.*;
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.shared.error.domain.MissingMandatoryValueException;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 @UnitTest
@@ -13,37 +14,54 @@ class ReferentielDuPupitreTest {
 
   @Test
   void shouldNotBuildWithoutDateDeGeneration() {
-    assertThatThrownBy(() -> new ReferentielDuPupitre(null, List.of(), List.of(), List.of(), DUREE_MAXIMALE_TREIZE_HEURES))
+    assertThatThrownBy(() ->
+      new ReferentielDuPupitre(null, List.of(), List.of(), List.of(), DUREE_MAXIMALE_TREIZE_HEURES, Optional.empty())
+    )
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("date de generation");
   }
 
   @Test
   void shouldNotBuildWithoutOperateurs() {
-    assertThatThrownBy(() -> new ReferentielDuPupitre(LE_10_MAI_2026_A_8H, null, List.of(), List.of(), DUREE_MAXIMALE_TREIZE_HEURES))
+    assertThatThrownBy(() ->
+      new ReferentielDuPupitre(LE_10_MAI_2026_A_8H, null, List.of(), List.of(), DUREE_MAXIMALE_TREIZE_HEURES, Optional.empty())
+    )
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("operateurs");
   }
 
   @Test
   void shouldNotBuildWithoutSuivis() {
-    assertThatThrownBy(() -> new ReferentielDuPupitre(LE_10_MAI_2026_A_8H, List.of(), null, List.of(), DUREE_MAXIMALE_TREIZE_HEURES))
+    assertThatThrownBy(() ->
+      new ReferentielDuPupitre(LE_10_MAI_2026_A_8H, List.of(), null, List.of(), DUREE_MAXIMALE_TREIZE_HEURES, Optional.empty())
+    )
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("suivis");
   }
 
   @Test
   void shouldNotBuildWithoutCategories() {
-    assertThatThrownBy(() -> new ReferentielDuPupitre(LE_10_MAI_2026_A_8H, List.of(), List.of(), null, DUREE_MAXIMALE_TREIZE_HEURES))
+    assertThatThrownBy(() ->
+      new ReferentielDuPupitre(LE_10_MAI_2026_A_8H, List.of(), List.of(), null, DUREE_MAXIMALE_TREIZE_HEURES, Optional.empty())
+    )
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("categories");
   }
 
   @Test
   void shouldNotBuildWithoutDureeMaximaleDActivite() {
-    assertThatThrownBy(() -> new ReferentielDuPupitre(LE_10_MAI_2026_A_8H, List.of(), List.of(), List.of(), null))
+    assertThatThrownBy(() -> new ReferentielDuPupitre(LE_10_MAI_2026_A_8H, List.of(), List.of(), List.of(), null, Optional.empty()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("duree maximale d'activite");
+  }
+
+  @Test
+  void shouldNotBuildWithoutLogo() {
+    assertThatThrownBy(() ->
+      new ReferentielDuPupitre(LE_10_MAI_2026_A_8H, List.of(), List.of(), List.of(), DUREE_MAXIMALE_TREIZE_HEURES, null)
+    )
+      .isExactlyInstanceOf(MissingMandatoryValueException.class)
+      .hasMessageContaining("logo");
   }
 
   /**
@@ -56,9 +74,11 @@ class ReferentielDuPupitreTest {
       List.of(OPERATEUR_DUPONT),
       List.of(suiviOf42Vierge()),
       List.of(CATEGORIE_MOULE, CATEGORIE_OF),
-      DUREE_MAXIMALE_TREIZE_HEURES
+      DUREE_MAXIMALE_TREIZE_HEURES,
+      Optional.of(VERSION_DU_LOGO_3F2A)
     );
 
+    assertThat(referentiel.logo()).contains(VERSION_DU_LOGO_3F2A);
     assertThat(referentiel.genereLe()).isEqualTo(LE_10_MAI_2026_A_8H);
     assertThat(referentiel.operateurs()).containsExactly(OPERATEUR_DUPONT);
     assertThat(referentiel.suivis()).containsExactly(suiviOf42Vierge());

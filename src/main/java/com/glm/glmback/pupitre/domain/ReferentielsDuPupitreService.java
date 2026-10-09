@@ -24,6 +24,7 @@ public final class ReferentielsDuPupitreService {
   private final SuivisOuvertsDuPupitre suivis;
   private final CategoriesDuPupitre categories;
   private final MaximumActivityDurations durees;
+  private final LogoDuPupitre logo;
   private final Clock clock;
 
   private ReferentielsDuPupitreService(
@@ -31,24 +32,27 @@ public final class ReferentielsDuPupitreService {
     SuivisOuvertsDuPupitre suivis,
     CategoriesDuPupitre categories,
     MaximumActivityDurations durees,
+    LogoDuPupitre logo,
     Clock clock
   ) {
     this.operateurs = operateurs;
     this.suivis = suivis;
     this.categories = categories;
     this.durees = durees;
+    this.logo = logo;
     this.clock = clock;
   }
 
   public static ReferentielsDuPupitreServiceOperateursBuilder builder() {
     return operateurs ->
-      suivis -> categories -> durees -> clock -> new ReferentielsDuPupitreService(operateurs, suivis, categories, durees, clock);
+      suivis ->
+        categories -> durees -> logo -> clock -> new ReferentielsDuPupitreService(operateurs, suivis, categories, durees, logo, clock);
   }
 
   public ReferentielDuPupitre referentiel() {
     Instant maintenant = clock.now();
 
-    return new ReferentielDuPupitre(maintenant, operateurs.tous(), suivis.tous(), categories.toutes(), durees.current());
+    return new ReferentielDuPupitre(maintenant, operateurs.tous(), suivis.tous(), categories.toutes(), durees.current(), logo.version());
   }
 
   public interface ReferentielsDuPupitreServiceOperateursBuilder {
@@ -64,7 +68,11 @@ public final class ReferentielsDuPupitreService {
   }
 
   public interface ReferentielsDuPupitreServiceDureesBuilder {
-    ReferentielsDuPupitreServiceClockBuilder dureeMaximaleDActivite(MaximumActivityDurations durees);
+    ReferentielsDuPupitreServiceLogoBuilder dureeMaximaleDActivite(MaximumActivityDurations durees);
+  }
+
+  public interface ReferentielsDuPupitreServiceLogoBuilder {
+    ReferentielsDuPupitreServiceClockBuilder logo(LogoDuPupitre logo);
   }
 
   public interface ReferentielsDuPupitreServiceClockBuilder {

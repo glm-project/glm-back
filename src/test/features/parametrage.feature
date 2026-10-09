@@ -143,3 +143,18 @@ Feature: Parametrage de l'entreprise
     Given I am logged in as "user" with role "USER" for tenant "parametrage_fixture"
     When je retire le logo
     Then la reponse a le statut http 403
+
+  Scenario: Le referentiel du pupitre d'une entreprise sans logo n'en porte aucun
+    Given I am logged in as "pupitre-atelier-1" with role "USER" for tenant "parametrage_vierge"
+    When je lis le referentiel du pupitre a "2026-05-11T07:00:00Z"
+    Then la reponse a le statut http 200
+    And le referentiel du pupitre n'a pas de logo
+
+  Scenario: Le referentiel du pupitre porte la version du logo depose, sans son image
+    Given I am logged in as "gestionnaire" with role "GESTIONNAIRE" for tenant "parametrage_fixture"
+    And j'ai depose comme logo "un JPEG de 50 x 50"
+    And je retiens la version du logo
+    And I am logged in as "pupitre-atelier-1" with role "USER" for tenant "parametrage_fixture"
+    When je lis le referentiel du pupitre a "2026-05-11T07:00:00Z"
+    Then la reponse a le statut http 200
+    And le referentiel du pupitre porte la version retenue du logo

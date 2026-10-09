@@ -14,6 +14,7 @@ public final class PupitreFixture {
 
   public static final MaximumActivityDuration DUREE_MAXIMALE_TREIZE_HEURES = new MaximumActivityDuration(Duration.ofHours(13));
   public static final MaximumActivityDuration DUREE_MAXIMALE_HUIT_HEURES = new MaximumActivityDuration(Duration.ofHours(8));
+  public static final VersionDuLogo VERSION_DU_LOGO_3F2A = new VersionDuLogo("3f2a9c41b07d58e6");
 
   public static final Instant LE_10_MAI_2026_A_7H = Instant.parse("2026-05-10T07:00:00Z");
   public static final Instant LE_10_MAI_2026_A_8H = Instant.parse("2026-05-10T08:00:00Z");

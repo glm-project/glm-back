@@ -1072,6 +1072,18 @@
         "required" : [ "version" ],
         "type" : "object"
       },
+      "RestLogoDuPupitre" : {
+        "description" : "Le logo de l'entreprise, par sa seule version.",
+        "properties" : {
+          "version" : {
+            "description" : "Empreinte du contenu du logo : elle change avec le logo. L'image se lit a /api/parametrage/logo/{version}.",
+            "example" : "3f2a9c41b07d58e6",
+            "type" : "string"
+          }
+        },
+        "required" : [ "version" ],
+        "type" : "object"
+      },
       "RestModificationElementDeFabrication" : {
         "properties" : {
           "description" : {
@@ -1742,6 +1754,10 @@
             "description" : "Instant ou le serveur a produit la reponse et evalue l'expiration. Il ne garantit pas un instantane commun face aux ecritures concurrentes.",
             "format" : "date-time",
             "type" : "string"
+          },
+          "logo" : {
+            "$ref" : "#/components/schemas/RestLogoDuPupitre",
+            "description" : "La version du logo de l'entreprise, absente tant qu'aucun n'est depose. Le pupitre ne telecharge l'image, a\nl'adresse /api/parametrage/logo/{version}, que quand cette version change, et la garde hors ligne.\n"
           },
           "operateurs" : {
             "description" : "Les operateurs designables, tries par nom puis prenom.",

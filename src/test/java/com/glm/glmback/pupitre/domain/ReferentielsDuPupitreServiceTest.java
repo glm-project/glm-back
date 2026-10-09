@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 @UnitTest
@@ -20,6 +21,7 @@ class ReferentielsDuPupitreServiceTest {
       .suivis(() -> List.of(suiviOf42Vierge()))
       .categories(() -> List.of(CATEGORIE_OF, CATEGORIE_MOULE))
       .dureeMaximaleDActivite(() -> DUREE_MAXIMALE_TREIZE_HEURES)
+      .logo(Optional::empty)
       .clock(() -> LE_10_MAI_2026_A_9H);
 
     ReferentielDuPupitre referentiel = service.referentiel();
@@ -41,6 +43,7 @@ class ReferentielsDuPupitreServiceTest {
       .suivis(List::of)
       .categories(List::of)
       .dureeMaximaleDActivite(() -> DUREE_MAXIMALE_HUIT_HEURES)
+      .logo(Optional::empty)
       .clock(() -> LE_10_MAI_2026_A_7H);
 
     assertThat(service.referentiel().dureeMaximaleDActivite()).isEqualTo(DUREE_MAXIMALE_HUIT_HEURES);
@@ -53,6 +56,7 @@ class ReferentielsDuPupitreServiceTest {
       .suivis(List::of)
       .categories(List::of)
       .dureeMaximaleDActivite(() -> DUREE_MAXIMALE_TREIZE_HEURES)
+      .logo(Optional::empty)
       .clock(() -> LE_10_MAI_2026_A_7H);
 
     ReferentielDuPupitre referentiel = service.referentiel();
@@ -60,5 +64,21 @@ class ReferentielsDuPupitreServiceTest {
     assertThat(referentiel.operateurs()).isEmpty();
     assertThat(referentiel.suivis()).isEmpty();
     assertThat(referentiel.categories()).isEmpty();
+  }
+
+  /**
+   * Le pupitre recoit la version du logo, jamais son image : il ne la telecharge que quand la version change.
+   */
+  @Test
+  void shouldDonnerLaVersionDuLogoQueLePortRend() {
+    ReferentielsDuPupitreService service = ReferentielsDuPupitreService.builder()
+      .operateurs(List::of)
+      .suivis(List::of)
+      .categories(List::of)
+      .dureeMaximaleDActivite(() -> DUREE_MAXIMALE_TREIZE_HEURES)
+      .logo(() -> Optional.of(VERSION_DU_LOGO_3F2A))
+      .clock(() -> LE_10_MAI_2026_A_7H);
+
+    assertThat(service.referentiel().logo()).contains(VERSION_DU_LOGO_3F2A);
   }
 }

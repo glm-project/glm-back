@@ -11,6 +11,7 @@ import com.glm.glmback.pupitre.domain.OperateurDuPupitre;
 import com.glm.glmback.pupitre.domain.ReferentielDuPupitre;
 import com.glm.glmback.pupitre.domain.SuiviDuPupitre;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 @UnitTest
@@ -24,7 +25,8 @@ class RestReferentielDuPupitreTest {
         List.of(OPERATEUR_DUPONT),
         List.of(suiviOf42Vierge()),
         List.of(CATEGORIE_MOULE, CATEGORIE_OF),
-        DUREE_MAXIMALE_TREIZE_HEURES
+        DUREE_MAXIMALE_TREIZE_HEURES,
+        Optional.of(VERSION_DU_LOGO_3F2A)
       )
     );
 
@@ -33,6 +35,16 @@ class RestReferentielDuPupitreTest {
     assertThat(referentiel.suivis()).hasSize(1);
     assertThat(referentiel.categories()).containsExactly("MOULE", "OF");
     assertThat(referentiel.dureeMaximaleDActivite()).isEqualTo("PT13H");
+    assertThat(referentiel.logo()).isEqualTo(new RestLogoDuPupitre("3f2a9c41b07d58e6"));
+  }
+
+  @Test
+  void shouldTaireLeLogoDUneEntrepriseQuiNEnAPas() {
+    RestReferentielDuPupitre referentiel = RestReferentielDuPupitre.from(
+      new ReferentielDuPupitre(LE_10_MAI_2026_A_8H, List.of(), List.of(), List.of(), DUREE_MAXIMALE_TREIZE_HEURES, Optional.empty())
+    );
+
+    assertThat(referentiel.logo()).isNull();
   }
 
   @Test
