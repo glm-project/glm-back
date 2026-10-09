@@ -4,6 +4,7 @@ import static com.glm.glmback.atelier.domain.AtelierFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
+import com.glm.glmback.shared.activityduration.domain.MaximumActivityDuration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,7 @@ class VieDeLAtelierTest {
   private static final Instant LE_11_MAI_2026_A_2H = Instant.parse("2026-05-11T02:00:00Z");
 
   private final AtomicReference<Instant> maintenant = new AtomicReference<>(LE_10_MAI_2026_A_7H);
+  private final AtomicReference<MaximumActivityDuration> dureeMaximale = new AtomicReference<>(DUREE_MAXIMALE_TREIZE_HEURES);
   private final SuivisDAtelierEnMemoire suivis = new SuivisDAtelierEnMemoire();
   private final PointagesIgnoresEnMemoire pointagesIgnores = new PointagesIgnoresEnMemoire();
   private final RessourcesDAtelierEnMemoire ressources = RessourcesDAtelierEnMemoire.deLAtelier();
@@ -46,6 +48,7 @@ class VieDeLAtelierTest {
     .postes(ressources.postes())
     .habilitations(ressources.habilitations())
     .pointagesIgnores(pointagesIgnores)
+    .dureeMaximaleDActivite(dureeMaximale::get)
     .clock(maintenant::get);
 
   private SuiviDAtelierId premierOrdre;

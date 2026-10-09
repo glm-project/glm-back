@@ -1,5 +1,7 @@
 package com.glm.glmback.atelier.domain;
 
+import com.glm.glmback.shared.activityduration.domain.MaximumActivityDuration;
+import com.glm.glmback.shared.activityduration.domain.MaximumActivityDurations;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import com.glm.glmback.shared.time.domain.Clock;
@@ -31,6 +33,13 @@ import java.util.Set;
  * La verification vaut pour les deux ecritures du journal — pointage et regularisation. Sans quoi le
  * back-office deviendrait un contournement de la regle que le pupitre applique.
  * </p>
+ *
+ * <p>
+ * C'est enfin ici que l'ouverture d'une activite recopie la duree maximale d'activite en vigueur, lue sur le port
+ * {@link MaximumActivityDurations} : un reglage de l'entreprise se recoit par un port, il ne se code pas. Elle est lue
+ * quand l'ouverture est acceptee, et seulement alors : ni une fin, ni une regularisation, ni un pointage ignore n'en ont
+ * besoin.
+ * </p>
  */
 public final class SuivisDAtelierService {
 
@@ -42,6 +51,7 @@ public final class SuivisDAtelierService {
   private final PostesConnus postes;
   private final Habilitations habilitations;
   private final PointagesIgnores pointagesIgnores;
+  private final MaximumActivityDurations durees;
   private final Clock clock;
 
   private SuivisDAtelierService(
@@ -51,6 +61,7 @@ public final class SuivisDAtelierService {
     PostesConnus postes,
     Habilitations habilitations,
     PointagesIgnores pointagesIgnores,
+    MaximumActivityDurations durees,
     Clock clock
   ) {
     this.repository = repository;
@@ -59,6 +70,7 @@ public final class SuivisDAtelierService {
     this.postes = postes;
     this.habilitations = habilitations;
     this.pointagesIgnores = pointagesIgnores;
+    this.durees = durees;
     this.clock = clock;
   }
 
@@ -69,7 +81,9 @@ public final class SuivisDAtelierService {
           postes ->
             habilitations ->
               pointagesIgnores ->
-                clock -> new SuivisDAtelierService(repository, elements, operateurs, postes, habilitations, pointagesIgnores, clock);
+                durees ->
+                  clock ->
+                    new SuivisDAtelierService(repository, elements, operateurs, postes, habilitations, pointagesIgnores, durees, clock);
   }
 
   /**
@@ -144,6 +158,7 @@ public final class SuivisDAtelierService {
           commande.type(),
           Optional.empty(),
           ressources,
+          commande.type().ouvreUneActivite() ? Optional.of(durees.current()) : Optional.empty(),
           commande.auteur(),
           OrigineDuPointage.POINTAGE,
           horodatage
@@ -176,6 +191,7 @@ public final class SuivisDAtelierService {
       TypeDEvenementDAtelier.FIN,
       Optional.of(commande.activite()),
       ressources(activite.ouvrant().operateur(), activite.ouvrant().poste()),
+      Optional.empty(),
       commande.auteur(),
       OrigineDuPointage.REGULARISATION,
       new Horodatage(commande.dateDeSurvenue(), maintenant)
@@ -227,6 +243,7 @@ public final class SuivisDAtelierService {
     TypeDEvenementDAtelier type,
     Optional<ActiviteId> cible,
     Ressources ressources,
+    Optional<MaximumActivityDuration> dureeMax,
     Auteur auteur,
     OrigineDuPointage origine,
     Horodatage horodatage
@@ -241,6 +258,7 @@ public final class SuivisDAtelierService {
       .nature(ressources.poste().map(PosteConnu::nature))
       .coutHoraire(ressources.poste().flatMap(PosteConnu::coutHoraire))
       .tauxHoraire(ressources.operateur().tauxHoraire())
+      .dureeMax(dureeMax)
       .auteur(auteur)
       .origine(origine)
       .horodatage(horodatage);
@@ -298,7 +316,11 @@ public final class SuivisDAtelierService {
   }
 
   public interface SuivisDAtelierServicePointagesIgnoresBuilder {
-    SuivisDAtelierServiceClockBuilder pointagesIgnores(PointagesIgnores pointagesIgnores);
+    SuivisDAtelierServiceDureesBuilder pointagesIgnores(PointagesIgnores pointagesIgnores);
+  }
+
+  public interface SuivisDAtelierServiceDureesBuilder {
+    SuivisDAtelierServiceClockBuilder dureeMaximaleDActivite(MaximumActivityDurations durees);
   }
 
   public interface SuivisDAtelierServiceClockBuilder {

@@ -129,6 +129,37 @@ class JpaSuiviDAtelierRepositoryIT {
   }
 
   /**
+   * La duree maximale en vigueur a l'ouverture survit au round-trip base, et l'echeance projetee en decoule : sous
+   * huit heures, le suivi est en cours jusqu'a 8 h apres le debut puis interrompu, la ou treize heures l'auraient
+   * laisse en cours.
+   */
+  @Test
+  @WithTenant(IMPECCMOLD)
+  void shouldRelireLaDureeMaximaleDeLOuvertureEtEnProjeterLEcheance() {
+    Instant engagement = Instant.parse("2040-01-06T08:30:00Z");
+    Instant debut = engagement.plusSeconds(3600);
+    SuiviDAtelier engage = suiviEngageA(engagement).enregistre(debutSurFraiseuse1ParDupontSousHuitHeuresA(debut));
+
+    inTransaction(() -> suivis.create(engage));
+
+    SuiviDAtelier relu = inTransaction(() -> suivis.get(engage.id())).orElseThrow();
+    assertThat(relu.journal().evenements())
+      .singleElement()
+      .extracting(EvenementDAtelier::dureeMax)
+      .isEqualTo(Optional.of(DUREE_MAXIMALE_HUIT_HEURES));
+    Periode periode = new Periode(engagement, debut.plusSeconds(1));
+    assertThat(liste(periode, EtatDAtelier.EN_COURS, debut.plus(Duration.ofHours(8)).minusSeconds(1)))
+      .extracting(SuiviDAtelier::id)
+      .contains(engage.id());
+    assertThat(liste(periode, EtatDAtelier.EN_COURS, debut.plus(Duration.ofHours(8))))
+      .extracting(SuiviDAtelier::id)
+      .doesNotContain(engage.id());
+    assertThat(liste(periode, EtatDAtelier.INTERROMPU, debut.plus(Duration.ofHours(8))))
+      .extracting(SuiviDAtelier::id)
+      .contains(engage.id());
+  }
+
+  /**
    * Un poste non valorise doit relire une absence, pas un montant reconstitue a partir de rien.
    */
   @Test
@@ -499,6 +530,7 @@ class JpaSuiviDAtelierRepositoryIT {
       .nature(Optional.of(NATURE_FRAISAGE))
       .coutHoraire(Optional.of(COUT_HORAIRE_FRAISEUSE_1))
       .tauxHoraire(Optional.of(TAUX_HORAIRE_DUPONT))
+      .dureeMax(Optional.empty())
       .auteur(AUTEUR_LEROY)
       .origine(OrigineDuPointage.REGULARISATION)
       .horodatage(Horodatage.saisiA(date));
@@ -524,6 +556,7 @@ class JpaSuiviDAtelierRepositoryIT {
       .nature(nature)
       .coutHoraire(coutHoraire)
       .tauxHoraire(tauxHoraire)
+      .dureeMax(type.ouvreUneActivite() ? Optional.of(DUREE_MAXIMALE_TREIZE_HEURES) : Optional.empty())
       .auteur(AUTEUR_DUPONT)
       .origine(OrigineDuPointage.POINTAGE)
       .horodatage(horodatage);

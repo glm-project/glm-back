@@ -94,6 +94,41 @@ class SuiviDAtelierReceptionTest {
     );
   }
 
+  /**
+   * L'echeance que la regle juge est celle de l'activite en cours, et elle tient de la duree que son debut a portee.
+   * Sous huit heures, une fin a 16 h est apres l'echeance (APRES_ECHEANCE), quand la meme fin sous treize heures est
+   * acceptee ; une fin a 15 h 59 est acceptee sous huit heures.
+   */
+  @Test
+  void shouldIgnorerUneFinALEcheanceDeLaDureeQueLeDebutAPortee() {
+    EvenementDAtelier sousHuitHeures = debutSurFraiseuse1ParDupontSousHuitHeuresA(LE_10_MAI_2026_A_8H);
+    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(sousHuitHeures);
+
+    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.FIN, LE_10_MAI_2026_A_16H)).isEqualTo(
+      new VerdictDeReception.Ignore(RaisonDePointageIgnore.APRES_ECHEANCE, Optional.of(sousHuitHeures.id()))
+    );
+    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.FIN, LE_10_MAI_2026_A_16H.minusSeconds(1))).isEqualTo(
+      new VerdictDeReception.Accepte()
+    );
+    assertThat(suiviDAtelierEngage().enregistre(travail).juge(cle, TypeDEvenementDAtelier.FIN, LE_10_MAI_2026_A_16H)).isEqualTo(
+      new VerdictDeReception.Accepte()
+    );
+  }
+
+  /**
+   * Un debut pile a l'echeance de huit heures est accepte : l'activite precedente est deja echue, la regle ne la tient
+   * plus pour en cours.
+   */
+  @Test
+  void shouldAccepterUnDebutALEcheanceDeLaDureeQueLeDebutAPortee() {
+    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(debutSurFraiseuse1ParDupontSousHuitHeuresA(LE_10_MAI_2026_A_8H));
+
+    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.DEBUT, LE_10_MAI_2026_A_16H)).isEqualTo(new VerdictDeReception.Accepte());
+    assertThat(suivi.juge(cle, TypeDEvenementDAtelier.DEBUT, LE_10_MAI_2026_A_16H.minusSeconds(1))).isEqualTo(
+      new VerdictDeReception.Ignore(RaisonDePointageIgnore.DEJA_EN_COURS, Optional.of(suivi.journal().evenements().getFirst().id()))
+    );
+  }
+
   @Test
   void shouldIgnorerUnPointagePlusAncienQueLeDernierAccepte() {
     EvenementDAtelier fin = finDe(travail).a(LE_10_MAI_2026_A_12H);

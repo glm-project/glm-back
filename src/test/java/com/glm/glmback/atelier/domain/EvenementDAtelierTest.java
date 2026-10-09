@@ -4,6 +4,7 @@ import static com.glm.glmback.atelier.domain.AtelierFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
+import com.glm.glmback.shared.activityduration.domain.MaximumActivityDuration;
 import com.glm.glmback.shared.error.domain.MissingMandatoryValueException;
 import java.util.Optional;
 import java.util.UUID;
@@ -24,6 +25,7 @@ class EvenementDAtelierTest {
   private static final Optional<NatureDOperation> EN_FRAISAGE = Optional.of(NATURE_FRAISAGE);
   private static final Optional<CoutHoraire> COUT_HORAIRE = Optional.of(COUT_HORAIRE_FRAISEUSE_1);
   private static final Optional<TauxHoraire> TAUX_HORAIRE = Optional.of(TAUX_HORAIRE_DUPONT);
+  private static final Optional<MaximumActivityDuration> DUREE_MAX = Optional.of(DUREE_MAXIMALE_TREIZE_HEURES);
 
   @ParameterizedTest
   @MethodSource("composantsManquants")
@@ -43,6 +45,7 @@ class EvenementDAtelierTest {
       .nature(EN_FRAISAGE)
       .coutHoraire(COUT_HORAIRE)
       .tauxHoraire(TAUX_HORAIRE)
+      .dureeMax(Optional.of(DUREE_MAXIMALE_TREIZE_HEURES))
       .auteur(AUTEUR_DUPONT)
       .origine(OrigineDuPointage.POINTAGE)
       .horodatage(HORODATAGE);
@@ -56,6 +59,7 @@ class EvenementDAtelierTest {
     assertThat(evenement.nature()).contains(NATURE_FRAISAGE);
     assertThat(evenement.coutHoraire()).contains(COUT_HORAIRE_FRAISEUSE_1);
     assertThat(evenement.tauxHoraire()).contains(TAUX_HORAIRE_DUPONT);
+    assertThat(evenement.dureeMax()).contains(DUREE_MAXIMALE_TREIZE_HEURES);
     assertThat(evenement.auteur()).isEqualTo(AUTEUR_DUPONT);
     assertThat(evenement.origine()).isEqualTo(OrigineDuPointage.POINTAGE);
     assertThat(evenement.horodatage()).isEqualTo(HORODATAGE);
@@ -73,6 +77,7 @@ class EvenementDAtelierTest {
       .nature(Optional.empty())
       .coutHoraire(Optional.empty())
       .tauxHoraire(Optional.empty())
+      .dureeMax(Optional.of(DUREE_MAXIMALE_TREIZE_HEURES))
       .auteur(AUTEUR_DUPONT)
       .origine(OrigineDuPointage.POINTAGE)
       .horodatage(HORODATAGE);
@@ -154,6 +159,38 @@ class EvenementDAtelierTest {
     assertThat(fin.activiteVisee()).isEmpty();
   }
 
+  /**
+   * Un debut ou une non conformite porte la duree maximale en vigueur quand il ouvre l'activite : c'est d'elle que
+   * l'activite tiendra son echeance, meme si le gestionnaire change ensuite le reglage.
+   */
+  @Test
+  void shouldPorterLaDureeMaximaleDeLActiviteQuIlOuvre() {
+    EvenementDAtelier debut = debutSurFraiseuse1ParDupontSousHuitHeuresA(LE_10_MAI_2026_A_8H);
+
+    assertThat(debut.dureeMax()).contains(DUREE_MAXIMALE_HUIT_HEURES);
+  }
+
+  @Test
+  void shouldNePorterAucuneDureeMaximaleQuandIlNOuvreAucuneActivite() {
+    assertThat(finDe(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)).a(LE_10_MAI_2026_A_9H).dureeMax()).isEmpty();
+  }
+
+  @Test
+  void shouldNotBuildUneOuvertureSansDureeMaximale() {
+    assertThatThrownBy(() -> avecDuree(TypeDEvenementDAtelier.DEBUT, Optional.of(ACTIVITE), Optional.empty()))
+      .isExactlyInstanceOf(EvenementDAtelierIncoherentException.class)
+      .hasMessageContaining("DEBUT")
+      .hasMessageContaining("duree maximale");
+  }
+
+  @Test
+  void shouldNotBuildUneFinQuiPorteUneDureeMaximale() {
+    assertThatThrownBy(() -> avecDuree(TypeDEvenementDAtelier.FIN, Optional.empty(), DUREE_MAX))
+      .isExactlyInstanceOf(EvenementDAtelierIncoherentException.class)
+      .hasMessageContaining("FIN")
+      .hasMessageContaining("duree maximale");
+  }
+
   @ParameterizedTest
   @MethodSource("gestesIncoherents")
   void shouldNotBuildUnGesteIncoherent(
@@ -205,6 +242,7 @@ class EvenementDAtelierTest {
             EN_FRAISAGE,
             null,
             TAUX_HORAIRE,
+            DUREE_MAX,
             AUTEUR_DUPONT,
             OrigineDuPointage.POINTAGE,
             HORODATAGE
@@ -223,12 +261,14 @@ class EvenementDAtelierTest {
             EN_FRAISAGE,
             COUT_HORAIRE,
             null,
+            DUREE_MAX,
             AUTEUR_DUPONT,
             OrigineDuPointage.POINTAGE,
             HORODATAGE
           ),
         "taux horaire"
       ),
+      construction(() -> avecDuree(TypeDEvenementDAtelier.DEBUT, Optional.of(ACTIVITE), null), "duree maximale d'activite"),
       construction(
         () ->
           new EvenementDAtelier(
@@ -241,6 +281,7 @@ class EvenementDAtelierTest {
             EN_FRAISAGE,
             COUT_HORAIRE,
             TAUX_HORAIRE,
+            DUREE_MAX,
             null,
             OrigineDuPointage.POINTAGE,
             HORODATAGE
@@ -259,6 +300,7 @@ class EvenementDAtelierTest {
             EN_FRAISAGE,
             COUT_HORAIRE,
             TAUX_HORAIRE,
+            DUREE_MAX,
             AUTEUR_DUPONT,
             null,
             HORODATAGE
@@ -277,6 +319,7 @@ class EvenementDAtelierTest {
             EN_FRAISAGE,
             COUT_HORAIRE,
             TAUX_HORAIRE,
+            DUREE_MAX,
             AUTEUR_DUPONT,
             OrigineDuPointage.POINTAGE,
             null
@@ -307,6 +350,7 @@ class EvenementDAtelierTest {
       nature,
       COUT_HORAIRE,
       TAUX_HORAIRE,
+      DUREE_MAX,
       AUTEUR_DUPONT,
       OrigineDuPointage.POINTAGE,
       HORODATAGE
@@ -333,8 +377,31 @@ class EvenementDAtelierTest {
       EN_FRAISAGE,
       COUT_HORAIRE,
       TAUX_HORAIRE,
+      type.ouvreUneActivite() ? DUREE_MAX : Optional.empty(),
       AUTEUR_DUPONT,
       origine,
+      HORODATAGE
+    );
+  }
+
+  private static EvenementDAtelier avecDuree(
+    TypeDEvenementDAtelier type,
+    Optional<ActiviteId> activite,
+    Optional<MaximumActivityDuration> dureeMax
+  ) {
+    return new EvenementDAtelier(
+      ID,
+      type,
+      activite,
+      Optional.empty(),
+      OPERATEUR_ID_DUPONT,
+      SUR_FRAISEUSE_1,
+      EN_FRAISAGE,
+      COUT_HORAIRE,
+      TAUX_HORAIRE,
+      dureeMax,
+      AUTEUR_DUPONT,
+      OrigineDuPointage.POINTAGE,
       HORODATAGE
     );
   }
@@ -350,6 +417,7 @@ class EvenementDAtelierTest {
       .nature(EN_FRAISAGE)
       .coutHoraire(COUT_HORAIRE)
       .tauxHoraire(TAUX_HORAIRE)
+      .dureeMax(Optional.of(DUREE_MAXIMALE_TREIZE_HEURES))
       .auteur(AUTEUR_DUPONT)
       .origine(origine)
       .horodatage(horodatage);

@@ -3,6 +3,7 @@ package com.glm.glmback.atelier.domain.gestionanomalies;
 import static com.glm.glmback.atelier.domain.AtelierFixture.AUTEUR_DUPONT;
 import static com.glm.glmback.atelier.domain.AtelierFixture.AUTEUR_LEROY;
 import static com.glm.glmback.atelier.domain.AtelierFixture.CATEGORIE_OF;
+import static com.glm.glmback.atelier.domain.AtelierFixture.DUREE_MAXIMALE_TREIZE_HEURES;
 import static com.glm.glmback.atelier.domain.AtelierFixture.NOM_OF_2026_000042;
 import static com.glm.glmback.atelier.domain.AtelierFixture.OPERATEUR_ID_DUPONT;
 
@@ -136,6 +137,7 @@ public final class FinsAutomatiquesFixture {
       .nature(Optional.empty())
       .coutHoraire(Optional.empty())
       .tauxHoraire(Optional.empty())
+      .dureeMax(Optional.of(DUREE_MAXIMALE_TREIZE_HEURES))
       .auteur(AUTEUR_DUPONT)
       .origine(OrigineDuPointage.POINTAGE)
       .horodatage(Horodatage.saisiA(Instant.parse("2043-01-09T08:00:00Z")));
@@ -160,6 +162,7 @@ public final class FinsAutomatiquesFixture {
       .nature(Optional.empty())
       .coutHoraire(Optional.empty())
       .tauxHoraire(Optional.empty())
+      .dureeMax(Optional.of(DUREE_MAXIMALE_TREIZE_HEURES))
       .auteur(AUTEUR_DUPONT)
       .origine(OrigineDuPointage.POINTAGE);
   }

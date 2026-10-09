@@ -4,8 +4,10 @@ import static com.glm.glmback.atelier.domain.AtelierFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
+import com.glm.glmback.shared.activityduration.domain.MaximumActivityDuration;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
@@ -16,9 +18,13 @@ import org.junit.jupiter.api.Test;
 @UnitTest
 class SuivisDAtelierReceptionTest {
 
+  private static final Instant LE_10_MAI_2026_A_21H = Instant.parse("2026-05-10T21:00:00Z");
   private static final Instant LE_10_MAI_2026_A_23H = Instant.parse("2026-05-10T23:00:00Z");
+  private static final Instant LE_11_MAI_2026_A_1H = Instant.parse("2026-05-11T01:00:00Z");
 
   private final AtomicReference<Instant> maintenant = new AtomicReference<>(LE_10_MAI_2026_A_7H);
+  private final AtomicReference<MaximumActivityDuration> dureeMaximale = new AtomicReference<>(DUREE_MAXIMALE_TREIZE_HEURES);
+  private final AtomicInteger lecturesDeLaDuree = new AtomicInteger();
   private final SuivisDAtelierEnMemoire suivis = new SuivisDAtelierEnMemoire();
   private final PointagesIgnoresEnMemoire pointagesIgnores = new PointagesIgnoresEnMemoire();
   private final RessourcesDAtelierEnMemoire ressources = RessourcesDAtelierEnMemoire.deLAtelier();
@@ -29,6 +35,11 @@ class SuivisDAtelierReceptionTest {
     .postes(ressources.postes())
     .habilitations(ressources.habilitations())
     .pointagesIgnores(pointagesIgnores)
+    .dureeMaximaleDActivite(() -> {
+      lecturesDeLaDuree.incrementAndGet();
+
+      return dureeMaximale.get();
+    })
     .clock(maintenant::get);
 
   /**
@@ -56,6 +67,78 @@ class SuivisDAtelierReceptionTest {
       }
     );
     assertThat(pointagesIgnores.lignes()).isEmpty();
+  }
+
+  /**
+   * Un debut recopie sur l'evenement qui ouvre l'activite la duree maximale en vigueur a cet instant : fixee a huit
+   * heures par le gestionnaire, l'activite echoit huit heures plus tard.
+   */
+  @Test
+  void shouldCopierSurLOuvertureLaDureeMaximaleEnVigueur() {
+    SuiviDAtelier engage = engage();
+    dureeMaximale.set(DUREE_MAXIMALE_HUIT_HEURES);
+
+    PointageDAtelierTraite debut = pointeA(pointage(engage.id(), TypeDEvenementDAtelier.DEBUT), LE_10_MAI_2026_A_8H);
+
+    assertThat(debut.suivi().journal().evenements())
+      .singleElement()
+      .extracting(EvenementDAtelier::dureeMax)
+      .isEqualTo(Optional.of(DUREE_MAXIMALE_HUIT_HEURES));
+    assertThat(debut.suivi().activites()).singleElement().extracting(Activite::echeance).isEqualTo(new Echeance(LE_10_MAI_2026_A_16H));
+  }
+
+  /**
+   * Une non conformite ouvre elle aussi une activite : elle porte, comme un debut, la duree en vigueur.
+   */
+  @Test
+  void shouldCopierLaDureeMaximaleSurUneNonConformite() {
+    SuiviDAtelier engage = engage();
+    dureeMaximale.set(DUREE_MAXIMALE_HUIT_HEURES);
+
+    PointageDAtelierTraite nonConformite = pointeA(pointage(engage.id(), TypeDEvenementDAtelier.NON_CONFORMITE), LE_10_MAI_2026_A_8H);
+
+    assertThat(nonConformite.suivi().journal().evenements())
+      .singleElement()
+      .extracting(EvenementDAtelier::dureeMax)
+      .isEqualTo(Optional.of(DUREE_MAXIMALE_HUIT_HEURES));
+  }
+
+  /**
+   * Pas de retroactivite : une activite garde la duree en vigueur a son debut, meme si le gestionnaire la change ensuite.
+   * Ouverte sous treize heures, elle accepte encore une fin a 17 h quand la duree est passee a huit ; la suivante, ouverte
+   * apres le changement, prend huit heures.
+   */
+  @Test
+  void shouldGarderLaDureeDeSonDebutQuandLeGestionnaireLaChangeEnsuite() {
+    SuiviDAtelier engage = engage();
+    pointeA(pointage(engage.id(), TypeDEvenementDAtelier.DEBUT), LE_10_MAI_2026_A_8H);
+    dureeMaximale.set(DUREE_MAXIMALE_HUIT_HEURES);
+
+    PointageDAtelierTraite fin = pointeA(pointage(engage.id(), TypeDEvenementDAtelier.FIN), LE_10_MAI_2026_A_17H);
+    PointageDAtelierTraite suivant = pointeA(pointage(engage.id(), TypeDEvenementDAtelier.DEBUT), LE_10_MAI_2026_A_17H);
+
+    assertThat(fin.issue()).isEqualTo(IssueDePointage.ACCEPTE);
+    assertThat(suivant.suivi().activites())
+      .extracting(Activite::echeance)
+      .containsExactly(new Echeance(LE_10_MAI_2026_A_21H), new Echeance(LE_11_MAI_2026_A_1H));
+  }
+
+  /**
+   * Une fin ne porte aucune duree et n'en lit aucune, pas plus qu'un pointage ignore : la duree se lit quand le debut ou
+   * la non conformite est accepte, et seulement alors.
+   */
+  @Test
+  void shouldNeLireLaDureeQuePourUneOuvertureAcceptee() {
+    SuiviDAtelier engage = engage();
+    pointeA(pointage(engage.id(), TypeDEvenementDAtelier.DEBUT), LE_10_MAI_2026_A_8H);
+    assertThat(lecturesDeLaDuree).hasValue(1);
+
+    PointageDAtelierTraite ignore = pointeA(pointage(engage.id(), TypeDEvenementDAtelier.DEBUT), LE_10_MAI_2026_A_9H);
+    PointageDAtelierTraite fin = pointeA(pointage(engage.id(), TypeDEvenementDAtelier.FIN), LE_10_MAI_2026_A_12H);
+
+    assertThat(ignore.issue()).isEqualTo(IssueDePointage.IGNORE);
+    assertThat(fin.suivi().journal().evenements().getLast().dureeMax()).isEmpty();
+    assertThat(lecturesDeLaDuree).hasValue(1);
   }
 
   /**

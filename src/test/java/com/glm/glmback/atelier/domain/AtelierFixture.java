@@ -1,6 +1,8 @@
 package com.glm.glmback.atelier.domain;
 
+import com.glm.glmback.shared.activityduration.domain.MaximumActivityDuration;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -10,6 +12,9 @@ public final class AtelierFixture {
 
   public static final CategorieDElement CATEGORIE_OF = new CategorieDElement("OF");
   public static final CategorieDElement CATEGORIE_MOULE = new CategorieDElement("MOULE");
+
+  public static final MaximumActivityDuration DUREE_MAXIMALE_TREIZE_HEURES = new MaximumActivityDuration(Duration.ofHours(13));
+  public static final MaximumActivityDuration DUREE_MAXIMALE_HUIT_HEURES = new MaximumActivityDuration(Duration.ofHours(8));
 
   public static final Instant LE_10_MAI_2026_A_7H = Instant.parse("2026-05-10T07:00:00Z");
   public static final Instant LE_10_MAI_2026_A_7H30 = Instant.parse("2026-05-10T07:30:00Z");
@@ -163,6 +168,22 @@ public final class AtelierFixture {
   }
 
   /**
+   * Un debut pointe quand le gestionnaire avait fixe la duree maximale a huit heures : l'activite qu'il ouvre echoit
+   * huit heures plus tard, et non treize.
+   */
+  public static EvenementDAtelier debutSurFraiseuse1ParDupontSousHuitHeuresA(Instant date) {
+    return evenementDAtelier(
+      TypeDEvenementDAtelier.DEBUT,
+      Optional.empty(),
+      cleDeFraiseuse1DeDupont(),
+      AUTEUR_DUPONT,
+      OrigineDuPointage.POINTAGE,
+      Horodatage.saisiA(date),
+      DUREE_MAXIMALE_HUIT_HEURES
+    );
+  }
+
+  /**
    * Une non conformite ouverte d'emblee : celle qu'on pointe apres la fin d'une activite, ou a la reprise d'une pause.
    */
   public static EvenementDAtelier nonConformiteSurFraiseuse1ParDupontA(Instant date) {
@@ -195,6 +216,7 @@ public final class AtelierFixture {
       .nature(Optional.empty())
       .coutHoraire(Optional.empty())
       .tauxHoraire(Optional.empty())
+      .dureeMax(Optional.of(DUREE_MAXIMALE_TREIZE_HEURES))
       .auteur(AUTEUR_DUPONT)
       .origine(OrigineDuPointage.POINTAGE)
       .horodatage(Horodatage.saisiA(date));
@@ -261,6 +283,18 @@ public final class AtelierFixture {
     OrigineDuPointage origine,
     Horodatage horodatage
   ) {
+    return evenementDAtelier(type, activiteVisee, cle, auteur, origine, horodatage, DUREE_MAXIMALE_TREIZE_HEURES);
+  }
+
+  private static EvenementDAtelier evenementDAtelier(
+    TypeDEvenementDAtelier type,
+    Optional<ActiviteId> activiteVisee,
+    CleDActivite cle,
+    Auteur auteur,
+    OrigineDuPointage origine,
+    Horodatage horodatage,
+    MaximumActivityDuration dureeMaximale
+  ) {
     EvenementDAtelierId id = EvenementDAtelierId.newId();
 
     return EvenementDAtelier.builder()
@@ -273,6 +307,7 @@ public final class AtelierFixture {
       .nature(Optional.of(NATURE_FRAISAGE))
       .coutHoraire(Optional.of(COUT_HORAIRE_FRAISEUSE_1))
       .tauxHoraire(Optional.of(TAUX_HORAIRE_DUPONT))
+      .dureeMax(type.ouvreUneActivite() ? Optional.of(dureeMaximale) : Optional.empty())
       .auteur(auteur)
       .origine(origine)
       .horodatage(horodatage);

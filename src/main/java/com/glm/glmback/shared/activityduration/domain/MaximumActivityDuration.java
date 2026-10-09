@@ -5,18 +5,17 @@ import com.glm.glmback.shared.error.domain.NumberValueTooLowException;
 import java.time.Duration;
 
 /**
- * How long an activity may run before it ends by itself: the single source of that duration.
+ * How long an activity may run before it ends by itself, as the company has set it.
  *
  * <p>
  * The workshop reads it to compute the due time of an activity and to judge a received punch, and the pupitre reads it
- * to know that due time offline. Both contexts depend on this kernel, never on each other. It is the workshop's rule
- * today, not a company setting: a table of settings will replace {@link #standard()} later. It is strictly positive: a
- * zero or negative duration would make every activity due as soon as it begins.
+ * to know that due time offline. Both contexts receive it through the {@link MaximumActivityDurations} port, which the
+ * company settings implement: they own the value, its default and its bounds, so this kernel holds no duration of its
+ * own and the workshop and the pupitre never depend on each other. It is strictly positive: a zero or negative
+ * duration would make every activity due as soon as it begins.
  * </p>
  */
 public record MaximumActivityDuration(Duration value) {
-  private static final Duration STANDARD = Duration.ofHours(13);
-
   public MaximumActivityDuration {
     Assert.notNull("maximum activity duration", value);
     if (!value.isPositive()) {
@@ -26,9 +25,5 @@ public record MaximumActivityDuration(Duration value) {
         .value(value.toString())
         .build();
     }
-  }
-
-  public static MaximumActivityDuration standard() {
-    return new MaximumActivityDuration(STANDARD);
   }
 }

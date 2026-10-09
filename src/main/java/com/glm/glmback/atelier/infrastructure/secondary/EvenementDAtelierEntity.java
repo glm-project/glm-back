@@ -12,6 +12,7 @@ import com.glm.glmback.atelier.domain.OrigineDuPointage;
 import com.glm.glmback.atelier.domain.PosteDeTravailId;
 import com.glm.glmback.atelier.domain.TauxHoraire;
 import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
+import com.glm.glmback.shared.activityduration.domain.MaximumActivityDuration;
 import com.glm.glmback.shared.time.infrastructure.secondary.ExactInstantConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -24,6 +25,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -63,6 +65,9 @@ class EvenementDAtelierEntity {
   @Column(name = "taux_horaire", precision = 10, scale = 2)
   private BigDecimal tauxHoraire;
 
+  @Column(name = "duree_max_secondes")
+  private Long dureeMaxSecondes;
+
   private String auteur;
 
   @Enumerated(EnumType.STRING)
@@ -91,6 +96,10 @@ class EvenementDAtelierEntity {
     nature = evenement.nature().map(NatureDOperation::value).orElse(null);
     coutHoraire = evenement.coutHoraire().map(CoutHoraire::value).orElse(null);
     tauxHoraire = evenement.tauxHoraire().map(TauxHoraire::value).orElse(null);
+    dureeMaxSecondes = evenement
+      .dureeMax()
+      .map(duree -> duree.value().toSeconds())
+      .orElse(null);
     auteur = evenement.auteur().value();
     origine = evenement.origine();
     dateDeSurvenue = evenement.dateDeSurvenue();
@@ -116,6 +125,7 @@ class EvenementDAtelierEntity {
       .nature(Optional.ofNullable(nature).map(NatureDOperation::new))
       .coutHoraire(Optional.ofNullable(coutHoraire).map(CoutHoraire::new))
       .tauxHoraire(Optional.ofNullable(tauxHoraire).map(TauxHoraire::new))
+      .dureeMax(Optional.ofNullable(dureeMaxSecondes).map(secondes -> new MaximumActivityDuration(Duration.ofSeconds(secondes))))
       .auteur(new Auteur(auteur))
       .origine(origine)
       .horodatage(new Horodatage(dateDeSurvenue, dateDEnregistrement));

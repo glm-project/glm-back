@@ -29,12 +29,4 @@ class MaximumActivityDurationTest {
     assertThatThrownBy(() -> new MaximumActivityDuration(Duration.ofNanos(-1))).isExactlyInstanceOf(NumberValueTooLowException.class);
     assertThat(new MaximumActivityDuration(Duration.ofNanos(1)).value()).isEqualTo(Duration.ofNanos(1));
   }
-
-  /**
-   * The single source of the rule: an activity that nothing ended stops by itself thirteen elapsed hours after it began.
-   */
-  @Test
-  void shouldBeThirteenHoursByDefault() {
-    assertThat(MaximumActivityDuration.standard().value()).isEqualTo(Duration.ofHours(13));
-  }
 }

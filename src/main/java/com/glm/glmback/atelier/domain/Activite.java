@@ -51,8 +51,12 @@ public record Activite(EvenementDAtelier ouvrant, Optional<Instant> fin) {
     return ouvrant.dateDeSurvenue();
   }
 
+  /**
+   * Le debut plus la duree maximale que l'ouvrant a portee, c'est-a-dire celle qui etait en vigueur quand l'activite a
+   * commence, quoi que le gestionnaire ait fixe depuis.
+   */
   public Echeance echeance() {
-    return Echeance.apres(debut());
+    return Echeance.apres(debut(), ouvrant.dureeMax().orElseThrow());
   }
 
   /**

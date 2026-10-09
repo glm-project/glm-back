@@ -10,11 +10,17 @@
       ou une non conformite : l'id de ce pointage. activite_visee_id n'est renseignee que par la fin d'une
       regularisation, qui cible l'activite echue dont elle etablit la fin ; une fin pointee ne designe aucune activite,
       c'est la cle (operateur, poste) qui la donne. Le type du fait dit le reste : aucune colonne d'intention.
+
+      duree_max_secondes est la duree maximale d'activite en vigueur quand le debut ou la non conformite a ouvert
+      l'activite, copiee du parametrage de l'entreprise. L'activite en tient son echeance pour toujours : le gestionnaire
+      peut changer ce reglage, une activite deja ouverte garde sa duree. Elle est vide pour toute fin, qui n'a pas
+      d'echeance.
     </comment>
 
     <addColumn tableName="evenement_d_atelier">
       <column name="activite_id" type="uuid" />
       <column name="activite_visee_id" type="uuid" />
+      <column name="duree_max_secondes" type="bigint" />
     </addColumn>
   </changeSet>
 </databaseChangeLog>

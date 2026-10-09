@@ -1,5 +1,6 @@
 package com.glm.glmback.atelier.domain;
 
+import com.glm.glmback.shared.activityduration.domain.MaximumActivityDuration;
 import com.glm.glmback.shared.error.domain.Assert;
 import java.time.Instant;
 import java.util.Optional;
@@ -35,6 +36,7 @@ public record EvenementDAtelier(
   Optional<NatureDOperation> nature,
   Optional<CoutHoraire> coutHoraire,
   Optional<TauxHoraire> tauxHoraire,
+  Optional<MaximumActivityDuration> dureeMax,
   Auteur auteur,
   OrigineDuPointage origine,
   Horodatage horodatage
@@ -49,10 +51,11 @@ public record EvenementDAtelier(
     Assert.notNull("nature de l'operation", nature);
     Assert.notNull("cout horaire", coutHoraire);
     Assert.notNull("taux horaire", tauxHoraire);
+    Assert.notNull("duree maximale d'activite", dureeMax);
     Assert.notNull("auteur", auteur);
     Assert.notNull("origine", origine);
     Assert.notNull("horodatage", horodatage);
-    exigeLesActivitesDuType(type, activite, activiteVisee, origine);
+    exigeLesActivitesDuType(type, activite, activiteVisee, dureeMax, origine);
   }
 
   private EvenementDAtelier(EvenementDAtelierBuilder builder) {
@@ -66,6 +69,7 @@ public record EvenementDAtelier(
       builder.nature,
       builder.coutHoraire,
       builder.tauxHoraire,
+      builder.dureeMax,
       builder.auteur,
       builder.origine,
       builder.horodatage
@@ -102,16 +106,18 @@ public record EvenementDAtelier(
 
   /**
    * Seul un debut ou une non conformite ouvre une activite, et seule la fin d'une regularisation en cible une : un
-   * pointage ne designe jamais l'activite qu'il ferme, la cle la donne.
+   * pointage ne designe jamais l'activite qu'il ferme, la cle la donne. Seule une ouverture porte la duree maximale
+   * dont son activite tient son echeance.
    */
   private static void exigeLesActivitesDuType(
     TypeDEvenementDAtelier type,
     Optional<ActiviteId> activite,
     Optional<ActiviteId> activiteVisee,
+    Optional<MaximumActivityDuration> dureeMax,
     OrigineDuPointage origine
   ) {
     boolean ouvre = type.ouvreUneActivite();
-    if (activite.isPresent() != ouvre) {
+    if (activite.isPresent() != ouvre || dureeMax.isPresent() != ouvre) {
       throw new EvenementDAtelierIncoherentException(type, origine);
     }
     if (activiteVisee.isPresent() != (!ouvre && origine == OrigineDuPointage.REGULARISATION)) {
@@ -130,6 +136,7 @@ public record EvenementDAtelier(
       EvenementDAtelierNatureBuilder,
       EvenementDAtelierCoutHoraireBuilder,
       EvenementDAtelierTauxHoraireBuilder,
+      EvenementDAtelierDureeMaxBuilder,
       EvenementDAtelierAuteurBuilder,
       EvenementDAtelierOrigineBuilder,
       EvenementDAtelierHorodatageBuilder
@@ -144,6 +151,7 @@ public record EvenementDAtelier(
     private Optional<NatureDOperation> nature;
     private Optional<CoutHoraire> coutHoraire;
     private Optional<TauxHoraire> tauxHoraire;
+    private Optional<MaximumActivityDuration> dureeMax;
     private Auteur auteur;
     private OrigineDuPointage origine;
     private Horodatage horodatage;
@@ -205,8 +213,15 @@ public record EvenementDAtelier(
     }
 
     @Override
-    public EvenementDAtelierAuteurBuilder tauxHoraire(Optional<TauxHoraire> tauxHoraire) {
+    public EvenementDAtelierDureeMaxBuilder tauxHoraire(Optional<TauxHoraire> tauxHoraire) {
       this.tauxHoraire = tauxHoraire;
+
+      return this;
+    }
+
+    @Override
+    public EvenementDAtelierAuteurBuilder dureeMax(Optional<MaximumActivityDuration> dureeMax) {
+      this.dureeMax = dureeMax;
 
       return this;
     }
@@ -266,7 +281,11 @@ public record EvenementDAtelier(
   }
 
   public interface EvenementDAtelierTauxHoraireBuilder {
-    EvenementDAtelierAuteurBuilder tauxHoraire(Optional<TauxHoraire> tauxHoraire);
+    EvenementDAtelierDureeMaxBuilder tauxHoraire(Optional<TauxHoraire> tauxHoraire);
+  }
+
+  public interface EvenementDAtelierDureeMaxBuilder {
+    EvenementDAtelierAuteurBuilder dureeMax(Optional<MaximumActivityDuration> dureeMax);
   }
 
   public interface EvenementDAtelierAuteurBuilder {

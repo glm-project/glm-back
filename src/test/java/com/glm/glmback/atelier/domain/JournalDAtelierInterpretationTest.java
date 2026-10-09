@@ -116,6 +116,42 @@ class JournalDAtelierInterpretationTest {
   }
 
   /**
+   * La fin automatique se lit a l'echeance de la duree que le debut a portee : sous huit heures, une fin pointee a
+   * 16 h est sans effet et l'activite se termine automatiquement a 16 h, quand une activite sous treize heures aurait
+   * ete terminee par cette fin.
+   */
+  @Test
+  void shouldLireLaFinAutomatiqueALEcheanceDeLaDureeQueLeDebutAPortee() {
+    EvenementDAtelier sousHuitHeures = debutSurFraiseuse1ParDupontSousHuitHeuresA(LE_10_MAI_2026_A_8H);
+
+    List<Activite> activites = activites(List.of(sousHuitHeures, finDe(sousHuitHeures).a(LE_10_MAI_2026_A_17H)), Optional.empty());
+
+    assertThat(activites)
+      .singleElement()
+      .satisfies(activite -> {
+        assertThat(activite.fin()).isEmpty();
+        assertThat(activite.a(LE_11_MAI_2026_A_9H15).fin()).contains(LE_10_MAI_2026_A_16H);
+        assertThat(activite.a(LE_11_MAI_2026_A_9H15).finAutomatique()).isTrue();
+      });
+  }
+
+  /**
+   * Chaque activite garde la duree de son propre debut : un debut a 16 h, pile a l'echeance de huit heures de la
+   * premiere, ouvre une activite sous treize heures que la premiere ne raccourcit ni ne prolonge.
+   */
+  @Test
+  void shouldGarderPourChaqueActiviteLaDureeDeSonPropreDebut() {
+    EvenementDAtelier premiere = debutSurFraiseuse1ParDupontSousHuitHeuresA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier suivante = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_16H);
+
+    List<Activite> activites = activites(List.of(premiere, suivante), Optional.empty());
+
+    assertThat(activites)
+      .extracting(Activite::echeance)
+      .containsExactly(new Echeance(LE_10_MAI_2026_A_16H), new Echeance(Instant.parse("2026-05-11T05:00:00Z")));
+  }
+
+  /**
    * L'echeance est atteinte a debut plus 13 h : une fin pile a 21 h ne l'emporte pas sur la fin automatique, comme la
    * regle de reception qui l'ignore (APRES_ECHEANCE).
    */

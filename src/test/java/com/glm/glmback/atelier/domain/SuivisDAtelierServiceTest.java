@@ -5,6 +5,7 @@ import static com.glm.glmback.shared.pagination.domain.PaginationFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
+import com.glm.glmback.shared.activityduration.domain.MaximumActivityDuration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
@@ -20,6 +21,7 @@ class SuivisDAtelierServiceTest {
   private static final Instant LE_10_MAI_2026_A_22H = Instant.parse("2026-05-10T22:00:00Z");
 
   private final AtomicReference<Instant> maintenant = new AtomicReference<>(LE_10_MAI_2026_A_7H);
+  private final AtomicReference<MaximumActivityDuration> dureeMaximale = new AtomicReference<>(DUREE_MAXIMALE_TREIZE_HEURES);
   private final SuivisDAtelierEnMemoire suivis = new SuivisDAtelierEnMemoire();
   private final PointagesIgnoresEnMemoire pointagesIgnores = new PointagesIgnoresEnMemoire();
   private final RessourcesDAtelierEnMemoire ressources = RessourcesDAtelierEnMemoire.deLAtelier();
@@ -30,6 +32,7 @@ class SuivisDAtelierServiceTest {
     .postes(ressources.postes())
     .habilitations(ressources.habilitations())
     .pointagesIgnores(pointagesIgnores)
+    .dureeMaximaleDActivite(dureeMaximale::get)
     .clock(maintenant::get);
 
   @Test
@@ -394,6 +397,34 @@ class SuivisDAtelierServiceTest {
     PointageAEnregistrer commande = debutSurFraiseuse1(SuiviDAtelierId.newId());
 
     assertThatThrownBy(() -> atelier.pointe(commande)).isExactlyInstanceOf(SuiviDAtelierIntrouvableException.class);
+  }
+
+  /**
+   * L'activite est echue quand l'est la duree que son debut a portee, pas celle du reglage du jour : ouverte sous huit
+   * heures, elle se regularise des 16 h, meme si le gestionnaire est revenu a treize heures ; avant 16 h, elle n'est pas
+   * echue.
+   */
+  @Test
+  void shouldRegulariserUneActiviteEchueSelonLaDureeQueSonDebutAPortee() {
+    SuiviDAtelier engage = engage();
+    dureeMaximale.set(DUREE_MAXIMALE_HUIT_HEURES);
+    maintenant.set(LE_10_MAI_2026_A_8H);
+    SuiviDAtelier suivi = atelier.pointe(debutSurFraiseuse1(engage.id())).suivi();
+    dureeMaximale.set(DUREE_MAXIMALE_TREIZE_HEURES);
+    RegularisationAEnregistrer commande = regularisationDeLaFin(suivi, LE_10_MAI_2026_A_16H);
+
+    maintenant.set(LE_10_MAI_2026_A_16H.minusSeconds(1));
+    assertThatThrownBy(() -> atelier.regularise(commande)).isExactlyInstanceOf(ActiviteNonEchueException.class);
+    maintenant.set(LE_10_MAI_2026_A_16H);
+    RegularisationTraitee regularise = atelier.regularise(commande);
+
+    assertThat(regularise.rejeu()).isFalse();
+    assertThat(regularise.suivi().journal().evenements())
+      .last()
+      .satisfies(fin -> {
+        assertThat(fin.estUneRegularisation()).isTrue();
+        assertThat(fin.dureeMax()).isEmpty();
+      });
   }
 
   /**

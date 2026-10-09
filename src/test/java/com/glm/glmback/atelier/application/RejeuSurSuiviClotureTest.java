@@ -60,6 +60,7 @@ class RejeuSurSuiviClotureTest {
       Mockito.mock(PostesConnus.class),
       Mockito.mock(Habilitations.class),
       Mockito.mock(PointagesIgnores.class),
+      () -> DUREE_MAXIMALE_TREIZE_HEURES,
       () -> LE_10_MAI_2026_A_17H,
       new TransactionTemplate(Mockito.mock(PlatformTransactionManager.class))
     );

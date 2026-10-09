@@ -22,6 +22,7 @@ import com.glm.glmback.atelier.domain.SuiviDAtelier;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
 import com.glm.glmback.atelier.domain.SuivisDAtelierService;
+import com.glm.glmback.shared.activityduration.domain.MaximumActivityDurations;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import com.glm.glmback.shared.time.domain.Clock;
@@ -63,6 +64,7 @@ public class SuivisDAtelierApplicationService {
     PostesConnus postes,
     Habilitations habilitations,
     PointagesIgnores pointagesIgnores,
+    MaximumActivityDurations durees,
     Clock clock,
     TransactionTemplate transactions
   ) {
@@ -73,6 +75,7 @@ public class SuivisDAtelierApplicationService {
       .postes(postes)
       .habilitations(habilitations)
       .pointagesIgnores(pointagesIgnores)
+      .dureeMaximaleDActivite(durees)
       .clock(clock);
     this.annuaires = new AnnuaireDAtelierService(operateurs, postes);
     this.transactions = transactions;

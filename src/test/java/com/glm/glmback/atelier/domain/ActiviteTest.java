@@ -71,7 +71,34 @@ class ActiviteTest {
   void shouldEcheoirTreizeHeuresApresSonDebut() {
     Activite activite = Activite.ouvertePar(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H));
 
-    assertThat(activite.echeance()).isEqualTo(Echeance.apres(LE_10_MAI_2026_A_8H));
+    assertThat(activite.echeance()).isEqualTo(Echeance.apres(LE_10_MAI_2026_A_8H, DUREE_MAXIMALE_TREIZE_HEURES));
+  }
+
+  /**
+   * L'echeance tient de la duree que porte l'ouvrant : celle que le gestionnaire avait fixee au debut de l'activite.
+   */
+  @Test
+  void shouldEcheoirLaDureeQuePorteSonOuvrant() {
+    Activite activite = Activite.ouvertePar(debutSurFraiseuse1ParDupontSousHuitHeuresA(LE_10_MAI_2026_A_8H));
+
+    assertThat(activite.echeance()).isEqualTo(Echeance.apres(LE_10_MAI_2026_A_8H, DUREE_MAXIMALE_HUIT_HEURES));
+    assertThat(activite.echeance().value()).isEqualTo(LE_10_MAI_2026_A_16H);
+  }
+
+  /**
+   * Activite a 08:00 sous huit heures, lue a 16:00 : elle est terminee automatiquement a 16:00, quand une activite
+   * sous treize heures serait encore en cours.
+   */
+  @Test
+  void shouldSeTerminerAutomatiquementApresLaDureeQuePorteSonOuvrant() {
+    Activite sousHuitHeures = Activite.ouvertePar(debutSurFraiseuse1ParDupontSousHuitHeuresA(LE_10_MAI_2026_A_8H));
+    Activite sousTreizeHeures = Activite.ouvertePar(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H));
+
+    IntervalleDActivite lue = sousHuitHeures.a(LE_10_MAI_2026_A_16H);
+
+    assertThat(lue.fin()).contains(LE_10_MAI_2026_A_16H);
+    assertThat(lue.finAutomatique()).isTrue();
+    assertThat(sousTreizeHeures.a(LE_10_MAI_2026_A_16H).estOuvert()).isTrue();
   }
 
   /**
