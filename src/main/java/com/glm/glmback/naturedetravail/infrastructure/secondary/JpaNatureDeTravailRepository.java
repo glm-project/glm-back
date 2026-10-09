@@ -5,6 +5,7 @@ import com.glm.glmback.naturedetravail.domain.NatureDeTravail;
 import com.glm.glmback.naturedetravail.domain.NatureDeTravailDejaCreeeException;
 import com.glm.glmback.naturedetravail.domain.NatureDeTravailId;
 import com.glm.glmback.naturedetravail.domain.NatureDeTravailRepository;
+import com.glm.glmback.naturedetravail.domain.NatureIntrouvableException;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import java.util.Optional;
@@ -27,6 +28,16 @@ class JpaNatureDeTravailRepository implements NatureDeTravailRepository {
   public NatureDeTravail create(NatureDeTravail nature) {
     if (natures.existsById(nature.id().uuid())) {
       throw new NatureDeTravailDejaCreeeException(nature.id());
+    }
+    natures.save(NatureDeTravailEntity.from(nature));
+
+    return nature;
+  }
+
+  @Override
+  public NatureDeTravail update(NatureDeTravail nature) {
+    if (!natures.existsById(nature.id().uuid())) {
+      throw new NatureIntrouvableException(nature.id());
     }
     natures.save(NatureDeTravailEntity.from(nature));
 

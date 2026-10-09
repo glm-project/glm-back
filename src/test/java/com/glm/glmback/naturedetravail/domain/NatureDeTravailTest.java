@@ -35,4 +35,11 @@ class NatureDeTravailTest {
     assertThat(nature.id()).isEqualTo(NATURE_DE_TRAVAIL_ID_SOUDAGE);
     assertThat(nature.libelle()).isEqualTo(LIBELLE_SOUDAGE);
   }
+
+  @Test
+  void shouldKeepIdWhenRenamed() {
+    assertThat(natureDeTravailSoudage().renomme(LIBELLE_TOURNAGE)).isEqualTo(
+      new NatureDeTravail(NATURE_DE_TRAVAIL_ID_SOUDAGE, LIBELLE_TOURNAGE)
+    );
+  }
 }

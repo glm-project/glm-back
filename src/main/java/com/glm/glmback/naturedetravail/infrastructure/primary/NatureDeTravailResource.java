@@ -1,15 +1,19 @@
 package com.glm.glmback.naturedetravail.infrastructure.primary;
 
 import com.glm.glmback.naturedetravail.application.NaturesDeTravailApplicationService;
+import com.glm.glmback.naturedetravail.domain.NatureDeTravailId;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import com.glm.glmback.shared.pagination.infrastructure.primary.RestPage;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -27,7 +31,9 @@ import org.springframework.web.bind.annotation.RestController;
   Deux natures ne peuvent pas porter le meme libelle a la casse, aux accents ou aux espaces pres : « Soudage » et
   « soudâge » sont la meme.
 
-  Le gestionnaire declare les natures ; l'operateur (role USER) les consulte.
+  Renommer une nature ne modifie qu'elle : son nouveau libelle s'affiche partout, rapports passes compris.
+
+  Le gestionnaire declare et renomme les natures ; l'operateur (role USER) les consulte.
   """
 )
 class NatureDeTravailResource {
@@ -58,5 +64,20 @@ class NatureDeTravailResource {
   @ApiResponse(responseCode = "409", description = "Une nature porte deja ce libelle, a la casse ou aux accents pres.")
   RestNatureDeTravail declare(@RequestBody @Valid RestLibelleDeNature request) {
     return RestNatureDeTravail.declaree(applicationService.declare(request.toDomain()));
+  }
+
+  @PutMapping("/{id}")
+  @Operation(
+    summary = "Renommer une nature de travail",
+    description = """
+    Seule la nature change : postes et pointages n'en retiennent que l'identifiant, et le nouveau libelle s'affiche
+    partout, rapports passes compris. Changer la casse ou les accents du libelle est permis.
+    """
+  )
+  @ApiResponse(responseCode = "200", description = "La nature est renommee.")
+  @ApiResponse(responseCode = "404", description = "Nature de travail introuvable.")
+  @ApiResponse(responseCode = "409", description = "Une autre nature porte deja ce libelle, a la casse ou aux accents pres.")
+  RestNatureDeTravail renomme(@PathVariable UUID id, @RequestBody @Valid RestLibelleDeNature request) {
+    return RestNatureDeTravail.from(applicationService.renomme(new NatureDeTravailId(id), request.toDomain()));
   }
 }

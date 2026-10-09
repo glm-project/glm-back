@@ -2,6 +2,7 @@ package com.glm.glmback.naturedetravail.application;
 
 import com.glm.glmback.naturedetravail.domain.LibelleDeNature;
 import com.glm.glmback.naturedetravail.domain.NatureDeTravail;
+import com.glm.glmback.naturedetravail.domain.NatureDeTravailId;
 import com.glm.glmback.naturedetravail.domain.NatureDeTravailListee;
 import com.glm.glmback.naturedetravail.domain.NatureDeTravailRepository;
 import com.glm.glmback.naturedetravail.domain.NaturesDeTravailService;
@@ -25,6 +26,12 @@ public class NaturesDeTravailApplicationService {
   @Transactional
   public NatureDeTravail declare(LibelleDeNature libelle) {
     return natures.declare(libelle);
+  }
+
+  @Secured("ROLE_GESTIONNAIRE")
+  @Transactional
+  public NatureDeTravailListee renomme(NatureDeTravailId id, LibelleDeNature libelle) {
+    return natures.renomme(id, libelle);
   }
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })

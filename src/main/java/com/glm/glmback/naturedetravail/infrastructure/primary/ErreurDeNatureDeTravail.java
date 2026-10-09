@@ -4,6 +4,7 @@ import com.glm.glmback.shared.error.infrastructure.primary.ProblemCode;
 import org.springframework.http.HttpStatus;
 
 enum ErreurDeNatureDeTravail implements ProblemCode {
+  NATURE_INTROUVABLE(HttpStatus.NOT_FOUND, "nature introuvable"),
   NATURE_DEJA_EXISTANTE(HttpStatus.CONFLICT, "nature deja existante");
 
   private final HttpStatus status;

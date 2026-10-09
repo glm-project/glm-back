@@ -8,8 +8,10 @@ import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
@@ -22,6 +24,8 @@ public class NatureDeTravailSteps {
   @Autowired
   private CucumberRestClient rest;
 
+  private final Map<String, String> ids = new HashMap<>();
+
   @When("je declare la nature de travail {string}")
   public void jeDeclareLaNatureDeTravail(String libelle) {
     rest.post(BASE_URI, JSON.writeValueAsString(Map.of("libelle", libelle)));
@@ -31,6 +35,17 @@ public class NatureDeTravailSteps {
   public void jaiDeclareLaNatureDeTravail(String libelle) {
     jeDeclareLaNatureDeTravail(libelle);
     assertThatLastResponse().hasHttpStatus(201);
+    ids.put(libelle, (String) CucumberRestTestContext.getElement("$.id"));
+  }
+
+  @When("je renomme la nature de travail {string} en {string}")
+  public void jeRenommeLaNatureDeTravailEn(String libelle, String nouveauLibelle) {
+    rest.put(BASE_URI + "/" + ids.get(libelle), JSON.writeValueAsString(Map.of("libelle", nouveauLibelle)));
+  }
+
+  @When("je renomme une nature de travail inconnue en {string}")
+  public void jeRenommeUneNatureDeTravailInconnueEn(String nouveauLibelle) {
+    rest.put(BASE_URI + "/" + UUID.randomUUID(), JSON.writeValueAsString(Map.of("libelle", nouveauLibelle)));
   }
 
   @When("je liste les natures de travail")
@@ -53,6 +68,14 @@ public class NatureDeTravailSteps {
     List<String> attendus = List.of(libelles.split("\\s*,\\s*"));
 
     assertThat(libelles().stream().filter(attendus::contains).toList()).containsExactlyElementsOf(attendus);
+  }
+
+  @Then("la nature de travail {string} est listee sous le libelle {string}")
+  public void laNatureDeTravailEstListeeSousLeLibelle(String libelle, String libelleListe) {
+    jeListeLesNaturesDeTravail();
+    assertThat(CucumberRestTestContext.getElement("$.content[?(@.id == '" + ids.get(libelle) + "')].libelle")).isEqualTo(
+      List.of(libelleListe)
+    );
   }
 
   @SuppressWarnings("unchecked")

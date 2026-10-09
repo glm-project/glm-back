@@ -6,8 +6,8 @@ Responsabilité, frontières et invariants de ce contexte. Les règles de code c
 
 ## Ce dont ce contexte s'occupe
 
-Le **référentiel des métiers exercés dans l'atelier** : soudage, tournage, fraisage, dessin. Déclarer les natures et
-les lister par ordre alphabétique, en disant pour chacune si elle sert déjà.
+Le **référentiel des métiers exercés dans l'atelier** : soudage, tournage, fraisage, dessin. Déclarer et renommer les
+natures, et les lister par ordre alphabétique, en disant pour chacune si elle sert déjà.
 
 ## Ce dont il ne s'occupe pas
 
@@ -26,6 +26,8 @@ les lister par ordre alphabétique, en disant pour chacune si elle sert déjà.
 - **Le libellé est unique par entreprise à la casse, aux accents et aux espaces près.** L'unicité se juge sur la
   `CleDeNature` (minuscules, sans accents, espaces réduits à un seul), jamais sur le libellé. La garde vit dans
   `NaturesDeTravailService` ; la contrainte `ux_nature_de_travail_cle` est le filet.
+- **Un renommage ne touche que la nature** : la transition `NatureDeTravail.renomme` conserve l'identifiant. Une
+  nature peut reprendre sa propre clé, pour changer la casse ou les accents de son libellé.
 - **Le libellé est rogné à la construction** : de 1 à 50 caractères une fois les espaces qui l'entourent retirés.
 - **L'ordre de lecture est total** : clé, puis identifiant.
 - **Les usages d'une page se lisent en une requête** (`NaturesEnUsage.utiliseesParmi`). Rien ne référence encore une

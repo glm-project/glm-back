@@ -159,9 +159,11 @@ segment de contexte, et lui seul, qui les distingue.
 
 | Code                    | Statut | `title`               | Exception                      |
 | ----------------------- | ------ | --------------------- | ------------------------------ |
+| `nature-introuvable`    | 404    | nature introuvable    | `NatureIntrouvableException`   |
 | `nature-deja-existante` | 409    | nature deja existante | `NatureDejaExistanteException` |
 
-`nature-deja-existante` refuse un libellé qu'une autre nature porte déjà, à la casse, aux accents ou aux espaces près.
+`nature-deja-existante` refuse un libellé qu'une autre nature porte déjà, à la casse, aux accents ou aux espaces près,
+à la déclaration comme au renommage.
 
 ### `parametrage` — `urn:glm:erreur:parametrage:`
 

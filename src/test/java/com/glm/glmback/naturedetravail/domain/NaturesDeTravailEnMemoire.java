@@ -26,6 +26,16 @@ final class NaturesDeTravailEnMemoire implements NatureDeTravailRepository {
   }
 
   @Override
+  public NatureDeTravail update(NatureDeTravail nature) {
+    NatureDeTravail precedente = natures.replace(nature.id(), nature);
+    if (precedente == null) {
+      throw new NatureIntrouvableException(nature.id());
+    }
+
+    return nature;
+  }
+
+  @Override
   public Optional<NatureDeTravail> get(NatureDeTravailId id) {
     return Optional.ofNullable(natures.get(id));
   }

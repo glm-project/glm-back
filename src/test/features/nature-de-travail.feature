@@ -61,3 +61,41 @@ Feature: Natures de travail
   Scenario: Cinquante caracteres entoures d'espaces sont acceptes
     When je declare la nature de travail "  Une nature au libelle de cinquante caracteres CNHI  "
     Then la reponse a le statut http 201
+
+  Scenario: Renommage d'une nature de travail
+    Given j'ai declare la nature de travail "Soudure CNJ"
+    When je renomme la nature de travail "Soudure CNJ" en "Soudage CNJ"
+    Then la reponse a le statut http 200
+    And la reponse de nature de travail contient
+      | libelle | Soudage CNJ |
+    And la nature de travail "Soudure CNJ" est listee sous le libelle "Soudage CNJ"
+
+  Scenario: Une nature peut changer la casse et les accents de son libelle
+    Given j'ai declare la nature de travail "electro-erosion CNK"
+    When je renomme la nature de travail "electro-erosion CNK" en "Électro-érosion CNK"
+    Then la reponse a le statut http 200
+    And la nature de travail "electro-erosion CNK" est listee sous le libelle "Électro-érosion CNK"
+
+  Scenario: Renommage refuse si une autre nature porte deja ce libelle a la casse ou aux accents pres
+    Given j'ai declare la nature de travail "Fraisage CNL"
+    And j'ai declare la nature de travail "Tournage CNL"
+    When je renomme la nature de travail "Tournage CNL" en "FRAISÂGE CNL"
+    Then la reponse a le statut http 409
+    And la reponse porte le code d'erreur "urn:glm:erreur:nature-de-travail:nature-deja-existante"
+    And la nature de travail "Tournage CNL" est listee sous le libelle "Tournage CNL"
+
+  Scenario: Renommage d'une nature inexistante renvoie 404
+    When je renomme une nature de travail inconnue en "Soudage CNM"
+    Then la reponse a le statut http 404
+    And la reponse porte le code d'erreur "urn:glm:erreur:nature-de-travail:nature-introuvable"
+
+  Scenario: Renommage refuse sans libelle
+    Given j'ai declare la nature de travail "Dessin CNN"
+    When je renomme la nature de travail "Dessin CNN" en " "
+    Then la reponse a le statut http 400
+
+  Scenario: Renommage refuse a un utilisateur simple
+    Given j'ai declare la nature de travail "Dessin CNO"
+    And I am logged in as "user" with role "USER"
+    When je renomme la nature de travail "Dessin CNO" en "Dessin industriel CNO"
+    Then la reponse a le statut http 403

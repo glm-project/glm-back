@@ -45,6 +45,52 @@ class NaturesDeTravailServiceTest {
   }
 
   @Test
+  void shouldRenameNature() {
+    repository.create(natureDeTravailSoudage());
+
+    NatureDeTravailListee renommee = natures.renomme(NATURE_DE_TRAVAIL_ID_SOUDAGE, new LibelleDeNature("Soudure"));
+
+    NatureDeTravail attendue = new NatureDeTravail(NATURE_DE_TRAVAIL_ID_SOUDAGE, new LibelleDeNature("Soudure"));
+    assertThat(renommee).isEqualTo(new NatureDeTravailListee(attendue, false));
+    assertThat(repository.get(NATURE_DE_TRAVAIL_ID_SOUDAGE)).contains(attendue);
+  }
+
+  @Test
+  void shouldTellWhetherRenamedNatureIsUsed() {
+    repository.create(natureDeTravailSoudage());
+    usages.utilise(NATURE_DE_TRAVAIL_ID_SOUDAGE);
+
+    assertThat(natures.renomme(NATURE_DE_TRAVAIL_ID_SOUDAGE, LIBELLE_TOURNAGE).utilisee()).isTrue();
+  }
+
+  @Test
+  void shouldRenameNatureToItsOwnKey() {
+    repository.create(natureDeTravailSoudage());
+
+    assertThat(natures.renomme(NATURE_DE_TRAVAIL_ID_SOUDAGE, new LibelleDeNature("SOUDÂGE")).nature().libelle()).isEqualTo(
+      new LibelleDeNature("SOUDÂGE")
+    );
+  }
+
+  @Test
+  void shouldNotRenameNatureToAnotherOnesKey() {
+    repository.create(natureDeTravailSoudage());
+    repository.create(natureDeTravailTournage());
+
+    assertThatThrownBy(() -> natures.renomme(NATURE_DE_TRAVAIL_ID_SOUDAGE, new LibelleDeNature("tournage")))
+      .isExactlyInstanceOf(NatureDejaExistanteException.class)
+      .hasMessageContaining("tournage");
+    assertThat(repository.get(NATURE_DE_TRAVAIL_ID_SOUDAGE)).contains(natureDeTravailSoudage());
+  }
+
+  @Test
+  void shouldNotRenameUnknownNature() {
+    assertThatThrownBy(() -> natures.renomme(NATURE_DE_TRAVAIL_ID_SOUDAGE, LIBELLE_TOURNAGE))
+      .isExactlyInstanceOf(NatureIntrouvableException.class)
+      .hasMessageContaining(NATURE_DE_TRAVAIL_ID_SOUDAGE.uuid().toString());
+  }
+
+  @Test
   void shouldListNaturesByKey() {
     repository.create(natureDeTravailTournage());
     repository.create(natureDeTravailSoudage());

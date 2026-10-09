@@ -3123,6 +3123,65 @@
         "tags" : [ "Natures de travail" ]
       }
     },
+    "/api/natures-de-travail/{id}" : {
+      "put" : {
+        "description" : "Seule la nature change : postes et pointages n'en retiennent que l'identifiant, et le nouveau libelle s'affiche\npartout, rapports passes compris. Changer la casse ou les accents du libelle est permis.\n",
+        "operationId" : "renomme",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RestLibelleDeNature"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestNatureDeTravail"
+                }
+              }
+            },
+            "description" : "La nature est renommee."
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestNatureDeTravail"
+                }
+              }
+            },
+            "description" : "Nature de travail introuvable."
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestNatureDeTravail"
+                }
+              }
+            },
+            "description" : "Une autre nature porte deja ce libelle, a la casse ou aux accents pres."
+          }
+        },
+        "summary" : "Renommer une nature de travail",
+        "tags" : [ "Natures de travail" ]
+      }
+    },
     "/api/operateurs" : {
       "get" : {
         "description" : "La page demandee, triee par nom puis prenom. Le filtre sur le poste repond a la question du pupitre : qui est\nhabilite sur ce poste ? Absent, il ne filtre rien.\n",
@@ -3794,6 +3853,9 @@
     "description" : "Le temps passe sur un element de fabrication, valorise par nature d'operation.",
     "name" : "Couts de revient"
   }, {
+    "description" : "Les metiers exerces dans l'atelier : soudage, tournage, fraisage, dessin. L'entreprise les declare une fois, et les\npostes de travail les choisissent dans cette liste.\n\nDeux natures ne peuvent pas porter le meme libelle a la casse, aux accents ou aux espaces pres : « Soudage » et\n« soudâge » sont la meme.\n\nRenommer une nature ne modifie qu'elle : son nouveau libelle s'affiche partout, rapports passes compris.\n\nLe gestionnaire declare et renomme les natures ; l'operateur (role USER) les consulte.\n",
+    "name" : "Natures de travail"
+  }, {
     "description" : "Le referentiel de ce sur quoi les operateurs pointent : une machine, un etabli, un four, une salle.\n\nChaque poste porte la nature du travail qui s'y fait. C'est de la que vient le metier exerce a un instant donne :\nl'operateur qui demarre sur le poste de soudure soude, celui qui demarre sur un tour tourne. Rien de tout cela n'est\ndeclare sur la personne.\n\nLe gestionnaire declare et revise les postes ; l'operateur (role USER) les consulte.\n",
     "name" : "Postes de travail"
   }, {
@@ -3808,8 +3870,5 @@
   }, {
     "description" : "Le referentiel des personnes qui pointent, et des postes sur lesquels elles sont habilitees.\n\nLes metiers d'un operateur ne se saisissent pas : ils se deduisent des natures de ses postes. Un operateur habilite\nsur le poste de soudure et sur un tour ressort soudeur et tourneur.\n\nEn entree, l'operateur porte des identifiants de postes ; en sortie, il porte les postes resolus et ses natures, pour\nqu'un ecran se serve d'un seul appel.\n",
     "name" : "Operateurs"
-  }, {
-    "description" : "Les metiers exerces dans l'atelier : soudage, tournage, fraisage, dessin. L'entreprise les declare une fois, et les\npostes de travail les choisissent dans cette liste.\n\nDeux natures ne peuvent pas porter le meme libelle a la casse, aux accents ou aux espaces pres : « Soudage » et\n« soudâge » sont la meme.\n\nLe gestionnaire declare les natures ; l'operateur (role USER) les consulte.\n",
-    "name" : "Natures de travail"
   } ]
 }

@@ -7,6 +7,8 @@ import java.util.Optional;
 public interface NatureDeTravailRepository {
   NatureDeTravail create(NatureDeTravail nature);
 
+  NatureDeTravail update(NatureDeTravail nature);
+
   Optional<NatureDeTravail> get(NatureDeTravailId id);
 
   Optional<NatureDeTravailId> idPourCle(CleDeNature cle);

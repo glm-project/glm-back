@@ -2,6 +2,7 @@ package com.glm.glmback.naturedetravail.domain;
 
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
+import java.util.List;
 import java.util.Set;
 
 public final class NaturesDeTravailService {
@@ -15,9 +16,20 @@ public final class NaturesDeTravailService {
   }
 
   public NatureDeTravail declare(LibelleDeNature libelle) {
-    verifierLibelleLibre(libelle);
+    NatureDeTravailId id = NatureDeTravailId.newId();
+    verifierLibelleLibre(id, libelle);
 
-    return repository.create(new NatureDeTravail(NatureDeTravailId.newId(), libelle));
+    return repository.create(new NatureDeTravail(id, libelle));
+  }
+
+  /**
+   * Une nature peut reprendre sa propre cle : changer la casse ou les accents de son libelle reste permis.
+   */
+  public NatureDeTravailListee renomme(NatureDeTravailId id, LibelleDeNature libelle) {
+    NatureDeTravail existante = repository.get(id).orElseThrow(() -> new NatureIntrouvableException(id));
+    verifierLibelleLibre(id, libelle);
+
+    return new NatureDeTravailListee(repository.update(existante.renomme(libelle)), !usages.utiliseesParmi(List.of(id)).isEmpty());
   }
 
   /**
@@ -41,11 +53,15 @@ public final class NaturesDeTravailService {
   }
 
   /**
-   * L'unicite se juge sur la cle, pas sur le libelle : « Soudage » et « soudâge » sont la meme nature.
+   * L'unicite se juge sur la cle, pas sur le libelle : « Soudage » et « soudâge » sont la meme nature. A la creation,
+   * l'identifiant vient d'etre tire et ne peut detenir aucune cle ; au renommage, la nature ne se heurte pas a elle-meme.
    */
-  private void verifierLibelleLibre(LibelleDeNature libelle) {
-    if (repository.idPourCle(libelle.cle()).isPresent()) {
-      throw new NatureDejaExistanteException(libelle);
-    }
+  private void verifierLibelleLibre(NatureDeTravailId id, LibelleDeNature libelle) {
+    repository
+      .idPourCle(libelle.cle())
+      .filter(detenteur -> !detenteur.equals(id))
+      .ifPresent(detenteur -> {
+        throw new NatureDejaExistanteException(libelle);
+      });
   }
 }

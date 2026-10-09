@@ -8,6 +8,7 @@ import com.glm.glmback.naturedetravail.domain.NatureDeTravail;
 import com.glm.glmback.naturedetravail.domain.NatureDeTravailDejaCreeeException;
 import com.glm.glmback.naturedetravail.domain.NatureDeTravailId;
 import com.glm.glmback.naturedetravail.domain.NatureDeTravailRepository;
+import com.glm.glmback.naturedetravail.domain.NatureIntrouvableException;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurityContexts;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.pagination.domain.Pageable;
@@ -58,6 +59,27 @@ class JpaNatureDeTravailRepositoryIT {
   @WithTenant(NATURES_FIXTURE)
   void shouldNotGetUnknownNature() {
     assertThat(inTransaction(() -> natures.get(NatureDeTravailId.newId()))).isEmpty();
+  }
+
+  @Test
+  @WithTenant(NATURES_FIXTURE)
+  void shouldUpdateNature() {
+    NatureDeTravail nature = natureDeTest("Meulage");
+    inTransaction(() -> natures.create(nature));
+    NatureDeTravail renommee = nature.renomme(new LibelleDeNature("Polissage " + suffixe(nature)));
+
+    inTransaction(() -> natures.update(renommee));
+
+    assertThat(inTransaction(() -> natures.get(nature.id()))).contains(renommee);
+    assertThat(inTransaction(() -> natures.idPourCle(renommee.libelle().cle()))).contains(nature.id());
+  }
+
+  @Test
+  @WithTenant(NATURES_FIXTURE)
+  void shouldNotUpdateUnknownNature() {
+    NatureDeTravail inconnue = natureDeTest("Inconnue");
+
+    assertThatThrownBy(() -> inTransaction(() -> natures.update(inconnue))).isExactlyInstanceOf(NatureIntrouvableException.class);
   }
 
   @Test
