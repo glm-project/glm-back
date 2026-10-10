@@ -66,8 +66,10 @@ class CoutDeRevientResource {
     description = """
     Le meme rapport que la lecture, mis en forme pour le client : aucun montant n'est recalcule ni arrondi a nouveau.
 
-    L'onglet Synthese porte l'element, l'instant de generation (l'evaluation du rapport) et une ligne par nature
-    avec le total. Montants et durees sont des nombres (durees en heures decimales), les dates de vraies dates Excel
+    L'onglet Synthese porte l'element, son statut, l'instant de generation (l'evaluation du rapport) et une ligne par
+    nature avec le total. L'element est "Termine le" sa derniere cloture quand tous ses passages en atelier sont clos
+    et qu'aucune activite n'est en cours ; sinon il est "En cours", et le classeur est une photographie a l'instant de
+    generation. Montants et durees sont des nombres (durees en heures decimales), les dates de vraies dates Excel
     dans le fuseau de l'entreprise ; un cout de 0 EUR garde sa valeur sous un format qui l'affiche vide.
     """
   )

@@ -9,6 +9,7 @@ import com.glm.glmback.coutderevient.domain.ElementsValorisables;
 import com.glm.glmback.coutderevient.domain.FuseauHoraireDeLEntreprise;
 import com.glm.glmback.coutderevient.domain.OccupationDesOperateurs;
 import com.glm.glmback.coutderevient.domain.OperateursNommes;
+import com.glm.glmback.coutderevient.domain.PassagesEnAtelier;
 import com.glm.glmback.coutderevient.domain.PostesNommes;
 import com.glm.glmback.coutderevient.domain.TravailDeLElement;
 import com.glm.glmback.shared.time.domain.Clock;
@@ -35,6 +36,7 @@ public class CoutsDeRevientApplicationService {
     OccupationDesOperateurs occupations,
     OperateursNommes operateursNommes,
     PostesNommes postesNommes,
+    PassagesEnAtelier passages,
     FuseauHoraireDeLEntreprise fuseau,
     Clock clock
   ) {
@@ -45,7 +47,7 @@ public class CoutsDeRevientApplicationService {
       .operateursNommes(operateursNommes)
       .postesNommes(postesNommes)
       .clock(clock);
-    this.comptesRendus = new ComptesRendusDuCout(coutsDeRevient, fuseau);
+    this.comptesRendus = new ComptesRendusDuCout(coutsDeRevient, passages, fuseau);
   }
 
   /**

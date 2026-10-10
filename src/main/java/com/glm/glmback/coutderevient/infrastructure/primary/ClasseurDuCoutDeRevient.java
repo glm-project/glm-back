@@ -6,13 +6,16 @@ import com.glm.glmback.coutderevient.domain.DureeTotale;
 import com.glm.glmback.coutderevient.domain.LigneDeCout;
 import com.glm.glmback.coutderevient.domain.MontantTotal;
 import com.glm.glmback.coutderevient.domain.NatureDOperation;
+import com.glm.glmback.coutderevient.domain.StatutDeLElement;
 import com.glm.glmback.coutderevient.domain.TempsPasse;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Font;
@@ -44,6 +47,7 @@ final class ClasseurDuCoutDeRevient {
   private static final String FORMAT_EURO = "#,##0.00 \"€\";-#,##0.00 \"€\";\"\"";
   private static final String FORMAT_HEURES = "0.00";
   private static final String FORMAT_DATE = "dd/mm/yyyy hh:mm";
+  private static final DateTimeFormatter CLOTURE = DateTimeFormatter.ofPattern("d MMM yyyy 'à' HH:mm", Locale.FRENCH);
   private static final double SECONDES_PAR_HEURE = 3600;
   private static final int LARGEUR_D_UN_CARACTERE = 256;
   private static final short TAILLE_DU_TITRE = 16;
@@ -88,7 +92,7 @@ final class ClasseurDuCoutDeRevient {
 
   static byte[] de(CompteRenduDuCout compteRendu) throws IOException {
     try (XSSFWorkbook classeur = new XSSFWorkbook(); ByteArrayOutputStream sortie = new ByteArrayOutputStream()) {
-      new ClasseurDuCoutDeRevient(classeur, compteRendu.fuseau()).synthese(compteRendu.rapport());
+      new ClasseurDuCoutDeRevient(classeur, compteRendu.fuseau()).synthese(compteRendu.rapport(), compteRendu.statut());
       classeur.write(sortie);
       return sortie.toByteArray();
     }
@@ -98,15 +102,16 @@ final class ClasseurDuCoutDeRevient {
     return "cout-de-revient-%s.xlsx".formatted(compteRendu.rapport().element().nom().value());
   }
 
-  private void synthese(CoutDeRevient rapport) {
+  private void synthese(CoutDeRevient rapport, StatutDeLElement statut) {
     XSSFSheet feuille = classeur.createSheet("Synthèse");
     texte(feuille.createRow(0), 0, "Coût de revient").setCellStyle(titre);
     enTete(feuille.createRow(1), "Élément")
       .createCell(1)
       .setCellValue("%s · %s".formatted(rapport.element().categorie().value(), rapport.element().nom().value()));
-    instant(enTete(feuille.createRow(2), "Généré le"), 1, rapport.lecture().evaluation()).setCellStyle(date);
+    texte(enTete(feuille.createRow(2), "Statut"), 1, statut(statut));
+    instant(enTete(feuille.createRow(3), "Généré le"), 1, rapport.lecture().evaluation()).setCellStyle(date);
 
-    int entete = 4;
+    int entete = 5;
     Row colonnes = feuille.createRow(entete);
     for (int colonne = 0; colonne < COLONNES_DES_NATURES.size(); colonne++) {
       texte(colonnes, colonne, COLONNES_DES_NATURES.get(colonne));
@@ -182,6 +187,17 @@ final class ClasseurDuCoutDeRevient {
     var cellule = ligne.createCell(colonne);
     cellule.setCellValue(LocalDateTime.ofInstant(valeur, fuseau));
     return cellule;
+  }
+
+  /**
+   * Un element termine dit quand, a l'heure de l'entreprise ; un element en cours fait du compte rendu une
+   * photographie a l'instant de generation.
+   */
+  private String statut(StatutDeLElement statut) {
+    return statut
+      .termineLe()
+      .map(cloture -> "Terminé le " + CLOTURE.format(cloture.atZone(fuseau)))
+      .orElse("En cours");
   }
 
   private static String nature(LigneDeCout ligne) {

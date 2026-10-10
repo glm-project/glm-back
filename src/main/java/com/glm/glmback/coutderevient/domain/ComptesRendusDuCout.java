@@ -4,14 +4,17 @@ package com.glm.glmback.coutderevient.domain;
 public final class ComptesRendusDuCout {
 
   private final CoutsDeRevientService coutsDeRevient;
+  private final PassagesEnAtelier passages;
   private final FuseauHoraireDeLEntreprise fuseau;
 
-  public ComptesRendusDuCout(CoutsDeRevientService coutsDeRevient, FuseauHoraireDeLEntreprise fuseau) {
+  public ComptesRendusDuCout(CoutsDeRevientService coutsDeRevient, PassagesEnAtelier passages, FuseauHoraireDeLEntreprise fuseau) {
     this.coutsDeRevient = coutsDeRevient;
+    this.passages = passages;
     this.fuseau = fuseau;
   }
 
   public CompteRenduDuCout compteRendu(ElementId element) {
-    return new CompteRenduDuCout(coutsDeRevient.rapport(element), fuseau.zone());
+    CoutDeRevient rapport = coutsDeRevient.rapport(element);
+    return new CompteRenduDuCout(rapport, StatutDeLElement.de(passages.passages(element), rapport.lecture()), fuseau.zone());
   }
 }

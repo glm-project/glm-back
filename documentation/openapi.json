@@ -2813,7 +2813,7 @@
     },
     "/api/couts-de-revient/{elementId}/export.xlsx" : {
       "get" : {
-        "description" : "Le meme rapport que la lecture, mis en forme pour le client : aucun montant n'est recalcule ni arrondi a nouveau.\n\nL'onglet Synthese porte l'element, l'instant de generation (l'evaluation du rapport) et une ligne par nature\navec le total. Montants et durees sont des nombres (durees en heures decimales), les dates de vraies dates Excel\ndans le fuseau de l'entreprise ; un cout de 0 EUR garde sa valeur sous un format qui l'affiche vide.\n",
+        "description" : "Le meme rapport que la lecture, mis en forme pour le client : aucun montant n'est recalcule ni arrondi a nouveau.\n\nL'onglet Synthese porte l'element, son statut, l'instant de generation (l'evaluation du rapport) et une ligne par\nnature avec le total. L'element est \"Termine le\" sa derniere cloture quand tous ses passages en atelier sont clos\net qu'aucune activite n'est en cours ; sinon il est \"En cours\", et le classeur est une photographie a l'instant de\ngeneration. Montants et durees sont des nombres (durees en heures decimales), les dates de vraies dates Excel\ndans le fuseau de l'entreprise ; un cout de 0 EUR garde sa valeur sous un format qui l'affiche vide.\n",
         "operationId" : "exporteEnExcel",
         "parameters" : [ {
           "description" : "Identifiant de l'element de fabrication.",

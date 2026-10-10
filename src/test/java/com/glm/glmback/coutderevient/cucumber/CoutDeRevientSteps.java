@@ -270,7 +270,14 @@ public class CoutDeRevientSteps {
   @Then("le classeur est genere le {string}, heure de l'entreprise")
   public void leClasseurEstGenereLe(String generation) throws IOException {
     try (XSSFWorkbook classeur = classeurRecu()) {
-      assertThat(classeur.getSheet("Synthèse").getRow(2).getCell(1).getLocalDateTimeCellValue()).isEqualTo(LocalDateTime.parse(generation));
+      assertThat(classeur.getSheet("Synthèse").getRow(3).getCell(1).getLocalDateTimeCellValue()).isEqualTo(LocalDateTime.parse(generation));
+    }
+  }
+
+  @Then("le classeur dit l'element {string}")
+  public void leClasseurDitLElement(String statut) throws IOException {
+    try (XSSFWorkbook classeur = classeurRecu()) {
+      assertThat(classeur.getSheet("Synthèse").getRow(2).getCell(1).getStringCellValue()).isEqualTo(statut);
     }
   }
 
