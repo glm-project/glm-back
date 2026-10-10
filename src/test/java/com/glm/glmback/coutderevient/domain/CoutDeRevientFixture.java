@@ -1,11 +1,17 @@
 package com.glm.glmback.coutderevient.domain;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import javax.imageio.ImageIO;
 
 /**
  * Le 11 mai 2026, une journee de 8 h a 17 h, et de quoi la valoriser.
@@ -155,6 +161,32 @@ public final class CoutDeRevientFixture {
   public static final CoutDeRevient COUT_DE_REVIENT_VIDE = coutDeRevient(List.of());
 
   private CoutDeRevientFixture() {}
+
+  public static LogoDeLEntreprise logoPngDe256Sur100() {
+    return new LogoDeLEntreprise(image("png", 256, 100), FormatDuLogo.PNG);
+  }
+
+  public static LogoDeLEntreprise logoPngDe300Sur40() {
+    return new LogoDeLEntreprise(image("png", 300, 40), FormatDuLogo.PNG);
+  }
+
+  public static LogoDeLEntreprise logoJpegDe100Sur100() {
+    return new LogoDeLEntreprise(image("jpeg", 100, 100), FormatDuLogo.JPEG);
+  }
+
+  public static LogoDeLEntreprise logoIllisible() {
+    return new LogoDeLEntreprise("ceci n'est pas une image".getBytes(StandardCharsets.UTF_8), FormatDuLogo.JPEG);
+  }
+
+  private static byte[] image(String format, int largeur, int hauteur) {
+    BufferedImage image = new BufferedImage(largeur, hauteur, BufferedImage.TYPE_INT_RGB);
+    try (ByteArrayOutputStream sortie = new ByteArrayOutputStream()) {
+      ImageIO.write(image, format, sortie);
+      return sortie.toByteArray();
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
 
   private static CoutDeRevient coutDeRevient(List<TrancheDActivite> tranches) {
     return CoutDeRevient.builder()

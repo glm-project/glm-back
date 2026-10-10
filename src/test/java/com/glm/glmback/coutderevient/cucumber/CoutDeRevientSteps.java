@@ -24,6 +24,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
@@ -261,6 +267,54 @@ public class CoutDeRevientSteps {
   public void jExporteEnExcel(String element, String instant) {
     horloge.ilEst(Instant.parse(instant));
     rest.get(RAPPORTS_URI + "/" + elements.get(element) + "/export.xlsx");
+  }
+
+  @When("j'exporte en PDF {string} le cout de revient de {string} a {string}")
+  public void jExporteEnPdf(String version, String element, String instant) {
+    horloge.ilEst(Instant.parse(instant));
+    rest.get(RAPPORTS_URI + "/" + elements.get(element) + "/export.pdf?version=" + version);
+  }
+
+  @Then("le PDF recu est nomme d'apres {string} en version {string}")
+  public void lePdfRecuEstNomme(String element, String version) {
+    assertThat(CucumberRestTestContext.getResponseHeader("Content-Type")).containsExactly("application/pdf");
+    assertThat(CucumberRestTestContext.getResponseHeader("Content-Disposition")).containsExactly(
+      "attachment; filename=\"cout-de-revient-%s-%s.pdf\"".formatted(noms.get(element), version)
+    );
+  }
+
+  @Then("le PDF porte les lignes")
+  public void lePdfPorteLesLignes(List<String> lignes) throws IOException {
+    try (PDDocument pdf = Loader.loadPDF(CucumberRestTestContext.getResponseBytes())) {
+      String texte = new PDFTextStripper().getText(pdf).replace('\u202f', ' ').replaceAll("[ \\t]+", " ");
+      assertThat(texte.lines().map(String::strip).toList()).containsSubsequence(lignes.stream().map(this::avecLesNoms).toList());
+    }
+  }
+
+  @Then("le PDF porte en en-tete un logo de {int} x {int} pixels")
+  public void lePdfPorteUnLogo(int largeur, int hauteur) throws IOException {
+    try (PDDocument pdf = Loader.loadPDF(CucumberRestTestContext.getResponseBytes())) {
+      PDResources ressources = pdf.getPage(0).getResources();
+      List<String> images = new ArrayList<>();
+      for (COSName nom : ressources.getXObjectNames()) {
+        if (ressources.getXObject(nom) instanceof PDImageXObject image) {
+          images.add(image.getWidth() + " x " + image.getHeight());
+        }
+      }
+      assertThat(images).containsExactly(largeur + " x " + hauteur);
+    }
+  }
+
+  /** Les postes et operateurs des scenarios portent un suffixe unique : le texte attendu les cite par leur alias. */
+  private String avecLesNoms(String ligne) {
+    String nommee = ligne;
+    for (Map.Entry<String, String> poste : libelles.entrySet()) {
+      nommee = nommee.replace("{" + poste.getKey() + "}", poste.getValue());
+    }
+    for (Map.Entry<String, String> operateur : nomsDesOperateurs.entrySet()) {
+      nommee = nommee.replace("{" + operateur.getKey() + "}", operateur.getValue());
+    }
+    return nommee;
   }
 
   @Then("le classeur recu est nomme d'apres {string}")

@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Pattern;
 import java.io.IOException;
 import java.util.UUID;
 import org.springframework.http.ContentDisposition;
@@ -17,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -106,5 +108,52 @@ class CoutDeRevientResource {
         ContentDisposition.attachment().filename(ClasseurDuCoutDeRevient.nomDeFichier(compteRendu)).build().toString()
       )
       .body(ClasseurDuCoutDeRevient.de(compteRendu));
+  }
+
+  @GetMapping(path = "/{elementId}/export.pdf", produces = "application/pdf")
+  @Operation(
+    summary = "Exporter le cout de revient d'un element en PDF",
+    description = """
+    Le compte rendu remis au client, genere par le serveur en A4 paysage a partir du meme rapport que la lecture :
+    aucun montant n'est recalcule ni arrondi a nouveau, et un cout de 0 EUR n'est pas affiche.
+
+    La version synthese porte l'element, son statut, l'instant de generation, les indicateurs et une ligne par nature
+    avec le total ; la version detail y ajoute, pour chaque nature, le tableau de ses pointages. L'en-tete et le pied
+    se repetent sur chaque page, numerotee ; l'en-tete porte le logo de l'entreprise s'il en a un, ajuste a sa case
+    sans deformation.
+
+    Memes refus que le classeur : 409 (rapport-non-exportable) pour une fin automatique non regularisee ou un tarif
+    manquant.
+    """
+  )
+  @ApiResponse(
+    responseCode = "200",
+    description = "Le PDF, en piece jointe nommee d'apres l'element et la version (cout-de-revient-OF-2026-000001-synthese.pdf).",
+    content = @Content(mediaType = "application/pdf", schema = @Schema(type = "string", format = "binary"))
+  )
+  @ApiResponse(responseCode = "400", description = "Version absente ou inconnue.")
+  @ApiResponse(responseCode = "403", description = "Jeton sans entreprise connue, ou role autre que GESTIONNAIRE.")
+  @ApiResponse(responseCode = "404", description = "Element de fabrication inconnu.")
+  @ApiResponse(
+    responseCode = "409",
+    description = "Rapport non exportable : un pointage porte une fin automatique non regularisee ou un tarif manque."
+  )
+  ResponseEntity<byte[]> exporteEnPdf(
+    @Parameter(description = "Identifiant de l'element de fabrication.") @PathVariable UUID elementId,
+    @Parameter(
+      description = "synthese : une ligne par nature ; detail : en plus, une ligne par pointage.",
+      schema = @Schema(allowableValues = { "synthese", "detail" })
+    ) @RequestParam @Pattern(regexp = "^(synthese|detail)$") String version
+  ) throws IOException {
+    VersionDuDocument choisie = VersionDuDocument.de(version);
+    CompteRenduDuCout compteRendu = applicationService.compteRendu(new ElementId(elementId));
+
+    return ResponseEntity.ok()
+      .contentType(DocumentDuCoutDeRevient.TYPE)
+      .header(
+        HttpHeaders.CONTENT_DISPOSITION,
+        ContentDisposition.attachment().filename(DocumentDuCoutDeRevient.nomDeFichier(compteRendu, choisie)).build().toString()
+      )
+      .body(DocumentDuCoutDeRevient.de(compteRendu, choisie, applicationService.logo()));
   }
 }

@@ -1,15 +1,11 @@
 package com.glm.glmback.coutderevient.infrastructure.primary;
 
-import com.glm.glmback.coutderevient.domain.Activite;
-import com.glm.glmback.coutderevient.domain.AnnuaireDuCout;
-import com.glm.glmback.coutderevient.domain.CategorieDActivite;
 import com.glm.glmback.coutderevient.domain.CompteRenduDuCout;
 import com.glm.glmback.coutderevient.domain.CoutDeRevient;
 import com.glm.glmback.coutderevient.domain.DureeTotale;
 import com.glm.glmback.coutderevient.domain.LigneDeCout;
 import com.glm.glmback.coutderevient.domain.Montant;
 import com.glm.glmback.coutderevient.domain.MontantTotal;
-import com.glm.glmback.coutderevient.domain.NatureDOperation;
 import com.glm.glmback.coutderevient.domain.PointageValorise;
 import com.glm.glmback.coutderevient.domain.StatutDeLElement;
 import com.glm.glmback.coutderevient.domain.TempsPasse;
@@ -18,9 +14,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Font;
@@ -46,13 +40,10 @@ final class ClasseurDuCoutDeRevient {
 
   static final MediaType TYPE = MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 
-  static final String SANS_POSTE = "Sans poste";
-
   private static final String STYLE_DE_TABLEAU = "TableStyleMedium2";
   private static final String FORMAT_EURO = "#,##0.00 \"€\";-#,##0.00 \"€\";\"\"";
   private static final String FORMAT_HEURES = "0.00";
   private static final String FORMAT_DATE = "dd/mm/yyyy hh:mm";
-  private static final DateTimeFormatter CLOTURE = DateTimeFormatter.ofPattern("d MMM yyyy 'à' HH:mm", Locale.FRENCH);
   private static final double SECONDES_PAR_HEURE = 3600;
   private static final int LARGEUR_D_UN_CARACTERE = 256;
   private static final short TAILLE_DU_TITRE = 16;
@@ -130,7 +121,7 @@ final class ClasseurDuCoutDeRevient {
     enTete(feuille.createRow(1), "Élément")
       .createCell(1)
       .setCellValue("%s · %s".formatted(rapport.element().categorie().value(), rapport.element().nom().value()));
-    texte(enTete(feuille.createRow(2), "Statut"), 1, statut(statut));
+    texte(enTete(feuille.createRow(2), "Statut"), 1, LibellesDuCoutDeRevient.statut(statut, fuseau));
     instant(enTete(feuille.createRow(3), "Généré le"), 1, rapport.lecture().evaluation()).setCellStyle(date);
 
     int entete = 5;
@@ -139,7 +130,7 @@ final class ClasseurDuCoutDeRevient {
     for (LigneDeCout nature : rapport.lignes()) {
       ligne++;
       Row valeurs = feuille.createRow(ligne);
-      texte(valeurs, 0, nature(nature));
+      texte(valeurs, 0, LibellesDuCoutDeRevient.nature(nature));
       ecrisLesValeurs(valeurs, nature.temps(), nature.cout().machine(), nature.cout().mainDOeuvre(), nature.cout().total(), false);
     }
     if (ligne > entete) {
@@ -164,10 +155,10 @@ final class ClasseurDuCoutDeRevient {
       for (PointageValorise pointage : nature.pointages()) {
         ligne++;
         Row valeurs = feuille.createRow(ligne);
-        texte(valeurs, 0, nature(nature));
-        texte(valeurs, 1, poste(pointage.activite(), rapport.annuaire()));
-        texte(valeurs, 2, operateur(pointage.activite(), rapport.annuaire()));
-        texte(valeurs, 3, categorie(pointage.activite().categorie()));
+        texte(valeurs, 0, LibellesDuCoutDeRevient.nature(nature));
+        texte(valeurs, 1, LibellesDuCoutDeRevient.poste(pointage.activite(), rapport.annuaire()));
+        texte(valeurs, 2, LibellesDuCoutDeRevient.operateur(pointage.activite(), rapport.annuaire()));
+        texte(valeurs, 3, LibellesDuCoutDeRevient.categorie(pointage.activite().categorie()));
         instant(valeurs, 4, pointage.debut()).setCellStyle(dateDePointage);
         instant(valeurs, 5, pointage.fin()).setCellStyle(dateDePointage);
         nombre(valeurs, 6, heures(pointage.duree())).setCellStyle(heures);
@@ -243,47 +234,6 @@ final class ClasseurDuCoutDeRevient {
     var cellule = ligne.createCell(colonne);
     cellule.setCellValue(LocalDateTime.ofInstant(valeur, fuseau));
     return cellule;
-  }
-
-  /**
-   * Un element termine dit quand, a l'heure de l'entreprise ; un element en cours fait du compte rendu une
-   * photographie a l'instant de generation.
-   */
-  private String statut(StatutDeLElement statut) {
-    return statut
-      .termineLe()
-      .map(cloture -> "Terminé le " + CLOTURE.format(cloture.atZone(fuseau)))
-      .orElse("En cours");
-  }
-
-  private static String poste(Activite activite, AnnuaireDuCout annuaire) {
-    return activite
-      .poste()
-      .map(poste ->
-        annuaire
-          .poste(poste)
-          .map(nomme -> nomme.libelle().value())
-          .orElse(poste.uuid().toString())
-      )
-      .orElse(SANS_POSTE);
-  }
-
-  private static String operateur(Activite activite, AnnuaireDuCout annuaire) {
-    return annuaire
-      .operateur(activite.operateur())
-      .map(nomme -> nomme.prenom().value() + " " + nomme.nom().value())
-      .orElse(activite.operateur().uuid().toString());
-  }
-
-  private static String categorie(CategorieDActivite categorie) {
-    return switch (categorie) {
-      case TRAVAIL -> "Travail";
-      case NON_CONFORMITE -> "Non-conformité";
-    };
-  }
-
-  private static String nature(LigneDeCout ligne) {
-    return ligne.nature().map(NatureDOperation::value).orElse(SANS_POSTE);
   }
 
   private static double heures(DureeTotale duree) {
