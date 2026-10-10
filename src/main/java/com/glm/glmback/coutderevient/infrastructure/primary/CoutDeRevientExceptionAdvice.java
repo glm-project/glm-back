@@ -1,9 +1,9 @@
 package com.glm.glmback.coutderevient.infrastructure.primary;
 
 import com.glm.glmback.coutderevient.domain.ElementInconnuException;
+import com.glm.glmback.coutderevient.domain.RapportNonExportableException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -12,14 +12,13 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 @Order(Ordered.LOWEST_PRECEDENCE - 20_000)
 class CoutDeRevientExceptionAdvice {
 
-  private static final String MESSAGE_KEY = "message";
-
   @ExceptionHandler(ElementInconnuException.class)
   ProblemDetail handleElementInconnu(ElementInconnuException e) {
-    var detail = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
-    detail.setTitle("element de fabrication introuvable");
-    detail.setProperty(MESSAGE_KEY, e.getMessage());
+    return ErreurDeCoutDeRevient.ELEMENT_DE_FABRICATION_INTROUVABLE.problem(e);
+  }
 
-    return detail;
+  @ExceptionHandler(RapportNonExportableException.class)
+  ProblemDetail handleRapportNonExportable(RapportNonExportableException e) {
+    return ErreurDeCoutDeRevient.RAPPORT_NON_EXPORTABLE.problem(e);
   }
 }

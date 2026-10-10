@@ -291,4 +291,47 @@ class CoutDeRevientTest {
 
     return new TrancheDActivite(activite, new Periode(debut, fin));
   }
+
+  @Test
+  void shouldBeExportableWithoutAutomaticEndNorMissingTarif() {
+    assertThat(COUT_DE_REVIENT_FRAISAGE_ET_SANS_POSTE.exportable()).isTrue();
+    assertThat(COUT_DE_REVIENT_VIDE.exportable()).isTrue();
+  }
+
+  @Test
+  void shouldNotBeExportableWithAnAutomaticEnd() {
+    CoutDeRevient rapport = rapportDe(
+      List.of(
+        new TrancheDActivite(ACTIVITE_FRAISAGE, new Periode(LE_11_MAI_A_8H, LE_11_MAI_A_21H), true),
+        new TrancheDActivite(ACTIVITE_TOURNAGE, new Periode(LE_12_MAI_A_8H, LE_12_MAI_A_9H))
+      )
+    );
+
+    assertThat(rapport.exportable()).isFalse();
+    assertThat(rapport.finsAutomatiques()).isEqualTo(1);
+    assertThat(rapport.tarifsManquants()).isZero();
+  }
+
+  @Test
+  void shouldNotBeExportableWithAMissingTarif() {
+    CoutDeRevient rapport = rapportDe(
+      List.of(
+        new TrancheDActivite(ACTIVITE_FRAISAGE_SANS_TAUX_HORAIRE, new Periode(LE_11_MAI_A_8H, LE_11_MAI_A_9H)),
+        new TrancheDActivite(ACTIVITE_FRAISAGE_SANS_COUT_HORAIRE, new Periode(LE_11_MAI_A_10H, LE_11_MAI_A_11H))
+      )
+    );
+
+    assertThat(rapport.exportable()).isFalse();
+    assertThat(rapport.finsAutomatiques()).isZero();
+    assertThat(rapport.tarifsManquants()).isEqualTo(2);
+  }
+
+  private static CoutDeRevient rapportDe(List<TrancheDActivite> tranches) {
+    return CoutDeRevient.builder()
+      .element(ELEMENT_VALORISE_OF)
+      .tranches(tranches)
+      .charges(ChargesDesOperateurs.de(tranches))
+      .lecture(new EvaluationDuCout(LE_13_MAI_A_8H, 0))
+      .annuaire(AnnuaireDuCout.VIDE);
+  }
 }

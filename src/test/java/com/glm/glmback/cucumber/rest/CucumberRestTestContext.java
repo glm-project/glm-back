@@ -101,6 +101,12 @@ public final class CucumberRestTestContext {
     return lastQuery().response();
   }
 
+  public static byte[] getResponseBytes() {
+    return lastQuery()
+      .content()
+      .orElseThrow(() -> new AssertionError("Can't read the body of the last response"));
+  }
+
   public static void reset() {
     queries.clear();
   }
@@ -124,6 +130,7 @@ public final class CucumberRestTestContext {
     private final HttpRequest request;
     private final String uri;
     private final HttpStatus status;
+    private final Optional<byte[]> content;
     private final Optional<String> response;
     private final HttpHeaders responseHeaders;
     private final ClientHttpRequestExecution execution;
@@ -139,17 +146,22 @@ public final class CucumberRestTestContext {
         throw new AssertionError(e.getMessage(), e);
       }
 
-      this.response = readResponse(response);
+      this.content = readContent(response);
+      this.response = content.map(bytes -> new String(bytes, Charset.defaultCharset()));
       this.execution = execution;
       this.body = body;
     }
 
-    private Optional<String> readResponse(ClientHttpResponse response) {
+    private Optional<byte[]> readContent(ClientHttpResponse response) {
       try {
-        return Optional.of(StreamUtils.copyToString(response.getBody(), Charset.defaultCharset()));
+        return Optional.of(StreamUtils.copyToByteArray(response.getBody()));
       } catch (Exception _) {
         return Optional.empty();
       }
+    }
+
+    private Optional<byte[]> content() {
+      return content;
     }
 
     private String uri() {

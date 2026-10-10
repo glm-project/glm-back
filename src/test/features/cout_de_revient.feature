@@ -242,6 +242,7 @@ Feature: Cout de revient d'un element de fabrication
   Scenario: Un element inconnu renvoie 404
     When je consulte le cout de revient de l'element inconnu "11111111-2222-3333-4444-555555555555"
     Then la reponse a le statut http 404
+    And la reponse porte le code d'erreur "urn:glm:erreur:cout-de-revient:element-de-fabrication-introuvable"
 
   Scenario: Un operateur ne lit pas les couts
     Given l'entreprise fabrique "OF 3010"

@@ -2811,6 +2811,70 @@
         "tags" : [ "Couts de revient" ]
       }
     },
+    "/api/couts-de-revient/{elementId}/export.xlsx" : {
+      "get" : {
+        "description" : "Le meme rapport que la lecture, mis en forme pour le client : aucun montant n'est recalcule ni arrondi a nouveau.\n\nRefuse en 409 (rapport-non-exportable) un rapport dont un pointage porte une fin automatique non regularisee, ou\nun tarif manquant : taux horaire de l'operateur absent, ou cout horaire absent sur un pointage qui a un poste. Un\ncout horaire de 0 EUR est valide ; une activite en cours ne bloque pas.\n\nL'onglet Synthese porte l'element, son statut, l'instant de generation (l'evaluation du rapport) et une ligne par\nnature avec le total. L'element est \"Termine le\" sa derniere cloture quand tous ses passages en atelier sont clos\net qu'aucune activite n'est en cours ; sinon il est \"En cours\", et le classeur est une photographie a l'instant de\ngeneration.\n\nL'onglet Pointages est un tableau Excel nomme Pointages, une ligne par pointage (nature, poste, operateur, categorie,\ndebut, fin, duree, machine, main d'oeuvre, total), sans cellule fusionnee ni ligne intercalaire : regroupes par\nnature, ses pointages retrouvent les lignes de la synthese. Montants et durees sont des nombres (durees en heures decimales), les dates de vraies dates Excel\ndans le fuseau de l'entreprise ; un cout de 0 EUR garde sa valeur sous un format qui l'affiche vide.\n",
+        "operationId" : "exporteEnExcel",
+        "parameters" : [ {
+          "description" : "Identifiant de l'element de fabrication.",
+          "in" : "path",
+          "name" : "elementId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : {
+                "schema" : {
+                  "format" : "binary",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "Le classeur, en piece jointe nommee d'apres l'element (cout-de-revient-OF-2026-000001.xlsx)."
+          },
+          "403" : {
+            "content" : {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "Jeton sans entreprise connue, ou role autre que GESTIONNAIRE."
+          },
+          "404" : {
+            "content" : {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "Element de fabrication inconnu."
+          },
+          "409" : {
+            "content" : {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "Rapport non exportable : un pointage porte une fin automatique non regularisee ou un tarif manque."
+          }
+        },
+        "summary" : "Exporter le cout de revient d'un element en classeur Excel",
+        "tags" : [ "Couts de revient" ]
+      }
+    },
     "/api/elements-de-fabrication" : {
       "get" : {
         "operationId" : "list_3",

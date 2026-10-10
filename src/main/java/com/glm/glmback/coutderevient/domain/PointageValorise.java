@@ -53,4 +53,13 @@ public record PointageValorise(TrancheDActivite tranche, List<TrancheValorisable
   public boolean finAutomatique() {
     return tranche.finAutomatique();
   }
+
+  /**
+   * Un taux absent compte zero : la main d'oeuvre ou la machine a 0 EUR qui en resulte ne doit pas partir chez le
+   * client. Un poste a 0 EUR de l'heure est valide, et un pointage sans poste n'a pas de machine a chiffrer.
+   */
+  public boolean tarifManquant() {
+    Activite activite = activite();
+    return activite.tauxHoraire().isEmpty() || (activite.poste().isPresent() && activite.coutHoraire().isEmpty());
+  }
 }

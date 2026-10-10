@@ -1,12 +1,19 @@
 package com.glm.glmback.coutderevient.infrastructure.primary;
 
 import com.glm.glmback.coutderevient.application.CoutsDeRevientApplicationService;
+import com.glm.glmback.coutderevient.domain.CompteRenduDuCout;
 import com.glm.glmback.coutderevient.domain.ElementId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.io.IOException;
 import java.util.UUID;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -51,5 +58,53 @@ class CoutDeRevientResource {
   @ApiResponse(responseCode = "404", description = "Element de fabrication inconnu.")
   RestCoutDeRevient get(@Parameter(description = "Identifiant de l'element de fabrication.") @PathVariable UUID elementId) {
     return RestCoutDeRevient.from(applicationService.rapport(new ElementId(elementId)));
+  }
+
+  @GetMapping(path = "/{elementId}/export.xlsx", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+  @Operation(
+    summary = "Exporter le cout de revient d'un element en classeur Excel",
+    description = """
+    Le meme rapport que la lecture, mis en forme pour le client : aucun montant n'est recalcule ni arrondi a nouveau.
+
+    Refuse en 409 (rapport-non-exportable) un rapport dont un pointage porte une fin automatique non regularisee, ou
+    un tarif manquant : taux horaire de l'operateur absent, ou cout horaire absent sur un pointage qui a un poste. Un
+    cout horaire de 0 EUR est valide ; une activite en cours ne bloque pas.
+
+    L'onglet Synthese porte l'element, son statut, l'instant de generation (l'evaluation du rapport) et une ligne par
+    nature avec le total. L'element est "Termine le" sa derniere cloture quand tous ses passages en atelier sont clos
+    et qu'aucune activite n'est en cours ; sinon il est "En cours", et le classeur est une photographie a l'instant de
+    generation.
+
+    L'onglet Pointages est un tableau Excel nomme Pointages, une ligne par pointage (nature, poste, operateur, categorie,
+    debut, fin, duree, machine, main d'oeuvre, total), sans cellule fusionnee ni ligne intercalaire : regroupes par
+    nature, ses pointages retrouvent les lignes de la synthese. Montants et durees sont des nombres (durees en heures decimales), les dates de vraies dates Excel
+    dans le fuseau de l'entreprise ; un cout de 0 EUR garde sa valeur sous un format qui l'affiche vide.
+    """
+  )
+  @ApiResponse(
+    responseCode = "200",
+    description = "Le classeur, en piece jointe nommee d'apres l'element (cout-de-revient-OF-2026-000001.xlsx).",
+    content = @Content(
+      mediaType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      schema = @Schema(type = "string", format = "binary")
+    )
+  )
+  @ApiResponse(responseCode = "403", description = "Jeton sans entreprise connue, ou role autre que GESTIONNAIRE.")
+  @ApiResponse(responseCode = "404", description = "Element de fabrication inconnu.")
+  @ApiResponse(
+    responseCode = "409",
+    description = "Rapport non exportable : un pointage porte une fin automatique non regularisee ou un tarif manque."
+  )
+  ResponseEntity<byte[]> exporteEnExcel(@Parameter(description = "Identifiant de l'element de fabrication.") @PathVariable UUID elementId)
+    throws IOException {
+    CompteRenduDuCout compteRendu = applicationService.compteRendu(new ElementId(elementId));
+
+    return ResponseEntity.ok()
+      .contentType(ClasseurDuCoutDeRevient.TYPE)
+      .header(
+        HttpHeaders.CONTENT_DISPOSITION,
+        ContentDisposition.attachment().filename(ClasseurDuCoutDeRevient.nomDeFichier(compteRendu)).build().toString()
+      )
+      .body(ClasseurDuCoutDeRevient.de(compteRendu));
   }
 }

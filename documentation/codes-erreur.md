@@ -32,7 +32,7 @@ Les trois champs ont trois usages distincts :
 
 Un `enum` par bounded context, dans son `infrastructure/primary`, implémentant
 `shared/error/infrastructure/primary/ProblemCode` : `ErreurDAtelier`, `ErreurDOperateur`, `ErreurDePosteDeTravail`,
-`ErreurDElementDeFabrication`, `ErreurDeFeuilleDeTemps`. Chaque constante porte son statut HTTP et son titre, et
+`ErreurDElementDeFabrication`, `ErreurDeFeuilleDeTemps`, `ErreurDeCoutDeRevient`. Chaque constante porte son statut HTTP et son titre, et
 l'advice s'y réduit à une ligne par exception traduite.
 
 **Le nom de la constante est le contrat publié.** `ProblemCode` en dérive le segment de code par
@@ -196,6 +196,17 @@ sans logo : le client relit la version dans `GET /api/parametrage`.
 | ----------------------- | ------ | -------------------------- | --------------------------- |
 | `operateur-introuvable` | 404    | operateur introuvable      | `OperateurInconnuException` |
 | `evaluation-future`     | 400    | instant d'evaluation futur | `EvaluationFutureException` |
+
+### `cout-de-revient` — `urn:glm:erreur:cout-de-revient:`
+
+| Code                                 | Statut | `title`                            | Exception                       |
+| ------------------------------------ | ------ | ---------------------------------- | ------------------------------- |
+| `element-de-fabrication-introuvable` | 404    | element de fabrication introuvable | `ElementInconnuException`       |
+| `rapport-non-exportable`             | 409    | rapport non exportable             | `RapportNonExportableException` |
+
+`rapport-non-exportable` refuse l'export d'un rapport dont un pointage porte une fin automatique non régularisée, ou un
+tarif manquant (taux horaire de l'opérateur absent, ou coût horaire absent sur un pointage qui a un poste). Il n'y a
+aucun fichier : le front explique la raison et mène aux anomalies de l'élément. Le refus cesse dès la régularisation.
 
 ## Ajouter une erreur
 

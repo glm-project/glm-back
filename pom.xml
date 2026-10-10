@@ -45,6 +45,11 @@
       <artifactId>commons-lang3</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.apache.poi</groupId>
+      <artifactId>poi-ooxml</artifactId>
+      <version>${poi.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
       <scope>runtime</scope>
@@ -164,6 +169,7 @@
     <jacoco.version>0.8.15</jacoco.version>
     <spring-boot.version>4.0.6</spring-boot.version>
     <springdoc.version>3.0.1</springdoc.version>
+    <poi.version>5.5.1</poi.version>
     <testcontainers.version>2.0.5</testcontainers.version>
     <reflections.version>0.10.2</reflections.version>
     <cucumber.version>7.34.6</cucumber.version>
