@@ -119,7 +119,8 @@ class CoutDeRevientResource {
 
     La version synthese porte l'element, son statut, l'instant de generation, les indicateurs et une ligne par nature
     avec le total ; la version detail y ajoute, pour chaque nature, le tableau de ses pointages. L'en-tete et le pied
-    se repetent sur chaque page, numerotee.
+    se repetent sur chaque page, numerotee ; l'en-tete porte le logo de l'entreprise s'il en a un, ajuste a sa case
+    sans deformation.
 
     Memes refus que le classeur : 409 (rapport-non-exportable) pour une fin automatique non regularisee ou un tarif
     manquant.
@@ -153,6 +154,6 @@ class CoutDeRevientResource {
         HttpHeaders.CONTENT_DISPOSITION,
         ContentDisposition.attachment().filename(DocumentDuCoutDeRevient.nomDeFichier(compteRendu, choisie)).build().toString()
       )
-      .body(DocumentDuCoutDeRevient.de(compteRendu, choisie));
+      .body(DocumentDuCoutDeRevient.de(compteRendu, choisie, applicationService.logo()));
   }
 }

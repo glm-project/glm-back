@@ -5,10 +5,14 @@ import com.glm.glmback.coutderevient.domain.CategorieDActivite;
 import com.glm.glmback.coutderevient.domain.CompteRenduDuCout;
 import com.glm.glmback.coutderevient.domain.CoutDeRevient;
 import com.glm.glmback.coutderevient.domain.DureeTotale;
+import com.glm.glmback.coutderevient.domain.FormatDuLogo;
+import com.glm.glmback.coutderevient.domain.LogoDeLEntreprise;
 import com.glm.glmback.coutderevient.domain.MontantTotal;
 import com.glm.glmback.coutderevient.domain.PointageValorise;
 import com.glm.glmback.coutderevient.domain.TempsPasse;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,8 +22,11 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
+import javax.imageio.ImageIO;
 import org.springframework.http.MediaType;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
@@ -47,9 +54,10 @@ final class DocumentDuCoutDeRevient {
 
   private DocumentDuCoutDeRevient() {}
 
-  static byte[] de(CompteRenduDuCout compteRendu, VersionDuDocument version) throws IOException {
+  static byte[] de(CompteRenduDuCout compteRendu, VersionDuDocument version, Optional<LogoDeLEntreprise> logo) throws IOException {
     Context contexte = new Context(Locale.FRENCH);
     contexte.setVariable("document", vue(compteRendu, version));
+    contexte.setVariable("logo", logo.isPresent() ? LogoVue.de(logo.orElseThrow()).orElse(null) : null);
     String html = MOTEUR.process(GABARIT, contexte);
 
     try (ByteArrayOutputStream sortie = new ByteArrayOutputStream()) {
@@ -160,6 +168,38 @@ final class DocumentDuCoutDeRevient {
     TemplateEngine moteur = new TemplateEngine();
     moteur.setTemplateResolver(resolveur);
     return moteur;
+  }
+
+  /**
+   * Le logo en data URI, a la taille qui le fait tenir dans sa case de l'en-tete sans le deformer : la hauteur de la
+   * case, sauf pour un logo trop large, borne alors a la largeur de la case. Une image illisible n'est pas affichee.
+   */
+  public record LogoVue(String source, String largeur, String hauteur) {
+    private static final double LARGEUR_DE_LA_CASE = 48;
+    private static final double HAUTEUR_DE_LA_CASE = 16;
+
+    static Optional<LogoVue> de(LogoDeLEntreprise logo) throws IOException {
+      BufferedImage image = ImageIO.read(new ByteArrayInputStream(logo.contenu()));
+      if (image == null) {
+        return Optional.empty();
+      }
+      double proportion = (double) image.getWidth() / image.getHeight();
+      double hauteur = Math.min(HAUTEUR_DE_LA_CASE, LARGEUR_DE_LA_CASE / proportion);
+      return Optional.of(
+        new LogoVue(
+          "data:%s;base64,%s".formatted(
+            logo.format() == FormatDuLogo.PNG ? MediaType.IMAGE_PNG_VALUE : MediaType.IMAGE_JPEG_VALUE,
+            Base64.getEncoder().encodeToString(logo.contenu())
+          ),
+          millimetres(hauteur * proportion),
+          millimetres(hauteur)
+        )
+      );
+    }
+
+    private static String millimetres(double valeur) {
+      return String.format(Locale.ROOT, "%.2fmm", valeur);
+    }
   }
 
   /** Ce que le gabarit affiche, deja formate : il ne fait que placer des textes. */

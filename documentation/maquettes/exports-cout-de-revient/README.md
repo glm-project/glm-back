@@ -11,4 +11,5 @@ main, pas la sortie du code : elles fixent le contenu et la forme que les export
 | `apercu-*.png`                                | —           | Aperçus affichés dans les tickets                                             |
 
 Écarts connus avec l'export final : le PDF détaillé n'y répète pas l'en-tête et n'a pas de numéro de page ; le
-logo et le nom de l'entreprise sont un emplacement réservé, à fournir plus tard.
+logo n'y est qu'un emplacement réservé, alors que l'export affiche le logo déposé dans le paramétrage (case vide sans
+logo). Le nom de l'entreprise reste à fournir plus tard. L'Excel n'a pas de logo.

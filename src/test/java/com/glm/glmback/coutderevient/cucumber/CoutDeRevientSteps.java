@@ -25,7 +25,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
@@ -285,6 +288,20 @@ public class CoutDeRevientSteps {
     try (PDDocument pdf = Loader.loadPDF(CucumberRestTestContext.getResponseBytes())) {
       String texte = new PDFTextStripper().getText(pdf).replace('\u202f', ' ').replaceAll("[ \\t]+", " ");
       assertThat(texte.lines().map(String::strip).toList()).containsSubsequence(lignes.stream().map(this::avecLesNoms).toList());
+    }
+  }
+
+  @Then("le PDF porte en en-tete un logo de {int} x {int} pixels")
+  public void lePdfPorteUnLogo(int largeur, int hauteur) throws IOException {
+    try (PDDocument pdf = Loader.loadPDF(CucumberRestTestContext.getResponseBytes())) {
+      PDResources ressources = pdf.getPage(0).getResources();
+      List<String> images = new ArrayList<>();
+      for (COSName nom : ressources.getXObjectNames()) {
+        if (ressources.getXObject(nom) instanceof PDImageXObject image) {
+          images.add(image.getWidth() + " x " + image.getHeight());
+        }
+      }
+      assertThat(images).containsExactly(largeur + " x " + hauteur);
     }
   }
 

@@ -142,7 +142,14 @@
     <div class="entete">
       <table>
         <tr>
-          <td class="logo"></td>
+          <td class="logo">
+            <img
+              th:if="${logo != null}"
+              th:src="${logo.source()}"
+              th:style="'width: ' + ${logo.largeur()} + '; height: ' + ${logo.hauteur()} + ';'"
+              alt="Logo de l’entreprise"
+            />
+          </td>
           <td>
             <div class="titre" th:text="${document.titre()}">Coût de revient</div>
             <div class="element" th:text="${document.element()}">OF · OF-2026-000001</div>

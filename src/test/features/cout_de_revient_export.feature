@@ -94,6 +94,14 @@ Feature: Export du cout de revient d'un element de fabrication
       | {fraiseuse} NC {dupont} 11 mai · 13:00 → 13:30 0 h 30 22,50 € 10,00 € 32,50 € |
       | Total fraisage 2 h 30 112,50 € 50,00 € 162,50 €                               |
 
+  Scenario: Le PDF porte le logo de l'entreprise dans son en-tete
+    Given j'ai depose comme logo "un PNG de 256 x 100"
+    And l'entreprise fabrique "OF 4010"
+    When j'exporte en PDF "synthese" le cout de revient de "OF 4010" a "2026-05-11T18:00:00Z"
+    Then la reponse a le statut http 200
+    And le PDF porte en en-tete un logo de 256 x 100 pixels
+    When je retire le logo
+
   Scenario: Une version de PDF inconnue est refusee
     Given l'entreprise fabrique "OF 4007"
     When j'exporte en PDF "complet" le cout de revient de "OF 4007" a "2026-05-11T18:00:00Z"

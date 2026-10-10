@@ -2813,7 +2813,7 @@
     },
     "/api/couts-de-revient/{elementId}/export.pdf" : {
       "get" : {
-        "description" : "Le compte rendu remis au client, genere par le serveur en A4 paysage a partir du meme rapport que la lecture :\naucun montant n'est recalcule ni arrondi a nouveau, et un cout de 0 EUR n'est pas affiche.\n\nLa version synthese porte l'element, son statut, l'instant de generation, les indicateurs et une ligne par nature\navec le total ; la version detail y ajoute, pour chaque nature, le tableau de ses pointages. L'en-tete et le pied\nse repetent sur chaque page, numerotee.\n\nMemes refus que le classeur : 409 (rapport-non-exportable) pour une fin automatique non regularisee ou un tarif\nmanquant.\n",
+        "description" : "Le compte rendu remis au client, genere par le serveur en A4 paysage a partir du meme rapport que la lecture :\naucun montant n'est recalcule ni arrondi a nouveau, et un cout de 0 EUR n'est pas affiche.\n\nLa version synthese porte l'element, son statut, l'instant de generation, les indicateurs et une ligne par nature\navec le total ; la version detail y ajoute, pour chaque nature, le tableau de ses pointages. L'en-tete et le pied\nse repetent sur chaque page, numerotee ; l'en-tete porte le logo de l'entreprise s'il en a un, ajuste a sa case\nsans deformation.\n\nMemes refus que le classeur : 409 (rapport-non-exportable) pour une fin automatique non regularisee ou un tarif\nmanquant.\n",
         "operationId" : "exporteEnPdf",
         "parameters" : [ {
           "description" : "Identifiant de l'element de fabrication.",

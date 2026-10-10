@@ -7,12 +7,15 @@ import com.glm.glmback.coutderevient.domain.CoutsDeRevientService;
 import com.glm.glmback.coutderevient.domain.ElementId;
 import com.glm.glmback.coutderevient.domain.ElementsValorisables;
 import com.glm.glmback.coutderevient.domain.FuseauHoraireDeLEntreprise;
+import com.glm.glmback.coutderevient.domain.LogoDeLEntreprise;
+import com.glm.glmback.coutderevient.domain.LogosDeLEntreprise;
 import com.glm.glmback.coutderevient.domain.OccupationDesOperateurs;
 import com.glm.glmback.coutderevient.domain.OperateursNommes;
 import com.glm.glmback.coutderevient.domain.PassagesEnAtelier;
 import com.glm.glmback.coutderevient.domain.PostesNommes;
 import com.glm.glmback.coutderevient.domain.TravailDeLElement;
 import com.glm.glmback.shared.time.domain.Clock;
+import java.util.Optional;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +32,7 @@ public class CoutsDeRevientApplicationService {
 
   private final CoutsDeRevientService coutsDeRevient;
   private final ComptesRendusDuCout comptesRendus;
+  private final LogosDeLEntreprise logos;
 
   public CoutsDeRevientApplicationService(
     ElementsValorisables elements,
@@ -38,6 +42,7 @@ public class CoutsDeRevientApplicationService {
     PostesNommes postesNommes,
     PassagesEnAtelier passages,
     FuseauHoraireDeLEntreprise fuseau,
+    LogosDeLEntreprise logos,
     Clock clock
   ) {
     this.coutsDeRevient = CoutsDeRevientService.builder()
@@ -48,6 +53,7 @@ public class CoutsDeRevientApplicationService {
       .postesNommes(postesNommes)
       .clock(clock);
     this.comptesRendus = new ComptesRendusDuCout(coutsDeRevient, passages, fuseau);
+    this.logos = logos;
   }
 
   /**
@@ -65,5 +71,12 @@ public class CoutsDeRevientApplicationService {
   @Transactional(readOnly = true)
   public CompteRenduDuCout compteRendu(ElementId element) {
     return comptesRendus.compteRendu(element);
+  }
+
+  /** Le logo de l'en-tete du PDF, lu sous les memes droits que le compte rendu qu'il accompagne. */
+  @Secured("ROLE_GESTIONNAIRE")
+  @Transactional(readOnly = true)
+  public Optional<LogoDeLEntreprise> logo() {
+    return logos.logo();
   }
 }

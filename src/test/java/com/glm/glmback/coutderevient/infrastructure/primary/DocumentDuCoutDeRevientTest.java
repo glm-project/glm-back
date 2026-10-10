@@ -9,18 +9,23 @@ import com.glm.glmback.coutderevient.domain.ChargesDesOperateurs;
 import com.glm.glmback.coutderevient.domain.CompteRenduDuCout;
 import com.glm.glmback.coutderevient.domain.CoutDeRevient;
 import com.glm.glmback.coutderevient.domain.EvaluationDuCout;
+import com.glm.glmback.coutderevient.domain.LogoDeLEntreprise;
 import com.glm.glmback.coutderevient.domain.Periode;
 import com.glm.glmback.coutderevient.domain.StatutDeLElement;
 import com.glm.glmback.coutderevient.domain.TrancheDActivite;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.IntStream;
 import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDResources;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.Test;
 
@@ -46,7 +51,11 @@ class DocumentDuCoutDeRevientTest {
 
   @Test
   void shouldMettreEnPageUneSyntheseSurUneSeulePageA4Paysage() throws IOException {
-    try (PDDocument pdf = Loader.loadPDF(DocumentDuCoutDeRevient.de(FRAISAGE_ET_SANS_POSTE_EN_COURS, VersionDuDocument.SYNTHESE))) {
+    try (
+      PDDocument pdf = Loader.loadPDF(
+        DocumentDuCoutDeRevient.de(FRAISAGE_ET_SANS_POSTE_EN_COURS, VersionDuDocument.SYNTHESE, Optional.empty())
+      )
+    ) {
       PDRectangle page = pdf.getPage(0).getMediaBox();
 
       assertThat(pdf.getNumberOfPages()).isEqualTo(1);
@@ -140,7 +149,8 @@ class DocumentDuCoutDeRevientTest {
       PDDocument pdf = Loader.loadPDF(
         DocumentDuCoutDeRevient.de(
           new CompteRenduDuCout(troisCentsHeures, StatutDeLElement.EN_COURS, FUSEAU_DE_PARIS),
-          VersionDuDocument.DETAIL
+          VersionDuDocument.DETAIL,
+          Optional.empty()
         )
       )
     ) {
@@ -162,8 +172,61 @@ class DocumentDuCoutDeRevientTest {
     );
   }
 
+  @Test
+  void shouldAjusterLeLogoALaHauteurDeSaCaseSansLeDeformer() throws IOException {
+    DocumentDuCoutDeRevient.LogoVue logo = DocumentDuCoutDeRevient.LogoVue.de(logoPngDe256Sur100()).orElseThrow();
+
+    assertThat(logo.source()).startsWith("data:image/png;base64,");
+    assertThat(logo.largeur()).isEqualTo("40.96mm");
+    assertThat(logo.hauteur()).isEqualTo("16.00mm");
+  }
+
+  @Test
+  void shouldBornerUnLogoTropLargeALaLargeurDeSaCase() throws IOException {
+    DocumentDuCoutDeRevient.LogoVue logo = DocumentDuCoutDeRevient.LogoVue.de(logoPngDe300Sur40()).orElseThrow();
+
+    assertThat(logo.largeur()).isEqualTo("48.00mm");
+    assertThat(logo.hauteur()).isEqualTo("6.40mm");
+  }
+
+  @Test
+  void shouldEmbarquerUnLogoJpegSousSonType() throws IOException {
+    DocumentDuCoutDeRevient.LogoVue logo = DocumentDuCoutDeRevient.LogoVue.de(logoJpegDe100Sur100()).orElseThrow();
+
+    assertThat(logo.source()).startsWith("data:image/jpeg;base64,");
+    assertThat(logo.largeur()).isEqualTo("16.00mm");
+  }
+
+  @Test
+  void shouldPorterLeLogoDansLEnTete() throws IOException {
+    assertThat(images(Optional.of(logoPngDe256Sur100()))).containsExactly("256x100");
+  }
+
+  @Test
+  void shouldLaisserLaCaseDuLogoVideSansLogo() throws IOException {
+    assertThat(images(Optional.empty())).isEmpty();
+  }
+
+  @Test
+  void shouldIgnorerUnLogoIllisible() throws IOException {
+    assertThat(images(Optional.of(logoIllisible()))).isEmpty();
+  }
+
+  private static List<String> images(Optional<LogoDeLEntreprise> logo) throws IOException {
+    try (PDDocument pdf = Loader.loadPDF(DocumentDuCoutDeRevient.de(FRAISAGE_ET_SANS_POSTE_EN_COURS, VersionDuDocument.SYNTHESE, logo))) {
+      PDResources ressources = pdf.getPage(0).getResources();
+      List<String> images = new ArrayList<>();
+      for (COSName nom : ressources.getXObjectNames()) {
+        if (ressources.getXObject(nom) instanceof PDImageXObject image) {
+          images.add(image.getWidth() + "x" + image.getHeight());
+        }
+      }
+      return images;
+    }
+  }
+
   private static String texte(CompteRenduDuCout compteRendu, VersionDuDocument version) throws IOException {
-    try (PDDocument pdf = Loader.loadPDF(DocumentDuCoutDeRevient.de(compteRendu, version))) {
+    try (PDDocument pdf = Loader.loadPDF(DocumentDuCoutDeRevient.de(compteRendu, version, Optional.empty()))) {
       return new PDFTextStripper().getText(pdf).replace(' ', ' ').replace(' ', ' ').replaceAll("[ \\t]+", " ");
     }
   }
