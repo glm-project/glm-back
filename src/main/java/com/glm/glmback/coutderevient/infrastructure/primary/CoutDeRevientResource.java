@@ -66,6 +66,10 @@ class CoutDeRevientResource {
     description = """
     Le meme rapport que la lecture, mis en forme pour le client : aucun montant n'est recalcule ni arrondi a nouveau.
 
+    Refuse en 409 (rapport-non-exportable) un rapport dont un pointage porte une fin automatique non regularisee, ou
+    un tarif manquant : taux horaire de l'operateur absent, ou cout horaire absent sur un pointage qui a un poste. Un
+    cout horaire de 0 EUR est valide ; une activite en cours ne bloque pas.
+
     L'onglet Synthese porte l'element, son statut, l'instant de generation (l'evaluation du rapport) et une ligne par
     nature avec le total. L'element est "Termine le" sa derniere cloture quand tous ses passages en atelier sont clos
     et qu'aucune activite n'est en cours ; sinon il est "En cours", et le classeur est une photographie a l'instant de
@@ -87,6 +91,10 @@ class CoutDeRevientResource {
   )
   @ApiResponse(responseCode = "403", description = "Jeton sans entreprise connue, ou role autre que GESTIONNAIRE.")
   @ApiResponse(responseCode = "404", description = "Element de fabrication inconnu.")
+  @ApiResponse(
+    responseCode = "409",
+    description = "Rapport non exportable : un pointage porte une fin automatique non regularisee ou un tarif manque."
+  )
   ResponseEntity<byte[]> exporteEnExcel(@Parameter(description = "Identifiant de l'element de fabrication.") @PathVariable UUID elementId)
     throws IOException {
     CompteRenduDuCout compteRendu = applicationService.compteRendu(new ElementId(elementId));

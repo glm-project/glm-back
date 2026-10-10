@@ -40,6 +40,23 @@ Feature: Export du cout de revient d'un element de fabrication
     Then la reponse a le statut http 200
     And le classeur dit l'element "Terminé le 11 mai 2026 à 17:05"
 
+  Scenario: Une fin automatique non regularisee bloque l'export
+    Given l'entreprise fabrique "OF 4004"
+    And "OF 4004" est mis en atelier a "2026-05-11T07:00:00Z"
+    And "dupont" pointe "DEBUT" sur "OF 4004" au poste "fraiseuse" a "2026-05-11T08:00:00Z"
+    # Treize heures plus tard, l'activite est terminee automatiquement : son cout compte, mais n'a pas ete pointe.
+    When j'exporte en Excel le cout de revient de "OF 4004" a "2026-05-11T21:00:00Z"
+    Then la reponse a le statut http 409
+    And la reponse porte le code d'erreur "urn:glm:erreur:cout-de-revient:rapport-non-exportable"
+
+  Scenario: Une activite en cours ne bloque pas l'export
+    Given l'entreprise fabrique "OF 4005"
+    And "OF 4005" est mis en atelier a "2026-05-11T07:00:00Z"
+    And "dupont" pointe "DEBUT" sur "OF 4005" au poste "fraiseuse" a "2026-05-11T08:00:00Z"
+    When j'exporte en Excel le cout de revient de "OF 4005" a "2026-05-11T20:59:00Z"
+    Then la reponse a le statut http 200
+    And le classeur dit l'element "En cours"
+
   Scenario: Un operateur n'exporte pas les couts
     Given l'entreprise fabrique "OF 4002"
     And I am logged in as "user" with role "USER"

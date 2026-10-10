@@ -4,7 +4,8 @@ import com.glm.glmback.shared.error.infrastructure.primary.ProblemCode;
 import org.springframework.http.HttpStatus;
 
 enum ErreurDeCoutDeRevient implements ProblemCode {
-  ELEMENT_DE_FABRICATION_INTROUVABLE(HttpStatus.NOT_FOUND, "element de fabrication introuvable");
+  ELEMENT_DE_FABRICATION_INTROUVABLE(HttpStatus.NOT_FOUND, "element de fabrication introuvable"),
+  RAPPORT_NON_EXPORTABLE(HttpStatus.CONFLICT, "rapport non exportable");
 
   private final HttpStatus status;
   private final String title;

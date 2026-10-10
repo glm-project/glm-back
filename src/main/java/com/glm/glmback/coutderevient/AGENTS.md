@@ -50,7 +50,8 @@ Aucun tarif ne doit être inventé.
 
 `GET /api/couts-de-revient/{elementId}` est réservé au `GESTIONNAIRE` : il expose les tarifs humains.
 Les exports (`…/export.xlsx`) mettent en forme ce même `CoutDeRevient` dans un `CompteRenduDuCout`, sous les mêmes
-droits : aucun montant recalculé ni ré-arrondi, instants écrits dans le fuseau de l'entreprise. Apache POI reste
+droits : aucun montant recalculé ni ré-arrondi, instants écrits dans le fuseau de l'entreprise. Un rapport qui porte
+une fin automatique ou un tarif manquant n'est jamais exporté (`CoutDeRevient.exportable()`, 409). Apache POI reste
 confiné à `infrastructure/primary` ([ADR 0013](../../../../../../../documentation/adr/0013-build-the-cost-price-workbook-with-apache-poi.md)).
 Chaque ligne rend ses pointages : parts par fenêtre de partage, activités parallèles, anomalies. Les noms (opérateurs, postes, éléments) sont relus aux tables voisines par leurs noms
 logiques de colonnes, jamais copiés ; un nom absent laisse l'identifiant seul.

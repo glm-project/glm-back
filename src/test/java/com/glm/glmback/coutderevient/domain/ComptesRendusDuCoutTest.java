@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -18,9 +19,11 @@ class ComptesRendusDuCoutTest {
       .connait(ELEMENT_VALORISE_OF)
       .aTravaille(ELEMENT_ID_OF, activiteInterpreteeDeFraisage(new Plage(LE_11_MAI_A_8H, Optional.of(LE_11_MAI_A_10H))));
 
-    CompteRenduDuCout compteRendu = comptesRendus(atelier, List.of(new PassageEnAtelier(Optional.of(LE_11_MAI_A_15H)))).compteRendu(
-      ELEMENT_ID_OF
-    );
+    CompteRenduDuCout compteRendu = comptesRendus(
+      atelier,
+      List.of(new PassageEnAtelier(Optional.of(LE_11_MAI_A_15H))),
+      LE_11_MAI_A_17H
+    ).compteRendu(ELEMENT_ID_OF);
 
     assertThat(compteRendu.fuseau()).isEqualTo(FUSEAU_DE_PARIS);
     assertThat(compteRendu.statut()).isEqualTo(new StatutDeLElement(Optional.of(LE_11_MAI_A_15H)));
@@ -29,20 +32,33 @@ class ComptesRendusDuCoutTest {
   }
 
   @Test
-  void shouldRefuserUnElementInconnu() {
-    assertThatThrownBy(() -> comptesRendus(new AtelierEnMemoire(), List.of()).compteRendu(ELEMENT_ID_OF)).isExactlyInstanceOf(
-      ElementInconnuException.class
-    );
+  void shouldRefuserUnRapportEnFinAutomatique() {
+    AtelierEnMemoire atelier = new AtelierEnMemoire()
+      .connait(ELEMENT_VALORISE_OF)
+      .aTravaille(ELEMENT_ID_OF, activiteInterpreteeDeFraisage(new Plage(LE_11_MAI_A_8H, Optional.empty())));
+
+    assertThatThrownBy(() -> comptesRendus(atelier, List.of(), LE_12_MAI_A_8H).compteRendu(ELEMENT_ID_OF))
+      .isExactlyInstanceOf(RapportNonExportableException.class)
+      .hasMessage(
+        "Le cout de revient de OF-2026-000001 ne peut pas etre exporte : 1 fin(s) automatique(s) a regulariser, 0 pointage(s) sans tarif"
+      );
   }
 
-  private static ComptesRendusDuCout comptesRendus(AtelierEnMemoire atelier, List<PassageEnAtelier> passages) {
+  @Test
+  void shouldRefuserUnElementInconnu() {
+    assertThatThrownBy(() ->
+      comptesRendus(new AtelierEnMemoire(), List.of(), LE_11_MAI_A_17H).compteRendu(ELEMENT_ID_OF)
+    ).isExactlyInstanceOf(ElementInconnuException.class);
+  }
+
+  private static ComptesRendusDuCout comptesRendus(AtelierEnMemoire atelier, List<PassageEnAtelier> passages, Instant evaluation) {
     CoutsDeRevientService coutsDeRevient = CoutsDeRevientService.builder()
       .elements(atelier)
       .travaux(atelier)
       .occupations(atelier)
       .operateursNommes(atelier)
       .postesNommes(atelier)
-      .clock(() -> LE_11_MAI_A_17H);
+      .clock(() -> evaluation);
     return new ComptesRendusDuCout(coutsDeRevient, element -> passages, () -> FUSEAU_DE_PARIS);
   }
 }

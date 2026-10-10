@@ -113,6 +113,31 @@ public final class CoutDeRevientFixture {
     .tauxHoraire(Optional.of(TAUX_HORAIRE_DE_20_EUROS))
     .categorie(CategorieDActivite.TRAVAIL);
 
+  public static final Activite ACTIVITE_FRAISAGE_SANS_TAUX_HORAIRE = Activite.builder()
+    .operateur(OPERATEUR_ID_DUPONT)
+    .element(ELEMENT_ID_OF)
+    .poste(Optional.of(POSTE_ID_FRAISEUSE))
+    .nature(Optional.of(NATURE_FRAISAGE))
+    .coutHoraire(Optional.of(COUT_HORAIRE_DE_45_EUROS))
+    .tauxHoraire(Optional.empty())
+    .categorie(CategorieDActivite.TRAVAIL);
+  public static final Activite ACTIVITE_FRAISAGE_SANS_COUT_HORAIRE = Activite.builder()
+    .operateur(OPERATEUR_ID_DUPONT)
+    .element(ELEMENT_ID_OF)
+    .poste(Optional.of(POSTE_ID_FRAISEUSE))
+    .nature(Optional.of(NATURE_FRAISAGE))
+    .coutHoraire(Optional.empty())
+    .tauxHoraire(Optional.of(TAUX_HORAIRE_DE_20_EUROS))
+    .categorie(CategorieDActivite.TRAVAIL);
+  public static final Activite ACTIVITE_FRAISAGE_A_0_EURO = Activite.builder()
+    .operateur(OPERATEUR_ID_DUPONT)
+    .element(ELEMENT_ID_OF)
+    .poste(Optional.of(POSTE_ID_FRAISEUSE))
+    .nature(Optional.of(NATURE_FRAISAGE))
+    .coutHoraire(Optional.of(COUT_HORAIRE_DE_0_EURO))
+    .tauxHoraire(Optional.of(TAUX_HORAIRE_DE_20_EUROS))
+    .categorie(CategorieDActivite.TRAVAIL);
+
   public static final ZoneId FUSEAU_DE_PARIS = ZoneId.of("Europe/Paris");
 
   /**

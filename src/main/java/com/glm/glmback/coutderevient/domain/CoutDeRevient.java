@@ -4,6 +4,7 @@ import com.glm.glmback.shared.error.domain.Assert;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Le rapport d'un element de fabrication : une ligne par nature d'operation, et le total.
@@ -61,6 +62,27 @@ public record CoutDeRevient(ElementValorise element, List<LigneDeCout> lignes, E
 
   public Cout cout() {
     return lignes.stream().map(LigneDeCout::cout).reduce(Cout.AUCUN, Cout::plus);
+  }
+
+  /**
+   * Le rapport ne part chez le client que si chacun de ses montants est sur : aucun pointage termine
+   * automatiquement sans etre regularise, aucun tarif manquant. Une activite en cours ne bloque pas : elle est exclue
+   * du rapport, qui n'est alors qu'une photographie.
+   */
+  public boolean exportable() {
+    return finsAutomatiques() == 0 && tarifsManquants() == 0;
+  }
+
+  public long finsAutomatiques() {
+    return pointages().filter(PointageValorise::finAutomatique).count();
+  }
+
+  public long tarifsManquants() {
+    return pointages().filter(PointageValorise::tarifManquant).count();
+  }
+
+  private Stream<PointageValorise> pointages() {
+    return lignes.stream().flatMap(ligne -> ligne.pointages().stream());
   }
 
   private static List<LigneDeCout> lignes(List<TrancheDActivite> tranches, ChargesDesOperateurs charges) {

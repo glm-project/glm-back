@@ -199,9 +199,14 @@ sans logo : le client relit la version dans `GET /api/parametrage`.
 
 ### `cout-de-revient` — `urn:glm:erreur:cout-de-revient:`
 
-| Code                                 | Statut | `title`                            | Exception                 |
-| ------------------------------------ | ------ | ---------------------------------- | ------------------------- |
-| `element-de-fabrication-introuvable` | 404    | element de fabrication introuvable | `ElementInconnuException` |
+| Code                                 | Statut | `title`                            | Exception                       |
+| ------------------------------------ | ------ | ---------------------------------- | ------------------------------- |
+| `element-de-fabrication-introuvable` | 404    | element de fabrication introuvable | `ElementInconnuException`       |
+| `rapport-non-exportable`             | 409    | rapport non exportable             | `RapportNonExportableException` |
+
+`rapport-non-exportable` refuse l'export d'un rapport dont un pointage porte une fin automatique non régularisée, ou un
+tarif manquant (taux horaire de l'opérateur absent, ou coût horaire absent sur un pointage qui a un poste). Il n'y a
+aucun fichier : le front explique la raison et mène aux anomalies de l'élément. Le refus cesse dès la régularisation.
 
 ## Ajouter une erreur
 

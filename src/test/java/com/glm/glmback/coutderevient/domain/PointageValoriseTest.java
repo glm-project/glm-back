@@ -63,4 +63,33 @@ class PointageValoriseTest {
     assertThat(pointage.finAutomatique()).isTrue();
     assertThat(pointage.anomalies()).containsExactly(AnomalieDuPointage.FIN_AUTOMATIQUE);
   }
+
+  @Test
+  void shouldNotMissATarifWhenTheRatesAreKnown() {
+    assertThat(pointage(ACTIVITE_FRAISAGE).tarifManquant()).isFalse();
+  }
+
+  @Test
+  void shouldMissATarifWithoutTauxHoraire() {
+    assertThat(pointage(ACTIVITE_FRAISAGE_SANS_TAUX_HORAIRE).tarifManquant()).isTrue();
+  }
+
+  @Test
+  void shouldMissATarifWithoutCoutHoraireOnAPoste() {
+    assertThat(pointage(ACTIVITE_FRAISAGE_SANS_COUT_HORAIRE).tarifManquant()).isTrue();
+  }
+
+  @Test
+  void shouldAcceptAPosteAt0Euro() {
+    assertThat(pointage(ACTIVITE_FRAISAGE_A_0_EURO).tarifManquant()).isFalse();
+  }
+
+  @Test
+  void shouldNotMissACoutHoraireWithoutPoste() {
+    assertThat(pointage(ACTIVITE_SANS_POSTE).tarifManquant()).isFalse();
+  }
+
+  private static PointageValorise pointage(Activite activite) {
+    return new PointageValorise(new TrancheDActivite(activite, new Periode(LE_11_MAI_A_9H, LE_11_MAI_A_11H)), List.of());
+  }
 }

@@ -1,6 +1,6 @@
 package com.glm.glmback.coutderevient.domain;
 
-/** Prepare le compte rendu d'un element, a partir du rapport que l'ecran lit. */
+/** Prepare le compte rendu d'un element, a partir du rapport que l'ecran lit, et refuse un rapport non exportable. */
 public final class ComptesRendusDuCout {
 
   private final CoutsDeRevientService coutsDeRevient;
@@ -15,6 +15,9 @@ public final class ComptesRendusDuCout {
 
   public CompteRenduDuCout compteRendu(ElementId element) {
     CoutDeRevient rapport = coutsDeRevient.rapport(element);
+    if (!rapport.exportable()) {
+      throw new RapportNonExportableException(rapport);
+    }
     return new CompteRenduDuCout(rapport, StatutDeLElement.de(passages.passages(element), rapport.lecture()), fuseau.zone());
   }
 }
