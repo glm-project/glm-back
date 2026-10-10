@@ -14,7 +14,7 @@ class PosteDeTravailAModifierTest {
 
   @Test
   void shouldNotBuildWithoutId() {
-    assertThatThrownBy(() -> new PosteDeTravailAModifier(null, LIBELLE_TOUR_1, NATURE_CHOISIE_TOURNAGE, Optional.empty()))
+    assertThatThrownBy(() -> new PosteDeTravailAModifier(null, LIBELLE_TOUR_1, NATURE_DE_TRAVAIL_ID_TOURNAGE, Optional.empty()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("id");
   }
@@ -23,7 +23,7 @@ class PosteDeTravailAModifierTest {
   void shouldNotBuildWithoutLibelle() {
     PosteDeTravailId id = PosteDeTravailId.newId();
 
-    assertThatThrownBy(() -> new PosteDeTravailAModifier(id, null, NATURE_CHOISIE_TOURNAGE, Optional.empty()))
+    assertThatThrownBy(() -> new PosteDeTravailAModifier(id, null, NATURE_DE_TRAVAIL_ID_TOURNAGE, Optional.empty()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("libelle");
   }
@@ -34,14 +34,14 @@ class PosteDeTravailAModifierTest {
 
     assertThatThrownBy(() -> new PosteDeTravailAModifier(id, LIBELLE_TOUR_1, null, Optional.empty()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("nature de travail");
+      .hasMessageContaining("id de la nature de travail");
   }
 
   @Test
   void shouldNotBuildWithoutCoutHoraire() {
     PosteDeTravailId id = PosteDeTravailId.newId();
 
-    assertThatThrownBy(() -> new PosteDeTravailAModifier(id, LIBELLE_TOUR_1, NATURE_CHOISIE_TOURNAGE, null))
+    assertThatThrownBy(() -> new PosteDeTravailAModifier(id, LIBELLE_TOUR_1, NATURE_DE_TRAVAIL_ID_TOURNAGE, null))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("cout horaire");
   }
@@ -50,17 +50,22 @@ class PosteDeTravailAModifierTest {
   void shouldWrapRawValuesInValueObjects() {
     PosteDeTravailId id = PosteDeTravailId.newId();
 
-    PosteDeTravailAModifier aModifier = new PosteDeTravailAModifier(id, "Tour 1", NATURE_CHOISIE_TOURNAGE, new BigDecimal("45.50"));
+    PosteDeTravailAModifier aModifier = new PosteDeTravailAModifier(id, "Tour 1", NATURE_DE_TRAVAIL_ID_TOURNAGE, new BigDecimal("45.50"));
 
     assertThat(aModifier.id()).isEqualTo(id);
     assertThat(aModifier.libelle()).isEqualTo(LIBELLE_TOUR_1);
-    assertThat(aModifier.nature()).isEqualTo(NATURE_CHOISIE_TOURNAGE);
+    assertThat(aModifier.nature()).isEqualTo(NATURE_DE_TRAVAIL_ID_TOURNAGE);
     assertThat(aModifier.coutHoraire()).contains(COUT_HORAIRE_45_50);
   }
 
   @Test
   void shouldAcceptAbsentCoutHoraire() {
-    PosteDeTravailAModifier aModifier = new PosteDeTravailAModifier(PosteDeTravailId.newId(), "Tour 1", NATURE_CHOISIE_TOURNAGE, null);
+    PosteDeTravailAModifier aModifier = new PosteDeTravailAModifier(
+      PosteDeTravailId.newId(),
+      "Tour 1",
+      NATURE_DE_TRAVAIL_ID_TOURNAGE,
+      null
+    );
 
     assertThat(aModifier.coutHoraire()).isEmpty();
   }

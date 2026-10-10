@@ -7,6 +7,7 @@ import com.glm.glmback.cucumber.CategoriesDeProduitDesScenarios;
 import com.glm.glmback.cucumber.CucumberClock;
 import com.glm.glmback.cucumber.EcrituresDuJournalDAtelier;
 import com.glm.glmback.cucumber.EcrituresDuJournalDAtelier.PointageEnvoye;
+import com.glm.glmback.cucumber.NaturesDesScenarios;
 import com.glm.glmback.cucumber.rest.CucumberRestClient;
 import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurityContexts;
@@ -620,7 +621,7 @@ public class AtelierSteps {
     postes.put(
       alias,
       POSTES_DECLARES.computeIfAbsent(alias, libelle -> {
-        Map<String, Object> corps = new HashMap<>(Map.of("libelle", libelle, "nature", nature));
+        Map<String, Object> corps = new HashMap<>(Map.of("libelle", libelle, "natureId", NaturesDesScenarios.identifiant(rest, nature)));
         if (coutHoraire != null) {
           corps.put("coutHoraire", coutHoraire);
         }

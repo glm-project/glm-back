@@ -40,12 +40,6 @@ class NatureDeTravailTest {
   }
 
   @Test
-  @SuppressWarnings("removal")
-  void shouldGiveKeyIgnoringCaseAccentsAndSpaces() {
-    assertThat(new NatureDeTravail("Électro   Érosion").cle()).isEqualTo("electro erosion");
-  }
-
-  @Test
   void shouldGetValueFromValidNature() {
     assertThat(NATURE_TOURNAGE.value()).isEqualTo("tournage");
   }

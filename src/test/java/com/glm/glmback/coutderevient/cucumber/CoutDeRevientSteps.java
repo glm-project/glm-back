@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.*;
 import com.glm.glmback.cucumber.CategoriesDeProduitDesScenarios;
 import com.glm.glmback.cucumber.CucumberClock;
 import com.glm.glmback.cucumber.EcrituresDuJournalDAtelier;
+import com.glm.glmback.cucumber.NaturesDesScenarios;
 import com.glm.glmback.cucumber.rest.CucumberRestClient;
 import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
 import io.cucumber.java.en.Given;
@@ -63,7 +64,14 @@ public class CoutDeRevientSteps {
 
   @Given("le rapport connait le poste {string} de nature {string} a {string} de l'heure")
   public void leRapportConnaitLePoste(String alias, String nature, String coutHoraire) {
-    Map<String, Object> corps = Map.of("libelle", alias + " " + SEQUENCE.incrementAndGet(), "nature", nature, "coutHoraire", coutHoraire);
+    Map<String, Object> corps = Map.of(
+      "libelle",
+      alias + " " + SEQUENCE.incrementAndGet(),
+      "natureId",
+      NaturesDesScenarios.identifiant(rest, nature),
+      "coutHoraire",
+      coutHoraire
+    );
     rest.post(POSTES_URI, JSON.writeValueAsString(corps));
     postes.put(alias, id());
   }

@@ -3,6 +3,7 @@ package com.glm.glmback.operateur.cucumber;
 import static com.glm.glmback.cucumber.rest.CucumberRestAssertions.*;
 import static org.assertj.core.api.Assertions.*;
 
+import com.glm.glmback.cucumber.NaturesDesScenarios;
 import com.glm.glmback.cucumber.rest.CucumberRestClient;
 import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
 import io.cucumber.java.en.Given;
@@ -35,7 +36,7 @@ public class OperateurSteps {
 
   @Given("j'ai un poste de travail {string} de nature {string}")
   public void jaiUnPosteDeTravail(String libelle, String nature) {
-    rest.post(POSTES_URI, JSON.writeValueAsString(Map.of("libelle", libelle, "nature", nature)));
+    rest.post(POSTES_URI, JSON.writeValueAsString(Map.of("libelle", libelle, "natureId", NaturesDesScenarios.identifiant(rest, nature))));
     postesDeclares.put(libelle, UUID.fromString((String) CucumberRestTestContext.getElement("$.id")));
   }
 

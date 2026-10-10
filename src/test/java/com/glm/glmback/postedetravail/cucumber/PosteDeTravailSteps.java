@@ -3,6 +3,7 @@ package com.glm.glmback.postedetravail.cucumber;
 import static com.glm.glmback.cucumber.rest.CucumberRestAssertions.*;
 import static org.assertj.core.api.Assertions.*;
 
+import com.glm.glmback.cucumber.NaturesDesScenarios;
 import com.glm.glmback.cucumber.rest.CucumberRestClient;
 import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
 import io.cucumber.java.en.Given;
@@ -31,13 +32,25 @@ public class PosteDeTravailSteps {
 
   @When("je declare un poste de travail")
   public void jeDeclareUnPosteDeTravail(Map<String, String> donnees) {
-    rest.post(BASE_URI, JSON.writeValueAsString(donnees));
+    rest.post(BASE_URI, JSON.writeValueAsString(avecIdentifiantDeNature(donnees)));
   }
 
   @Given("j'ai declare un poste de travail")
   public void jaiDeclareUnPosteDeTravail(Map<String, String> donnees) {
-    rest.post(BASE_URI, JSON.writeValueAsString(donnees));
+    rest.post(BASE_URI, JSON.writeValueAsString(avecIdentifiantDeNature(donnees)));
     dernierIdDeclare = idDeLaDerniereReponse();
+  }
+
+  /**
+   * Les tableaux des scenarios nomment la nature par son libelle : elle part au serveur par son identifiant.
+   */
+  private Map<String, String> avecIdentifiantDeNature(Map<String, String> donnees) {
+    if (!donnees.containsKey("nature")) {
+      return donnees;
+    }
+    Map<String, String> corps = new HashMap<>(donnees);
+    corps.put("natureId", NaturesDesScenarios.identifiant(rest, corps.remove("nature")));
+    return corps;
   }
 
   @When("je declare le poste de travail {string} de la nature declaree {string}")
@@ -94,12 +107,12 @@ public class PosteDeTravailSteps {
 
   @When("je revise ce poste de travail")
   public void jeReviseCePosteDeTravail(Map<String, String> donnees) {
-    rest.put(BASE_URI + "/" + dernierIdDeclare, JSON.writeValueAsString(donnees));
+    rest.put(BASE_URI + "/" + dernierIdDeclare, JSON.writeValueAsString(avecIdentifiantDeNature(donnees)));
   }
 
   @When("je revise le poste de travail {string}")
   public void jeReviseLePosteDeTravail(String id, Map<String, String> donnees) {
-    rest.put(BASE_URI + "/" + id, JSON.writeValueAsString(donnees));
+    rest.put(BASE_URI + "/" + id, JSON.writeValueAsString(avecIdentifiantDeNature(donnees)));
   }
 
   @When("je supprime ce poste de travail")

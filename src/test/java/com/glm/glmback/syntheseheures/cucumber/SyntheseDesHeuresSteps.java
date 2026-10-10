@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.*;
 import com.glm.glmback.cucumber.CategoriesDeProduitDesScenarios;
 import com.glm.glmback.cucumber.CucumberClock;
 import com.glm.glmback.cucumber.EcrituresDuJournalDAtelier;
+import com.glm.glmback.cucumber.NaturesDesScenarios;
 import com.glm.glmback.cucumber.rest.CucumberRestClient;
 import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
 import io.cucumber.java.en.Given;
@@ -67,7 +68,9 @@ public class SyntheseDesHeuresSteps {
   public void laSyntheseDesHeuresConnaitLePoste(String alias, String nature) {
     rest.post(
       POSTES_URI,
-      JSON.writeValueAsString(Map.of("libelle", "Synthese " + alias + " " + SEQUENCE.incrementAndGet(), "nature", nature))
+      JSON.writeValueAsString(
+        Map.of("libelle", "Synthese " + alias + " " + SEQUENCE.incrementAndGet(), "natureId", NaturesDesScenarios.identifiant(rest, nature))
+      )
     );
     postes.put(alias, id());
   }
