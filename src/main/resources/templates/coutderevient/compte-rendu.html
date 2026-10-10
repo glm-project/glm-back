@@ -1,0 +1,211 @@
+<!-- XHTML sans doctype : OpenHTMLtoPDF lit le gabarit en XML. -->
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title th:text="${document.titre()} + ' · ' + ${document.element()}">Coût de revient</title>
+    <style>
+      @page {
+        size: A4 landscape;
+        margin: 34mm 12mm 14mm 12mm;
+        @top-center {
+          content: element(entete);
+        }
+        @bottom-left {
+          content: element(pied);
+        }
+        @bottom-right {
+          content: 'Page ' counter(page) ' / ' counter(pages);
+          font-family: 'DejaVu Sans';
+          font-size: 8pt;
+          color: #555555;
+        }
+      }
+      body {
+        margin: 0;
+        font-family: 'DejaVu Sans';
+        font-size: 9pt;
+        color: #111111;
+      }
+      .entete {
+        position: running(entete);
+        width: 100%;
+        border-bottom: 1.5pt solid #111111;
+        padding-bottom: 3mm;
+      }
+      .pied {
+        position: running(pied);
+        font-size: 8pt;
+        color: #555555;
+      }
+      .entete table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .entete td {
+        vertical-align: top;
+        padding: 0;
+      }
+      .logo {
+        width: 48mm;
+        height: 16mm;
+      }
+      .titre {
+        font-size: 16pt;
+        font-weight: bold;
+      }
+      .element {
+        font-size: 11pt;
+        font-weight: bold;
+      }
+      .droite {
+        text-align: right;
+      }
+      .statut {
+        display: inline-block;
+        border: 1pt solid #111111;
+        padding: 1mm 2mm;
+        font-weight: bold;
+      }
+      .indicateurs {
+        margin: 0 0 4mm 0;
+        border-collapse: separate;
+        border-spacing: 0;
+      }
+      .indicateur {
+        border: 0.75pt solid #888888;
+        padding: 2mm 3mm;
+        width: 60mm;
+      }
+      .espace {
+        width: 8mm;
+      }
+      .petit {
+        font-size: 7.5pt;
+        color: #444444;
+      }
+      .valeur {
+        font-size: 14pt;
+        font-weight: bold;
+      }
+      h2 {
+        font-size: 11pt;
+        margin: 4mm 0 1.5mm 0;
+        page-break-after: avoid;
+      }
+      table.donnees {
+        width: 100%;
+        border-collapse: collapse;
+        -fs-table-paginate: paginate;
+      }
+      table.donnees thead {
+        display: table-header-group;
+      }
+      table.donnees tr {
+        page-break-inside: avoid;
+      }
+      table.donnees th {
+        font-size: 8pt;
+        text-align: left;
+        border-bottom: 1pt solid #111111;
+        padding: 1mm 1.5mm;
+      }
+      table.donnees td {
+        border-bottom: 0.5pt solid #bbbbbb;
+        padding: 1mm 1.5mm;
+      }
+      table.donnees th.nombre,
+      table.donnees td.nombre {
+        text-align: right;
+      }
+      table.donnees td.cout {
+        font-weight: bold;
+      }
+      table.donnees tr.total td {
+        font-weight: bold;
+        border-bottom: none;
+        border-top: 1pt solid #111111;
+      }
+      .note {
+        margin-top: 4mm;
+        font-size: 7.5pt;
+        color: #444444;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="entete">
+      <table>
+        <tr>
+          <td class="logo"></td>
+          <td>
+            <div class="titre" th:text="${document.titre()}">Coût de revient</div>
+            <div class="element" th:text="${document.element()}">OF · OF-2026-000001</div>
+          </td>
+          <td class="droite">
+            <div class="statut" th:text="${document.statut()}">En cours</div>
+            <div th:text="'Généré le ' + ${document.generation()}">Généré le</div>
+          </td>
+        </tr>
+      </table>
+    </div>
+    <div class="pied" th:text="${document.element()} + ' · Généré le ' + ${document.generation()}">pied</div>
+
+    <table class="indicateurs">
+      <tr>
+        <td class="indicateur">
+          <div class="petit">Coût de revient</div>
+          <div class="valeur" th:text="${document.total().total()}">0,00 €</div>
+          <div class="petit" th:text="'Machine ' + ${document.total().machine()} + ' · Main d’œuvre ' + ${document.total().mainDOeuvre()}">
+            detail
+          </div>
+        </td>
+        <td class="espace"></td>
+        <td class="indicateur">
+          <div class="petit">Temps passé</div>
+          <div class="valeur" th:text="${document.total().temps()}">0 h 00</div>
+          <div class="petit" th:text="'dont non-conformité ' + ${document.total().nonConformite()}">detail</div>
+        </td>
+      </tr>
+    </table>
+
+    <h2>Par nature d’opération</h2>
+    <table class="donnees natures">
+      <thead>
+        <tr>
+          <th>Nature</th>
+          <th class="nombre">Travail</th>
+          <th class="nombre">Non-conformité</th>
+          <th class="nombre">Temps total</th>
+          <th class="nombre">Machine</th>
+          <th class="nombre">Main d’œuvre</th>
+          <th class="nombre">Coût total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="ligne : ${document.natures()}">
+          <td th:text="${ligne.libelle()}">Nature</td>
+          <td class="nombre" th:text="${ligne.travail()}"></td>
+          <td class="nombre" th:text="${ligne.nonConformite()}"></td>
+          <td class="nombre" th:text="${ligne.temps()}"></td>
+          <td class="nombre" th:text="${ligne.machine()}"></td>
+          <td class="nombre" th:text="${ligne.mainDOeuvre()}"></td>
+          <td class="nombre cout" th:text="${ligne.total()}"></td>
+        </tr>
+        <tr class="total">
+          <td>Total</td>
+          <td class="nombre" th:text="${document.total().travail()}"></td>
+          <td class="nombre" th:text="${document.total().nonConformite()}"></td>
+          <td class="nombre" th:text="${document.total().temps()}"></td>
+          <td class="nombre" th:text="${document.total().machine()}"></td>
+          <td class="nombre" th:text="${document.total().mainDOeuvre()}"></td>
+          <td class="nombre" th:text="${document.total().total()}"></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="note">
+      Montants arrondis au centime par le serveur. Le coût machine court en entier ; le taux de l’opérateur est partagé entre les postes
+      qu’il occupe en même temps. Un coût nul n’est pas affiché.
+    </p>
+  </body>
+</html>

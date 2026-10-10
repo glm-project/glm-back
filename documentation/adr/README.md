@@ -13,3 +13,4 @@
 - [0011 — Regularise an automatic end directly](0011-regularise-an-automatic-end-directly.md)
 - [0012 — Freeze the maximum duration on the opening punch](0012-freeze-the-maximum-duration-on-the-opening-punch.md)
 - [0013 — Build the cost price workbook with Apache POI](0013-build-the-cost-price-workbook-with-apache-poi.md)
+- [0014 — Render the cost price PDF from an HTML template](0014-render-the-cost-price-pdf-from-an-html-template.md)

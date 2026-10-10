@@ -24,6 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
@@ -261,6 +264,40 @@ public class CoutDeRevientSteps {
   public void jExporteEnExcel(String element, String instant) {
     horloge.ilEst(Instant.parse(instant));
     rest.get(RAPPORTS_URI + "/" + elements.get(element) + "/export.xlsx");
+  }
+
+  @When("j'exporte en PDF {string} le cout de revient de {string} a {string}")
+  public void jExporteEnPdf(String version, String element, String instant) {
+    horloge.ilEst(Instant.parse(instant));
+    rest.get(RAPPORTS_URI + "/" + elements.get(element) + "/export.pdf?version=" + version);
+  }
+
+  @Then("le PDF recu est nomme d'apres {string} en version {string}")
+  public void lePdfRecuEstNomme(String element, String version) {
+    assertThat(CucumberRestTestContext.getResponseHeader("Content-Type")).containsExactly("application/pdf");
+    assertThat(CucumberRestTestContext.getResponseHeader("Content-Disposition")).containsExactly(
+      "attachment; filename=\"cout-de-revient-%s-%s.pdf\"".formatted(noms.get(element), version)
+    );
+  }
+
+  @Then("le PDF porte les lignes")
+  public void lePdfPorteLesLignes(List<String> lignes) throws IOException {
+    try (PDDocument pdf = Loader.loadPDF(CucumberRestTestContext.getResponseBytes())) {
+      String texte = new PDFTextStripper().getText(pdf).replace('\u202f', ' ').replaceAll("[ \\t]+", " ");
+      assertThat(texte.lines().map(String::strip).toList()).containsSubsequence(lignes.stream().map(this::avecLesNoms).toList());
+    }
+  }
+
+  /** Les postes et operateurs des scenarios portent un suffixe unique : le texte attendu les cite par leur alias. */
+  private String avecLesNoms(String ligne) {
+    String nommee = ligne;
+    for (Map.Entry<String, String> poste : libelles.entrySet()) {
+      nommee = nommee.replace("{" + poste.getKey() + "}", poste.getValue());
+    }
+    for (Map.Entry<String, String> operateur : nomsDesOperateurs.entrySet()) {
+      nommee = nommee.replace("{" + operateur.getKey() + "}", operateur.getValue());
+    }
+    return nommee;
   }
 
   @Then("le classeur recu est nomme d'apres {string}")
