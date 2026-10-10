@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.*;
 import com.glm.glmback.cucumber.CategoriesDeProduitDesScenarios;
 import com.glm.glmback.cucumber.CucumberClock;
 import com.glm.glmback.cucumber.EcrituresDuJournalDAtelier;
+import com.glm.glmback.cucumber.NaturesDesScenarios;
 import com.glm.glmback.cucumber.rest.CucumberRestClient;
 import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
 import io.cucumber.java.en.Given;
@@ -76,7 +77,10 @@ public class PupitreSteps {
   @Given("le pupitre connait le poste {string}")
   public void lePupitreConnaitLePoste(String alias) {
     String libelle = PREFIXE + alias + " " + SEQUENCE.incrementAndGet();
-    rest.post(POSTES_URI, JSON.writeValueAsString(Map.of("libelle", libelle, "nature", "fraisage")));
+    rest.post(
+      POSTES_URI,
+      JSON.writeValueAsString(Map.of("libelle", libelle, "natureId", NaturesDesScenarios.identifiant(rest, "fraisage")))
+    );
     postes.put(alias, id());
     libelles.put(alias, libelle);
   }
