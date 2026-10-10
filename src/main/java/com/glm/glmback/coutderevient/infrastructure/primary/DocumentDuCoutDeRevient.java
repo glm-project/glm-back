@@ -1,9 +1,12 @@
 package com.glm.glmback.coutderevient.infrastructure.primary;
 
+import com.glm.glmback.coutderevient.domain.AnnuaireDuCout;
+import com.glm.glmback.coutderevient.domain.CategorieDActivite;
 import com.glm.glmback.coutderevient.domain.CompteRenduDuCout;
 import com.glm.glmback.coutderevient.domain.CoutDeRevient;
 import com.glm.glmback.coutderevient.domain.DureeTotale;
 import com.glm.glmback.coutderevient.domain.MontantTotal;
+import com.glm.glmback.coutderevient.domain.PointageValorise;
 import com.glm.glmback.coutderevient.domain.TempsPasse;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import java.io.ByteArrayOutputStream;
@@ -11,7 +14,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
@@ -36,6 +41,8 @@ final class DocumentDuCoutDeRevient {
   private static final String GABARIT = "compte-rendu";
   private static final String POLICE = "DejaVu Sans";
   private static final DateTimeFormatter GENERATION = DateTimeFormatter.ofPattern("d MMM yyyy 'à' HH:mm", Locale.FRENCH);
+  private static final DateTimeFormatter JOUR = DateTimeFormatter.ofPattern("d MMM", Locale.FRENCH);
+  private static final DateTimeFormatter HEURE = DateTimeFormatter.ofPattern("HH:mm", Locale.FRENCH);
   private static final TemplateEngine MOTEUR = moteur();
 
   private DocumentDuCoutDeRevient() {}
@@ -82,8 +89,49 @@ final class DocumentDuCoutDeRevient {
           )
         )
         .toList(),
-      LigneVue.de("Total", rapport.temps(), rapport.cout().machine(), rapport.cout().mainDOeuvre(), rapport.cout().total())
+      LigneVue.de("Total", rapport.temps(), rapport.cout().machine(), rapport.cout().mainDOeuvre(), rapport.cout().total()),
+      version == VersionDuDocument.DETAIL ? sections(rapport, fuseau) : List.of()
     );
+  }
+
+  /** Une section par nature : ses pointages dans l'ordre ou ils ont commence, puis le total de la nature. */
+  private static List<SectionVue> sections(CoutDeRevient rapport, ZoneId fuseau) {
+    return rapport
+      .lignes()
+      .stream()
+      .map(ligne -> {
+        String nature = LibellesDuCoutDeRevient.nature(ligne);
+        int nombre = ligne.pointages().size();
+        return new SectionVue(
+          "%s — %d %s".formatted(nature, nombre, nombre > 1 ? "pointages" : "pointage"),
+          ligne
+            .pointages()
+            .stream()
+            .map(pointage -> PointageVue.de(pointage, rapport.annuaire(), fuseau))
+            .toList(),
+          new PointageVue(
+            "Total " + nature,
+            false,
+            "",
+            "",
+            duree(ligne.temps().total().valeur()),
+            euros(ligne.cout().machine().valeur().value()),
+            euros(ligne.cout().mainDOeuvre().valeur().value()),
+            euros(ligne.cout().total().valeur().value())
+          )
+        );
+      })
+      .toList();
+  }
+
+  /** Le jour n'est repete a la fin que si le pointage a passe minuit. */
+  static String periode(Instant debut, Instant fin, ZoneId fuseau) {
+    ZonedDateTime depuis = debut.atZone(fuseau);
+    ZonedDateTime jusqua = fin.atZone(fuseau);
+    String fermeture = depuis.toLocalDate().equals(jusqua.toLocalDate())
+      ? HEURE.format(jusqua)
+      : JOUR.format(jusqua) + " · " + HEURE.format(jusqua);
+    return JOUR.format(depuis) + " · " + HEURE.format(depuis) + " → " + fermeture;
   }
 
   static String duree(Duration duree) {
@@ -115,7 +163,41 @@ final class DocumentDuCoutDeRevient {
   }
 
   /** Ce que le gabarit affiche, deja formate : il ne fait que placer des textes. */
-  public record Vue(String titre, String element, String statut, String generation, List<LigneVue> natures, LigneVue total) {}
+  public record Vue(
+    String titre,
+    String element,
+    String statut,
+    String generation,
+    List<LigneVue> natures,
+    LigneVue total,
+    List<SectionVue> sections
+  ) {}
+
+  public record SectionVue(String titre, List<PointageVue> pointages, PointageVue total) {}
+
+  public record PointageVue(
+    String poste,
+    boolean nonConformite,
+    String operateur,
+    String periode,
+    String duree,
+    String machine,
+    String mainDOeuvre,
+    String total
+  ) {
+    static PointageVue de(PointageValorise pointage, AnnuaireDuCout annuaire, ZoneId fuseau) {
+      return new PointageVue(
+        LibellesDuCoutDeRevient.poste(pointage.activite(), annuaire),
+        pointage.activite().categorie() == CategorieDActivite.NON_CONFORMITE,
+        LibellesDuCoutDeRevient.operateur(pointage.activite(), annuaire),
+        DocumentDuCoutDeRevient.periode(pointage.debut(), pointage.fin(), fuseau),
+        DocumentDuCoutDeRevient.duree(pointage.duree().valeur()),
+        DocumentDuCoutDeRevient.euros(pointage.cout().machine().valeur().value()),
+        DocumentDuCoutDeRevient.euros(pointage.cout().mainDOeuvre().valeur().value()),
+        DocumentDuCoutDeRevient.euros(pointage.cout().total().valeur().value())
+      );
+    }
+  }
 
   public record LigneVue(
     String libelle,

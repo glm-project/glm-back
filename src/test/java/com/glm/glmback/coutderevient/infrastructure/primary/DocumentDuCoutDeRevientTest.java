@@ -4,12 +4,20 @@ import static com.glm.glmback.coutderevient.domain.CoutDeRevientFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
+import com.glm.glmback.coutderevient.domain.AnnuaireDuCout;
+import com.glm.glmback.coutderevient.domain.ChargesDesOperateurs;
 import com.glm.glmback.coutderevient.domain.CompteRenduDuCout;
+import com.glm.glmback.coutderevient.domain.CoutDeRevient;
+import com.glm.glmback.coutderevient.domain.EvaluationDuCout;
+import com.glm.glmback.coutderevient.domain.Periode;
 import com.glm.glmback.coutderevient.domain.StatutDeLElement;
+import com.glm.glmback.coutderevient.domain.TrancheDActivite;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
@@ -89,6 +97,69 @@ class DocumentDuCoutDeRevientTest {
     assertThat(DocumentDuCoutDeRevient.duree(Duration.ofMinutes(625))).isEqualTo("10 h 25");
     assertThat(DocumentDuCoutDeRevient.euros(new BigDecimal("1164.25"))).isEqualTo("1\u202f164,25 €");
     assertThat(DocumentDuCoutDeRevient.euros(new BigDecimal("0.00"))).isEmpty();
+  }
+
+  @Test
+  void shouldNeDetaillerLesPointagesQueDansLaVersionDetaillee() throws IOException {
+    assertThat(texte(FRAISAGE_ET_SANS_POSTE_EN_COURS, VersionDuDocument.SYNTHESE)).doesNotContain("pointages");
+  }
+
+  @Test
+  void shouldDetaillerChaquePointageParNature() throws IOException {
+    String texte = texte(FRAISAGE_ET_SANS_POSTE_EN_COURS, VersionDuDocument.DETAIL);
+
+    assertThat(texte)
+      .contains("Coût de revient — détaillé")
+      .contains("Fraisage — 2 pointages")
+      .contains("DMG DMU 50 Jean Dupont 11 mai · 11:00 → 13:00 2 h 00 90,00 € 40,00 € 130,00 €")
+      .contains("DMG DMU 50 NC Jean Dupont 11 mai · 13:00 → 14:00 1 h 00 45,00 € 20,00 € 65,00 €")
+      .contains("Total Fraisage 3 h 00 135,00 € 60,00 € 195,00 €")
+      .contains("Sans poste — 1 pointage")
+      .contains("Sans poste Jean Dupont 11 mai · 15:00 → 16:00 1 h 00 20,00 € 20,00 €")
+      .contains("Total Sans poste 1 h 00 20,00 € 20,00 €");
+  }
+
+  @Test
+  void shouldRepeterLEnTeteEtNumeroterChaquePageDUnLongDetail() throws IOException {
+    List<TrancheDActivite> tranches = IntStream.range(0, 300)
+      .mapToObj(heure ->
+        new TrancheDActivite(
+          ACTIVITE_FRAISAGE,
+          new Periode(LE_11_MAI_A_8H.plusSeconds(3600L * heure), LE_11_MAI_A_9H.plusSeconds(3600L * heure))
+        )
+      )
+      .toList();
+    CoutDeRevient troisCentsHeures = CoutDeRevient.builder()
+      .element(ELEMENT_VALORISE_OF)
+      .tranches(tranches)
+      .charges(ChargesDesOperateurs.de(tranches))
+      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
+      .annuaire(AnnuaireDuCout.VIDE);
+
+    try (
+      PDDocument pdf = Loader.loadPDF(
+        DocumentDuCoutDeRevient.de(
+          new CompteRenduDuCout(troisCentsHeures, StatutDeLElement.EN_COURS, FUSEAU_DE_PARIS),
+          VersionDuDocument.DETAIL
+        )
+      )
+    ) {
+      int pages = pdf.getNumberOfPages();
+      assertThat(pages).isGreaterThan(5);
+      PDFTextStripper extraction = new PDFTextStripper();
+      for (int page = 1; page <= pages; page++) {
+        extraction.setStartPage(page);
+        extraction.setEndPage(page);
+        assertThat(extraction.getText(pdf)).contains("Coût de revient — détaillé").contains("Page %d / %d".formatted(page, pages));
+      }
+    }
+  }
+
+  @Test
+  void shouldRepeterLeJourDeFinDUnPointageQuiPasseMinuit() {
+    assertThat(DocumentDuCoutDeRevient.periode(LE_11_MAI_A_21H, LE_12_MAI_A_7H, FUSEAU_DE_PARIS)).isEqualTo(
+      "11 mai · 23:00 → 12 mai · 09:00"
+    );
   }
 
   private static String texte(CompteRenduDuCout compteRendu, VersionDuDocument version) throws IOException {

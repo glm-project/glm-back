@@ -125,6 +125,12 @@
         border-bottom: none;
         border-top: 1pt solid #111111;
       }
+      .nc {
+        border: 0.75pt solid #111111;
+        padding: 0 1mm;
+        font-size: 7pt;
+        font-weight: bold;
+      }
       .note {
         margin-top: 4mm;
         font-size: 7.5pt;
@@ -203,9 +209,47 @@
       </tbody>
     </table>
 
+    <th:block th:each="section : ${document.sections()}">
+      <h2 th:text="${section.titre()}">Nature — 1 pointage</h2>
+      <table class="donnees pointages">
+        <thead>
+          <tr>
+            <th>Poste</th>
+            <th>Opérateur</th>
+            <th>Pointage</th>
+            <th class="nombre">Durée</th>
+            <th class="nombre">Machine</th>
+            <th class="nombre">Main d’œuvre</th>
+            <th class="nombre">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="pointage : ${section.pointages()}">
+            <td>
+              <span th:text="${pointage.poste()}">Poste</span>
+              <span class="nc" th:if="${pointage.nonConformite()}">NC</span>
+            </td>
+            <td th:text="${pointage.operateur()}"></td>
+            <td th:text="${pointage.periode()}"></td>
+            <td class="nombre" th:text="${pointage.duree()}"></td>
+            <td class="nombre" th:text="${pointage.machine()}"></td>
+            <td class="nombre" th:text="${pointage.mainDOeuvre()}"></td>
+            <td class="nombre" th:text="${pointage.total()}"></td>
+          </tr>
+          <tr class="total">
+            <td colspan="3" th:text="${section.total().poste()}">Total</td>
+            <td class="nombre" th:text="${section.total().duree()}"></td>
+            <td class="nombre" th:text="${section.total().machine()}"></td>
+            <td class="nombre" th:text="${section.total().mainDOeuvre()}"></td>
+            <td class="nombre" th:text="${section.total().total()}"></td>
+          </tr>
+        </tbody>
+      </table>
+    </th:block>
+
     <p class="note">
-      Montants arrondis au centime par le serveur. Le coût machine court en entier ; le taux de l’opérateur est partagé entre les postes
-      qu’il occupe en même temps. Un coût nul n’est pas affiché.
+      Montants arrondis au centime par le serveur. NC : reprise de non-conformité. Le coût machine court en entier ; le taux de l’opérateur
+      est partagé entre les postes qu’il occupe en même temps. Un coût nul n’est pas affiché.
     </p>
   </body>
 </html>

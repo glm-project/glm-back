@@ -76,6 +76,24 @@ Feature: Export du cout de revient d'un element de fabrication
       | Sans poste 1 h 00 0 h 00 1 h 00 20,00 € 20,00 €        |
       | Total 3 h 00 0 h 00 3 h 00 90,00 € 60,00 € 150,00 €    |
 
+  Scenario: Le PDF detaille ajoute une ligne par pointage sous chaque nature
+    Given l'entreprise fabrique "OF 4009"
+    And "OF 4009" est mis en atelier a "2026-05-11T07:00:00Z"
+    And "dupont" pointe "DEBUT" sur "OF 4009" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
+    And "dupont" pointe "FIN" sur "OF 4009" au poste "fraiseuse" a "2026-05-11T11:00:00Z"
+    And "dupont" pointe "NON_CONFORMITE" sur "OF 4009" au poste "fraiseuse" a "2026-05-11T11:00:00Z"
+    And "dupont" pointe "FIN" sur "OF 4009" au poste "fraiseuse" a "2026-05-11T11:30:00Z"
+    When j'exporte en PDF "detail" le cout de revient de "OF 4009" a "2026-05-11T18:00:00Z"
+    Then la reponse a le statut http 200
+    And le PDF recu est nomme d'apres "OF 4009" en version "detail"
+    And le PDF porte les lignes
+      | Coût de revient — détaillé                                                    |
+      | fraisage 2 h 00 0 h 30 2 h 30 112,50 € 50,00 € 162,50 €                       |
+      | fraisage — 2 pointages                                                        |
+      | {fraiseuse} {dupont} 11 mai · 11:00 → 13:00 2 h 00 90,00 € 40,00 € 130,00 €   |
+      | {fraiseuse} NC {dupont} 11 mai · 13:00 → 13:30 0 h 30 22,50 € 10,00 € 32,50 € |
+      | Total fraisage 2 h 30 112,50 € 50,00 € 162,50 €                               |
+
   Scenario: Une version de PDF inconnue est refusee
     Given l'entreprise fabrique "OF 4007"
     When j'exporte en PDF "complet" le cout de revient de "OF 4007" a "2026-05-11T18:00:00Z"
