@@ -69,7 +69,11 @@ class CoutDeRevientResource {
     L'onglet Synthese porte l'element, son statut, l'instant de generation (l'evaluation du rapport) et une ligne par
     nature avec le total. L'element est "Termine le" sa derniere cloture quand tous ses passages en atelier sont clos
     et qu'aucune activite n'est en cours ; sinon il est "En cours", et le classeur est une photographie a l'instant de
-    generation. Montants et durees sont des nombres (durees en heures decimales), les dates de vraies dates Excel
+    generation.
+
+    L'onglet Pointages est un tableau Excel nomme Pointages, une ligne par pointage (nature, poste, operateur, categorie,
+    debut, fin, duree, machine, main d'oeuvre, total), sans cellule fusionnee ni ligne intercalaire : regroupes par
+    nature, ses pointages retrouvent les lignes de la synthese. Montants et durees sont des nombres (durees en heures decimales), les dates de vraies dates Excel
     dans le fuseau de l'entreprise ; un cout de 0 EUR garde sa valeur sous un format qui l'affiche vide.
     """
   )

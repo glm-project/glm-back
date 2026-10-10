@@ -68,7 +68,9 @@ public class CoutDeRevientSteps {
   private EcrituresDuJournalDAtelier ecritures;
 
   private final Map<String, String> postes = new HashMap<>();
+  private final Map<String, String> libelles = new HashMap<>();
   private final Map<String, String> operateurs = new HashMap<>();
+  private final Map<String, String> nomsDesOperateurs = new HashMap<>();
   private final Map<String, String> elements = new HashMap<>();
   private final Map<String, String> noms = new HashMap<>();
   private final Map<String, String> suivis = new HashMap<>();
@@ -76,9 +78,11 @@ public class CoutDeRevientSteps {
 
   @Given("le rapport connait le poste {string} de nature {string} a {string} de l'heure")
   public void leRapportConnaitLePoste(String alias, String nature, String coutHoraire) {
+    String libelle = alias + " " + SEQUENCE.incrementAndGet();
+    libelles.put(alias, libelle);
     Map<String, Object> corps = Map.of(
       "libelle",
-      alias + " " + SEQUENCE.incrementAndGet(),
+      libelle,
       "natureId",
       NaturesDesScenarios.identifiant(rest, nature),
       "coutHoraire",
@@ -90,11 +94,13 @@ public class CoutDeRevientSteps {
 
   @Given("le rapport connait l'operateur {string} a {string} de l'heure, habilite sur")
   public void leRapportConnaitLOperateur(String alias, String tauxHoraire, List<String> habilitations) {
+    String prenom = "Cout " + SEQUENCE.incrementAndGet();
+    nomsDesOperateurs.put(alias, prenom + " " + alias);
     Map<String, Object> corps = Map.of(
       "nom",
       alias,
       "prenom",
-      "Cout " + SEQUENCE.incrementAndGet(),
+      prenom,
       "postes",
       habilitations.stream().map(postes::get).toList(),
       "tauxHoraire",
@@ -299,8 +305,16 @@ public class CoutDeRevientSteps {
         }
         lues.add(lue);
       }
-      assertThat(lues).containsExactlyElementsOf(attendues);
+      assertThat(lues).containsExactlyElementsOf(attendues.stream().map(this::nommee).toList());
     }
+  }
+
+  /** Les postes et operateurs des scenarios portent un suffixe unique : le tableau attendu les cite par leur alias. */
+  private Map<String, String> nommee(Map<String, String> attendue) {
+    Map<String, String> nommee = new HashMap<>(attendue);
+    nommee.computeIfPresent("Poste", (colonne, alias) -> libelles.getOrDefault(alias, alias));
+    nommee.computeIfPresent("Opérateur", (colonne, alias) -> nomsDesOperateurs.getOrDefault(alias, alias));
+    return nommee;
   }
 
   private static XSSFWorkbook classeurRecu() throws IOException {

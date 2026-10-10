@@ -4,8 +4,14 @@ import static com.glm.glmback.coutderevient.domain.CoutDeRevientFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
+import com.glm.glmback.coutderevient.domain.AnnuaireDuCout;
+import com.glm.glmback.coutderevient.domain.ChargesDesOperateurs;
 import com.glm.glmback.coutderevient.domain.CompteRenduDuCout;
+import com.glm.glmback.coutderevient.domain.CoutDeRevient;
+import com.glm.glmback.coutderevient.domain.EvaluationDuCout;
+import com.glm.glmback.coutderevient.domain.Periode;
 import com.glm.glmback.coutderevient.domain.StatutDeLElement;
+import com.glm.glmback.coutderevient.domain.TrancheDActivite;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -115,6 +121,123 @@ class ClasseurDuCoutDeRevientTest {
     try (XSSFWorkbook classeur = lis(new CompteRenduDuCout(COUT_DE_REVIENT_VIDE, termine, FUSEAU_DE_PARIS))) {
       assertThat(texte(classeur.getSheet("Synthèse"), 2, 1)).isEqualTo("Terminé le 12 mai 2026 à 20:00");
     }
+  }
+
+  @Test
+  void shouldRendreUneLigneParPointageDansLeTableauPointages() throws IOException {
+    try (XSSFWorkbook classeur = classeur()) {
+      XSSFTable pointages = classeur.getTable("Pointages");
+
+      assertThat(classeur.getSheetName(1)).isEqualTo("Pointages");
+      assertThat(pointages.getSheetName()).isEqualTo("Pointages");
+      assertThat(pointages.getArea().formatAsString()).isEqualTo("A1:J4");
+      assertThat(pointages.getCTTable().getAutoFilter().getRef()).isEqualTo("A1:J4");
+      assertThat(
+        pointages
+          .getColumns()
+          .stream()
+          .map(colonne -> colonne.getName())
+          .toList()
+      ).containsExactly(
+        "Nature",
+        "Poste",
+        "Opérateur",
+        "Catégorie",
+        "Début",
+        "Fin",
+        "Durée (h)",
+        "Machine (€)",
+        "Main d’œuvre (€)",
+        "Total (€)"
+      );
+      assertThat(classeur.getSheet("Pointages").getPaneInformation().getHorizontalSplitPosition()).isEqualTo((short) 1);
+      assertThat(classeur.getSheet("Pointages").getNumMergedRegions()).isZero();
+    }
+  }
+
+  @Test
+  void shouldEcrireChaquePointageAvecDesTypesNatifs() throws IOException {
+    try (XSSFWorkbook classeur = classeur()) {
+      XSSFSheet pointages = classeur.getSheet("Pointages");
+
+      assertThat(textes(pointages.getRow(1))).containsExactly("Fraisage", "DMG DMU 50", "Jean Dupont", "Travail");
+      assertThat(pointages.getRow(1).getCell(4).getLocalDateTimeCellValue()).isEqualTo(LocalDateTime.parse("2026-05-11T11:00"));
+      assertThat(pointages.getRow(1).getCell(5).getLocalDateTimeCellValue()).isEqualTo(LocalDateTime.parse("2026-05-11T13:00"));
+      assertThat(pointages.getRow(1).getCell(4).getCellStyle().getDataFormatString()).isEqualTo("dd/mm/yyyy hh:mm");
+      assertThat(valeursDuPointage(pointages.getRow(1))).containsExactly(2.0, 90.0, 40.0, 130.0);
+      assertThat(textes(pointages.getRow(2))).containsExactly("Fraisage", "DMG DMU 50", "Jean Dupont", "Non-conformité");
+      assertThat(valeursDuPointage(pointages.getRow(2))).containsExactly(1.0, 45.0, 20.0, 65.0);
+      assertThat(textes(pointages.getRow(3))).containsExactly("Sans poste", "Sans poste", "Jean Dupont", "Travail");
+      assertThat(valeursDuPointage(pointages.getRow(3))).containsExactly(1.0, 0.0, 20.0, 20.0);
+      assertThat(pointages.getRow(3).getCell(6).getCellStyle().getDataFormatString()).isEqualTo("0.00");
+      assertThat(pointages.getRow(3).getCell(7).getCellStyle().getDataFormatString()).isEqualTo(FORMAT_EURO);
+    }
+  }
+
+  @Test
+  void shouldRetrouverLaSyntheseEnRegroupantLesPointagesParNature() throws IOException {
+    try (XSSFWorkbook classeur = classeur()) {
+      XSSFSheet pointages = classeur.getSheet("Pointages");
+      List<Double> premier = valeursDuPointage(pointages.getRow(1));
+      List<Double> second = valeursDuPointage(pointages.getRow(2));
+      Row fraisage = classeur.getSheet("Synthèse").getRow(6);
+
+      assertThat(
+        List.of(0, 1, 2, 3)
+          .stream()
+          .map(colonne -> premier.get(colonne) + second.get(colonne))
+          .toList()
+      ).containsExactly(
+        fraisage.getCell(3).getNumericCellValue(),
+        fraisage.getCell(4).getNumericCellValue(),
+        fraisage.getCell(5).getNumericCellValue(),
+        fraisage.getCell(6).getNumericCellValue()
+      );
+    }
+  }
+
+  @Test
+  void shouldGarderLIdentifiantDUnNomAbsent() throws IOException {
+    CoutDeRevient sansNoms = CoutDeRevient.builder()
+      .element(ELEMENT_VALORISE_OF)
+      .tranches(List.of(new TrancheDActivite(ACTIVITE_TOURNAGE, new Periode(LE_11_MAI_A_9H, LE_11_MAI_A_10H))))
+      .charges(ChargesDesOperateurs.de(List.of(new TrancheDActivite(ACTIVITE_TOURNAGE, new Periode(LE_11_MAI_A_9H, LE_11_MAI_A_10H)))))
+      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
+      .annuaire(AnnuaireDuCout.VIDE);
+
+    try (XSSFWorkbook classeur = lis(new CompteRenduDuCout(sansNoms, StatutDeLElement.EN_COURS, FUSEAU_DE_PARIS))) {
+      assertThat(textes(classeur.getSheet("Pointages").getRow(1))).containsExactly(
+        "Tournage",
+        POSTE_ID_TOUR.uuid().toString(),
+        OPERATEUR_ID_DUPONT.uuid().toString(),
+        "Travail"
+      );
+    }
+  }
+
+  @Test
+  void shouldNeDresserQueLEnTeteDesPointagesPourUnRapportVide() throws IOException {
+    try (XSSFWorkbook classeur = lis(new CompteRenduDuCout(COUT_DE_REVIENT_VIDE, StatutDeLElement.EN_COURS, FUSEAU_DE_PARIS))) {
+      XSSFSheet pointages = classeur.getSheet("Pointages");
+
+      assertThat(pointages.getTables()).isEmpty();
+      assertThat(pointages.getLastRowNum()).isZero();
+      assertThat(texte(pointages, 0, 9)).isEqualTo("Total (€)");
+    }
+  }
+
+  private static List<String> textes(Row ligne) {
+    return List.of(0, 1, 2, 3)
+      .stream()
+      .map(colonne -> ligne.getCell(colonne).getStringCellValue())
+      .toList();
+  }
+
+  private static List<Double> valeursDuPointage(Row ligne) {
+    return List.of(6, 7, 8, 9)
+      .stream()
+      .map(colonne -> ligne.getCell(colonne).getNumericCellValue())
+      .toList();
   }
 
   private static XSSFWorkbook classeur() throws IOException {

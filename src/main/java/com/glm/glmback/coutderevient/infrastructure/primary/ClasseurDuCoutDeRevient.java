@@ -1,11 +1,16 @@
 package com.glm.glmback.coutderevient.infrastructure.primary;
 
+import com.glm.glmback.coutderevient.domain.Activite;
+import com.glm.glmback.coutderevient.domain.AnnuaireDuCout;
+import com.glm.glmback.coutderevient.domain.CategorieDActivite;
 import com.glm.glmback.coutderevient.domain.CompteRenduDuCout;
 import com.glm.glmback.coutderevient.domain.CoutDeRevient;
 import com.glm.glmback.coutderevient.domain.DureeTotale;
 import com.glm.glmback.coutderevient.domain.LigneDeCout;
+import com.glm.glmback.coutderevient.domain.Montant;
 import com.glm.glmback.coutderevient.domain.MontantTotal;
 import com.glm.glmback.coutderevient.domain.NatureDOperation;
+import com.glm.glmback.coutderevient.domain.PointageValorise;
 import com.glm.glmback.coutderevient.domain.StatutDeLElement;
 import com.glm.glmback.coutderevient.domain.TempsPasse;
 import java.io.ByteArrayOutputStream;
@@ -61,12 +66,26 @@ final class ClasseurDuCoutDeRevient {
     "Total (€)"
   );
   private static final List<Integer> LARGEURS_DES_NATURES = List.of(28, 34, 20, 17, 14, 18, 14);
+  private static final List<String> COLONNES_DES_POINTAGES = List.of(
+    "Nature",
+    "Poste",
+    "Opérateur",
+    "Catégorie",
+    "Début",
+    "Fin",
+    "Durée (h)",
+    "Machine (€)",
+    "Main d’œuvre (€)",
+    "Total (€)"
+  );
+  private static final List<Integer> LARGEURS_DES_POINTAGES = List.of(14, 16, 18, 16, 18, 18, 11, 13, 17, 13);
 
   private final XSSFWorkbook classeur;
   private final ZoneId fuseau;
   private final CellStyle titre;
   private final CellStyle libelle;
   private final CellStyle date;
+  private final CellStyle dateDePointage;
   private final CellStyle heures;
   private final CellStyle euros;
   private final CellStyle heuresDuTotal;
@@ -84,6 +103,7 @@ final class ClasseurDuCoutDeRevient {
     this.libelle = style(gras, null);
     this.date = style(null, FORMAT_DATE);
     this.date.setAlignment(HorizontalAlignment.LEFT);
+    this.dateDePointage = style(null, FORMAT_DATE);
     this.heures = style(null, FORMAT_HEURES);
     this.euros = style(null, FORMAT_EURO);
     this.heuresDuTotal = style(gras, FORMAT_HEURES);
@@ -92,7 +112,9 @@ final class ClasseurDuCoutDeRevient {
 
   static byte[] de(CompteRenduDuCout compteRendu) throws IOException {
     try (XSSFWorkbook classeur = new XSSFWorkbook(); ByteArrayOutputStream sortie = new ByteArrayOutputStream()) {
-      new ClasseurDuCoutDeRevient(classeur, compteRendu.fuseau()).synthese(compteRendu.rapport(), compteRendu.statut());
+      ClasseurDuCoutDeRevient construction = new ClasseurDuCoutDeRevient(classeur, compteRendu.fuseau());
+      construction.synthese(compteRendu.rapport(), compteRendu.statut());
+      construction.pointages(compteRendu.rapport());
       classeur.write(sortie);
       return sortie.toByteArray();
     }
@@ -112,11 +134,7 @@ final class ClasseurDuCoutDeRevient {
     instant(enTete(feuille.createRow(3), "Généré le"), 1, rapport.lecture().evaluation()).setCellStyle(date);
 
     int entete = 5;
-    Row colonnes = feuille.createRow(entete);
-    for (int colonne = 0; colonne < COLONNES_DES_NATURES.size(); colonne++) {
-      texte(colonnes, colonne, COLONNES_DES_NATURES.get(colonne));
-      feuille.setColumnWidth(colonne, LARGEURS_DES_NATURES.get(colonne) * LARGEUR_D_UN_CARACTERE);
-    }
+    colonnes(feuille, entete, COLONNES_DES_NATURES, LARGEURS_DES_NATURES);
     int ligne = entete;
     for (LigneDeCout nature : rapport.lignes()) {
       ligne++;
@@ -132,6 +150,44 @@ final class ClasseurDuCoutDeRevient {
     texte(total, 0, "Total").setCellStyle(libelle);
     ecrisLesValeurs(total, rapport.temps(), rapport.cout().machine(), rapport.cout().mainDOeuvre(), rapport.cout().total(), true);
     feuille.createFreezePane(0, entete + 1);
+  }
+
+  /**
+   * Un tableau plat, source des tableaux croises et des macros : une ligne par pointage, aucune ligne intercalaire ni
+   * cellule fusionnee. Regroupes par nature, ses pointages retrouvent les lignes de la synthese.
+   */
+  private void pointages(CoutDeRevient rapport) {
+    XSSFSheet feuille = classeur.createSheet("Pointages");
+    colonnes(feuille, 0, COLONNES_DES_POINTAGES, LARGEURS_DES_POINTAGES);
+    int ligne = 0;
+    for (LigneDeCout nature : rapport.lignes()) {
+      for (PointageValorise pointage : nature.pointages()) {
+        ligne++;
+        Row valeurs = feuille.createRow(ligne);
+        texte(valeurs, 0, nature(nature));
+        texte(valeurs, 1, poste(pointage.activite(), rapport.annuaire()));
+        texte(valeurs, 2, operateur(pointage.activite(), rapport.annuaire()));
+        texte(valeurs, 3, categorie(pointage.activite().categorie()));
+        instant(valeurs, 4, pointage.debut()).setCellStyle(dateDePointage);
+        instant(valeurs, 5, pointage.fin()).setCellStyle(dateDePointage);
+        nombre(valeurs, 6, heures(pointage.duree())).setCellStyle(heures);
+        nombre(valeurs, 7, euros(pointage.cout().machine())).setCellStyle(euros);
+        nombre(valeurs, 8, euros(pointage.cout().mainDOeuvre())).setCellStyle(euros);
+        nombre(valeurs, 9, euros(pointage.cout().total())).setCellStyle(euros);
+      }
+    }
+    if (ligne > 0) {
+      tableau(feuille, "Pointages", 0, ligne, COLONNES_DES_POINTAGES.size());
+    }
+    feuille.createFreezePane(0, 1);
+  }
+
+  private static void colonnes(XSSFSheet feuille, int ligne, List<String> noms, List<Integer> largeurs) {
+    Row entete = feuille.createRow(ligne);
+    for (int colonne = 0; colonne < noms.size(); colonne++) {
+      texte(entete, colonne, noms.get(colonne));
+      feuille.setColumnWidth(colonne, largeurs.get(colonne) * LARGEUR_D_UN_CARACTERE);
+    }
   }
 
   private void ecrisLesValeurs(
@@ -200,6 +256,32 @@ final class ClasseurDuCoutDeRevient {
       .orElse("En cours");
   }
 
+  private static String poste(Activite activite, AnnuaireDuCout annuaire) {
+    return activite
+      .poste()
+      .map(poste ->
+        annuaire
+          .poste(poste)
+          .map(nomme -> nomme.libelle().value())
+          .orElse(poste.uuid().toString())
+      )
+      .orElse(SANS_POSTE);
+  }
+
+  private static String operateur(Activite activite, AnnuaireDuCout annuaire) {
+    return annuaire
+      .operateur(activite.operateur())
+      .map(nomme -> nomme.prenom().value() + " " + nomme.nom().value())
+      .orElse(activite.operateur().uuid().toString());
+  }
+
+  private static String categorie(CategorieDActivite categorie) {
+    return switch (categorie) {
+      case TRAVAIL -> "Travail";
+      case NON_CONFORMITE -> "Non-conformité";
+    };
+  }
+
   private static String nature(LigneDeCout ligne) {
     return ligne.nature().map(NatureDOperation::value).orElse(SANS_POSTE);
   }
@@ -209,7 +291,11 @@ final class ClasseurDuCoutDeRevient {
   }
 
   private static double euros(MontantTotal montant) {
-    return montant.valeur().value().doubleValue();
+    return euros(montant.valeur());
+  }
+
+  private static double euros(Montant montant) {
+    return montant.value().doubleValue();
   }
 
   private CellStyle style(Font police, String format) {

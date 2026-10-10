@@ -25,6 +25,10 @@ Feature: Export du cout de revient d'un element de fabrication
       | Nature     | Travail (h) | Non-conformité (h) | Temps total (h) | Machine (€) | Main d’œuvre (€) | Total (€) |
       | fraisage   | 2.00        | 0.00               | 2.00            | 90.00       | 40.00            | 130.00    |
       | Sans poste | 1.00        | 0.00               | 1.00            | 0.00        | 20.00            | 20.00     |
+    And le tableau "Pointages" du classeur porte
+      | Nature     | Poste      | Opérateur | Catégorie | Début            | Fin              | Durée (h) | Machine (€) | Main d’œuvre (€) | Total (€) |
+      | fraisage   | fraiseuse  | dupont    | Travail   | 2026-05-11T11:00 | 2026-05-11T13:00 | 2.00      | 90.00       | 40.00            | 130.00    |
+      | Sans poste | Sans poste | dupont    | Travail   | 2026-05-11T15:00 | 2026-05-11T16:00 | 1.00      | 0.00        | 20.00            | 20.00     |
 
   Scenario: Le classeur d'un element clos dit quand il a ete termine
     Given l'entreprise fabrique "OF 4003"
