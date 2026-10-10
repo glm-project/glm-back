@@ -12,13 +12,24 @@ import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFTable;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
@@ -59,6 +70,7 @@ public class CoutDeRevientSteps {
   private final Map<String, String> postes = new HashMap<>();
   private final Map<String, String> operateurs = new HashMap<>();
   private final Map<String, String> elements = new HashMap<>();
+  private final Map<String, String> noms = new HashMap<>();
   private final Map<String, String> suivis = new HashMap<>();
   private final Map<String, String> pointages = new HashMap<>();
 
@@ -98,6 +110,7 @@ public class CoutDeRevientSteps {
     Map<String, Object> corps = Map.of("categorie", "OF", "reference", alias + " " + SEQUENCE.incrementAndGet());
     rest.post(ELEMENTS_URI, JSON.writeValueAsString(corps));
     elements.put(alias, id());
+    noms.put(alias, (String) CucumberRestTestContext.getElement("$.nom"));
   }
 
   /**
@@ -236,6 +249,65 @@ public class CoutDeRevientSteps {
   @When("je consulte le cout de revient de l'element inconnu {string}")
   public void jeConsulteLeCoutDeRevientInconnu(String id) {
     rest.get(RAPPORTS_URI + "/" + id);
+  }
+
+  @When("j'exporte en Excel le cout de revient de {string} a {string}")
+  public void jExporteEnExcel(String element, String instant) {
+    horloge.ilEst(Instant.parse(instant));
+    rest.get(RAPPORTS_URI + "/" + elements.get(element) + "/export.xlsx");
+  }
+
+  @Then("le classeur recu est nomme d'apres {string}")
+  public void leClasseurRecuEstNomme(String element) {
+    assertThat(CucumberRestTestContext.getResponseHeader("Content-Type")).containsExactly(
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    assertThat(CucumberRestTestContext.getResponseHeader("Content-Disposition")).containsExactly(
+      "attachment; filename=\"cout-de-revient-%s.xlsx\"".formatted(noms.get(element))
+    );
+  }
+
+  @Then("le classeur est genere le {string}, heure de l'entreprise")
+  public void leClasseurEstGenereLe(String generation) throws IOException {
+    try (XSSFWorkbook classeur = classeurRecu()) {
+      assertThat(classeur.getSheet("Synthèse").getRow(2).getCell(1).getLocalDateTimeCellValue()).isEqualTo(LocalDateTime.parse(generation));
+    }
+  }
+
+  @Then("le tableau {string} du classeur porte")
+  public void leTableauDuClasseurPorte(String nom, List<Map<String, String>> attendues) throws IOException {
+    try (XSSFWorkbook classeur = classeurRecu()) {
+      XSSFTable tableau = classeur.getTable(nom);
+      XSSFSheet feuille = tableau.getXSSFSheet();
+      List<String> colonnes = tableau
+        .getColumns()
+        .stream()
+        .map(colonne -> colonne.getName())
+        .toList();
+      List<Map<String, String>> lues = new ArrayList<>();
+      for (int ligne = tableau.getStartRowIndex() + 1; ligne <= tableau.getEndRowIndex(); ligne++) {
+        Map<String, String> lue = new HashMap<>();
+        for (int colonne = 0; colonne < colonnes.size(); colonne++) {
+          lue.put(colonnes.get(colonne), valeur(feuille.getRow(ligne).getCell(tableau.getStartColIndex() + colonne)));
+        }
+        lues.add(lue);
+      }
+      assertThat(lues).containsExactlyElementsOf(attendues);
+    }
+  }
+
+  private static XSSFWorkbook classeurRecu() throws IOException {
+    return new XSSFWorkbook(new ByteArrayInputStream(CucumberRestTestContext.getResponseBytes()));
+  }
+
+  private static String valeur(Cell cellule) {
+    if (cellule.getCellType() == CellType.STRING) {
+      return cellule.getStringCellValue();
+    }
+    if (DateUtil.isCellDateFormatted(cellule)) {
+      return cellule.getLocalDateTimeCellValue().toString();
+    }
+    return BigDecimal.valueOf(cellule.getNumericCellValue()).setScale(2, RoundingMode.HALF_UP).toPlainString();
   }
 
   @Then("le rapport ne porte aucune ligne")

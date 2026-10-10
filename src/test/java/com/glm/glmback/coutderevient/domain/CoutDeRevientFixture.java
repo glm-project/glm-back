@@ -2,6 +2,8 @@ package com.glm.glmback.coutderevient.domain;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -102,7 +104,41 @@ public final class CoutDeRevientFixture {
     .tauxHoraire(Optional.of(TAUX_HORAIRE_DE_20_EUROS))
     .categorie(CategorieDActivite.TRAVAIL);
 
+  public static final Activite ACTIVITE_SANS_POSTE = Activite.builder()
+    .operateur(OPERATEUR_ID_DUPONT)
+    .element(ELEMENT_ID_OF)
+    .poste(Optional.empty())
+    .nature(Optional.empty())
+    .coutHoraire(Optional.empty())
+    .tauxHoraire(Optional.of(TAUX_HORAIRE_DE_20_EUROS))
+    .categorie(CategorieDActivite.TRAVAIL);
+
+  public static final ZoneId FUSEAU_DE_PARIS = ZoneId.of("Europe/Paris");
+
+  /**
+   * Dupont seul le 11 mai : deux heures de fraisage, une heure de reprise, puis une heure sans poste. Fraisage 135 EUR
+   * de machine et 60 EUR de main d'oeuvre, sans poste 0 EUR et 20 EUR.
+   */
+  public static final CoutDeRevient COUT_DE_REVIENT_FRAISAGE_ET_SANS_POSTE = coutDeRevient(
+    List.of(
+      new TrancheDActivite(ACTIVITE_FRAISAGE, new Periode(LE_11_MAI_A_9H, LE_11_MAI_A_11H)),
+      new TrancheDActivite(ACTIVITE_NC_FRAISAGE, new Periode(LE_11_MAI_A_11H, LE_11_MAI_A_12H)),
+      new TrancheDActivite(ACTIVITE_SANS_POSTE, new Periode(LE_11_MAI_A_13H, LE_11_MAI_A_14H))
+    )
+  );
+
+  public static final CoutDeRevient COUT_DE_REVIENT_VIDE = coutDeRevient(List.of());
+
   private CoutDeRevientFixture() {}
+
+  private static CoutDeRevient coutDeRevient(List<TrancheDActivite> tranches) {
+    return CoutDeRevient.builder()
+      .element(ELEMENT_VALORISE_OF)
+      .tranches(tranches)
+      .charges(ChargesDesOperateurs.de(tranches))
+      .lecture(new EvaluationDuCout(LE_11_MAI_A_17H, 0))
+      .annuaire(new AnnuaireDuCout(List.of(OPERATEUR_NOMME_JEAN_DUPONT), List.of(POSTE_NOMME_DMG_DMU_50), List.of(ELEMENT_VALORISE_OF)));
+  }
 
   public static ActiviteInterpretee activiteInterpreteeDeFraisage(Plage plage) {
     return ActiviteInterpretee.builder()

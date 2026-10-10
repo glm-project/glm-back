@@ -2811,6 +2811,59 @@
         "tags" : [ "Couts de revient" ]
       }
     },
+    "/api/couts-de-revient/{elementId}/export.xlsx" : {
+      "get" : {
+        "description" : "Le meme rapport que la lecture, mis en forme pour le client : aucun montant n'est recalcule ni arrondi a nouveau.\n\nL'onglet Synthese porte l'element, l'instant de generation (l'evaluation du rapport) et une ligne par nature\navec le total. Montants et durees sont des nombres (durees en heures decimales), les dates de vraies dates Excel\ndans le fuseau de l'entreprise ; un cout de 0 EUR garde sa valeur sous un format qui l'affiche vide.\n",
+        "operationId" : "exporteEnExcel",
+        "parameters" : [ {
+          "description" : "Identifiant de l'element de fabrication.",
+          "in" : "path",
+          "name" : "elementId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : {
+                "schema" : {
+                  "format" : "binary",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "Le classeur, en piece jointe nommee d'apres l'element (cout-de-revient-OF-2026-000001.xlsx)."
+          },
+          "403" : {
+            "content" : {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "Jeton sans entreprise connue, ou role autre que GESTIONNAIRE."
+          },
+          "404" : {
+            "content" : {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "Element de fabrication inconnu."
+          }
+        },
+        "summary" : "Exporter le cout de revient d'un element en classeur Excel",
+        "tags" : [ "Couts de revient" ]
+      }
+    },
     "/api/elements-de-fabrication" : {
       "get" : {
         "operationId" : "list_3",
