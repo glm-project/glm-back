@@ -7,9 +7,7 @@ import com.glm.glmback.IntegrationTest;
 import com.glm.glmback.postedetravail.domain.CoutHoraire;
 import com.glm.glmback.postedetravail.domain.Libelle;
 import com.glm.glmback.postedetravail.domain.NatureDeTravail;
-import com.glm.glmback.postedetravail.domain.NatureDeTravailId;
 import com.glm.glmback.postedetravail.domain.NatureDuPoste;
-import com.glm.glmback.postedetravail.domain.NaturesDeclarees;
 import com.glm.glmback.postedetravail.domain.PosteDeTravail;
 import com.glm.glmback.postedetravail.domain.PosteDeTravailCriteria;
 import com.glm.glmback.postedetravail.domain.PosteDeTravailDejaExistantException;
@@ -39,9 +37,6 @@ class JpaPosteDeTravailRepositoryIT {
 
   @Autowired
   private PosteDeTravailRepository postes;
-
-  @Autowired
-  private NaturesDeclarees natures;
 
   @Autowired
   private TransactionTemplate transactions;
@@ -257,23 +252,8 @@ class JpaPosteDeTravailRepositoryIT {
     ).isEqualTo(new NatureDuPoste(poste.nature().id(), new NatureDeTravail("IT-renommee")));
   }
 
-  /**
-   * La cle etrangere impose que la nature existe avant le poste ; les tests partagent le schema, la nature n'est donc
-   * declaree que si elle manque.
-   */
-  @SuppressWarnings("removal")
   private NatureDuPoste nature(String libelle) {
-    NatureDeTravail nature = new NatureDeTravail(libelle);
-
-    return inTransaction(() ->
-      natures
-        .parLibelle(nature)
-        .orElseGet(() -> {
-          NatureDuPoste declaree = new NatureDuPoste(NatureDeTravailId.newId(), nature);
-          natures.declare(declaree);
-          return declaree;
-        })
-    );
+    return NaturesEnBase.nature(entities, transactions, libelle);
   }
 
   private PosteDeTravail posteDeTournage() {

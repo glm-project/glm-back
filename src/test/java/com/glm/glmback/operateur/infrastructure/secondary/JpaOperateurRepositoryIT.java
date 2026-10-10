@@ -15,16 +15,15 @@ import com.glm.glmback.operateur.domain.OperateurRepository;
 import com.glm.glmback.operateur.domain.PosteHabilitableId;
 import com.glm.glmback.operateur.domain.Prenom;
 import com.glm.glmback.postedetravail.domain.Libelle;
-import com.glm.glmback.postedetravail.domain.NatureDeTravail;
-import com.glm.glmback.postedetravail.domain.NatureDeTravailId;
 import com.glm.glmback.postedetravail.domain.NatureDuPoste;
-import com.glm.glmback.postedetravail.domain.NaturesDeclarees;
 import com.glm.glmback.postedetravail.domain.PosteDeTravail;
 import com.glm.glmback.postedetravail.domain.PosteDeTravailId;
 import com.glm.glmback.postedetravail.domain.PosteDeTravailRepository;
+import com.glm.glmback.postedetravail.infrastructure.secondary.NaturesEnBase;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurityContexts;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
 import com.glm.glmback.shared.pagination.domain.Page;
+import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.Set;
@@ -55,7 +54,7 @@ class JpaOperateurRepositoryIT {
   private PosteDeTravailRepository postes;
 
   @Autowired
-  private NaturesDeclarees natures;
+  private EntityManager entities;
 
   @Autowired
   private TransactionTemplate transactions;
@@ -291,22 +290,8 @@ class JpaOperateurRepositoryIT {
     return new PosteHabilitableId(poste.id().uuid());
   }
 
-  /**
-   * La cle etrangere du poste impose que sa nature existe : elle n'est declaree que si elle manque.
-   */
-  @SuppressWarnings("removal")
   private NatureDuPoste tournage() {
-    NatureDeTravail tournage = new NatureDeTravail("tournage");
-
-    return inTransaction(() ->
-      natures
-        .parLibelle(tournage)
-        .orElseGet(() -> {
-          NatureDuPoste declaree = new NatureDuPoste(NatureDeTravailId.newId(), tournage);
-          natures.declare(declaree);
-          return declaree;
-        })
-    );
+    return NaturesEnBase.nature(entities, transactions, "tournage");
   }
 
   private static Operateur operateurHabiliteSur(Set<PosteHabilitableId> habilitations) {

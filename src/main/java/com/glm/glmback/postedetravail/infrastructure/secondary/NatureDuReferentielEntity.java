@@ -8,15 +8,13 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.util.UUID;
+import org.hibernate.annotations.Immutable;
 
 /**
- * La table du referentiel des natures, que ce contexte lit et alimente sans jamais importer son code.
- *
- * <p>
- * L'ecriture ne sert qu'au chemin de transition du libelle saisi en texte, et disparait avec lui (glm-back#130).
- * </p>
+ * Vue en lecture seule de la table du referentiel des natures, que ce contexte lit sans jamais importer son code.
  */
 @Entity
+@Immutable
 @Table(name = "nature_de_travail")
 class NatureDuReferentielEntity {
 
@@ -26,22 +24,8 @@ class NatureDuReferentielEntity {
   @Column(length = 50)
   private String libelle;
 
-  @Column(length = 50)
-  private String cle;
-
   protected NatureDuReferentielEntity() {
     // Constructeur requis par JPA.
-  }
-
-  @SuppressWarnings("removal")
-  private NatureDuReferentielEntity(NatureDuPoste nature) {
-    id = nature.id().uuid();
-    libelle = nature.libelle().value();
-    cle = nature.libelle().cle();
-  }
-
-  static NatureDuReferentielEntity from(NatureDuPoste nature) {
-    return new NatureDuReferentielEntity(nature);
   }
 
   NatureDuPoste toDomain() {

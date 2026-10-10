@@ -70,30 +70,10 @@ public final class PostesDeTravailService {
   }
 
   /**
-   * Une nature designee par son identifiant doit etre declaree : le gestionnaire la choisit dans le referentiel, il ne
-   * la cree pas depuis le poste.
+   * La nature doit etre declaree : le gestionnaire la choisit dans le referentiel, il ne la cree pas depuis le poste.
    */
-  @SuppressWarnings("removal")
-  private NatureDuPoste nature(NatureChoisie choisie) {
-    return switch (choisie) {
-      case NatureChoisie.ParIdentifiant(NatureDeTravailId id) -> natures.get(id).orElseThrow(() -> new NatureInconnueException(id));
-      case NatureChoisie.ParLibelle(NatureDeTravail libelle) -> naturePourLibelle(libelle);
-    };
-  }
-
-  /**
-   * Chemin de transition : le libelle saisi en texte designe la nature qui porte la meme cle, declaree a la volee si
-   * elle manque, pour que le front d'avant le referentiel continue de declarer ses postes. Retire avec glm-back#130.
-   */
-  @SuppressWarnings("removal")
-  private NatureDuPoste naturePourLibelle(NatureDeTravail libelle) {
-    return natures
-      .parLibelle(libelle)
-      .orElseGet(() -> {
-        NatureDuPoste declaree = new NatureDuPoste(NatureDeTravailId.newId(), libelle);
-        natures.declare(declaree);
-        return declaree;
-      });
+  private NatureDuPoste nature(NatureDeTravailId id) {
+    return natures.get(id).orElseThrow(() -> new NatureInconnueException(id));
   }
 
   /**

@@ -3,12 +3,12 @@ package com.glm.glmback.postedetravail.infrastructure.secondary;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.IntegrationTest;
-import com.glm.glmback.postedetravail.domain.NatureDeTravail;
 import com.glm.glmback.postedetravail.domain.NatureDeTravailId;
 import com.glm.glmback.postedetravail.domain.NatureDuPoste;
 import com.glm.glmback.postedetravail.domain.NaturesDeclarees;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurityContexts;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
+import jakarta.persistence.EntityManager;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.AfterEach;
@@ -18,13 +18,15 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @IntegrationTest
-@SuppressWarnings("removal")
 class NaturesDuReferentielIT {
 
   private static final String NATURES_FIXTURE = "natures_fixture";
 
   @Autowired
   private NaturesDeclarees natures;
+
+  @Autowired
+  private EntityManager entities;
 
   @Autowired
   private TransactionTemplate transactions;
@@ -36,26 +38,8 @@ class NaturesDuReferentielIT {
 
   @Test
   @WithTenant(NATURES_FIXTURE)
-  void shouldFindDeclaredNatureIgnoringCaseAccentsAndSpaces() {
-    String suffixe = UUID.randomUUID().toString().substring(0, 8);
-    NatureDuPoste nature = new NatureDuPoste(NatureDeTravailId.newId(), new NatureDeTravail("Électro-érosion " + suffixe));
-
-    inTransaction(() -> {
-      natures.declare(nature);
-      return null;
-    });
-
-    assertThat(inTransaction(() -> natures.parLibelle(new NatureDeTravail("  ELECTRO-EROSION   " + suffixe)))).contains(nature);
-  }
-
-  @Test
-  @WithTenant(NATURES_FIXTURE)
   void shouldGetDeclaredNatureById() {
-    NatureDuPoste nature = new NatureDuPoste(NatureDeTravailId.newId(), new NatureDeTravail("Ébavurage " + UUID.randomUUID()));
-    inTransaction(() -> {
-      natures.declare(nature);
-      return null;
-    });
+    NatureDuPoste nature = NaturesEnBase.nature(entities, transactions, "ebavurage " + UUID.randomUUID());
 
     assertThat(inTransaction(() -> natures.get(nature.id()))).contains(nature);
   }
@@ -67,23 +51,13 @@ class NaturesDuReferentielIT {
   }
 
   @Test
-  @WithTenant(NATURES_FIXTURE)
-  void shouldNotFindUnknownNature() {
-    assertThat(inTransaction(() -> natures.parLibelle(new NatureDeTravail("Inconnue " + UUID.randomUUID())))).isEmpty();
-  }
-
-  @Test
-  void shouldOnlyFindNaturesOfCurrentTenant() {
+  void shouldOnlyGetNaturesOfCurrentTenant() {
     TenantSecurityContexts.authenticateOn(NATURES_FIXTURE);
-    NatureDuPoste nature = new NatureDuPoste(NatureDeTravailId.newId(), new NatureDeTravail("Voisine " + UUID.randomUUID()));
-    inTransaction(() -> {
-      natures.declare(nature);
-      return null;
-    });
+    NatureDuPoste nature = NaturesEnBase.nature(entities, transactions, "voisine " + UUID.randomUUID());
 
     TenantSecurityContexts.authenticateOn("katilys");
 
-    assertThat(inTransaction(() -> natures.parLibelle(nature.libelle()))).isEmpty();
+    assertThat(inTransaction(() -> natures.get(nature.id()))).isEmpty();
   }
 
   private <T> T inTransaction(Supplier<T> action) {

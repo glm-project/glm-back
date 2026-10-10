@@ -1,6 +1,5 @@
 package com.glm.glmback.postedetravail.infrastructure.secondary;
 
-import com.glm.glmback.postedetravail.domain.NatureDeTravail;
 import com.glm.glmback.postedetravail.domain.NatureDeTravailId;
 import com.glm.glmback.postedetravail.domain.NatureDuPoste;
 import com.glm.glmback.postedetravail.domain.NaturesDeclarees;
@@ -11,7 +10,6 @@ import org.springframework.stereotype.Repository;
  * Les natures de l'entreprise courante, lues dans la table du referentiel.
  */
 @Repository
-@SuppressWarnings("removal")
 class NaturesDuReferentiel implements NaturesDeclarees {
 
   private final SpringDataNaturesDuReferentielRepository natures;
@@ -23,15 +21,5 @@ class NaturesDuReferentiel implements NaturesDeclarees {
   @Override
   public Optional<NatureDuPoste> get(NatureDeTravailId id) {
     return natures.findById(id.uuid()).map(NatureDuReferentielEntity::toDomain);
-  }
-
-  @Override
-  public Optional<NatureDuPoste> parLibelle(NatureDeTravail libelle) {
-    return natures.findByCle(libelle.cle()).map(NatureDuReferentielEntity::toDomain);
-  }
-
-  @Override
-  public void declare(NatureDuPoste nature) {
-    natures.save(NatureDuReferentielEntity.from(nature));
   }
 }
