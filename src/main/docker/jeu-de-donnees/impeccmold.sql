@@ -56,16 +56,16 @@ insert into operateur_poste (operateur_id, poste_id) values
   ('dc27e2bf-a194-4011-a309-6a91fe6373c8', '0e24634e-bbd7-4ad7-9598-02e6f552c5fd'),
   ('dc27e2bf-a194-4011-a309-6a91fe6373c8', '85463bdc-e751-4c31-99da-bd682a4d92fd'),
   ('dc27e2bf-a194-4011-a309-6a91fe6373c8', 'd80b4653-b521-4547-8cf3-a0945f40314f');
-insert into element_de_fabrication (id, categorie, nom, reference, description, date_de_creation) values
-  ('50d33e56-f7b5-46ed-b1e3-6897d0bbd44c', 'OF', 'OF-2026-000001', 'CMD-24561', 'Série 2 000 capots de rétroviseur', '2026-09-03 14:00:00'),
-  ('5228b4fa-f8f4-47ee-8557-7be9d29172fe', 'OF', 'OF-2026-000002', 'CMD-24577', 'Reprise empreinte bouchon 28 mm', '2026-09-03 14:00:00'),
-  ('143838f6-eeb0-47e6-ac4d-36ad28c661ad', 'OF', 'OF-2026-000003', 'CMD-24590', 'Modification tiroir moule boîtier', '2026-09-03 14:00:00'),
-  ('97b0e2f6-5936-4cb0-8945-db1974c79b7d', 'MOULE', 'MOULE-2026-000001', 'M-2026-PEUG-01', 'Moule 4 empreintes clip de planche de bord', '2026-09-03 14:00:00'),
-  ('5a9a2138-0c16-40e9-8580-f44dafdc9d9a', 'MOULE', 'MOULE-2026-000002', 'M-2026-SEB-02', 'Moule bi-matière poignée de casserole', '2026-09-03 14:00:00'),
-  ('44fa648c-edea-4e19-98ed-0597a435049e', 'OF', 'OF-2026-000004', 'CMD-24502', 'Retouche éjecteurs moule couvercle', '2026-09-03 14:00:00'),
-  ('039654e8-b2b6-4ed2-ad28-1a65f6a6b2f2', 'MOULE', 'MOULE-2026-000003', 'M-2026-VAL-03', 'Moule 2 empreintes grille d''aération', '2026-09-03 14:00:00'),
-  ('93b9ec78-efa5-4cc7-9dd7-0f437e22129b', 'OF', 'OF-2026-000005', 'CMD-24612', 'Série 500 bouchons verseurs', '2026-09-03 14:00:00'),
-  ('5bebf87b-592a-4d21-a02e-ca2915f17972', 'MOULE', 'MOULE-2026-000004', 'M-2026-ALP-04', 'Moule capot de batterie', '2026-09-03 14:00:00');
+insert into element_de_fabrication (id, categorie, nom, reference, description, date_de_creation, date_de_modification) values
+  ('50d33e56-f7b5-46ed-b1e3-6897d0bbd44c', 'OF', 'OF-2026-000001', 'CMD-24561', 'Série 2 000 capots de rétroviseur', '2026-09-03 14:00:00', '2026-09-03 14:00:00'),
+  ('5228b4fa-f8f4-47ee-8557-7be9d29172fe', 'OF', 'OF-2026-000002', 'CMD-24577', 'Reprise empreinte bouchon 28 mm', '2026-09-03 14:00:00', '2026-09-03 14:00:00'),
+  ('143838f6-eeb0-47e6-ac4d-36ad28c661ad', 'OF', 'OF-2026-000003', 'CMD-24590', 'Modification tiroir moule boîtier', '2026-09-03 14:00:00', '2026-09-03 14:00:00'),
+  ('97b0e2f6-5936-4cb0-8945-db1974c79b7d', 'MOULE', 'MOULE-2026-000001', 'M-2026-PEUG-01', 'Moule 4 empreintes clip de planche de bord', '2026-09-03 14:00:00', '2026-09-03 14:00:00'),
+  ('5a9a2138-0c16-40e9-8580-f44dafdc9d9a', 'MOULE', 'MOULE-2026-000002', 'M-2026-SEB-02', 'Moule bi-matière poignée de casserole', '2026-09-03 14:00:00', '2026-09-03 14:00:00'),
+  ('44fa648c-edea-4e19-98ed-0597a435049e', 'OF', 'OF-2026-000004', 'CMD-24502', 'Retouche éjecteurs moule couvercle', '2026-09-03 14:00:00', '2026-09-03 14:00:00'),
+  ('039654e8-b2b6-4ed2-ad28-1a65f6a6b2f2', 'MOULE', 'MOULE-2026-000003', 'M-2026-VAL-03', 'Moule 2 empreintes grille d''aération', '2026-09-03 14:00:00', '2026-09-03 14:00:00'),
+  ('93b9ec78-efa5-4cc7-9dd7-0f437e22129b', 'OF', 'OF-2026-000005', 'CMD-24612', 'Série 500 bouchons verseurs', '2026-09-03 14:00:00', '2026-09-03 14:00:00'),
+  ('5bebf87b-592a-4d21-a02e-ca2915f17972', 'MOULE', 'MOULE-2026-000004', 'M-2026-ALP-04', 'Moule capot de batterie', '2026-09-03 14:00:00', '2026-09-03 14:00:00');
 insert into compteur_d_elements_de_fabrication (categorie, annee, numero) values
   ('OF', 2026, 5),
   ('MOULE', 2026, 4);

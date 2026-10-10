@@ -96,8 +96,8 @@ valeurs("poste_de_travail", "id, libelle, nature_id, cout_horaire", [(t(i), t(l)
 valeurs("operateur", "id, nom, prenom, identifiant, taux_horaire", [(t(o[0]), t(o[1]), t(o[2]), t(o[3]), o[4]) for o in OPERATEURS])
 valeurs("operateur_poste", "operateur_id, poste_id", [(t(o[0]), t(p[0])) for o in OPERATEURS for p in o[5]])
 creation = datetime(2026, 9, 3, 14, 0).isoformat(sep=" ")
-valeurs("element_de_fabrication", "id, categorie, nom, reference, description, date_de_creation",
-        [(t(i), t(c), t(n), t(r), t(d), t(creation)) for i, c, n, r, d in ELEMENTS])
+valeurs("element_de_fabrication", "id, categorie, nom, reference, description, date_de_creation, date_de_modification",
+        [(t(i), t(c), t(n), t(r), t(d), t(creation), t(creation)) for i, c, n, r, d in ELEMENTS])
 valeurs("compteur_d_elements_de_fabrication", "categorie, annee, numero", [("'OF'", "2026", "5"), ("'MOULE'", "2026", "4")])
 
 evenements, activites, nb_par_suivi = [], [], {e[0]: 0 for e in ENGAGES}
