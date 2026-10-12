@@ -40,7 +40,9 @@ import org.springframework.stereotype.Repository;
  * Un element n'a qu'un suivi dans sa vie (contrainte unique de l'atelier) : la jointure externe rend au plus une ligne
  * par element. L'etat d'un suivi ouvert se juge ensuite sur la seule page lue, en deux requetes, avec la regle de
  * l'atelier : en cours si une activite sans fin reelle n'a pas atteint son echeance a l'instant d'evaluation, sinon
- * interrompu s'il porte un evenement, sinon en attente.
+ * interrompu s'il a ete pointe, sinon en attente. Un suivi pointe porte toujours une activite projetee : tout pointage
+ * accepte ouvre ou ferme une activite, et une regularisation en vise une. La projection suffit donc, sans relire le
+ * journal.
  * </p>
  */
 @Repository
@@ -131,12 +133,13 @@ class JpaElementsDansLeurCycle implements ElementsDansLeurCycle {
     }
     return entities
       .createQuery(
-        "SELECT activite.suiviId FROM ActiviteDuProduitEntity activite WHERE activite.suiviId IN :suivis AND activite.fin IS NULL AND activite.echeance > :evaluation",
-        UUID.class
+        "SELECT activite FROM ActiviteDuProduitEntity activite WHERE activite.suiviId IN :suivis AND activite.fin IS NULL AND activite.echeance > :evaluation",
+        ActiviteDuProduitEntity.class
       )
       .setParameter("suivis", suivis)
       .setParameter("evaluation", evaluation)
       .getResultStream()
+      .map(ActiviteDuProduitEntity::suivi)
       .collect(Collectors.toSet());
   }
 
@@ -145,7 +148,7 @@ class JpaElementsDansLeurCycle implements ElementsDansLeurCycle {
       return Set.of();
     }
     return entities
-      .createQuery("SELECT evenement.suiviId FROM EvenementDuProduitEntity evenement WHERE evenement.suiviId IN :suivis", UUID.class)
+      .createQuery("SELECT DISTINCT activite.suiviId FROM ActiviteDuProduitEntity activite WHERE activite.suiviId IN :suivis", UUID.class)
       .setParameter("suivis", suivis)
       .getResultStream()
       .collect(Collectors.toSet());

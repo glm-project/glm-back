@@ -31,4 +31,8 @@ class ActiviteDuProduitEntity {
   protected ActiviteDuProduitEntity() {
     // Constructeur requis par JPA.
   }
+
+  UUID suivi() {
+    return suiviId;
+  }
 }
