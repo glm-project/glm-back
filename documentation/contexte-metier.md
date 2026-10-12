@@ -18,6 +18,8 @@ La garde d'unicité vit dans `ElementsDeFabricationService`, qui lit le détente
 
 La création et la modification passent par des commandes d'action (`ElementDeFabricationToCreate`, `ElementDeFabricationToUpdate`) construites par l'adapter primaire et orchestrées par `ElementsDeFabricationService`, service de domaine pur qui porte les ports repository, compteur, catégories déclarées et horloge.
 
+**Un élément est dans un seul cycle à la fois**, lu sur son suivi d'atelier sans statut propre : **en préparation** sans suivi, **en atelier** quand le suivi est ouvert, **clôturé** quand il est clos. Un élément n'ayant qu'un suivi dans sa vie, ce cycle ne se dédouble jamais. La liste (`ElementsDansLeurCycle`) rend chaque élément avec ce que son suivi en dit — le suivi, la mise à l'atelier, l'état à l'instant de la lecture (en attente, en cours, interrompu), la clôture et son auteur — et se filtre côté serveur par cycle, catégorie, texte cherché (nom, référence, description, sans égard à la casse) et période de création ; les clôturés, dont la liste grandit sans fin, se filtrent aussi par période de clôture. Chaque cycle se trie par son dernier événement : création, mise à l'atelier ou clôture. Une route sœur compte les éléments de chaque cycle pour les onglets, sans jamais compter les clôturés hors de la période demandée. L'adapter lit les tables de l'atelier par ses propres entités en lecture seule, sans importer `atelier` ; l'état qu'il juge est confronté à celui du domaine de l'atelier par `JpaElementsDansLeurCycleIT`.
+
 Le repository et le compteur sont persistés en PostgreSQL, dans le schéma de l'entreprise courante : la numérotation repart donc de 1 pour chaque entreprise, et deux entreprises peuvent porter le même nom d'élément. Les catégories, donc les préfixes, sont propres à chaque entreprise : `CategoriesDeclarees` les lit dans son schéma, par une entité en lecture seule de `categorie_de_produit`.
 
 ### Points ouverts
@@ -25,7 +27,6 @@ Le repository et le compteur sont persistés en PostgreSQL, dans le schéma de l
 1. **Relation produit ↔ ordre de fabrication.** Le client décrit un enchaînement (« ce moule neuf, une fois testé, s'il y a une opération à faire dessus, ça se transforme en OF ») mais ne demande jamais le lien, et l'imposer exclurait les modifications sur des produits antérieurs à l'application. Le jour où ce lien sera ajouté, il ne concernera que les ordres de fabrication : les deux types cesseront de ne différer que par leur valeur, ce qui rouvrira la question de scinder l'agrégat unique — aujourd'hui justifié précisément parce qu'ils ne diffèrent par aucun champ.
 2. **Suppression.** Le client ne parle jamais de supprimer, seulement de clôturer. Dès que les temps seront saisis, la suppression d'un élément qui en porte devra être interdite : elle empêcherait de relire les faits et leurs coûts.
 3. **Numérotation.** Les préfixes sont désormais les catégories de chaque entreprise. L'année et le reset annuel du format `MOULE-2026-000001` n'ont en revanche aucune source client, alors que des ordres de fabrication durant plusieurs mois traversent les millésimes.
-4. **Critère de lecture.** `ElementDeFabricationCriteria` ne filtre que par période de création et la liste est paginée. Aucun écran décrit par le client ne filtre ainsi ; le seul critère cité est « actifs seulement ». Côté atelier, ce point est traité — la période y est devenue facultative.
 
 ## categoriedeproduit
 
@@ -241,9 +242,8 @@ porte le contrat détaillé et les limites de cohérence face aux écritures con
    d'activité correspondants ; les activités expirées sont exclues de ces commandes. Voir
    l'[ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md) pour la frontière serveur/pupitre.
 4. **La déclaration du travail non facturable.** Le client veut son bouton GLM, placé en bas de l'écran, pour déclarer à la main le travail qu'il ne facture pas. Il sera déclaré par le superviseur comme un OF de type Perso. Sa création, le sous-type et le rattachement éventuel à un projet interne feront l'objet d'un chantier distinct.
-5. **Le cycle de vie de l'élément lui-même.** La clôture existe côté atelier, sur le suivi. Reste à trancher si l'élément de fabrication porte en propre un statut, ou si son activité se lit entièrement par la présence ou l'absence d'un suivi non clôturé.
-6. **L'écriture du journal rapproche par identifiant**, ce qui coûte une lecture indexée de la collection à chaque pointage. Si un journal devenait assez long pour que cette lecture pèse, la sortie est un upsert natif gardé (`on conflict (id) do update ... where ... is distinct from ...`), qui épargne à PostgreSQL toute version de tuple sur les lignes inchangées — au prix d'une scission permanente entre lecture JPA et écriture JDBC.
-7. **L'audit reste à faire.** Les pointages ignorés se lisent en base, sans endpoint ni écran ; les actes du gestionnaire ne sont pas audités, et ceux qui seraient incohérents ne sont pas refusés au-delà de la borne de fin.
+5. **L'écriture du journal rapproche par identifiant**, ce qui coûte une lecture indexée de la collection à chaque pointage. Si un journal devenait assez long pour que cette lecture pèse, la sortie est un upsert natif gardé (`on conflict (id) do update ... where ... is distinct from ...`), qui épargne à PostgreSQL toute version de tuple sur les lignes inchangées — au prix d'une scission permanente entre lecture JPA et écriture JDBC.
+6. **L'audit reste à faire.** Les pointages ignorés se lisent en base, sans endpoint ni écran ; les actes du gestionnaire ne sont pas audités, et ceux qui seraient incohérents ne sont pas refusés au-delà de la borne de fin.
 
 ## postedetravail
 

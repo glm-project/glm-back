@@ -1,6 +1,7 @@
 package com.glm.glmback.elementdefabrication.infrastructure.primary;
 
 import com.glm.glmback.elementdefabrication.domain.CategorieInconnueException;
+import com.glm.glmback.elementdefabrication.domain.ClotureHorsDesCloturesException;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationIntrouvableException;
 import com.glm.glmback.elementdefabrication.domain.ReferenceDejaUtiliseeException;
 import org.springframework.core.Ordered;
@@ -26,5 +27,10 @@ class ElementDeFabricationExceptionAdvice {
   @ExceptionHandler(CategorieInconnueException.class)
   ProblemDetail handleCategorieInconnue(CategorieInconnueException e) {
     return ErreurDElementDeFabrication.CATEGORIE_INCONNUE.problem(e);
+  }
+
+  @ExceptionHandler(ClotureHorsDesCloturesException.class)
+  ProblemDetail handleClotureHorsDesClotures(ClotureHorsDesCloturesException e) {
+    return ErreurDElementDeFabrication.CLOTURE_HORS_DES_CLOTURES.problem(e);
   }
 }

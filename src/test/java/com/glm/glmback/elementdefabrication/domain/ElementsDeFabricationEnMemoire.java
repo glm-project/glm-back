@@ -1,10 +1,5 @@
 package com.glm.glmback.elementdefabrication.domain;
 
-import com.glm.glmback.shared.pagination.domain.Page;
-import com.glm.glmback.shared.pagination.domain.Pageable;
-import java.time.Instant;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -57,27 +52,5 @@ final class ElementsDeFabricationEnMemoire implements ElementDeFabricationReposi
       .filter(element -> element.reference().filter(reference::equals).isPresent())
       .findFirst()
       .map(ElementDeFabrication::id);
-  }
-
-  @Override
-  public Page<ElementDeFabrication> list(ElementDeFabricationCriteria criteria, Pageable pageable) {
-    List<ElementDeFabrication> filtres = elements
-      .values()
-      .stream()
-      .filter(criteria::matches)
-      .sorted(parDateDeCreationDescendante())
-      .toList();
-
-    return Page.<ElementDeFabrication>builder()
-      .content(filtres.stream().skip(pageable.offset()).limit(pageable.size()).toList())
-      .currentPage(pageable.page())
-      .pageSize(pageable.size())
-      .totalElementsCount(filtres.size());
-  }
-
-  private static Comparator<ElementDeFabrication> parDateDeCreationDescendante() {
-    return Comparator.comparing(ElementDeFabrication::dateDeCreation, Comparator.<Instant>reverseOrder()).thenComparing(
-      ElementDeFabrication::id
-    );
   }
 }

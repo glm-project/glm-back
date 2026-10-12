@@ -187,6 +187,157 @@ Feature: Gestion des elements de fabrication
     Then la reponse a le statut http 200
     And la reponse contient au moins 2 elements
 
+  # Un element n'est que dans un cycle a la fois : la liste filtree par cycle ne le rend que dans le sien.
+  Scenario: La liste dit ou en est chaque element, de sa creation a sa reouverture
+    Given il est "2042-01-05T08:00:00Z"
+    And j'ai cree un element de fabrication
+      | categorie | OF   |
+      | reference | 3001 |
+    When je liste les elements de fabrication crees avec celui-ci
+    Then cet element de fabrication est liste avec
+      | cycle          | EN_PREPARATION |
+      | suivi          | -              |
+      | etatDAtelier   | -              |
+      | misALAtelierLe | -              |
+      | clotureLe      | -              |
+    And cet element de fabrication n'est liste que dans le cycle "EN_PREPARATION"
+    Given il est "2042-01-05T09:00:00Z"
+    And j'ai mis cet element de fabrication a l'atelier
+    When je liste les elements de fabrication crees avec celui-ci
+    Then cet element de fabrication est liste avec
+      | cycle          | EN_ATELIER           |
+      | suivi          | suivi                |
+      | etatDAtelier   | EN_ATTENTE           |
+      | misALAtelierLe | 2042-01-05T09:00:00Z |
+      | clotureLe      | -                    |
+    And cet element de fabrication n'est liste que dans le cycle "EN_ATELIER"
+    Given il est "2042-01-05T17:00:00Z"
+    And j'ai cloture cet element de fabrication
+    When je liste les elements de fabrication crees avec celui-ci
+    Then cet element de fabrication est liste avec
+      | cycle          | CLOTURE              |
+      | suivi          | suivi                |
+      | etatDAtelier   | -                    |
+      | misALAtelierLe | 2042-01-05T09:00:00Z |
+      | clotureLe      | 2042-01-05T17:00:00Z |
+      | clotureePar    | gestionnaire         |
+    And cet element de fabrication n'est liste que dans le cycle "CLOTURE"
+    Given j'ai rouvert cet element de fabrication
+    When je liste les elements de fabrication crees avec celui-ci
+    Then cet element de fabrication est liste avec
+      | cycle        | EN_ATELIER |
+      | suivi        | suivi      |
+      | etatDAtelier | EN_ATTENTE |
+      | clotureLe    | -          |
+      | clotureePar  | -          |
+    And cet element de fabrication n'est liste que dans le cycle "EN_ATELIER"
+
+  Scenario: La liste filtre par categorie et par texte, sans tenir compte de la casse
+    Given il est "2042-02-06T08:00:00Z"
+    And j'ai cree un element de fabrication
+      | categorie   | OF             |
+      | reference   | 3101           |
+      | description | Bride en acier |
+    And j'ai cree un element de fabrication
+      | categorie   | MOULE           |
+      | reference   | 3102            |
+      | description | Carter en acier |
+    And j'ai cree un element de fabrication
+      | categorie   | OF              |
+      | reference   | 3103            |
+      | description | Carter en fonte |
+    When je liste les elements de fabrication crees avec celui-ci, avec
+      | recherche | ACIER |
+    Then la liste ne rend que les references
+      | 3102 |
+      | 3101 |
+    When je liste les elements de fabrication crees avec celui-ci, avec
+      | categorie | OF     |
+      | recherche | carter |
+    Then la liste ne rend que les references
+      | 3103 |
+
+  Scenario: La liste se lit sans periode de creation
+    Given j'ai cree un element de fabrication
+      | categorie | OF            |
+      | reference | 3201-SANS-PER |
+    When je liste les elements de fabrication avec
+      | recherche | 3201-sans-per |
+    Then la liste ne rend que les references
+      | 3201-SANS-PER |
+
+  Scenario: Une periode de creation a une seule borne ne filtre rien, comme la liste d'atelier
+    Given j'ai cree un element de fabrication
+      | categorie | OF             |
+      | reference | 3202-UNE-BORNE |
+    When je liste les elements de fabrication avec
+      | debut     | 2999-01-01T00:00:00Z |
+      | recherche | 3202-une-borne       |
+    Then la liste ne rend que les references
+      | 3202-UNE-BORNE |
+
+  Scenario: Une categorie hors motif est refusee
+    When je liste les elements de fabrication avec
+      | categorie | moule |
+    Then la reponse a le statut http 400
+
+  Scenario: Les clotures se lisent sur une periode de cloture
+    Given il est "2042-03-07T08:00:00Z"
+    And j'ai cree un element de fabrication
+      | categorie | OF   |
+      | reference | 3301 |
+    And j'ai mis cet element de fabrication a l'atelier
+    And il est "2042-03-09T10:00:00Z"
+    And j'ai cloture cet element de fabrication
+    When je liste les elements de fabrication crees avec celui-ci, avec
+      | cycle        | CLOTURE              |
+      | clotureDebut | 2042-03-09T00:00:00Z |
+      | clotureFin   | 2042-03-09T23:59:59Z |
+    Then la liste ne rend que les references
+      | 3301 |
+    When je liste les elements de fabrication crees avec celui-ci, avec
+      | cycle        | CLOTURE              |
+      | clotureDebut | 2042-03-10T00:00:00Z |
+      | clotureFin   | 2042-03-10T23:59:59Z |
+    Then la reponse a le statut http 200
+    And la reponse contient 0 elements
+
+  Scenario: Une periode de cloture hors des clotures est refusee
+    When je liste les elements de fabrication avec
+      | cycle        | EN_ATELIER           |
+      | clotureDebut | 2042-03-09T00:00:00Z |
+      | clotureFin   | 2042-03-09T23:59:59Z |
+    Then la reponse a le statut http 400
+    And la reponse porte le code d'erreur "urn:glm:erreur:element-de-fabrication:cloture-hors-des-clotures"
+
+  Scenario: Les compteurs des onglets comptent chaque cycle, les clotures sur leur periode
+    Given il est "2042-04-08T08:00:00Z"
+    And j'ai cree un element de fabrication
+      | categorie | OF   |
+      | reference | 3401 |
+    And j'ai cree un element de fabrication
+      | categorie | OF   |
+      | reference | 3402 |
+    And j'ai mis cet element de fabrication a l'atelier
+    And j'ai cree un element de fabrication
+      | categorie | OF   |
+      | reference | 3403 |
+    And j'ai mis cet element de fabrication a l'atelier
+    And j'ai cloture cet element de fabrication
+    When je compte les elements de fabrication crees avec celui-ci, avec
+      | categorie | OF |
+    Then les compteurs des cycles sont
+      | enPreparation | 1 |
+      | enAtelier     | 1 |
+      | clotures      | 1 |
+    When je compte les elements de fabrication crees avec celui-ci, avec
+      | clotureDebut | 2042-04-09T00:00:00Z |
+      | clotureFin   | 2042-04-09T23:59:59Z |
+    Then les compteurs des cycles sont
+      | enPreparation | 1 |
+      | enAtelier     | 1 |
+      | clotures      | 0 |
+
   Scenario: Creation refusee a un utilisateur sans role gestionnaire
     Given I am logged in as "user" with role "USER"
     When je cree un element de fabrication

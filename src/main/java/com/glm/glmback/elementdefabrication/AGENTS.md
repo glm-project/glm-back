@@ -11,7 +11,8 @@ Responsabilité, frontières et invariants de ce contexte. Les règles de code c
 1. **Créer** un élément de fabrication dans une catégorie de produit de l'entreprise (`MOULE`, `OF`…), en lui
    attribuant son nom par numérotation automatique.
 2. **Réviser** sa fiche : la référence que l'entreprise lui donne dans son propre système, et sa description.
-3. **Lire** un élément ou la liste paginée des éléments.
+3. **Lire** un élément, ou la liste paginée des éléments **dans leur cycle** (en préparation, en atelier, clôturés),
+   avec ses compteurs par cycle.
 
 « Produit » est volontairement générique : l'application s'adresse à plusieurs entreprises clientes, dont les métiers
 nomment différemment ce qu'elles fabriquent (des moules, chez le client de référence). Ne jamais renommer ces concepts
@@ -20,7 +21,8 @@ d'après le vocabulaire d'un seul client.
 ## Ce dont il ne s'occupe pas
 
 - **L'exécution** — engagement en atelier, pointages, temps passé, clôture. Tout cela appartient à `atelier`, qui ne
-  connaît de ce contexte qu'une copie du nom et de la catégorie, prise à l'engagement.
+  connaît de ce contexte qu'une copie du nom et de la catégorie, prise à l'engagement. Ce contexte **lit** le suivi
+  d'atelier pour dire où en est un élément, sans jamais l'écrire ni importer `atelier`.
 - **La suppression** — le client ne parle que de clôture. Le jour où des temps seront saisis, supprimer un élément qui
   en porte empêcherait de relire les faits et leurs coûts.
 - **Déclarer les catégories** — cela appartient à `categoriedeproduit`. Ce contexte n'en lit que l'existence, par le
@@ -55,6 +57,19 @@ plus tard, sur une différence réelle — le lien produit → OF, par exemple �
 - **L'état mutable — compteur, catégories déclarées, horloge — n'est jamais un champ du domaine** : il vient de ports
   (`CompteurDElementsDeFabrication`, `CategoriesDeclarees`, `Clock`), et la règle qui les utilise vit dans
   `ElementsDeFabricationService`.
+
+## Lecture par cycle
+
+L'élément ne porte aucun statut : son cycle se lit sur son suivi d'atelier (`ElementDansSonCycle`, `PassageOuvert`
+ou `PassageClos`), unique par élément. Le port `ElementsDansLeurCycle` lit la liste et les compteurs ;
+`JpaElementsDansLeurCycle` joint `suivi_d_atelier` par des entités `@Immutable` propres à ce contexte
+(`SuiviDuProduitEntity`, `ActiviteDuProduitEntity`), puis juge l'état des seuls suivis ouverts de la page avec la
+règle de l'atelier, sur la projection `activite_d_atelier` : un suivi pointé y porte toujours une activité. `JpaElementsDansLeurCycleIT` confronte cet état à
+`SuiviDAtelier.etat` : le modifier avec toute évolution de l'état côté atelier.
+
+Les règles de sélection vivent dans le domaine (`FiltreDesElements`, `Recherche`, `CycleDemande`), que l'adapter
+traduit en SQL. Une période de clôture ne se demande qu'avec le cycle `CLOTURE` (400 `cloture-hors-des-clotures`) ;
+une période à une seule borne ne filtre rien, comme la liste de l'atelier.
 
 ## Structure
 

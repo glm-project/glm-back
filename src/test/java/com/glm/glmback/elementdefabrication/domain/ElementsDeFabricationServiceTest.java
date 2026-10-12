@@ -1,12 +1,10 @@
 package com.glm.glmback.elementdefabrication.domain;
 
 import static com.glm.glmback.elementdefabrication.domain.ElementsDeFabricationFixture.*;
-import static com.glm.glmback.shared.pagination.domain.PaginationFixture.*;
 import static com.glm.glmback.shared.time.domain.TimeFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
-import com.glm.glmback.shared.pagination.domain.Page;
 import java.time.Instant;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -120,28 +118,6 @@ class ElementsDeFabricationServiceTest {
     ElementDeFabricationId inconnu = ElementDeFabricationId.newId();
 
     assertThatThrownBy(() -> elements.get(inconnu)).isExactlyInstanceOf(ElementDeFabricationIntrouvableException.class);
-  }
-
-  @Test
-  void shouldListElementsDeFabricationInPeriode() {
-    ElementDeFabrication ordre = elements.create(elementDeFabricationToCreateOrdre1015());
-    ElementDeFabrication produit = elements.create(elementDeFabricationToCreateMoule2456());
-
-    Page<ElementDeFabrication> page = elements.list(
-      new Periode(LE_10_MAI_2026.minusSeconds(1), LE_10_MAI_2026.plusSeconds(1)),
-      firstPageOfTen()
-    );
-
-    assertThat(page.content()).containsExactlyInAnyOrder(ordre, produit);
-  }
-
-  @Test
-  void shouldNotListElementsDeFabricationOutOfPeriode() {
-    elements.create(elementDeFabricationToCreateOrdre1015());
-
-    Page<ElementDeFabrication> page = elements.list(premierTrimestre2026(), firstPageOfTen());
-
-    assertThat(page.content()).isEmpty();
   }
 
   @Test

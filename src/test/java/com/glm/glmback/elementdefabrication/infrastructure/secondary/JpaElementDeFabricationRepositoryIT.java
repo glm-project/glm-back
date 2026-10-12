@@ -1,23 +1,19 @@
 package com.glm.glmback.elementdefabrication.infrastructure.secondary;
 
 import static com.glm.glmback.elementdefabrication.domain.ElementsDeFabricationFixture.*;
-import static com.glm.glmback.shared.pagination.domain.PaginationFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.IntegrationTest;
 import com.glm.glmback.elementdefabrication.domain.Categorie;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabrication;
-import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationCriteria;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationDejaExistantException;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationId;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationIntrouvableException;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationRepository;
 import com.glm.glmback.elementdefabrication.domain.Nom;
-import com.glm.glmback.elementdefabrication.domain.Periode;
 import com.glm.glmback.elementdefabrication.domain.Reference;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurityContexts;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
-import com.glm.glmback.shared.pagination.domain.Page;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.List;
@@ -157,35 +153,6 @@ class JpaElementDeFabricationRepositoryIT {
   }
 
   @Test
-  @WithTenant(IMPECCMOLD)
-  void shouldListElementsDeFabricationOfPeriodeFromNewestToOldest() {
-    Instant lundi = Instant.parse("2031-03-02T08:00:00Z");
-    Instant mardi = Instant.parse("2031-03-03T08:00:00Z");
-    ElementDeFabrication ancien = elementDeFabricationCreeLe(lundi);
-    ElementDeFabrication recent = elementDeFabricationCreeLe(mardi);
-    inTransaction(() -> elements.create(ancien));
-    inTransaction(() -> elements.create(recent));
-
-    Page<ElementDeFabrication> page = inTransaction(() -> elements.list(criteres(lundi, mardi), firstPageOfTen()));
-
-    assertThat(page.content()).containsExactly(recent, ancien);
-    assertThat(page.totalElementsCount()).isEqualTo(2);
-  }
-
-  @Test
-  @WithTenant(IMPECCMOLD)
-  void shouldNotListElementsDeFabricationOutOfPeriode() {
-    Instant creation = Instant.parse("2032-04-05T08:00:00Z");
-    inTransaction(() -> elements.create(elementDeFabricationCreeLe(creation)));
-
-    Page<ElementDeFabrication> page = inTransaction(() ->
-      elements.list(criteres(creation.plusSeconds(1), creation.plusSeconds(2)), firstPageOfTen())
-    );
-
-    assertThat(page.content()).isEmpty();
-  }
-
-  @Test
   void shouldNotReadElementDeFabricationOfAnotherTenant() {
     Instant creation = Instant.parse("2033-05-06T08:00:00Z");
     ElementDeFabrication element = elementDeFabricationCreeLe(creation);
@@ -195,10 +162,8 @@ class JpaElementDeFabricationRepositoryIT {
 
     TenantSecurityContexts.authenticateOn(KATILYS);
     Optional<ElementDeFabrication> chezKatilys = inTransaction(() -> elements.get(element.id()));
-    Page<ElementDeFabrication> pageChezKatilys = inTransaction(() -> elements.list(criteres(creation, creation), firstPageOfTen()));
 
     assertThat(chezKatilys).isEmpty();
-    assertThat(pageChezKatilys.content()).isEmpty();
   }
 
   @Test
@@ -266,10 +231,6 @@ class JpaElementDeFabricationRepositoryIT {
     inTransaction(() -> elements.create(chezKatilys));
 
     assertThat(inTransaction(() -> elements.get(chezKatilys.id()))).contains(chezKatilys);
-  }
-
-  private static ElementDeFabricationCriteria criteres(Instant debut, Instant fin) {
-    return new ElementDeFabricationCriteria(new Periode(debut, fin));
   }
 
   private static ElementDeFabrication elementDeFabricationCreeLe(Instant dateDeCreation) {

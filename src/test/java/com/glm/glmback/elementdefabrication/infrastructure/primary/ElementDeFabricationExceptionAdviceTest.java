@@ -5,6 +5,7 @@ import static org.springframework.http.HttpStatus.*;
 
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.elementdefabrication.domain.CategorieInconnueException;
+import com.glm.glmback.elementdefabrication.domain.ClotureHorsDesCloturesException;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationId;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationIntrouvableException;
 import com.glm.glmback.elementdefabrication.domain.ReferenceDejaUtiliseeException;
@@ -37,6 +38,11 @@ class ElementDeFabricationExceptionAdviceTest extends ExceptionAdviceContract {
         new CategorieInconnueException(CATEGORIE_MOULE),
         "urn:glm:erreur:element-de-fabrication:categorie-inconnue",
         CONFLICT
+      ),
+      new PublishedProblem(
+        new ClotureHorsDesCloturesException(),
+        "urn:glm:erreur:element-de-fabrication:cloture-hors-des-clotures",
+        BAD_REQUEST
       )
     );
   }
