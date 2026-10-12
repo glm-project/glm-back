@@ -11,7 +11,9 @@ import java.util.Optional;
  * <p>
  * Son type dit ce qu'il fait d'une activite. Un debut et une non conformite ouvrent une activite, dont ils portent
  * l'identite : la leur. Une fin n'en ouvre aucune et ferme l'activite en cours de sa cle, sans la designer ; seule la
- * fin que le gestionnaire regularise porte une cible, l'activite echue dont elle etablit la fin.
+ * fin que le gestionnaire etablit (regularisation d'une fin automatique, ou ajout d'une activite oubliee) porte une
+ * cible, l'activite dont elle fixe la fin. Un retrait et un changement de poste, que seul le gestionnaire porte au
+ * journal, ciblent eux aussi une activite : ils s'ajoutent au journal sans rien modifier.
  * </p>
  *
  * <p>
@@ -105,9 +107,10 @@ public record EvenementDAtelier(
   }
 
   /**
-   * Seul un debut ou une non conformite ouvre une activite, et seule la fin d'une regularisation en cible une : un
-   * pointage ne designe jamais l'activite qu'il ferme, la cle la donne. Seule une ouverture porte la duree maximale
-   * dont son activite tient son echeance.
+   * Seul un debut ou une non conformite ouvre une activite. Un fait du gestionnaire en cible une : la fin d'une
+   * regularisation ou d'un ajout, un retrait, un changement de poste ; un pointage ne designe jamais l'activite qu'il
+   * ferme, la cle la donne. Un retrait et un changement de poste sont toujours un acte du gestionnaire. Seule une
+   * ouverture porte la duree maximale dont son activite tient son echeance.
    */
   private static void exigeLesActivitesDuType(
     TypeDEvenementDAtelier type,
@@ -121,6 +124,9 @@ public record EvenementDAtelier(
       throw new EvenementDAtelierIncoherentException(type, origine);
     }
     if (activiteVisee.isPresent() != (!ouvre && origine == OrigineDuPointage.REGULARISATION)) {
+      throw new EvenementDAtelierIncoherentException(type, origine);
+    }
+    if (type.estUneCorrection() && origine != OrigineDuPointage.REGULARISATION) {
       throw new EvenementDAtelierIncoherentException(type, origine);
     }
   }

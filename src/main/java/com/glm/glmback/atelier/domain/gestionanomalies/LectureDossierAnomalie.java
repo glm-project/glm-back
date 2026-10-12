@@ -43,14 +43,11 @@ public record LectureDossierAnomalie(AdresseDossierAnomalie adresse, LectureDuSu
     return lecture.suivi().borneDeFin(activite.activite());
   }
 
-  /** Les pointages de la cle de l'activite echue : meme operateur, meme poste, dans l'ordre du journal. */
+  /**
+   * Les pointages de la cle de l'activite echue : meme operateur, meme poste, dans l'ordre du journal. Ce sont les gestes
+   * que la cle a reellement vecus, apres les corrections du gestionnaire.
+   */
   public List<EvenementDAtelier> pointages() {
-    return lecture
-      .suivi()
-      .journal()
-      .evenements()
-      .stream()
-      .filter(pointage -> pointage.cle().equals(activite.cle()))
-      .toList();
+    return lecture.suivi().gestesDeLaCle(activite.cle());
   }
 }

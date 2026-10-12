@@ -20,7 +20,11 @@ enum ErreurDAtelier implements ProblemCode {
   FIN_APRES_BORNE(HttpStatus.CONFLICT, "fin apres borne"),
   SAISIE_CONCURRENTE(HttpStatus.CONFLICT, "saisie concurrente"),
   POINTAGE_IGNORE(HttpStatus.CONFLICT, "pointage ignore"),
-  DATE_DE_SURVENUE_FUTURE(HttpStatus.BAD_REQUEST, "date de survenue future");
+  DATE_DE_SURVENUE_FUTURE(HttpStatus.BAD_REQUEST, "date de survenue future"),
+  ACTIVITE_EN_COURS(HttpStatus.CONFLICT, "activite en cours"),
+  CHEVAUCHEMENT(HttpStatus.CONFLICT, "chevauchement"),
+  MEME_POSTE(HttpStatus.CONFLICT, "meme poste"),
+  EVENEMENT_POSTERIEUR_A_LA_CLOTURE(HttpStatus.CONFLICT, "evenement posterieur a la cloture");
 
   private final HttpStatus status;
   private final String title;

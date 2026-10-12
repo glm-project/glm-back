@@ -232,6 +232,63 @@
         "required" : [ "activite", "categorie", "debut", "element" ],
         "type" : "object"
       },
+      "RestActiviteDeLaJournee" : {
+        "description" : "Une activite qui touche le jour lu, telle que le journal la lit apres les corrections du gestionnaire.\n\nSes bornes sont entieres : une activite a cheval sur minuit garde son debut et sa fin d'origine, et ses portions sont\n`dureeSurLeJour` pour le jour lu et `autresJours` pour les autres. Une activite en cours n'a ni fin, ni duree. Elle n'est\ncorrigeable (retrait, changement de poste) que terminee, normalement, automatiquement ou par une fin regularisee, et tant\nque son suivi n'est pas cloture : la cloture d'un suivi se lit dans `choix.suivis`.\n",
+        "properties" : {
+          "autresJours" : {
+            "description" : "Les portions comptees les autres jours, coupees aux minuits de l'entreprise. Vide pour une activite contenue dans le jour.",
+            "items" : {
+              "$ref" : "#/components/schemas/RestPortionDeJour"
+            },
+            "type" : "array"
+          },
+          "categorie" : {
+            "description" : "TRAVAIL ou NON_CONFORMITE : le type de l'activite.",
+            "enum" : [ "TRAVAIL", "NON_CONFORMITE" ],
+            "type" : "string"
+          },
+          "debut" : {
+            "description" : "Debut de l'activite entiere.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "dureeSurLeJour" : {
+            "description" : "La portion comptee le jour lu, ISO-8601. Absente pour une activite en cours, qui ne compte aucune duree.",
+            "example" : "PT2H",
+            "type" : "string"
+          },
+          "element" : {
+            "$ref" : "#/components/schemas/RestElementDeLaJournee",
+            "description" : "L'element engage dans ce suivi."
+          },
+          "etat" : {
+            "description" : "TERMINEE (fin reelle : pointee, regularisee, ajoutee ou posee par la cloture), TERMINEE_AUTOMATIQUEMENT (l'echeance est\natteinte faute de fin reelle : l'anomalie que le gestionnaire regularise) ou EN_COURS.\n",
+            "enum" : [ "TERMINEE", "TERMINEE_AUTOMATIQUEMENT", "EN_COURS" ],
+            "type" : "string"
+          },
+          "fin" : {
+            "description" : "Fin de l'activite entiere : sa fin reelle, ou son echeance pour une fin automatique. Absente tant qu'elle est en cours.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "description" : "Identite de l'activite : l'identifiant de son pointage ouvrant d'origine, qui ne change pas quand son poste change.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "poste" : {
+            "$ref" : "#/components/schemas/RestPosteDeLaJournee",
+            "description" : "Le poste courant de l'activite, apres un eventuel changement de poste. Absent si aucun poste n'a ete pointe."
+          },
+          "suivi" : {
+            "description" : "Le suivi qui porte l'activite : celui des routes de correction.",
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "required" : [ "autresJours", "categorie", "debut", "element", "etat", "id", "suivi" ],
+        "type" : "object"
+      },
       "RestActiviteDeSupervision" : {
         "properties" : {
           "categorie" : {
@@ -428,6 +485,68 @@
         "required" : [ "pointage", "suivi" ],
         "type" : "object"
       },
+      "RestAjoutDUneActivite" : {
+        "description" : "Une activite oubliee que le gestionnaire ajoute a un suivi, du debut a la fin qu'il donne.\n\nElle s'ecrit en deux faits d'origine regularisation : une ouverture (un debut, ou une non conformite selon la\ncategorie) a l'heure du debut, et une fin a l'heure de la fin qui vise l'activite. La nature d'operation, le cout\nhoraire et le taux horaire sont recopies du poste et de l'operateur, comme pour un pointage ; la duree maximale\nd'activite en vigueur est copiee sur l'ouverture. La fin peut tomber le lendemain du debut : le chevauchement se verifie\nsur toute l'activite, sur la cle (operateur, poste) de ce suivi.\n",
+        "properties" : {
+          "categorie" : {
+            "description" : "TRAVAIL ou NON_CONFORMITE : le type de l'activite, qui decide du fait d'ouverture (DEBUT ou NON_CONFORMITE).",
+            "enum" : [ "TRAVAIL", "NON_CONFORMITE" ],
+            "type" : "string"
+          },
+          "debut" : {
+            "description" : "Heure metier a laquelle l'activite a commence : pas avant l'engagement du suivi.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "fin" : {
+            "description" : "Heure metier a laquelle l'activite a fini : posterieure au debut, ni dans le futur, ni apres la cloture du suivi. Elle\npeut tomber le lendemain du debut.\n",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "description" : "Identifiant de la saisie, genere par le client une fois par saisie et conserve d'un renvoi a l'autre. C'est aussi\nl'identifiant de l'ouverture, donc de l'activite ajoutee. Un identifiant deja present au journal est un renvoi : il\nrepond 200, sans rien ecrire, avant toute regle.\n",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "operateur" : {
+            "description" : "Identifiant de l'operateur dont le temps est affecte.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "poste" : {
+            "description" : "Identifiant du poste de travail, sur lequel l'operateur doit etre habilite. Facultatif, comme pour un pointage.",
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "required" : [ "categorie", "debut", "fin", "id", "operateur" ],
+        "type" : "object"
+      },
+      "RestBornesDuJour" : {
+        "description" : "Les minuits du jour, calcules dans le fuseau horaire de l'entreprise (aujourd'hui Europe/Paris) : le client ne calcule\naucun minuit. Comme partout dans l'API, les instants se lisent en UTC (suffixe Z) : en Europe/Paris l'ete, minuit du 5\noctobre est `2026-10-04T22:00:00Z`.\n",
+        "properties" : {
+          "debut" : {
+            "description" : "Debut du jour, inclus : minuit.",
+            "example" : "2026-10-04T22:00:00Z",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "fin" : {
+            "description" : "Fin du jour, exclue : minuit du lendemain.",
+            "example" : "2026-10-05T22:00:00Z",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "finDuLendemain" : {
+            "description" : "Fin du lendemain, exclue : la fin d'une activite ajoutee ne la depasse pas.",
+            "example" : "2026-10-06T22:00:00Z",
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "debut", "fin", "finDuLendemain" ],
+        "type" : "object"
+      },
       "RestCategorieDeProduit" : {
         "description" : "Une categorie de produit de l'entreprise.",
         "properties" : {
@@ -443,6 +562,44 @@
           }
         },
         "required" : [ "code", "utilisee" ],
+        "type" : "object"
+      },
+      "RestChangementDePoste" : {
+        "description" : "Le nouveau poste d'une activite terminee. L'operateur, la categorie et les heures sont ceux de l'activite ; la nature\nd'operation et le cout horaire sont recopies du nouveau poste au moment de la correction, comme au pointage, et le taux\nhoraire reste celui de l'activite.\n\nLe fait CHANGEMENT_DE_POSTE est date du moment de la correction, vise l'activite par `activiteVisee` et ne modifie aucun\nfait : l'activite compte sur le nouveau poste dans toutes les lectures du journal.\n",
+        "properties" : {
+          "id" : {
+            "description" : "Identifiant de la saisie, genere par le client une fois par saisie et conserve d'un renvoi a l'autre. Un identifiant\ndeja present au journal est un renvoi : il repond 200, sans rien ecrire, avant toute regle.\n",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "poste" : {
+            "description" : "Identifiant du nouveau poste de travail, different du poste actuel et sur lequel l'operateur est habilite.",
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "poste" ],
+        "type" : "object"
+      },
+      "RestChoixDAjout" : {
+        "description" : "Ce que le gestionnaire peut choisir pour ajouter une activite ce jour-la : les suivis presents (un par suivi) et les\npostes sur lesquels l'operateur est habilite aujourd'hui.\n",
+        "properties" : {
+          "postes" : {
+            "description" : "Les postes habilites de l'operateur, par libelle.",
+            "items" : {
+              "$ref" : "#/components/schemas/RestPosteDeLaJournee"
+            },
+            "type" : "array"
+          },
+          "suivis" : {
+            "description" : "Les suivis presents a l'atelier ce jour-la, par engagement.",
+            "items" : {
+              "$ref" : "#/components/schemas/RestSuiviPresent"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "postes", "suivis" ],
         "type" : "object"
       },
       "RestCloture" : {
@@ -809,6 +966,38 @@
         },
         "type" : "object"
       },
+      "RestElementDeLaJournee" : {
+        "description" : "Un element de fabrication, tel que les autres lectures de l'API le rendent : nom et categorie copies a l'engagement du\nsuivi, reference et description relues au referentiel et absentes si l'element a ete supprime. Le numero que l'ecran\naffiche est la reference, a defaut le nom ; la designation est la description.\n",
+        "properties" : {
+          "categorie" : {
+            "description" : "Categorie de l'element, copiee a l'engagement.",
+            "example" : "OF",
+            "type" : "string"
+          },
+          "description" : {
+            "description" : "Description de l'element, relue au referentiel.",
+            "example" : "Carter de pompe",
+            "type" : "string"
+          },
+          "id" : {
+            "description" : "Identifiant de l'element de fabrication.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "nom" : {
+            "description" : "Nom de l'element, copie a l'engagement.",
+            "example" : "PRD-2026-000015",
+            "type" : "string"
+          },
+          "reference" : {
+            "description" : "Reference de l'element, relue au referentiel.",
+            "example" : 1015,
+            "type" : "string"
+          }
+        },
+        "required" : [ "categorie", "id", "nom" ],
+        "type" : "object"
+      },
       "RestElementDeLaSynthese" : {
         "description" : "Un element sur lequel l'operateur a travaille ou pointe dans la semaine, et le temps qu'il y a passe.\n\nNom et categorie viennent du suivi, copies a l'engagement ; reference et description sont relues au referentiel, et\nabsentes si l'element a ete supprime. Les durees se cumulent par element : une heure passee sur deux elements compte\nsur chacun.\n",
         "properties" : {
@@ -895,6 +1084,11 @@
             "format" : "uuid",
             "type" : "string"
           },
+          "activiteVisee" : {
+            "description" : "Identite de l'activite qu'un fait du gestionnaire cible : la fin d'une regularisation ou d'un ajout, un retrait, un\nchangement de poste. Absente pour un pointage.\n",
+            "format" : "uuid",
+            "type" : "string"
+          },
           "auteur" : {
             "description" : "Utilisateur ayant saisi l'evenement.",
             "example" : "dupont",
@@ -952,8 +1146,8 @@
             "type" : "number"
           },
           "type" : {
-            "description" : "Nature du pointage. La reprise du travail apres une non conformite se pointe DEBUT.",
-            "enum" : [ "DEBUT", "NON_CONFORMITE", "FIN" ],
+            "description" : "Nature du fait. DEBUT, NON_CONFORMITE et FIN sont les gestes que le pupitre pointe ; la reprise du travail apres une non\nconformite se pointe DEBUT. RETRAIT et CHANGEMENT_DE_POSTE sont des corrections du gestionnaire, qui ciblent une\nactivite (`activiteVisee`), sont datees du moment de la correction et ne se pointent pas.\n",
+            "enum" : [ "DEBUT", "NON_CONFORMITE", "FIN", "RETRAIT", "CHANGEMENT_DE_POSTE" ],
             "type" : "string"
           }
         },
@@ -1084,6 +1278,48 @@
           }
         },
         "required" : [ "dureeOperationnelle" ],
+        "type" : "object"
+      },
+      "RestJourneeACorriger" : {
+        "description" : "La journee d'un operateur telle que le gestionnaire la corrige : les minuits du jour, les activites qui le touchent, leur\nduree operationnelle et de quoi ajouter une activite.\n\nLes activites sont lues apres les corrections deja faites : une activite retiree n'y est plus, une activite dont le poste\na change y est sur son nouveau poste. La duree operationnelle est la somme des portions du jour des activites terminees,\nautomatiquement comprises, sans union des intervalles ; une activite en cours ne compte pas. Les instants se lisent en UTC\ncomme partout dans l'API ; ceux qu'on envoie peuvent porter un decalage. Les durees suivent ISO-8601.\n",
+        "properties" : {
+          "activites" : {
+            "description" : "Les activites qui touchent le jour, par debut.",
+            "items" : {
+              "$ref" : "#/components/schemas/RestActiviteDeLaJournee"
+            },
+            "type" : "array"
+          },
+          "bornes" : {
+            "$ref" : "#/components/schemas/RestBornesDuJour",
+            "description" : "Les minuits du jour, calcules dans le fuseau de l'entreprise."
+          },
+          "choix" : {
+            "$ref" : "#/components/schemas/RestChoixDAjout",
+            "description" : "De quoi ajouter une activite ce jour-la."
+          },
+          "dureeOperationnelle" : {
+            "description" : "La duree operationnelle du jour, sous le nom qu'emploie la synthese des heures.",
+            "example" : "PT7H30M",
+            "type" : "string"
+          },
+          "evaluation" : {
+            "description" : "Instant effectivement utilise pour juger si une activite sans fin est en cours ou terminee automatiquement.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "jour" : {
+            "description" : "Le jour calendaire lu, dans le fuseau de l'entreprise.",
+            "example" : "2026-10-05",
+            "format" : "date",
+            "type" : "string"
+          },
+          "operateur" : {
+            "$ref" : "#/components/schemas/RestOperateurDAtelier",
+            "description" : "L'operateur, resolu au referentiel."
+          }
+        },
+        "required" : [ "activites", "bornes", "choix", "dureeOperationnelle", "evaluation", "jour", "operateur" ],
         "type" : "object"
       },
       "RestLibelleDeNature" : {
@@ -1695,6 +1931,24 @@
         "required" : [ "anomalies", "categorie", "cout", "debut", "duree", "fin", "operateur", "parts" ],
         "type" : "object"
       },
+      "RestPortionDeJour" : {
+        "description" : "La part d'une activite comptee un autre jour, coupee aux minuits de l'entreprise.",
+        "properties" : {
+          "duree" : {
+            "description" : "La duree comptee ce jour-la, ISO-8601 : un ecart reel entre deux instants.",
+            "example" : "PT3H30M",
+            "type" : "string"
+          },
+          "jour" : {
+            "description" : "Le jour calendaire de l'entreprise.",
+            "example" : "2026-10-06",
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "duree", "jour" ],
+        "type" : "object"
+      },
       "RestPosteDAtelier" : {
         "description" : "Un poste de travail du referentiel, resolu a la lecture.\n\nToujours facultatif : une entreprise sans parc machine laisse le champ vide et retrouve une activite unique par\noperateur.\n",
         "properties" : {
@@ -1726,6 +1980,28 @@
           }
         },
         "required" : [ "poste" ],
+        "type" : "object"
+      },
+      "RestPosteDeLaJournee" : {
+        "description" : "Un poste de travail du referentiel avec sa nature d'operation courante, relus a chaque lecture.",
+        "properties" : {
+          "id" : {
+            "description" : "Identifiant du poste dans le referentiel.",
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "libelle" : {
+            "description" : "Libelle du poste.",
+            "example" : "Tour CN 1",
+            "type" : "string"
+          },
+          "nature" : {
+            "description" : "Nature de l'operation qui s'exerce sur le poste.",
+            "example" : "Tournage",
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "libelle", "nature" ],
         "type" : "object"
       },
       "RestPosteDeLaSynthese" : {
@@ -1968,6 +2244,18 @@
         "required" : [ "dernierJour", "dureeNonConformite", "evaluation", "finsAutomatiques", "joursAvecPointage", "operateur", "pointages", "premierJour", "tempsPointe" ],
         "type" : "object"
       },
+      "RestRetrait" : {
+        "description" : "Le retrait d'une activite terminee. Rien n'est supprime : le fait RETRAIT, date du moment de la correction, vise l'activite\npar `activiteVisee` et l'ecarte de toutes les lectures du journal.\n",
+        "properties" : {
+          "id" : {
+            "description" : "Identifiant de la saisie, genere par le client une fois par saisie et conserve d'un renvoi a l'autre. Un identifiant\ndeja present au journal est un renvoi : il repond 200, sans rien ecrire, avant toute regle.\n",
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "required" : [ "id" ],
+        "type" : "object"
+      },
       "RestSuiviDAtelier" : {
         "description" : "Le suivi en atelier d'un element engage.\n\nSon etat, ses activites en cours et son temps ne sont **jamais stockes** : tout est deduit du journal a chaque\nlecture. C'est ce qui permet a une saisie rattrapee de compter a l'heure ou elle a reellement eu lieu.\n",
         "properties" : {
@@ -2125,6 +2413,32 @@
           }
         },
         "required" : [ "activites", "categorie", "etat", "id", "nom" ],
+        "type" : "object"
+      },
+      "RestSuiviPresent" : {
+        "description" : "Un suivi present a l'atelier le jour lu : engage avant la fin du jour et non cloture avant son debut, y compris cloture\ndepuis. C'est le suivi qu'une correction vise, et un choix pour ajouter une activite.\n",
+        "properties" : {
+          "clotureLe" : {
+            "description" : "Instant de la cloture du suivi, absent s'il est ouvert : aucun evenement ne la suit.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "element" : {
+            "$ref" : "#/components/schemas/RestElementDeLaJournee",
+            "description" : "L'element engage dans ce suivi."
+          },
+          "engageLe" : {
+            "description" : "Instant de l'engagement de l'element dans l'atelier : aucun evenement ne le precede.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "suivi" : {
+            "description" : "Identifiant du suivi : celui des routes de correction.",
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "required" : [ "element", "engageLe", "suivi" ],
         "type" : "object"
       },
       "RestSupervisionDAtelier" : {
@@ -2289,6 +2603,61 @@
         "tags" : [ "Atelier - anomalies de pointage" ]
       }
     },
+    "/api/atelier/operateurs/{operateurId}/journees/{jour}" : {
+      "get" : {
+        "description" : "La journee d'un operateur telle que le gestionnaire la corrige : les activites qui touchent le jour, apres les retraits\net les changements de poste deja faits, avec leur suivi (une feuille de temps ne donne que l'element, jamais le suivi\nqu'une correction vise), leur etat et leurs portions coupees aux minuits de l'entreprise ; la\nduree operationnelle du jour ; les minuits du jour, du lendemain compris ; et les choix d'un ajout, les suivis presents\nce jour-la et les postes habilites de l'operateur.\n\nLe jour est un jour calendaire `AAAA-MM-JJ` du fuseau de l'entreprise (aujourd'hui Europe/Paris), les instants se lisent\nen UTC comme dans le reste de l'API (`evaluation` accepte un decalage) et les durees suivent ISO-8601. `evaluation`, facultatif comme dans les autres lectures, fixe l'instant\nauquel une activite sans fin est jugee en cours ou terminee automatiquement ; par defaut, l'heure du serveur.\n",
+        "operationId" : "get_7",
+        "parameters" : [ {
+          "description" : "Identifiant de l'operateur dans le referentiel.",
+          "in" : "path",
+          "name" : "operateurId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "description" : "Le jour calendaire, AAAA-MM-JJ.",
+          "example" : "2026-10-05",
+          "in" : "path",
+          "name" : "jour",
+          "required" : true,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "description" : "Instant ISO-8601 utilise pour evaluer les activites sans fin. Par defaut, l'heure du serveur.",
+          "in" : "query",
+          "name" : "evaluation",
+          "required" : false,
+          "schema" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestJourneeACorriger"
+                }
+              }
+            },
+            "description" : "La journee de l'operateur."
+          },
+          "400" : {
+            "description" : "Le jour ou l'instant d'evaluation est mal forme."
+          },
+          "404" : {
+            "description" : "Operateur inconnu du referentiel (`operateur-introuvable`)."
+          }
+        },
+        "summary" : "Lire la journee d'un operateur a corriger",
+        "tags" : [ "Atelier - correction des activites" ]
+      }
+    },
     "/api/atelier/suivis" : {
       "get" : {
         "description" : "Le tableau de l'atelier.\n\nTous les filtres sont facultatifs : l'ecran des operateurs veut tous les elements actifs d'un coup, sans notion de\ndate. Le parametre etats accepte plusieurs valeurs (?etats=EN_ATTENTE&etats=EN_COURS) ; absent, il ne filtre rien.\nL'etat se juge a l'instant de la lecture, celui de chaque ligne rendue : un element dont la seule activite a atteint\nson echeance n'est plus EN_COURS. La periode, quand elle est fournie, porte sur la date d'engagement.\n\nChaque ligne conserve l'etat et les activites en cours, mais ne contient pas de journal.\nLe journal complet se consulte via GET /api/atelier/suivis/{id}.\n",
@@ -2431,6 +2800,154 @@
         },
         "summary" : "Consulter un element engage",
         "tags" : [ "Atelier - elements engages" ]
+      }
+    },
+    "/api/atelier/suivis/{id}/activites" : {
+      "post" : {
+        "description" : "Ajoute au suivi une activite que l'operateur a menee sans la pointer : une ouverture a l'heure du debut et une fin a\nl'heure de la fin, d'origine regularisation. La fin peut tomber le lendemain du debut. La nature d'operation est\nrecopiee du poste, le taux horaire de l'operateur.\n\nRefus, dans l'ordre : suivi (404 `suivi-d-atelier-introuvable`), operateur (404 `operateur-introuvable`) ou poste (404\n`poste-de-travail-introuvable`) introuvable, operateur non habilite sur ce poste (409 `operateur-non-habilite`), fin\nqui ne suit pas le debut (409 `fin-avant-debut`), fin dans le futur (400 `date-de-survenue-future`), debut anterieur\na l'engagement (409 `evenement-anterieur-a-l-engagement`), fin posterieure a la cloture (409\n`evenement-posterieur-a-la-cloture`), chevauchement d'une autre activite de la meme cle sur toute l'activite (409\n`chevauchement`). `saisie-concurrente` (409) demande de relire la journee.\n",
+        "operationId" : "ajoute",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RestAjoutDUneActivite"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Renvoi : l'evenement de cet identifiant figure deja au journal, rien n'est ecrit de plus."
+          },
+          "201" : {
+            "description" : "L'activite est ajoutee au journal."
+          },
+          "400" : {
+            "description" : "Le corps est invalide, ou la fin est dans le futur (`date-de-survenue-future`)."
+          },
+          "404" : {
+            "description" : "Suivi, operateur ou poste de travail introuvable."
+          },
+          "409" : {
+            "description" : "Operateur non habilite sur ce poste, fin qui ne suit pas le debut, debut anterieur a l'engagement, fin posterieure a la\ncloture, chevauchement d'une autre activite de la cle, ou saisie concurrente (la journee est a relire).\n"
+          }
+        },
+        "summary" : "Ajouter une activite oubliee",
+        "tags" : [ "Atelier - correction des activites" ]
+      }
+    },
+    "/api/atelier/suivis/{id}/activites/{activite}/poste" : {
+      "post" : {
+        "description" : "L'activite compte desormais sur le nouveau poste : la nature d'operation et le cout horaire sont ceux du nouveau poste,\nrecopies a la correction. Le poste d'une fin automatique change aussi : son anomalie reste ouverte, sur la nouvelle cle.\n\nRefus, dans l'ordre : suivi (404 `suivi-d-atelier-introuvable`) ou activite (404 `activite-visee-introuvable`)\nintrouvable, activite en cours (409 `activite-en-cours`), poste introuvable (404 `poste-de-travail-introuvable`),\noperateur non habilite sur le nouveau poste (409 `operateur-non-habilite`), meme poste que l'activite (409\n`meme-poste`), chevauchement sur la nouvelle cle (409 `chevauchement`), changement posterieur a la cloture (409\n`evenement-posterieur-a-la-cloture`). `saisie-concurrente` (409) demande de relire la journee.\n",
+        "operationId" : "changeLePoste",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "activite",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RestChangementDePoste"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Renvoi : l'evenement de cet identifiant figure deja au journal, rien n'est ecrit de plus."
+          },
+          "201" : {
+            "description" : "Le changement de poste est porte au journal."
+          },
+          "400" : {
+            "description" : "Le corps est invalide."
+          },
+          "404" : {
+            "description" : "Suivi, activite ou poste de travail introuvable."
+          },
+          "409" : {
+            "description" : "Activite en cours, operateur non habilite sur le nouveau poste, meme poste, chevauchement sur la nouvelle cle,\nchangement posterieur a la cloture, ou saisie concurrente (la journee est a relire).\n"
+          }
+        },
+        "summary" : "Changer le poste d'une activite",
+        "tags" : [ "Atelier - correction des activites" ]
+      }
+    },
+    "/api/atelier/suivis/{id}/activites/{activite}/retrait" : {
+      "post" : {
+        "description" : "Ecarte l'activite de toutes les lectures du journal : releve des heures, supervision et cout de revient sont recalcules\npour chaque jour qu'elle touchait. Le retrait d'une fin automatique en fait disparaitre l'anomalie. Aucune habilitation\nn'est verifiee : on retire une activite pointee sur un poste dont l'operateur a perdu l'habilitation.\n\nRefus, dans l'ordre : suivi (404 `suivi-d-atelier-introuvable`) ou activite (404 `activite-visee-introuvable`, y compris\nune activite deja retiree) introuvable, activite en cours (409 `activite-en-cours`), retrait posterieur a la cloture\n(409 `evenement-posterieur-a-la-cloture`). `saisie-concurrente` (409) demande de relire la journee.\n",
+        "operationId" : "retire",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "activite",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RestRetrait"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Renvoi : l'evenement de cet identifiant figure deja au journal, rien n'est ecrit de plus."
+          },
+          "201" : {
+            "description" : "Le retrait est porte au journal."
+          },
+          "400" : {
+            "description" : "Le corps est invalide."
+          },
+          "404" : {
+            "description" : "Suivi ou activite introuvable."
+          },
+          "409" : {
+            "description" : "Activite en cours, retrait posterieur a la cloture, ou saisie concurrente (la journee est a relire)."
+          }
+        },
+        "summary" : "Retirer une activite",
+        "tags" : [ "Atelier - correction des activites" ]
       }
     },
     "/api/atelier/suivis/{id}/anomalies/{pointage}" : {
@@ -4558,6 +5075,21 @@
     "description" : "Les metiers exerces dans l'atelier : soudage, tournage, fraisage, dessin. L'entreprise les declare une fois, et les\npostes de travail les choisissent dans cette liste.\n\nDeux natures ne peuvent pas porter le meme libelle a la casse, aux accents ou aux espaces pres : « Soudage » et\n« soudâge » sont la meme.\n\nRenommer une nature ne modifie qu'elle : son nouveau libelle s'affiche partout, rapports passes compris.\n\nUne nature se supprime tant qu'aucun poste ni aucun pointage ne s'en sert.\n\nLe gestionnaire declare, renomme et supprime les natures ; l'operateur (role USER) les consulte.\n",
     "name" : "Natures de travail"
   }, {
+    "description" : "Les reglages que l'entreprise fixe elle-meme, un seul jeu pour toute l'entreprise.\n\nLe gestionnaire les modifie ; l'operateur (role USER) les consulte.\n",
+    "name" : "Parametrage"
+  }, {
+    "description" : "Le referentiel de ce sur quoi les operateurs pointent : une machine, un etabli, un four, une salle.\n\nChaque poste porte la nature du travail qui s'y fait. C'est de la que vient le metier exerce a un instant donne :\nl'operateur qui demarre sur le poste de soudure soude, celui qui demarre sur un tour tourne. Rien de tout cela n'est\ndeclare sur la personne.\n\nLe gestionnaire declare et revise les postes ; l'operateur (role USER) les consulte.\n",
+    "name" : "Postes de travail"
+  }, {
+    "description" : "Le releve horodate des pointages et la duree travaillee d'un operateur, semaine par semaine.",
+    "name" : "Syntheses des heures"
+  }, {
+    "description" : "Le gestionnaire corrige la journee d'un operateur : il ajoute une activite oubliee, retire une activite pointee a tort,\nou change son poste. Les trois corrections lui sont reservees ; la page de la journee les lit par\n`GET /api/atelier/operateurs/{operateurId}/journees/{jour}`.\n\nUne correction n'efface rien et ne modifie aucun fait du journal : elle y ajoute des faits d'origine regularisation, qui\nportent chacun leur auteur et leur horodatage. Un ajout ecrit une ouverture et une fin datees de l'heure qu'elles\netablissent ; un retrait (`RETRAIT`) et un changement de poste (`CHANGEMENT_DE_POSTE`) sont dates du moment de la\ncorrection, visent leur activite par `activiteVisee`, et ne peuvent suivre la cloture du suivi. Aucune ne passe par la\nregle de reception : celle-ci juge ensuite les pointages sur le journal tel qu'il est apres les corrections. Le releve\ndes heures, la supervision et le cout de revient sont recalcules pour chaque jour que l'activite touche.\n\nChaque correction porte un identifiant de saisie, genere une fois par saisie par le client : un identifiant deja present\nau journal est un renvoi, qui repond 200 sans rien ecrire, avant toute autre regle. Une activite corrigeable est terminee\n(fin pointee, fin automatique ou fin regularisee) et son suivi n'est pas cloture ; une activite en cours se refuse\n(`activite-en-cours`), une activite retiree est introuvable (`activite-visee-introuvable`). Une saisie perimee, parce\nqu'un pointage s'est glisse depuis la lecture, repond `saisie-concurrente` : le client relit la journee et recommence.\n",
+    "name" : "Atelier - correction des activites"
+  }, {
+    "description" : "Le referentiel des personnes qui pointent, et des postes sur lesquels elles sont habilitees.\n\nLes metiers d'un operateur ne se saisissent pas : ils se deduisent des natures de ses postes. Un operateur habilite\nsur le poste de soudure et sur un tour ressort soudeur et tourneur.\n\nEn entree, l'operateur porte des identifiants de postes ; en sortie, il porte les postes resolus et ses natures, pour\nqu'un ecran se serve d'un seul appel.\n",
+    "name" : "Operateurs"
+  }, {
     "description" : "Toute l'activite d'un operateur sur une semaine ou un mois, a telecharger. Du temps pointe, aucun montant.",
     "name" : "Rapports d'activite"
   }, {
@@ -4567,28 +5099,16 @@
     "description" : "Le suivi des elements de fabrication mis en atelier.\n\nDeux publics se partagent ces routes. L'operateur (role USER) consulte le tableau des elements actifs et pointe son\ntravail. Le gestionnaire (role GESTIONNAIRE) engage les elements, les cloture et rattrape les saisies oubliees.\n\nRien de ce qui se deduit n'est stocke : etat et activites en cours sont recalcules du journal a chaque lecture, a\nl'instant de cette lecture. Une activite que rien n'a terminee se termine automatiquement a son echeance, son debut\nplus la duree maximale d'activite en vigueur a ce debut (celle que le gestionnaire avait fixee, treize heures par\ndefaut), sans qu'aucun evenement ne soit ecrit.\n",
     "name" : "Atelier - elements engages"
   }, {
-    "description" : "Les reglages que l'entreprise fixe elle-meme, un seul jeu pour toute l'entreprise.\n\nLe gestionnaire les modifie ; l'operateur (role USER) les consulte.\n",
-    "name" : "Parametrage"
-  }, {
     "description" : "Ce que le gestionnaire doit trancher : une activite terminee a son echeance faute de fin reelle.",
     "name" : "Atelier - anomalies de pointage"
   }, {
     "description" : "Le temps passe sur un element de fabrication, valorise par nature d'operation.",
     "name" : "Couts de revient"
   }, {
-    "description" : "Le referentiel de ce sur quoi les operateurs pointent : une machine, un etabli, un four, une salle.\n\nChaque poste porte la nature du travail qui s'y fait. C'est de la que vient le metier exerce a un instant donne :\nl'operateur qui demarre sur le poste de soudure soude, celui qui demarre sur un tour tourne. Rien de tout cela n'est\ndeclare sur la personne.\n\nLe gestionnaire declare et revise les postes ; l'operateur (role USER) les consulte.\n",
-    "name" : "Postes de travail"
-  }, {
     "description" : "Ce que le poste d'atelier met en cache pour continuer a collecter sans reseau.",
     "name" : "Pupitre"
   }, {
-    "description" : "Le releve horodate des pointages et la duree travaillee d'un operateur, semaine par semaine.",
-    "name" : "Syntheses des heures"
-  }, {
     "description" : "Historique calendaire d'un operateur, semaine par semaine.",
     "name" : "Feuilles de temps"
-  }, {
-    "description" : "Le referentiel des personnes qui pointent, et des postes sur lesquels elles sont habilitees.\n\nLes metiers d'un operateur ne se saisissent pas : ils se deduisent des natures de ses postes. Un operateur habilite\nsur le poste de soudure et sur un tour ressort soudeur et tourneur.\n\nEn entree, l'operateur porte des identifiants de postes ; en sortie, il porte les postes resolus et ses natures, pour\nqu'un ecran se serve d'un seul appel.\n",
-    "name" : "Operateurs"
   } ]
 }

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
@@ -18,6 +19,12 @@ class SuiviDAtelierReceptionTest {
   private static final Instant A_21H = Instant.parse("2026-05-10T21:00:00Z");
   private static final Instant A_22H = Instant.parse("2026-05-10T22:00:00Z");
   private static final Instant A_23H = Instant.parse("2026-05-10T23:00:00Z");
+
+  private static final List<TypeDEvenementDAtelier> GESTES = List.of(
+    TypeDEvenementDAtelier.DEBUT,
+    TypeDEvenementDAtelier.NON_CONFORMITE,
+    TypeDEvenementDAtelier.FIN
+  );
 
   private final EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
   private final CleDActivite cle = cleDeFraiseuse1DeDupont();
@@ -134,7 +141,7 @@ class SuiviDAtelierReceptionTest {
     EvenementDAtelier fin = finDe(travail).a(LE_10_MAI_2026_A_12H);
     SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(travail).enregistre(fin);
 
-    for (TypeDEvenementDAtelier type : TypeDEvenementDAtelier.values()) {
+    for (TypeDEvenementDAtelier type : GESTES) {
       assertThat(suivi.juge(cle, type, LE_10_MAI_2026_A_12H.minusNanos(1))).isEqualTo(
         new VerdictDeReception.Ignore(RaisonDePointageIgnore.ANTERIEUR, Optional.of(fin.id()))
       );

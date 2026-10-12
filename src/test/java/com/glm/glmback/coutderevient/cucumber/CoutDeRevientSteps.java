@@ -167,6 +167,34 @@ public class CoutDeRevientSteps {
     rest.put(SUIVIS_URI + "/" + suivis.get(element) + "/cloture", JSON.writeValueAsString(Map.of("dateDeSurvenue", instant)));
   }
 
+  /**
+   * Le gestionnaire change le poste de l'activite que l'operateur a ouverte a cette heure : les tarifs de l'activite sont
+   * desormais ceux du nouveau poste.
+   */
+  @Given(
+    "pour le cout, le gestionnaire change a {string} le poste de l'activite de {string} sur {string} commencee a {string} vers {string}"
+  )
+  public void leGestionnaireChangeLePoste(String instant, String operateur, String element, String debut, String poste) {
+    horloge.ilEst(Instant.parse(instant));
+    String activite = activiteOuverteA(element, operateur, debut);
+    rest.post(
+      SUIVIS_URI + "/" + suivis.get(element) + "/activites/" + activite + "/poste",
+      JSON.writeValueAsString(Map.of("id", UUID.randomUUID(), "poste", postes.get(poste)))
+    );
+    assertThat(CucumberRestTestContext.getStatus().value()).as("le changement de poste doit etre accepte").isEqualTo(201);
+  }
+
+  @Given("pour le cout, le gestionnaire retire a {string} l'activite de {string} sur {string} commencee a {string}")
+  public void leGestionnaireRetire(String instant, String operateur, String element, String debut) {
+    horloge.ilEst(Instant.parse(instant));
+    String activite = activiteOuverteA(element, operateur, debut);
+    rest.post(
+      SUIVIS_URI + "/" + suivis.get(element) + "/activites/" + activite + "/retrait",
+      JSON.writeValueAsString(Map.of("id", UUID.randomUUID()))
+    );
+    assertThat(CucumberRestTestContext.getStatus().value()).as("le retrait doit etre accepte").isEqualTo(201);
+  }
+
   @Given("pour le cout, {string} recoit les pointages")
   public void recoitLesPointages(String element, List<Map<String, String>> recus) {
     for (Map<String, String> pointage : recus) {
@@ -250,6 +278,19 @@ public class CoutDeRevientSteps {
   public void evaluation(String instant, int enCours) {
     assertThat(CucumberRestTestContext.getElement("$.evaluation")).isEqualTo(instant);
     assertThat(CucumberRestTestContext.getElement("$.activitesEnCours")).isEqualTo(enCours);
+  }
+
+  @SuppressWarnings("unchecked")
+  private String activiteOuverteA(String element, String operateur, String debut) {
+    rest.get(SUIVIS_URI + "/" + suivis.get(element));
+
+    return ((List<Map<String, Object>>) CucumberRestTestContext.getElement("$.journal")).stream()
+      .filter(fait -> fait.get("activite") != null)
+      .filter(fait -> operateurs.get(operateur).equals(fait.get("operateurId")))
+      .filter(fait -> Instant.parse(debut).equals(Instant.parse((String) fait.get("dateDeSurvenue"))))
+      .map(fait -> (String) fait.get("activite"))
+      .findFirst()
+      .orElseThrow(() -> new AssertionError("Aucune activite de " + operateur + " commencee a " + debut));
   }
 
   @When("je consulte le cout de revient de {string} a {string}")

@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-class SuivisDAtelierEnMemoire implements SuiviDAtelierRepository {
+public class SuivisDAtelierEnMemoire implements SuiviDAtelierRepository {
 
   private final Map<SuiviDAtelierId, SuiviDAtelier> suivis = new ConcurrentHashMap<>();
   private final List<SuiviDAtelierId> verrouilles = new ArrayList<>();

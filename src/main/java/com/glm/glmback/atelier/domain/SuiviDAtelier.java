@@ -126,6 +126,20 @@ public record SuiviDAtelier(
     );
   }
 
+  /**
+   * Les gestes qui bornent les activites de la cle, dans l'ordre du journal : ce que la cle a reellement vecu, apres les
+   * corrections. Les gestes d'une activite retiree n'y sont plus, ceux d'une activite dont le poste a change y sont
+   * sur son nouveau poste, et une correction n'y est jamais.
+   */
+  public List<EvenementDAtelier> gestesDeLaCle(CleDActivite cle) {
+    return activites()
+      .stream()
+      .filter(activite -> activite.cle().equals(cle))
+      .flatMap(Activite::gestes)
+      .sorted(JournalDAtelier.PAR_ORDRE_CHRONOLOGIQUE)
+      .toList();
+  }
+
   public List<Activite> activites() {
     return journal.activites(cloture.map(Cloture::dateDeSurvenue));
   }
@@ -158,7 +172,89 @@ public record SuiviDAtelier(
     return journal
       .evenements()
       .stream()
-      .anyMatch(evenement -> evenement.activiteVisee().filter(id::equals).isPresent());
+      .anyMatch(evenement -> evenement.type() == TypeDEvenementDAtelier.FIN && evenement.activiteVisee().filter(id::equals).isPresent());
+  }
+
+  /**
+   * L'activite que le gestionnaire peut retirer ou dont il peut changer le poste : une activite de ce suivi, telle que le
+   * journal la lit apres les corrections deja faites, et terminee a l'instant present. Une activite retiree est donc
+   * introuvable, et une activite que rien n'a terminee avant son echeance est en cours.
+   */
+  public Activite exigeUneActiviteCorrigeable(ActiviteId id, Instant maintenant) {
+    Activite activite = activites()
+      .stream()
+      .filter(candidate -> candidate.id().equals(id))
+      .findFirst()
+      .orElseThrow(() -> new ActiviteViseeIntrouvableException(id));
+    if (activite.estEnCoursA(maintenant)) {
+      throw new ActiviteEnCoursException(id);
+    }
+
+    return activite;
+  }
+
+  /**
+   * Refuse la plage qu'une autre activite de la cle recoupe. Les extremites qui se touchent ne se chevauchent pas. Une
+   * activite que rien n'a terminee s'etend jusqu'a son echeance si elle est echue, et sans fin sinon ; celle qu'on
+   * deplace, donnee en {@code sauf}, ne se recoupe pas elle-meme.
+   */
+  void exigeUnePlageLibre(CleDActivite cle, Instant debut, Instant fin, Optional<ActiviteId> sauf, Instant maintenant) {
+    boolean occupee = activites()
+      .stream()
+      .filter(autre -> autre.cle().equals(cle))
+      .filter(autre -> sauf.filter(autre.id()::equals).isEmpty())
+      .map(autre -> autre.a(maintenant))
+      .anyMatch(autre -> autre.debut().isBefore(fin) && autre.fin().map(debut::isBefore).orElse(true));
+    if (occupee) {
+      throw new ChevauchementException(cle, debut, fin);
+    }
+  }
+
+  /**
+   * Ajoute au journal une activite oubliee : son ouverture et sa fin. Verifie dans cet ordre que l'ouverture ne precede
+   * pas l'engagement, que la fin ne suit pas la cloture, puis que la plage est libre sur la cle.
+   */
+  public SuiviDAtelier ajoute(EvenementDAtelier ouverture, EvenementDAtelier fin, Instant maintenant) {
+    exigeApresLEngagement(ouverture);
+    exigeAvantLaCloture(fin);
+    exigeUnePlageLibre(ouverture.cle(), ouverture.dateDeSurvenue(), fin.dateDeSurvenue(), Optional.empty(), maintenant);
+
+    return enregistre(ouverture).enregistre(fin);
+  }
+
+  /**
+   * Retire une activite : un fait de plus au journal, qui ne modifie aucun fait, et qui ne suit pas la cloture.
+   */
+  public SuiviDAtelier retire(EvenementDAtelier retrait) {
+    exigeAvantLaCloture(retrait);
+
+    return enregistre(retrait);
+  }
+
+  /**
+   * Change le poste de l'activite que vise le changement : un fait de plus au journal, qui ne modifie aucun fait. La
+   * plage de l'activite doit etre libre sur le nouveau poste, puis le changement, date du moment de la correction, ne suit
+   * pas la cloture.
+   */
+  public SuiviDAtelier changeLePoste(EvenementDAtelier changement, Instant maintenant) {
+    ActiviteId visee = changement.activiteVisee().orElseThrow();
+    IntervalleDActivite intervalle = exigeUneActiviteCorrigeable(visee, maintenant).a(maintenant);
+    exigeUnePlageLibre(changement.cle(), intervalle.debut(), intervalle.fin().orElseThrow(), Optional.of(visee), maintenant);
+    exigeAvantLaCloture(changement);
+
+    return enregistre(changement);
+  }
+
+  private void exigeApresLEngagement(EvenementDAtelier evenement) {
+    if (evenement.dateDeSurvenue().isBefore(engagement.date())) {
+      throw new EvenementAvantEngagementException(evenement);
+    }
+  }
+
+  private void exigeAvantLaCloture(EvenementDAtelier evenement) {
+    if (cloture.filter(fin -> evenement.dateDeSurvenue().isAfter(fin.dateDeSurvenue())).isPresent()) {
+      throw new EvenementApresClotureException(evenement);
+    }
   }
 
   private Optional<Instant> borne(Activite activite) {

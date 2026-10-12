@@ -50,6 +50,9 @@ les portions dont la synthèse additionne les durées. Le journal brut est lu s�
 - Le total du jour, de l'élément et de la semaine comprend travail et NC ; la part de NC dépend seulement de la NC.
   Une activité en cours ne contribue pas à la durée.
 - `JournalDeLOperateur` rend tous les pointages datés de la semaine, même sans activité.
+  Seuls les gestes y figurent (`DEBUT`, `NON_CONFORMITE`, `FIN`) : les faits de correction du gestionnaire (`RETRAIT`,
+  `CHANGEMENT_DE_POSTE`) sont écartés par leur type avant tout chargement, et les gestes d'une activité retirée y restent,
+  le journal étant celui des pointages et non des activités. Les durées, elles, lisent les activités après correction.
   Chaque geste porte son identité, son type, son élément et son poste. Le tri est total : heure métier, la fin avant l'ouverture, identité du pointage. L'heure
   d'enregistrement et l'identité de l'élément ne départagent jamais les gestes simultanés.
 - Tout élément portant une portion d'activité ou un pointage dans la semaine est rendu, par première apparition

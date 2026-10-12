@@ -24,7 +24,11 @@ import java.util.UUID;
 public record RestEvenementDAtelier(
   @Schema(description = "Identifiant de l'evenement.", requiredMode = Schema.RequiredMode.REQUIRED) UUID id,
   @Schema(
-    description = "Nature du pointage. La reprise du travail apres une non conformite se pointe DEBUT.",
+    description = """
+    Nature du fait. DEBUT, NON_CONFORMITE et FIN sont les gestes que le pupitre pointe ; la reprise du travail apres une non
+    conformite se pointe DEBUT. RETRAIT et CHANGEMENT_DE_POSTE sont des corrections du gestionnaire, qui ciblent une
+    activite (`activiteVisee`), sont datees du moment de la correction et ne se pointent pas.
+    """,
     requiredMode = Schema.RequiredMode.REQUIRED
   )
   TypeDEvenementDAtelier type,
@@ -35,6 +39,13 @@ public record RestEvenementDAtelier(
     """
   )
   UUID activite,
+  @Schema(
+    description = """
+    Identite de l'activite qu'un fait du gestionnaire cible : la fin d'une regularisation ou d'un ajout, un retrait, un
+    changement de poste. Absente pour un pointage.
+    """
+  )
+  UUID activiteVisee,
   @Schema(
     description = "Identite brute de l'operateur, conservee meme si la fiche est absente.",
     requiredMode = Schema.RequiredMode.REQUIRED
@@ -75,6 +86,7 @@ public record RestEvenementDAtelier(
       evenement.id().uuid(),
       evenement.type(),
       evenement.activite().map(ActiviteId::uuid).orElse(null),
+      evenement.activiteVisee().map(ActiviteId::uuid).orElse(null),
       evenement.operateur().uuid(),
       RestOperateur.resolu(annuaire, evenement.operateur()),
       evenement

@@ -3,6 +3,7 @@ package com.glm.glmback.atelier.infrastructure.secondary;
 import com.glm.glmback.atelier.domain.Habilitations;
 import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.PosteDeTravailId;
+import java.util.List;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -20,5 +21,10 @@ class HabilitationsDuReferentiel implements Habilitations {
   @Override
   public boolean estHabilite(OperateurId operateur, PosteDeTravailId poste) {
     return habilitations.findFirstByOperateurIdAndPosteId(operateur.uuid(), poste.uuid()).isPresent();
+  }
+
+  @Override
+  public List<PosteDeTravailId> postesHabilites(OperateurId operateur) {
+    return habilitations.postesHabilites(operateur.uuid()).stream().map(PosteDeTravailId::new).toList();
   }
 }

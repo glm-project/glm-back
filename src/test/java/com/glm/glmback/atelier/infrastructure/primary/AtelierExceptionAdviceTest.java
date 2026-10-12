@@ -5,12 +5,15 @@ import static org.springframework.http.HttpStatus.*;
 
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.atelier.domain.ActiviteDejaRegulariseeException;
+import com.glm.glmback.atelier.domain.ActiviteEnCoursException;
 import com.glm.glmback.atelier.domain.ActiviteId;
 import com.glm.glmback.atelier.domain.ActiviteNonEchueException;
 import com.glm.glmback.atelier.domain.ActiviteViseeIntrouvableException;
+import com.glm.glmback.atelier.domain.ChevauchementException;
 import com.glm.glmback.atelier.domain.DateDeSurvenueFutureException;
 import com.glm.glmback.atelier.domain.ElementDejaEngageException;
 import com.glm.glmback.atelier.domain.ElementEngageableIntrouvableException;
+import com.glm.glmback.atelier.domain.EvenementApresClotureException;
 import com.glm.glmback.atelier.domain.EvenementAvantEngagementException;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.FinApresBorneException;
@@ -23,6 +26,7 @@ import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierClotureException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
+import com.glm.glmback.atelier.domain.correctiondesactivites.MemePosteException;
 import com.glm.glmback.atelier.domain.gestionanomalies.AdresseDossierAnomalie;
 import com.glm.glmback.atelier.domain.gestionanomalies.FinAutomatiqueIntrouvableException;
 import com.glm.glmback.shared.error.infrastructure.primary.ExceptionAdviceContract;
@@ -112,6 +116,26 @@ class AtelierExceptionAdviceTest extends ExceptionAdviceContract {
         new DateDeSurvenueFutureException(LE_10_MAI_2026_A_8H),
         "urn:glm:erreur:atelier:date-de-survenue-future",
         BAD_REQUEST
+      ),
+      new PublishedProblem(
+        new ActiviteEnCoursException(new ActiviteId(java.util.UUID.randomUUID())),
+        "urn:glm:erreur:atelier:activite-en-cours",
+        CONFLICT
+      ),
+      new PublishedProblem(
+        new ChevauchementException(cleDeFraiseuse1DeDupont(), LE_10_MAI_2026_A_8H, LE_10_MAI_2026_A_9H),
+        "urn:glm:erreur:atelier:chevauchement",
+        CONFLICT
+      ),
+      new PublishedProblem(
+        new MemePosteException(new ActiviteId(java.util.UUID.randomUUID()), POSTE_ID_FRAISEUSE_1),
+        "urn:glm:erreur:atelier:meme-poste",
+        CONFLICT
+      ),
+      new PublishedProblem(
+        new EvenementApresClotureException(debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H)),
+        "urn:glm:erreur:atelier:evenement-posterieur-a-la-cloture",
+        CONFLICT
       )
     );
   }

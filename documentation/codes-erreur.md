@@ -85,6 +85,10 @@ tests sont le seul endroit qui les tient.
 | `saisie-concurrente`                 | 409    | saisie concurrente                 | `SaisieConcurrenteException`            |
 | `pointage-ignore`                    | 409    | pointage ignore                    | `PointageIgnoreException`               |
 | `date-de-survenue-future`            | 400    | date de survenue future            | `DateDeSurvenueFutureException`         |
+| `activite-en-cours`                  | 409    | activite en cours                  | `ActiviteEnCoursException`              |
+| `chevauchement`                      | 409    | chevauchement                      | `ChevauchementException`                |
+| `meme-poste`                         | 409    | meme poste                         | `MemePosteException`                    |
+| `evenement-posterieur-a-la-cloture`  | 409    | evenement posterieur a la cloture  | `EvenementApresClotureException`        |
 
 `fin-automatique-introuvable` répond à `GET /api/atelier/suivis/{id}/anomalies/{pointage}` quand le pointage n'ouvre
 aucune fin automatique non régularisée : le front revient à la liste.
@@ -108,8 +112,18 @@ réponse. Le refus ne s'affiche pas à l'opérateur : le pupitre retire l'effet 
 référentiel. Renvoyer l'identifiant d'un pointage déjà ignoré répond le même refus, sans nouvelle ligne d'audit. Seul
 `suivi-d-atelier-cloture`, pour un démarrage ou une non conformité sur un élément clôturé, est un refus à afficher.
 
-`activite-visee-introuvable` répond à la régularisation directe dont l'activité n'est pas une activité de ce suivi. Il est
-définitif : la même saisie rejouée reçoit le même refus. Les pointages ne désignent plus d'activité.
+`activite-visee-introuvable` répond à la régularisation directe dont l'activité n'est pas une activité de ce suivi, et à une
+correction de la journée qui vise une activité inconnue ou déjà retirée. Il est définitif : la même saisie rejouée reçoit
+le même refus. Les pointages ne désignent plus d'activité.
+
+Les quatre derniers codes du tableau sont ceux de la correction de la journée (voir [Corriger la journée d'un
+opérateur](atelier-api.md#corriger-la-journée-dun-opérateur)) : `activite-en-cours` (la retirer ou changer son poste
+quand rien ne l'a terminée avant son échéance), `chevauchement` (un ajout ou un changement de poste recoupe une autre
+activité de la même clé du suivi), `meme-poste` (le nouveau poste est l'actuel) et `evenement-posterieur-a-la-cloture`
+(un ajout dont la fin, un retrait ou un changement de poste, datés du moment de la correction, suivent la clôture ;
+symétrique de `evenement-anterieur-a-l-engagement`). `suivi-d-atelier-cloture` ne leur est jamais rendu. Une
+correction rejouée avec le même identifiant de saisie répond 200 avant toute règle ; `saisie-concurrente` dit de relire
+la journée.
 
 Aucun code ne refuse un pointage qui contredit le journal d'un élément : la règle de réception l'ignore (`pointage-ignore`)
 et l'audite.

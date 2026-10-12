@@ -17,6 +17,14 @@ import java.util.Optional;
  * </p>
  *
  * <p>
+ * Elle juge le journal tel qu'il est apres les corrections du gestionnaire : elle lit les activites effectives de la cle
+ * (voir {@link JournalDAtelier#activites}), et ne compte comme faits de la cle que les gestes qui bornent ces activites.
+ * Un retrait ou un changement de poste, date du moment de la correction, ne borne donc jamais un pointage ; les gestes
+ * d'une activite retiree ne comptent plus ; ceux d'une activite dont le poste a change comptent sur le nouveau ; la
+ * fin d'un ajout compte comme une fin regularisee.
+ * </p>
+ *
+ * <p>
  * La cloture ne termine l'activite que pour un geste qui lui est posterieur : une fin survenue avant la cloture, mais
  * recue apres elle, termine toujours l'activite a son heure.
  * </p>
@@ -32,11 +40,12 @@ final class RegleDeReception {
     TypeDEvenementDAtelier type,
     Instant survenue
   ) {
-    List<EvenementDAtelier> faits = journal
-      .evenements()
+    List<Activite> activites = journal
+      .activites(cloture.filter(date -> date.isBefore(survenue)))
       .stream()
-      .filter(fait -> fait.cle().equals(cle))
+      .filter(activite -> activite.cle().equals(cle))
       .toList();
+    List<EvenementDAtelier> faits = activites.stream().flatMap(Activite::gestes).sorted(JournalDAtelier.PAR_ORDRE_CHRONOLOGIQUE).toList();
     Optional<EvenementDAtelierId> dernierAccepte = faits
       .stream()
       .reduce((premier, second) -> second)
@@ -45,7 +54,7 @@ final class RegleDeReception {
       return new VerdictDeReception.Ignore(RaisonDePointageIgnore.ANTERIEUR, dernierAccepte);
     }
 
-    Optional<Activite> sansFin = SequenceDActivites.activites(faits, cloture.filter(date -> date.isBefore(survenue)))
+    Optional<Activite> sansFin = activites
       .stream()
       .reduce((premiere, seconde) -> seconde)
       .filter(derniere -> derniere.fin().isEmpty());

@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -150,14 +151,20 @@ class SuiviDAtelierEntity {
   }
 
   /**
-   * Reecrit la projection des activites, rapprochee elle aussi par identifiant : le journal ne perd jamais un evenement, donc
-   * aucune activite ne disparait ; une activite connue recoit ses valeurs courantes, une nouvelle est inseree.
+   * Reecrit la projection des activites, rapprochee elle aussi par identifiant : une activite connue recoit ses valeurs
+   * courantes, une nouvelle est inseree, et une activite que le journal ne lit plus, parce qu'un retrait la vise, est
+   * retiree de la projection. Le journal, lui, ne perd jamais un fait.
    */
   private void projette(List<Activite> lues) {
     Map<UUID, ActiviteDAtelierEntity> projetees = activites
       .stream()
       .collect(Collectors.toMap(ActiviteDAtelierEntity::id, Function.identity()));
+    Set<UUID> identites = lues
+      .stream()
+      .map(activite -> activite.id().uuid())
+      .collect(Collectors.toSet());
 
+    activites.removeIf(projetee -> !identites.contains(projetee.id()));
     lues.forEach(activite -> {
       ActiviteDAtelierEntity projetee = projetees.get(activite.id().uuid());
       if (projetee == null) {

@@ -1,11 +1,14 @@
 package com.glm.glmback.atelier.infrastructure.primary;
 
 import com.glm.glmback.atelier.domain.ActiviteDejaRegulariseeException;
+import com.glm.glmback.atelier.domain.ActiviteEnCoursException;
 import com.glm.glmback.atelier.domain.ActiviteNonEchueException;
 import com.glm.glmback.atelier.domain.ActiviteViseeIntrouvableException;
+import com.glm.glmback.atelier.domain.ChevauchementException;
 import com.glm.glmback.atelier.domain.DateDeSurvenueFutureException;
 import com.glm.glmback.atelier.domain.ElementDejaEngageException;
 import com.glm.glmback.atelier.domain.ElementEngageableIntrouvableException;
+import com.glm.glmback.atelier.domain.EvenementApresClotureException;
 import com.glm.glmback.atelier.domain.EvenementAvantEngagementException;
 import com.glm.glmback.atelier.domain.FinApresBorneException;
 import com.glm.glmback.atelier.domain.FinAvantDebutException;
@@ -16,6 +19,7 @@ import com.glm.glmback.atelier.domain.PosteDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.SaisieConcurrenteException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierClotureException;
 import com.glm.glmback.atelier.domain.SuiviDAtelierIntrouvableException;
+import com.glm.glmback.atelier.domain.correctiondesactivites.MemePosteException;
 import com.glm.glmback.atelier.domain.gestionanomalies.FinAutomatiqueIntrouvableException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -110,5 +114,25 @@ class AtelierExceptionAdvice {
   @ExceptionHandler(DateDeSurvenueFutureException.class)
   ProblemDetail handleDateDeSurvenueFuture(DateDeSurvenueFutureException e) {
     return ErreurDAtelier.DATE_DE_SURVENUE_FUTURE.problem(e);
+  }
+
+  @ExceptionHandler(ActiviteEnCoursException.class)
+  ProblemDetail handleActiviteEnCours(ActiviteEnCoursException e) {
+    return ErreurDAtelier.ACTIVITE_EN_COURS.problem(e);
+  }
+
+  @ExceptionHandler(ChevauchementException.class)
+  ProblemDetail handleChevauchement(ChevauchementException e) {
+    return ErreurDAtelier.CHEVAUCHEMENT.problem(e);
+  }
+
+  @ExceptionHandler(MemePosteException.class)
+  ProblemDetail handleMemePoste(MemePosteException e) {
+    return ErreurDAtelier.MEME_POSTE.problem(e);
+  }
+
+  @ExceptionHandler(EvenementApresClotureException.class)
+  ProblemDetail handleEvenementApresCloture(EvenementApresClotureException e) {
+    return ErreurDAtelier.EVENEMENT_POSTERIEUR_A_LA_CLOTURE.problem(e);
   }
 }

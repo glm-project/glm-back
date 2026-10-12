@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,9 @@ import org.junit.jupiter.api.Test;
 class SuiviDAtelierAuPlusUneActiviteParCleTest {
 
   private static final EvenementDAtelier DONNEUR_DE_CLE = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_7H);
-  private static final TypeDEvenementDAtelier[] TYPES = TypeDEvenementDAtelier.values();
+  private static final TypeDEvenementDAtelier[] TYPES = Arrays.stream(TypeDEvenementDAtelier.values())
+    .filter(TypeDEvenementDAtelier::estUnGeste)
+    .toArray(TypeDEvenementDAtelier[]::new);
 
   @Test
   void shouldNeLaisserQuUneActiviteVivanteParCleSurDesSuitesDePointagesAcceptesParLaRegle() {
@@ -54,6 +57,7 @@ class SuiviDAtelierAuPlusUneActiviteParCleTest {
       case DEBUT -> debutSurFraiseuse1ParDupontA(heure);
       case NON_CONFORMITE -> nonConformiteSurFraiseuse1ParDupontA(heure);
       case FIN -> finDe(DONNEUR_DE_CLE).a(heure);
+      case RETRAIT, CHANGEMENT_DE_POSTE -> throw new IllegalArgumentException("Une correction n'est pas un pointage : " + type);
     };
   }
 }

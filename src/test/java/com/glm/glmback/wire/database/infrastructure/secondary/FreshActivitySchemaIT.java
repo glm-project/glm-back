@@ -252,7 +252,8 @@ class FreshActivitySchemaIT {
       "evenement_d_atelier.cout_horaire:YES",
       "evenement_d_atelier.taux_horaire:YES",
       "evenement_d_atelier.duree_max_secondes:YES",
-      "activite_d_atelier.echeance:NO"
+      "activite_d_atelier.echeance:NO",
+      "activite_d_atelier.porteur_id:NO"
     );
     assertThat(
       query(database, "SELECT table_name || '.' || column_name FROM information_schema.columns WHERE table_schema = '" + schema + "'")

@@ -1,6 +1,5 @@
 package com.glm.glmback.atelier.domain;
 
-import com.glm.glmback.shared.activityduration.domain.MaximumActivityDuration;
 import com.glm.glmback.shared.activityduration.domain.MaximumActivityDurations;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
@@ -47,9 +46,7 @@ public final class SuivisDAtelierService {
 
   private final SuiviDAtelierRepository repository;
   private final ElementsEngageables elements;
-  private final OperateursConnus operateurs;
-  private final PostesConnus postes;
-  private final Habilitations habilitations;
+  private final ResolutionDesRessources ressources;
   private final PointagesIgnores pointagesIgnores;
   private final MaximumActivityDurations dureesMax;
   private final Clock clock;
@@ -66,9 +63,7 @@ public final class SuivisDAtelierService {
   ) {
     this.repository = repository;
     this.elements = elements;
-    this.operateurs = operateurs;
-    this.postes = postes;
-    this.habilitations = habilitations;
+    this.ressources = new ResolutionDesRessources(operateurs, postes, habilitations);
     this.pointagesIgnores = pointagesIgnores;
     this.dureesMax = dureesMax;
     this.clock = clock;
@@ -150,7 +145,7 @@ public final class SuivisDAtelierService {
 
     Instant maintenant = clock.now();
     Horodatage horodatage = new Horodatage(survenue(commande.dateDeSurvenue(), maintenant), maintenant);
-    Ressources ressources = ressources(commande.operateur(), commande.poste());
+    ResolutionDesRessources.Ressources saisies = ressources.ressources(commande.operateur(), commande.poste());
 
     return switch (suivi.juge(new CleDActivite(commande.operateur(), commande.poste()), commande.type(), horodatage.dateDeSurvenue())) {
       case VerdictDeReception.Ignore ignore -> {
@@ -158,11 +153,10 @@ public final class SuivisDAtelierService {
         yield new PointageDAtelierTraite(suivi, IssueDePointage.IGNORE);
       }
       case VerdictDeReception.Accepte _ -> {
-        EvenementDAtelier evenement = evenement(
+        EvenementDAtelier evenement = saisies.evenement(
           commande.evenement(),
           commande.type(),
           Optional.empty(),
-          ressources,
           commande.type().ouvreUneActivite() ? Optional.of(dureesMax.current()) : Optional.empty(),
           commande.auteur(),
           OrigineDuPointage.POINTAGE,
@@ -191,16 +185,17 @@ public final class SuivisDAtelierService {
 
     Instant maintenant = clock.now();
     Activite activite = suivi.exigeUneFinRegularisable(commande.activite(), commande.dateDeSurvenue(), maintenant);
-    EvenementDAtelier fin = evenement(
-      commande.evenement(),
-      TypeDEvenementDAtelier.FIN,
-      Optional.of(commande.activite()),
-      ressources(activite.ouvrant().operateur(), activite.ouvrant().poste()),
-      Optional.empty(),
-      commande.auteur(),
-      OrigineDuPointage.REGULARISATION,
-      new Horodatage(commande.dateDeSurvenue(), maintenant)
-    );
+    EvenementDAtelier fin = ressources
+      .ressources(activite.cle().operateur(), activite.cle().poste())
+      .evenement(
+        commande.evenement(),
+        TypeDEvenementDAtelier.FIN,
+        Optional.of(commande.activite()),
+        Optional.empty(),
+        commande.auteur(),
+        OrigineDuPointage.REGULARISATION,
+        new Horodatage(commande.dateDeSurvenue(), maintenant)
+      );
 
     return new RegularisationTraitee(repository.update(suivi.enregistre(fin)), false);
   }
@@ -242,63 +237,6 @@ public final class SuivisDAtelierService {
 
     return dateDeSurvenue.filter(date -> date.isBefore(maintenant)).orElse(maintenant);
   }
-
-  private static EvenementDAtelier evenement(
-    EvenementDAtelierId evenement,
-    TypeDEvenementDAtelier type,
-    Optional<ActiviteId> cible,
-    Ressources ressources,
-    Optional<MaximumActivityDuration> dureeMax,
-    Auteur auteur,
-    OrigineDuPointage origine,
-    Horodatage horodatage
-  ) {
-    return EvenementDAtelier.builder()
-      .id(evenement)
-      .type(type)
-      .activite(type.ouvreUneActivite() ? Optional.of(ActiviteId.ouvertePar(evenement)) : Optional.empty())
-      .activiteVisee(cible)
-      .operateur(ressources.operateur().id())
-      .poste(ressources.poste().map(PosteConnu::id))
-      .nature(ressources.poste().map(PosteConnu::nature))
-      .coutHoraire(ressources.poste().flatMap(PosteConnu::coutHoraire))
-      .tauxHoraire(ressources.operateur().tauxHoraire())
-      .dureeMax(dureeMax)
-      .auteur(auteur)
-      .origine(origine)
-      .horodatage(horodatage);
-  }
-
-  /**
-   * L'operateur et le poste d'un geste, une fois etabli qu'ils existent et que l'operateur est habilite sur le poste.
-   */
-  private Ressources ressources(OperateurId operateur, Optional<PosteDeTravailId> poste) {
-    return new Ressources(operateurConnu(operateur), poste.map(id -> posteHabilite(operateur, id)));
-  }
-
-  private OperateurConnu operateurConnu(OperateurId operateur) {
-    return operateurs.get(operateur).orElseThrow(() -> new OperateurDAtelierIntrouvableException(operateur));
-  }
-
-  /**
-   * Le poste pointe, une fois etabli qu'il existe et que l'operateur y est habilite.
-   *
-   * <p>
-   * L'habilitation est la seule regle dure de ce contexte : la nature, elle, ne bloque toujours rien. La regle ne joue
-   * que lorsqu'un poste est fourni, une entreprise sans parc machine n'ayant aucune habilitation a declarer.
-   * </p>
-   */
-  private PosteConnu posteHabilite(OperateurId operateur, PosteDeTravailId poste) {
-    PosteConnu connu = postes.get(poste).orElseThrow(() -> new PosteDAtelierIntrouvableException(poste));
-
-    if (!habilitations.estHabilite(operateur, poste)) {
-      throw new OperateurNonHabiliteException(operateur, poste);
-    }
-
-    return connu;
-  }
-
-  private record Ressources(OperateurConnu operateur, Optional<PosteConnu> poste) {}
 
   public interface SuivisDAtelierServiceRepositoryBuilder {
     SuivisDAtelierServiceElementsBuilder repository(SuiviDAtelierRepository repository);

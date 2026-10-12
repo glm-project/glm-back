@@ -23,8 +23,8 @@ class ActiviteValoriseeEntity {
   private SuiviValoriseEntity suivi;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "ouverture_id")
-  private EvenementDAtelierValoriseEntity ouverture;
+  @JoinColumn(name = "porteur_id")
+  private EvenementDAtelierValoriseEntity porteur;
 
   @Column(name = "operateur_id")
   private UUID operateurId;
@@ -64,8 +64,8 @@ class ActiviteValoriseeEntity {
           suivi.element(),
           Optional.ofNullable(posteId).map(PosteDeTravailId::new),
           Optional.ofNullable(nature).map(NatureDOperation::new),
-          ouverture.coutHoraire(),
-          ouverture.tauxHoraire(),
+          porteur.coutHoraire(),
+          porteur.tauxHoraire(),
           categorie
         )
       )

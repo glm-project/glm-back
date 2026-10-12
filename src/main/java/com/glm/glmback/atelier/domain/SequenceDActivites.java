@@ -11,7 +11,8 @@ import java.util.Optional;
  * seule interpretation du journal.
  *
  * <p>
- * Les faits arrivent dans l'ordre du journal. Cette lecture suppose qu'au plus une activite est en cours sur la cle :
+ * Les faits arrivent dans l'ordre du journal ; seuls les gestes y entrent, un retrait ou un changement de poste n'etant
+ * jamais lu ici (voir {@link JournalDAtelier#activites}). Cette lecture suppose qu'au plus une activite est en cours sur la cle :
  * c'est la regle de reception qui le garantit, en ignorant tout debut ou toute non conformite pointe pendant une
  * activite en cours. Un debut ou une non conformite ouvre une activite. Une fin pointee ferme l'activite en cours de la cle ; une fin regularisee ferme celle
  * qu'elle cible. La cloture, a defaut, ferme l'activite restee en cours.
@@ -72,7 +73,7 @@ final class SequenceDActivites {
    */
   private void arrete(EvenementDAtelier fin) {
     Optional<ActiviteId> terminee = fin.activiteVisee().or(() -> courante);
-    termine(terminee, fin.dateDeSurvenue());
+    termine(terminee, fin);
     if (courante.equals(terminee)) {
       courante = Optional.empty();
     }
@@ -88,5 +89,9 @@ final class SequenceDActivites {
 
   private void termine(Optional<ActiviteId> activite, Instant heure) {
     activite.ifPresent(identite -> activites.computeIfPresent(identite, (id, ouverte) -> ouverte.termineeA(heure)));
+  }
+
+  private void termine(Optional<ActiviteId> activite, EvenementDAtelier fin) {
+    activite.ifPresent(identite -> activites.computeIfPresent(identite, (id, ouverte) -> ouverte.termineePar(fin)));
   }
 }

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <changeSet id="activite_d_atelier_porteur" author="glm">
+    <comment>
+      Le gestionnaire peut changer le poste d'une activite : le fait CHANGEMENT_DE_POSTE qu'il ecrit au journal recopie la
+      nature et le cout horaire du nouveau poste, et c'est lui, des lors, qui parle pour l'activite. porteur_id est le fait
+      qui porte ses tarifs : l'ouvrant tant que personne n'a corrige son poste, puis le dernier changement de poste.
+      ouverture_id ne bouge pas, il reste l'ouvrant d'origine et l'adresse d'un dossier d'anomalie. Les activites
+      deja projetees sont leur propre porteur.
+    </comment>
+
+    <addColumn tableName="activite_d_atelier">
+      <column name="porteur_id" type="${uuidType}" />
+    </addColumn>
+    <update tableName="activite_d_atelier">
+      <column name="porteur_id" valueComputed="ouverture_id" />
+    </update>
+    <addNotNullConstraint tableName="activite_d_atelier" columnName="porteur_id" columnDataType="${uuidType}" />
+  </changeSet>
+</databaseChangeLog>
