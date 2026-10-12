@@ -197,6 +197,7 @@ sans logo : le client relit la version dans `GET /api/parametrage`.
 | ----------------------- | ------ | -------------------------- | --------------------------- |
 | `operateur-introuvable` | 404    | operateur introuvable      | `OperateurInconnuException` |
 | `evaluation-future`     | 400    | instant d'evaluation futur | `EvaluationFutureException` |
+| `periode-future`        | 400    | periode future             | `PeriodeFutureException`    |
 
 ### `cout-de-revient` — `urn:glm:erreur:cout-de-revient:`
 

@@ -366,4 +366,31 @@ public class SyntheseDesHeuresSteps {
   private static List<Map<String, Object>> pointagesDu(String jour) {
     return pointagesDe(jourDe(jour));
   }
+
+  @When("je consulte le rapport d'activite de {string} pour le mois {int} de {int}")
+  public void jeConsulteLeRapportDuMois(String alias, int mois, int annee) {
+    rest.get(SYNTHESES_URI + "/" + operateurs.get(alias) + "/rapport?annee=" + annee + "&mois=" + mois);
+  }
+
+  @When("je consulte le rapport d'activite de {string} pour la semaine {int} de {int}")
+  public void jeConsulteLeRapportDeLaSemaine(String alias, int semaine, int annee) {
+    rest.get(SYNTHESES_URI + "/" + operateurs.get(alias) + "/rapport?annee=" + annee + "&semaine=" + semaine);
+  }
+
+  @When("je consulte le rapport d'activite de {string} avec {string}")
+  public void jeConsulteLeRapportAvec(String alias, String parametres) {
+    rest.get(SYNTHESES_URI + "/" + operateurs.get(alias) + "/rapport?" + parametres);
+  }
+
+  @When("je consulte le rapport d'activite de l'operateur {string} pour le mois {int} de {int}")
+  public void jeConsulteLeRapportDeLOperateur(String operateur, int mois, int annee) {
+    rest.get(SYNTHESES_URI + "/" + operateur + "/rapport?annee=" + annee + "&mois=" + mois);
+  }
+
+  @Then("le resume du rapport d'activite est")
+  public void leResumeDuRapportEst(Map<String, String> attendu) {
+    attendu.forEach((champ, valeur) ->
+      assertThat(String.valueOf(CucumberRestTestContext.getElement("$." + champ))).as(champ).isEqualTo(valeur)
+    );
+  }
 }

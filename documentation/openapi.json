@@ -1914,6 +1914,60 @@
         "required" : [ "activite", "dateDeSurvenue", "id" ],
         "type" : "object"
       },
+      "RestResumeDuRapportDActivite" : {
+        "description" : "Le resume d'un rapport d'activite, affiche avant de le telecharger : le temps pointe de la periode et ce qui\nmerite l'attention. Aucun montant.\n",
+        "properties" : {
+          "dernierJour" : {
+            "description" : "Dernier jour de la periode, inclus.",
+            "example" : "2026-09-30",
+            "format" : "date",
+            "type" : "string"
+          },
+          "dureeNonConformite" : {
+            "$ref" : "#/components/schemas/RestDureeDeSynthese",
+            "description" : "Part du temps pointe passee en non-conformite."
+          },
+          "evaluation" : {
+            "description" : "Instant de lecture du rapport.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "finsAutomatiques" : {
+            "description" : "Pointages termines automatiquement a leur echeance, a regulariser ; ils n'empechent pas l'export.",
+            "example" : 1,
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "joursAvecPointage" : {
+            "description" : "Jours portant au moins un pointage.",
+            "example" : 17,
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "operateur" : {
+            "$ref" : "#/components/schemas/RestOperateurDeSyntheseDesHeures",
+            "description" : "Operateur resolu au referentiel."
+          },
+          "pointages" : {
+            "description" : "Pointages du journal ; une activite qui passe minuit en compte un par jour.",
+            "example" : 94,
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "premierJour" : {
+            "description" : "Premier jour de la periode.",
+            "example" : "2026-09-01",
+            "format" : "date",
+            "type" : "string"
+          },
+          "tempsPointe" : {
+            "$ref" : "#/components/schemas/RestDureeDeSynthese",
+            "description" : "Temps pointe de la periode : une heure sur deux elements compte sur chacun ; une activite en cours ne compte rien."
+          }
+        },
+        "required" : [ "dernierJour", "dureeNonConformite", "evaluation", "finsAutomatiques", "joursAvecPointage", "operateur", "pointages", "premierJour", "tempsPointe" ],
+        "type" : "object"
+      },
       "RestSuiviDAtelier" : {
         "description" : "Le suivi en atelier d'un element engage.\n\nSon etat, ses activites en cours et son temps ne sont **jamais stockes** : tout est deduit du journal a chaque\nlecture. C'est ce qui permet a une saisie rattrapee de compter a l'heure ou elle a reellement eu lieu.\n",
         "properties" : {
@@ -4189,6 +4243,102 @@
         "summary" : "Lire la synthese des heures hebdomadaire d'un operateur",
         "tags" : [ "Syntheses des heures" ]
       }
+    },
+    "/api/syntheses-des-heures/{operateurId}/rapport" : {
+      "get" : {
+        "description" : "Ce qu'affiche la fenetre d'export avant le telechargement : temps pointe, jours avec pointage, nombre de pointages\net de fins automatiques. Memes regles que la synthese des heures : une heure passee sur deux elements compte sur\nchacun, une fin automatique compte jusqu'a son echeance, une activite en cours ne compte rien.\n\nLa periode est une semaine ISO (annee ISO et semaine) ou un mois civil (annee et mois), au fuseau de\nl'entreprise ; exactement l'un des deux. Les activites sont coupees aux minuits locaux et aux bornes de la\nperiode : une semaine a cheval sur deux mois est coupee dans le rapport mensuel. Une periode qui n'a pas encore\ncommence est refusee.\n",
+        "operationId" : "resume",
+        "parameters" : [ {
+          "description" : "Identifiant de l'operateur dans le referentiel.",
+          "in" : "path",
+          "name" : "operateurId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "description" : "Annee : ISO pour une semaine, civile pour un mois.",
+          "example" : 2026,
+          "in" : "query",
+          "name" : "annee",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "maximum" : 2999,
+            "minimum" : 2000,
+            "type" : "integer"
+          }
+        }, {
+          "description" : "Numero de la semaine ISO.",
+          "example" : 38,
+          "in" : "query",
+          "name" : "semaine",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "maximum" : 53,
+            "minimum" : 1,
+            "type" : "integer"
+          }
+        }, {
+          "description" : "Numero du mois, de 1 a 12.",
+          "example" : 9,
+          "in" : "query",
+          "name" : "mois",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "maximum" : 12,
+            "minimum" : 1,
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestResumeDuRapportDActivite"
+                }
+              }
+            },
+            "description" : "Le resume du rapport de la periode."
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestResumeDuRapportDActivite"
+                }
+              }
+            },
+            "description" : "Annee, semaine ou mois hors bornes, semaine et mois tous deux absents ou tous deux presents, ou periode future."
+          },
+          "403" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestResumeDuRapportDActivite"
+                }
+              }
+            },
+            "description" : "Jeton sans entreprise connue, ou role autre que GESTIONNAIRE."
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestResumeDuRapportDActivite"
+                }
+              }
+            },
+            "description" : "Operateur inconnu du referentiel."
+          }
+        },
+        "summary" : "Lire le resume du rapport d'activite d'un operateur",
+        "tags" : [ "Rapports d'activite" ]
+      }
     }
   },
   "security" : [ {
@@ -4197,6 +4347,9 @@
   "tags" : [ {
     "description" : "Les metiers exerces dans l'atelier : soudage, tournage, fraisage, dessin. L'entreprise les declare une fois, et les\npostes de travail les choisissent dans cette liste.\n\nDeux natures ne peuvent pas porter le meme libelle a la casse, aux accents ou aux espaces pres : « Soudage » et\n« soudâge » sont la meme.\n\nRenommer une nature ne modifie qu'elle : son nouveau libelle s'affiche partout, rapports passes compris.\n\nUne nature se supprime tant qu'aucun poste ni aucun pointage ne s'en sert.\n\nLe gestionnaire declare, renomme et supprime les natures ; l'operateur (role USER) les consulte.\n",
     "name" : "Natures de travail"
+  }, {
+    "description" : "Toute l'activite d'un operateur sur une semaine ou un mois, a telecharger. Du temps pointe, aucun montant.",
+    "name" : "Rapports d'activite"
   }, {
     "description" : "Les familles dans lesquelles l'entreprise range ce qu'elle fabrique : des moules et des OF chez le client de\nreference, autre chose ailleurs. Une entreprise neuve n'en a aucune.\n\nLe code d'une categorie est a la fois son libelle et le prefixe du nom des produits qui s'y creent\n(MOULE-2026-000001). Il ne se renomme donc jamais.\n\nUne categorie se supprime tant qu'aucun produit n'y est range.\n\nLe gestionnaire declare, reordonne et supprime les categories ; l'operateur (role USER) les consulte.\n",
     "name" : "Categories de produit"

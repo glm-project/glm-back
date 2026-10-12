@@ -8,6 +8,7 @@ import com.glm.glmback.shared.error.infrastructure.primary.ExceptionAdviceContra
 import com.glm.glmback.shared.error.infrastructure.primary.PublishedProblem;
 import com.glm.glmback.syntheseheures.domain.EvaluationFutureException;
 import com.glm.glmback.syntheseheures.domain.OperateurInconnuException;
+import com.glm.glmback.syntheseheures.domain.PeriodeFutureException;
 import java.util.stream.Stream;
 
 @UnitTest
@@ -30,7 +31,8 @@ class SyntheseDesHeuresExceptionAdviceTest extends ExceptionAdviceContract {
         new EvaluationFutureException(LE_MARDI_12_MAI_2026_A_10H),
         "urn:glm:erreur:synthese-des-heures:evaluation-future",
         BAD_REQUEST
-      )
+      ),
+      new PublishedProblem(new PeriodeFutureException(MAI_2026), "urn:glm:erreur:synthese-des-heures:periode-future", BAD_REQUEST)
     );
   }
 }
