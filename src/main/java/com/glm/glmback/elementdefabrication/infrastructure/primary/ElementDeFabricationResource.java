@@ -3,6 +3,7 @@ package com.glm.glmback.elementdefabrication.infrastructure.primary;
 import com.glm.glmback.elementdefabrication.application.ElementDeFabricationApplicationService;
 import com.glm.glmback.elementdefabrication.domain.Categorie;
 import com.glm.glmback.elementdefabrication.domain.CycleDeVie;
+import com.glm.glmback.elementdefabrication.domain.CycleDemande;
 import com.glm.glmback.elementdefabrication.domain.ElementDansSonCycle;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationId;
 import com.glm.glmback.elementdefabrication.domain.FiltreDesElements;
@@ -69,6 +70,12 @@ class ElementDeFabricationResource {
     @Parameter(
       description = "Ne lire que les elements de ce cycle, tries par creation, mise a l'atelier ou cloture decroissante."
     ) @RequestParam Optional<CycleDeVie> cycle,
+    @Parameter(
+      description = "Debut de la periode de cloture, a donner avec clotureFin, et avec cycle=CLOTURE seulement (sinon 400)."
+    ) @RequestParam Optional<Instant> clotureDebut,
+    @Parameter(
+      description = "Fin de la periode de cloture, a donner avec clotureDebut, et avec cycle=CLOTURE seulement (sinon 400)."
+    ) @RequestParam Optional<Instant> clotureFin,
     @Parameter(description = "Ne lire que les elements de cette categorie, par son code.") @RequestParam Optional<String> categorie,
     @Parameter(
       description = "Texte cherche dans le nom, la reference et la description, sans tenir compte de la casse. Vide, il ne filtre rien."
@@ -76,8 +83,9 @@ class ElementDeFabricationResource {
     @RequestParam(defaultValue = "0") int page,
     @RequestParam(defaultValue = "20") int size
   ) {
-    FiltreDesElements filtre = new FiltreDesElements(creation(debut, fin), categorie.map(Categorie::new), Recherche.de(recherche));
-    Page<ElementDansSonCycle> resultat = applicationService.list(filtre, cycle, new Pageable(page, size));
+    FiltreDesElements filtre = new FiltreDesElements(periode(debut, fin), categorie.map(Categorie::new), Recherche.de(recherche));
+    Optional<CycleDemande> demande = CycleDemande.de(cycle, periode(clotureDebut, clotureFin));
+    Page<ElementDansSonCycle> resultat = applicationService.list(filtre, demande, new Pageable(page, size));
 
     return RestPage.from(resultat, RestElementDeFabrication::from);
   }
@@ -85,7 +93,7 @@ class ElementDeFabricationResource {
   /**
    * Comme la liste de l'atelier, une periode a une seule borne ne filtre rien.
    */
-  private static Optional<Periode> creation(Optional<Instant> debut, Optional<Instant> fin) {
+  private static Optional<Periode> periode(Optional<Instant> debut, Optional<Instant> fin) {
     return debut.flatMap(depuis -> fin.map(jusqua -> new Periode(depuis, jusqua)));
   }
 }

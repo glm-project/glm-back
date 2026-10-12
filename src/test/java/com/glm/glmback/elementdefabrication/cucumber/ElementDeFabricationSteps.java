@@ -181,6 +181,11 @@ public class ElementDeFabricationSteps {
     assertThat(CucumberRestTestContext.getElement("$.description")).isNull();
   }
 
+  @Then("la reponse contient {int} elements")
+  public void laReponseContient(int count) {
+    assertThat(CucumberRestTestContext.countEntries("$.content")).isEqualTo(count);
+  }
+
   @Then("la reponse contient au moins {int} elements")
   public void laReponseContientAuMoins(int count) {
     assertThatLastResponse().hasElement("$.content").withMoreThanElementsCount(count);

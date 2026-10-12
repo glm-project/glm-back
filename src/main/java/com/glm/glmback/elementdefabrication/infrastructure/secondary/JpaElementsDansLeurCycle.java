@@ -159,7 +159,14 @@ class JpaElementsDansLeurCycle implements ElementsDansLeurCycle {
         .ifPresent(periode -> predicats.add(constructeur.between(element.get("dateDeCreation"), periode.debut(), periode.fin())));
       filtre.categorie().ifPresent(categorie -> predicats.add(constructeur.equal(element.get("categorie"), categorie.value())));
       filtre.recherche().ifPresent(recherche -> predicats.add(trouve(recherche)));
-      criteria.cycle().ifPresent(cycle -> predicats.add(dans(cycle)));
+      criteria
+        .cycle()
+        .ifPresent(demande -> {
+          predicats.add(dans(demande.cycle()));
+          demande
+            .cloture()
+            .ifPresent(periode -> predicats.add(constructeur.between(suivi.get("clotureDateDeSurvenue"), periode.debut(), periode.fin())));
+        });
       return predicats.toArray(Predicate[]::new);
     }
 
@@ -194,8 +201,8 @@ class JpaElementsDansLeurCycle implements ElementsDansLeurCycle {
     List<Order> tri(ElementsDansLeurCycleCriteria criteria) {
       Expression<?> date = criteria
         .cycle()
-        .<Expression<?>>map(cycle ->
-          switch (cycle) {
+        .<Expression<?>>map(demande ->
+          switch (demande.cycle()) {
             case EN_PREPARATION -> element.get("dateDeCreation");
             case EN_ATELIER -> suivi.get("engagementDate");
             case CLOTURE -> suivi.get("clotureDateDeSurvenue");

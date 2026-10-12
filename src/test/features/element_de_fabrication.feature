@@ -276,6 +276,35 @@ Feature: Gestion des elements de fabrication
     Then la liste ne rend que les references
       | 3202-UNE-BORNE |
 
+  Scenario: Les clotures se lisent sur une periode de cloture
+    Given il est "2042-03-07T08:00:00Z"
+    And j'ai cree un element de fabrication
+      | categorie | OF   |
+      | reference | 3301 |
+    And j'ai mis cet element de fabrication a l'atelier
+    And il est "2042-03-09T10:00:00Z"
+    And j'ai cloture cet element de fabrication
+    When je liste les elements de fabrication crees avec celui-ci, avec
+      | cycle        | CLOTURE              |
+      | clotureDebut | 2042-03-09T00:00:00Z |
+      | clotureFin   | 2042-03-09T23:59:59Z |
+    Then la liste ne rend que les references
+      | 3301 |
+    When je liste les elements de fabrication crees avec celui-ci, avec
+      | cycle        | CLOTURE              |
+      | clotureDebut | 2042-03-10T00:00:00Z |
+      | clotureFin   | 2042-03-10T23:59:59Z |
+    Then la reponse a le statut http 200
+    And la reponse contient 0 elements
+
+  Scenario: Une periode de cloture hors des clotures est refusee
+    When je liste les elements de fabrication avec
+      | cycle        | EN_ATELIER           |
+      | clotureDebut | 2042-03-09T00:00:00Z |
+      | clotureFin   | 2042-03-09T23:59:59Z |
+    Then la reponse a le statut http 400
+    And la reponse porte le code d'erreur "urn:glm:erreur:element-de-fabrication:cloture-hors-des-clotures"
+
   Scenario: Creation refusee a un utilisateur sans role gestionnaire
     Given I am logged in as "user" with role "USER"
     When je cree un element de fabrication

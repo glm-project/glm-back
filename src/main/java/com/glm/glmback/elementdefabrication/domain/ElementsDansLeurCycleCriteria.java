@@ -7,7 +7,7 @@ import java.util.Optional;
 /**
  * Les elements a lire, et l'instant auquel l'atelier juge l'etat de ceux qui y sont.
  */
-public record ElementsDansLeurCycleCriteria(FiltreDesElements filtre, Optional<CycleDeVie> cycle, Instant evaluation) {
+public record ElementsDansLeurCycleCriteria(FiltreDesElements filtre, Optional<CycleDemande> cycle, Instant evaluation) {
   public ElementsDansLeurCycleCriteria {
     Assert.notNull("filtre", filtre);
     Assert.notNull("cycle", cycle);
@@ -15,6 +15,6 @@ public record ElementsDansLeurCycleCriteria(FiltreDesElements filtre, Optional<C
   }
 
   public boolean matches(ElementDansSonCycle lu) {
-    return filtre.matches(lu.element()) && cycle.map(demande -> demande == lu.cycle()).orElse(true);
+    return filtre.matches(lu.element()) && cycle.map(demande -> demande.matches(lu)).orElse(true);
   }
 }

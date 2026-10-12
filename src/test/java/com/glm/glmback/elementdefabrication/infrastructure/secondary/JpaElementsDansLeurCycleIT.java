@@ -22,6 +22,7 @@ import com.glm.glmback.elementdefabrication.domain.Annee;
 import com.glm.glmback.elementdefabrication.domain.AuteurDeLaCloture;
 import com.glm.glmback.elementdefabrication.domain.Categorie;
 import com.glm.glmback.elementdefabrication.domain.CycleDeVie;
+import com.glm.glmback.elementdefabrication.domain.CycleDemande;
 import com.glm.glmback.elementdefabrication.domain.ElementDansSonCycle;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabrication;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationId;
@@ -178,7 +179,15 @@ class JpaElementsDansLeurCycleIT {
     assertThat(lit(periode, CycleDeVie.EN_PREPARATION)).containsExactly(preparationRecente, preparationAncienne);
     assertThat(lit(periode, CycleDeVie.EN_ATELIER)).containsExactly(engageLePremier, engageLeSecond);
     assertThat(lit(periode, CycleDeVie.CLOTURE)).containsExactly(clotureLaSeconde, clotureLaPremiere);
-    assertThat(lit(periode, Optional.of(CycleDeVie.CLOTURE), creation, firstPageOfTen()).totalElementsCount()).isEqualTo(2);
+    assertThat(
+      lit(periode, Optional.of(new CycleDemande(CycleDeVie.CLOTURE, Optional.empty())), creation, firstPageOfTen()).totalElementsCount()
+    ).isEqualTo(2);
+    Periode clotureDeLaSeconde = new Periode(engagement.plusSeconds(15), engagement.plusSeconds(20));
+    assertThat(
+      lit(periode, Optional.of(new CycleDemande(CycleDeVie.CLOTURE, Optional.of(clotureDeLaSeconde))), creation, firstPageOfTen()).content()
+    )
+      .extracting(ElementDansSonCycle::element)
+      .containsExactly(clotureLaSeconde);
   }
 
   @Test
@@ -234,10 +243,14 @@ class JpaElementsDansLeurCycleIT {
   }
 
   private List<ElementDeFabrication> lit(Periode periode, CycleDeVie cycle) {
-    return lit(periode, Optional.of(cycle), periode.fin(), firstPageOfTen()).content().stream().map(ElementDansSonCycle::element).toList();
+    return lit(periode, Optional.of(new CycleDemande(cycle, Optional.empty())), periode.fin(), firstPageOfTen())
+      .content()
+      .stream()
+      .map(ElementDansSonCycle::element)
+      .toList();
   }
 
-  private Page<ElementDansSonCycle> lit(Periode periode, Optional<CycleDeVie> cycle, Instant evaluation, Pageable pageable) {
+  private Page<ElementDansSonCycle> lit(Periode periode, Optional<CycleDemande> cycle, Instant evaluation, Pageable pageable) {
     return inTransaction(() -> lecture.list(new ElementsDansLeurCycleCriteria(creesPendant(periode), cycle, evaluation), pageable));
   }
 

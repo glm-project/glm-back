@@ -3020,6 +3020,24 @@
             "type" : "string"
           }
         }, {
+          "description" : "Debut de la periode de cloture, a donner avec clotureFin, et avec cycle=CLOTURE seulement (sinon 400).",
+          "in" : "query",
+          "name" : "clotureDebut",
+          "required" : false,
+          "schema" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        }, {
+          "description" : "Fin de la periode de cloture, a donner avec clotureDebut, et avec cycle=CLOTURE seulement (sinon 400).",
+          "in" : "query",
+          "name" : "clotureFin",
+          "required" : false,
+          "schema" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        }, {
           "description" : "Ne lire que les elements de cette categorie, par son code.",
           "in" : "query",
           "name" : "categorie",

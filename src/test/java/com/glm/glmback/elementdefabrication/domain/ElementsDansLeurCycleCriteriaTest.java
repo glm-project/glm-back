@@ -36,7 +36,7 @@ class ElementsDansLeurCycleCriteriaTest {
   void shouldMatchUnElementDuCycleDemande() {
     var criteria = new ElementsDansLeurCycleCriteria(
       FiltreDesElements.aucun(),
-      Optional.of(CycleDeVie.EN_ATELIER),
+      Optional.of(new CycleDemande(CycleDeVie.EN_ATELIER, Optional.empty())),
       INSTANT_10_MAI_2026_A_18H
     );
 
@@ -49,7 +49,7 @@ class ElementsDansLeurCycleCriteriaTest {
   void shouldNotMatchUnElementDUnAutreCycle() {
     var criteria = new ElementsDansLeurCycleCriteria(
       FiltreDesElements.aucun(),
-      Optional.of(CycleDeVie.EN_ATELIER),
+      Optional.of(new CycleDemande(CycleDeVie.EN_ATELIER, Optional.empty())),
       INSTANT_10_MAI_2026_A_18H
     );
 

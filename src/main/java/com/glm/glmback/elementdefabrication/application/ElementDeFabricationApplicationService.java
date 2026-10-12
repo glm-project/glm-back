@@ -2,7 +2,7 @@ package com.glm.glmback.elementdefabrication.application;
 
 import com.glm.glmback.elementdefabrication.domain.CategoriesDeclarees;
 import com.glm.glmback.elementdefabrication.domain.CompteurDElementsDeFabrication;
-import com.glm.glmback.elementdefabrication.domain.CycleDeVie;
+import com.glm.glmback.elementdefabrication.domain.CycleDemande;
 import com.glm.glmback.elementdefabrication.domain.ElementDansSonCycle;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabrication;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationId;
@@ -58,7 +58,7 @@ public class ElementDeFabricationApplicationService {
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
   @Transactional(readOnly = true)
-  public Page<ElementDansSonCycle> list(FiltreDesElements filtre, Optional<CycleDeVie> cycle, Pageable pageable) {
+  public Page<ElementDansSonCycle> list(FiltreDesElements filtre, Optional<CycleDemande> cycle, Pageable pageable) {
     return elementsDansLeurCycle.list(new ElementsDansLeurCycleCriteria(filtre, cycle, clock.now()), pageable);
   }
 
