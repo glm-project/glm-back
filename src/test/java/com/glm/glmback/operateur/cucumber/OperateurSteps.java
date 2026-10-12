@@ -24,6 +24,7 @@ public class OperateurSteps {
 
   private static final String BASE_URI = "/api/operateurs";
   private static final String POSTES_URI = "/api/postes-de-travail";
+  private static final String COUT_HORAIRE = "40.00";
   private static final String CLE_POSTES = "postes";
   private static final ObjectMapper JSON = JsonMapper.builder().build();
 
@@ -36,7 +37,12 @@ public class OperateurSteps {
 
   @Given("j'ai un poste de travail {string} de nature {string}")
   public void jaiUnPosteDeTravail(String libelle, String nature) {
-    rest.post(POSTES_URI, JSON.writeValueAsString(Map.of("libelle", libelle, "natureId", NaturesDesScenarios.identifiant(rest, nature))));
+    rest.post(
+      POSTES_URI,
+      JSON.writeValueAsString(
+        Map.of("libelle", libelle, "natureId", NaturesDesScenarios.identifiant(rest, nature), "coutHoraire", COUT_HORAIRE)
+      )
+    );
     postesDeclares.put(libelle, UUID.fromString((String) CucumberRestTestContext.getElement("$.id")));
   }
 

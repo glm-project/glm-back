@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
@@ -29,9 +30,11 @@ record RestCreationOperateur(
   String identifiant,
 
   @Schema(
-    description = "Taux horaire de l'operateur, destine au cout de revient. Facultatif : toutes les entreprises ne le valorisent pas. Strictement positif, exactement representable en centimes et inferieur a 100000000.",
-    example = "22.00"
+    description = "Taux horaire de l'operateur, destine au cout de revient. Obligatoire : il est fige sur chaque pointage, et un pointage sans tarif rend le cout de revient non exportable. Strictement positif, exactement representable en centimes et inferieur a 100000000.",
+    example = "22.00",
+    requiredMode = Schema.RequiredMode.REQUIRED
   )
+  @NotNull
   @DecimalMin(value = "0", inclusive = false)
   @Digits(integer = 8, fraction = 2)
   BigDecimal tauxHoraire,

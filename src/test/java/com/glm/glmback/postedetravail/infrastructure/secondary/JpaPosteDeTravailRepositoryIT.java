@@ -1,5 +1,6 @@
 package com.glm.glmback.postedetravail.infrastructure.secondary;
 
+import static com.glm.glmback.postedetravail.domain.PostesDeTravailFixture.COUT_HORAIRE_60;
 import static com.glm.glmback.shared.pagination.domain.PaginationFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
@@ -95,7 +96,7 @@ class JpaPosteDeTravailRepositoryIT {
     PosteDeTravail poste = posteDeTournage();
     inTransaction(() -> postes.create(poste));
 
-    PosteDeTravail revise = poste.revise(libelleDeTest(), nature("soudage"), Optional.empty());
+    PosteDeTravail revise = poste.revise(libelleDeTest(), nature("soudage"), COUT_HORAIRE_60);
     inTransaction(() -> postes.update(revise));
 
     assertThat(inTransaction(() -> postes.get(poste.id()))).contains(revise);

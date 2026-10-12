@@ -56,7 +56,10 @@ public class NatureDeTravailSteps {
 
   @Given("le poste de travail {string} porte la nature de travail {string}")
   public void lePosteDeTravailPorteLaNatureDeTravail(String poste, String libelle) {
-    rest.post("/api/postes-de-travail", JSON.writeValueAsString(Map.of("libelle", poste, "natureId", ids.get(libelle))));
+    rest.post(
+      "/api/postes-de-travail",
+      JSON.writeValueAsString(Map.of("libelle", poste, "natureId", ids.get(libelle), "coutHoraire", "40.00"))
+    );
     assertThatLastResponse().hasHttpStatus(201);
   }
 

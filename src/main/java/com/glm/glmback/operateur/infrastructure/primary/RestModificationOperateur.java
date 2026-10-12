@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
@@ -30,9 +31,11 @@ record RestModificationOperateur(
   String identifiant,
 
   @Schema(
-    description = "Taux horaire de l'operateur, laisse vide pour le retirer. Strictement positif, exactement representable en centimes et inferieur a 100000000.",
-    example = "22.00"
+    description = "Taux horaire de l'operateur. Obligatoire, meme pour un operateur declare avant qu'il le soit : il est fige sur chaque pointage. Strictement positif, exactement representable en centimes et inferieur a 100000000.",
+    example = "22.00",
+    requiredMode = Schema.RequiredMode.REQUIRED
   )
+  @NotNull
   @DecimalMin(value = "0", inclusive = false)
   @Digits(integer = 8, fraction = 2)
   BigDecimal tauxHoraire,

@@ -28,9 +28,11 @@ record RestModificationPosteDeTravail(
   UUID natureId,
 
   @Schema(
-    description = "Cout horaire du poste, laisse vide pour le retirer. Positif ou nul (0 pour un poste qui ne demande que de la main d'oeuvre), exactement representable en centimes et inferieur a 100000000.",
-    example = "45.50"
+    description = "Cout horaire du poste. Obligatoire, meme pour un poste declare avant qu'il le soit : il est fige sur chaque pointage. Positif ou nul (0 pour un poste qui ne demande que de la main d'oeuvre), exactement representable en centimes et inferieur a 100000000.",
+    example = "45.50",
+    requiredMode = Schema.RequiredMode.REQUIRED
   )
+  @NotNull
   @DecimalMin("0")
   @Digits(integer = 8, fraction = 2)
   BigDecimal coutHoraire

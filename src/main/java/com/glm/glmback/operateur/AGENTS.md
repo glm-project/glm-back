@@ -19,7 +19,7 @@ ne l'ait saisi deux fois.
   l'authentification n'est pas tranchée : l'`Auteur` d'une saisie vient du jeton, pas d'un référentiel.
 - **La nature de travail comme propriété d'une personne.** Elle appartient au poste. Déclarer un métier sur
   l'opérateur le stockerait deux fois, avec la possibilité qu'ils se contredisent.
-- **Le calcul du coût de revient**. L'opérateur porte son `TauxHoraire` (facultatif, strictement positif), mais ce
+- **Le calcul du coût de revient**. L'opérateur porte son `TauxHoraire` (exigé, strictement positif), mais ce
   contexte ne fait rien d'autre que le stocker et le restituer : aucun calcul, aucune répartition. `atelier` le copie
   sur ses faits, `coutderevient` les valorise.
 - **Le pointage**, qui appartient à `atelier` — lequel ne connaît de ce contexte que l'`OperateurId`, lu par port, et
@@ -44,8 +44,11 @@ résolus.
 - **L'identifiant est unique quand il est renseigné**, et plusieurs opérateurs peuvent rester sans — patron
   `elementdefabrication.Reference`. PostgreSQL considérant les `NULL` comme distincts, l'index unique laisse coexister
   autant d'opérateurs sans identifiant que nécessaire.
-- **Le taux horaire est facultatif et strictement positif** quand il est renseigné, sur le patron de l'identifiant : un
-  taux à zéro n'a pas de sens métier — s'il est inconnu, le champ reste absent plutôt qu'à zéro.
+- **Le taux horaire est exigé et strictement positif** à la déclaration comme à la révision (glm-back#142) : il est
+  figé sur chaque pointage, et un pointage sans tarif rend le coût de revient non exportable. Un taux à zéro n'a pas
+  de sens métier. Un opérateur déclaré avant cette exigence peut encore en être dépourvu : `Operateur` le garde
+  facultatif à la relecture, mais `OperateurACreer`, `OperateurAModifier` et `revise` l'exigent, et l'API répond 400
+  à une requête sans `tauxHoraire`.
   Sa valeur doit être exactement représentable en centimes et inférieure à 100 000 000, pour rester relisible
   dans le stockage `numeric(10,2)`. Création et révision refusent toute précision perdue, sans arrondi.
 - **Le taux horaire reste réservé au `GESTIONNAIRE`.** Les lectures `USER` gardent les fiches et leurs habilitations

@@ -15,21 +15,21 @@ class OperateurACreerTest {
 
   @Test
   void shouldNotBuildWithoutNom() {
-    assertThatThrownBy(() -> new OperateurACreer(null, PRENOM_JEAN, Optional.empty(), Optional.empty(), Set.of()))
+    assertThatThrownBy(() -> new OperateurACreer(null, PRENOM_JEAN, Optional.empty(), TAUX_HORAIRE_22, Set.of()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("nom");
   }
 
   @Test
   void shouldNotBuildWithoutPrenom() {
-    assertThatThrownBy(() -> new OperateurACreer(NOM_DUPONT, null, Optional.empty(), Optional.empty(), Set.of()))
+    assertThatThrownBy(() -> new OperateurACreer(NOM_DUPONT, null, Optional.empty(), TAUX_HORAIRE_22, Set.of()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("prenom");
   }
 
   @Test
   void shouldNotBuildWithoutIdentifiant() {
-    assertThatThrownBy(() -> new OperateurACreer(NOM_DUPONT, PRENOM_JEAN, null, Optional.empty(), Set.of()))
+    assertThatThrownBy(() -> new OperateurACreer(NOM_DUPONT, PRENOM_JEAN, null, TAUX_HORAIRE_22, Set.of()))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("identifiant");
   }
@@ -43,7 +43,7 @@ class OperateurACreerTest {
 
   @Test
   void shouldNotBuildWithoutPostes() {
-    assertThatThrownBy(() -> new OperateurACreer(NOM_DUPONT, PRENOM_JEAN, Optional.empty(), Optional.empty(), null))
+    assertThatThrownBy(() -> new OperateurACreer(NOM_DUPONT, PRENOM_JEAN, Optional.empty(), TAUX_HORAIRE_22, null))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
       .hasMessageContaining("postes");
   }
@@ -55,21 +55,21 @@ class OperateurACreerTest {
     assertThat(aCreer.nom()).isEqualTo(NOM_DUPONT);
     assertThat(aCreer.prenom()).isEqualTo(PRENOM_JEAN);
     assertThat(aCreer.identifiant()).contains(IDENTIFIANT_049);
-    assertThat(aCreer.tauxHoraire()).contains(TAUX_HORAIRE_22);
+    assertThat(aCreer.tauxHoraire()).isEqualTo(TAUX_HORAIRE_22);
     assertThat(aCreer.postes()).containsExactly(ID_TOUR_1);
   }
 
   @Test
   void shouldAcceptBlankIdentifiantAsAbsent() {
-    OperateurACreer aCreer = new OperateurACreer("Dupont", "Jean", " ", null, Set.of());
+    OperateurACreer aCreer = new OperateurACreer("Dupont", "Jean", " ", new BigDecimal("22.00"), Set.of());
 
     assertThat(aCreer.identifiant()).isEmpty();
   }
 
   @Test
-  void shouldAcceptAbsentTauxHoraire() {
-    OperateurACreer aCreer = new OperateurACreer("Dupont", "Jean", "049", null, Set.of());
-
-    assertThat(aCreer.tauxHoraire()).isEmpty();
+  void shouldNotBuildWithoutRawTauxHoraire() {
+    assertThatThrownBy(() -> new OperateurACreer("Dupont", "Jean", "049", null, Set.of()))
+      .isExactlyInstanceOf(MissingMandatoryValueException.class)
+      .hasMessageContaining("taux horaire");
   }
 }

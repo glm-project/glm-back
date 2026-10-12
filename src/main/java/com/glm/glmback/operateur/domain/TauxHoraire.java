@@ -8,8 +8,9 @@ import java.util.Optional;
  * Le taux horaire de l'operateur, destine au lot cout de revient.
  *
  * <p>
- * Facultatif, comme l'identifiant : une entreprise qui ne valorise pas encore ses operateurs retrouve un comportement
- * coherent plutot qu'un cas degrade.
+ * Exige a la declaration et a la revision : il est fige sur chaque pointage, et un pointage sans tarif rend le cout de
+ * revient non exportable. Un operateur declare avant cette exigence peut encore en etre depourvu, d'ou
+ * {@link #of(BigDecimal)} a la relecture.
  * </p>
  */
 public record TauxHoraire(BigDecimal value) {

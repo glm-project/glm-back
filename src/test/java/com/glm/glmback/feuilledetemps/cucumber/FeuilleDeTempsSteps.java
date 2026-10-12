@@ -33,6 +33,8 @@ import tools.jackson.databind.json.JsonMapper;
 public class FeuilleDeTempsSteps {
 
   private static final String OPERATEURS_URI = "/api/operateurs";
+  private static final String TAUX_HORAIRE = "20.00";
+  private static final String COUT_HORAIRE = "40.00";
   private static final String FEUILLES_URI = "/api/feuilles-de-temps";
   private static final String ELEMENTS_URI = "/api/elements-de-fabrication";
   private static final String SUIVIS_URI = "/api/atelier/suivis";
@@ -58,7 +60,16 @@ public class FeuilleDeTempsSteps {
 
   @Given("la feuille de temps suit l'operateur {string}")
   public void laFeuilleDeTempsSuitLOperateur(String alias) {
-    Map<String, Object> corps = Map.of("nom", alias, "prenom", "Feuille " + SEQUENCE.incrementAndGet(), "postes", List.of());
+    Map<String, Object> corps = Map.of(
+      "nom",
+      alias,
+      "prenom",
+      "Feuille " + SEQUENCE.incrementAndGet(),
+      "postes",
+      List.of(),
+      "tauxHoraire",
+      TAUX_HORAIRE
+    );
     rest.post(OPERATEURS_URI, JSON.writeValueAsString(corps));
     operateurs.put(alias, String.valueOf(CucumberRestTestContext.getElement("$.id")));
   }
@@ -68,7 +79,14 @@ public class FeuilleDeTempsSteps {
     rest.post(
       POSTES_URI,
       JSON.writeValueAsString(
-        Map.of("libelle", "Feuille " + alias + " " + SEQUENCE.incrementAndGet(), "natureId", NaturesDesScenarios.identifiant(rest, nature))
+        Map.of(
+          "libelle",
+          "Feuille " + alias + " " + SEQUENCE.incrementAndGet(),
+          "natureId",
+          NaturesDesScenarios.identifiant(rest, nature),
+          "coutHoraire",
+          COUT_HORAIRE
+        )
       )
     );
     postes.put(alias, id());
@@ -82,7 +100,9 @@ public class FeuilleDeTempsSteps {
       "prenom",
       "Feuille " + SEQUENCE.incrementAndGet(),
       "postes",
-      habilitations.stream().map(postes::get).toList()
+      habilitations.stream().map(postes::get).toList(),
+      "tauxHoraire",
+      TAUX_HORAIRE
     );
     rest.post(OPERATEURS_URI, JSON.writeValueAsString(corps));
     operateurs.put(alias, id());

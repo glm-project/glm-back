@@ -34,7 +34,7 @@ public final class OperateursService {
         .nom(aCreer.nom())
         .prenom(aCreer.prenom())
         .identifiant(aCreer.identifiant().map(Identifiant::value).orElse(null))
-        .tauxHoraire(aCreer.tauxHoraire().map(TauxHoraire::value).orElse(null))
+        .tauxHoraire(aCreer.tauxHoraire().value())
         .postes(aCreer.postes())
     );
 

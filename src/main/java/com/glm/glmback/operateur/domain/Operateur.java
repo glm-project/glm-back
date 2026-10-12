@@ -44,10 +44,10 @@ public record Operateur(
     Nom nom,
     Prenom prenom,
     Optional<Identifiant> identifiant,
-    Optional<TauxHoraire> tauxHoraire,
+    TauxHoraire tauxHoraire,
     Set<PosteHabilitableId> postes
   ) {
-    return new Operateur(id, nom, prenom, identifiant, tauxHoraire, postes);
+    return new Operateur(id, nom, prenom, identifiant, Optional.of(tauxHoraire), postes);
   }
 
   public interface OperateurIdBuilder {
