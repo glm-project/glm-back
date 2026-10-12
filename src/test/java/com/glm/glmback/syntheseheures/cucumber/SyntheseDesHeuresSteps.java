@@ -11,12 +11,25 @@ import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFTable;
+import org.apache.poi.xssf.usermodel.XSSFTableColumn;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.springframework.beans.factory.annotation.Autowired;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
@@ -365,5 +378,94 @@ public class SyntheseDesHeuresSteps {
 
   private static List<Map<String, Object>> pointagesDu(String jour) {
     return pointagesDe(jourDe(jour));
+  }
+
+  @When("je consulte le rapport d'activite de {string} pour le mois {int} de {int}")
+  public void jeConsulteLeRapportDuMois(String alias, int mois, int annee) {
+    rest.get(SYNTHESES_URI + "/" + operateurs.get(alias) + "/rapport?annee=" + annee + "&mois=" + mois);
+  }
+
+  @When("je consulte le rapport d'activite de {string} pour la semaine {int} de {int}")
+  public void jeConsulteLeRapportDeLaSemaine(String alias, int semaine, int annee) {
+    rest.get(SYNTHESES_URI + "/" + operateurs.get(alias) + "/rapport?annee=" + annee + "&semaine=" + semaine);
+  }
+
+  @When("je consulte le rapport d'activite de {string} avec {string}")
+  public void jeConsulteLeRapportAvec(String alias, String parametres) {
+    rest.get(SYNTHESES_URI + "/" + operateurs.get(alias) + "/rapport?" + parametres);
+  }
+
+  @When("je consulte le rapport d'activite de l'operateur {string} pour le mois {int} de {int}")
+  public void jeConsulteLeRapportDeLOperateur(String operateur, int mois, int annee) {
+    rest.get(SYNTHESES_URI + "/" + operateur + "/rapport?annee=" + annee + "&mois=" + mois);
+  }
+
+  @Then("le resume du rapport d'activite est")
+  public void leResumeDuRapportEst(Map<String, String> attendu) {
+    attendu.forEach((champ, valeur) ->
+      assertThat(String.valueOf(CucumberRestTestContext.getElement("$." + champ))).as(champ).isEqualTo(valeur)
+    );
+  }
+
+  @When("j'exporte en Excel le rapport d'activite de {string} pour le mois {int} de {int}")
+  public void jExporteEnExcelLeRapportDuMois(String alias, int mois, int annee) {
+    rest.get(SYNTHESES_URI + "/" + operateurs.get(alias) + "/export.xlsx?annee=" + annee + "&mois=" + mois);
+  }
+
+  @Then("le classeur du rapport d'activite est nomme d'apres {string} et {string}")
+  public void leClasseurDuRapportEstNomme(String operateur, String periode) {
+    assertThat(CucumberRestTestContext.getResponseHeader("Content-Type")).containsExactly(
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    assertThat(CucumberRestTestContext.getResponseHeader("Content-Disposition"))
+      .singleElement(InstanceOfAssertFactories.STRING)
+      .matches("attachment; filename=\"activite-%s-synthese-\\d+-%s\\.xlsx\"".formatted(operateur, periode));
+  }
+
+  @Then("le tableau {string} du rapport d'activite porte")
+  public void leTableauDuRapportPorte(String nom, List<Map<String, String>> attendues) throws IOException {
+    try (XSSFWorkbook classeur = new XSSFWorkbook(new ByteArrayInputStream(CucumberRestTestContext.getResponseBytes()))) {
+      XSSFTable tableau = classeur.getTable(nom);
+      List<String> colonnes = tableau.getColumns().stream().map(XSSFTableColumn::getName).toList();
+      List<Map<String, String>> lues = new ArrayList<>();
+      for (int ligne = tableau.getStartRowIndex() + 1; ligne <= tableau.getEndRowIndex(); ligne++) {
+        Row valeurs = tableau.getXSSFSheet().getRow(ligne);
+        Map<String, String> lue = new HashMap<>();
+        for (int colonne = 0; colonne < colonnes.size(); colonne++) {
+          if (attendues.getFirst().containsKey(colonnes.get(colonne))) {
+            lue.put(colonnes.get(colonne), cellule(valeurs.getCell(tableau.getStartColIndex() + colonne)));
+          }
+        }
+        lues.add(lue);
+      }
+      assertThat(lues).containsExactlyElementsOf(
+        attendues
+          .stream()
+          .map(attendue -> {
+            Map<String, String> complete = new HashMap<>();
+            attendue.forEach((colonne, valeur) -> complete.put(colonne, valeur == null ? "" : valeur));
+            return complete;
+          })
+          .toList()
+      );
+    }
+  }
+
+  /** Une cellule telle qu'on la lit dans Excel : jour, heure ou duree a deux decimales. */
+  private static String cellule(Cell cellule) {
+    if (cellule.getCellType() == CellType.BLANK) {
+      return "";
+    }
+    if (cellule.getCellType() == CellType.STRING) {
+      return cellule.getStringCellValue();
+    }
+    String format = cellule.getCellStyle().getDataFormatString();
+    if ("hh:mm".equals(format)) {
+      return cellule.getLocalDateTimeCellValue().toLocalTime().toString();
+    }
+    if (DateUtil.isCellDateFormatted(cellule)) {
+      return cellule.getLocalDateTimeCellValue().toLocalDate().toString();
+    }
+    return BigDecimal.valueOf(cellule.getNumericCellValue()).setScale(2, RoundingMode.HALF_UP).toPlainString();
   }
 }

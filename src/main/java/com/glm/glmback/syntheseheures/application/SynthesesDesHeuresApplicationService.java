@@ -7,7 +7,10 @@ import com.glm.glmback.syntheseheures.domain.FuseauHoraireDeLEntreprise;
 import com.glm.glmback.syntheseheures.domain.JournalDeLOperateur;
 import com.glm.glmback.syntheseheures.domain.OperateurId;
 import com.glm.glmback.syntheseheures.domain.OperateursConnus;
+import com.glm.glmback.syntheseheures.domain.PeriodeCalendaire;
 import com.glm.glmback.syntheseheures.domain.PostesDeTravail;
+import com.glm.glmback.syntheseheures.domain.RapportDActivite;
+import com.glm.glmback.syntheseheures.domain.RapportsDActiviteService;
 import com.glm.glmback.syntheseheures.domain.SemaineCalendaire;
 import com.glm.glmback.syntheseheures.domain.SyntheseDesHeures;
 import com.glm.glmback.syntheseheures.domain.SynthesesDesHeuresService;
@@ -24,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class SynthesesDesHeuresApplicationService {
 
   private final SynthesesDesHeuresService synthesesDesHeures;
+  private final RapportsDActiviteService rapportsDActivite;
 
   public SynthesesDesHeuresApplicationService(
     OperateursConnus operateurs,
@@ -42,6 +46,13 @@ public class SynthesesDesHeuresApplicationService {
       .elements(elements)
       .postes(postes)
       .clock(clock);
+    this.rapportsDActivite = RapportsDActiviteService.builder()
+      .operateurs(operateurs)
+      .fuseau(fuseau)
+      .activites(activites)
+      .elements(elements)
+      .postes(postes)
+      .clock(clock);
   }
 
   /**
@@ -53,5 +64,15 @@ public class SynthesesDesHeuresApplicationService {
   @Transactional(readOnly = true)
   public SyntheseDesHeures synthese(OperateurId operateur, SemaineCalendaire semaine, Optional<Instant> evaluation) {
     return synthesesDesHeures.synthese(operateur, semaine, evaluation);
+  }
+
+  /**
+   * Le rapport d'activite est un document remis par le gestionnaire, comme les exports du cout de revient : il ne
+   * s'ouvre pas au pupitre.
+   */
+  @Secured("ROLE_GESTIONNAIRE")
+  @Transactional(readOnly = true)
+  public RapportDActivite rapport(OperateurId operateur, PeriodeCalendaire periode) {
+    return rapportsDActivite.rapport(operateur, periode);
   }
 }

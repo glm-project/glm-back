@@ -5,7 +5,8 @@ import org.springframework.http.HttpStatus;
 
 enum ErreurDeSyntheseDesHeures implements ProblemCode {
   OPERATEUR_INTROUVABLE(HttpStatus.NOT_FOUND, "operateur introuvable"),
-  EVALUATION_FUTURE(HttpStatus.BAD_REQUEST, "instant d'evaluation futur");
+  EVALUATION_FUTURE(HttpStatus.BAD_REQUEST, "instant d'evaluation futur"),
+  PERIODE_FUTURE(HttpStatus.BAD_REQUEST, "periode future");
 
   private final HttpStatus status;
   private final String title;

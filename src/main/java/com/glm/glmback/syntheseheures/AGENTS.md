@@ -9,6 +9,12 @@ Relever le temps opérationnel d'un opérateur sur une semaine ISO explicite : s
 le journal brut des pointages et les éléments touchés. Cette projection est purement lectrice et ne possède
 aucune table. Elle ne calcule aucun montant.
 
+Le même contexte assemble le **rapport d'activité** (`RapportDActivite`) d'un opérateur sur une `PeriodeCalendaire`
+— semaine ISO (`SemaineCalendaire`) ou mois civil (`MoisCalendaire`) — avec les mêmes règles de durée : ses jours
+(`JourDuRapport`), ses éléments, ses natures (`NatureDuRapport`) et son journal (`LigneDuJournal`, une ligne par
+portion d'activité coupée à minuit). Il est réservé au `GESTIONNAIRE` ; une fin automatique y est comptée et
+signalée, jamais bloquante ; une période qui n'a pas commencé est refusée (`periode-future`).
+
 `SyntheseDesHeures` porte l'opérateur résolu, la semaine, les `JourDeSynthese` et les `ElementDeLaSynthese`.
 Le jour porte ses pointages et sa durée opérationnelle. L'élément porte son identité engagée, sa fiche relue,
 sa durée totale, sa part de non-conformité et ses couples poste/nature. `DureeTotale` porte une valeur certaine.

@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted on 10 October 2026 (glm-back#78, feature glm-back#77).
+Accepted on 10 October 2026 (glm-back#78, feature glm-back#77). Extended on 12 October 2026 to the operator activity
+report (glm-back#153, feature glm-back#151).
 
 ## Context
 
@@ -25,7 +26,9 @@ table whose column names the macros can rely on. The workbook must show exactly 
 
 `org.apache.poi:poi-ooxml` 5.5.1 is a compile dependency. It is used **only** in
 `coutderevient/infrastructure/primary`, by `ClasseurDuCoutDeRevient`, which turns a `CompteRenduDuCout` into the bytes
-of the response. The domain knows nothing of POI.
+of the response, and in `syntheseheures/infrastructure/primary`, by `ClasseurDuRapportDActivite`, which does the same
+for a `RapportDActivite`. Each context keeps its own builder: they share no code, as bounded contexts never import
+each other. The domain knows nothing of POI.
 
 - Amounts are written from the already-rounded `Montant` values; totals are the domain's totals, not Excel formulas.
 - Durations are decimal hours (`0.00`), amounts euros (`#,##0.00 "€";-#,##0.00 "€";""`): a cost of 0 € keeps the value

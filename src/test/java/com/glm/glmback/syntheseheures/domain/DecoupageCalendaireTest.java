@@ -25,10 +25,10 @@ class DecoupageCalendaireTest {
   private static final SemaineCalendaire SEMAINE_20_DE_2026 = new SemaineCalendaire(2026, 20);
 
   @Test
-  void shouldNotBuildWithoutSemaine() {
+  void shouldNotBuildWithoutPeriode() {
     assertThatThrownBy(() -> new DecoupageCalendaire(null, PARIS))
       .isExactlyInstanceOf(MissingMandatoryValueException.class)
-      .hasMessageContaining("semaine");
+      .hasMessageContaining("periode");
   }
 
   @Test
@@ -259,5 +259,35 @@ class DecoupageCalendaireTest {
       assertThat(portion.intervalle().lecture()).isEqualTo(intervalle.lecture());
       assertThat(portion.intervalle().lecture().etat()).isEqualTo(EtatDActivite.TERMINEE_AUTOMATIQUEMENT);
     });
+  }
+
+  @Test
+  void shouldPorterTousLesJoursDuMois() {
+    assertThat(new DecoupageCalendaire(new MoisCalendaire(2026, 2), PARIS).jours())
+      .hasSize(28)
+      .startsWith(LocalDate.of(2026, 2, 1))
+      .endsWith(LocalDate.of(2026, 2, 28));
+  }
+
+  /** Mars 2026 commence a l'heure d'hiver et finit a l'heure d'ete : ses bornes n'ont pas le meme decalage. */
+  @Test
+  void shouldBornerLeMoisAuxMinuitsLocauxDeChaqueCoteDuChangementDHeure() {
+    DecoupageCalendaire mars = new DecoupageCalendaire(new MoisCalendaire(2026, 3), PARIS);
+
+    assertThat(mars.debut()).isEqualTo(Instant.parse("2026-02-28T23:00:00Z"));
+    assertThat(mars.finExclusive()).isEqualTo(Instant.parse("2026-03-31T22:00:00Z"));
+  }
+
+  /** La semaine 40 de 2026 commence en septembre : sa nuit du 30 au 1er est coupee par le mois. */
+  @Test
+  void shouldCouperAuDernierMinuitDuMoisUnePlageQuiDebordeSurLeSuivant() {
+    Instant le30A22H = LocalDateTime.of(2026, 9, 30, 22, 0).atZone(PARIS).toInstant();
+    Instant le1erA6H = LocalDateTime.of(2026, 10, 1, 6, 0).atZone(PARIS).toInstant();
+
+    List<PlageDUnJour> plages = new DecoupageCalendaire(new MoisCalendaire(2026, 9), PARIS).plages(fermee(le30A22H, le1erA6H));
+
+    assertThat(plages).hasSize(1);
+    assertThat(plages.getFirst().jour()).isEqualTo(LocalDate.of(2026, 9, 30));
+    assertThat(plages.getFirst().plage().fin()).contains(LocalDateTime.of(2026, 10, 1, 0, 0).atZone(PARIS).toInstant());
   }
 }
