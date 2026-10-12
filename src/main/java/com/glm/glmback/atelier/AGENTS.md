@@ -280,7 +280,8 @@ sa catégorie, son début, son échéance et sa fin réelle, rapprochés par ide
 automatique ni d'anomalie, qui dépendent de l'instant : le filtre `etats` juge l'état à l'instant d'évaluation de
 `SuiviDAtelierCriteria`, une activité sans fin réelle étant en cours tant que son échéance n'est pas atteinte.
 `feuilledetemps`, `syntheseheures`, `coutderevient` et `pupitre` lisent cette projection, avec leurs modèles et ports
-propres, sans import du domaine d'atelier.
+propres, sans import du domaine d'atelier. `elementdefabrication` y lit l'état d'un suivi ouvert pour sa liste par cycle :
+`JpaElementsDansLeurCycleIT` confronte cette lecture à `SuiviDAtelier.etat`, à modifier avec toute évolution de l'état.
 
 Leur contrepartie : `SuiviDAtelierCriteria.matches` n'est plus appelée par la production, qui traduit les mêmes règles
 en SQL. C'est `PariteDesRepositoriesDAtelierIT` qui rétablit par l'exécution la garantie que donnait le code partagé —
