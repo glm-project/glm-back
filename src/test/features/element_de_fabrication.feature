@@ -276,6 +276,11 @@ Feature: Gestion des elements de fabrication
     Then la liste ne rend que les references
       | 3202-UNE-BORNE |
 
+  Scenario: Une categorie hors motif est refusee
+    When je liste les elements de fabrication avec
+      | categorie | moule |
+    Then la reponse a le statut http 400
+
   Scenario: Les clotures se lisent sur une periode de cloture
     Given il est "2042-03-07T08:00:00Z"
     And j'ai cree un element de fabrication

@@ -14,10 +14,12 @@ import com.glm.glmback.shared.pagination.domain.Pageable;
 import com.glm.glmback.shared.pagination.infrastructure.primary.RestPage;
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,6 +32,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@Validated
 @RequestMapping("/api/elements-de-fabrication")
 class ElementDeFabricationResource {
 
@@ -76,7 +79,9 @@ class ElementDeFabricationResource {
     @Parameter(
       description = "Fin de la periode de cloture, a donner avec clotureDebut, et avec cycle=CLOTURE seulement (sinon 400)."
     ) @RequestParam Optional<Instant> clotureFin,
-    @Parameter(description = "Ne lire que les elements de cette categorie, par son code.") @RequestParam Optional<String> categorie,
+    @Parameter(description = "Ne lire que les elements de cette categorie, par son code.") @RequestParam Optional<
+      @Pattern(regexp = "^[A-Z]{1,10}$") String
+    > categorie,
     @Parameter(
       description = "Texte cherche dans le nom, la reference et la description, sans tenir compte de la casse. Vide, il ne filtre rien."
     ) @RequestParam Optional<String> recherche,
