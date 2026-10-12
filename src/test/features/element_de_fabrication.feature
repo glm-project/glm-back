@@ -232,6 +232,31 @@ Feature: Gestion des elements de fabrication
       | clotureePar  | -          |
     And cet element de fabrication n'est liste que dans le cycle "EN_ATELIER"
 
+  Scenario: La liste filtre par categorie et par texte, sans tenir compte de la casse
+    Given il est "2042-02-06T08:00:00Z"
+    And j'ai cree un element de fabrication
+      | categorie   | OF             |
+      | reference   | 3101           |
+      | description | Bride en acier |
+    And j'ai cree un element de fabrication
+      | categorie   | MOULE           |
+      | reference   | 3102            |
+      | description | Carter en acier |
+    And j'ai cree un element de fabrication
+      | categorie   | OF              |
+      | reference   | 3103            |
+      | description | Carter en fonte |
+    When je liste les elements de fabrication crees avec celui-ci, avec
+      | recherche | ACIER |
+    Then la liste ne rend que les references
+      | 3102 |
+      | 3101 |
+    When je liste les elements de fabrication crees avec celui-ci, avec
+      | categorie | OF     |
+      | recherche | carter |
+    Then la liste ne rend que les references
+      | 3103 |
+
   Scenario: Creation refusee a un utilisateur sans role gestionnaire
     Given I am logged in as "user" with role "USER"
     When je cree un element de fabrication

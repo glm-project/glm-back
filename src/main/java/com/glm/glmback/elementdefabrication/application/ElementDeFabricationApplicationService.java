@@ -12,7 +12,7 @@ import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationToUpdate;
 import com.glm.glmback.elementdefabrication.domain.ElementsDansLeurCycle;
 import com.glm.glmback.elementdefabrication.domain.ElementsDansLeurCycleCriteria;
 import com.glm.glmback.elementdefabrication.domain.ElementsDeFabricationService;
-import com.glm.glmback.elementdefabrication.domain.Periode;
+import com.glm.glmback.elementdefabrication.domain.FiltreDesElements;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import com.glm.glmback.shared.time.domain.Clock;
@@ -58,8 +58,8 @@ public class ElementDeFabricationApplicationService {
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
   @Transactional(readOnly = true)
-  public Page<ElementDansSonCycle> list(Optional<Periode> creation, Optional<CycleDeVie> cycle, Pageable pageable) {
-    return elementsDansLeurCycle.list(new ElementsDansLeurCycleCriteria(creation, cycle, clock.now()), pageable);
+  public Page<ElementDansSonCycle> list(FiltreDesElements filtre, Optional<CycleDeVie> cycle, Pageable pageable) {
+    return elementsDansLeurCycle.list(new ElementsDansLeurCycleCriteria(filtre, cycle, clock.now()), pageable);
   }
 
   @Secured("ROLE_GESTIONNAIRE")

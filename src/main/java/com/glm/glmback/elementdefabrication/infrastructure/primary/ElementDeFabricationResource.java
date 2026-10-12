@@ -1,10 +1,13 @@
 package com.glm.glmback.elementdefabrication.infrastructure.primary;
 
 import com.glm.glmback.elementdefabrication.application.ElementDeFabricationApplicationService;
+import com.glm.glmback.elementdefabrication.domain.Categorie;
 import com.glm.glmback.elementdefabrication.domain.CycleDeVie;
 import com.glm.glmback.elementdefabrication.domain.ElementDansSonCycle;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationId;
+import com.glm.glmback.elementdefabrication.domain.FiltreDesElements;
 import com.glm.glmback.elementdefabrication.domain.Periode;
+import com.glm.glmback.elementdefabrication.domain.Recherche;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import com.glm.glmback.shared.pagination.infrastructure.primary.RestPage;
@@ -64,10 +67,19 @@ class ElementDeFabricationResource {
     @Parameter(
       description = "Ne lire que les elements de ce cycle, tries par creation, mise a l'atelier ou cloture decroissante."
     ) @RequestParam Optional<CycleDeVie> cycle,
+    @Parameter(description = "Ne lire que les elements de cette categorie, par son code.") @RequestParam Optional<String> categorie,
+    @Parameter(
+      description = "Texte cherche dans le nom, la reference et la description, sans tenir compte de la casse. Vide, il ne filtre rien."
+    ) @RequestParam Optional<String> recherche,
     @RequestParam(defaultValue = "0") int page,
     @RequestParam(defaultValue = "20") int size
   ) {
-    Page<ElementDansSonCycle> resultat = applicationService.list(Optional.of(new Periode(debut, fin)), cycle, new Pageable(page, size));
+    FiltreDesElements filtre = new FiltreDesElements(
+      Optional.of(new Periode(debut, fin)),
+      categorie.map(Categorie::new),
+      Recherche.de(recherche)
+    );
+    Page<ElementDansSonCycle> resultat = applicationService.list(filtre, cycle, new Pageable(page, size));
 
     return RestPage.from(resultat, RestElementDeFabrication::from);
   }

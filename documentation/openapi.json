@@ -3018,6 +3018,22 @@
             "type" : "string"
           }
         }, {
+          "description" : "Ne lire que les elements de cette categorie, par son code.",
+          "in" : "query",
+          "name" : "categorie",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "Texte cherche dans le nom, la reference et la description, sans tenir compte de la casse. Vide, il ne filtre rien.",
+          "in" : "query",
+          "name" : "recherche",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
           "in" : "query",
           "name" : "page",
           "required" : false,

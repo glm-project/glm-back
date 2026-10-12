@@ -29,10 +29,12 @@ import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationRepositor
 import com.glm.glmback.elementdefabrication.domain.ElementsDansLeurCycle;
 import com.glm.glmback.elementdefabrication.domain.ElementsDansLeurCycleCriteria;
 import com.glm.glmback.elementdefabrication.domain.EtatEnAtelier;
+import com.glm.glmback.elementdefabrication.domain.FiltreDesElements;
 import com.glm.glmback.elementdefabrication.domain.Nom;
 import com.glm.glmback.elementdefabrication.domain.PassageClos;
 import com.glm.glmback.elementdefabrication.domain.PassageOuvert;
 import com.glm.glmback.elementdefabrication.domain.Periode;
+import com.glm.glmback.elementdefabrication.domain.Recherche;
 import com.glm.glmback.elementdefabrication.domain.SuiviId;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.TenantSecurityContexts;
 import com.glm.glmback.shared.multitenancy.infrastructure.primary.WithTenant;
@@ -62,6 +64,7 @@ class JpaElementsDansLeurCycleIT {
   private static final String IMPECCMOLD = "impeccmold";
   private static final String KATILYS = "katilys";
   private static final Categorie CATEGORIE_CYCLE = new Categorie("CYCLE");
+  private static final Categorie CATEGORIE_CYCLEB = new Categorie("CYCLEB");
   private static final AtomicLong COMPTEUR = new AtomicLong();
   private static final Auteur LEROY = new Auteur("leroy");
 
@@ -85,12 +88,14 @@ class JpaElementsDansLeurCycleIT {
     SecurityContext contexteDuTest = SecurityContextHolder.getContext();
     for (String entreprise : List.of(IMPECCMOLD, KATILYS)) {
       TenantSecurityContexts.authenticateOn(entreprise);
-      inTransaction(() ->
-        entityManager
-          .createNativeQuery("INSERT INTO categorie_de_produit (code, rang) VALUES (?, 1) ON CONFLICT (code) DO NOTHING")
-          .setParameter(1, CATEGORIE_CYCLE.value())
-          .executeUpdate()
-      );
+      for (Categorie categorie : List.of(CATEGORIE_CYCLE, CATEGORIE_CYCLEB)) {
+        inTransaction(() ->
+          entityManager
+            .createNativeQuery("INSERT INTO categorie_de_produit (code, rang) VALUES (?, 1) ON CONFLICT (code) DO NOTHING")
+            .setParameter(1, categorie.value())
+            .executeUpdate()
+        );
+      }
     }
     SecurityContextHolder.setContext(contexteDuTest);
   }
@@ -178,6 +183,27 @@ class JpaElementsDansLeurCycleIT {
 
   @Test
   @WithTenant(IMPECCMOLD)
+  void shouldFiltrerParCategorieEtTextePrisALaLettre() {
+    Instant creation = Instant.parse("2041-06-07T06:00:00Z");
+    Periode periode = new Periode(creation, creation.plusSeconds(1));
+    ElementDeFabrication pourcent = cree(creation, CATEGORIE_CYCLE, "Rch_50%-" + COMPTEUR.incrementAndGet());
+    ElementDeFabrication lettres = cree(creation.plusSeconds(1), CATEGORIE_CYCLEB, "RCHX50Y-" + COMPTEUR.incrementAndGet());
+
+    assertThat(lit(new FiltreDesElements(Optional.of(periode), Optional.empty(), Optional.of(new Recherche("rch"))))).containsExactly(
+      lettres,
+      pourcent
+    );
+    assertThat(lit(new FiltreDesElements(Optional.of(periode), Optional.empty(), Optional.of(new Recherche("_50%"))))).containsExactly(
+      pourcent
+    );
+    assertThat(lit(new FiltreDesElements(Optional.of(periode), Optional.of(CATEGORIE_CYCLEB), Optional.empty()))).containsExactly(lettres);
+    assertThat(lit(new FiltreDesElements(Optional.of(periode), Optional.empty(), Optional.of(new Recherche("lecture par cycle"))))).hasSize(
+      2
+    );
+  }
+
+  @Test
+  @WithTenant(IMPECCMOLD)
   void shouldPaginerParCreationDecroissante() {
     Instant creation = Instant.parse("2041-03-04T06:00:00Z");
     ElementDeFabrication ancien = cree(creation);
@@ -212,16 +238,34 @@ class JpaElementsDansLeurCycleIT {
   }
 
   private Page<ElementDansSonCycle> lit(Periode periode, Optional<CycleDeVie> cycle, Instant evaluation, Pageable pageable) {
-    return inTransaction(() -> lecture.list(new ElementsDansLeurCycleCriteria(Optional.of(periode), cycle, evaluation), pageable));
+    return inTransaction(() -> lecture.list(new ElementsDansLeurCycleCriteria(creesPendant(periode), cycle, evaluation), pageable));
+  }
+
+  private List<ElementDeFabrication> lit(FiltreDesElements filtre) {
+    return inTransaction(() ->
+      lecture.list(new ElementsDansLeurCycleCriteria(filtre, Optional.empty(), Instant.now()), firstPageOfTen()).content()
+    )
+      .stream()
+      .map(ElementDansSonCycle::element)
+      .toList();
+  }
+
+  private static FiltreDesElements creesPendant(Periode periode) {
+    return new FiltreDesElements(Optional.of(periode), Optional.empty(), Optional.empty());
   }
 
   private ElementDeFabrication cree(Instant dateDeCreation) {
     long numero = COMPTEUR.incrementAndGet();
+    return cree(dateDeCreation, CATEGORIE_CYCLE, "CYCLE-" + numero + "-" + dateDeCreation.toEpochMilli());
+  }
+
+  private ElementDeFabrication cree(Instant dateDeCreation, Categorie categorie, String reference) {
+    long numero = COMPTEUR.incrementAndGet();
     ElementDeFabrication element = ElementDeFabrication.builder()
       .id(ElementDeFabricationId.newId())
-      .categorie(CATEGORIE_CYCLE)
-      .nom(Nom.of(CATEGORIE_CYCLE, new Annee(2041), numero))
-      .reference("CYCLE-" + numero + "-" + dateDeCreation.toEpochMilli())
+      .categorie(categorie)
+      .nom(Nom.of(categorie, new Annee(2041), numero))
+      .reference(reference)
       .description("Element de la lecture par cycle")
       .dateDeCreation(dateDeCreation)
       .dateDeModification(dateDeCreation);

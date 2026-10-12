@@ -5,6 +5,8 @@ import com.glm.glmback.elementdefabrication.domain.ElementDansSonCycle;
 import com.glm.glmback.elementdefabrication.domain.ElementsDansLeurCycle;
 import com.glm.glmback.elementdefabrication.domain.ElementsDansLeurCycleCriteria;
 import com.glm.glmback.elementdefabrication.domain.EtatEnAtelier;
+import com.glm.glmback.elementdefabrication.domain.FiltreDesElements;
+import com.glm.glmback.elementdefabrication.domain.Recherche;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import jakarta.persistence.EntityManager;
@@ -151,11 +153,27 @@ class JpaElementsDansLeurCycle implements ElementsDansLeurCycle {
 
     Predicate[] correspondA(ElementsDansLeurCycleCriteria criteria) {
       List<Predicate> predicats = new ArrayList<>();
-      criteria
+      FiltreDesElements filtre = criteria.filtre();
+      filtre
         .creation()
         .ifPresent(periode -> predicats.add(constructeur.between(element.get("dateDeCreation"), periode.debut(), periode.fin())));
+      filtre.categorie().ifPresent(categorie -> predicats.add(constructeur.equal(element.get("categorie"), categorie.value())));
+      filtre.recherche().ifPresent(recherche -> predicats.add(trouve(recherche)));
       criteria.cycle().ifPresent(cycle -> predicats.add(dans(cycle)));
       return predicats.toArray(Predicate[]::new);
+    }
+
+    /**
+     * La regle de {@link Recherche#trouveDans} : le texte, pris a la lettre, dans le nom, la reference ou la
+     * description, sans tenir compte de la casse.
+     */
+    private Predicate trouve(Recherche recherche) {
+      String motif = "%" + recherche.value().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
+      return constructeur.or(
+        constructeur.like(constructeur.lower(element.get("nom")), motif, '\\'),
+        constructeur.like(constructeur.lower(element.get("reference")), motif, '\\'),
+        constructeur.like(constructeur.lower(element.get("description")), motif, '\\')
+      );
     }
 
     private Predicate dans(CycleDeVie cycle) {

@@ -9,6 +9,8 @@ import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -115,6 +117,20 @@ public class ElementDeFabricationSteps {
   @When("je liste les elements de fabrication crees avec celui-ci")
   public void jeListeLesElementsCreesAvecCeluiCi() {
     rest.get(BASE_URI + "?debut=" + derniereCreation + "&fin=" + derniereCreation);
+  }
+
+  @When("je liste les elements de fabrication crees avec celui-ci, avec")
+  public void jeListeLesElementsCreesAvecCeluiCiAvec(Map<String, String> parametres) {
+    StringBuilder uri = new StringBuilder(BASE_URI + "?debut=" + derniereCreation + "&fin=" + derniereCreation);
+    parametres.forEach((nom, valeur) -> uri.append('&').append(nom).append('=').append(URLEncoder.encode(valeur, StandardCharsets.UTF_8)));
+    rest.get(uri.toString());
+  }
+
+  @Then("la liste ne rend que les references")
+  public void laListeNeRendQueLesReferences(List<String> references) {
+    assertThat(CucumberRestTestContext.getElement("$.content[*].reference"))
+      .asInstanceOf(LIST)
+      .containsExactlyInAnyOrderElementsOf(references);
   }
 
   @Then("cet element de fabrication n'est liste que dans le cycle {string}")
