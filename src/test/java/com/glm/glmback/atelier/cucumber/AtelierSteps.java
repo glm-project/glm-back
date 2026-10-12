@@ -49,6 +49,7 @@ public class AtelierSteps {
   private static final String POSTES_URI = "/api/postes-de-travail";
   private static final String OPERATEURS_URI = "/api/operateurs";
   private static final String TAUX_HORAIRE = "20.00";
+  private static final String COUT_HORAIRE = "40.00";
   private static final ObjectMapper JSON = JsonMapper.builder().build();
   private static final AtomicInteger SEQUENCE = new AtomicInteger();
 
@@ -94,7 +95,7 @@ public class AtelierSteps {
    */
   @Given("l'entreprise a declare le poste de travail {string} de nature {string}")
   public void lEntrepriseADeclareLePosteDeTravail(String alias, String nature) {
-    declareLePosteDeTravail(alias, nature, null);
+    declareLePosteDeTravail(alias, nature, COUT_HORAIRE);
   }
 
   @Given("l'entreprise a declare le poste de travail {string} de nature {string} et de cout horaire {string}")
@@ -623,10 +624,14 @@ public class AtelierSteps {
     postes.put(
       alias,
       POSTES_DECLARES.computeIfAbsent(alias, libelle -> {
-        Map<String, Object> corps = new HashMap<>(Map.of("libelle", libelle, "natureId", NaturesDesScenarios.identifiant(rest, nature)));
-        if (coutHoraire != null) {
-          corps.put("coutHoraire", coutHoraire);
-        }
+        Map<String, Object> corps = Map.of(
+          "libelle",
+          libelle,
+          "natureId",
+          NaturesDesScenarios.identifiant(rest, nature),
+          "coutHoraire",
+          coutHoraire
+        );
         rest.post(POSTES_URI, JSON.writeValueAsString(corps));
 
         return idDeLaDerniereReponse();

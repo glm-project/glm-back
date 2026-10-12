@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.shared.pagination.domain.Page;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -50,7 +49,7 @@ class PostesDeTravailServiceTest {
   @Test
   void shouldNotCreatePosteDeTravailWithUnknownNature() {
     NatureDeTravailId inconnue = NatureDeTravailId.newId();
-    PosteDeTravailACreer aCreer = new PosteDeTravailACreer(LIBELLE_TOUR_1, inconnue, Optional.empty());
+    PosteDeTravailACreer aCreer = new PosteDeTravailACreer(LIBELLE_TOUR_1, inconnue, COUT_HORAIRE_45_50);
 
     assertThatThrownBy(() -> postes.create(aCreer))
       .isExactlyInstanceOf(NatureInconnueException.class)
@@ -60,7 +59,12 @@ class PostesDeTravailServiceTest {
   @Test
   void shouldNotUpdatePosteDeTravailWithUnknownNature() {
     PosteDeTravail cree = postes.create(posteDeTravailACreerTour1());
-    PosteDeTravailAModifier aModifier = new PosteDeTravailAModifier(cree.id(), LIBELLE_TOUR_1, NatureDeTravailId.newId(), Optional.empty());
+    PosteDeTravailAModifier aModifier = new PosteDeTravailAModifier(
+      cree.id(),
+      LIBELLE_TOUR_1,
+      NatureDeTravailId.newId(),
+      COUT_HORAIRE_45_50
+    );
 
     assertThatThrownBy(() -> postes.update(aModifier)).isExactlyInstanceOf(NatureInconnueException.class);
     assertThat(postes.get(cree.id())).isEqualTo(cree);
@@ -68,7 +72,7 @@ class PostesDeTravailServiceTest {
 
   @Test
   void shouldCreatePosteDeTravailWithCoutHoraire() {
-    PosteDeTravail cree = postes.create(posteDeTravailACreerTour1AvecCoutHoraire());
+    PosteDeTravail cree = postes.create(posteDeTravailACreerTour1());
 
     assertThat(cree.coutHoraire()).contains(COUT_HORAIRE_45_50);
   }

@@ -27,11 +27,7 @@ public final class PostesDeTravailService {
     verifierLibelleLibre(id, aCreer.libelle());
 
     return repository.create(
-      PosteDeTravail.builder()
-        .id(id)
-        .libelle(aCreer.libelle())
-        .nature(nature(aCreer.nature()))
-        .coutHoraire(aCreer.coutHoraire().map(CoutHoraire::value).orElse(null))
+      PosteDeTravail.builder().id(id).libelle(aCreer.libelle()).nature(nature(aCreer.nature())).coutHoraire(aCreer.coutHoraire().value())
     );
   }
 

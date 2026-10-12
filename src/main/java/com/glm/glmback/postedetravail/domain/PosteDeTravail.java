@@ -24,8 +24,8 @@ public record PosteDeTravail(PosteDeTravailId id, Libelle libelle, NatureDuPoste
     return id -> libelle -> nature -> coutHoraire -> new PosteDeTravail(id, libelle, nature, CoutHoraire.of(coutHoraire));
   }
 
-  public PosteDeTravail revise(Libelle libelle, NatureDuPoste nature, Optional<CoutHoraire> coutHoraire) {
-    return new PosteDeTravail(id, libelle, nature, coutHoraire);
+  public PosteDeTravail revise(Libelle libelle, NatureDuPoste nature, CoutHoraire coutHoraire) {
+    return new PosteDeTravail(id, libelle, nature, Optional.of(coutHoraire));
   }
 
   public interface PosteDeTravailIdBuilder {

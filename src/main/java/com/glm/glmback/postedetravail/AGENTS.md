@@ -16,7 +16,7 @@ l'atelier : une machine chez le client de référence, un établi, un four, une 
 
 - **Qui est habilité dessus** — cela appartient à `operateur`. Ce contexte n'en connaît que la conséquence : un poste
   encore habilité ne se supprime pas.
-- **Le calcul du coût de revient**. Le poste porte son `CoutHoraire` (facultatif, positif ou nul), mais ce
+- **Le calcul du coût de revient**. Le poste porte son `CoutHoraire` (exigé, positif ou nul), mais ce
   contexte ne fait rien d'autre que le stocker et le restituer : aucun calcul, aucune répartition. `atelier` ne le lit
   pas encore — c'est le lot « coût de revient » qui posera ce port.
 - **Le pointage** lui-même, qui appartient à `atelier`. Celui-ci ne connaît de ce contexte que l'identifiant, lu par
@@ -44,9 +44,11 @@ aucune inversion ne compile. `builder()` est public parce que la relecture depui
 - **La nature se choisit, elle ne se crée pas depuis le poste** : création et révision reçoivent l'identifiant
   (`natureId`, obligatoire) d'une nature déclarée, sinon `NatureInconnueException` (422). Aucun libellé texte n'est
   accepté en entrée.
-- **Le coût horaire est facultatif et positif ou nul** quand il est renseigné, sur le patron d'`Identifiant` :
-  toutes les entreprises ne valorisent pas encore leurs postes. Un coût à zéro dit que le poste ne demande que de la
-  main d'œuvre ; il reste distinct d'un coût absent, qui dit que le poste n'est pas valorisé (glm-back#141).
+- **Le coût horaire est exigé et positif ou nul** à la déclaration comme à la révision (glm-back#142) : il est figé
+  sur chaque pointage, et un pointage sans tarif rend le coût de revient non exportable. Un coût à zéro dit que le
+  poste ne demande que de la main d'œuvre (glm-back#141). Un poste déclaré avant cette exigence peut encore en être
+  dépourvu : `PosteDeTravail` le garde facultatif à la relecture, mais `PosteDeTravailACreer`,
+  `PosteDeTravailAModifier` et `revise` l'exigent, et l'API répond 400 à une requête sans `coutHoraire`.
   Sa valeur doit être exactement représentable en centimes et inférieure à 100 000 000, pour rester relisible
   dans le stockage `numeric(10,2)`. Création et révision refusent toute précision perdue, sans arrondi.
 - **Le coût horaire reste réservé au `GESTIONNAIRE`.** Les lectures `USER` gardent les postes et leurs natures

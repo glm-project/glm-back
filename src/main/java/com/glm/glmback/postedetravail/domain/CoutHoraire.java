@@ -8,9 +8,9 @@ import java.util.Optional;
  * Le cout horaire d'un poste de travail, destine au lot cout de revient.
  *
  * <p>
- * Facultatif, comme le libelle et la nature ne le sont pas : une entreprise qui ne valorise pas encore ses postes
- * retrouve un comportement coherent plutot qu'un cas degrade. A zero, le poste ne demande que de la main d'oeuvre, ce
- * qui reste distinct d'un poste qui n'est pas valorise.
+ * Exige a la declaration et a la revision : il est fige sur chaque pointage, et un pointage sans tarif rend le cout de
+ * revient non exportable. A zero, le poste ne demande que de la main d'oeuvre. Un poste declare avant cette exigence
+ * peut encore en etre depourvu, d'ou {@link #of(BigDecimal)} a la relecture.
  * </p>
  */
 public record CoutHoraire(BigDecimal value) {

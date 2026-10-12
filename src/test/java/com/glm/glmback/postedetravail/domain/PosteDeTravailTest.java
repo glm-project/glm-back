@@ -87,7 +87,7 @@ class PosteDeTravailTest {
   void shouldKeepIdentityWhenRevising() {
     PosteDeTravail poste = posteDeTravailTour1();
 
-    PosteDeTravail revise = poste.revise(LIBELLE_FRAISEUSE_1, NATURE_DU_POSTE_FRAISAGE, Optional.of(COUT_HORAIRE_60));
+    PosteDeTravail revise = poste.revise(LIBELLE_FRAISEUSE_1, NATURE_DU_POSTE_FRAISAGE, COUT_HORAIRE_60);
 
     assertThat(revise.id()).isEqualTo(poste.id());
     assertThat(revise.libelle()).isEqualTo(LIBELLE_FRAISEUSE_1);

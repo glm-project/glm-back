@@ -43,6 +43,7 @@ public class PupitreSteps {
   private static final String POSTES_URI = "/api/postes-de-travail";
   private static final String OPERATEURS_URI = "/api/operateurs";
   private static final String TAUX_HORAIRE = "20.00";
+  private static final String COUT_HORAIRE = "40.00";
   private static final String ELEMENTS_URI = "/api/elements-de-fabrication";
   private static final String SUIVIS_URI = "/api/atelier/suivis";
   private static final String REFERENTIEL_URI = "/api/pupitre/referentiel";
@@ -80,7 +81,9 @@ public class PupitreSteps {
     String libelle = PREFIXE + alias + " " + SEQUENCE.incrementAndGet();
     rest.post(
       POSTES_URI,
-      JSON.writeValueAsString(Map.of("libelle", libelle, "natureId", NaturesDesScenarios.identifiant(rest, "fraisage")))
+      JSON.writeValueAsString(
+        Map.of("libelle", libelle, "natureId", NaturesDesScenarios.identifiant(rest, "fraisage"), "coutHoraire", COUT_HORAIRE)
+      )
     );
     postes.put(alias, id());
     libelles.put(alias, libelle);

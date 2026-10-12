@@ -21,6 +21,7 @@ import tools.jackson.databind.json.JsonMapper;
 public class PosteDeTravailSteps {
 
   private static final String BASE_URI = "/api/postes-de-travail";
+  private static final String COUT_HORAIRE = "40.00";
   private static final ObjectMapper JSON = JsonMapper.builder().build();
 
   @Autowired
@@ -55,17 +56,23 @@ public class PosteDeTravailSteps {
 
   @When("je declare le poste de travail {string} de la nature declaree {string}")
   public void jeDeclareLePosteDeTravailDeLaNatureDeclaree(String libelle, String nature) {
-    rest.post(BASE_URI, JSON.writeValueAsString(Map.of("libelle", libelle, "natureId", natureDeclaree(nature))));
+    rest.post(
+      BASE_URI,
+      JSON.writeValueAsString(Map.of("libelle", libelle, "natureId", natureDeclaree(nature), "coutHoraire", COUT_HORAIRE))
+    );
   }
 
   @When("je declare le poste de travail {string} d'une nature inconnue")
   public void jeDeclareLePosteDeTravailDUneNatureInconnue(String libelle) {
-    rest.post(BASE_URI, JSON.writeValueAsString(Map.of("libelle", libelle, "natureId", UUID.randomUUID())));
+    rest.post(BASE_URI, JSON.writeValueAsString(Map.of("libelle", libelle, "natureId", UUID.randomUUID(), "coutHoraire", COUT_HORAIRE)));
   }
 
   @When("je revise ce poste de travail en {string} de la nature declaree {string}")
   public void jeReviseCePosteDeTravailDeLaNatureDeclaree(String libelle, String nature) {
-    rest.put(BASE_URI + "/" + dernierIdDeclare, JSON.writeValueAsString(Map.of("libelle", libelle, "natureId", natureDeclaree(nature))));
+    rest.put(
+      BASE_URI + "/" + dernierIdDeclare,
+      JSON.writeValueAsString(Map.of("libelle", libelle, "natureId", natureDeclaree(nature), "coutHoraire", COUT_HORAIRE))
+    );
   }
 
   @When("je liste les postes de travail de la nature declaree {string}")

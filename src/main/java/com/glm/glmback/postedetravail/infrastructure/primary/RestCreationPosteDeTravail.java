@@ -27,9 +27,11 @@ record RestCreationPosteDeTravail(
   UUID natureId,
 
   @Schema(
-    description = "Cout horaire du poste, destine au cout de revient. Facultatif : toutes les entreprises ne le valorisent pas. Positif ou nul (0 pour un poste qui ne demande que de la main d'oeuvre), exactement representable en centimes et inferieur a 100000000.",
-    example = "45.50"
+    description = "Cout horaire du poste, destine au cout de revient. Obligatoire : il est fige sur chaque pointage, et un pointage sans tarif rend le cout de revient non exportable. Positif ou nul (0 pour un poste qui ne demande que de la main d'oeuvre), exactement representable en centimes et inferieur a 100000000.",
+    example = "45.50",
+    requiredMode = Schema.RequiredMode.REQUIRED
   )
+  @NotNull
   @DecimalMin("0")
   @Digits(integer = 8, fraction = 2)
   BigDecimal coutHoraire

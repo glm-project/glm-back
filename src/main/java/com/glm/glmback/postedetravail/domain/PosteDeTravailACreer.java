@@ -2,9 +2,8 @@ package com.glm.glmback.postedetravail.domain;
 
 import com.glm.glmback.shared.error.domain.Assert;
 import java.math.BigDecimal;
-import java.util.Optional;
 
-public record PosteDeTravailACreer(Libelle libelle, NatureDeTravailId nature, Optional<CoutHoraire> coutHoraire) {
+public record PosteDeTravailACreer(Libelle libelle, NatureDeTravailId nature, CoutHoraire coutHoraire) {
   public PosteDeTravailACreer {
     Assert.notNull("libelle", libelle);
     Assert.notNull("id de la nature de travail", nature);
@@ -12,6 +11,6 @@ public record PosteDeTravailACreer(Libelle libelle, NatureDeTravailId nature, Op
   }
 
   public PosteDeTravailACreer(String libelle, NatureDeTravailId nature, BigDecimal coutHoraire) {
-    this(new Libelle(libelle), nature, CoutHoraire.of(coutHoraire));
+    this(new Libelle(libelle), nature, new CoutHoraire(coutHoraire));
   }
 }
