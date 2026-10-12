@@ -65,7 +65,8 @@ les portions dont la synthèse additionne les durées. Le journal brut est lu s�
 ## Couture et ports
 
 `ActivitesDeLOperateur`, `JournalDeLOperateur`, `OperateursConnus`, `FuseauHoraireDeLEntreprise`,
-`ElementsDeFabrication`, `PostesDeTravail` et `Clock` sont les ports sortants.
+`ElementsDeFabrication`, `PostesDeTravail`, `LogosDeLEntreprise` (logo de l'en-tête du PDF du rapport, lu dans la
+ligne unique du paramétrage) et `Clock` sont les ports sortants.
 Les activités sont lues en une requête ; le journal en deux requêtes groupées, jamais une par suivi ; les fiches
 et les postes sont chacun lus par lots.
 

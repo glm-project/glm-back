@@ -2917,7 +2917,7 @@
     "/api/couts-de-revient/{elementId}/export.pdf" : {
       "get" : {
         "description" : "Le compte rendu remis au client, genere par le serveur en A4 paysage a partir du meme rapport que la lecture :\naucun montant n'est recalcule ni arrondi a nouveau, et un cout de 0 EUR n'est pas affiche.\n\nLa version synthese porte l'element, son statut, l'instant de generation, les indicateurs et une ligne par nature\navec le total ; la version detail y ajoute, pour chaque nature, le tableau de ses pointages. L'en-tete et le pied\nse repetent sur chaque page, numerotee ; l'en-tete porte le logo de l'entreprise s'il en a un, ajuste a sa case\nsans deformation.\n\nMemes refus que le classeur : 409 (rapport-non-exportable) pour une fin automatique non regularisee ou un tarif\nmanquant.\n",
-        "operationId" : "exporteEnPdf",
+        "operationId" : "exporteEnPdf_1",
         "parameters" : [ {
           "description" : "Identifiant de l'element de fabrication.",
           "in" : "path",
@@ -4242,6 +4242,116 @@
         },
         "summary" : "Lire la synthese des heures hebdomadaire d'un operateur",
         "tags" : [ "Syntheses des heures" ]
+      }
+    },
+    "/api/syntheses-des-heures/{operateurId}/export.pdf" : {
+      "get" : {
+        "description" : "Le rapport genere par le serveur en A4 portrait, a partir du meme rapport que le classeur : aucune duree n'est\nrecalculee, et une duree nulle n'est pas affichee.\n\nLa version synthese porte l'operateur, la periode, l'instant de generation, les chiffres cles, le temps pointe\npar jour en calendrier (une ligne par semaine, avec son total), les elements et les natures de travail (seulement\ns'il y en a au moins deux). La version detail y ajoute le journal de tous les pointages, jour par jour. L'en-tete\net le pied se repetent sur chaque page, numerotee ; l'en-tete porte le logo de l'entreprise s'il en a un.\n\nLa periode est une semaine ISO (annee ISO et semaine) ou un mois civil (annee et mois), au fuseau de\nl'entreprise ; exactement l'un des deux. Les activites sont coupees aux minuits locaux et aux bornes de la\nperiode : une semaine a cheval sur deux mois est coupee dans le rapport mensuel. Une periode qui n'a pas encore\ncommence est refusee.\n",
+        "operationId" : "exporteEnPdf",
+        "parameters" : [ {
+          "description" : "Identifiant de l'operateur dans le referentiel.",
+          "in" : "path",
+          "name" : "operateurId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "description" : "Annee : ISO pour une semaine, civile pour un mois.",
+          "example" : 2026,
+          "in" : "query",
+          "name" : "annee",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "maximum" : 2999,
+            "minimum" : 2000,
+            "type" : "integer"
+          }
+        }, {
+          "description" : "Numero de la semaine ISO.",
+          "example" : 38,
+          "in" : "query",
+          "name" : "semaine",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "maximum" : 53,
+            "minimum" : 1,
+            "type" : "integer"
+          }
+        }, {
+          "description" : "Numero du mois, de 1 a 12.",
+          "example" : 9,
+          "in" : "query",
+          "name" : "mois",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "maximum" : 12,
+            "minimum" : 1,
+            "type" : "integer"
+          }
+        }, {
+          "description" : "synthese : chiffres cles, calendrier, elements et natures ; detail : en plus, le journal des pointages.",
+          "in" : "query",
+          "name" : "version",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "synthese", "detail" ],
+            "pattern" : "^(synthese|detail)$",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/pdf" : {
+                "schema" : {
+                  "format" : "binary",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "Le PDF, en piece jointe nommee d'apres l'operateur, la periode et la version (activite-dupont-jean-2026-05-synthese.pdf)."
+          },
+          "400" : {
+            "content" : {
+              "application/pdf" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "Version absente ou inconnue, annee, semaine ou mois hors bornes, semaine et mois tous deux absents ou tous deux presents, ou periode future."
+          },
+          "403" : {
+            "content" : {
+              "application/pdf" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "Jeton sans entreprise connue, ou role autre que GESTIONNAIRE."
+          },
+          "404" : {
+            "content" : {
+              "application/pdf" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "Operateur inconnu du referentiel."
+          }
+        },
+        "summary" : "Exporter le rapport d'activite d'un operateur en PDF",
+        "tags" : [ "Rapports d'activite" ]
       }
     },
     "/api/syntheses-des-heures/{operateurId}/export.xlsx" : {

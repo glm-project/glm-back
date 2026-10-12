@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted on 10 October 2026 (glm-back#79, feature glm-back#77).
+Accepted on 10 October 2026 (glm-back#79, feature glm-back#77). Extended on 12 October 2026 to the operator activity
+report (glm-back#154, feature glm-back#151).
 
 ## Context
 
@@ -33,6 +34,10 @@ pages, readable when printed in black and white.
   They cover the accents, `€`, `→` and the narrow no-break space of French number grouping.
 - Everything stays in `coutderevient/infrastructure/primary` (`DocumentDuCoutDeRevient`); the domain knows nothing of
   HTML or PDF.
+- The operator activity report follows the same recipe in `syntheseheures/infrastructure/primary`
+  (`DocumentDuRapportDActivite`, template `templates/syntheseheures/rapport-d-activite.html`, A4 portrait). It keeps
+  its own copy of the few lines that drive OpenHTMLtoPDF and its own read of the company logo: bounded contexts never
+  import each other, and moving the renderer to `shared` would buy little for some thirty lines.
 
 ## Consequences
 
