@@ -113,6 +113,7 @@ public final class JourneesACorrigerService {
     LocalDate jour,
     Instant evaluation
   ) {
+    Optional<PosteConnu> poste = activite.poste().flatMap(annuaire::poste);
     EtatDActiviteDeLaJournee etat = activite.etatA(evaluation);
     List<PortionDeJour> portions =
       etat == EtatDActiviteDeLaJournee.EN_COURS ? List.of() : decoupage.portions(activite.debut(), activite.finRetenue());
@@ -121,7 +122,8 @@ public final class JourneesACorrigerService {
       .id(activite.id())
       .suivi(activite.suivi())
       .element(activite.element())
-      .poste(activite.poste().flatMap(annuaire::poste))
+      .poste(poste)
+      .nature(activite.nature().or(() -> poste.map(PosteConnu::nature)))
       .categorie(activite.categorie())
       .debut(activite.debut())
       .fin(etat == EtatDActiviteDeLaJournee.EN_COURS ? Optional.empty() : Optional.of(activite.finRetenue()))

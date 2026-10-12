@@ -73,57 +73,44 @@ class SuiviDAtelierCorrectionsTest {
   }
 
   @Test
-  void shouldAccepterUnePlageQuiTouchePlusieursActivitesSansLesRecouper() {
+  void shouldAccepterUnAjoutQuiTouchePlusieursActivitesSansLesRecouper() {
     SuiviDAtelier suivi = suiviDAtelierEngage()
       .enregistre(travail)
       .enregistre(finDe(travail).a(LE_10_MAI_2026_A_12H))
       .enregistre(debutSurFraiseuse1ParDupontA(A_14H));
 
-    assertThatCode(() ->
-      suivi.exigeUnePlageLibre(fraiseuse1, LE_10_MAI_2026_A_12H, A_14H, Optional.empty(), A_22H)
-    ).doesNotThrowAnyException();
-    assertThatCode(() ->
-      suivi.exigeUnePlageLibre(fraiseuse1, LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_8H, Optional.empty(), A_22H)
-    ).doesNotThrowAnyException();
+    assertThatCode(() -> ajoute(suivi, fraiseuse1, LE_10_MAI_2026_A_12H, A_14H)).doesNotThrowAnyException();
+    assertThatCode(() -> ajoute(suivi, fraiseuse1, LE_10_MAI_2026_A_7H, LE_10_MAI_2026_A_8H)).doesNotThrowAnyException();
   }
 
   @Test
-  void shouldRefuserUnePlageQuiRecoupeUneActiviteDeLaCle() {
+  void shouldRefuserUnAjoutQuiRecoupeUneActiviteDeLaCle() {
     SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(travail).enregistre(finDe(travail).a(LE_10_MAI_2026_A_12H));
 
-    assertThatThrownBy(() -> suivi.exigeUnePlageLibre(fraiseuse1, A_10H, A_14H, Optional.empty(), A_22H))
+    assertThatThrownBy(() -> ajoute(suivi, fraiseuse1, A_10H, A_14H))
       .isExactlyInstanceOf(ChevauchementException.class)
       .hasMessageContaining(POSTE_ID_FRAISEUSE_1.uuid().toString());
-    assertThatThrownBy(() -> suivi.exigeUnePlageLibre(fraiseuse1, LE_10_MAI_2026_A_7H, A_9H, Optional.empty(), A_22H)).isExactlyInstanceOf(
-      ChevauchementException.class
-    );
-    assertThatThrownBy(() -> suivi.exigeUnePlageLibre(fraiseuse1, LE_10_MAI_2026_A_7H, A_14H, Optional.empty(), A_22H)).isExactlyInstanceOf(
-      ChevauchementException.class
-    );
-    assertThatThrownBy(() -> suivi.exigeUnePlageLibre(fraiseuse1, A_9H, A_10H, Optional.empty(), A_22H)).isExactlyInstanceOf(
-      ChevauchementException.class
-    );
+    assertThatThrownBy(() -> ajoute(suivi, fraiseuse1, LE_10_MAI_2026_A_7H, A_9H)).isExactlyInstanceOf(ChevauchementException.class);
+    assertThatThrownBy(() -> ajoute(suivi, fraiseuse1, LE_10_MAI_2026_A_7H, A_14H)).isExactlyInstanceOf(ChevauchementException.class);
+    assertThatThrownBy(() -> ajoute(suivi, fraiseuse1, A_9H, A_10H)).isExactlyInstanceOf(ChevauchementException.class);
   }
 
   @Test
-  void shouldRefuserUnePlageQuiRecoupeUneFinAutomatiqueJusquaSonEcheance() {
+  void shouldRefuserUnAjoutQuiRecoupeUneFinAutomatiqueJusquaSonEcheance() {
     SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(travail);
 
-    assertThatThrownBy(() ->
-      suivi.exigeUnePlageLibre(fraiseuse1, A_15H, Instant.parse("2026-05-10T20:59:59Z"), Optional.empty(), A_22H)
-    ).isExactlyInstanceOf(ChevauchementException.class);
-    assertThatCode(() ->
-      suivi.exigeUnePlageLibre(fraiseuse1, Instant.parse("2026-05-10T21:00:00Z"), A_22H, Optional.empty(), A_22H)
-    ).doesNotThrowAnyException();
+    assertThatThrownBy(() -> ajoute(suivi, fraiseuse1, A_15H, Instant.parse("2026-05-10T20:59:59Z"))).isExactlyInstanceOf(
+      ChevauchementException.class
+    );
+    assertThatCode(() -> ajoute(suivi, fraiseuse1, Instant.parse("2026-05-10T21:00:00Z"), A_22H)).doesNotThrowAnyException();
   }
 
   @Test
-  void shouldRefuserUnePlageQuiRecoupeUneActiviteEnCours() {
+  void shouldRefuserUnAjoutQuiRecoupeUneActiviteEnCours() {
     SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(travail);
+    EvenementDAtelier ouverture = ouverture(fraiseuse1, A_10H);
 
-    assertThatThrownBy(() ->
-      suivi.exigeUnePlageLibre(fraiseuse1, A_14H, A_15H, Optional.empty(), A_14H.plusSeconds(1))
-    ).isExactlyInstanceOf(ChevauchementException.class);
+    assertThatThrownBy(() -> suivi.ajoute(ouverture, fin(ouverture, A_14H), A_14H)).isExactlyInstanceOf(ChevauchementException.class);
   }
 
   /**
@@ -135,25 +122,108 @@ class SuiviDAtelierCorrectionsTest {
     CleDActivite fraiseuse2 = new CleDActivite(OPERATEUR_ID_DUPONT, Optional.of(POSTE_ID_FRAISEUSE_2));
     CleDActivite martin = new CleDActivite(OPERATEUR_ID_MARTIN, Optional.of(POSTE_ID_FRAISEUSE_1));
 
-    assertThatCode(() -> suivi.exigeUnePlageLibre(fraiseuse2, A_9H, A_10H, Optional.empty(), A_22H)).doesNotThrowAnyException();
-    assertThatCode(() -> suivi.exigeUnePlageLibre(martin, A_9H, A_10H, Optional.empty(), A_22H)).doesNotThrowAnyException();
+    assertThatCode(() -> ajoute(suivi, fraiseuse2, A_9H, A_10H)).doesNotThrowAnyException();
+    assertThatCode(() -> ajoute(suivi, martin, A_9H, A_10H)).doesNotThrowAnyException();
   }
 
+  /**
+   * L'activite qu'on deplace ne se recoupe pas elle-meme : la ramener sur sa propre cle n'est pas un chevauchement.
+   */
   @Test
   void shouldNePasRecouperLActiviteQuOnDeplace() {
-    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(travail).enregistre(finDe(travail).a(LE_10_MAI_2026_A_12H));
+    EvenementDAtelier surFraiseuse2 = debutSurFraiseuse2ParDupontA(A_9H);
+    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(surFraiseuse2).enregistre(finDe(surFraiseuse2).a(A_10H));
 
-    assertThatCode(() -> suivi.exigeUnePlageLibre(fraiseuse1, A_9H, A_10H, Optional.of(activite), A_22H)).doesNotThrowAnyException();
+    assertThatCode(() ->
+      suivi.changeLePoste(changementDePosteVersFraiseuse2ParLeroyDe(surFraiseuse2).a(A_22H), A_22H)
+    ).doesNotThrowAnyException();
   }
 
   @Test
-  void shouldNePasCompterUneActiviteRetireeDansLaPlage() {
+  void shouldNePasCompterUneActiviteRetireeDansUnAjout() {
     SuiviDAtelier suivi = suiviDAtelierEngage()
       .enregistre(travail)
       .enregistre(finDe(travail).a(LE_10_MAI_2026_A_12H))
       .retire(retraitParLeroyDe(travail).a(A_22H));
 
-    assertThatCode(() -> suivi.exigeUnePlageLibre(fraiseuse1, A_9H, A_10H, Optional.empty(), A_22H)).doesNotThrowAnyException();
+    assertThatCode(() -> ajoute(suivi, fraiseuse1, A_9H, A_10H)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldRefuserUneFinQuiNeSuitPasLeDebut() {
+    SuiviDAtelier suivi = suiviDAtelierEngage();
+
+    assertThatThrownBy(() -> ajoute(suivi, fraiseuse1, A_10H, A_10H)).isExactlyInstanceOf(FinAvantDebutException.class);
+    assertThatThrownBy(() -> ajoute(suivi, fraiseuse1, A_10H, A_9H)).isExactlyInstanceOf(FinAvantDebutException.class);
+  }
+
+  @Test
+  void shouldRefuserUneFinDuFutur() {
+    SuiviDAtelier suivi = suiviDAtelierEngage();
+    EvenementDAtelier ouverture = ouverture(fraiseuse1, A_9H);
+    EvenementDAtelier fin = fin(ouverture, A_10H);
+
+    assertThatThrownBy(() -> suivi.ajoute(ouverture, fin, A_10H.minusNanos(1))).isExactlyInstanceOf(DateDeSurvenueFutureException.class);
+    assertThatCode(() -> suivi.ajoute(ouverture, fin, A_10H)).doesNotThrowAnyException();
+  }
+
+  /**
+   * Le suivi protege l'ajout de son appelant : une fin qui ne ferme pas l'ouverture donnee (autre type, autre activite,
+   * autre cle) ou une ouverture qui n'en est pas une n'est jamais ecrite.
+   */
+  @Test
+  void shouldRefuserUnAjoutIncoherent() {
+    SuiviDAtelier suivi = suiviDAtelierEngage();
+    EvenementDAtelier ouverture = ouverture(fraiseuse1, A_9H);
+    EvenementDAtelier autreOuverture = ouverture(fraiseuse1, A_9H);
+
+    assertThatThrownBy(() -> suivi.ajoute(finDe(travail).a(A_10H), fin(fraiseuse1, A_9H, A_10H), A_22H)).isExactlyInstanceOf(
+      EvenementDAtelierIncoherentException.class
+    );
+    assertThatThrownBy(() -> suivi.ajoute(ouverture, retraitParLeroyDe(ouverture).a(A_10H), A_22H)).isExactlyInstanceOf(
+      EvenementDAtelierIncoherentException.class
+    );
+    assertThatThrownBy(() -> suivi.ajoute(ouverture, fin(autreOuverture, A_10H), A_22H)).isExactlyInstanceOf(
+      EvenementDAtelierIncoherentException.class
+    );
+    assertThatThrownBy(() -> suivi.ajoute(ouverture, finRegulariseeSurFraiseuse2ParLeroyDe(ouverture).a(A_10H), A_22H)).isExactlyInstanceOf(
+      EvenementDAtelierIncoherentException.class
+    );
+  }
+
+  /**
+   * La regle de l'ADR 0015 : une activite dont la fin a ete regularisee, ou qu'on a ajoutee, se corrige comme une autre.
+   */
+  @Test
+  void shouldCorrigerUneActiviteDontLaFinEstRegularisee() {
+    EvenementDAtelier regularisee = finRegulariseeParLeroyDe(travail).a(LE_10_MAI_2026_A_17H);
+    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(travail).enregistre(regularisee);
+
+    assertThat(suivi.exigeUneActiviteCorrigeable(activite, A_22H).evenementDeFin()).contains(regularisee);
+    assertThat(suivi.changeLePoste(changementDePosteVersFraiseuse2ParLeroyDe(travail).a(A_22H), A_22H).activites())
+      .singleElement()
+      .satisfies(changee -> {
+        assertThat(changee.cle().poste()).contains(POSTE_ID_FRAISEUSE_2);
+        assertThat(changee.fin()).contains(LE_10_MAI_2026_A_17H);
+      });
+    assertThat(suivi.retire(retraitParLeroyDe(travail).a(A_22H)).activites()).isEmpty();
+  }
+
+  @Test
+  void shouldCorrigerUneActiviteAjoutee() {
+    SuiviDAtelier suivi = ajoute(suiviDAtelierEngage(), fraiseuse1, A_9H, A_10H);
+    ActiviteId ajoutee = suivi.activites().getFirst().id();
+
+    assertThat(suivi.exigeUneActiviteCorrigeable(ajoutee, A_22H).fin()).contains(A_10H);
+    assertThat(
+      suivi.changeLePoste(changementDePosteVersFraiseuse2ParLeroyDe(suivi.activites().getFirst().ouvrant()).a(A_22H), A_22H).activites()
+    )
+      .singleElement()
+      .satisfies(changee -> {
+        assertThat(changee.cle().poste()).contains(POSTE_ID_FRAISEUSE_2);
+        assertThat(changee.fin()).contains(A_10H);
+      });
+    assertThat(suivi.retire(retraitParLeroyDe(suivi.activites().getFirst().ouvrant()).a(A_22H)).activites()).isEmpty();
   }
 
   @Test
@@ -291,5 +361,26 @@ class SuiviDAtelierCorrectionsTest {
     EvenementDAtelier changement = changementDePosteVersFraiseuse2ParLeroyDe(travail).a(A_10H);
 
     assertThatThrownBy(() -> suivi.changeLePoste(changement, A_10H)).isExactlyInstanceOf(ActiviteEnCoursException.class);
+  }
+
+  private static EvenementDAtelier ouverture(CleDActivite cle, Instant debut) {
+    return debutAjouteParLeroySur(cle).a(debut);
+  }
+
+  private static EvenementDAtelier fin(CleDActivite cle, Instant debut, Instant fin) {
+    return fin(ouverture(cle, debut), fin);
+  }
+
+  private static EvenementDAtelier fin(EvenementDAtelier ouverture, Instant fin) {
+    return finAjouteeParLeroyDe(ouverture).a(fin);
+  }
+
+  /**
+   * Ajoute une activite a cette cle, de debut a fin, un 10 mai a 22 h.
+   */
+  private static SuiviDAtelier ajoute(SuiviDAtelier suivi, CleDActivite cle, Instant debut, Instant fin) {
+    EvenementDAtelier ouverture = ouverture(cle, debut);
+
+    return suivi.ajoute(ouverture, fin(ouverture, fin), A_22H);
   }
 }

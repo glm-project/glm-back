@@ -76,14 +76,20 @@ activity punched on a workstation the operator has lost since can be removed.
 the follow-up, between a new or moved activity and the others of that key; an activity that no end closed counts up to its
 deadline, and a running one has no end.
 
-**How the journal is read.** The interpretation stays in one place. A first reading groups the gestures by the key they
-were punched on and gives the activities and their ends, a `FIN` that targets an activity being read with its opening
-whatever key it was written on. A second reading applies the corrections: the activities a `RETRAIT` targets disappear,
+**How the journal is read.** The interpretation stays in one place. A first reading gives the activities and binds each
+end to the activity it closes, without looking at a correction. A `FIN` that targets an activity (a regularisation, the
+end of an add) closes it whatever key it was written on. A pointed `FIN` closes no named activity: it closes the one its key
+had running when the server received it, so the pointages of a key are replayed in the order the server received them
+(registration date, then the order of the journal), not in the order of the gesture times. Removed and moved activities
+stay in this reading, which only binds ends; the openings of an add never take part in it, since their end is targeted.
+Replayed by gesture time instead, a pupitre punch accepted on a key a correction had freed would steal the pointed end of
+the activity that used to hold it. A second reading applies the corrections: the activities a `RETRAIT` targets disappear,
 and the activities a `CHANGEMENT_DE_POSTE` targets count on the workstation of the last one. An activity carries its
 `porteur`, the fact that speaks for its workstation, its nature and its tariffs: its opening, or its last change. The
 projection `activite_d_atelier` gains `porteur_id` for that; `ouverture_id` stays the opening of origin, which is the
 address of an anomaly's dossier, and the cost price reads its tariffs from `porteur_id`. The projection drops the rows
-of removed activities.
+of removed activities; a follow-up whose activities were all removed stays `INTERROMPU`, since its journal still holds
+facts — the list of elements by cycle reads that state from the journal, not from the projection.
 
 **The reception rule** judges a punch on the journal as it is after the corrections, restricted to its key:
 
@@ -119,9 +125,10 @@ its real duration.
 - ADR 0011 said a regularised end is final; it now is not. A second regularisation of the same activity still answers
   `activite-deja-regularisee`.
 - A punch kept offline during a correction is lost or ignored, as it already was for a regularisation.
-- A pointed `FIN` closes, in the first reading, the activity running on the key it was punched on; if a punch is then
-  received on the old key inside the window of an activity whose workstation was changed, the two can be attributed
-  wrongly. It needs an offline punch reaching the server after the correction.
+- Binding a pointed end follows the order of reception. The reception rule only accepts a pointage that is not older than
+  the facts of its key, so for the pointages it accepted this order is the order of the gestures; the two differ only
+  for a key a correction has freed. Two pointages of one key registered at the very same instant are ordered by gesture
+  time (a `FIN` before an opening).
 - Moving the closure of a follow-up before a correction already made is refused.
 - The raw journal of the hours summary still lists the gestures of a removed activity: it is the log of the punches, not
   of the activities. The corrections themselves are not listed.

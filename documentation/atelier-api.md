@@ -750,13 +750,13 @@ facultatif comme dans les autres lectures) rend :
 - `activites`, celles qui touchent le jour, par début, **après les corrections déjà faites** : `id` (le pointage ouvrant,
   qui ne change pas quand le poste change), `suivi` (celui des routes de correction), `element` (`id`, `categorie`, `nom`,
   `reference`, `description` : le numéro affiché est la référence, à défaut le nom, la désignation est la description),
-  `poste` (`id`, `libelle`, `nature`), `categorie`, `debut`, `fin` (absente en cours ; l'échéance pour une fin
+  `poste` (`id`, `libelle`, `nature` : celle figée à la saisie, non celle que le référentiel donne aujourd'hui au poste), `categorie`, `debut`, `fin` (absente en cours ; l'échéance pour une fin
   automatique), `etat` (`TERMINEE`, `TERMINEE_AUTOMATIQUEMENT`, `EN_COURS`), `dureeSurLeJour` (la portion comptée ce jour,
   absente en cours) et `autresJours` (`jour` et `duree` des portions comptées ailleurs, vide pour une activité contenue
   dans le jour) ;
 - `choix`, pour l'ajout : `suivis` (les suivis présents le jour : engagés avant la fin du jour et non clôturés avant son
   début, clôturés depuis compris ; `suivi`, `element`, `engageLe`, `clotureLe` facultatif) et `postes` (les postes
-  habilités de l'opérateur aujourd'hui, par libellé).
+  habilités de l'opérateur aujourd'hui, par libellé, avec leur nature d'aujourd'hui).
 
 Un opérateur inconnu répond 404 `operateur-introuvable`. Une activité est corrigeable quand elle est terminée (fin
 pointée, automatique ou régularisée) et que son suivi n'est pas clôturé : la clôture se lit dans `choix.suivis`.

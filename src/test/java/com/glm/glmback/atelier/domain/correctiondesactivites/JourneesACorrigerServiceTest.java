@@ -9,6 +9,7 @@ import com.glm.glmback.atelier.domain.CategorieDActivite;
 import com.glm.glmback.atelier.domain.Echeance;
 import com.glm.glmback.atelier.domain.ElementEngage;
 import com.glm.glmback.atelier.domain.ElementEngageId;
+import com.glm.glmback.atelier.domain.NatureDOperation;
 import com.glm.glmback.atelier.domain.OperateurDAtelierIntrouvableException;
 import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.PosteDeTravailId;
@@ -101,6 +102,7 @@ class JourneesACorrigerServiceTest {
     assertThat(activite.debut()).isEqualTo(LE_5_A_8H);
     assertThat(activite.fin()).contains(LE_5_A_10H);
     assertThat(activite.poste()).contains(POSTE_CONNU_FRAISEUSE_1);
+    assertThat(activite.nature()).contains(NATURE_FRAISAGE);
     assertThat(activite.element()).isEqualTo(elementEngageOf2026000042());
     assertThat(activite.categorie()).isEqualTo(CategorieDActivite.TRAVAIL);
     assertThat(activite.dureeSurLeJour()).contains(Duration.ofHours(2));
@@ -168,6 +170,28 @@ class JourneesACorrigerServiceTest {
     assertThat(journees.lit(OPERATEUR_ID_DUPONT, LE_5_OCTOBRE, EVALUATION).dureeOperationnelle()).isEqualTo(Duration.ofHours(4));
   }
 
+  /**
+   * Le poste d'une activite porte la nature figee a la saisie : un poste requalifie depuis ne la change pas, alors que le
+   * poste propose a l'ajout porte la nature du referentiel, aujourd'hui.
+   */
+  @Test
+  void shouldGarderLaNatureFigeeALaSaisieQuandLePosteEstRequalifie() {
+    projetees.add(projetee(LE_5_A_8H, Optional.of(LE_5_A_10H), Optional.of(POSTE_ID_FRAISEUSE_1), Optional.of(NATURE_TOURNAGE)));
+
+    JourneeACorriger journee = journees.lit(OPERATEUR_ID_DUPONT, LE_5_OCTOBRE, EVALUATION);
+
+    assertThat(journee.activites().getFirst().poste()).contains(POSTE_CONNU_FRAISEUSE_1);
+    assertThat(journee.activites().getFirst().nature()).contains(NATURE_TOURNAGE);
+    assertThat(journee.choix().postes()).contains(POSTE_CONNU_FRAISEUSE_1);
+  }
+
+  @Test
+  void shouldLireLaNatureDuPosteQuandLActiviteNEnAPasFigee() {
+    projetees.add(projetee(LE_5_A_8H, Optional.of(LE_5_A_10H), Optional.of(POSTE_ID_FRAISEUSE_2), Optional.empty()));
+
+    assertThat(journees.lit(OPERATEUR_ID_DUPONT, LE_5_OCTOBRE, EVALUATION).activites().getFirst().nature()).contains(NATURE_TOURNAGE);
+  }
+
   @Test
   void shouldRendreUneActiviteSansPosteSansPoste() {
     projetees.add(activiteSansPoste(LE_5_A_8H, Optional.of(LE_5_A_10H)));
@@ -233,14 +257,19 @@ class JourneesACorrigerServiceTest {
   }
 
   private static ActiviteProjetee activite(Instant debut, Optional<Instant> fin, PosteDeTravailId poste) {
-    return projetee(debut, fin, Optional.of(poste));
+    return projetee(debut, fin, Optional.of(poste), Optional.of(NATURE_FRAISAGE));
   }
 
   private static ActiviteProjetee activiteSansPoste(Instant debut, Optional<Instant> fin) {
-    return projetee(debut, fin, Optional.empty());
+    return projetee(debut, fin, Optional.empty(), Optional.empty());
   }
 
-  private static ActiviteProjetee projetee(Instant debut, Optional<Instant> fin, Optional<PosteDeTravailId> poste) {
+  private static ActiviteProjetee projetee(
+    Instant debut,
+    Optional<Instant> fin,
+    Optional<PosteDeTravailId> poste,
+    Optional<NatureDOperation> nature
+  ) {
     ElementEngage element = elementEngageOf2026000042();
 
     return ActiviteProjetee.builder()
@@ -248,6 +277,7 @@ class JourneesACorrigerServiceTest {
       .suivi(SuiviDAtelierId.newId())
       .element(element)
       .poste(poste)
+      .nature(nature)
       .categorie(CategorieDActivite.TRAVAIL)
       .debut(debut)
       .echeance(new Echeance(debut.plus(Duration.ofHours(13))))

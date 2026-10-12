@@ -198,7 +198,7 @@ public record SuiviDAtelier(
    * activite que rien n'a terminee s'etend jusqu'a son echeance si elle est echue, et sans fin sinon ; celle qu'on
    * deplace, donnee en {@code sauf}, ne se recoupe pas elle-meme.
    */
-  void exigeUnePlageLibre(CleDActivite cle, Instant debut, Instant fin, Optional<ActiviteId> sauf, Instant maintenant) {
+  private void exigeUnePlageLibre(CleDActivite cle, Instant debut, Instant fin, Optional<ActiviteId> sauf, Instant maintenant) {
     boolean occupee = activites()
       .stream()
       .filter(autre -> autre.cle().equals(cle))
@@ -211,15 +211,36 @@ public record SuiviDAtelier(
   }
 
   /**
-   * Ajoute au journal une activite oubliee : son ouverture et sa fin. Verifie dans cet ordre que l'ouverture ne precede
+   * Ajoute au journal une activite oubliee : son ouverture et sa fin, deux faits du gestionnaire sur la meme cle, la fin
+   * visant l'activite qu'ouvre l'ouverture (un ecart est un defaut de l'appelant). Verifie dans cet ordre que la fin est
+   * posterieure au debut (aucune activite n'a une duree nulle), qu'elle ne vient pas du futur, que l'ouverture ne precede
    * pas l'engagement, que la fin ne suit pas la cloture, puis que la plage est libre sur la cle.
    */
   public SuiviDAtelier ajoute(EvenementDAtelier ouverture, EvenementDAtelier fin, Instant maintenant) {
+    exigeUnAjoutCoherent(ouverture, fin);
+    ActiviteId activite = ouverture.activite().orElseThrow();
+    if (!fin.dateDeSurvenue().isAfter(ouverture.dateDeSurvenue())) {
+      throw new FinAvantDebutException(activite, fin.dateDeSurvenue(), ouverture.dateDeSurvenue());
+    }
+    if (fin.dateDeSurvenue().isAfter(maintenant)) {
+      throw new DateDeSurvenueFutureException(fin.dateDeSurvenue());
+    }
     exigeApresLEngagement(ouverture);
     exigeAvantLaCloture(fin);
     exigeUnePlageLibre(ouverture.cle(), ouverture.dateDeSurvenue(), fin.dateDeSurvenue(), Optional.empty(), maintenant);
 
     return enregistre(ouverture).enregistre(fin);
+  }
+
+  private static void exigeUnAjoutCoherent(EvenementDAtelier ouverture, EvenementDAtelier fin) {
+    boolean coherent =
+      ouverture.type().ouvreUneActivite()
+      && fin.type() == TypeDEvenementDAtelier.FIN
+      && ouverture.activite().equals(fin.activiteVisee())
+      && ouverture.cle().equals(fin.cle());
+    if (!coherent) {
+      throw new EvenementDAtelierIncoherentException(fin.type(), fin.origine());
+    }
   }
 
   /**

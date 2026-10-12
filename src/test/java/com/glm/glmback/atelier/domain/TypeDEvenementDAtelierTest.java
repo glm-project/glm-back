@@ -49,8 +49,5 @@ class TypeDEvenementDAtelierTest {
     assertThat(TypeDEvenementDAtelier.FIN.estUnGeste()).isTrue();
     assertThat(TypeDEvenementDAtelier.RETRAIT.estUnGeste()).isFalse();
     assertThat(TypeDEvenementDAtelier.CHANGEMENT_DE_POSTE.estUnGeste()).isFalse();
-    assertThat(TypeDEvenementDAtelier.RETRAIT.estUneCorrection()).isTrue();
-    assertThat(TypeDEvenementDAtelier.CHANGEMENT_DE_POSTE.estUneCorrection()).isTrue();
-    assertThat(TypeDEvenementDAtelier.FIN.estUneCorrection()).isFalse();
   }
 }

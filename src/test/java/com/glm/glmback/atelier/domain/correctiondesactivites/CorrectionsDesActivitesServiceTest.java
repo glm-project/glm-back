@@ -236,13 +236,24 @@ class CorrectionsDesActivitesServiceTest {
     assertThatThrownBy(() -> corrections.ajoute(ajout(A_10H, A_14H))).isExactlyInstanceOf(ChevauchementException.class);
   }
 
+  /**
+   * L'activite est pointee sur la fraiseuse 1 (fraisage, 45,5 de l'heure, taux 22) ; le referentiel donne aujourd'hui a
+   * Dupont un taux de 30. Sur la fraiseuse 2, le fait recopie la nature (tournage) et le cout (aucun) du nouveau poste,
+   * mais garde le taux de l'activite : un taux revise depuis ne reecrit pas les heures passees.
+   */
   @Test
-  void shouldChangerLePosteEnRecopiantLaNatureEtLeCoutDuNouveauPoste() {
-    EvenementDAtelier surFraiseuse2 = debutSurFraiseuse2ParDupontA(A_14H);
-    suivis.update(suivis.get(suivi.id()).orElseThrow().enregistre(surFraiseuse2).enregistre(finDe(surFraiseuse2).a(A_15H)));
-    ChangementDePosteAEnregistrer commande = changement(activiteDe(surFraiseuse2), POSTE_ID_FRAISEUSE_1);
+  void shouldChangerLePosteEnRecopiantLaNatureEtLeCoutDuNouveauPosteEtEnGardantLeTauxDeLActivite() {
+    RessourcesDAtelierEnMemoire reviseDepuis = RessourcesDAtelierEnMemoire.deLAtelierAuTauxRevise();
+    CorrectionsDesActivitesService surLeReferentielRevise = CorrectionsDesActivitesService.builder()
+      .repository(suivis)
+      .operateurs(reviseDepuis.operateurs())
+      .postes(reviseDepuis.postes())
+      .habilitations(reviseDepuis.habilitations())
+      .dureeMax(() -> DUREE_MAXIMALE_HUIT_HEURES)
+      .clock(maintenant::get);
+    ChangementDePosteAEnregistrer commande = changement(activite, POSTE_ID_FRAISEUSE_2);
 
-    CorrectionTraitee traitee = corrections.changeLePoste(commande);
+    CorrectionTraitee traitee = surLeReferentielRevise.changeLePoste(commande);
 
     assertThat(traitee.rejeu()).isFalse();
     EvenementDAtelier changement = traitee
@@ -254,20 +265,22 @@ class CorrectionsDesActivitesServiceTest {
       .findFirst()
       .orElseThrow();
     assertThat(changement.type()).isEqualTo(TypeDEvenementDAtelier.CHANGEMENT_DE_POSTE);
-    assertThat(changement.activiteVisee()).contains(activiteDe(surFraiseuse2));
+    assertThat(changement.activiteVisee()).contains(activite);
     assertThat(changement.activite()).isEmpty();
     assertThat(changement.operateur()).isEqualTo(OPERATEUR_ID_DUPONT);
-    assertThat(changement.poste()).contains(POSTE_ID_FRAISEUSE_1);
-    assertThat(changement.nature()).contains(NATURE_FRAISAGE);
-    assertThat(changement.coutHoraire()).contains(COUT_HORAIRE_FRAISEUSE_1);
-    assertThat(changement.tauxHoraire()).isEqualTo(surFraiseuse2.tauxHoraire());
+    assertThat(changement.poste()).contains(POSTE_ID_FRAISEUSE_2);
+    assertThat(changement.nature()).contains(NATURE_TOURNAGE).isNotEqualTo(travail.nature());
+    assertThat(changement.coutHoraire()).isEmpty();
+    assertThat(travail.coutHoraire()).contains(COUT_HORAIRE_FRAISEUSE_1);
+    assertThat(changement.tauxHoraire()).isEqualTo(travail.tauxHoraire()).contains(TAUX_HORAIRE_DUPONT);
     assertThat(changement.auteur()).isEqualTo(AUTEUR_LEROY);
     assertThat(changement.origine()).isEqualTo(OrigineDuPointage.REGULARISATION);
     assertThat(changement.dateDeSurvenue()).isEqualTo(LE_11_MAI_2026_A_8H);
     assertThat(changement.dateDEnregistrement()).isEqualTo(LE_11_MAI_2026_A_8H);
     assertThat(traitee.suivi().activites()).anySatisfy(changee -> {
-      assertThat(changee.id()).isEqualTo(activiteDe(surFraiseuse2));
-      assertThat(changee.cle().poste()).contains(POSTE_ID_FRAISEUSE_1);
+      assertThat(changee.id()).isEqualTo(activite);
+      assertThat(changee.cle().poste()).contains(POSTE_ID_FRAISEUSE_2);
+      assertThat(changee.porteur()).isEqualTo(changement);
     });
   }
 
@@ -428,6 +441,81 @@ class CorrectionsDesActivitesServiceTest {
     assertThat(corrections.retire(commande).rejeu()).isTrue();
     assertThat(suivis.get(suivi.id())).contains(apres);
     assertThatThrownBy(() -> corrections.retire(retrait(activite))).isExactlyInstanceOf(ActiviteViseeIntrouvableException.class);
+  }
+
+  /**
+   * Le cas courant d'un ajout : la journee porte deja des pointages, et l'activite oubliee tombe avant eux. L'ajout ne
+   * passe pas par la regle de reception, qui l'aurait ignore (ANTERIEUR) : les deux activites gardent leurs fins.
+   */
+  @Test
+  void shouldAjouterUneActiviteAvantLesPointagesDeLaCle() {
+    EvenementDAtelier pointee = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H.plusSeconds(3600));
+    EvenementDAtelier finPointee = finDe(pointee).a(LE_10_MAI_2026_A_12H);
+    SuiviDAtelier avecPointages = suivis.create(suiviDAtelierEngage().enregistre(pointee).enregistre(finPointee));
+    Instant debut = LE_10_MAI_2026_A_8H;
+    Instant fin = LE_10_MAI_2026_A_9H.plusSeconds(1800);
+    AjoutDUneActivite commande = ajoutSur(avecPointages.id(), OPERATEUR_ID_DUPONT, Optional.of(POSTE_ID_FRAISEUSE_1), debut, fin);
+
+    CorrectionTraitee traitee = corrections.ajoute(commande);
+
+    assertThat(traitee.rejeu()).isFalse();
+    assertThat(traitee.suivi().activites()).hasSize(2);
+    assertThat(traitee.suivi().activites().get(0).id()).isEqualTo(commande.activite());
+    assertThat(traitee.suivi().activites().get(0).fin()).contains(fin);
+    assertThat(traitee.suivi().activites().get(1).id()).isEqualTo(activiteDe(pointee));
+    assertThat(traitee.suivi().activites().get(1).fin()).contains(LE_10_MAI_2026_A_12H);
+    assertThat(traitee.suivi().activites().get(1).evenementDeFin()).contains(finPointee);
+  }
+
+  /**
+   * ADR 0015 : retirer ou deplacer une activite dont la fin a ete regularisee, ou qu'on a ajoutee, est possible.
+   */
+  @Test
+  void shouldRetirerEtChangerLePosteDUneActiviteDontLaFinEstRegularisee() {
+    EvenementDAtelier oubliee = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_13H);
+    EvenementDAtelier regularisee = finRegulariseeParLeroyDe(oubliee).a(LE_10_MAI_2026_A_16H);
+    SuiviDAtelier avecFinRegularisee = suivis.create(suiviDAtelierEngage().enregistre(oubliee).enregistre(regularisee));
+
+    SuiviDAtelier change = corrections
+      .changeLePoste(
+        ChangementDePosteAEnregistrer.builder()
+          .suivi(avecFinRegularisee.id())
+          .evenement(EvenementDAtelierId.newId())
+          .activite(activiteDe(oubliee))
+          .poste(POSTE_ID_FRAISEUSE_2)
+          .auteur(AUTEUR_LEROY)
+      )
+      .suivi();
+    assertThat(change.activites())
+      .singleElement()
+      .satisfies(a -> assertThat(a.cle().poste()).contains(POSTE_ID_FRAISEUSE_2));
+
+    SuiviDAtelier retire = corrections
+      .retire(
+        RetraitAEnregistrer.builder()
+          .suivi(avecFinRegularisee.id())
+          .evenement(EvenementDAtelierId.newId())
+          .activite(activiteDe(oubliee))
+          .auteur(AUTEUR_LEROY)
+      )
+      .suivi();
+    assertThat(retire.activites()).isEmpty();
+  }
+
+  @Test
+  void shouldRetirerEtChangerLePosteDUneActiviteAjoutee() {
+    AjoutDUneActivite ajout = ajout(A_14H, A_15H);
+    corrections.ajoute(ajout);
+
+    SuiviDAtelier change = corrections.changeLePoste(changement(ajout.activite(), POSTE_ID_FRAISEUSE_2)).suivi();
+    assertThat(change.activites()).anySatisfy(a -> {
+      assertThat(a.id()).isEqualTo(ajout.activite());
+      assertThat(a.cle().poste()).contains(POSTE_ID_FRAISEUSE_2);
+      assertThat(a.fin()).contains(A_15H);
+    });
+
+    SuiviDAtelier retire = corrections.retire(retrait(ajout.activite())).suivi();
+    assertThat(retire.activites()).extracting(Activite::id).doesNotContain(ajout.activite());
   }
 
   private static ActiviteId activiteDe(EvenementDAtelier ouvrant) {

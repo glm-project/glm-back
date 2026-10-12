@@ -4,6 +4,7 @@ import com.glm.glmback.atelier.domain.ActiviteId;
 import com.glm.glmback.atelier.domain.CategorieDActivite;
 import com.glm.glmback.atelier.domain.Echeance;
 import com.glm.glmback.atelier.domain.ElementEngage;
+import com.glm.glmback.atelier.domain.NatureDOperation;
 import com.glm.glmback.atelier.domain.PosteDeTravailId;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.shared.error.domain.Assert;
@@ -12,7 +13,7 @@ import java.util.Optional;
 
 /**
  * Une activite telle que la projection de l'atelier la porte : son identite, son suivi et l'element engage, son poste
- * courant, sa categorie, son debut, son echeance et sa fin reelle. Elle ne depend pas de l'instant de lecture ; c'est la
+ * courant et la nature figee a la saisie, sa categorie, son debut, son echeance et sa fin reelle. Elle ne depend pas de l'instant de lecture ; c'est la
  * lecture de la journee qui dit si elle est en cours ou terminee automatiquement.
  */
 public record ActiviteProjetee(
@@ -20,6 +21,7 @@ public record ActiviteProjetee(
   SuiviDAtelierId suivi,
   ElementEngage element,
   Optional<PosteDeTravailId> poste,
+  Optional<NatureDOperation> nature,
   CategorieDActivite categorie,
   Instant debut,
   Echeance echeance,
@@ -30,6 +32,7 @@ public record ActiviteProjetee(
     Assert.notNull("suivi", suivi);
     Assert.notNull("element", element);
     Assert.notNull("poste de travail", poste);
+    Assert.notNull("nature de l'operation", nature);
     Assert.notNull("categorie", categorie);
     Assert.notNull("debut", debut);
     Assert.notNull("echeance", echeance);
@@ -41,7 +44,9 @@ public record ActiviteProjetee(
       suivi ->
         element ->
           poste ->
-            categorie -> debut -> echeance -> fin -> new ActiviteProjetee(id, suivi, element, poste, categorie, debut, echeance, fin);
+            nature ->
+              categorie ->
+                debut -> echeance -> fin -> new ActiviteProjetee(id, suivi, element, poste, nature, categorie, debut, echeance, fin);
   }
 
   /**
@@ -77,7 +82,11 @@ public record ActiviteProjetee(
   }
 
   public interface ActiviteProjeteePosteBuilder {
-    ActiviteProjeteeCategorieBuilder poste(Optional<PosteDeTravailId> poste);
+    ActiviteProjeteeNatureBuilder poste(Optional<PosteDeTravailId> poste);
+  }
+
+  public interface ActiviteProjeteeNatureBuilder {
+    ActiviteProjeteeCategorieBuilder nature(Optional<NatureDOperation> nature);
   }
 
   public interface ActiviteProjeteeCategorieBuilder {

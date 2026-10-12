@@ -12,9 +12,10 @@ import java.util.Optional;
  * </p>
  *
  * <p>
- * Deux corrections du gestionnaire s'y ajoutent, qui visent chacune une activite et n'en ouvrent aucune : un retrait
- * l'ecarte de toutes les lectures, un changement de poste la fait compter sur un autre poste. Datees du moment de la
- * correction, ce ne sont pas des gestes : la regle de reception ne les compte jamais.
+ * Deux faits du gestionnaire s'y ajoutent, qui visent chacun une activite et n'en ouvrent aucune : un retrait l'ecarte de
+ * toutes les lectures, un changement de poste la fait compter sur un autre poste. Dates du moment de la correction, ce ne
+ * sont pas des gestes : la regle de reception ne les compte jamais. (Ajouter une activite n'a pas de type propre : c'est un
+ * debut et une fin.)
  * </p>
  */
 public enum TypeDEvenementDAtelier {
@@ -34,17 +35,10 @@ public enum TypeDEvenementDAtelier {
 
   /**
    * Vrai pour un debut, une non conformite et une fin : ce que le pupitre pointe et ce que la regle de reception juge.
+   * Faux pour un retrait et un changement de poste, faits du gestionnaire qui visent une activite sans la borner.
    */
   public boolean estUnGeste() {
-    return !estUneCorrection();
-  }
-
-  /**
-   * Vrai pour un retrait et un changement de poste, que seul le gestionnaire porte au journal, et qui visent toujours
-   * une activite.
-   */
-  public boolean estUneCorrection() {
-    return this == RETRAIT || this == CHANGEMENT_DE_POSTE;
+    return this == DEBUT || this == NON_CONFORMITE || this == FIN;
   }
 
   /**

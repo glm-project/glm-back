@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 @UnitTest
 class JournalDAtelierCorrectionsTest {
 
+  private static final Instant LE_10_MAI_2026_A_10H = Instant.parse("2026-05-10T10:00:00Z");
   private static final Instant LE_10_MAI_2026_A_14H = Instant.parse("2026-05-10T14:00:00Z");
   private static final Instant LE_10_MAI_2026_A_15H = Instant.parse("2026-05-10T15:00:00Z");
   private static final Instant LE_11_MAI_2026_A_10H = Instant.parse("2026-05-11T10:00:00Z");
@@ -163,6 +164,72 @@ class JournalDAtelierCorrectionsTest {
       .satisfies(activite -> {
         assertThat(activite.fin()).contains(cloture);
         assertThat(activite.evenementDeFin()).isEmpty();
+      });
+  }
+
+  /**
+   * Une activite ajoutee sur la cle qu'une autre activite a quittee ne prend pas la fin pointee de celle-ci : la fin reste
+   * liee a l'activite qu'elle a fermee, quels que soient les gestes qui s'ouvrent ensuite sur l'ancienne cle.
+   */
+  @Test
+  void shouldGarderLaFinPointeeDUneActiviteDeplaceeQuandOnAjouteSurSonAncienPoste() {
+    EvenementDAtelier fin = finDe(travail).a(LE_10_MAI_2026_A_10H);
+    EvenementDAtelier ajoutee = debutAjouteParLeroySurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H);
+    EvenementDAtelier finAjoutee = finRegulariseeParLeroyDe(ajoutee).a(LE_10_MAI_2026_A_9H.plusSeconds(1800));
+
+    List<Activite> activites = activites(
+      travail,
+      fin,
+      changementDePosteVersFraiseuse2ParLeroyDe(travail).a(LE_11_MAI_2026_A_8H),
+      ajoutee,
+      finAjoutee
+    );
+
+    assertThat(activites).hasSize(2);
+    assertThat(activites.get(0).ouvrant()).isEqualTo(travail);
+    assertThat(activites.get(0).fin()).contains(LE_10_MAI_2026_A_10H);
+    assertThat(activites.get(0).evenementDeFin()).contains(fin);
+    assertThat(activites.get(0).cle().poste()).contains(POSTE_ID_FRAISEUSE_2);
+    assertThat(activites.get(1).ouvrant()).isEqualTo(ajoutee);
+    assertThat(activites.get(1).fin()).contains(LE_10_MAI_2026_A_9H.plusSeconds(1800));
+  }
+
+  /**
+   * Un pointage recu apres un retrait, dans la plage de l'activite retiree, ouvre une activite que la fin pointee de
+   * l'activite retiree ne ferme pas : cette fin a ete recue avant lui, elle reste liee a l'activite qu'elle a fermee.
+   */
+  @Test
+  void shouldNePasFermerUnPointageRecuApresUnRetraitParLaFinDeLActiviteRetiree() {
+    EvenementDAtelier retiree = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier recu = debutSurFraiseuse1ParDupontRecuLe(LE_11_MAI_2026_A_9H.plusSeconds(60)).a(LE_10_MAI_2026_A_10H);
+
+    List<Activite> activites = activites(
+      retiree,
+      finDe(retiree).a(LE_10_MAI_2026_A_12H),
+      retraitParLeroyDe(retiree).a(LE_11_MAI_2026_A_9H),
+      recu
+    );
+
+    assertThat(activites)
+      .singleElement()
+      .satisfies(activite -> {
+        assertThat(activite.ouvrant()).isEqualTo(recu);
+        assertThat(activite.fin()).isEmpty();
+      });
+  }
+
+  @Test
+  void shouldNePasRefermerParLaClotureUneActiviteQueUneFinRegulariseeAvaitDejaTerminee() {
+    Instant cloture = LE_10_MAI_2026_A_16H;
+    EvenementDAtelier regularisee = finRegulariseeParLeroyDe(travail).a(LE_10_MAI_2026_A_12H);
+
+    List<Activite> activites = new JournalDAtelier(List.of(travail, regularisee)).activites(Optional.of(cloture));
+
+    assertThat(activites)
+      .singleElement()
+      .satisfies(activite -> {
+        assertThat(activite.fin()).contains(LE_10_MAI_2026_A_12H);
+        assertThat(activite.evenementDeFin()).contains(regularisee);
       });
   }
 }

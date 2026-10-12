@@ -73,7 +73,8 @@ public record RestEvenementDAtelier(
   Instant dateDEnregistrement,
   @Schema(
     description = """
-    Vrai lorsque l'evenement a ete saisi par le gestionnaire, en regularisation.
+    Vrai pour tout fait que le gestionnaire ecrit : la fin d'une regularisation, l'ouverture et la fin d'une activite qu'il
+    ajoute, un retrait, un changement de poste.
     Un pointage ne l'est jamais, meme rejoue hors ligne avec l'heure de son geste : une saisie differee se lit a l'ecart
     entre dateDeSurvenue et dateDEnregistrement.
     """,

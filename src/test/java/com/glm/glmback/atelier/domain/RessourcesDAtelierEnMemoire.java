@@ -46,6 +46,25 @@ public final class RessourcesDAtelierEnMemoire {
     );
   }
 
+  /**
+   * Comme {@link #deLAtelier()}, mais le taux horaire de Dupont a ete revise depuis : ce que le referentiel dit
+   * aujourd'hui n'est plus ce que les faits deja ecrits ont fige.
+   */
+  public static RessourcesDAtelierEnMemoire deLAtelierAuTauxRevise() {
+    return new RessourcesDAtelierEnMemoire(
+      List.of(
+        OperateurConnu.builder()
+          .id(OPERATEUR_ID_DUPONT)
+          .nom(NOM_DUPONT)
+          .prenom(PRENOM_JEAN)
+          .tauxHoraire(TAUX_HORAIRE_DUPONT_REVISE.value()),
+        OPERATEUR_CONNU_MARTIN
+      ),
+      List.of(POSTE_CONNU_FRAISEUSE_1, POSTE_CONNU_FRAISEUSE_2),
+      Set.of(Map.entry(OPERATEUR_ID_DUPONT, POSTE_ID_FRAISEUSE_1), Map.entry(OPERATEUR_ID_DUPONT, POSTE_ID_FRAISEUSE_2))
+    );
+  }
+
   public OperateursConnus operateurs() {
     return new OperateursEnMemoire();
   }

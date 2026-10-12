@@ -29,7 +29,12 @@ record RestActiviteDeLaJournee(
   @Schema(description = "Le suivi qui porte l'activite : celui des routes de correction.", requiredMode = Schema.RequiredMode.REQUIRED)
   UUID suivi,
   @Schema(description = "L'element engage dans ce suivi.", requiredMode = Schema.RequiredMode.REQUIRED) RestElementDeLaJournee element,
-  @Schema(description = "Le poste courant de l'activite, apres un eventuel changement de poste. Absent si aucun poste n'a ete pointe.")
+  @Schema(
+    description = """
+    Le poste courant de l'activite, apres un eventuel changement de poste, avec la nature d'operation figee a la saisie (celle
+    du poste d'alors). Absent si aucun poste n'a ete pointe.
+    """
+  )
   RestPosteDeLaJournee poste,
   @Schema(description = "TRAVAIL ou NON_CONFORMITE : le type de l'activite.", requiredMode = Schema.RequiredMode.REQUIRED)
   CategorieDActivite categorie,

@@ -64,8 +64,11 @@ L'élément ne porte aucun statut : son cycle se lit sur son suivi d'atelier (`E
 ou `PassageClos`), unique par élément. Le port `ElementsDansLeurCycle` lit la liste et les compteurs ;
 `JpaElementsDansLeurCycle` joint `suivi_d_atelier` par des entités `@Immutable` propres à ce contexte
 (`SuiviDuProduitEntity`, `ActiviteDuProduitEntity`), puis juge l'état des seuls suivis ouverts de la page avec la
-règle de l'atelier, sur la projection `activite_d_atelier` : un suivi pointé y porte toujours une activité. `JpaElementsDansLeurCycleIT` confronte cet état à
-`SuiviDAtelier.etat` : le modifier avec toute évolution de l'état côté atelier.
+règle de l'atelier : en cours si la projection `activite_d_atelier` porte une activité sans fin dont l'échéance n'est pas
+atteinte, interrompu si le journal (`evenement_d_atelier`) porte un fait, en attente sinon. La projection ne dit pas si un suivi
+est pointé : le gestionnaire peut retirer toutes ses activités, qui disparaissent alors de la projection, et le suivi reste
+interrompu, comme l'atelier le dit. `JpaElementsDansLeurCycleIT` confronte cet état à `SuiviDAtelier.etat`, retrait compris :
+le modifier avec toute évolution de l'état côté atelier.
 
 Les règles de sélection vivent dans le domaine (`FiltreDesElements`, `Recherche`, `CycleDemande`), que l'adapter
 traduit en SQL. Une période de clôture ne se demande qu'avec le cycle `CLOTURE` (400 `cloture-hors-des-clotures`) ;

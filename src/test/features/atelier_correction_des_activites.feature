@@ -161,6 +161,9 @@ Feature: Le gestionnaire corrige la journee d'un operateur
       | debut     | 2046-01-15T08:00:00Z |
       | fin       | 2046-01-15T10:00:00Z |
     Then la reponse a le statut http 403
+    When je change le poste de l'activite inconnue sur "Corr 1006"
+      | poste | fraiseuse-corr |
+    Then la reponse a le statut http 403
     When je retire une activite sur le suivi inconnu
     Then la reponse a le statut http 403
 
@@ -636,6 +639,11 @@ Feature: Le gestionnaire corrige la journee d'un operateur
     Given j'ai retire sur "Corr 5002" l'activite de "dupont-corr" commencee a "2046-02-05T08:00:00Z"
     When l'operateur "dupont-corr" pointe DEBUT sur "Corr 5002" au poste "tour-corr" a "2046-02-05T10:00:00Z" et le serveur le recoit a "2046-02-05T18:30:00Z"
     Then le pointage est accepte
+    # La fin pointee a midi etait celle de l'activite retiree : elle ne ferme pas le pointage recu depuis.
+    When je consulte la journee de "dupont-corr" du "2046-02-05"
+    Then la journee porte les activites
+      | debut                | fin | poste     | etat     | dureeSurLeJour |
+      | 2046-02-05T10:00:00Z |     | tour-corr | EN_COURS |                |
 
   Scenario: Apres un changement de poste, les faits de l'activite comptent sur le nouveau poste
     Given il est "2046-02-06T06:00:00Z"
@@ -660,3 +668,123 @@ Feature: Le gestionnaire corrige la journee d'un operateur
     Then le pointage est ignore
     When l'operateur "dupont-corr" pointe DEBUT sur "Corr 5003" au poste "tour-corr" a "2046-02-06T10:00:00Z" et le serveur le recoit a "2046-02-06T18:40:00Z"
     Then le pointage est accepte
+    # L'activite deplacee garde sa fin pointee, le pointage recu sur l'ancien poste ouvre la sienne.
+    When je consulte la journee de "dupont-corr" du "2046-02-06"
+    Then la journee porte les activites
+      | debut                | fin                  | poste          | etat     | dureeSurLeJour |
+      | 2046-02-06T08:00:00Z | 2046-02-06T12:00:00Z | fraiseuse-corr | TERMINEE | PT4H           |
+      | 2046-02-06T10:00:00Z |                      | tour-corr      | EN_COURS |                |
+
+  Scenario: Un ajout sur l'ancien poste d'une activite deplacee lui laisse sa fin pointee
+    Given il est "2046-02-07T06:00:00Z"
+    And l'entreprise a cree l'element de fabrication "Corr 5004"
+      | categorie | OF       |
+      | reference | CORR5004 |
+    And j'ai engage l'element "Corr 5004" en atelier
+    And il est "2046-02-07T08:00:00Z"
+    And j'ai pointe sur "Corr 5004"
+      | type      | DEBUT       |
+      | operateur | dupont-corr |
+      | poste     | tour-corr   |
+    And il est "2046-02-07T10:00:00Z"
+    And j'ai pointe sur "Corr 5004"
+      | type      | FIN         |
+      | operateur | dupont-corr |
+      | poste     | tour-corr   |
+    And il est "2046-02-07T18:00:00Z"
+    And j'ai change sur "Corr 5004" le poste de l'activite de "dupont-corr" commencee a "2046-02-07T08:00:00Z"
+      | poste | fraiseuse-corr |
+    When j'ajoute sur "Corr 5004" une activite
+      | operateur | dupont-corr          |
+      | poste     | tour-corr            |
+      | categorie | TRAVAIL              |
+      | debut     | 2046-02-07T09:00:00Z |
+      | fin       | 2046-02-07T09:30:00Z |
+    Then la reponse a le statut http 201
+    When je consulte la journee de "dupont-corr" du "2046-02-07"
+    Then la journee porte les activites
+      | debut                | fin                  | poste          | etat     | dureeSurLeJour |
+      | 2046-02-07T08:00:00Z | 2046-02-07T10:00:00Z | fraiseuse-corr | TERMINEE | PT2H           |
+      | 2046-02-07T09:00:00Z | 2046-02-07T09:30:00Z | tour-corr      | TERMINEE | PT30M          |
+    And la duree operationnelle de la journee est "PT2H30M"
+
+  Scenario: Un ajout avant des pointages de la meme cle les laisse intacts
+    Given il est "2046-02-08T06:00:00Z"
+    And l'entreprise a cree l'element de fabrication "Corr 5005"
+      | categorie | OF       |
+      | reference | CORR5005 |
+    And j'ai engage l'element "Corr 5005" en atelier
+    And il est "2046-02-08T10:00:00Z"
+    And j'ai pointe sur "Corr 5005"
+      | type      | DEBUT       |
+      | operateur | dupont-corr |
+      | poste     | tour-corr   |
+    And il est "2046-02-08T12:00:00Z"
+    And j'ai pointe sur "Corr 5005"
+      | type      | FIN         |
+      | operateur | dupont-corr |
+      | poste     | tour-corr   |
+    And il est "2046-02-08T18:00:00Z"
+    When j'ajoute sur "Corr 5005" une activite
+      | operateur | dupont-corr          |
+      | poste     | tour-corr            |
+      | categorie | TRAVAIL              |
+      | debut     | 2046-02-08T08:00:00Z |
+      | fin       | 2046-02-08T09:30:00Z |
+    Then la reponse a le statut http 201
+    When je consulte la journee de "dupont-corr" du "2046-02-08"
+    Then la journee porte les activites
+      | debut                | fin                  | poste     | etat     | dureeSurLeJour |
+      | 2046-02-08T08:00:00Z | 2046-02-08T09:30:00Z | tour-corr | TERMINEE | PT1H30M        |
+      | 2046-02-08T10:00:00Z | 2046-02-08T12:00:00Z | tour-corr | TERMINEE | PT2H           |
+
+  Scenario: Une activite dont la fin a ete regularisee se deplace et se retire
+    Given il est "2046-02-09T00:30:00Z"
+    And l'entreprise a cree l'element de fabrication "Corr 5006"
+      | categorie | OF       |
+      | reference | CORR5006 |
+    And j'ai engage l'element "Corr 5006" en atelier
+    And il est "2046-02-09T01:00:00Z"
+    And j'ai pointe sur "Corr 5006"
+      | type      | DEBUT       |
+      | operateur | dupont-corr |
+      | poste     | tour-corr   |
+    And il est "2046-02-09T20:00:00Z"
+    And je regularise sur "Corr 5006" en visant l'activite de l'evenement 0
+      | dateDeSurvenue | 2046-02-09T11:00:00Z |
+    When je change sur "Corr 5006" le poste de l'activite de "dupont-corr" commencee a "2046-02-09T01:00:00Z"
+      | poste | fraiseuse-corr |
+    Then la reponse a le statut http 201
+    When je consulte la journee de "dupont-corr" du "2046-02-09"
+    Then la journee porte les activites
+      | debut                | fin                  | poste          | etat     | dureeSurLeJour |
+      | 2046-02-09T01:00:00Z | 2046-02-09T11:00:00Z | fraiseuse-corr | TERMINEE | PT10H          |
+    When je retire sur "Corr 5006" l'activite de "dupont-corr" commencee a "2046-02-09T01:00:00Z"
+    Then la reponse a le statut http 201
+    When je consulte la journee de "dupont-corr" du "2046-02-09"
+    Then la journee ne porte aucune activite
+
+  Scenario: Une activite ajoutee se deplace et se retire
+    Given il est "2046-02-10T06:00:00Z"
+    And l'entreprise a cree l'element de fabrication "Corr 5007"
+      | categorie | OF       |
+      | reference | CORR5007 |
+    And j'ai engage l'element "Corr 5007" en atelier
+    And il est "2046-02-10T18:00:00Z"
+    And j'ai ajoute sur "Corr 5007" une activite
+      | operateur | dupont-corr          |
+      | poste     | tour-corr            |
+      | categorie | TRAVAIL              |
+      | debut     | 2046-02-10T08:00:00Z |
+      | fin       | 2046-02-10T09:00:00Z |
+    When je change sur "Corr 5007" le poste de l'activite de "dupont-corr" commencee a "2046-02-10T08:00:00Z"
+      | poste | fraiseuse-corr |
+    Then la reponse a le statut http 201
+    When je consulte la journee de "dupont-corr" du "2046-02-10"
+    Then la journee porte les activites
+      | debut                | fin                  | poste          | etat     | dureeSurLeJour |
+      | 2046-02-10T08:00:00Z | 2046-02-10T09:00:00Z | fraiseuse-corr | TERMINEE | PT1H           |
+    When je retire sur "Corr 5007" l'activite de "dupont-corr" commencee a "2046-02-10T08:00:00Z"
+    Then la reponse a le statut http 201
+    When je consulte la journee de "dupont-corr" du "2046-02-10"
+    Then la journee ne porte aucune activite

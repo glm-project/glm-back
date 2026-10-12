@@ -56,6 +56,7 @@ public final class AtelierFixture {
   public static final NatureDOperation NATURE_TOURNAGE = new NatureDOperation(NATURE_D_OPERATION_ID_TOURNAGE, "tournage");
   public static final CoutHoraire COUT_HORAIRE_FRAISEUSE_1 = new CoutHoraire(new BigDecimal("45.50"));
   public static final TauxHoraire TAUX_HORAIRE_DUPONT = new TauxHoraire(new BigDecimal("22.00"));
+  public static final TauxHoraire TAUX_HORAIRE_DUPONT_REVISE = new TauxHoraire(new BigDecimal("30.00"));
   public static final OperateurConnu OPERATEUR_CONNU_DUPONT = OperateurConnu.builder()
     .id(OPERATEUR_ID_DUPONT)
     .nom(NOM_DUPONT)
@@ -278,6 +279,21 @@ public final class AtelierFixture {
   }
 
   /**
+   * Un debut pointe par Dupont a l'heure de son geste et recu plus tard, a l'instant donne : un pointage hors ligne.
+   */
+  public static GesteADater debutSurFraiseuse1ParDupontRecuLe(Instant reception) {
+    return date ->
+      evenementDAtelier(
+        TypeDEvenementDAtelier.DEBUT,
+        Optional.empty(),
+        cleDeFraiseuse1DeDupont(),
+        AUTEUR_DUPONT,
+        OrigineDuPointage.POINTAGE,
+        new Horodatage(date, reception)
+      );
+  }
+
+  /**
    * La fin que le gestionnaire regularise sur l'activite de Dupont qu'ouvre ce debut, ecrite sur la fraiseuse 2 : la cle
    * d'une activite dont le poste a change.
    */
@@ -306,6 +322,36 @@ public final class AtelierFixture {
       OrigineDuPointage.REGULARISATION,
       new Horodatage(date, LE_11_MAI_2026_A_9H15)
     );
+  }
+
+  /**
+   * Un debut que le gestionnaire ajoute apres coup sur cette cle, saisi quand il l'a ajoute.
+   */
+  public static GesteADater debutAjouteParLeroySur(CleDActivite cle) {
+    return date ->
+      evenementDAtelier(
+        TypeDEvenementDAtelier.DEBUT,
+        Optional.empty(),
+        cle,
+        AUTEUR_LEROY,
+        OrigineDuPointage.REGULARISATION,
+        new Horodatage(date, LE_11_MAI_2026_A_9H15)
+      );
+  }
+
+  /**
+   * La fin d'une activite ajoutee : celle qui vise cette ouverture, sur sa cle.
+   */
+  public static GesteADater finAjouteeParLeroyDe(EvenementDAtelier ouverture) {
+    return date ->
+      evenementDAtelier(
+        TypeDEvenementDAtelier.FIN,
+        ouverture.activite(),
+        ouverture.cle(),
+        AUTEUR_LEROY,
+        OrigineDuPointage.REGULARISATION,
+        new Horodatage(date, LE_11_MAI_2026_A_9H15)
+      );
   }
 
   /**

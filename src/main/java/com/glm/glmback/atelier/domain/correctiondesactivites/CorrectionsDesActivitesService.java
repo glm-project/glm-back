@@ -3,10 +3,8 @@ package com.glm.glmback.atelier.domain.correctiondesactivites;
 import com.glm.glmback.atelier.domain.Activite;
 import com.glm.glmback.atelier.domain.Auteur;
 import com.glm.glmback.atelier.domain.CoutHoraire;
-import com.glm.glmback.atelier.domain.DateDeSurvenueFutureException;
 import com.glm.glmback.atelier.domain.EvenementDAtelier;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
-import com.glm.glmback.atelier.domain.FinAvantDebutException;
 import com.glm.glmback.atelier.domain.Habilitations;
 import com.glm.glmback.atelier.domain.Horodatage;
 import com.glm.glmback.atelier.domain.NatureDOperation;
@@ -80,9 +78,9 @@ public final class CorrectionsDesActivitesService {
    * vigueur est copiee sur l'ouverture.
    *
    * <p>
-   * Refus, dans l'ordre : suivi introuvable, operateur introuvable, poste introuvable, operateur non habilite, fin qui
-   * ne suit pas le debut, fin future, debut anterieur a l'engagement, fin posterieure a la cloture, chevauchement d'une
-   * autre activite de la cle sur toute l'activite.
+   * Refus, dans l'ordre : suivi introuvable, operateur introuvable, poste introuvable, operateur non habilite (ici), puis
+   * ceux du suivi (voir {@link SuiviDAtelier#ajoute}) : fin qui ne suit pas le debut, fin future, debut anterieur a
+   * l'engagement, fin posterieure a la cloture, chevauchement d'une autre activite de la cle sur toute l'activite.
    * </p>
    */
   public CorrectionTraitee ajoute(AjoutDUneActivite commande) {
@@ -94,13 +92,6 @@ public final class CorrectionsDesActivitesService {
     Instant maintenant = clock.now();
     ResolutionDesRessources.Ressources saisies = ressources.ressources(commande.operateur(), commande.poste());
     PlageDAjout plage = commande.plage();
-    if (!plage.fin().isAfter(plage.debut())) {
-      throw new FinAvantDebutException(commande.activite(), plage.fin(), plage.debut());
-    }
-    if (plage.fin().isAfter(maintenant)) {
-      throw new DateDeSurvenueFutureException(plage.fin());
-    }
-
     EvenementDAtelier ouverture = saisies.evenement(
       commande.evenement(),
       commande.categorie().typeDOuverture(),
@@ -108,7 +99,7 @@ public final class CorrectionsDesActivitesService {
       Optional.of(dureesMax.current()),
       commande.auteur(),
       OrigineDuPointage.REGULARISATION,
-      new Horodatage(plage.debut(), maintenant)
+      new Horodatage(plage.debut(), enregistreeA(plage.debut(), maintenant))
     );
     EvenementDAtelier fin = saisies.evenement(
       commande.evenementDeFin(),
@@ -117,7 +108,7 @@ public final class CorrectionsDesActivitesService {
       Optional.empty(),
       commande.auteur(),
       OrigineDuPointage.REGULARISATION,
-      new Horodatage(plage.fin(), maintenant)
+      new Horodatage(plage.fin(), enregistreeA(plage.fin(), maintenant))
     );
 
     return new CorrectionTraitee(repository.update(suivi.ajoute(ouverture, fin, maintenant)), false);
@@ -190,6 +181,14 @@ public final class CorrectionsDesActivitesService {
     );
 
     return new CorrectionTraitee(repository.update(suivi.retire(retrait)), false);
+  }
+
+  /**
+   * L'enregistrement d'un fait ajoute : maintenant. Un fait du futur n'a pas d'enregistrement possible avant lui, et le
+   * suivi le refuse avant de l'ecrire : l'evenement n'est alors construit que pour lui etre presente.
+   */
+  private static Instant enregistreeA(Instant survenue, Instant maintenant) {
+    return survenue.isAfter(maintenant) ? survenue : maintenant;
   }
 
   private SuiviDAtelier get(SuiviDAtelierId id) {

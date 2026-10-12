@@ -258,10 +258,10 @@ corrections, et sa clôture ne peut plus être déplacée avant une correction d
 clé (opérateur, poste) **du suivi** : une activité qui n'a pas de fin compte jusqu'à son échéance si elle est échue, sans
 fin sinon.
 
-**Dans le cœur** : `TypeDEvenementDAtelier` gagne `RETRAIT` et `CHANGEMENT_DE_POSTE`, qui ne sont pas des gestes ;
+**Dans le cœur** : `TypeDEvenementDAtelier` gagne `RETRAIT` et `CHANGEMENT_DE_POSTE`, qui ne sont pas des gestes ; `SuiviDAtelier.ajoute` garde lui-même ses invariants (fin postérieure au début, pas dans le futur, fin qui cible l'ouverture sur la même clé, engagement, clôture, chevauchement) ;
 `Activite` porte un `changementDePoste` et le fait qui l'a terminée (`evenementDeFin`) ; la projection `activite_d_atelier`
 gagne `porteur_id` (le fait porteur de ses tarifs, que lit le coût de revient — `ouverture_id` reste l'ouvrant d'origine, adresse
-d'un dossier d'anomalie) et perd les lignes des activités retirées. Un poste de fin automatique change sans perdre son anomalie :
+d'un dossier d'anomalie) et perd les lignes des activités retirées (un suivi dont toutes les activités sont retirées reste `INTERROMPU` : l'état se lit sur les faits du journal, jamais sur la projection seule). Un poste de fin automatique change sans perdre son anomalie :
 le dossier et la liste suivent la nouvelle clé. Le `journal` rendu par l'API porte les nouveaux types.
 
 **La lecture de la journée** (`GET /api/atelier/operateurs/{operateurId}/journees/{jour}`, `JourneesACorrigerService`) lit les
@@ -271,10 +271,11 @@ et coupe les durées aux minuits du fuseau de l'entreprise (`DecoupageParJour`).
 ne calcule aucun minuit. Une activité en cours n'a ni fin ni durée ; la durée opérationnelle est une somme simple des portions du
 jour des activités terminées.
 
-**Limites connues.** Le premier temps de la lecture du journal attribue une `FIN` pointée à l'activité en cours de la clé
-sur laquelle elle a été pointée : un pointage hors ligne reçu après un changement de poste, sur l'ancienne clé et dans la plage
-de l'activité déplacée, peut être mal attribué (ADR 0015). Le journal brut de la synthèse des heures garde les gestes d'une
-activité retirée.
+**Limites connues.** Une `FIN` pointée se lie à l'activité que sa clé avait en cours quand le serveur l'a reçue : la première
+lecture rejoue les pointages d'une clé dans l'ordre de réception (date d'enregistrement, puis ordre du journal), pas dans l'ordre
+des heures de geste, et y garde les activités retirées ou déplacées. Deux pointages d'une même clé enregistrés au même instant
+se départagent par l'heure du geste. Le journal brut de la synthèse des heures garde les gestes d'une activité retirée, et,
+après un changement de poste, les pointages gardent leur ancien poste.
 
 ## Invariants à ne pas casser
 

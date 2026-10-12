@@ -3,6 +3,7 @@ package com.glm.glmback.atelier.domain.correctiondesactivites;
 import com.glm.glmback.atelier.domain.ActiviteId;
 import com.glm.glmback.atelier.domain.CategorieDActivite;
 import com.glm.glmback.atelier.domain.ElementEngage;
+import com.glm.glmback.atelier.domain.NatureDOperation;
 import com.glm.glmback.atelier.domain.PosteConnu;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.shared.error.domain.Assert;
@@ -13,7 +14,7 @@ import java.util.Optional;
 
 /**
  * Une activite qui touche le jour lu, telle que la journee a corriger la montre : son identite (celle de son pointage
- * ouvrant), son suivi et son element, son poste courant, sa categorie, ses bornes entieres et son etat.
+ * ouvrant), son suivi et son element, son poste courant, la nature figee a la saisie, sa categorie, ses bornes entieres et son etat.
  *
  * <p>
  * Sa duree n'est comptee que si elle est terminee, reelle ou automatique : {@code dureeSurLeJour} est la portion comptee
@@ -26,6 +27,7 @@ public record ActiviteDeLaJournee(
   SuiviDAtelierId suivi,
   ElementEngage element,
   Optional<PosteConnu> poste,
+  Optional<NatureDOperation> nature,
   CategorieDActivite categorie,
   Instant debut,
   Optional<Instant> fin,
@@ -38,6 +40,7 @@ public record ActiviteDeLaJournee(
     Assert.notNull("suivi", suivi);
     Assert.notNull("element", element);
     Assert.notNull("poste de travail", poste);
+    Assert.notNull("nature de l'operation", nature);
     Assert.notNull("categorie", categorie);
     Assert.notNull("debut", debut);
     Assert.notNull("fin", fin);
@@ -53,13 +56,26 @@ public record ActiviteDeLaJournee(
       suivi ->
         element ->
           poste ->
-            categorie ->
-              debut ->
-                fin ->
-                  etat ->
-                    dureeSurLeJour ->
-                      autresJours ->
-                        new ActiviteDeLaJournee(id, suivi, element, poste, categorie, debut, fin, etat, dureeSurLeJour, autresJours);
+            nature ->
+              categorie ->
+                debut ->
+                  fin ->
+                    etat ->
+                      dureeSurLeJour ->
+                        autresJours ->
+                          new ActiviteDeLaJournee(
+                            id,
+                            suivi,
+                            element,
+                            poste,
+                            nature,
+                            categorie,
+                            debut,
+                            fin,
+                            etat,
+                            dureeSurLeJour,
+                            autresJours
+                          );
   }
 
   public interface ActiviteDeLaJourneeIdBuilder {
@@ -75,7 +91,11 @@ public record ActiviteDeLaJournee(
   }
 
   public interface ActiviteDeLaJourneePosteBuilder {
-    ActiviteDeLaJourneeCategorieBuilder poste(Optional<PosteConnu> poste);
+    ActiviteDeLaJourneeNatureBuilder poste(Optional<PosteConnu> poste);
+  }
+
+  public interface ActiviteDeLaJourneeNatureBuilder {
+    ActiviteDeLaJourneeCategorieBuilder nature(Optional<NatureDOperation> nature);
   }
 
   public interface ActiviteDeLaJourneeCategorieBuilder {

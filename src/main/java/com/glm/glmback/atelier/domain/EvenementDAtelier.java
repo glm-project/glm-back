@@ -126,7 +126,7 @@ public record EvenementDAtelier(
     if (activiteVisee.isPresent() != (!ouvre && origine == OrigineDuPointage.REGULARISATION)) {
       throw new EvenementDAtelierIncoherentException(type, origine);
     }
-    if (type.estUneCorrection() && origine != OrigineDuPointage.REGULARISATION) {
+    if (!type.estUnGeste() && origine != OrigineDuPointage.REGULARISATION) {
       throw new EvenementDAtelierIncoherentException(type, origine);
     }
   }

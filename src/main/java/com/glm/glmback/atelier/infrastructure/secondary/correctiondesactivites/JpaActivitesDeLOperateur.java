@@ -6,6 +6,8 @@ import com.glm.glmback.atelier.domain.CategorieDElement;
 import com.glm.glmback.atelier.domain.Echeance;
 import com.glm.glmback.atelier.domain.ElementEngage;
 import com.glm.glmback.atelier.domain.ElementEngageId;
+import com.glm.glmback.atelier.domain.NatureDOperation;
+import com.glm.glmback.atelier.domain.NatureDOperationId;
 import com.glm.glmback.atelier.domain.NomDElement;
 import com.glm.glmback.atelier.domain.OperateurId;
 import com.glm.glmback.atelier.domain.PosteDeTravailId;
@@ -33,7 +35,9 @@ class JpaActivitesDeLOperateur implements ActivitesDeLOperateur {
 
   private static final String ACTIVITES = """
     select activite.id as id, activite.suivi_id as suivi, suivi.element_id as element_id, suivi.element_nom as element_nom,
-      suivi.element_categorie as element_categorie, activite.poste_id as poste_id, activite.categorie as categorie,
+      suivi.element_categorie as element_categorie, activite.poste_id as poste_id, activite.nature_id as nature_id,
+      (select referentiel.libelle from nature_de_travail referentiel where referentiel.id = activite.nature_id) as nature,
+      activite.categorie as categorie,
       activite.debut as debut, activite.echeance as echeance, activite.fin as fin
     from activite_d_atelier activite
     join suivi_d_atelier suivi on suivi.id = activite.suivi_id
@@ -76,6 +80,11 @@ class JpaActivitesDeLOperateur implements ActivitesDeLOperateur {
         )
       )
       .poste(Optional.ofNullable(ligne.get("poste_id", UUID.class)).map(PosteDeTravailId::new))
+      .nature(
+        Optional.ofNullable(ligne.get("nature_id", UUID.class)).map(id ->
+          new NatureDOperation(new NatureDOperationId(id), ligne.get("nature", String.class))
+        )
+      )
       .categorie(CategorieDActivite.valueOf(ligne.get("categorie", String.class)))
       .debut(instants.convertToEntityAttribute(ligne.get("debut", BigDecimal.class)))
       .echeance(new Echeance(instants.convertToEntityAttribute(ligne.get("echeance", BigDecimal.class))))

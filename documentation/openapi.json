@@ -278,7 +278,7 @@
           },
           "poste" : {
             "$ref" : "#/components/schemas/RestPosteDeLaJournee",
-            "description" : "Le poste courant de l'activite, apres un eventuel changement de poste. Absent si aucun poste n'a ete pointe."
+            "description" : "Le poste courant de l'activite, apres un eventuel changement de poste, avec la nature d'operation figee a la saisie (celle\ndu poste d'alors). Absent si aucun poste n'a ete pointe.\n"
           },
           "suivi" : {
             "description" : "Le suivi qui porte l'activite : celui des routes de correction.",
@@ -1110,7 +1110,7 @@
             "type" : "string"
           },
           "estUneRegularisation" : {
-            "description" : "Vrai lorsque l'evenement a ete saisi par le gestionnaire, en regularisation.\nUn pointage ne l'est jamais, meme rejoue hors ligne avec l'heure de son geste : une saisie differee se lit a l'ecart\nentre dateDeSurvenue et dateDEnregistrement.\n",
+            "description" : "Vrai pour tout fait que le gestionnaire ecrit : la fin d'une regularisation, l'ouverture et la fin d'une activite qu'il\najoute, un retrait, un changement de poste.\nUn pointage ne l'est jamais, meme rejoue hors ligne avec l'heure de son geste : une saisie differee se lit a l'ecart\nentre dateDeSurvenue et dateDEnregistrement.\n",
             "type" : "boolean"
           },
           "id" : {
@@ -1983,7 +1983,7 @@
         "type" : "object"
       },
       "RestPosteDeLaJournee" : {
-        "description" : "Un poste de travail du referentiel avec sa nature d'operation courante, relus a chaque lecture.",
+        "description" : "Un poste de travail du referentiel, relu a chaque lecture, avec sa nature d'operation : celle du referentiel pour un poste\na choisir, celle figee a la saisie pour le poste d'une activite.\n",
         "properties" : {
           "id" : {
             "description" : "Identifiant du poste dans le referentiel.",
