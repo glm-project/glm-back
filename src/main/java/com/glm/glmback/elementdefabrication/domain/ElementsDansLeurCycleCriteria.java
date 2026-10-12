@@ -7,13 +7,17 @@ import java.util.Optional;
 /**
  * Les elements a lire, et l'instant auquel l'atelier juge l'etat de ceux qui y sont.
  */
-public record ElementsDansLeurCycleCriteria(Optional<Periode> creation, Instant evaluation) {
+public record ElementsDansLeurCycleCriteria(Optional<Periode> creation, Optional<CycleDeVie> cycle, Instant evaluation) {
   public ElementsDansLeurCycleCriteria {
     Assert.notNull("creation", creation);
+    Assert.notNull("cycle", cycle);
     Assert.notNull("evaluation", evaluation);
   }
 
   public boolean matches(ElementDansSonCycle lu) {
-    return creation.map(periode -> periode.contains(lu.element().dateDeCreation())).orElse(true);
+    return (
+      creation.map(periode -> periode.contains(lu.element().dateDeCreation())).orElse(true)
+      && cycle.map(demande -> demande == lu.cycle()).orElse(true)
+    );
   }
 }

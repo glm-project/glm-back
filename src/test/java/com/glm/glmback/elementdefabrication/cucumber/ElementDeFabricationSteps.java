@@ -9,6 +9,7 @@ import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -114,6 +115,14 @@ public class ElementDeFabricationSteps {
   @When("je liste les elements de fabrication crees avec celui-ci")
   public void jeListeLesElementsCreesAvecCeluiCi() {
     rest.get(BASE_URI + "?debut=" + derniereCreation + "&fin=" + derniereCreation);
+  }
+
+  @Then("cet element de fabrication n'est liste que dans le cycle {string}")
+  public void cetElementNEstListeQueDansLeCycle(String attendu) {
+    for (String cycle : List.of("EN_PREPARATION", "EN_ATELIER", "CLOTURE")) {
+      rest.get(BASE_URI + "?debut=" + derniereCreation + "&fin=" + derniereCreation + "&cycle=" + cycle);
+      assertThat(CucumberRestTestContext.countEntries("$.content")).as(cycle).isEqualTo(cycle.equals(attendu) ? 1 : 0);
+    }
   }
 
   /**

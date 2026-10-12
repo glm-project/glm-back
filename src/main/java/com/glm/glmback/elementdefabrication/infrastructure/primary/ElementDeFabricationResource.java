@@ -1,12 +1,14 @@
 package com.glm.glmback.elementdefabrication.infrastructure.primary;
 
 import com.glm.glmback.elementdefabrication.application.ElementDeFabricationApplicationService;
+import com.glm.glmback.elementdefabrication.domain.CycleDeVie;
 import com.glm.glmback.elementdefabrication.domain.ElementDansSonCycle;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationId;
 import com.glm.glmback.elementdefabrication.domain.Periode;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import com.glm.glmback.shared.pagination.infrastructure.primary.RestPage;
+import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.Optional;
@@ -59,10 +61,13 @@ class ElementDeFabricationResource {
   RestPage<RestElementDeFabrication> list(
     @RequestParam Instant debut,
     @RequestParam Instant fin,
+    @Parameter(
+      description = "Ne lire que les elements de ce cycle, tries par creation, mise a l'atelier ou cloture decroissante."
+    ) @RequestParam Optional<CycleDeVie> cycle,
     @RequestParam(defaultValue = "0") int page,
     @RequestParam(defaultValue = "20") int size
   ) {
-    Page<ElementDansSonCycle> resultat = applicationService.list(Optional.of(new Periode(debut, fin)), new Pageable(page, size));
+    Page<ElementDansSonCycle> resultat = applicationService.list(Optional.of(new Periode(debut, fin)), cycle, new Pageable(page, size));
 
     return RestPage.from(resultat, RestElementDeFabrication::from);
   }

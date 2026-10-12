@@ -187,6 +187,7 @@ Feature: Gestion des elements de fabrication
     Then la reponse a le statut http 200
     And la reponse contient au moins 2 elements
 
+  # Un element n'est que dans un cycle a la fois : la liste filtree par cycle ne le rend que dans le sien.
   Scenario: La liste dit ou en est chaque element, de sa creation a sa reouverture
     Given il est "2042-01-05T08:00:00Z"
     And j'ai cree un element de fabrication
@@ -199,6 +200,7 @@ Feature: Gestion des elements de fabrication
       | etatDAtelier   | -              |
       | misALAtelierLe | -              |
       | clotureLe      | -              |
+    And cet element de fabrication n'est liste que dans le cycle "EN_PREPARATION"
     Given il est "2042-01-05T09:00:00Z"
     And j'ai mis cet element de fabrication a l'atelier
     When je liste les elements de fabrication crees avec celui-ci
@@ -208,6 +210,7 @@ Feature: Gestion des elements de fabrication
       | etatDAtelier   | EN_ATTENTE           |
       | misALAtelierLe | 2042-01-05T09:00:00Z |
       | clotureLe      | -                    |
+    And cet element de fabrication n'est liste que dans le cycle "EN_ATELIER"
     Given il est "2042-01-05T17:00:00Z"
     And j'ai cloture cet element de fabrication
     When je liste les elements de fabrication crees avec celui-ci
@@ -218,6 +221,7 @@ Feature: Gestion des elements de fabrication
       | misALAtelierLe | 2042-01-05T09:00:00Z |
       | clotureLe      | 2042-01-05T17:00:00Z |
       | clotureePar    | gestionnaire         |
+    And cet element de fabrication n'est liste que dans le cycle "CLOTURE"
     Given j'ai rouvert cet element de fabrication
     When je liste les elements de fabrication crees avec celui-ci
     Then cet element de fabrication est liste avec
@@ -226,6 +230,7 @@ Feature: Gestion des elements de fabrication
       | etatDAtelier | EN_ATTENTE |
       | clotureLe    | -          |
       | clotureePar  | -          |
+    And cet element de fabrication n'est liste que dans le cycle "EN_ATELIER"
 
   Scenario: Creation refusee a un utilisateur sans role gestionnaire
     Given I am logged in as "user" with role "USER"

@@ -3009,6 +3009,15 @@
             "type" : "string"
           }
         }, {
+          "description" : "Ne lire que les elements de ce cycle, tries par creation, mise a l'atelier ou cloture decroissante.",
+          "in" : "query",
+          "name" : "cycle",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "EN_PREPARATION", "EN_ATELIER", "CLOTURE" ],
+            "type" : "string"
+          }
+        }, {
           "in" : "query",
           "name" : "page",
           "required" : false,

@@ -1,5 +1,6 @@
 package com.glm.glmback.elementdefabrication.infrastructure.secondary;
 
+import com.glm.glmback.elementdefabrication.domain.CycleDeVie;
 import com.glm.glmback.elementdefabrication.domain.ElementDansSonCycle;
 import com.glm.glmback.elementdefabrication.domain.ElementsDansLeurCycle;
 import com.glm.glmback.elementdefabrication.domain.ElementsDansLeurCycleCriteria;
@@ -11,6 +12,7 @@ import jakarta.persistence.Tuple;
 import jakarta.persistence.criteria.AbstractQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Order;
@@ -50,7 +52,7 @@ class JpaElementsDansLeurCycle implements ElementsDansLeurCycle {
     CriteriaBuilder constructeur = entities.getCriteriaBuilder();
     CriteriaQuery<Tuple> requete = constructeur.createTupleQuery();
     Lecture lecture = Lecture.sur(requete, constructeur);
-    requete.multiselect(lecture.element(), lecture.suivi()).where(lecture.correspondA(criteria)).orderBy(lecture.tri());
+    requete.multiselect(lecture.element(), lecture.suivi()).where(lecture.correspondA(criteria)).orderBy(lecture.tri(criteria));
 
     List<Tuple> lignes = entities
       .createQuery(requete)
@@ -152,11 +154,37 @@ class JpaElementsDansLeurCycle implements ElementsDansLeurCycle {
       criteria
         .creation()
         .ifPresent(periode -> predicats.add(constructeur.between(element.get("dateDeCreation"), periode.debut(), periode.fin())));
+      criteria.cycle().ifPresent(cycle -> predicats.add(dans(cycle)));
       return predicats.toArray(Predicate[]::new);
     }
 
-    List<Order> tri() {
-      return List.of(constructeur.desc(element.get("dateDeCreation")), constructeur.asc(element.get("id")));
+    private Predicate dans(CycleDeVie cycle) {
+      return switch (cycle) {
+        case EN_PREPARATION -> constructeur.isNull(suivi.get("id"));
+        case EN_ATELIER -> constructeur.and(
+          constructeur.isNotNull(suivi.get("id")),
+          constructeur.isNull(suivi.get("clotureDateDeSurvenue"))
+        );
+        case CLOTURE -> constructeur.isNotNull(suivi.get("clotureDateDeSurvenue"));
+      };
+    }
+
+    /**
+     * Chaque cycle se lit de son evenement le plus recent : creation, mise a l'atelier ou cloture ; sans cycle, la
+     * creation. L'identite de l'element departage.
+     */
+    List<Order> tri(ElementsDansLeurCycleCriteria criteria) {
+      Expression<?> date = criteria
+        .cycle()
+        .<Expression<?>>map(cycle ->
+          switch (cycle) {
+            case EN_PREPARATION -> element.get("dateDeCreation");
+            case EN_ATELIER -> suivi.get("engagementDate");
+            case CLOTURE -> suivi.get("clotureDateDeSurvenue");
+          }
+        )
+        .orElseGet(() -> element.get("dateDeCreation"));
+      return List.of(constructeur.desc(date), constructeur.asc(element.get("id")));
     }
   }
 }

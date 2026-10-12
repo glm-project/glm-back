@@ -155,6 +155,29 @@ class JpaElementsDansLeurCycleIT {
 
   @Test
   @WithTenant(IMPECCMOLD)
+  void shouldLireChaqueCycleSeulParSonEvenementLePlusRecent() {
+    Instant creation = Instant.parse("2041-05-06T06:00:00Z");
+    Instant engagement = creation.plusSeconds(3600);
+    ElementDeFabrication preparationAncienne = cree(creation);
+    ElementDeFabrication preparationRecente = cree(creation.plusSeconds(1));
+    ElementDeFabrication engageLePremier = cree(creation.plusSeconds(2));
+    ElementDeFabrication engageLeSecond = cree(creation.plusSeconds(3));
+    ElementDeFabrication clotureLaPremiere = cree(creation.plusSeconds(4));
+    ElementDeFabrication clotureLaSeconde = cree(creation.plusSeconds(5));
+    inTransaction(() -> suivis.create(engage(engageLeSecond, engagement.plusSeconds(1))));
+    inTransaction(() -> suivis.create(engage(engageLePremier, engagement.plusSeconds(2))));
+    inTransaction(() -> suivis.create(engage(clotureLaSeconde, engagement).cloture(clotureParLeroyA(engagement.plusSeconds(20)))));
+    inTransaction(() -> suivis.create(engage(clotureLaPremiere, engagement).cloture(clotureParLeroyA(engagement.plusSeconds(10)))));
+    Periode periode = new Periode(creation, creation.plusSeconds(5));
+
+    assertThat(lit(periode, CycleDeVie.EN_PREPARATION)).containsExactly(preparationRecente, preparationAncienne);
+    assertThat(lit(periode, CycleDeVie.EN_ATELIER)).containsExactly(engageLePremier, engageLeSecond);
+    assertThat(lit(periode, CycleDeVie.CLOTURE)).containsExactly(clotureLaSeconde, clotureLaPremiere);
+    assertThat(lit(periode, Optional.of(CycleDeVie.CLOTURE), creation, firstPageOfTen()).totalElementsCount()).isEqualTo(2);
+  }
+
+  @Test
+  @WithTenant(IMPECCMOLD)
   void shouldPaginerParCreationDecroissante() {
     Instant creation = Instant.parse("2041-03-04T06:00:00Z");
     ElementDeFabrication ancien = cree(creation);
@@ -181,7 +204,15 @@ class JpaElementsDansLeurCycleIT {
   }
 
   private Page<ElementDansSonCycle> lit(Periode periode, Instant evaluation, Pageable pageable) {
-    return inTransaction(() -> lecture.list(new ElementsDansLeurCycleCriteria(Optional.of(periode), evaluation), pageable));
+    return lit(periode, Optional.empty(), evaluation, pageable);
+  }
+
+  private List<ElementDeFabrication> lit(Periode periode, CycleDeVie cycle) {
+    return lit(periode, Optional.of(cycle), periode.fin(), firstPageOfTen()).content().stream().map(ElementDansSonCycle::element).toList();
+  }
+
+  private Page<ElementDansSonCycle> lit(Periode periode, Optional<CycleDeVie> cycle, Instant evaluation, Pageable pageable) {
+    return inTransaction(() -> lecture.list(new ElementsDansLeurCycleCriteria(Optional.of(periode), cycle, evaluation), pageable));
   }
 
   private ElementDeFabrication cree(Instant dateDeCreation) {
