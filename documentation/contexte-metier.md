@@ -192,6 +192,8 @@ ajoutent l'évaluation temporelle, le calendrier ou la valorisation de leur cont
 
 **Mettre un élément en atelier est un geste métier explicite du back-office**, distinct de sa création : tout ce qui est créé n'est pas forcément à faire, et c'est cet acte qui fait apparaître l'élément sur l'écran des opérateurs. C'est aussi ce qui donne un sens à l'invariant « aucun événement antérieur à l'engagement ».
 
+**Un élément n'a qu'un suivi d'atelier dans sa vie.** Revenir en atelier après la clôture, c'est rouvrir ce suivi, jamais en engager un second : engager un élément qui a déjà un suivi, clôturé compris, est refusé (409 `element-deja-engage`). La contrainte unique `ux_suivi_d_atelier_element` est le filet de deux engagements simultanés.
+
 L'écran des opérateurs veut tous les éléments actifs d'un coup, sans rien qui défile et sans notion de date : la période de `SuiviDAtelierCriteria` est donc **facultative**, et ne sert qu'aux écrans de back-office.
 
 Les quatre couches existent ; `suivi_d_atelier` et `evenement_d_atelier` persistent le suivi et ses faits dans le
@@ -240,9 +242,8 @@ porte le contrat détaillé et les limites de cohérence face aux écritures con
    l'[ADR 0002](adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md) pour la frontière serveur/pupitre.
 4. **La déclaration du travail non facturable.** Le client veut son bouton GLM, placé en bas de l'écran, pour déclarer à la main le travail qu'il ne facture pas. Il sera déclaré par le superviseur comme un OF de type Perso. Sa création, le sous-type et le rattachement éventuel à un projet interne feront l'objet d'un chantier distinct.
 5. **Le cycle de vie de l'élément lui-même.** La clôture existe côté atelier, sur le suivi. Reste à trancher si l'élément de fabrication porte en propre un statut, ou si son activité se lit entièrement par la présence ou l'absence d'un suivi non clôturé.
-6. **Aucune garde d'unicité en base** sur « un seul suivi non clôturé par élément », contrairement à ce que `elementdefabrication` fait pour la `Reference`. La règle vit dans le service, mais une contrainte partielle transformerait en 500 un état que le domaine admet aujourd'hui : rouvrir la clôture d'un suivi dont l'élément a été réengagé depuis. À trancher côté domaine avant de poser la contrainte.
-7. **L'écriture du journal rapproche par identifiant**, ce qui coûte une lecture indexée de la collection à chaque pointage. Si un journal devenait assez long pour que cette lecture pèse, la sortie est un upsert natif gardé (`on conflict (id) do update ... where ... is distinct from ...`), qui épargne à PostgreSQL toute version de tuple sur les lignes inchangées — au prix d'une scission permanente entre lecture JPA et écriture JDBC.
-8. **L'audit reste à faire.** Les pointages ignorés se lisent en base, sans endpoint ni écran ; les actes du gestionnaire ne sont pas audités, et ceux qui seraient incohérents ne sont pas refusés au-delà de la borne de fin.
+6. **L'écriture du journal rapproche par identifiant**, ce qui coûte une lecture indexée de la collection à chaque pointage. Si un journal devenait assez long pour que cette lecture pèse, la sortie est un upsert natif gardé (`on conflict (id) do update ... where ... is distinct from ...`), qui épargne à PostgreSQL toute version de tuple sur les lignes inchangées — au prix d'une scission permanente entre lecture JPA et écriture JDBC.
+7. **L'audit reste à faire.** Les pointages ignorés se lisent en base, sans endpoint ni écran ; les actes du gestionnaire ne sont pas audités, et ceux qui seraient incohérents ne sont pas refusés au-delà de la borne de fin.
 
 ## postedetravail
 
@@ -345,7 +346,7 @@ limites de la semaine ; les bornes de l'activité restent intactes.
 Une activité en cours rend une indication sans fin sur chacun des jours atteints à l'instant de lecture, dans la
 semaine : commencée dimanche à 22 h et lue lundi à 1 h, elle apparaît lundi avec son début entier, sans fin à minuit.
 Une fin lundi à 3 h remplace ensuite cette indication par les portions terminées, 2 h dimanche et 3 h lundi.
-La feuille nomme l'élément, jamais le suivi : un élément réengagé après clôture reste le même élément. Ni libellé
+La feuille nomme l'élément, jamais le suivi. Ni libellé
 de poste ni fiche d'élément ici — la synthèse des heures les porte. Les activités sont triées par début de portion,
 élément puis identité stable.
 
@@ -378,7 +379,7 @@ journal d'un autre agrégat modifie ; seule une projection le peut.
 
 Une ligne par nature d'opération, plus une ligne sans nature pour une entreprise sans parc machine.
 Chaque ligne sépare travail et non conformité, ses périodes datées, machine et main d'œuvre.
-L'élément connu mais jamais engagé rend un rapport vide ; un réengagement additionne ses passages.
+L'élément connu mais jamais engagé rend un rapport vide.
 
 Le rapport comptabilise seulement les activités terminées. Une activité encore en cours est entièrement
 exclue du temps, des coûts et du diviseur ; `activitesEnCours` explique leur nombre.
@@ -469,7 +470,7 @@ opérationnelle de la semaine. Une activité en cours conserve son élément sur
 la semaine, sans durée comptabilisée.
 
 Les éléments rendus portent une activité ou un pointage dans la semaine, par première apparition puis nom.
-Un réengagement reste le même élément. Le nom et la catégorie viennent du suivi ; référence et description sont
+Le nom et la catégorie viennent du suivi ; référence et description sont
 relues au référentiel, et peuvent être absentes. Les couples poste/nature suivent leur première apparition,
 activité et pointage confondus ; l'absence de poste ou de nature est nominale.
 
