@@ -19,6 +19,8 @@ class JournalDAtelierCorrectionsTest {
 
   private static final Instant LE_10_MAI_2026_A_10H = Instant.parse("2026-05-10T10:00:00Z");
   private static final Instant LE_10_MAI_2026_A_11H = Instant.parse("2026-05-10T11:00:00Z");
+  private static final Instant LE_10_MAI_2026_A_21H = Instant.parse("2026-05-10T21:00:00Z");
+  private static final Instant LE_10_MAI_2026_A_22H = Instant.parse("2026-05-10T22:00:00Z");
   private static final Instant LE_10_MAI_2026_A_14H = Instant.parse("2026-05-10T14:00:00Z");
   private static final Instant LE_10_MAI_2026_A_15H = Instant.parse("2026-05-10T15:00:00Z");
   private static final Instant LE_11_MAI_2026_A_10H = Instant.parse("2026-05-11T10:00:00Z");
@@ -174,7 +176,7 @@ class JournalDAtelierCorrectionsTest {
    */
   @Test
   void shouldGarderLaFinPointeeDUneActiviteDeplaceeQuandOnAjouteSurSonAncienPoste() {
-    EvenementDAtelier fin = finPointeeDe(travail).a(LE_10_MAI_2026_A_10H);
+    EvenementDAtelier fin = finDe(travail).a(LE_10_MAI_2026_A_10H);
     EvenementDAtelier ajoutee = debutAjouteParLeroySurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H);
     EvenementDAtelier finAjoutee = finRegulariseeParLeroyDe(ajoutee).a(LE_10_MAI_2026_A_9H.plusSeconds(1800));
 
@@ -206,7 +208,7 @@ class JournalDAtelierCorrectionsTest {
 
     List<Activite> activites = activites(
       retiree,
-      finPointeeDe(retiree).a(LE_10_MAI_2026_A_12H),
+      finDe(retiree).a(LE_10_MAI_2026_A_12H),
       retraitParLeroyDe(retiree).a(LE_11_MAI_2026_A_9H),
       recu
     );
@@ -308,7 +310,7 @@ class JournalDAtelierCorrectionsTest {
   @Test
   void shouldLireUneFinSansCibleParLaCleEtLOrdreDesGestes() {
     EvenementDAtelier ouverture = debutSurFraiseuse1ParDupontRecuLe(LE_11_MAI_2026_A_9H).a(LE_10_MAI_2026_A_8H);
-    EvenementDAtelier fin = finDe(ouverture).a(LE_10_MAI_2026_A_12H);
+    EvenementDAtelier fin = finSansCibleDe(ouverture).a(LE_10_MAI_2026_A_12H);
     EvenementDAtelier suivante = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_14H);
 
     List<Activite> activites = activites(suivante, fin, ouverture);
@@ -325,7 +327,7 @@ class JournalDAtelierCorrectionsTest {
   void shouldNePasRemplacerLaFinRegulariseeParUneFinSansCible() {
     EvenementDAtelier regularisee = finRegulariseeParLeroyDe(travail).a(LE_10_MAI_2026_A_9H);
 
-    List<Activite> activites = activites(travail, regularisee, finDe(travail).a(LE_10_MAI_2026_A_12H));
+    List<Activite> activites = activites(travail, regularisee, finSansCibleDe(travail).a(LE_10_MAI_2026_A_12H));
 
     assertThat(activites)
       .singleElement()
@@ -333,5 +335,58 @@ class JournalDAtelierCorrectionsTest {
         assertThat(activite.fin()).contains(LE_10_MAI_2026_A_9H);
         assertThat(activite.evenementDeFin()).contains(regularisee);
       });
+  }
+
+  /**
+   * La cloture ne depend d'aucun rejeu : elle ferme toute activite que rien n'a terminee, quelle que soit sa cle, et
+   * pas seulement la derniere ouverte de la cle. Ici une activite pointee apres un retrait, dont l'heure de geste precede
+   * celle de l'activite retiree, est fermee par la cloture.
+   */
+  @Test
+  void shouldFermerParLaClotureLActiviteOuverteSurUneCleLibereeParUneCorrection() {
+    EvenementDAtelier retiree = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_10H);
+    EvenementDAtelier recu = debutSurFraiseuse1ParDupontRecuLe(LE_10_MAI_2026_A_12H.plusSeconds(1800)).a(LE_10_MAI_2026_A_9H);
+
+    List<Activite> activites = new JournalDAtelier(
+      List.of(retiree, finDe(retiree).a(LE_10_MAI_2026_A_11H), retraitParLeroyDe(retiree).a(LE_10_MAI_2026_A_12H), recu)
+    ).activites(Optional.of(LE_10_MAI_2026_A_13H));
+
+    assertThat(activites)
+      .singleElement()
+      .satisfies(activite -> {
+        assertThat(activite.ouvrant()).isEqualTo(recu);
+        assertThat(activite.fin()).contains(LE_10_MAI_2026_A_13H);
+        assertThat(activite.evenementDeFin()).isEmpty();
+      });
+  }
+
+  @Test
+  void shouldFermerParLaClotureUneActiviteDontLePosteAChange() {
+    EvenementDAtelier deplacee = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_10H);
+    EvenementDAtelier recu = debutSurFraiseuse1ParDupontRecuLe(LE_10_MAI_2026_A_12H.plusSeconds(1800)).a(LE_10_MAI_2026_A_9H);
+
+    List<Activite> activites = new JournalDAtelier(
+      List.of(
+        deplacee,
+        finDe(deplacee).a(LE_10_MAI_2026_A_11H),
+        changementDePosteVersFraiseuse2ParLeroyDe(deplacee).a(LE_10_MAI_2026_A_12H),
+        recu
+      )
+    ).activites(Optional.of(LE_10_MAI_2026_A_13H));
+
+    assertThat(activites).extracting(Activite::fin).containsExactly(Optional.of(LE_10_MAI_2026_A_13H), Optional.of(LE_10_MAI_2026_A_11H));
+  }
+
+  /**
+   * Une activite commencee apres la cloture n'est pas fermee par elle, et une activite echue avant elle garde sa borne.
+   */
+  @Test
+  void shouldNeFermerParLaClotureNiUneActiviteCommenceeApresNiUneActiviteEchue() {
+    EvenementDAtelier echue = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier apres = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_22H);
+
+    List<Activite> activites = new JournalDAtelier(List.of(echue, apres)).activites(Optional.of(LE_10_MAI_2026_A_21H.plusSeconds(60)));
+
+    assertThat(activites).extracting(Activite::fin).containsExactly(Optional.empty(), Optional.empty());
   }
 }

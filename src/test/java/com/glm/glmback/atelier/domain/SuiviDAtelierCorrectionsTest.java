@@ -187,7 +187,7 @@ class SuiviDAtelierCorrectionsTest {
     assertThatThrownBy(() -> suivi.ajoute(pointee, finRegulariseeParLeroyDe(pointee).a(A_10H), A_22H)).isExactlyInstanceOf(
       EvenementDAtelierIncoherentException.class
     );
-    assertThatThrownBy(() -> suivi.ajoute(ouverture, finPointeeDe(ouverture).a(A_10H), A_22H)).isExactlyInstanceOf(
+    assertThatThrownBy(() -> suivi.ajoute(ouverture, finDe(ouverture).a(A_10H), A_22H)).isExactlyInstanceOf(
       EvenementDAtelierIncoherentException.class
     );
     assertThatThrownBy(() -> suivi.ajoute(ouverture, fin(autreOuverture, A_10H), A_22H)).isExactlyInstanceOf(

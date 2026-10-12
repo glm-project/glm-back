@@ -124,7 +124,7 @@ rien.
 Le journal se **lit par clé** (`SequenceDActivites`, la seule interprétation) : les gestes d'une clé, dans l'ordre du
 journal, donnent ses activités. Un `DEBUT` ou une `NON_CONFORMITE` ouvre une activité, qui s'identifie par son pointage
 ouvrant (`ActiviteId`). Une `FIN` du pupitre ferme l'activité que sa clé avait en cours à la réception, que le serveur écrit dans la fin (`activiteVisee`). La `FIN` d'une
-régularisation ou d'un ajout ferme l'activité qu'elle cible. La clôture ferme l'activité restée en cours. La lecture suppose
+régularisation ou d'un ajout ferme l'activité qu'elle cible. La clôture ferme à son heure toute activité que rien n'a terminée, commencée avant elle et dont l'échéance n'est pas passée, quelle que soit sa clé (aucun rejeu). La lecture suppose
 au plus une activité en cours par clé, ce que la règle de réception garantit ; un fait qui n'a rien à fermer n'a aucun
 effet, et rien n'est refusé à la lecture.
 

@@ -12,7 +12,9 @@ import org.junit.jupiter.api.Test;
 /**
  * La lecture d'une cle, seule interpretation du journal : l'echeance, a treize heures de son debut, a partir de laquelle
  * une activite que rien n'a terminee est lue comme terminee automatiquement ; la fin pointee, qui ferme l'activite en
- * cours de la cle sans la designer ; et la fin regularisee, qui ferme celle qu'elle cible.
+ * cours de la cle ; et la fin regularisee, qui ferme celle qu'elle cible. Les fins pointees y sont ecrites comme le serveur
+ * les ecrit, ciblees ; seuls les tests de l'echeance prennent la fin d'avant la liaison ({@code finSansCibleDe}), qui se
+ * lit par la cle et dont l'effet apres l'echeance reste nul, comme celui d'un geste que la regle de reception aurait ignore.
  */
 @UnitTest
 class JournalDAtelierInterpretationTest {
@@ -104,7 +106,7 @@ class JournalDAtelierInterpretationTest {
   void shouldIgnorerUneFinPointeeApresLEcheance() {
     EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
 
-    List<Activite> activites = activites(List.of(travail, finDe(travail).a(LE_10_MAI_2026_A_23H)), Optional.empty());
+    List<Activite> activites = activites(List.of(travail, finSansCibleDe(travail).a(LE_10_MAI_2026_A_23H)), Optional.empty());
 
     assertThat(activites)
       .singleElement()
@@ -124,7 +126,7 @@ class JournalDAtelierInterpretationTest {
   void shouldLireLaFinAutomatiqueALEcheanceDeLaDureeQueLeDebutAPortee() {
     EvenementDAtelier sousHuitHeures = debutSurFraiseuse1ParDupontSousHuitHeuresA(LE_10_MAI_2026_A_8H);
 
-    List<Activite> activites = activites(List.of(sousHuitHeures, finDe(sousHuitHeures).a(LE_10_MAI_2026_A_17H)), Optional.empty());
+    List<Activite> activites = activites(List.of(sousHuitHeures, finSansCibleDe(sousHuitHeures).a(LE_10_MAI_2026_A_17H)), Optional.empty());
 
     assertThat(activites)
       .singleElement()
@@ -159,7 +161,7 @@ class JournalDAtelierInterpretationTest {
   void shouldLireCommeFinAutomatiqueUneFinPointeeExactementALEcheance() {
     EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
 
-    List<Activite> activites = activites(List.of(travail, finDe(travail).a(LE_10_MAI_2026_A_21H)), Optional.empty());
+    List<Activite> activites = activites(List.of(travail, finSansCibleDe(travail).a(LE_10_MAI_2026_A_21H)), Optional.empty());
 
     assertThat(activites)
       .singleElement()
@@ -231,7 +233,7 @@ class JournalDAtelierInterpretationTest {
   @Test
   void shouldLaisserSansEffetUneFinPointeeApresLEcheanceMemeAvantUneFinRegularisee() {
     EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    EvenementDAtelier finPointee = finDe(travail).a(LE_10_MAI_2026_A_22H);
+    EvenementDAtelier finPointee = finSansCibleDe(travail).a(LE_10_MAI_2026_A_22H);
     EvenementDAtelier finRegularisee = finRegulariseeParLeroyDe(travail).a(LE_10_MAI_2026_A_23H);
 
     List<Activite> activites = activites(List.of(travail, finPointee, finRegularisee), Optional.empty());

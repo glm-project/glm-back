@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 class SuiviDAtelierReceptionApresCorrectionsTest {
 
   private static final Instant LE_10_MAI_2026_A_10H = Instant.parse("2026-05-10T10:00:00Z");
+  private static final Instant LE_10_MAI_2026_A_11H = Instant.parse("2026-05-10T11:00:00Z");
   private static final Instant LE_10_MAI_2026_A_14H = Instant.parse("2026-05-10T14:00:00Z");
   private static final Instant LE_10_MAI_2026_A_22H = Instant.parse("2026-05-10T22:00:00Z");
 
@@ -126,5 +127,46 @@ class SuiviDAtelierReceptionApresCorrectionsTest {
     SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(travail).cloture(clotureParLeroyA(LE_10_MAI_2026_A_12H));
 
     assertThat(suivi.juge(fraiseuse1, TypeDEvenementDAtelier.FIN, LE_10_MAI_2026_A_10H)).isEqualTo(new VerdictDeReception.Accepte());
+  }
+
+  /**
+   * Un pointage recu apres un retrait, sur la cle que le retrait a liberee, est ferme par la cloture comme tout autre : le
+   * suivi cloture ne garde aucune activite en cours, et une fin posterieure a la cloture est ignoree (ADR 0010).
+   */
+  @Test
+  void shouldFermerParLaClotureUnPointageRecuSurUneCleLiberee() {
+    EvenementDAtelier retiree = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_10H);
+    EvenementDAtelier recu = debutSurFraiseuse1ParDupontRecuLe(LE_10_MAI_2026_A_12H.plusSeconds(1800)).a(LE_10_MAI_2026_A_9H);
+    SuiviDAtelier suivi = suiviDAtelierEngage()
+      .enregistre(retiree)
+      .enregistre(finDe(retiree).a(LE_10_MAI_2026_A_11H))
+      .enregistre(retraitParLeroyDe(retiree).a(LE_10_MAI_2026_A_12H))
+      .enregistre(recu)
+      .cloture(clotureParLeroyA(LE_10_MAI_2026_A_13H));
+    Instant apresLaCloture = LE_10_MAI_2026_A_14H;
+
+    assertThat(suivi.activites())
+      .singleElement()
+      .satisfies(activite -> assertThat(activite.fin()).contains(LE_10_MAI_2026_A_13H));
+    assertThat(suivi.etat(LE_10_MAI_2026_A_16H)).isEqualTo(EtatDAtelier.CLOTURE);
+    assertThat(suivi.activitesEnCours(LE_10_MAI_2026_A_16H)).isEmpty();
+    assertThat(suivi.juge(fraiseuse1, TypeDEvenementDAtelier.FIN, apresLaCloture)).isEqualTo(
+      new VerdictDeReception.Ignore(RaisonDePointageIgnore.AUCUNE_ACTIVITE, Optional.of(recu.id()))
+    );
+  }
+
+  @Test
+  void shouldFermerParLaClotureUnPointageRecuSurLaCleQuUneActiviteADeplaceeAilleurs() {
+    EvenementDAtelier deplacee = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_10H);
+    EvenementDAtelier recu = debutSurFraiseuse1ParDupontRecuLe(LE_10_MAI_2026_A_12H.plusSeconds(1800)).a(LE_10_MAI_2026_A_9H);
+    SuiviDAtelier suivi = suiviDAtelierEngage()
+      .enregistre(deplacee)
+      .enregistre(finDe(deplacee).a(LE_10_MAI_2026_A_11H))
+      .enregistre(changementDePosteVersFraiseuse2ParLeroyDe(deplacee).a(LE_10_MAI_2026_A_12H))
+      .enregistre(recu)
+      .cloture(clotureParLeroyA(LE_10_MAI_2026_A_13H));
+
+    assertThat(suivi.activitesEnCours(LE_10_MAI_2026_A_16H)).isEmpty();
+    assertThat(suivi.juge(fraiseuse1, TypeDEvenementDAtelier.FIN, LE_10_MAI_2026_A_14H)).isInstanceOf(VerdictDeReception.Ignore.class);
   }
 }

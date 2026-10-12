@@ -82,7 +82,7 @@ end to the activity it closes, without looking at a correction. **Every end name
 on the effective key, after the corrections, and the server writes the activity it judged running into the fact it
 accepts (origin stays `POINTAGE`; `estUneRegularisation` still reads the origin). Nothing is guessed afterwards: a targeted end
 closes its activity at its time, whatever key it is written on, whatever opens on a freed key later, and whatever order the
-facts were registered in — the reading no longer depends on `dateDEnregistrement`. A pointed `FIN` written before this
+facts were registered in — the reading no longer depends on `dateDEnregistrement`. The closure of the follow-up ends, at its time, every activity that no end closes, that began before it and whose deadline it has not passed: it depends on no replay, so an activity opened late on a key a correction freed is closed like any other. A pointed `FIN` written before this
 change carries no target; it is read as it always was, by key and by the order of the gesture times (the openings of an
 add never take part), and never replaces an end already set. A second reading applies the corrections: the activities a
 `RETRAIT` targets disappear, and the activities a `CHANGEMENT_DE_POSTE` targets count on the workstation of the last one.

@@ -16,7 +16,8 @@ import java.util.stream.Collectors;
  * regularisation ou d'un ajout, et depuis que le serveur la lie a la reception, la fin pointee, qui porte l'activite que sa
  * cle avait en cours (voir {@link RegleDeReception#activiteQueFermeUneFin}). Une fin ciblee ferme son activite a son heure,
  * quelle que soit la cle sur laquelle elle est ecrite et quelles que soient les ouvertures ou les corrections qui suivent :
- * rien n'est jamais redevine. La cloture, a defaut, ferme l'activite restee en cours.
+ * rien n'est jamais redevine. La cloture, a defaut, ferme a son heure toute activite que rien n'a terminee,
+ * quelle que soit sa cle : elle ne depend d'aucun rejeu.
  * </p>
  *
  * <p>
@@ -58,21 +59,25 @@ final class SequenceDActivites {
     gestes
       .stream()
       .filter(geste -> geste.activiteVisee().isPresent())
-      .forEach(fin -> sequence.termine(fin.activiteVisee(), fin));
+      .forEach(fin -> sequence.termine(fin.activiteVisee(), activite -> activite.termineePar(fin)));
     gestes
       .stream()
       .filter(geste -> geste.activiteVisee().isEmpty() && geste.origine() == OrigineDuPointage.POINTAGE)
       .collect(Collectors.groupingBy(EvenementDAtelier::cle, LinkedHashMap::new, Collectors.toList()))
       .values()
-      .forEach(pointages -> sequence.rejoue(pointages, cloture));
+      .forEach(sequence::rejoue);
+    cloture.ifPresent(sequence::clot);
 
     return List.copyOf(sequence.activites.values());
   }
 
-  private void rejoue(List<EvenementDAtelier> pointages, Optional<Instant> cloture) {
+  /**
+   * Rattache les fins sans cible d'une cle aux activites que la cle avait en cours : les pointages, rejoues dans l'ordre
+   * du journal, celui des heures de geste.
+   */
+  private void rejoue(List<EvenementDAtelier> pointages) {
     courante = Optional.empty();
     pointages.forEach(this::lit);
-    cloture.ifPresent(this::clot);
   }
 
   private void lit(EvenementDAtelier pointage) {
@@ -80,7 +85,7 @@ final class SequenceDActivites {
     if (pointage.type().ouvreUneActivite()) {
       courante = pointage.activite();
     } else {
-      termineSiEnCours(courante, termineePar(pointage));
+      termine(courante, activite -> activite.termineePar(pointage));
       courante = Optional.empty();
     }
   }
@@ -94,27 +99,24 @@ final class SequenceDActivites {
   }
 
   /**
-   * La cloture ferme a son heure l'activite encore vivante ; elle ne prolonge jamais une activite deja echue.
+   * La cloture ferme a son heure toute activite que rien n'a terminee, commencee avant elle et dont l'echeance n'est pas
+   * atteinte : elle ne prolonge jamais une activite echue. Elle ne depend d'aucun rejeu, donc ni de la cle, ni des ouvertures
+   * qui ont suivi une correction : la regle de reception ne laisse qu'une activite en cours par cle apres elles.
    */
   private void clot(Instant date) {
-    atteintLEcheance(date);
-    termineSiEnCours(courante, activite -> activite.termineeA(date));
-  }
-
-  private void termine(Optional<ActiviteId> activite, EvenementDAtelier fin) {
-    activite.ifPresent(identite -> activites.computeIfPresent(identite, (id, ouverte) -> ouverte.termineePar(fin)));
-  }
-
-  /**
-   * Termine l'activite que la cle avait en cours, sauf si une fin la ferme deja : la premiere fin posee reste la sienne.
-   */
-  private void termineSiEnCours(Optional<ActiviteId> activite, UnaryOperator<Activite> terminaison) {
-    activite.ifPresent(identite ->
-      activites.computeIfPresent(identite, (id, ouverte) -> ouverte.fin().isEmpty() ? terminaison.apply(ouverte) : ouverte)
+    activites.replaceAll((id, activite) ->
+      activite.fin().isEmpty() && !activite.debut().isAfter(date) && !activite.echeance().estAtteinteA(date)
+        ? activite.termineeA(date)
+        : activite
     );
   }
 
-  private static UnaryOperator<Activite> termineePar(EvenementDAtelier fin) {
-    return activite -> activite.termineePar(fin);
+  /**
+   * Termine l'activite, sauf si une fin la ferme deja : la premiere fin posee reste la sienne.
+   */
+  private void termine(Optional<ActiviteId> activite, UnaryOperator<Activite> terminaison) {
+    activite.ifPresent(identite ->
+      activites.computeIfPresent(identite, (id, ouverte) -> ouverte.fin().isEmpty() ? terminaison.apply(ouverte) : ouverte)
+    );
   }
 }

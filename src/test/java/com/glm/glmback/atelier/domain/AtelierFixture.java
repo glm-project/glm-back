@@ -256,19 +256,19 @@ public final class AtelierFixture {
   }
 
   /**
-   * La fin pointee sur la cle de l'activite qu'ouvre ce debut, par celui qui l'a ouverte : elle ferme l'activite en
-   * cours de la cle sans la designer, et il ne reste qu'a la dater.
+   * La fin pointee sur la cle de l'activite qu'ouvre ce debut, par celui qui l'a ouverte, telle que le serveur l'ecrit :
+   * elle vise l'activite que sa cle avait en cours, et il ne reste qu'a la dater.
    */
   public static GesteADater finDe(EvenementDAtelier ouvrant) {
-    return date -> pointageDAtelier(TypeDEvenementDAtelier.FIN, Optional.empty(), ouvrant.cle(), ouvrant.auteur(), Horodatage.saisiA(date));
+    return date -> finPointeeVisant(ouvrant, ouvrant.cle(), Horodatage.saisiA(date));
   }
 
   /**
-   * La fin pointee, telle que le serveur l'ecrit depuis qu'il la lie a la reception : sur la cle de l'activite qu'ouvre ce
-   * debut, et visant cette activite.
+   * La fin pointee d'avant que le serveur ne la lie a l'activite qu'elle ferme : elle ne designe rien, la cle la donne. Les
+   * journaux ecrits alors se lisent encore ainsi ; seuls les tests qui les couvrent s'en servent.
    */
-  public static GesteADater finPointeeDe(EvenementDAtelier ouvrant) {
-    return date -> finPointeeVisant(ouvrant, ouvrant.cle(), Horodatage.saisiA(date));
+  public static GesteADater finSansCibleDe(EvenementDAtelier ouvrant) {
+    return date -> pointageDAtelier(TypeDEvenementDAtelier.FIN, Optional.empty(), ouvrant.cle(), ouvrant.auteur(), Horodatage.saisiA(date));
   }
 
   /**
@@ -287,7 +287,7 @@ public final class AtelierFixture {
   }
 
   private static EvenementDAtelier finPointeeVisant(EvenementDAtelier ouvrant, CleDActivite cle, Horodatage horodatage) {
-    return evenementDAtelier(TypeDEvenementDAtelier.FIN, ouvrant.activite(), cle, AUTEUR_DUPONT, OrigineDuPointage.POINTAGE, horodatage);
+    return evenementDAtelier(TypeDEvenementDAtelier.FIN, ouvrant.activite(), cle, ouvrant.auteur(), OrigineDuPointage.POINTAGE, horodatage);
   }
 
   /**
