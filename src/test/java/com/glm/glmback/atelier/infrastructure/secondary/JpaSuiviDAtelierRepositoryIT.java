@@ -310,28 +310,28 @@ class JpaSuiviDAtelierRepositoryIT {
 
   @Test
   @WithTenant(IMPECCMOLD)
-  void shouldTrouverLeSuiviEnCoursDeSonElement() {
+  void shouldContenirLElementDUnSuiviEngage() {
     SuiviDAtelier engage = suiviEngageA(Instant.parse("2040-01-13T07:00:00Z"));
     inTransaction(() -> suivis.create(engage));
 
-    assertThat(inTransaction(() -> suivis.getEnCoursPour(engage.element().id()))).contains(engage);
+    assertThat(inTransaction(() -> suivis.contientElement(engage.element().id()))).isTrue();
   }
 
   @Test
   @WithTenant(IMPECCMOLD)
-  void shouldNePasTrouverDeSuiviEnCoursPourUnElementCloture() {
+  void shouldContenirLElementDUnSuiviCloture() {
     Instant engagement = Instant.parse("2040-01-14T07:00:00Z");
     SuiviDAtelier engage = suiviEngageA(engagement);
     inTransaction(() -> suivis.create(engage));
     inTransaction(() -> suivis.update(engage.cloture(new Cloture(AUTEUR_LEROY, Horodatage.saisiA(engagement.plusSeconds(36000))))));
 
-    assertThat(inTransaction(() -> suivis.getEnCoursPour(engage.element().id()))).isEmpty();
+    assertThat(inTransaction(() -> suivis.contientElement(engage.element().id()))).isTrue();
   }
 
   @Test
   @WithTenant(IMPECCMOLD)
-  void shouldNePasTrouverDeSuiviEnCoursPourUnElementJamaisEngage() {
-    assertThat(inTransaction(() -> suivis.getEnCoursPour(new ElementEngageId(UUID.randomUUID())))).isEmpty();
+  void shouldNePasContenirUnElementJamaisEngage() {
+    assertThat(inTransaction(() -> suivis.contientElement(new ElementEngageId(UUID.randomUUID())))).isFalse();
   }
 
   @Test

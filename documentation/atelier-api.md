@@ -480,6 +480,9 @@ clé et de la clôture, ou rien ; l'instant présent borne toujours la fin.
 **La clôture ne fige rien pour le gestionnaire** : la régularisation reste possible ensuite, et la clôture elle-même
 se déplace (`PUT`) ou se rouvre (`DELETE`). Ne pas griser la régularisation sur un élément clôturé.
 
+**Un élément ne s'engage qu'une fois.** Remettre à l'atelier un élément clôturé, c'est rouvrir sa clôture (`DELETE`) :
+un `POST /api/atelier/suivis` sur un élément qui a déjà un suivi, clôturé compris, répond 409 `element-deja-engage`.
+
 ### Évaluer le relevé des heures
 
 ```

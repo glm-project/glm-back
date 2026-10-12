@@ -237,19 +237,6 @@ Feature: Feuille de temps hebdomadaire d'un operateur
       | element | debut                | fin                  |
       | carter  | 2026-05-11T05:05:00Z | 2026-05-11T09:00:00Z |
 
-  Scenario: Un element reengage apres cloture reste le meme element
-    Given l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
-    And "martin" pointe "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:05:00Z"
-    And l'element "carter" est cloture a "2026-05-11T07:00:00Z"
-    And l'element "carter" est engage en atelier a "2026-05-11T08:00:00Z"
-    And "martin" pointe "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T08:05:00Z"
-    And "martin" pointe "FIN" sur l'element "carter" au poste "DMU 50" a "2026-05-11T12:00:00Z"
-    When je consulte la feuille de temps de "martin" pour la semaine 20 de 2026
-    Then les activites du "2026-05-11" sont
-      | element | debut                | fin                  |
-      | carter  | 2026-05-11T05:05:00Z | 2026-05-11T07:00:00Z |
-      | carter  | 2026-05-11T08:05:00Z | 2026-05-11T12:00:00Z |
-
   Scenario: Une feuille de temps ne se lit pas pour un operateur inconnu
     When je consulte la feuille de temps de l'operateur "11111111-2222-3333-4444-555555555555" pour la semaine 20 de 2026
     Then la reponse a le statut http 404

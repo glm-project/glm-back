@@ -89,10 +89,8 @@ class JpaSuiviDAtelierRepository implements SuiviDAtelierRepository {
   }
 
   @Override
-  public Optional<SuiviDAtelier> getEnCoursPour(ElementEngageId element) {
-    return suivis
-      .findFirstByElementIdAndClotureDateDeSurvenueIsNullOrderByEngagementDateDescIdAsc(element.uuid())
-      .map(SuiviDAtelierEntity::toDomain);
+  public boolean contientElement(ElementEngageId element) {
+    return suivis.existsByElementId(element.uuid());
   }
 
   @Override

@@ -70,6 +70,15 @@ class SuivisDAtelierServiceTest {
   }
 
   @Test
+  void shouldNotReengagerUnElementCloture() {
+    SuiviDAtelier engage = engage();
+    suivis.update(engage.cloture(clotureParLeroyA(LE_10_MAI_2026_A_17H)));
+    EngagementAEnregistrer commande = new EngagementAEnregistrer(ELEMENT_OF_2026_000042, AUTEUR_LEROY);
+
+    assertThatThrownBy(() -> atelier.engage(commande)).isExactlyInstanceOf(ElementDejaEngageException.class);
+  }
+
+  @Test
   void shouldDaterUnPointageSurLHorlogeEtEstampillerLaNatureDuPoste() {
     SuiviDAtelier engage = engage();
     maintenant.set(LE_10_MAI_2026_A_9H);

@@ -13,7 +13,10 @@ public interface SuiviDAtelierRepository {
 
   Optional<SuiviDAtelier> getForUpdate(SuiviDAtelierId id);
 
-  Optional<SuiviDAtelier> getEnCoursPour(ElementEngageId element);
+  /**
+   * Vrai si cet element a deja un suivi, ouvert ou cloture : un element n'a qu'un suivi dans sa vie.
+   */
+  boolean contientElement(ElementEngageId element);
 
   /**
    * Vrai si un suivi de l'entreprise porte deja cet evenement : l'identifiant d'un geste est unique dans toute la table,

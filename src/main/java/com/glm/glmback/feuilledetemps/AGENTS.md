@@ -37,7 +37,7 @@ l'opérateur ; la feuille expose les identifiants de poste et d'élément sans l
   les deux états terminés. Le découpage aux minuits locaux et aux limites de semaine ne déplace jamais ces bornes.
 - Une activité en cours rend une indication sans fin sur chaque jour atteint à l'instant de lecture, dans la semaine.
   Son début entier permet de lire « en cours depuis dimanche » sur lundi, sans durée à compter.
-- Une activité porte l'élément, jamais le suivi : un élément réengagé après clôture reste le même élément.
+- Une activité porte l'élément, jamais le suivi.
 - Les portions sont triées par début, élément puis identité stable de l'activité.
 - `DecoupageCalendaire` est le seul détenteur du calendrier. Le fuseau passe par `FuseauHoraireDeLEntreprise` ;
   son adapter rend actuellement `Europe/Paris`.

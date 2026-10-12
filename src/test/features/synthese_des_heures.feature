@@ -91,18 +91,6 @@ Feature: Synthese des heures hebdomadaire d'un operateur
       | DMU 50 | fraisage |
       | Tour   | tournage |
 
-  Scenario: Un element reengage apres cloture reste un seul element
-    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
-    And "martin" enregistre "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:05:00Z"
-    And pour la synthese, l'element "carter" est cloture a "2026-05-11T07:00:00Z"
-    And pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T08:00:00Z"
-    And "martin" enregistre "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T08:05:00Z"
-    And "martin" enregistre "FIN" sur l'element "carter" au poste "DMU 50" a "2026-05-11T12:00:00Z"
-    When je consulte la synthese des heures de "martin" pour la semaine 20 de 2026
-    Then les elements de la synthese sont
-      | id     | duree   |
-      | carter | PT5H50M |
-
   Scenario: Le journal brut conserve les seuls gestes d'element
     Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
     And "martin" enregistre "DEBUT" sur l'element "carter" au poste "DMU 50" a "2026-05-11T05:00:00Z"

@@ -62,6 +62,21 @@ Feature: Suivi des elements engages en atelier
     Then la reponse a le statut http 409
     And la reponse porte le code d'erreur "urn:glm:erreur:atelier:element-deja-engage"
 
+  # Un element n'a qu'un suivi dans sa vie : revenir en atelier apres la cloture, c'est rouvrir ce suivi.
+  Scenario: Un element cloture se rouvre, il ne se reengage pas
+    Given il est "2026-05-10T08:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 2005"
+      | categorie | OF   |
+      | reference | 2005 |
+    And j'ai engage l'element "OF 2005" en atelier
+    And je cloture "OF 2005" a l'instant present
+    When j'engage l'element "OF 2005" en atelier
+    Then la reponse a le statut http 409
+    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:element-deja-engage"
+    When je rouvre "OF 2005"
+    Then la reponse a le statut http 200
+    And le suivi a l'etat "EN_ATTENTE"
+
   Scenario: Engager un element inexistant renvoie 404
     When j'engage l'element inconnu "8b5f3d02-7c94-4e16-af28-0315b7c9d2e4" en atelier
     Then la reponse a le statut http 404

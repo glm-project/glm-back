@@ -24,7 +24,7 @@ record RestSyntheseDesHeures(
   )
   RestDureeDeSynthese dureeOperationnelleTotale,
   @Schema(
-    description = "Elements portant une activite ou un pointage dans la semaine, par premiere apparition puis nom. Un element reengage reste un seul element.",
+    description = "Elements portant une activite ou un pointage dans la semaine, par premiere apparition puis nom.",
     requiredMode = Schema.RequiredMode.REQUIRED
   )
   List<RestElementDeLaSynthese> elements
