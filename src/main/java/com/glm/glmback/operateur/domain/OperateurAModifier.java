@@ -10,7 +10,7 @@ public record OperateurAModifier(
   Nom nom,
   Prenom prenom,
   Optional<Identifiant> identifiant,
-  Optional<TauxHoraire> tauxHoraire,
+  TauxHoraire tauxHoraire,
   Set<PosteHabilitableId> postes
 ) {
   public OperateurAModifier {
@@ -32,6 +32,6 @@ public record OperateurAModifier(
     BigDecimal tauxHoraire,
     Set<PosteHabilitableId> postes
   ) {
-    this(id, new Nom(nom), new Prenom(prenom), Identifiant.of(identifiant), TauxHoraire.of(tauxHoraire), postes);
+    this(id, new Nom(nom), new Prenom(prenom), Identifiant.of(identifiant), new TauxHoraire(tauxHoraire), postes);
   }
 }

@@ -127,13 +127,7 @@ class OperateurTest {
   void shouldKeepIdentityWhenRevising() {
     Operateur operateur = operateurDupont();
 
-    Operateur revise = operateur.revise(
-      NOM_MARTIN,
-      PRENOM_SOPHIE,
-      Optional.of(IDENTIFIANT_050),
-      Optional.of(TAUX_HORAIRE_25),
-      habilitationDeTournage()
-    );
+    Operateur revise = operateur.revise(NOM_MARTIN, PRENOM_SOPHIE, Optional.of(IDENTIFIANT_050), TAUX_HORAIRE_25, habilitationDeTournage());
 
     assertThat(revise.id()).isEqualTo(operateur.id());
     assertThat(revise.nom()).isEqualTo(NOM_MARTIN);

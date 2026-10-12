@@ -262,7 +262,7 @@ Le terme reste volontairement générique, comme dans l'atelier : une machine ch
 
 ## operateur
 
-Gère le **référentiel des personnes qui pointent**. Un `Operateur` porte son nom, son prénom, un identifiant facultatif, un taux horaire facultatif, et l'ensemble des postes sur lesquels il est habilité.
+Gère le **référentiel des personnes qui pointent**. Un `Operateur` porte son nom, son prénom, un identifiant facultatif, un taux horaire exigé à la déclaration comme à la révision, et l'ensemble des postes sur lesquels il est habilité.
 
 ### Le métier vient du poste, jamais de la personne
 
@@ -290,7 +290,7 @@ L'identité (nom, prénom) est **unique par entreprise**. L'**identifiant** est 
 
 1. **Les gestionnaires ne sont pas déclarés.** Leur fiche n'aurait aucun usage tant que l'authentification n'est pas tranchée : l'`Auteur` d'une saisie vient du jeton, pas d'un référentiel. À rouvrir avec ce sujet.
 2. **Aucun plafond sur le nombre de postes par personne**, alors que le client énonce « maximum 4 machines par personne ». Une donnée de paramétrage ne s'écrit pas en constante du domaine, et GLM est une trame : une autre entreprise en habilitera six. Si le plafond doit être tenu, il viendra d'un port.
-3. **Montants.** Coût horaire du poste et taux horaire de l'opérateur existent sur les deux agrégats (facultatifs ; le taux strictement positif, le coût positif ou nul pour un poste qui ne demande que de la main d'œuvre), `atelier` les copie sur chaque événement du journal au moment de la saisie, et `coutderevient` les valorise. La boucle est fermée : un opérateur sans taux horaire ne coûte rien en main d'œuvre, et le rapport ne l'invente pas. Un poste à 0 € de l'heure coûte 0 € de machine : c'est un tarif connu, pas un tarif absent.
+3. **Montants.** Coût horaire du poste et taux horaire de l'opérateur existent sur les deux agrégats (le taux exigé et strictement positif depuis glm-back#142 ; le coût facultatif, positif ou nul pour un poste qui ne demande que de la main d'œuvre), `atelier` les copie sur chaque événement du journal au moment de la saisie, et `coutderevient` les valorise. La boucle est fermée : un opérateur déclaré sans taux horaire avant qu'il soit exigé ne coûte rien en main d'œuvre, et le rapport ne l'invente pas : ses pointages rendent le rapport non exportable. Un poste à 0 € de l'heure coûte 0 € de machine : c'est un tarif connu, pas un tarif absent.
 4. **Utilisateur connecté.** La réflexion de principe dans [strategie/authentification-pointage.md](strategie/authentification-pointage.md) distingue l’**identité d’appareil** du pupitre et l’**identification** de l’opérateur au geste — par un code, qui désigne sans prouver, ou par une signature, qui prouve. L'`Auteur` du jeton cessant dès lors de désigner une personne, c'est la **qualité de l'identification** portée par l'événement qui permettra l’audit, et c’est elle qui rouvrira `estSaisiParUnTiers`. Restent ouverts le régime du code — ouvert à tous ou réservé à l'exception —, le matériel des pupitres, et la validation juridique de l'empreinte.
 
 ## feuilledetemps

@@ -48,6 +48,7 @@ public class AtelierSteps {
   private static final String ELEMENTS_URI = "/api/elements-de-fabrication";
   private static final String POSTES_URI = "/api/postes-de-travail";
   private static final String OPERATEURS_URI = "/api/operateurs";
+  private static final String TAUX_HORAIRE = "20.00";
   private static final ObjectMapper JSON = JsonMapper.builder().build();
   private static final AtomicInteger SEQUENCE = new AtomicInteger();
 
@@ -103,12 +104,12 @@ public class AtelierSteps {
 
   @Given("l'entreprise a declare l'operateur {string} habilite sur {string}")
   public void lEntrepriseADeclareLOperateurHabilite(String alias, String poste) {
-    declareLOperateur(alias, List.of(postes.get(poste)), null);
+    declareLOperateur(alias, List.of(postes.get(poste)), TAUX_HORAIRE);
   }
 
   @Given("l'entreprise a declare l'operateur {string} habilite sur {string} et {string}")
   public void lEntrepriseADeclareLOperateurHabiliteSurDeuxPostes(String alias, String premier, String second) {
-    declareLOperateur(alias, List.of(postes.get(premier), postes.get(second)), null);
+    declareLOperateur(alias, List.of(postes.get(premier), postes.get(second)), TAUX_HORAIRE);
   }
 
   @Given("l'entreprise a declare l'operateur {string} habilite sur {string} et {string} avec un taux horaire de {string}")
@@ -123,12 +124,12 @@ public class AtelierSteps {
 
   @Given("l'entreprise a declare l'operateur {string}")
   public void lEntrepriseADeclareLOperateur(String alias) {
-    declareLOperateur(alias, List.of(), null);
+    declareLOperateur(alias, List.of(), TAUX_HORAIRE);
   }
 
   @Given("l'entreprise a declare l'operateur {string} sans habilitation")
   public void lEntrepriseADeclareLOperateurSansHabilitation(String alias) {
-    declareLOperateur(alias, List.of(), null);
+    declareLOperateur(alias, List.of(), TAUX_HORAIRE);
   }
 
   @Given("l'entreprise a cree l'element de fabrication {string}")
@@ -301,13 +302,14 @@ public class AtelierSteps {
     rest.get(OPERATEURS_URI + "/" + operateurs.get(alias));
     String nom = (String) CucumberRestTestContext.getElement("$.nom");
     String prenom = (String) CucumberRestTestContext.getElement("$.prenom");
+    Object tauxHoraire = CucumberRestTestContext.getElement("$.tauxHoraire");
     List<String> restants = ((List<String>) CucumberRestTestContext.getElement("$.postes[*].id")).stream()
       .filter(id -> !id.equals(postes.get(poste)))
       .toList();
 
     rest.put(
       OPERATEURS_URI + "/" + operateurs.get(alias),
-      JSON.writeValueAsString(Map.of("nom", nom, "prenom", prenom, "postes", restants))
+      JSON.writeValueAsString(Map.of("nom", nom, "prenom", prenom, "postes", restants, "tauxHoraire", tauxHoraire))
     );
   }
 
@@ -633,12 +635,16 @@ public class AtelierSteps {
   }
 
   private void declareLOperateur(String alias, List<String> habilitations, String tauxHoraire) {
-    Map<String, Object> corps = new HashMap<>(
-      Map.of("nom", alias, "prenom", "Operateur " + SEQUENCE.incrementAndGet(), "postes", habilitations)
+    Map<String, Object> corps = Map.of(
+      "nom",
+      alias,
+      "prenom",
+      "Operateur " + SEQUENCE.incrementAndGet(),
+      "postes",
+      habilitations,
+      "tauxHoraire",
+      tauxHoraire
     );
-    if (tauxHoraire != null) {
-      corps.put("tauxHoraire", tauxHoraire);
-    }
     rest.post(OPERATEURS_URI, JSON.writeValueAsString(corps));
     operateurs.put(alias, idDeLaDerniereReponse());
   }

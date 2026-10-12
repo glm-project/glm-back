@@ -1,5 +1,6 @@
 package com.glm.glmback.operateur.infrastructure.secondary;
 
+import static com.glm.glmback.operateur.domain.OperateursFixture.TAUX_HORAIRE_22;
 import static com.glm.glmback.shared.pagination.domain.PaginationFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
@@ -142,7 +143,7 @@ class JpaOperateurRepositoryIT {
       operateur.nom(),
       operateur.prenom(),
       operateur.identifiant(),
-      operateur.tauxHoraire(),
+      TAUX_HORAIRE_22,
       Set.of(conserve, ajoute)
     );
     inTransaction(() -> operateurs.update(revise));
@@ -160,7 +161,7 @@ class JpaOperateurRepositoryIT {
     Operateur operateur = operateurHabiliteSur(Set.of());
     inTransaction(() -> operateurs.create(operateur));
 
-    Operateur revise = operateur.revise(operateur.nom(), operateur.prenom(), Optional.empty(), operateur.tauxHoraire(), Set.of());
+    Operateur revise = operateur.revise(operateur.nom(), operateur.prenom(), Optional.empty(), TAUX_HORAIRE_22, Set.of());
     inTransaction(() -> operateurs.update(revise));
 
     assertThat(

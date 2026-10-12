@@ -578,13 +578,13 @@
             "type" : "string"
           },
           "tauxHoraire" : {
-            "description" : "Taux horaire de l'operateur, destine au cout de revient. Facultatif : toutes les entreprises ne le valorisent pas. Strictement positif, exactement representable en centimes et inferieur a 100000000.",
+            "description" : "Taux horaire de l'operateur, destine au cout de revient. Obligatoire : il est fige sur chaque pointage, et un pointage sans tarif rend le cout de revient non exportable. Strictement positif, exactement representable en centimes et inferieur a 100000000.",
             "example" : 22.0,
             "minimum" : 0,
             "type" : "number"
           }
         },
-        "required" : [ "nom", "prenom" ],
+        "required" : [ "nom", "prenom", "tauxHoraire" ],
         "type" : "object"
       },
       "RestCreationPosteDeTravail" : {
@@ -1167,13 +1167,13 @@
             "type" : "string"
           },
           "tauxHoraire" : {
-            "description" : "Taux horaire de l'operateur, laisse vide pour le retirer. Strictement positif, exactement representable en centimes et inferieur a 100000000.",
+            "description" : "Taux horaire de l'operateur. Obligatoire, meme pour un operateur declare avant qu'il le soit : il est fige sur chaque pointage. Strictement positif, exactement representable en centimes et inferieur a 100000000.",
             "example" : 22.0,
             "minimum" : 0,
             "type" : "number"
           }
         },
-        "required" : [ "nom", "prenom" ],
+        "required" : [ "nom", "prenom", "tauxHoraire" ],
         "type" : "object"
       },
       "RestModificationPosteDeTravail" : {

@@ -105,7 +105,8 @@ avec les champs de tarifs absents. La même confidentialité vaut pour les tarif
 opérateur et poste. Les tarifs saisis restent exactement représentables en centimes, inférieurs à 100 000 000,
 strictement positifs pour le taux de l'opérateur et positifs ou nuls pour le coût du poste — `0` pour un poste qui ne
 demande que de la main d'œuvre, distinct d'un coût absent : création et révision refusent toute perte de précision ou dépassement par un 400,
-sans arrondi implicite.
+sans arrondi implicite. Le taux de l'opérateur est exigé : une création ou une révision d'opérateur sans `tauxHoraire`
+est refusée par un 400. Un opérateur déclaré avant cette exigence peut encore se relire sans taux.
 
 ### L'habilitation est une règle dure
 

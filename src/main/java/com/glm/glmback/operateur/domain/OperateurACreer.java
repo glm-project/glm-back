@@ -9,7 +9,7 @@ public record OperateurACreer(
   Nom nom,
   Prenom prenom,
   Optional<Identifiant> identifiant,
-  Optional<TauxHoraire> tauxHoraire,
+  TauxHoraire tauxHoraire,
   Set<PosteHabilitableId> postes
 ) {
   public OperateurACreer {
@@ -23,6 +23,6 @@ public record OperateurACreer(
   }
 
   public OperateurACreer(String nom, String prenom, String identifiant, BigDecimal tauxHoraire, Set<PosteHabilitableId> postes) {
-    this(new Nom(nom), new Prenom(prenom), Identifiant.of(identifiant), TauxHoraire.of(tauxHoraire), postes);
+    this(new Nom(nom), new Prenom(prenom), Identifiant.of(identifiant), new TauxHoraire(tauxHoraire), postes);
   }
 }

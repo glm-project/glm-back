@@ -43,7 +43,7 @@ class OperateursServiceTest {
 
   @Test
   void shouldCreateOperateurWithTauxHoraire() {
-    ProfilDOperateur profil = operateurs.create(operateurACreerDupontAvecTauxHoraire());
+    ProfilDOperateur profil = operateurs.create(operateurACreerDupont());
 
     assertThat(profil.operateur().tauxHoraire()).contains(TAUX_HORAIRE_22);
   }
@@ -81,7 +81,7 @@ class OperateursServiceTest {
       NOM_MARTIN,
       PRENOM_SOPHIE,
       Optional.of(IDENTIFIANT_049),
-      Optional.empty(),
+      TAUX_HORAIRE_25,
       Set.of()
     );
 
@@ -93,7 +93,7 @@ class OperateursServiceTest {
   @Test
   void shouldNotCreateOperateurReferencingUnknownPoste() {
     PosteHabilitableId inconnu = new PosteHabilitableId(java.util.UUID.fromString("99999999-9999-9999-9999-999999999999"));
-    OperateurACreer aCreer = new OperateurACreer(NOM_DUPONT, PRENOM_JEAN, Optional.empty(), Optional.empty(), Set.of(inconnu));
+    OperateurACreer aCreer = new OperateurACreer(NOM_DUPONT, PRENOM_JEAN, Optional.empty(), TAUX_HORAIRE_22, Set.of(inconnu));
 
     assertThatThrownBy(() -> operateurs.create(aCreer)).isExactlyInstanceOf(PosteHabilitableIntrouvableException.class);
   }
@@ -153,7 +153,7 @@ class OperateursServiceTest {
       NOM_DUPONT,
       PRENOM_JEAN,
       Optional.of(IDENTIFIANT_050),
-      Optional.empty(),
+      TAUX_HORAIRE_25,
       Set.of()
     );
 
@@ -170,7 +170,7 @@ class OperateursServiceTest {
       NOM_MARTIN,
       PRENOM_SOPHIE,
       Optional.of(IDENTIFIANT_049),
-      Optional.empty(),
+      TAUX_HORAIRE_25,
       Set.of()
     );
 
