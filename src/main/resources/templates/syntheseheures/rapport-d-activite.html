@@ -354,6 +354,7 @@
             <th class="nombre">Début</th>
             <th class="nombre">Fin</th>
             <th>Élément</th>
+            <th>Référence</th>
             <th>Poste</th>
             <th>Nature</th>
             <th class="nombre">Durée</th>
@@ -362,7 +363,7 @@
         </thead>
         <tbody th:each="jour : ${document.journal()}">
           <tr class="jour">
-            <td colspan="5" th:text="${jour.libelle()}">Lundi 1er septembre</td>
+            <td colspan="6" th:text="${jour.libelle()}">Lundi 1er septembre</td>
             <td class="nombre" th:text="${jour.total()}"></td>
             <td></td>
           </tr>
@@ -370,6 +371,7 @@
             <td class="nombre" th:text="${pointage.debut()}">08:00</td>
             <td class="nombre" th:text="${pointage.fin()}">10:00</td>
             <td class="reference" th:text="${pointage.element()}">OF-2026-000001</td>
+            <td class="reference" th:text="${pointage.reference()}">1015</td>
             <td th:text="${pointage.poste()}">Poste</td>
             <td th:text="${pointage.nature()}">Nature</td>
             <td class="nombre" th:text="${pointage.duree()}"></td>

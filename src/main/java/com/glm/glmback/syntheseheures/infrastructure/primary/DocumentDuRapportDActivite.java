@@ -3,6 +3,7 @@ package com.glm.glmback.syntheseheures.infrastructure.primary;
 import com.glm.glmback.syntheseheures.domain.CategorieDActivite;
 import com.glm.glmback.syntheseheures.domain.DescriptionDElement;
 import com.glm.glmback.syntheseheures.domain.ElementDeLaSynthese;
+import com.glm.glmback.syntheseheures.domain.ElementId;
 import com.glm.glmback.syntheseheures.domain.FormatDuLogo;
 import com.glm.glmback.syntheseheures.domain.JourDuRapport;
 import com.glm.glmback.syntheseheures.domain.LigneDuJournal;
@@ -142,6 +143,11 @@ final class DocumentDuRapportDActivite {
   }
 
   private static List<JourVue> journal(RapportDActivite rapport) {
+    Map<ElementId, String> references = rapport
+      .elements()
+      .stream()
+      .filter(element -> element.reference().isPresent())
+      .collect(Collectors.toMap(element -> element.element().id(), element -> element.reference().orElseThrow().value()));
     return rapport
       .jours()
       .stream()
@@ -153,7 +159,7 @@ final class DocumentDuRapportDActivite {
           jour
             .lignes()
             .stream()
-            .map(ligne -> PointageVue.de(ligne, rapport.fuseau()))
+            .map(ligne -> PointageVue.de(ligne, references.getOrDefault(ligne.element().id(), ""), rapport.fuseau()))
             .toList()
         )
       )
@@ -303,13 +309,14 @@ final class DocumentDuRapportDActivite {
     String debut,
     String fin,
     String element,
+    String reference,
     String poste,
     String nature,
     String duree,
     boolean nonConformite,
     List<String> mentions
   ) {
-    static PointageVue de(LigneDuJournal ligne, ZoneId fuseau) {
+    static PointageVue de(LigneDuJournal ligne, String reference, ZoneId fuseau) {
       return new PointageVue(
         heure(ligne.plage().debut(), fuseau),
         ligne
@@ -318,6 +325,7 @@ final class DocumentDuRapportDActivite {
           .map(fin -> heure(fin, fuseau))
           .orElse(""),
         ligne.element().nom().value(),
+        reference,
         LibellesDuRapportDActivite.poste(ligne.poste()),
         LibellesDuRapportDActivite.nature(ligne.nature()),
         DocumentDuRapportDActivite.duree(ligne.duree().valeur()),

@@ -133,6 +133,7 @@ class DocumentDuRapportDActiviteTest {
         "08:00",
         "10:00",
         "PRD-2026-000015",
+        "1015",
         "DMU 50",
         "Fraisage",
         "2 h 00",
@@ -141,8 +142,9 @@ class DocumentDuRapportDActiviteTest {
       )
     );
     assertThat(journal.getFirst().pointages().get(2).nonConformite()).isTrue();
+    assertThat(journal.getFirst().pointages().get(1).reference()).isEmpty();
     assertThat(journal.get(2).pointages().get(1)).isEqualTo(
-      new PointageVue("10:00", "", "PRD-2026-000015", "Tour 14", "Tournage", "", false, List.of("en cours"))
+      new PointageVue("10:00", "", "PRD-2026-000015", "1015", "Tour 14", "Tournage", "", false, List.of("en cours"))
     );
   }
 
