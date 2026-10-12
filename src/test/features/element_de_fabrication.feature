@@ -257,6 +257,20 @@ Feature: Gestion des elements de fabrication
     Then la liste ne rend que les references
       | 3103 |
 
+  Scenario: La liste se lit sans periode de creation
+    Given j'ai cree un element de fabrication
+      | categorie | OF            |
+      | reference | 3201-SANS-PER |
+    When je liste les elements de fabrication avec
+      | recherche | 3201-sans-per |
+    Then la liste ne rend que les references
+      | 3201-SANS-PER |
+
+  Scenario: Une periode de creation a une seule borne est refusee
+    When je liste les elements de fabrication avec
+      | debut | 2026-01-01T00:00:00Z |
+    Then la reponse a le statut http 400
+
   Scenario: Creation refusee a un utilisateur sans role gestionnaire
     Given I am logged in as "user" with role "USER"
     When je cree un element de fabrication

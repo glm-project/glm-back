@@ -62,8 +62,10 @@ class ElementDeFabricationResource {
 
   @GetMapping
   RestPage<RestElementDeFabrication> list(
-    @RequestParam Instant debut,
-    @RequestParam Instant fin,
+    @Parameter(
+      description = "Debut de la periode de creation, a donner avec fin. Sans les deux, tous les elements."
+    ) @RequestParam Optional<Instant> debut,
+    @Parameter(description = "Fin de la periode de creation, a donner avec debut.") @RequestParam Optional<Instant> fin,
     @Parameter(
       description = "Ne lire que les elements de ce cycle, tries par creation, mise a l'atelier ou cloture decroissante."
     ) @RequestParam Optional<CycleDeVie> cycle,
@@ -74,13 +76,19 @@ class ElementDeFabricationResource {
     @RequestParam(defaultValue = "0") int page,
     @RequestParam(defaultValue = "20") int size
   ) {
-    FiltreDesElements filtre = new FiltreDesElements(
-      Optional.of(new Periode(debut, fin)),
-      categorie.map(Categorie::new),
-      Recherche.de(recherche)
-    );
+    FiltreDesElements filtre = new FiltreDesElements(creation(debut, fin), categorie.map(Categorie::new), Recherche.de(recherche));
     Page<ElementDansSonCycle> resultat = applicationService.list(filtre, cycle, new Pageable(page, size));
 
     return RestPage.from(resultat, RestElementDeFabrication::from);
+  }
+
+  /**
+   * Une seule borne ne fait pas une periode : le domaine la refuse, ce qui rend 400.
+   */
+  private static Optional<Periode> creation(Optional<Instant> debut, Optional<Instant> fin) {
+    if (debut.isEmpty() && fin.isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.of(new Periode(debut.orElse(null), fin.orElse(null)));
   }
 }

@@ -121,9 +121,20 @@ public class ElementDeFabricationSteps {
 
   @When("je liste les elements de fabrication crees avec celui-ci, avec")
   public void jeListeLesElementsCreesAvecCeluiCiAvec(Map<String, String> parametres) {
-    StringBuilder uri = new StringBuilder(BASE_URI + "?debut=" + derniereCreation + "&fin=" + derniereCreation);
-    parametres.forEach((nom, valeur) -> uri.append('&').append(nom).append('=').append(URLEncoder.encode(valeur, StandardCharsets.UTF_8)));
-    rest.get(uri.toString());
+    rest.get(avec(BASE_URI + "?debut=" + derniereCreation + "&fin=" + derniereCreation, parametres));
+  }
+
+  @When("je liste les elements de fabrication avec")
+  public void jeListeLesElementsDeFabricationAvec(Map<String, String> parametres) {
+    rest.get(avec(BASE_URI + "?page=0", parametres));
+  }
+
+  private static String avec(String uri, Map<String, String> parametres) {
+    StringBuilder complete = new StringBuilder(uri);
+    parametres.forEach((nom, valeur) ->
+      complete.append('&').append(nom).append('=').append(URLEncoder.encode(valeur, StandardCharsets.UTF_8))
+    );
+    return complete.toString();
   }
 
   @Then("la liste ne rend que les references")

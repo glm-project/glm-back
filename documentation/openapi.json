@@ -2993,17 +2993,19 @@
       "get" : {
         "operationId" : "list_3",
         "parameters" : [ {
+          "description" : "Debut de la periode de creation, a donner avec fin. Sans les deux, tous les elements.",
           "in" : "query",
           "name" : "debut",
-          "required" : true,
+          "required" : false,
           "schema" : {
             "format" : "date-time",
             "type" : "string"
           }
         }, {
+          "description" : "Fin de la periode de creation, a donner avec debut.",
           "in" : "query",
           "name" : "fin",
-          "required" : true,
+          "required" : false,
           "schema" : {
             "format" : "date-time",
             "type" : "string"
