@@ -5,6 +5,8 @@ import com.glm.glmback.syntheseheures.domain.ActivitesDeLOperateur;
 import com.glm.glmback.syntheseheures.domain.ElementsDeFabrication;
 import com.glm.glmback.syntheseheures.domain.FuseauHoraireDeLEntreprise;
 import com.glm.glmback.syntheseheures.domain.JournalDeLOperateur;
+import com.glm.glmback.syntheseheures.domain.LogoDeLEntreprise;
+import com.glm.glmback.syntheseheures.domain.LogosDeLEntreprise;
 import com.glm.glmback.syntheseheures.domain.OperateurId;
 import com.glm.glmback.syntheseheures.domain.OperateursConnus;
 import com.glm.glmback.syntheseheures.domain.PeriodeCalendaire;
@@ -28,6 +30,7 @@ public class SynthesesDesHeuresApplicationService {
 
   private final SynthesesDesHeuresService synthesesDesHeures;
   private final RapportsDActiviteService rapportsDActivite;
+  private final LogosDeLEntreprise logos;
 
   public SynthesesDesHeuresApplicationService(
     OperateursConnus operateurs,
@@ -36,6 +39,7 @@ public class SynthesesDesHeuresApplicationService {
     JournalDeLOperateur journal,
     ElementsDeFabrication elements,
     PostesDeTravail postes,
+    LogosDeLEntreprise logos,
     Clock clock
   ) {
     this.synthesesDesHeures = SynthesesDesHeuresService.builder()
@@ -53,6 +57,7 @@ public class SynthesesDesHeuresApplicationService {
       .elements(elements)
       .postes(postes)
       .clock(clock);
+    this.logos = logos;
   }
 
   /**
@@ -74,5 +79,12 @@ public class SynthesesDesHeuresApplicationService {
   @Transactional(readOnly = true)
   public RapportDActivite rapport(OperateurId operateur, PeriodeCalendaire periode) {
     return rapportsDActivite.rapport(operateur, periode);
+  }
+
+  /** Le logo de l'en-tete du PDF, lu sous les memes droits que le rapport qu'il accompagne. */
+  @Secured("ROLE_GESTIONNAIRE")
+  @Transactional(readOnly = true)
+  public Optional<LogoDeLEntreprise> logo() {
+    return logos.logo();
   }
 }

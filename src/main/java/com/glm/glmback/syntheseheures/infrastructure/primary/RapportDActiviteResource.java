@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
@@ -146,5 +147,62 @@ class RapportDActiviteResource {
         ContentDisposition.attachment().filename(ClasseurDuRapportDActivite.nomDeFichier(rapport)).build().toString()
       )
       .body(ClasseurDuRapportDActivite.de(rapport));
+  }
+
+  @GetMapping(path = "/{operateurId}/export.pdf", produces = "application/pdf")
+  @Operation(
+    summary = "Exporter le rapport d'activite d'un operateur en PDF",
+    description = """
+      Le rapport genere par le serveur en A4 portrait, a partir du meme rapport que le classeur : aucune duree n'est
+      recalculee, et une duree nulle n'est pas affichee.
+
+      La version synthese porte l'operateur, la periode, l'instant de generation, les chiffres cles, le temps pointe
+      par jour en calendrier (une ligne par semaine, avec son total), les elements et les natures de travail (seulement
+      s'il y en a au moins deux). La version detail y ajoute le journal de tous les pointages, jour par jour. L'en-tete
+      et le pied se repetent sur chaque page, numerotee ; l'en-tete porte le logo de l'entreprise s'il en a un.
+
+      """
+      + DESCRIPTION_DE_LA_PERIODE
+  )
+  @ApiResponse(
+    responseCode = "200",
+    description = "Le PDF, en piece jointe nommee d'apres l'operateur, la periode et la version (activite-dupont-jean-2026-05-synthese.pdf).",
+    content = @Content(mediaType = "application/pdf", schema = @Schema(type = "string", format = "binary"))
+  )
+  @ApiResponse(
+    responseCode = "400",
+    description = "Version absente ou inconnue, annee, semaine ou mois hors bornes, semaine et mois tous deux absents ou tous deux presents, ou periode future."
+  )
+  @ApiResponse(responseCode = "403", description = "Jeton sans entreprise connue, ou role autre que GESTIONNAIRE.")
+  @ApiResponse(responseCode = "404", description = "Operateur inconnu du referentiel.")
+  ResponseEntity<byte[]> exporteEnPdf(
+    @Parameter(description = "Identifiant de l'operateur dans le referentiel.") @PathVariable UUID operateurId,
+    @Parameter(description = "Annee : ISO pour une semaine, civile pour un mois.", example = "2026") @RequestParam @Min(
+      PREMIERE_ANNEE
+    ) @Max(DERNIERE_ANNEE) int annee,
+    @Parameter(description = "Numero de la semaine ISO.", example = "38") @RequestParam(required = false) @Min(PREMIERE_SEMAINE) @Max(
+      DERNIERE_SEMAINE
+    ) Integer semaine,
+    @Parameter(description = "Numero du mois, de 1 a 12.", example = "9") @RequestParam(required = false) @Min(PREMIER_MOIS) @Max(
+      DERNIER_MOIS
+    ) Integer mois,
+    @Parameter(
+      description = "synthese : chiffres cles, calendrier, elements et natures ; detail : en plus, le journal des pointages.",
+      schema = @Schema(allowableValues = { "synthese", "detail" })
+    ) @RequestParam @Pattern(regexp = "^(synthese|detail)$") String version
+  ) throws IOException {
+    VersionDuRapport choisie = VersionDuRapport.de(version);
+    RapportDActivite rapport = applicationService.rapport(
+      new OperateurId(operateurId),
+      PeriodeDemandee.de(annee, Optional.ofNullable(semaine), Optional.ofNullable(mois))
+    );
+
+    return ResponseEntity.ok()
+      .contentType(DocumentDuRapportDActivite.TYPE)
+      .header(
+        HttpHeaders.CONTENT_DISPOSITION,
+        ContentDisposition.attachment().filename(DocumentDuRapportDActivite.nomDeFichier(rapport, choisie)).build().toString()
+      )
+      .body(DocumentDuRapportDActivite.de(rapport, choisie, applicationService.logo()));
   }
 }

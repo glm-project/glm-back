@@ -1,0 +1,391 @@
+<!-- XHTML sans doctype : OpenHTMLtoPDF lit le gabarit en XML. -->
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title th:text="${document.titre()} + ' · ' + ${document.operateur()}">Rapport d'activité</title>
+    <style>
+      @page {
+        size: A4 portrait;
+        margin: 32mm 12mm 16mm 12mm;
+        @top-center {
+          content: element(entete);
+        }
+        @bottom-left {
+          content: element(pied);
+        }
+        @bottom-right {
+          content: 'Page ' counter(page) ' / ' counter(pages);
+          font-family: 'DejaVu Sans';
+          font-size: 7.5pt;
+          color: #555555;
+        }
+      }
+      body {
+        margin: 0;
+        font-family: 'DejaVu Sans';
+        font-size: 8.5pt;
+        color: #111111;
+      }
+      .entete {
+        position: running(entete);
+        width: 100%;
+        border-bottom: 1.5pt solid #111111;
+        padding-bottom: 2.5mm;
+      }
+      .pied {
+        position: running(pied);
+        font-size: 7.5pt;
+        color: #555555;
+      }
+      .entete table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .entete td {
+        vertical-align: top;
+        padding: 0;
+      }
+      .logo {
+        width: 46mm;
+        height: 14mm;
+      }
+      .titre {
+        font-size: 15pt;
+        font-weight: bold;
+      }
+      .operateur {
+        font-size: 10.5pt;
+        font-weight: bold;
+      }
+      .droite {
+        text-align: right;
+        font-size: 7.5pt;
+        color: #555555;
+      }
+      .periode {
+        font-size: 8.5pt;
+        font-weight: bold;
+        color: #111111;
+      }
+      .indicateurs {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 3mm 0;
+        margin: 0 -3mm 1mm -3mm;
+      }
+      .indicateur {
+        border: 0.75pt solid #888888;
+        padding: 2mm 3mm;
+        width: 25%;
+      }
+      .petit {
+        font-size: 7pt;
+        color: #444444;
+      }
+      .valeur {
+        font-size: 13pt;
+        font-weight: bold;
+      }
+      h2 {
+        font-size: 10pt;
+        margin: 5mm 0 1.5mm 0;
+        page-break-after: avoid;
+      }
+      h2 .discret {
+        font-weight: normal;
+        font-size: 7.5pt;
+        color: #555555;
+      }
+      table.donnees {
+        width: 100%;
+        border-collapse: collapse;
+        -fs-table-paginate: paginate;
+      }
+      table.donnees thead {
+        display: table-header-group;
+      }
+      table.donnees tr {
+        page-break-inside: avoid;
+      }
+      table.donnees th {
+        font-size: 7.5pt;
+        text-align: left;
+        border-bottom: 1pt solid #111111;
+        padding: 1mm 1.5mm;
+      }
+      table.donnees td {
+        border-bottom: 0.5pt solid #bbbbbb;
+        padding: 0.9mm 1.5mm;
+        vertical-align: top;
+      }
+      table.donnees th.nombre,
+      table.donnees td.nombre {
+        text-align: right;
+        white-space: nowrap;
+      }
+      table.donnees td.reference {
+        white-space: nowrap;
+      }
+      table.donnees tr.total td {
+        font-weight: bold;
+        border-bottom: none;
+        border-top: 1pt solid #111111;
+      }
+      table.donnees tr.jour td {
+        background-color: #eeeeee;
+        font-weight: bold;
+        border-bottom: 1pt solid #111111;
+      }
+      .gras {
+        font-weight: bold;
+      }
+      .etiquette {
+        border: 0.75pt solid #111111;
+        padding: 0 1mm;
+        font-size: 6.5pt;
+        font-weight: bold;
+        white-space: nowrap;
+      }
+      .etiquette.douce {
+        border-style: dashed;
+        font-weight: normal;
+      }
+      table.calendrier {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+      table.calendrier th {
+        font-size: 7pt;
+        text-align: left;
+        padding: 1mm 1.5mm;
+        border-bottom: 1pt solid #111111;
+      }
+      table.calendrier td {
+        border: 0.5pt solid #bbbbbb;
+        vertical-align: top;
+        padding: 1mm 1.5mm;
+        height: 15mm;
+      }
+      table.calendrier.semaine td {
+        height: 22mm;
+      }
+      table.calendrier td.week-end {
+        background-color: #f4f4f4;
+      }
+      table.calendrier td.hors-periode {
+        background-color: #ececec;
+      }
+      table.calendrier td.total-de-semaine {
+        background-color: #eeeeee;
+      }
+      .date {
+        font-size: 6.5pt;
+        color: #555555;
+      }
+      .temps {
+        font-size: 10pt;
+        font-weight: bold;
+      }
+      .temps.vide {
+        color: #aaaaaa;
+        font-weight: normal;
+      }
+      .sous {
+        font-size: 6.5pt;
+        margin-top: 0.5mm;
+      }
+      .note {
+        margin-top: 2mm;
+        font-size: 7.5pt;
+        color: #444444;
+      }
+      .saut {
+        page-break-before: always;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="entete">
+      <table>
+        <tr>
+          <td class="logo">
+            <img
+              th:if="${logo != null}"
+              th:src="${logo.source()}"
+              th:style="'width: ' + ${logo.largeur()} + '; height: ' + ${logo.hauteur()} + ';'"
+              alt="Logo de l’entreprise"
+            />
+          </td>
+          <td>
+            <div class="titre" th:text="${document.titre()}">Rapport d'activité</div>
+            <div class="operateur" th:text="${document.operateur()}">Jean Dupont</div>
+          </td>
+          <td class="droite">
+            <div class="periode" th:text="${document.periode()}">Septembre 2026</div>
+            <div th:text="'Généré le ' + ${document.generation()}">Généré le</div>
+          </td>
+        </tr>
+      </table>
+    </div>
+    <div class="pied">Le temps pointé mesure le temps passé sur les éléments, pas la présence.</div>
+
+    <table class="indicateurs">
+      <tr>
+        <td class="indicateur">
+          <div class="petit">Temps pointé</div>
+          <div class="valeur" th:text="${document.tempsPointe()}">0 h 00</div>
+          <div class="petit" th:text="${document.tempsPointeEnHeures()}">0,00 h</div>
+        </td>
+        <td class="indicateur">
+          <div class="petit">Jours avec pointage</div>
+          <div class="valeur" th:text="${document.joursAvecPointage()}">0</div>
+          <div class="petit" th:text="${document.pointages()}">0 pointage</div>
+        </td>
+        <td class="indicateur">
+          <div class="petit">Éléments</div>
+          <div class="valeur" th:text="${document.elements().size()}">0</div>
+          <div class="petit" th:text="${document.nombreDeNatures()}">0 nature de travail</div>
+        </td>
+        <td class="indicateur">
+          <div class="petit">Dont non-conformité</div>
+          <div class="valeur" th:text="${document.nonConformite()}">0 h 00</div>
+          <div class="petit" th:text="${document.partDeNonConformite()}">0 % du temps pointé</div>
+        </td>
+      </tr>
+    </table>
+
+    <h2>Temps pointé par jour</h2>
+    <table class="calendrier" th:classappend="${document.semaines().size() == 1} ? 'semaine'">
+      <thead>
+        <tr>
+          <th>Lun</th>
+          <th>Mar</th>
+          <th>Mer</th>
+          <th>Jeu</th>
+          <th>Ven</th>
+          <th>Sam</th>
+          <th>Dim</th>
+          <th>Semaine</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="semaine : ${document.semaines()}">
+          <td
+            th:each="case : ${semaine.cases()}"
+            th:classappend="${case.horsPeriode()} ? 'hors-periode' : (${case.weekEnd()} ? 'week-end')"
+          >
+            <div class="date" th:text="${case.date()}">01/09</div>
+            <th:block th:unless="${case.horsPeriode()}">
+              <div class="temps" th:classappend="${case.vide()} ? 'vide'" th:text="${case.temps()}">—</div>
+              <div class="sous" th:if="${!case.nonConformite().isEmpty()}" th:text="${case.nonConformite()}">dont NC</div>
+              <div class="sous" th:if="${case.finAutomatique()}"><span class="etiquette">fin auto.</span></div>
+              <div class="sous" th:if="${case.simultanee()}"><span class="etiquette douce">2 postes</span></div>
+            </th:block>
+          </td>
+          <td class="total-de-semaine">
+            <div class="date" th:text="${semaine.libelle()}">S36</div>
+            <div class="temps" th:text="${semaine.total()}">0 h 00</div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Par élément</h2>
+    <table class="donnees">
+      <thead>
+        <tr>
+          <th>Élément</th>
+          <th>Référence</th>
+          <th>Description</th>
+          <th>Catégorie</th>
+          <th>Postes</th>
+          <th class="nombre">Dont NC</th>
+          <th class="nombre">Temps</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="element : ${document.elements()}">
+          <td class="reference" th:text="${element.nom()}">OF-2026-000001</td>
+          <td th:text="${element.reference()}"></td>
+          <td th:text="${element.description()}"></td>
+          <td th:text="${element.categorie()}">OF</td>
+          <td th:text="${element.postes()}"></td>
+          <td class="nombre" th:text="${element.nonConformite()}"></td>
+          <td class="nombre gras" th:text="${element.temps()}"></td>
+        </tr>
+        <tr class="total">
+          <td colspan="6">Total</td>
+          <td class="nombre" th:text="${document.tempsPointe()}"></td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note" th:if="${document.simultanee()}">
+      Une heure passée sur deux postes en même temps compte sur chacun : le temps pointé d’une journée peut dépasser son amplitude.
+    </p>
+
+    <th:block th:unless="${document.natures().isEmpty()}">
+      <h2>Par nature de travail</h2>
+      <table class="donnees">
+        <thead>
+          <tr>
+            <th>Nature de travail</th>
+            <th class="nombre">Temps</th>
+            <th class="nombre">Part</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="nature : ${document.natures()}">
+            <td th:text="${nature.libelle()}">Nature</td>
+            <td class="nombre gras" th:text="${nature.temps()}"></td>
+            <td class="nombre" th:text="${nature.part()}"></td>
+          </tr>
+        </tbody>
+      </table>
+    </th:block>
+
+    <th:block th:unless="${document.journal().isEmpty()}">
+      <h2 class="saut">
+        Journal des pointages <span class="discret" th:text="${document.pointages()} + ', dans l’ordre chronologique'"></span>
+      </h2>
+      <table class="donnees">
+        <thead>
+          <tr>
+            <th class="nombre">Début</th>
+            <th class="nombre">Fin</th>
+            <th>Élément</th>
+            <th>Référence</th>
+            <th>Poste</th>
+            <th>Nature</th>
+            <th class="nombre">Durée</th>
+            <th>Mention</th>
+          </tr>
+        </thead>
+        <tbody th:each="jour : ${document.journal()}">
+          <tr class="jour">
+            <td colspan="6" th:text="${jour.libelle()}">Lundi 1er septembre</td>
+            <td class="nombre" th:text="${jour.total()}"></td>
+            <td></td>
+          </tr>
+          <tr th:each="pointage : ${jour.pointages()}">
+            <td class="nombre" th:text="${pointage.debut()}">08:00</td>
+            <td class="nombre" th:text="${pointage.fin()}">10:00</td>
+            <td class="reference" th:text="${pointage.element()}">OF-2026-000001</td>
+            <td class="reference" th:text="${pointage.reference()}">1015</td>
+            <td th:text="${pointage.poste()}">Poste</td>
+            <td th:text="${pointage.nature()}">Nature</td>
+            <td class="nombre" th:text="${pointage.duree()}"></td>
+            <td>
+              <span class="etiquette" th:if="${pointage.nonConformite()}">NC</span>
+              <span class="etiquette" th:each="mention : ${pointage.mentions()}" th:text="${mention}">fin automatique</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="note" th:if="${document.finAutomatique()}">
+        Fin automatique : l’opérateur n’a pas terminé le pointage, GLM l’a clos à son échéance (durée maximale d’une activité). Il est
+        compté ; à vérifier.
+      </p>
+    </th:block>
+  </body>
+</html>

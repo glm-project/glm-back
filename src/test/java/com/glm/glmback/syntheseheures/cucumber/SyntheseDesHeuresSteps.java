@@ -22,6 +22,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
@@ -467,5 +470,26 @@ public class SyntheseDesHeuresSteps {
       return cellule.getLocalDateTimeCellValue().toLocalDate().toString();
     }
     return BigDecimal.valueOf(cellule.getNumericCellValue()).setScale(2, RoundingMode.HALF_UP).toPlainString();
+  }
+
+  @When("j'exporte en PDF {string} le rapport d'activite de {string} pour le mois {int} de {int}")
+  public void jExporteEnPdfLeRapportDuMois(String version, String alias, int mois, int annee) {
+    rest.get(SYNTHESES_URI + "/" + operateurs.get(alias) + "/export.pdf?annee=" + annee + "&mois=" + mois + "&version=" + version);
+  }
+
+  @Then("le PDF du rapport d'activite est nomme d'apres {string}, {string} et {string}")
+  public void lePdfDuRapportEstNomme(String operateur, String periode, String version) {
+    assertThat(CucumberRestTestContext.getResponseHeader("Content-Type")).containsExactly("application/pdf");
+    assertThat(CucumberRestTestContext.getResponseHeader("Content-Disposition"))
+      .singleElement(InstanceOfAssertFactories.STRING)
+      .matches("attachment; filename=\"activite-%s-synthese-\\d+-%s-%s\\.pdf\"".formatted(operateur, periode, version));
+  }
+
+  @Then("le PDF du rapport d'activite contient")
+  public void lePdfDuRapportContient(List<String> fragments) throws IOException {
+    try (PDDocument pdf = Loader.loadPDF(CucumberRestTestContext.getResponseBytes())) {
+      String texte = new PDFTextStripper().getText(pdf).replaceAll("\\s+", " ");
+      assertThat(texte).contains(fragments);
+    }
   }
 }

@@ -121,3 +121,43 @@ Feature: Rapport d'activite d'un operateur sur une semaine ou un mois
     And I am logged in as "user" with role "USER" for tenant "impeccmold"
     When j'exporte en Excel le rapport d'activite de "martin" pour le mois 5 de 2026
     Then la reponse a le statut http 403
+
+  Scenario: Le PDF detaille du mois porte le journal et la fin automatique
+    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la synthese des heures recoit sur l'element "carter" les pointages
+      | alias | type  | operateur | poste  | survenue             |
+      | A     | DEBUT | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | F     | FIN   | martin    | DMU 50 | 2026-05-11T08:30:00Z |
+      | B     | DEBUT | martin    | DMU 50 | 2026-05-12T06:00:00Z |
+    And il est "2026-05-20T10:00:00Z"
+    When j'exporte en PDF "detail" le rapport d'activite de "martin" pour le mois 5 de 2026
+    Then la reponse a le statut http 200
+    And le PDF du rapport d'activite est nomme d'apres "martin", "2026-05" et "detail"
+    And le PDF du rapport d'activite contient
+      | Rapport d'activité · détaillé                                            |
+      | Mai 2026                                                                 |
+      | 15 h 30                                                                  |
+      | Journal des pointages                                                    |
+      | Lundi 11 mai                                                             |
+      | 08:00 10:30                                                              |
+      | fin automatique                                                          |
+      | Le temps pointé mesure le temps passé sur les éléments, pas la présence. |
+
+  Scenario: Le PDF porte le logo de l'entreprise dans son en-tete
+    Given j'ai depose comme logo "un PNG de 256 x 100"
+    And il est "2026-05-20T10:00:00Z"
+    When j'exporte en PDF "synthese" le rapport d'activite de "martin" pour le mois 5 de 2026
+    Then la reponse a le statut http 200
+    And le PDF porte en en-tete un logo de 256 x 100 pixels
+    When je retire le logo
+
+  Scenario: Une version de PDF inconnue est refusee
+    Given il est "2026-05-20T10:00:00Z"
+    When j'exporte en PDF "complet" le rapport d'activite de "martin" pour le mois 5 de 2026
+    Then la reponse a le statut http 400
+
+  Scenario: Le PDF est reserve au gestionnaire
+    Given il est "2026-05-20T10:00:00Z"
+    And I am logged in as "user" with role "USER" for tenant "impeccmold"
+    When j'exporte en PDF "synthese" le rapport d'activite de "martin" pour le mois 5 de 2026
+    Then la reponse a le statut http 403
