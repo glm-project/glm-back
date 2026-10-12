@@ -130,9 +130,6 @@ public class SyntheseDesHeuresSteps {
     fichesRevisees.put(alias, Map.of("reference", unique, "description", description));
   }
 
-  /**
-   * Engager un element deja cloture ouvre un nouveau suivi : c'est le reengagement, qui reste le meme element.
-   */
   @Given("pour la synthese, l'element {string} est engage en atelier a {string}")
   public void pourLaSyntheseLElementEstEngageA(String alias, String instant) {
     horloge.ilEst(Instant.parse(instant));

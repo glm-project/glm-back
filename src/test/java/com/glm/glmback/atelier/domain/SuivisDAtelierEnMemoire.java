@@ -69,13 +69,11 @@ class SuivisDAtelierEnMemoire implements SuiviDAtelierRepository {
   }
 
   @Override
-  public Optional<SuiviDAtelier> getEnCoursPour(ElementEngageId element) {
+  public boolean contientElement(ElementEngageId element) {
     return suivis
       .values()
       .stream()
-      .filter(suivi -> !suivi.estCloture())
-      .filter(suivi -> suivi.element().id().equals(element))
-      .findFirst();
+      .anyMatch(suivi -> suivi.element().id().equals(element));
   }
 
   @Override

@@ -39,7 +39,11 @@ public final class FinsAutomatiquesFixture {
     return new ElementEngage(new ElementEngageId(UUID.randomUUID()), new NomDElement(nom), CATEGORIE_OF);
   }
 
-  /** Un suivi engage avant toute date de test : ses pointages peuvent etre dates librement apres le 1er janvier 2025. */
+  /**
+   * Un suivi engage avant toute date de test : ses pointages peuvent etre dates librement apres le 1er janvier 2025.
+   * Il porte un element neuf, du nom et de la categorie de celui donne : un element n'a qu'un suivi dans sa vie, et
+   * plusieurs suivis d'un meme jeu se retrouvent par ce nom.
+   */
   public static SuiviDAtelier suiviEngageLe1erJanvier2025Pour(ElementEngage element) {
     return suiviIdentifieEngageLe1erJanvier2025(SuiviDAtelierId.newId(), element);
   }
@@ -47,7 +51,7 @@ public final class FinsAutomatiquesFixture {
   public static SuiviDAtelier suiviIdentifieEngageLe1erJanvier2025(SuiviDAtelierId id, ElementEngage element) {
     return SuiviDAtelier.builder()
       .id(id)
-      .element(element)
+      .element(new ElementEngage(new ElementEngageId(UUID.randomUUID()), element.nom(), element.categorie()))
       .engagement(new Engagement(AUTEUR_LEROY, Instant.parse("2025-01-01T00:00:00Z")))
       .journal(JournalDAtelier.vide());
   }

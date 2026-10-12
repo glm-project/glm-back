@@ -36,7 +36,7 @@ class SuivisDAtelierEnMemoireTest {
     SuiviDAtelier suivi = suivis.create(suiviDAtelierEngage());
 
     assertThat(suivis.get(suivi.id())).contains(suivi);
-    assertThat(suivis.getEnCoursPour(ELEMENT_OF_2026_000042)).contains(suivi);
+    assertThat(suivis.contientElement(ELEMENT_OF_2026_000042)).isTrue();
   }
 
   @Test
@@ -50,11 +50,11 @@ class SuivisDAtelierEnMemoireTest {
   }
 
   @Test
-  void shouldNotGetEnCoursPourUnElementCloture() {
+  void shouldContenirUnElementCloture() {
     SuiviDAtelier suivi = suivis.create(suiviDAtelierEngage());
     suivis.update(suivi.cloture(clotureParLeroyA(LE_10_MAI_2026_A_17H)));
 
-    assertThat(suivis.getEnCoursPour(ELEMENT_OF_2026_000042)).isEmpty();
+    assertThat(suivis.contientElement(ELEMENT_OF_2026_000042)).isTrue();
   }
 
   @Test

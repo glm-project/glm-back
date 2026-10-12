@@ -39,8 +39,7 @@ class CoutDeRevientResource {
     Rend une ligne par nature d'operation — fraisage, tournage, erosion —, chacune portant le temps de bon travail,
     le temps passe en non conformite avec ses periodes datees, et le cout separe en machine et main d'oeuvre.
 
-    L'entree se fait par l'element, non par son suivi d'atelier : un element reengage apres cloture additionne ses
-    passages.
+    L'entree se fait par l'element, non par son suivi d'atelier.
 
     Deux regles a connaitre avant d'afficher les montants. Le cout horaire de chaque poste actif court **en entier**,
     meme quand l'operateur en mene plusieurs de front ; son taux horaire, lui, est **divise** par le nombre de postes

@@ -18,11 +18,7 @@ import java.util.UUID;
   """
 )
 record RestActiviteDeLaFeuilleDeTemps(
-  @Schema(
-    description = "L'element de fabrication travaille, jamais le suivi : un element reengage apres cloture reste le meme element.",
-    requiredMode = Schema.RequiredMode.REQUIRED
-  )
-  UUID element,
+  @Schema(description = "L'element de fabrication travaille, jamais le suivi.", requiredMode = Schema.RequiredMode.REQUIRED) UUID element,
   @Schema(description = "Le poste pointe, s'il l'a ete. Son libelle est dans la synthese des heures.") UUID poste,
   @Schema(description = "La nature de l'operation, figee a la saisie depuis le poste.", example = "Fraisage") String nature,
   @Schema(description = "Du bon travail, ou sa reprise sur non conformite.", requiredMode = Schema.RequiredMode.REQUIRED)

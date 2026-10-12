@@ -42,7 +42,7 @@ class RevisionDuSuiviIT {
   void shouldRefuserUneClotureQuiPerdraitUneFinConcurrente() throws Exception {
     // GIVEN
     var debut = debutSansPosteParDupontA(LE_10_MAI_2026_A_8H);
-    var suivi = inTransaction(() -> suivis.create(suiviDAtelierEngage().enregistre(debut)));
+    var suivi = inTransaction(() -> suivis.create(suiviDAtelierEngageSurUnElementNeuf().enregistre(debut)));
     var authentication = SecurityContextHolder.getContext().getAuthentication();
     var requete = RequestContextHolder.getRequestAttributes();
     var lecture = new CountDownLatch(1);
@@ -86,7 +86,7 @@ class RevisionDuSuiviIT {
   @WithTenant("impeccmold")
   void shouldConserverLaRevisionQuandAucunFaitNiClotureNeChange() {
     // GIVEN
-    var suivi = inTransaction(() -> suivis.create(suiviDAtelierEngage()));
+    var suivi = inTransaction(() -> suivis.create(suiviDAtelierEngageSurUnElementNeuf()));
     var versionLue = inTransaction(() -> suivis.get(suivi.id())).orElseThrow();
     // WHEN
     var inchange = inTransaction(() -> suivis.update(versionLue));
@@ -100,7 +100,7 @@ class RevisionDuSuiviIT {
   void shouldRelireLeJournalSousVerrouApresUneLectureDevenuePerimee() throws Exception {
     // GIVEN
     var debut = debutSansPosteParDupontA(LE_10_MAI_2026_A_8H);
-    var suivi = inTransaction(() -> suivis.create(suiviDAtelierEngage().enregistre(debut)));
+    var suivi = inTransaction(() -> suivis.create(suiviDAtelierEngageSurUnElementNeuf().enregistre(debut)));
     var authentication = SecurityContextHolder.getContext().getAuthentication();
     var requete = RequestContextHolder.getRequestAttributes();
     var lecture = new CountDownLatch(1);

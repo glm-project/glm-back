@@ -208,7 +208,7 @@
             "type" : "string"
           },
           "element" : {
-            "description" : "L'element de fabrication travaille, jamais le suivi : un element reengage apres cloture reste le meme element.",
+            "description" : "L'element de fabrication travaille, jamais le suivi.",
             "format" : "uuid",
             "type" : "string"
           },
@@ -2060,7 +2060,7 @@
             "description" : "Total de travail et NC des sept jours ; une activite en cours ne compte rien."
           },
           "elements" : {
-            "description" : "Elements portant une activite ou un pointage dans la semaine, par premiere apparition puis nom. Un element reengage reste un seul element.",
+            "description" : "Elements portant une activite ou un pointage dans la semaine, par premiere apparition puis nom.",
             "items" : {
               "$ref" : "#/components/schemas/RestElementDeLaSynthese"
             },
@@ -2294,7 +2294,7 @@
                 }
               }
             },
-            "description" : "Cet element est deja engage et non cloture."
+            "description" : "Cet element a deja un suivi, ouvert ou cloture : un element cloture se rouvre."
           }
         },
         "summary" : "Engager un element en atelier",
@@ -2763,7 +2763,7 @@
     },
     "/api/couts-de-revient/{elementId}" : {
       "get" : {
-        "description" : "Rend une ligne par nature d'operation — fraisage, tournage, erosion —, chacune portant le temps de bon travail,\nle temps passe en non conformite avec ses periodes datees, et le cout separe en machine et main d'oeuvre.\n\nL'entree se fait par l'element, non par son suivi d'atelier : un element reengage apres cloture additionne ses\npassages.\n\nDeux regles a connaitre avant d'afficher les montants. Le cout horaire de chaque poste actif court **en entier**,\nmeme quand l'operateur en mene plusieurs de front ; son taux horaire, lui, est **divise** par le nombre de postes\nqu'il occupait a cet instant, tous elements confondus. Un operateur sur trois elements avec une seule machine\nn'est donc pas divise. Le decoupage se fait aux bornes de chaque pointage, si bien que seul le chevauchement reel\nest divise.\n\nUne activite encore en cours est entierement exclue du temps, des couts et du diviseur. A son echeance\nprojetee, elle compte jusqu'a sa fin automatique avec une anomalie et sa periode datee. L'horloge est relevee\nune seule fois par rapport ; cet instant est rendu dans evaluation.\n\nChaque duree et montant porte sa valeur.\n",
+        "description" : "Rend une ligne par nature d'operation — fraisage, tournage, erosion —, chacune portant le temps de bon travail,\nle temps passe en non conformite avec ses periodes datees, et le cout separe en machine et main d'oeuvre.\n\nL'entree se fait par l'element, non par son suivi d'atelier.\n\nDeux regles a connaitre avant d'afficher les montants. Le cout horaire de chaque poste actif court **en entier**,\nmeme quand l'operateur en mene plusieurs de front ; son taux horaire, lui, est **divise** par le nombre de postes\nqu'il occupait a cet instant, tous elements confondus. Un operateur sur trois elements avec une seule machine\nn'est donc pas divise. Le decoupage se fait aux bornes de chaque pointage, si bien que seul le chevauchement reel\nest divise.\n\nUne activite encore en cours est entierement exclue du temps, des couts et du diviseur. A son echeance\nprojetee, elle compte jusqu'a sa fin automatique avec une anomalie et sa periode datee. L'horloge est relevee\nune seule fois par rapport ; cet instant est rendu dans evaluation.\n\nChaque duree et montant porte sa valeur.\n",
         "operationId" : "get_5",
         "parameters" : [ {
           "description" : "Identifiant de l'element de fabrication.",

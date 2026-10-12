@@ -26,5 +26,5 @@ interface SpringDataSuiviDAtelierRepository
   @Query("select distinct suivi from SuiviDAtelierEntity suivi left join fetch suivi.journal where suivi.id = :id")
   Optional<SuiviDAtelierEntity> findWithJournalById(UUID id);
 
-  Optional<SuiviDAtelierEntity> findFirstByElementIdAndClotureDateDeSurvenueIsNullOrderByEngagementDateDescIdAsc(UUID elementId);
+  boolean existsByElementId(UUID elementId);
 }

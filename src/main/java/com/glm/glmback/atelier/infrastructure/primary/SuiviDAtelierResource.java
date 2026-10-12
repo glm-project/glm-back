@@ -96,7 +96,7 @@ class SuiviDAtelierResource {
   )
   @ApiResponse(responseCode = "201", description = "L'element est engage.")
   @ApiResponse(responseCode = "404", description = "Aucun element de fabrication ne porte cet identifiant.")
-  @ApiResponse(responseCode = "409", description = "Cet element est deja engage et non cloture.")
+  @ApiResponse(responseCode = "409", description = "Cet element a deja un suivi, ouvert ou cloture : un element cloture se rouvre.")
   RestSuiviDAtelier engage(@RequestBody @Valid RestEngagement request) {
     return rendu(applicationService.engage(request.toDomain(AuteurConnecte.get())));
   }

@@ -59,7 +59,7 @@ class InstantsDAtelierExactsIT {
     EvenementDAtelier second = debutSurFraiseuse1ParDupontA(debut.plusNanos(1));
     SuiviDAtelier suivi = SuiviDAtelier.builder()
       .id(SuiviDAtelierId.newId())
-      .element(elementEngageOf2026000042())
+      .element(elementNeufNommeOf2026000042())
       .engagement(new Engagement(AUTEUR_LEROY, debut.minusSeconds(3600)))
       .journal(JournalDAtelier.vide())
       .enregistre(premier)
@@ -79,7 +79,7 @@ class InstantsDAtelierExactsIT {
     Instant debut = Instant.parse("2042-01-07T08:00:00.123456789Z");
     Instant fin = debut.plusNanos(1);
     EvenementDAtelier ouvrant = debutSurFraiseuse1ParDupontA(debut);
-    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(ouvrant).enregistre(finDe(ouvrant).a(fin));
+    SuiviDAtelier suivi = suiviDAtelierEngageSurUnElementNeuf().enregistre(ouvrant).enregistre(finDe(ouvrant).a(fin));
     transactions.executeWithoutResult(transaction -> suivis.create(suivi));
 
     transactions.executeWithoutResult(transaction -> {
@@ -120,7 +120,7 @@ class InstantsDAtelierExactsIT {
   void shouldConserverLEcheancePreciseDuPupitreEtLesDatesDeCloture() {
     Instant debut = Instant.parse("2042-01-08T08:00:00.123456789Z");
     EvenementDAtelier ouvrant = debutSurFraiseuse1ParDupontA(debut);
-    SuiviDAtelier suivi = suiviDAtelierEngage().enregistre(ouvrant);
+    SuiviDAtelier suivi = suiviDAtelierEngageSurUnElementNeuf().enregistre(ouvrant);
     transactions.executeWithoutResult(transaction -> suivis.create(suivi));
     transactions.executeWithoutResult(transaction ->
       assertThat(pupitre.tous())

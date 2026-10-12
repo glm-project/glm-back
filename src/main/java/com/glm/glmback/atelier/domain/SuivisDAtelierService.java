@@ -93,13 +93,18 @@ public final class SuivisDAtelierService {
    * C'est un geste metier du back-office, distinct de la creation de l'element : tout ce qui est cree n'est pas
    * forcement a faire, et c'est cet acte qui fait apparaitre l'element sur l'ecran des operateurs.
    * </p>
+   *
+   * <p>
+   * Un element n'a qu'un suivi dans sa vie : revenir en atelier apres la cloture, c'est rouvrir ce suivi, jamais en
+   * engager un second.
+   * </p>
    */
   public SuiviDAtelier engage(EngagementAEnregistrer commande) {
     ElementEngage element = elements
       .get(commande.element())
       .orElseThrow(() -> new ElementEngageableIntrouvableException(commande.element()));
 
-    if (repository.getEnCoursPour(commande.element()).isPresent()) {
+    if (repository.contientElement(commande.element())) {
       throw new ElementDejaEngageException(commande.element());
     }
 

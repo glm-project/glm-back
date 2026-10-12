@@ -116,9 +116,6 @@ public class FeuilleDeTempsSteps {
     elements.put(alias, id());
   }
 
-  /**
-   * Engager un element deja cloture ouvre un nouveau suivi : c'est le reengagement, qui reste le meme element.
-   */
   @Given("l'element {string} est engage en atelier a {string}")
   public void lElementEstEngageEnAtelierA(String alias, String instant) {
     horloge.ilEst(Instant.parse(instant));
