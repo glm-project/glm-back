@@ -50,7 +50,7 @@ class DossierAnomalieResourceIT {
   void shouldLireLeDossierDUneFinAutomatiqueEtLesPointagesDeSaCle() throws Exception {
     var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     var autreOperateur = debutSurFraiseuse1ParMartinA(LE_10_MAI_2026_A_9H);
-    var suivi = suiviDAtelierEngage().enregistre(travail).enregistre(autreOperateur);
+    var suivi = suiviDAtelierEngageSurUnElementNeuf().enregistre(travail).enregistre(autreOperateur);
     transactions.executeWithoutResult(status -> suivis.create(suivi));
     when(clock.now()).thenReturn(Instant.parse("2026-05-10T22:00:00Z"));
 
@@ -74,7 +74,7 @@ class DossierAnomalieResourceIT {
   @WithTenant("dossier_fixture")
   void shouldRepondre404QuandLActiviteNEstPasEncoreEchue() throws Exception {
     var travail = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
-    var suivi = suiviDAtelierEngage().enregistre(travail);
+    var suivi = suiviDAtelierEngageSurUnElementNeuf().enregistre(travail);
     transactions.executeWithoutResult(status -> suivis.create(suivi));
     when(clock.now()).thenReturn(Instant.parse("2026-05-10T20:59:59Z"));
 

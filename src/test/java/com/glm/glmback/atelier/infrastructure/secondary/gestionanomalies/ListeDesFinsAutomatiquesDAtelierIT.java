@@ -141,7 +141,7 @@ class ListeDesFinsAutomatiquesDAtelierIT {
       List.of(suiviTardif, suiviEnCours, suiviReel, suiviRegularise, suiviCloture).forEach(suivis::create)
     );
 
-    var page = lit(new AnomaliesDAtelierCriteria("", element.id().uuid().toString()), LE_11_MAI_2026_A_9H, new Pageable(0, 10));
+    var page = lit(new AnomaliesDAtelierCriteria("", element.nom().value()), LE_11_MAI_2026_A_9H, new Pageable(0, 10));
 
     assertThat(page.totalElementsCount()).isEqualTo(1);
     assertThat(page.content())
@@ -162,7 +162,7 @@ class ListeDesFinsAutomatiquesDAtelierIT {
       suivis.create(secondSuivi);
       suivis.create(premierSuivi);
     });
-    var criteria = new AnomaliesDAtelierCriteria("", element.id().uuid().toString());
+    var criteria = new AnomaliesDAtelierCriteria("", element.nom().value());
     var evaluation = debut.plusSeconds(24 * 3600);
 
     var premiere = lit(criteria, evaluation, new Pageable(0, 1));
@@ -198,7 +198,7 @@ class ListeDesFinsAutomatiquesDAtelierIT {
       suivis.create(suiviIdentifieEngageLe1erJanvier2025(suiviA, element).enregistre(ouvrantA1).enregistre(ouvrantA2));
       suivis.create(suiviIdentifieEngageLe1erJanvier2025(suiviC, element).enregistre(ouvrantC));
     });
-    var criteria = new AnomaliesDAtelierCriteria("", element.id().uuid().toString());
+    var criteria = new AnomaliesDAtelierCriteria("", element.nom().value());
     var evaluation = debut.plusSeconds(24 * 3600);
 
     var premiere = lit(criteria, evaluation, new Pageable(0, 2));
@@ -353,7 +353,7 @@ class ListeDesFinsAutomatiquesDAtelierIT {
     transactions.executeWithoutResult(transaction -> jeu.forEach(suivis::create));
     var annuaire = new AnnuaireDAtelier(Map.of(berthe.id(), berthe, charles.id(), charles), Map.of());
     var recherches = List.of(
-      new AnomaliesDAtelierCriteria("", element.id().uuid().toString()),
+      new AnomaliesDAtelierCriteria("", element.nom().value()),
       new AnomaliesDAtelierCriteria("", "finauto_parite_2043_%a"),
       new AnomaliesDAtelierCriteria("bErThE", "FINAUTO_PARITE_2043"),
       new AnomaliesDAtelierCriteria("CHARLES", "FINAUTO_PARITE_2043"),

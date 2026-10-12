@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+>
+  <changeSet id="un_seul_suivi_par_element" author="glm">
+    <preConditions
+      onFail="HALT"
+      onError="HALT"
+      onFailMessage="Un element de fabrication porte plusieurs suivis d'atelier : il a ete reengage apres une cloture, ce qui n'est plus admis. Aucun client n'etant deploye, ce schema se remet a zero : supprimer le schema de l'entreprise (DROP SCHEMA ... CASCADE), en gardant public.tenant, puis redemarrer. Voir glm-back#121."
+    >
+      <sqlCheck expectedResult="0">
+        select count(*) from (select element_id from suivi_d_atelier group by element_id having count(*) &gt; 1) reengages
+      </sqlCheck>
+    </preConditions>
+    <comment>
+      Un element n'a qu'un suivi d'atelier dans sa vie : revenir en atelier apres la cloture, c'est rouvrir ce suivi.
+      La regle vit dans le service ; la contrainte est le filet de deux engagements simultanes du meme element, et elle
+      sert la question de presence posee a chaque engagement.
+    </comment>
+
+    <addUniqueConstraint constraintName="ux_suivi_d_atelier_element" tableName="suivi_d_atelier" columnNames="element_id" />
+  </changeSet>
+</databaseChangeLog>

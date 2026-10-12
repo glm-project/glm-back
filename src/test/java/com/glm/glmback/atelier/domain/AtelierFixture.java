@@ -123,6 +123,22 @@ public final class AtelierFixture {
       .journal(JournalDAtelier.vide());
   }
 
+  /**
+   * Un suivi engage par Leroy sur un element neuf, du nom de l'OF-2026-000042 : la base que partagent les tests
+   * d'integration n'admet qu'un suivi par element.
+   */
+  public static SuiviDAtelier suiviDAtelierEngageSurUnElementNeuf() {
+    return SuiviDAtelier.builder()
+      .id(SuiviDAtelierId.newId())
+      .element(elementNeufNommeOf2026000042())
+      .engagement(engagementParLeroy())
+      .journal(JournalDAtelier.vide());
+  }
+
+  public static ElementEngage elementNeufNommeOf2026000042() {
+    return new ElementEngage(new ElementEngageId(UUID.randomUUID()), NOM_OF_2026_000042, CATEGORIE_OF);
+  }
+
   public static AnnuaireDAtelier annuaireDeDupontEtMartin() {
     return AnnuaireDAtelier.de(
       List.of(OPERATEUR_CONNU_DUPONT, OPERATEUR_CONNU_MARTIN),

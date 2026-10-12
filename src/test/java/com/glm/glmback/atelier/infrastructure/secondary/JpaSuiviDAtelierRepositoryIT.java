@@ -44,6 +44,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -292,6 +293,20 @@ class JpaSuiviDAtelierRepositoryIT {
     inTransaction(() -> suivis.create(engage));
 
     assertThatThrownBy(() -> inTransaction(() -> suivis.create(engage))).isExactlyInstanceOf(SuiviDAtelierDejaExistantException.class);
+  }
+
+  @Test
+  @WithTenant(IMPECCMOLD)
+  void shouldRefuserUnSecondSuiviPourLeMemeElement() {
+    SuiviDAtelier engage = suiviEngageA(Instant.parse("2040-01-11T08:00:00Z"));
+    inTransaction(() -> suivis.create(engage));
+    SuiviDAtelier second = SuiviDAtelier.builder()
+      .id(SuiviDAtelierId.newId())
+      .element(engage.element())
+      .engagement(new Engagement(AUTEUR_LEROY, Instant.parse("2040-01-11T09:00:00Z")))
+      .journal(JournalDAtelier.vide());
+
+    assertThatThrownBy(() -> inTransaction(() -> suivis.create(second))).isInstanceOf(DataIntegrityViolationException.class);
   }
 
   @Test

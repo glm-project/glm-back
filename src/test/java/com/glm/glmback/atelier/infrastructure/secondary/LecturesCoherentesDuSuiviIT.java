@@ -57,7 +57,7 @@ class LecturesCoherentesDuSuiviIT {
   void shouldLireUneRevisionUnJournalEtUneClotureDuMemeInstantane() throws Exception {
     // GIVEN
     var debut = debutSansPosteParDupontA(LE_10_MAI_2026_A_8H);
-    var ancien = inTransaction(() -> suivis.create(suiviDAtelierEngage().enregistre(debut)));
+    var ancien = inTransaction(() -> suivis.create(suiviDAtelierEngageSurUnElementNeuf().enregistre(debut)));
     var journalDemandee = new CountDownLatch(1);
     var ecritureTerminee = new CountDownLatch(1);
     try (var executor = Executors.newSingleThreadExecutor()) {
@@ -91,7 +91,7 @@ class LecturesCoherentesDuSuiviIT {
   void shouldLireUnSuiviCoherentMalgreLeParentDejaChargeParLAppelant() {
     // GIVEN
     var debut = debutSansPosteParDupontA(LE_10_MAI_2026_A_8H);
-    var ancien = inTransaction(() -> suivis.create(suiviDAtelierEngage().enregistre(debut)));
+    var ancien = inTransaction(() -> suivis.create(suiviDAtelierEngageSurUnElementNeuf().enregistre(debut)));
     // WHEN / THEN
     avecParentDejaChargeEtFinClotureCommittees(ancien, nouveau -> assertThat(application.get(ancien.id()).suivi()).isIn(ancien, nouveau));
   }
