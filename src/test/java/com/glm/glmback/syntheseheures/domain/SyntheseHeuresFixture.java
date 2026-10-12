@@ -17,6 +17,7 @@ public final class SyntheseHeuresFixture {
 
   public static final ZoneId ZONE_PARIS = ZoneId.of("Europe/Paris");
   public static final SemaineCalendaire SEMAINE_20_DE_2026 = new SemaineCalendaire(2026, 20);
+  public static final MoisCalendaire MAI_2026 = new MoisCalendaire(2026, 5);
 
   public static final LocalDate LUNDI_11_MAI_2026 = LocalDate.of(2026, 5, 11);
   public static final LocalDate MARDI_12_MAI_2026 = LocalDate.of(2026, 5, 12);
@@ -79,6 +80,7 @@ public final class SyntheseHeuresFixture {
 
   public static final ActiviteId ACTIVITE_ID_DU_CARTER = new ActiviteId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
   public static final ActiviteId ACTIVITE_ID_DE_LA_BRIDE = new ActiviteId(UUID.fromString("22222222-2222-2222-2222-222222222222"));
+  public static final ActiviteId ACTIVITE_ID_DU_TOUR = new ActiviteId(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
 
   public static final Instant LE_LUNDI_11_MAI_2026_A_MINUIT = aParis(11, 0);
 
