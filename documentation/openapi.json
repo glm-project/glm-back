@@ -2993,7 +2993,7 @@
       "get" : {
         "operationId" : "list_3",
         "parameters" : [ {
-          "description" : "Debut de la periode de creation, a donner avec fin. Sans les deux, tous les elements.",
+          "description" : "Debut de la periode de creation, a donner avec fin : une seule borne ne filtre rien.",
           "in" : "query",
           "name" : "debut",
           "required" : false,

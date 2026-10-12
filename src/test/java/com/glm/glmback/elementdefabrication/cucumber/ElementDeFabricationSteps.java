@@ -9,8 +9,6 @@ import com.glm.glmback.cucumber.rest.CucumberRestTestContext;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -131,9 +129,7 @@ public class ElementDeFabricationSteps {
 
   private static String avec(String uri, Map<String, String> parametres) {
     StringBuilder complete = new StringBuilder(uri);
-    parametres.forEach((nom, valeur) ->
-      complete.append('&').append(nom).append('=').append(URLEncoder.encode(valeur, StandardCharsets.UTF_8))
-    );
+    parametres.forEach((nom, valeur) -> complete.append('&').append(nom).append('=').append(valeur));
     return complete.toString();
   }
 

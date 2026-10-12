@@ -62,9 +62,9 @@ class ElementDeFabricationResource {
 
   @GetMapping
   RestPage<RestElementDeFabrication> list(
-    @Parameter(
-      description = "Debut de la periode de creation, a donner avec fin. Sans les deux, tous les elements."
-    ) @RequestParam Optional<Instant> debut,
+    @Parameter(description = "Debut de la periode de creation, a donner avec fin : une seule borne ne filtre rien.") @RequestParam Optional<
+      Instant
+    > debut,
     @Parameter(description = "Fin de la periode de creation, a donner avec debut.") @RequestParam Optional<Instant> fin,
     @Parameter(
       description = "Ne lire que les elements de ce cycle, tries par creation, mise a l'atelier ou cloture decroissante."
@@ -83,12 +83,9 @@ class ElementDeFabricationResource {
   }
 
   /**
-   * Une seule borne ne fait pas une periode : le domaine la refuse, ce qui rend 400.
+   * Comme la liste de l'atelier, une periode a une seule borne ne filtre rien.
    */
   private static Optional<Periode> creation(Optional<Instant> debut, Optional<Instant> fin) {
-    if (debut.isEmpty() && fin.isEmpty()) {
-      return Optional.empty();
-    }
-    return Optional.of(new Periode(debut.orElse(null), fin.orElse(null)));
+    return debut.flatMap(depuis -> fin.map(jusqua -> new Periode(depuis, jusqua)));
   }
 }

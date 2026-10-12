@@ -266,10 +266,15 @@ Feature: Gestion des elements de fabrication
     Then la liste ne rend que les references
       | 3201-SANS-PER |
 
-  Scenario: Une periode de creation a une seule borne est refusee
+  Scenario: Une periode de creation a une seule borne ne filtre rien, comme la liste d'atelier
+    Given j'ai cree un element de fabrication
+      | categorie | OF             |
+      | reference | 3202-UNE-BORNE |
     When je liste les elements de fabrication avec
-      | debut | 2026-01-01T00:00:00Z |
-    Then la reponse a le statut http 400
+      | debut     | 2999-01-01T00:00:00Z |
+      | recherche | 3202-une-borne       |
+    Then la liste ne rend que les references
+      | 3202-UNE-BORNE |
 
   Scenario: Creation refusee a un utilisateur sans role gestionnaire
     Given I am logged in as "user" with role "USER"
