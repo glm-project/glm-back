@@ -2,14 +2,21 @@ package com.glm.glmback.syntheseheures.infrastructure.primary;
 
 import com.glm.glmback.syntheseheures.application.SynthesesDesHeuresApplicationService;
 import com.glm.glmback.syntheseheures.domain.OperateurId;
+import com.glm.glmback.syntheseheures.domain.RapportDActivite;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -81,5 +88,63 @@ class RapportDActiviteResource {
         PeriodeDemandee.de(annee, Optional.ofNullable(semaine), Optional.ofNullable(mois))
       )
     );
+  }
+
+  @GetMapping(path = "/{operateurId}/export.xlsx", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+  @Operation(
+    summary = "Exporter le rapport d'activite d'un operateur en classeur Excel",
+    description = """
+      Le meme rapport que le resume, mis en forme pour etre retravaille. Une fin automatique ne bloque pas l'export :
+      elle compte jusqu'a son echeance et porte la mention "fin automatique".
+
+      L'onglet Synthese porte l'operateur, la periode, l'instant de generation, le temps pointe et les tableaux nommes
+      Jours (un mois omet ses samedis et dimanches sans pointage), Elements et Natures (seulement s'il y a au moins deux
+      natures). L'onglet Pointages est un tableau Excel nomme Pointages, une ligne par pointage (date, jour, debut, fin,
+      duree, element, reference, description, categorie, poste, nature, activite, mention), sans cellule fusionnee ni
+      ligne intercalaire : additionnees, ses durees donnent le temps pointe. Durees en heures decimales, jours et heures
+      en vraies dates Excel dans le fuseau de l'entreprise ; une duree nulle garde sa valeur sous un format qui
+      l'affiche vide.
+
+      """
+      + DESCRIPTION_DE_LA_PERIODE
+  )
+  @ApiResponse(
+    responseCode = "200",
+    description = "Le classeur, en piece jointe nommee d'apres l'operateur et la periode (activite-dupont-jean-2026-05.xlsx).",
+    content = @Content(
+      mediaType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      schema = @Schema(type = "string", format = "binary")
+    )
+  )
+  @ApiResponse(
+    responseCode = "400",
+    description = "Annee, semaine ou mois hors bornes, semaine et mois tous deux absents ou tous deux presents, ou periode future."
+  )
+  @ApiResponse(responseCode = "403", description = "Jeton sans entreprise connue, ou role autre que GESTIONNAIRE.")
+  @ApiResponse(responseCode = "404", description = "Operateur inconnu du referentiel.")
+  ResponseEntity<byte[]> exporteEnExcel(
+    @Parameter(description = "Identifiant de l'operateur dans le referentiel.") @PathVariable UUID operateurId,
+    @Parameter(description = "Annee : ISO pour une semaine, civile pour un mois.", example = "2026") @RequestParam @Min(
+      PREMIERE_ANNEE
+    ) @Max(DERNIERE_ANNEE) int annee,
+    @Parameter(description = "Numero de la semaine ISO.", example = "38") @RequestParam(required = false) @Min(PREMIERE_SEMAINE) @Max(
+      DERNIERE_SEMAINE
+    ) Integer semaine,
+    @Parameter(description = "Numero du mois, de 1 a 12.", example = "9") @RequestParam(required = false) @Min(PREMIER_MOIS) @Max(
+      DERNIER_MOIS
+    ) Integer mois
+  ) throws IOException {
+    RapportDActivite rapport = applicationService.rapport(
+      new OperateurId(operateurId),
+      PeriodeDemandee.de(annee, Optional.ofNullable(semaine), Optional.ofNullable(mois))
+    );
+
+    return ResponseEntity.ok()
+      .contentType(ClasseurDuRapportDActivite.TYPE)
+      .header(
+        HttpHeaders.CONTENT_DISPOSITION,
+        ContentDisposition.attachment().filename(ClasseurDuRapportDActivite.nomDeFichier(rapport)).build().toString()
+      )
+      .body(ClasseurDuRapportDActivite.de(rapport));
   }
 }

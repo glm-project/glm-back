@@ -88,3 +88,36 @@ Feature: Rapport d'activite d'un operateur sur une semaine ou un mois
     Given I am logged in as "gestionnaire" with role "GESTIONNAIRE" for tenant "katilys"
     When je consulte le rapport d'activite de "martin" pour le mois 5 de 2026
     Then la reponse a le statut http 404
+
+  Scenario: Le classeur du mois porte un pointage par ligne, fin automatique comprise
+    Given pour la synthese, l'element "carter" est engage en atelier a "2026-05-11T04:00:00Z"
+    And pour la synthese, l'element "bride" est engage en atelier a "2026-05-11T04:00:00Z"
+    And la synthese des heures recoit sur l'element "carter" les pointages
+      | alias | type  | operateur | poste  | survenue             |
+      | A     | DEBUT | martin    | DMU 50 | 2026-05-11T06:00:00Z |
+      | F     | FIN   | martin    | DMU 50 | 2026-05-11T07:00:00Z |
+      | B     | DEBUT | martin    | DMU 50 | 2026-05-12T06:00:00Z |
+    And la synthese des heures recoit sur l'element "bride" les pointages
+      | alias | type  | operateur | poste | survenue             |
+      | C     | DEBUT | martin    | Tour  | 2026-05-11T06:30:00Z |
+      | G     | FIN   | martin    | Tour  | 2026-05-11T07:30:00Z |
+    And il est "2026-05-20T10:00:00Z"
+    When j'exporte en Excel le rapport d'activite de "martin" pour le mois 5 de 2026
+    Then la reponse a le statut http 200
+    And le classeur du rapport d'activite est nomme d'apres "martin" et "2026-05"
+    # Heures de Paris : 6 h UTC, c'est 8 h en mai.
+    And le tableau "Pointages" du rapport d'activite porte
+      | Date       | Début | Fin   | Durée (h) | Nature   | Activité | Mention                            |
+      | 2026-05-11 | 08:00 | 09:00 | 1.00      | fraisage | Travail  | en même temps qu'un autre pointage |
+      | 2026-05-11 | 08:30 | 09:30 | 1.00      | tournage | Travail  | en même temps qu'un autre pointage |
+      | 2026-05-12 | 08:00 | 21:00 | 13.00     | fraisage | Travail  | fin automatique                    |
+    And le tableau "Natures" du rapport d'activite porte
+      | Nature de travail | Temps (h) |
+      | fraisage          | 14.00     |
+      | tournage          | 1.00      |
+
+  Scenario: Le classeur est reserve au gestionnaire
+    Given il est "2026-05-20T10:00:00Z"
+    And I am logged in as "user" with role "USER" for tenant "impeccmold"
+    When j'exporte en Excel le rapport d'activite de "martin" pour le mois 5 de 2026
+    Then la reponse a le statut http 403

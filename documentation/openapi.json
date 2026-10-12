@@ -3002,7 +3002,7 @@
     "/api/couts-de-revient/{elementId}/export.xlsx" : {
       "get" : {
         "description" : "Le meme rapport que la lecture, mis en forme pour le client : aucun montant n'est recalcule ni arrondi a nouveau.\n\nRefuse en 409 (rapport-non-exportable) un rapport dont un pointage porte une fin automatique non regularisee, ou\nun tarif manquant : taux horaire de l'operateur absent, ou cout horaire absent sur un pointage qui a un poste. Un\ncout horaire de 0 EUR est valide ; une activite en cours ne bloque pas.\n\nL'onglet Synthese porte l'element, son statut, l'instant de generation (l'evaluation du rapport) et une ligne par\nnature avec le total. L'element est \"Termine le\" sa derniere cloture quand tous ses passages en atelier sont clos\net qu'aucune activite n'est en cours ; sinon il est \"En cours\", et le classeur est une photographie a l'instant de\ngeneration.\n\nL'onglet Pointages est un tableau Excel nomme Pointages, une ligne par pointage (nature, poste, operateur, categorie,\ndebut, fin, duree, machine, main d'oeuvre, total), sans cellule fusionnee ni ligne intercalaire : regroupes par\nnature, ses pointages retrouvent les lignes de la synthese. Montants et durees sont des nombres (durees en heures decimales), les dates de vraies dates Excel\ndans le fuseau de l'entreprise ; un cout de 0 EUR garde sa valeur sous un format qui l'affiche vide.\n",
-        "operationId" : "exporteEnExcel",
+        "operationId" : "exporteEnExcel_1",
         "parameters" : [ {
           "description" : "Identifiant de l'element de fabrication.",
           "in" : "path",
@@ -4242,6 +4242,106 @@
         },
         "summary" : "Lire la synthese des heures hebdomadaire d'un operateur",
         "tags" : [ "Syntheses des heures" ]
+      }
+    },
+    "/api/syntheses-des-heures/{operateurId}/export.xlsx" : {
+      "get" : {
+        "description" : "Le meme rapport que le resume, mis en forme pour etre retravaille. Une fin automatique ne bloque pas l'export :\nelle compte jusqu'a son echeance et porte la mention \"fin automatique\".\n\nL'onglet Synthese porte l'operateur, la periode, l'instant de generation, le temps pointe et les tableaux nommes\nJours (un mois omet ses samedis et dimanches sans pointage), Elements et Natures (seulement s'il y a au moins deux\nnatures). L'onglet Pointages est un tableau Excel nomme Pointages, une ligne par pointage (date, jour, debut, fin,\nduree, element, reference, description, categorie, poste, nature, activite, mention), sans cellule fusionnee ni\nligne intercalaire : additionnees, ses durees donnent le temps pointe. Durees en heures decimales, jours et heures\nen vraies dates Excel dans le fuseau de l'entreprise ; une duree nulle garde sa valeur sous un format qui\nl'affiche vide.\n\nLa periode est une semaine ISO (annee ISO et semaine) ou un mois civil (annee et mois), au fuseau de\nl'entreprise ; exactement l'un des deux. Les activites sont coupees aux minuits locaux et aux bornes de la\nperiode : une semaine a cheval sur deux mois est coupee dans le rapport mensuel. Une periode qui n'a pas encore\ncommence est refusee.\n",
+        "operationId" : "exporteEnExcel",
+        "parameters" : [ {
+          "description" : "Identifiant de l'operateur dans le referentiel.",
+          "in" : "path",
+          "name" : "operateurId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "description" : "Annee : ISO pour une semaine, civile pour un mois.",
+          "example" : 2026,
+          "in" : "query",
+          "name" : "annee",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "maximum" : 2999,
+            "minimum" : 2000,
+            "type" : "integer"
+          }
+        }, {
+          "description" : "Numero de la semaine ISO.",
+          "example" : 38,
+          "in" : "query",
+          "name" : "semaine",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "maximum" : 53,
+            "minimum" : 1,
+            "type" : "integer"
+          }
+        }, {
+          "description" : "Numero du mois, de 1 a 12.",
+          "example" : 9,
+          "in" : "query",
+          "name" : "mois",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "maximum" : 12,
+            "minimum" : 1,
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : {
+                "schema" : {
+                  "format" : "binary",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "Le classeur, en piece jointe nommee d'apres l'operateur et la periode (activite-dupont-jean-2026-05.xlsx)."
+          },
+          "400" : {
+            "content" : {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "Annee, semaine ou mois hors bornes, semaine et mois tous deux absents ou tous deux presents, ou periode future."
+          },
+          "403" : {
+            "content" : {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "Jeton sans entreprise connue, ou role autre que GESTIONNAIRE."
+          },
+          "404" : {
+            "content" : {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "Operateur inconnu du referentiel."
+          }
+        },
+        "summary" : "Exporter le rapport d'activite d'un operateur en classeur Excel",
+        "tags" : [ "Rapports d'activite" ]
       }
     },
     "/api/syntheses-des-heures/{operateurId}/rapport" : {

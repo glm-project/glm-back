@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -138,6 +139,92 @@ public final class SyntheseHeuresFixture {
       .id(ACTIVITE_ID_DU_CARTER)
       .etat(plage.estOuverte() ? EtatDActivite.EN_COURS : EtatDActivite.TERMINEE)
       .plage(plage);
+  }
+
+  /**
+   * Mai 2026 lu le mercredi 13 a midi : le lundi 11, le carter et la bride en meme temps puis une NC ; le mardi 12,
+   * une fin automatique ; le mercredi 13, la bride sans poste puis le carter au tour, encore en cours.
+   */
+  public static RapportDActivite rapportDActiviteDeMai2026() {
+    return rapportDActivite(
+      MAI_2026,
+      List.of(
+        new ActiviteDElement(ELEMENT_ENGAGE_CARTER, termineeEnMai(ACTIVITE_ID_DU_CARTER, activiteDeTravailDuCarterSurLaDmu50(), 11, 8, 10)),
+        new ActiviteDElement(
+          ELEMENT_ENGAGE_BRIDE,
+          termineeEnMai(ACTIVITE_ID_DE_LA_BRIDE, activiteDeTravailDeLaBrideSurLaDmu50(), 11, 9, 11)
+        ),
+        new ActiviteDElement(
+          ELEMENT_ENGAGE_CARTER,
+          termineeEnMai(
+            new ActiviteId(UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc")),
+            activiteDeNonConformiteDuCarterSurLaDmu50(),
+            11,
+            10,
+            11
+          )
+        ),
+        new ActiviteDElement(
+          ELEMENT_ENGAGE_CARTER,
+          ActiviteInterpretee.builder()
+            .id(new ActiviteId(UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd")))
+            .activite(activiteDeTravailDuCarterSurLaDmu50())
+            .plage(new Plage(aParis(12, 8), Optional.empty()))
+            .echeance(aParis(12, 18))
+        ),
+        new ActiviteDElement(
+          ELEMENT_ENGAGE_BRIDE,
+          termineeEnMai(
+            new ActiviteId(UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")),
+            Activite.builder()
+              .element(ELEMENT_ID_BRIDE)
+              .poste(Optional.empty())
+              .nature(Optional.empty())
+              .categorie(CategorieDActivite.TRAVAIL),
+            13,
+            8,
+            9
+          )
+        ),
+        new ActiviteDElement(
+          ELEMENT_ENGAGE_CARTER,
+          ActiviteInterpretee.builder()
+            .id(ACTIVITE_ID_DU_TOUR)
+            .activite(activiteDeTravailDuCarterAuTour())
+            .plage(new Plage(aParis(13, 10), Optional.empty()))
+            .echeance(aParis(13, 23))
+        )
+      )
+    );
+  }
+
+  /** La semaine 20 de 2026, lue le mercredi 13 a midi : deux heures de fraisage du carter le lundi. */
+  public static RapportDActivite rapportDActiviteDeLaSemaine20() {
+    return rapportDActivite(SEMAINE_20_DE_2026, List.of(new ActiviteDElement(ELEMENT_ENGAGE_CARTER, travailDuCarterDe8HA10H())));
+  }
+
+  /** La semaine 19 de 2026, sans aucun pointage. */
+  public static RapportDActivite rapportDActiviteVideDeLaSemaine19() {
+    return rapportDActivite(SEMAINE_19_DE_2026, List.of());
+  }
+
+  private static RapportDActivite rapportDActivite(PeriodeCalendaire periode, List<ActiviteDElement> activites) {
+    return RapportsDActiviteService.builder()
+      .operateurs(id -> Optional.of(OPERATEUR_CONNU_DUPONT))
+      .fuseau(() -> ZONE_PARIS)
+      .activites((operateur, debut, fin) -> activites)
+      .elements(ids -> List.of(FICHE_DU_CARTER))
+      .postes(ids -> List.of(POSTE_CONNU_DMU_50, POSTE_CONNU_TOUR_14))
+      .clock(() -> LE_MERCREDI_13_MAI_2026_A_12H)
+      .rapport(OPERATEUR_ID_DUPONT, periode);
+  }
+
+  private static ActiviteInterpretee termineeEnMai(ActiviteId id, Activite activite, int jour, int debut, int fin) {
+    return ActiviteInterpretee.builder()
+      .id(id)
+      .activite(activite)
+      .plage(new Plage(aParis(jour, debut), Optional.of(aParis(jour, fin))))
+      .echeance(aParis(jour, fin + 1));
   }
 
   private static Instant aParis(int jourDeMai, int heure) {
