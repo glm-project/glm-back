@@ -7,11 +7,10 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.IntStream;
 
 /**
- * Une semaine vue depuis le fuseau horaire de l'entreprise : ses sept jours, ses bornes en instants, et de quoi
- * ramener n'importe quelle plage aux jours qu'elle traverse.
+ * Une periode vue depuis le fuseau horaire de l'entreprise : ses jours, ses bornes en instants, et de quoi ramener
+ * n'importe quelle plage aux jours qu'elle traverse.
  *
  * <p>
  * Toute la connaissance du calendrier tient ici. L'atelier ne sait que compter des instants — il n'a ni fuseau ni
@@ -21,35 +20,31 @@ import java.util.stream.IntStream;
  */
 public final class DecoupageCalendaire {
 
-  private static final int JOURS_PAR_SEMAINE = 7;
-
-  private final SemaineCalendaire semaine;
+  private final PeriodeCalendaire periode;
   private final ZoneId zone;
 
-  public DecoupageCalendaire(SemaineCalendaire semaine, ZoneId zone) {
-    Assert.notNull("semaine", semaine);
+  public DecoupageCalendaire(PeriodeCalendaire periode, ZoneId zone) {
+    Assert.notNull("periode", periode);
     Assert.notNull("fuseau horaire", zone);
 
-    this.semaine = semaine;
+    this.periode = periode;
     this.zone = zone;
   }
 
   public List<LocalDate> jours() {
-    return IntStream.range(0, JOURS_PAR_SEMAINE)
-      .mapToObj(rang -> semaine.lundi().plusDays(rang))
-      .toList();
+    return periode.premierJour().datesUntil(periode.dernierJour().plusDays(1)).toList();
   }
 
   public Instant debut() {
-    return semaine.lundi().atStartOfDay(zone).toInstant();
+    return periode.premierJour().atStartOfDay(zone).toInstant();
   }
 
   public Instant finExclusive() {
-    return semaine.lundi().plusDays(JOURS_PAR_SEMAINE).atStartOfDay(zone).toInstant();
+    return periode.dernierJour().plusDays(1).atStartOfDay(zone).toInstant();
   }
 
   /**
-   * La plage donnee, ramenee a la semaine et scindee a chaque minuit traverse.
+   * La plage donnee, ramenee a la periode et scindee a chaque minuit traverse.
    *
    * Une plage sans fin et sans instant d'evaluation n'indique que son jour de debut.
    */

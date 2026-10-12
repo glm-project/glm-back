@@ -59,4 +59,12 @@ class SemaineCalendaireTest {
   void shouldPorterLaCinquanteTroisiemeSemaineDesAnneesQuiEnComptent() {
     assertThat(new SemaineCalendaire(2026, 53).lundi()).isEqualTo(LocalDate.of(2026, 12, 28));
   }
+
+  @Test
+  void shouldAllerDuLundiAuDimanche() {
+    SemaineCalendaire semaine = new SemaineCalendaire(2026, 38);
+
+    assertThat(semaine.premierJour()).isEqualTo(LocalDate.of(2026, 9, 14));
+    assertThat(semaine.dernierJour()).isEqualTo(LocalDate.of(2026, 9, 20));
+  }
 }

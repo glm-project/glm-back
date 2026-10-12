@@ -19,11 +19,12 @@ import java.time.temporal.WeekFields;
  * instants — c'est le role de {@link DecoupageCalendaire}.
  * </p>
  */
-public record SemaineCalendaire(int annee, int numero) {
+public record SemaineCalendaire(int annee, int numero) implements PeriodeCalendaire {
   private static final int PREMIERE_SEMAINE = 1;
   private static final int DERNIERE_SEMAINE = 53;
   private static final int PREMIERE_ANNEE = 2000;
   private static final int DERNIERE_ANNEE = 2999;
+  private static final int DERNIER_JOUR_APRES_LE_LUNDI = 6;
 
   /**
    * Les bornes de l'annee ne sont pas une regle metier : elles evitent qu'un parametre aberrant recu par l'API
@@ -42,5 +43,15 @@ public record SemaineCalendaire(int annee, int numero) {
     return LocalDate.of(annee, 1, 4)
       .with(WeekFields.ISO.weekOfWeekBasedYear(), numero)
       .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+  }
+
+  @Override
+  public LocalDate premierJour() {
+    return lundi();
+  }
+
+  @Override
+  public LocalDate dernierJour() {
+    return lundi().plusDays(DERNIER_JOUR_APRES_LE_LUNDI);
   }
 }
