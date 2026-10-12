@@ -264,6 +264,33 @@ public final class AtelierFixture {
   }
 
   /**
+   * La fin pointee, telle que le serveur l'ecrit depuis qu'il la lie a la reception : sur la cle de l'activite qu'ouvre ce
+   * debut, et visant cette activite.
+   */
+  public static GesteADater finPointeeDe(EvenementDAtelier ouvrant) {
+    return date -> finPointeeVisant(ouvrant, ouvrant.cle(), Horodatage.saisiA(date));
+  }
+
+  /**
+   * La meme fin, mais ecrite sur la fraiseuse 2 : celle d'une activite qu'une correction y a amenee.
+   */
+  public static GesteADater finPointeeSurFraiseuse2De(EvenementDAtelier ouvrant) {
+    return date ->
+      finPointeeVisant(ouvrant, new CleDActivite(OPERATEUR_ID_DUPONT, Optional.of(POSTE_ID_FRAISEUSE_2)), Horodatage.saisiA(date));
+  }
+
+  /**
+   * La fin pointee de cette activite, recue le 11 mai a 9 h 15 : bien apres son geste.
+   */
+  public static GesteADater finPointeeRecueLe11MaiDe(EvenementDAtelier ouvrant) {
+    return date -> finPointeeVisant(ouvrant, ouvrant.cle(), new Horodatage(date, LE_11_MAI_2026_A_9H15));
+  }
+
+  private static EvenementDAtelier finPointeeVisant(EvenementDAtelier ouvrant, CleDActivite cle, Horodatage horodatage) {
+    return evenementDAtelier(TypeDEvenementDAtelier.FIN, ouvrant.activite(), cle, AUTEUR_DUPONT, OrigineDuPointage.POINTAGE, horodatage);
+  }
+
+  /**
    * La fin que le gestionnaire regularise sur l'activite de Dupont qu'ouvre ce debut : la seule fin qui porte une cible.
    */
   public static GesteADater finRegulariseeParLeroyDe(EvenementDAtelier ouvrant) {

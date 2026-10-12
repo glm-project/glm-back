@@ -167,6 +167,19 @@ class EvenementDAtelierTest {
     assertThat(correction.estUneRegularisation()).isTrue();
   }
 
+  /**
+   * Le serveur lie la fin pointee a l'activite que sa cle avait en cours ; une fin d'avant cette liaison n'en porte aucune.
+   * Dans les deux cas c'est un pointage, jamais un acte du gestionnaire.
+   */
+  @Test
+  void shouldBuildUneFinPointeeQuiCibleUneActiviteSansEnOuvrir() {
+    EvenementDAtelier fin = geste(TypeDEvenementDAtelier.FIN, OrigineDuPointage.POINTAGE, Optional.empty(), Optional.of(ACTIVITE_VISEE));
+
+    assertThat(fin.activite()).isEmpty();
+    assertThat(fin.activiteVisee()).contains(ACTIVITE_VISEE);
+    assertThat(fin.estUneRegularisation()).isFalse();
+  }
+
   @Test
   void shouldBuildUneFinPointeeSansCibleNiActivite() {
     EvenementDAtelier fin = geste(TypeDEvenementDAtelier.FIN, OrigineDuPointage.POINTAGE, Optional.empty(), Optional.empty());
@@ -228,7 +241,6 @@ class EvenementDAtelierTest {
 
     return Stream.of(
       Arguments.of(TypeDEvenementDAtelier.FIN, OrigineDuPointage.POINTAGE, ouverte, aucune),
-      Arguments.of(TypeDEvenementDAtelier.FIN, OrigineDuPointage.POINTAGE, aucune, visee),
       Arguments.of(TypeDEvenementDAtelier.FIN, OrigineDuPointage.REGULARISATION, aucune, aucune),
       Arguments.of(TypeDEvenementDAtelier.FIN, OrigineDuPointage.REGULARISATION, ouverte, visee),
       Arguments.of(TypeDEvenementDAtelier.DEBUT, OrigineDuPointage.POINTAGE, aucune, aucune),

@@ -123,22 +123,23 @@ rien.
 
 Le journal se **lit par clé** (`SequenceDActivites`, la seule interprétation) : les gestes d'une clé, dans l'ordre du
 journal, donnent ses activités. Un `DEBUT` ou une `NON_CONFORMITE` ouvre une activité, qui s'identifie par son pointage
-ouvrant (`ActiviteId`). Une `FIN` du pupitre ferme l'activité en cours de sa clé, sans la désigner. La `FIN` d'une
+ouvrant (`ActiviteId`). Une `FIN` du pupitre ferme l'activité que sa clé avait en cours à la réception, que le serveur écrit dans la fin (`activiteVisee`). La `FIN` d'une
 régularisation ou d'un ajout ferme l'activité qu'elle cible. La clôture ferme l'activité restée en cours. La lecture suppose
 au plus une activité en cours par clé, ce que la règle de réception garantit ; un fait qui n'a rien à fermer n'a aucun
 effet, et rien n'est refusé à la lecture.
 
-`JournalDAtelier.activites` lit en **deux temps**. Le premier lit les gestes par **clé d'origine**, celle sur laquelle ils
-ont été pointés (une `FIN` qui cible une activité se lit avec l'ouverture qu'elle vise, quelle que soit la clé sur laquelle
-elle a été écrite) ; il ne regarde jamais une correction. Le second applique les corrections : une activité qu'un
+`JournalDAtelier.activites` lit en **deux temps**. Le premier lit les gestes : une fin ciblée ferme son activité à son heure, quelle
+que soit la clé sur laquelle elle est écrite ; une fin pointée sans cible (d'avant la liaison) ferme l'activité en cours de sa
+clé pointée, dans l'ordre des heures de geste ; il ne regarde jamais une correction. Le second applique les corrections : une activité qu'un
 `RETRAIT` cible disparaît, une activité qu'un `CHANGEMENT_DE_POSTE` cible compte sur le poste du dernier changement du
 journal. Une `Activite` porte donc son **`porteur`** — le fait qui parle pour son poste, sa nature et ses tarifs : son
 ouvrant, ou son dernier changement de poste — et sa clé (`cle()`) est celle du porteur. `ouvrant()` reste l'ouverture
 d'origine, qui donne l'identité, le début, la catégorie et l'échéance.
 
-`EvenementDAtelier` impose son invariant : seul un `DEBUT` ou une `NON_CONFORMITE` porte une activité, et **seul un fait du
-gestionnaire porte une cible** (`activiteVisee`) : la `FIN` d'une régularisation ou d'un ajout, un `RETRAIT`, un
-`CHANGEMENT_DE_POSTE` — ces deux derniers, de type non-geste, ayant toujours l'origine `REGULARISATION`. Seuls `DEBUT`,
+`EvenementDAtelier` impose son invariant : seul un `DEBUT` ou une `NON_CONFORMITE` porte une activité, et un fait du
+gestionnaire porte toujours une cible (`activiteVisee`) : la `FIN` d'une régularisation ou d'un ajout, un `RETRAIT`, un
+`CHANGEMENT_DE_POSTE` — ces deux derniers, de type non-geste, ayant toujours l'origine `REGULARISATION` — et la `FIN` pointée
+en porte une aussi (origine `POINTAGE`), sauf si elle date d'avant la liaison ; une ouverture n'en porte jamais. Seuls `DEBUT`,
 `NON_CONFORMITE` et `FIN` sont des **gestes** (`TypeDEvenementDAtelier.estUnGeste`) : le pupitre ne pointe que ceux-là.
 
 ## L'échéance
@@ -271,11 +272,14 @@ et coupe les durées aux minuits du fuseau de l'entreprise (`DecoupageParJour`).
 ne calcule aucun minuit. Une activité en cours n'a ni fin ni durée ; la durée opérationnelle est une somme simple des portions du
 jour des activités terminées.
 
-**Limites connues.** Une `FIN` pointée se lie à l'activité que sa clé avait en cours quand le serveur l'a reçue : la première
-lecture rejoue les pointages d'une clé dans l'ordre de réception (date d'enregistrement, puis ordre du journal), pas dans l'ordre
-des heures de geste, et y garde les activités retirées ou déplacées. Deux pointages d'une même clé enregistrés au même instant
-se départagent par l'heure du geste. Le journal brut de la synthèse des heures garde les gestes d'une activité retirée, et,
-après un changement de poste, les pointages gardent leur ancien poste.
+**Limites connues.** Toute fin cible l'activité qu'elle ferme (`activiteVisee`), y compris la fin pointée : la règle de réception
+juge la fin sur la clé effective, après les corrections, et `SuivisDAtelierService.pointe` écrit dans la fin acceptée l'activité
+qu'elle a jugée en cours (`RegleDeReception.activiteQueFermeUneFin`). L'origine de la fin reste `POINTAGE`. La lecture ne devine
+donc plus rien et ne dépend ni de la date d'enregistrement ni des ouvertures ou corrections qui suivent. Reste lue par la clé et
+l'ordre des heures de geste — comme avant les corrections — la fin pointée **sans cible**, écrite avant cette liaison ; une
+correction appliquée sur un journal d'avant la liaison hérite de l'ancienne lecture pour ces fins. Il n'y a pas de migration :
+aucun client n'est déployé et les bases se remettent à zéro (ADR 0003, changelogs 016 et 017). Le journal brut de la synthèse des
+heures garde les gestes d'une activité retirée, et, après un changement de poste, les pointages gardent leur ancien poste.
 
 ## Invariants à ne pas casser
 

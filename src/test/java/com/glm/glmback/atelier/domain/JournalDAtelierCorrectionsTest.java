@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 class JournalDAtelierCorrectionsTest {
 
   private static final Instant LE_10_MAI_2026_A_10H = Instant.parse("2026-05-10T10:00:00Z");
+  private static final Instant LE_10_MAI_2026_A_11H = Instant.parse("2026-05-10T11:00:00Z");
   private static final Instant LE_10_MAI_2026_A_14H = Instant.parse("2026-05-10T14:00:00Z");
   private static final Instant LE_10_MAI_2026_A_15H = Instant.parse("2026-05-10T15:00:00Z");
   private static final Instant LE_11_MAI_2026_A_10H = Instant.parse("2026-05-11T10:00:00Z");
@@ -173,7 +174,7 @@ class JournalDAtelierCorrectionsTest {
    */
   @Test
   void shouldGarderLaFinPointeeDUneActiviteDeplaceeQuandOnAjouteSurSonAncienPoste() {
-    EvenementDAtelier fin = finDe(travail).a(LE_10_MAI_2026_A_10H);
+    EvenementDAtelier fin = finPointeeDe(travail).a(LE_10_MAI_2026_A_10H);
     EvenementDAtelier ajoutee = debutAjouteParLeroySurFraiseuse1ParDupontA(LE_10_MAI_2026_A_9H);
     EvenementDAtelier finAjoutee = finRegulariseeParLeroyDe(ajoutee).a(LE_10_MAI_2026_A_9H.plusSeconds(1800));
 
@@ -205,7 +206,7 @@ class JournalDAtelierCorrectionsTest {
 
     List<Activite> activites = activites(
       retiree,
-      finDe(retiree).a(LE_10_MAI_2026_A_12H),
+      finPointeeDe(retiree).a(LE_10_MAI_2026_A_12H),
       retraitParLeroyDe(retiree).a(LE_11_MAI_2026_A_9H),
       recu
     );
@@ -229,6 +230,107 @@ class JournalDAtelierCorrectionsTest {
       .singleElement()
       .satisfies(activite -> {
         assertThat(activite.fin()).contains(LE_10_MAI_2026_A_12H);
+        assertThat(activite.evenementDeFin()).contains(regularisee);
+      });
+  }
+
+  /**
+   * Le serveur lie la fin pointee a l'activite qu'il jugeait en cours : la lecture ne la devine plus. Ici l'activite de la
+   * fraiseuse 1 a ete amenee sur la fraiseuse 2, ou une autre activite avait deja sa fin regularisee ; la fin pointee tardive
+   * ferme celle qu'on a amenee, et laisse a l'autre sa fin.
+   */
+  @Test
+  void shouldFermerLActiviteAmeneeSurLaCleEtLaisserSaFinARegularisee() {
+    EvenementDAtelier deja = debutSurFraiseuse2ParDupontA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier finRegularisee = finRegulariseeSurFraiseuse2ParLeroyDe(deja).a(LE_10_MAI_2026_A_9H);
+    EvenementDAtelier amenee = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_10H);
+    EvenementDAtelier finTardive = finPointeeSurFraiseuse2De(amenee).a(LE_10_MAI_2026_A_11H);
+
+    List<Activite> activites = activites(
+      deja,
+      finRegularisee,
+      amenee,
+      changementDePosteVersFraiseuse2ParLeroyDe(amenee).a(LE_11_MAI_2026_A_8H),
+      finTardive
+    );
+
+    assertThat(activites).hasSize(2);
+    assertThat(activites.get(0).ouvrant()).isEqualTo(deja);
+    assertThat(activites.get(0).fin()).contains(LE_10_MAI_2026_A_9H);
+    assertThat(activites.get(0).evenementDeFin()).contains(finRegularisee);
+    assertThat(activites.get(1).ouvrant()).isEqualTo(amenee);
+    assertThat(activites.get(1).fin()).contains(LE_10_MAI_2026_A_11H);
+    assertThat(activites.get(1).evenementDeFin()).contains(finTardive);
+  }
+
+  @Test
+  void shouldFermerLActiviteAmeneeSurLaCleSansAutreActiviteSurCetteCle() {
+    EvenementDAtelier amenee = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_10H);
+    EvenementDAtelier finTardive = finPointeeSurFraiseuse2De(amenee).a(LE_10_MAI_2026_A_11H);
+
+    assertThat(activites(amenee, changementDePosteVersFraiseuse2ParLeroyDe(amenee).a(LE_11_MAI_2026_A_8H), finTardive))
+      .singleElement()
+      .satisfies(activite -> {
+        assertThat(activite.fin()).contains(LE_10_MAI_2026_A_11H);
+        assertThat(activite.a(LE_11_MAI_2026_A_9H).finAutomatique()).isFalse();
+      });
+  }
+
+  /**
+   * La lecture ne depend plus de la date d'enregistrement : ici la fin de l'activite retiree est enregistree apres le debut
+   * recu depuis, alors que le serveur l'avait jugee avant. Elle reste liee a son activite.
+   */
+  @Test
+  void shouldLireUneFinLieeSansRegarderLOrdreDEnregistrement() {
+    EvenementDAtelier retiree = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier recu = debutSurFraiseuse1ParDupontRecuLe(LE_11_MAI_2026_A_9H).a(LE_10_MAI_2026_A_10H);
+    EvenementDAtelier finEnregistreeApres = finPointeeRecueLe11MaiDe(retiree).a(LE_10_MAI_2026_A_12H);
+
+    List<Activite> activites = activites(
+      retiree,
+      recu,
+      finEnregistreeApres,
+      retraitParLeroyDe(retiree).a(LE_11_MAI_2026_A_9H.plusSeconds(1))
+    );
+
+    assertThat(activites)
+      .singleElement()
+      .satisfies(activite -> {
+        assertThat(activite.ouvrant()).isEqualTo(recu);
+        assertThat(activite.fin()).isEmpty();
+      });
+  }
+
+  /**
+   * Les fins pointees d'avant la liaison ne portent aucune cible : elles se lisent comme toujours, par la cle et l'ordre
+   * des heures de geste, quel que soit l'ordre dans lequel le journal les a enregistrees.
+   */
+  @Test
+  void shouldLireUneFinSansCibleParLaCleEtLOrdreDesGestes() {
+    EvenementDAtelier ouverture = debutSurFraiseuse1ParDupontRecuLe(LE_11_MAI_2026_A_9H).a(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier fin = finDe(ouverture).a(LE_10_MAI_2026_A_12H);
+    EvenementDAtelier suivante = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_14H);
+
+    List<Activite> activites = activites(suivante, fin, ouverture);
+
+    assertThat(activites).extracting(Activite::fin).containsExactly(Optional.of(LE_10_MAI_2026_A_12H), Optional.empty());
+    assertThat(activites.getFirst().evenementDeFin()).contains(fin);
+  }
+
+  /**
+   * Une fin ne remplace jamais une fin deja posee : une fin sans cible, lue par la cle, ne reprend pas l'activite dont le
+   * gestionnaire a regularise la fin.
+   */
+  @Test
+  void shouldNePasRemplacerLaFinRegulariseeParUneFinSansCible() {
+    EvenementDAtelier regularisee = finRegulariseeParLeroyDe(travail).a(LE_10_MAI_2026_A_9H);
+
+    List<Activite> activites = activites(travail, regularisee, finDe(travail).a(LE_10_MAI_2026_A_12H));
+
+    assertThat(activites)
+      .singleElement()
+      .satisfies(activite -> {
+        assertThat(activite.fin()).contains(LE_10_MAI_2026_A_9H);
         assertThat(activite.evenementDeFin()).contains(regularisee);
       });
   }

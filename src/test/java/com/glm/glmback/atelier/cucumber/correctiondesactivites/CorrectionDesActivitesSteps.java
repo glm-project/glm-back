@@ -254,6 +254,24 @@ public class CorrectionDesActivitesSteps {
     assertThat(CucumberRestTestContext.getElement(chemin + "activiteVisee")).isNotNull();
   }
 
+  /**
+   * Le serveur ecrit dans la fin pointee l'activite qu'il jugeait en cours : c'est son lien, aucune lecture ne le devine.
+   * Le journal est lu par le steps precedent, l'ordre du journal est celui des heures : la fin pointee est la derniere
+   * fin non regularisee.
+   */
+  @Then("le dernier evenement du journal du suivi est une fin pointee qui vise l'activite de {string} commencee a {string}")
+  public void leDernierEvenementEstUneFinPointeeQuiVise(String operateur, String debut) {
+    String attendue = activiteLueDansLeJournal(operateur, debut);
+    List<Map<String, Object>> fins = lus("$.journal")
+      .stream()
+      .filter(fait -> "FIN".equals(fait.get("type")) && Boolean.FALSE.equals(fait.get("estUneRegularisation")))
+      .toList();
+
+    assertThat(fins).isNotEmpty();
+    assertThat(fins.getLast().get("activiteVisee")).isEqualTo(attendue);
+    assertThat(fins.getLast().get("activite")).isNull();
+  }
+
   @Then("le fait {string} du journal du suivi a la nature {string} et le cout horaire {string}")
   public void leFaitDuJournalALaNature(String type, String nature, String coutHoraire) {
     @SuppressWarnings("unchecked")
@@ -276,6 +294,11 @@ public class CorrectionDesActivitesSteps {
    */
   private String activite(String alias, String operateur, String debut) {
     rest.get(SUIVIS_URI + atelier.suiviId(alias));
+
+    return activiteLueDansLeJournal(operateur, debut);
+  }
+
+  private String activiteLueDansLeJournal(String operateur, String debut) {
     String operateurId = atelier.operateurId(operateur);
     Instant instant = Instant.parse(debut);
 

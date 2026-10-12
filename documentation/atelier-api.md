@@ -225,8 +225,9 @@ Pour le gestionnaire, un pointage ignoré ne crée aucune anomalie : il ne trait
 Le journal est la source de vérité, et sa lecture est la seule interprétation. Les faits de chaque clé (opérateur, poste) se lisent dans l'ordre de l'heure du geste, la `FIN` avant
 l'ouverture à heure égale, puis par identifiant — jamais par l'ordre de réception :
 
-- une `FIN` du pupitre ferme l'activité en cours de sa clé, sans la désigner ;
-- la `FIN` d'une régularisation ou d'un ajout ferme l'activité qu'elle cible, seules `FIN` à porter une cible ;
+- une `FIN` ferme l'activité qu'elle cible (`activiteVisee`) : la régularisation et l'ajout la désignent, et le serveur écrit aussi, dans
+  la `FIN` d'un pointage qu'il accepte, l'activité que la clé avait en cours (jugée après les corrections). Le pupitre n'envoie toujours
+  aucune cible ; une `FIN` pointée d'avant cette liaison n'en porte aucune et se lit par la clé ;
 - un `RETRAIT` écarte l'activité qu'il cible de toute lecture, et un `CHANGEMENT_DE_POSTE` la fait compter sur son poste
   (le dernier l'emporte) : ni l'un ni l'autre n'est un geste, ils ne ferment ni n'ouvrent rien ;
 - une activité atteint son échéance à son début plus sa durée max (13 h par défaut), borne comprise : elle compte alors comme terminée

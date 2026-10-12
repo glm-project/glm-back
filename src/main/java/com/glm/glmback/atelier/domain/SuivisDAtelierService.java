@@ -126,7 +126,8 @@ public final class SuivisDAtelierService {
    *
    * <p>
    * Un pointage ignore n'entre pas au journal : il est ecrit dans l'audit, et le suivi rendu est inchange. Accepte, il
-   * entre au journal comme une ouverture, ou comme la fin de l'activite en cours de sa cle.
+   * entre au journal comme une ouverture, ou comme la fin de l'activite en cours de sa cle, que la fin designe alors
+   * (`activiteVisee`) : le serveur l'a jugee en cours, apres les corrections, et aucune lecture ne la devinera plus.
    * </p>
    */
   public PointageDAtelierTraite pointe(PointageAEnregistrer commande) {
@@ -147,7 +148,9 @@ public final class SuivisDAtelierService {
     Horodatage horodatage = new Horodatage(survenue(commande.dateDeSurvenue(), maintenant), maintenant);
     ResolutionDesRessources.Ressources saisies = ressources.ressources(commande.operateur(), commande.poste());
 
-    return switch (suivi.juge(new CleDActivite(commande.operateur(), commande.poste()), commande.type(), horodatage.dateDeSurvenue())) {
+    CleDActivite cle = new CleDActivite(commande.operateur(), commande.poste());
+
+    return switch (suivi.juge(cle, commande.type(), horodatage.dateDeSurvenue())) {
       case VerdictDeReception.Ignore ignore -> {
         pointagesIgnores.enregistre(new PointageIgnore(commande, horodatage, ignore));
         yield new PointageDAtelierTraite(suivi, IssueDePointage.IGNORE);
@@ -156,7 +159,9 @@ public final class SuivisDAtelierService {
         EvenementDAtelier evenement = saisies.evenement(
           commande.evenement(),
           commande.type(),
-          Optional.empty(),
+          commande.type().ouvreUneActivite()
+            ? Optional.empty()
+            : Optional.of(suivi.activiteQueFermeUneFin(cle, horodatage.dateDeSurvenue())),
           commande.type().ouvreUneActivite() ? Optional.of(dureesMax.current()) : Optional.empty(),
           commande.auteur(),
           OrigineDuPointage.POINTAGE,

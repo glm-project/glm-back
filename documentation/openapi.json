@@ -1085,7 +1085,7 @@
             "type" : "string"
           },
           "activiteVisee" : {
-            "description" : "Identite de l'activite qu'un fait du gestionnaire cible : la fin d'une regularisation ou d'un ajout, un retrait, un\nchangement de poste. Absente pour un pointage.\n",
+            "description" : "Identite de l'activite qu'un fait cible : la fin d'une regularisation ou d'un ajout, un retrait, un changement de poste,\net la fin pointee, que le serveur lie a la reception a l'activite que la cle avait en cours (jugee apres les corrections).\nAbsente pour une ouverture, et pour une fin pointee d'avant cette liaison, qui se lit par la cle. Une cible n'est pas\nune regularisation : `estUneRegularisation` se lit sur l'origine.\n",
             "format" : "uuid",
             "type" : "string"
           },

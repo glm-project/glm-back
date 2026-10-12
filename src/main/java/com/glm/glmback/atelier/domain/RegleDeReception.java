@@ -25,6 +25,11 @@ import java.util.Optional;
  * </p>
  *
  * <p>
+ * Une fin acceptee ferme une activite precise, celle que la cle avait en cours : {@link #activiteQueFermeUneFin} la donne,
+ * et le suivi l'ecrit dans la fin pour que sa lecture ne la devine plus.
+ * </p>
+ *
+ * <p>
  * La cloture ne termine l'activite que pour un geste qui lui est posterieur : une fin survenue avant la cloture, mais
  * recue apres elle, termine toujours l'activite a son heure.
  * </p>
@@ -40,11 +45,7 @@ final class RegleDeReception {
     TypeDEvenementDAtelier type,
     Instant survenue
   ) {
-    List<Activite> activites = journal
-      .activites(cloture.filter(date -> date.isBefore(survenue)))
-      .stream()
-      .filter(activite -> activite.cle().equals(cle))
-      .toList();
+    List<Activite> activites = activitesDeLaCle(journal, cloture, cle, survenue);
     List<EvenementDAtelier> faits = activites.stream().flatMap(Activite::gestes).sorted(JournalDAtelier.PAR_ORDRE_CHRONOLOGIQUE).toList();
     Optional<EvenementDAtelierId> dernierAccepte = faits
       .stream()
@@ -54,11 +55,8 @@ final class RegleDeReception {
       return new VerdictDeReception.Ignore(RaisonDePointageIgnore.ANTERIEUR, dernierAccepte);
     }
 
-    Optional<Activite> sansFin = activites
-      .stream()
-      .reduce((premiere, seconde) -> seconde)
-      .filter(derniere -> derniere.fin().isEmpty());
-    Optional<Activite> enCours = sansFin.filter(derniere -> !derniere.echeance().estAtteinteA(survenue));
+    Optional<Activite> sansFin = sansFin(activites);
+    Optional<Activite> enCours = enCours(sansFin, survenue);
 
     if (!type.ouvreUneActivite()) {
       if (enCours.isPresent()) {
@@ -80,5 +78,33 @@ final class RegleDeReception {
     }
 
     return new VerdictDeReception.Accepte();
+  }
+
+  /**
+   * L'activite qu'une fin acceptee ferme : celle que la cle avait en cours a l'heure du geste, jugee sur le journal tel
+   * qu'il est apres les corrections. Le suivi l'ecrit dans la fin (`activiteVisee`), pour qu'aucune lecture ne la
+   * retrouve plus jamais par rejeu. Le pointage doit avoir ete accepte.
+   */
+  static ActiviteId activiteQueFermeUneFin(JournalDAtelier journal, Optional<Instant> cloture, CleDActivite cle, Instant survenue) {
+    return enCours(sansFin(activitesDeLaCle(journal, cloture, cle, survenue)), survenue).orElseThrow().id();
+  }
+
+  private static List<Activite> activitesDeLaCle(JournalDAtelier journal, Optional<Instant> cloture, CleDActivite cle, Instant survenue) {
+    return journal
+      .activites(cloture.filter(date -> date.isBefore(survenue)))
+      .stream()
+      .filter(activite -> activite.cle().equals(cle))
+      .toList();
+  }
+
+  private static Optional<Activite> sansFin(List<Activite> activites) {
+    return activites
+      .stream()
+      .reduce((premiere, seconde) -> seconde)
+      .filter(derniere -> derniere.fin().isEmpty());
+  }
+
+  private static Optional<Activite> enCours(Optional<Activite> sansFin, Instant survenue) {
+    return sansFin.filter(derniere -> !derniere.echeance().estAtteinteA(survenue));
   }
 }

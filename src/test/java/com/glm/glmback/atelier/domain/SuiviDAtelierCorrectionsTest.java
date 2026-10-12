@@ -183,6 +183,13 @@ class SuiviDAtelierCorrectionsTest {
     assertThatThrownBy(() -> suivi.ajoute(ouverture, retraitParLeroyDe(ouverture).a(A_10H), A_22H)).isExactlyInstanceOf(
       EvenementDAtelierIncoherentException.class
     );
+    EvenementDAtelier pointee = debutSurFraiseuse1ParDupontA(A_9H);
+    assertThatThrownBy(() -> suivi.ajoute(pointee, finRegulariseeParLeroyDe(pointee).a(A_10H), A_22H)).isExactlyInstanceOf(
+      EvenementDAtelierIncoherentException.class
+    );
+    assertThatThrownBy(() -> suivi.ajoute(ouverture, finPointeeDe(ouverture).a(A_10H), A_22H)).isExactlyInstanceOf(
+      EvenementDAtelierIncoherentException.class
+    );
     assertThatThrownBy(() -> suivi.ajoute(ouverture, fin(autreOuverture, A_10H), A_22H)).isExactlyInstanceOf(
       EvenementDAtelierIncoherentException.class
     );

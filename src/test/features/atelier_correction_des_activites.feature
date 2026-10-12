@@ -788,3 +788,34 @@ Feature: Le gestionnaire corrige la journee d'un operateur
     Then la reponse a le statut http 201
     When je consulte la journee de "dupont-corr" du "2046-02-10"
     Then la journee ne porte aucune activite
+
+  Scenario: Une fin pointee tardive ferme l'activite jugee en cours sur la cle, pas celle dont la fin est regularisee
+    Given il est "2046-02-11T06:00:00Z"
+    And l'entreprise a cree l'element de fabrication "Corr 5008"
+      | categorie | OF       |
+      | reference | CORR5008 |
+    And j'ai engage l'element "Corr 5008" en atelier
+    And il est "2046-02-11T08:00:00Z"
+    And j'ai pointe sur "Corr 5008"
+      | type      | DEBUT          |
+      | operateur | dupont-corr    |
+      | poste     | fraiseuse-corr |
+    And il est "2046-02-11T10:00:00Z"
+    And j'ai pointe sur "Corr 5008"
+      | type      | DEBUT       |
+      | operateur | dupont-corr |
+      | poste     | tour-corr   |
+    And il est "2046-02-12T09:00:00Z"
+    And je regularise sur "Corr 5008" en visant l'activite de l'evenement 0
+      | dateDeSurvenue | 2046-02-11T09:00:00Z |
+    And j'ai change sur "Corr 5008" le poste de l'activite de "dupont-corr" commencee a "2046-02-11T10:00:00Z"
+      | poste | fraiseuse-corr |
+    When l'operateur "dupont-corr" pointe FIN sur "Corr 5008" au poste "fraiseuse-corr" a "2046-02-11T11:00:00Z" et le serveur le recoit a "2046-02-12T09:30:00Z"
+    Then le pointage est accepte
+    When je consulte la journee de "dupont-corr" du "2046-02-11"
+    Then la journee porte les activites
+      | debut                | fin                  | poste          | etat     | dureeSurLeJour |
+      | 2046-02-11T08:00:00Z | 2046-02-11T09:00:00Z | fraiseuse-corr | TERMINEE | PT1H           |
+      | 2046-02-11T10:00:00Z | 2046-02-11T11:00:00Z | fraiseuse-corr | TERMINEE | PT1H           |
+    When je consulte "Corr 5008"
+    Then le dernier evenement du journal du suivi est une fin pointee qui vise l'activite de "dupont-corr" commencee a "2046-02-11T10:00:00Z"

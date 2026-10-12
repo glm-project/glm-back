@@ -107,10 +107,11 @@ public record EvenementDAtelier(
   }
 
   /**
-   * Seul un debut ou une non conformite ouvre une activite. Un fait du gestionnaire en cible une : la fin d'une
-   * regularisation ou d'un ajout, un retrait, un changement de poste ; un pointage ne designe jamais l'activite qu'il
-   * ferme, la cle la donne. Un retrait et un changement de poste sont toujours un acte du gestionnaire. Seule une
-   * ouverture porte la duree maximale dont son activite tient son echeance.
+   * Seul un debut ou une non conformite ouvre une activite, et n'en cible aucune. Un fait du gestionnaire en cible
+   * toujours une : la fin d'une regularisation ou d'un ajout, un retrait, un changement de poste. Une fin pointee en cible
+   * une aussi depuis que le serveur l'ecrit a la reception : l'activite que sa cle avait en cours ; une fin pointee avant
+   * cela n'en porte aucune, et se lit par la cle. Un retrait et un changement de poste sont toujours un acte du
+   * gestionnaire. Seule une ouverture porte la duree maximale dont son activite tient son echeance.
    */
   private static void exigeLesActivitesDuType(
     TypeDEvenementDAtelier type,
@@ -123,7 +124,10 @@ public record EvenementDAtelier(
     if (activite.isPresent() != ouvre || dureeMax.isPresent() != ouvre) {
       throw new EvenementDAtelierIncoherentException(type, origine);
     }
-    if (activiteVisee.isPresent() != (!ouvre && origine == OrigineDuPointage.REGULARISATION)) {
+    if (ouvre && activiteVisee.isPresent()) {
+      throw new EvenementDAtelierIncoherentException(type, origine);
+    }
+    if (!ouvre && origine == OrigineDuPointage.REGULARISATION && activiteVisee.isEmpty()) {
       throw new EvenementDAtelierIncoherentException(type, origine);
     }
     if (!type.estUnGeste() && origine != OrigineDuPointage.REGULARISATION) {

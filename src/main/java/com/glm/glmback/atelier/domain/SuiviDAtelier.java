@@ -77,6 +77,14 @@ public record SuiviDAtelier(
   }
 
   /**
+   * L'activite qu'une fin pointee a cette heure ferme sur cette cle : celle que la cle avait en cours, jugee sur le journal
+   * apres les corrections. A n'appeler que pour une fin que {@link #juge} accepte.
+   */
+  public ActiviteId activiteQueFermeUneFin(CleDActivite cle, Instant survenue) {
+    return RegleDeReception.activiteQueFermeUneFin(journal, cloture.map(Cloture::dateDeSurvenue), cle, survenue);
+  }
+
+  /**
    * L'activite dont le gestionnaire peut regulariser la fin, a l'heure de fin donnee et a l'instant present.
    *
    * <p>
@@ -172,7 +180,12 @@ public record SuiviDAtelier(
     return journal
       .evenements()
       .stream()
-      .anyMatch(evenement -> evenement.type() == TypeDEvenementDAtelier.FIN && evenement.activiteVisee().filter(id::equals).isPresent());
+      .anyMatch(
+        evenement ->
+          evenement.type() == TypeDEvenementDAtelier.FIN
+          && evenement.estUneRegularisation()
+          && evenement.activiteVisee().filter(id::equals).isPresent()
+      );
   }
 
   /**
@@ -212,7 +225,7 @@ public record SuiviDAtelier(
 
   /**
    * Ajoute au journal une activite oubliee : son ouverture et sa fin, deux faits du gestionnaire sur la meme cle, la fin
-   * visant l'activite qu'ouvre l'ouverture (un ecart est un defaut de l'appelant). Verifie dans cet ordre que la fin est
+   * d'origine regularisation, la fin visant l'activite qu'ouvre l'ouverture (un ecart est un defaut de l'appelant). Verifie dans cet ordre que la fin est
    * posterieure au debut (aucune activite n'a une duree nulle), qu'elle ne vient pas du futur, que l'ouverture ne precede
    * pas l'engagement, que la fin ne suit pas la cloture, puis que la plage est libre sur la cle.
    */
@@ -235,7 +248,9 @@ public record SuiviDAtelier(
   private static void exigeUnAjoutCoherent(EvenementDAtelier ouverture, EvenementDAtelier fin) {
     boolean coherent =
       ouverture.type().ouvreUneActivite()
+      && ouverture.estUneRegularisation()
       && fin.type() == TypeDEvenementDAtelier.FIN
+      && fin.estUneRegularisation()
       && ouverture.activite().equals(fin.activiteVisee())
       && ouverture.cle().equals(fin.cle());
     if (!coherent) {

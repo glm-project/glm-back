@@ -1,31 +1,29 @@
 package com.glm.glmback.atelier.domain;
 
 import java.time.Instant;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 /**
  * La premiere lecture du journal : les activites que les gestes donnent, et la fin de chacune.
  *
  * <p>
- * Un debut ou une non conformite ouvre une activite. Une fin <b>cible</b> l'activite qu'elle ferme quand le gestionnaire
- * l'a ecrite (regularisation d'une fin automatique, fin d'un ajout) : elle la ferme a son heure, quelle que soit la cle
- * sur laquelle elle est ecrite. Une fin <b>pointee</b> ne designe rien : elle ferme l'activite que la cle avait en cours
- * quand le serveur l'a recue. La cloture, a defaut, ferme l'activite restee en cours.
+ * Un debut ou une non conformite ouvre une activite. Une fin <b>cible</b> l'activite qu'elle ferme : la fin d'une
+ * regularisation ou d'un ajout, et depuis que le serveur la lie a la reception, la fin pointee, qui porte l'activite que sa
+ * cle avait en cours (voir {@link RegleDeReception#activiteQueFermeUneFin}). Une fin ciblee ferme son activite a son heure,
+ * quelle que soit la cle sur laquelle elle est ecrite et quelles que soient les ouvertures ou les corrections qui suivent :
+ * rien n'est jamais redevine. La cloture, a defaut, ferme l'activite restee en cours.
  * </p>
  *
  * <p>
- * Pour rattacher une fin pointee a son activite, les pointages d'une meme cle se rejouent dans l'ordre ou le serveur les
- * a recus (date d'enregistrement, puis l'ordre du journal), et non dans l'ordre des heures de geste : la regle de reception
- * juge chaque pointage sur le journal tel qu'il etait, et un retrait ou un changement de poste libere une cle sur laquelle
- * un pointage peut ensuite tomber dans la plage d'une activite qui n'y compte plus. Rejoue par heure de geste, ce pointage
- * volerait la fin pointee de cette activite. Les activites retirees ou deplacees restent donc dans cette lecture : elle
- * ne sert qu'a lier les fins, les corrections s'appliquent apres elle (voir {@link JournalDAtelier#activites}). Seuls
- * les pointages y entrent ; l'ouverture d'un ajout n'est jamais une activite en cours de sa cle.
+ * Reste une seule lecture par la cle : celle d'une fin pointee <b>sans cible</b>, ecrite avant que le serveur ne la lie. Elle
+ * ferme l'activite en cours de sa cle, les pointages de la cle etant rejoues dans l'ordre du journal, celui des heures de
+ * geste, comme toujours. Un journal qui n'a jamais porte de correction est lu ainsi sans aucun ecart ; l'ouverture d'un
+ * ajout n'y entre jamais, puisque sa fin est ciblee.
  * </p>
  *
  * <p>
@@ -36,15 +34,11 @@ import java.util.stream.Collectors;
  * </p>
  *
  * <p>
- * Rien n'est jamais refuse ici. Un fait sans activite a fermer, ou qui cible une activite inconnue, n'a simplement aucun
- * effet.
+ * Rien n'est jamais refuse ici, et une fin ne remplace jamais une fin deja posee. Un fait sans activite a fermer, ou qui
+ * cible une activite inconnue, n'a simplement aucun effet.
  * </p>
  */
 final class SequenceDActivites {
-
-  private static final Comparator<EvenementDAtelier> PAR_ORDRE_DE_RECEPTION = Comparator.comparing(
-    EvenementDAtelier::dateDEnregistrement
-  ).thenComparing(JournalDAtelier.PAR_ORDRE_CHRONOLOGIQUE);
 
   private final Map<ActiviteId, Activite> activites = new LinkedHashMap<>();
   private Optional<ActiviteId> courante = Optional.empty();
@@ -77,7 +71,7 @@ final class SequenceDActivites {
 
   private void rejoue(List<EvenementDAtelier> pointages, Optional<Instant> cloture) {
     courante = Optional.empty();
-    pointages.stream().sorted(PAR_ORDRE_DE_RECEPTION).forEach(this::lit);
+    pointages.forEach(this::lit);
     cloture.ifPresent(this::clot);
   }
 
@@ -86,7 +80,7 @@ final class SequenceDActivites {
     if (pointage.type().ouvreUneActivite()) {
       courante = pointage.activite();
     } else {
-      termine(courante, pointage);
+      termineSiEnCours(courante, termineePar(pointage));
       courante = Optional.empty();
     }
   }
@@ -104,12 +98,23 @@ final class SequenceDActivites {
    */
   private void clot(Instant date) {
     atteintLEcheance(date);
-    courante.ifPresent(identite ->
-      activites.computeIfPresent(identite, (id, ouverte) -> ouverte.fin().isEmpty() ? ouverte.termineeA(date) : ouverte)
-    );
+    termineSiEnCours(courante, activite -> activite.termineeA(date));
   }
 
   private void termine(Optional<ActiviteId> activite, EvenementDAtelier fin) {
     activite.ifPresent(identite -> activites.computeIfPresent(identite, (id, ouverte) -> ouverte.termineePar(fin)));
+  }
+
+  /**
+   * Termine l'activite que la cle avait en cours, sauf si une fin la ferme deja : la premiere fin posee reste la sienne.
+   */
+  private void termineSiEnCours(Optional<ActiviteId> activite, UnaryOperator<Activite> terminaison) {
+    activite.ifPresent(identite ->
+      activites.computeIfPresent(identite, (id, ouverte) -> ouverte.fin().isEmpty() ? terminaison.apply(ouverte) : ouverte)
+    );
+  }
+
+  private static UnaryOperator<Activite> termineePar(EvenementDAtelier fin) {
+    return activite -> activite.termineePar(fin);
   }
 }

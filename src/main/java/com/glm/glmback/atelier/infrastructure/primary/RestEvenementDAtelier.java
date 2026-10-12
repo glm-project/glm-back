@@ -41,8 +41,10 @@ public record RestEvenementDAtelier(
   UUID activite,
   @Schema(
     description = """
-    Identite de l'activite qu'un fait du gestionnaire cible : la fin d'une regularisation ou d'un ajout, un retrait, un
-    changement de poste. Absente pour un pointage.
+    Identite de l'activite qu'un fait cible : la fin d'une regularisation ou d'un ajout, un retrait, un changement de poste,
+    et la fin pointee, que le serveur lie a la reception a l'activite que la cle avait en cours (jugee apres les corrections).
+    Absente pour une ouverture, et pour une fin pointee d'avant cette liaison, qui se lit par la cle. Une cible n'est pas
+    une regularisation : `estUneRegularisation` se lit sur l'origine.
     """
   )
   UUID activiteVisee,
