@@ -2,16 +2,20 @@ package com.glm.glmback.elementdefabrication.application;
 
 import com.glm.glmback.elementdefabrication.domain.CategoriesDeclarees;
 import com.glm.glmback.elementdefabrication.domain.CompteurDElementsDeFabrication;
+import com.glm.glmback.elementdefabrication.domain.ElementDansSonCycle;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabrication;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationId;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationRepository;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationToCreate;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationToUpdate;
+import com.glm.glmback.elementdefabrication.domain.ElementsDansLeurCycle;
+import com.glm.glmback.elementdefabrication.domain.ElementsDansLeurCycleCriteria;
 import com.glm.glmback.elementdefabrication.domain.ElementsDeFabricationService;
 import com.glm.glmback.elementdefabrication.domain.Periode;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import com.glm.glmback.shared.time.domain.Clock;
+import java.util.Optional;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,13 +24,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class ElementDeFabricationApplicationService {
 
   private final ElementsDeFabricationService elementsDeFabrication;
+  private final ElementsDansLeurCycle elementsDansLeurCycle;
+  private final Clock clock;
 
   public ElementDeFabricationApplicationService(
     ElementDeFabricationRepository repository,
     CompteurDElementsDeFabrication compteur,
     CategoriesDeclarees categories,
+    ElementsDansLeurCycle elementsDansLeurCycle,
     Clock clock
   ) {
+    this.elementsDansLeurCycle = elementsDansLeurCycle;
+    this.clock = clock;
     this.elementsDeFabrication = ElementsDeFabricationService.builder()
       .repository(repository)
       .compteur(compteur)
@@ -48,8 +57,8 @@ public class ElementDeFabricationApplicationService {
 
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
   @Transactional(readOnly = true)
-  public Page<ElementDeFabrication> list(Periode periode, Pageable pageable) {
-    return elementsDeFabrication.list(periode, pageable);
+  public Page<ElementDansSonCycle> list(Optional<Periode> creation, Pageable pageable) {
+    return elementsDansLeurCycle.list(new ElementsDansLeurCycleCriteria(creation, clock.now()), pageable);
   }
 
   @Secured("ROLE_GESTIONNAIRE")

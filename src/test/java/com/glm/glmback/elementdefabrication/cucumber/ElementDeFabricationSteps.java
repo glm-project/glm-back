@@ -19,12 +19,17 @@ import tools.jackson.databind.json.JsonMapper;
 public class ElementDeFabricationSteps {
 
   private static final String BASE_URI = "/api/elements-de-fabrication";
+  private static final String SUIVIS_URI = "/api/atelier/suivis";
   private static final ObjectMapper JSON = JsonMapper.builder().build();
 
   @Autowired
   private CucumberRestClient rest;
 
   private UUID dernierIdCree;
+
+  private String derniereCreation;
+
+  private String dernierSuivi;
 
   @When("je cree un element de fabrication")
   public void jeCreeUnElementDeFabrication(Map<String, String> donnees) {
@@ -41,6 +46,7 @@ public class ElementDeFabricationSteps {
   public void jaiCreeUnElementDeFabrication(Map<String, String> donnees) {
     jeCreeUnElementDeFabrication(donnees);
     dernierIdCree = idDeLaDerniereReponse();
+    derniereCreation = (String) CucumberRestTestContext.getElement("$.dateDeCreation");
   }
 
   @When("je consulte cet element de fabrication")
@@ -81,6 +87,50 @@ public class ElementDeFabricationSteps {
   @When("je liste les elements de fabrication entre {string} et {string}")
   public void jeListeLesElementsDeFabrication(String debut, String fin) {
     rest.get(BASE_URI + "?debut=" + debut + "&fin=" + fin);
+  }
+
+  @Given("j'ai mis cet element de fabrication a l'atelier")
+  public void jaiMisCetElementALAtelier() {
+    rest.post(SUIVIS_URI, JSON.writeValueAsString(Map.of("element", dernierIdCree)));
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("la mise a l'atelier doit etre acceptee").isTrue();
+    dernierSuivi = (String) CucumberRestTestContext.getElement("$.id");
+  }
+
+  @Given("j'ai cloture cet element de fabrication")
+  public void jaiClotureCetElement() {
+    rest.put(SUIVIS_URI + "/" + dernierSuivi + "/cloture", "{}");
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("la cloture doit etre acceptee").isTrue();
+  }
+
+  @Given("j'ai rouvert cet element de fabrication")
+  public void jaiRouvertCetElement() {
+    rest.delete(SUIVIS_URI + "/" + dernierSuivi + "/cloture");
+    assertThat(CucumberRestTestContext.getStatus().is2xxSuccessful()).as("la reouverture doit etre acceptee").isTrue();
+  }
+
+  /**
+   * La liste des elements crees a l'instant meme de cet element : l'horloge des scenarios le rend seul a cet instant.
+   */
+  @When("je liste les elements de fabrication crees avec celui-ci")
+  public void jeListeLesElementsCreesAvecCeluiCi() {
+    rest.get(BASE_URI + "?debut=" + derniereCreation + "&fin=" + derniereCreation);
+  }
+
+  /**
+   * Compare la seule ligne listee aux champs attendus ; « - » dit un champ absent, « suivi » le suivi mis a l'atelier.
+   */
+  @Then("cet element de fabrication est liste avec")
+  public void cetElementEstListeAvec(Map<String, String> attendu) {
+    assertThat(CucumberRestTestContext.countEntries("$.content")).isEqualTo(1);
+    assertThat(CucumberRestTestContext.getElement("$.content[0].id")).isEqualTo(dernierIdCree.toString());
+    attendu.forEach((champ, valeur) -> {
+      Object lu = CucumberRestTestContext.getElement("$.content[0]." + champ);
+      switch (valeur) {
+        case "-" -> assertThat(lu).as(champ).isNull();
+        case "suivi" -> assertThat(lu).as(champ).isEqualTo(dernierSuivi);
+        default -> assertThat(lu).as(champ).hasToString(valeur);
+      }
+    });
   }
 
   @Then("la reponse d'element de fabrication contient")

@@ -1,7 +1,7 @@
 package com.glm.glmback.elementdefabrication.infrastructure.primary;
 
 import com.glm.glmback.elementdefabrication.application.ElementDeFabricationApplicationService;
-import com.glm.glmback.elementdefabrication.domain.ElementDeFabrication;
+import com.glm.glmback.elementdefabrication.domain.ElementDansSonCycle;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabricationId;
 import com.glm.glmback.elementdefabrication.domain.Periode;
 import com.glm.glmback.shared.pagination.domain.Page;
@@ -9,6 +9,7 @@ import com.glm.glmback.shared.pagination.domain.Pageable;
 import com.glm.glmback.shared.pagination.infrastructure.primary.RestPage;
 import jakarta.validation.Valid;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -61,7 +62,7 @@ class ElementDeFabricationResource {
     @RequestParam(defaultValue = "0") int page,
     @RequestParam(defaultValue = "20") int size
   ) {
-    Page<ElementDeFabrication> resultat = applicationService.list(new Periode(debut, fin), new Pageable(page, size));
+    Page<ElementDansSonCycle> resultat = applicationService.list(Optional.of(new Periode(debut, fin)), new Pageable(page, size));
 
     return RestPage.from(resultat, RestElementDeFabrication::from);
   }

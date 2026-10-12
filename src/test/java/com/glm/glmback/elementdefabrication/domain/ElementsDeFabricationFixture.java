@@ -2,6 +2,7 @@ package com.glm.glmback.elementdefabrication.domain;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 public final class ElementsDeFabricationFixture {
 
@@ -17,6 +18,11 @@ public final class ElementsDeFabricationFixture {
 
   public static final Nom OF_2026_000001 = Nom.of(CATEGORIE_OF, ANNEE_2026, 1);
   public static final Nom MOULE_2026_000001 = Nom.of(CATEGORIE_MOULE, ANNEE_2026, 1);
+
+  public static final SuiviId SUIVI_DU_10_MAI_2026 = new SuiviId(UUID.fromString("5f0c6d1e-2a3b-4c5d-8e9f-0a1b2c3d4e5f"));
+  public static final Instant INSTANT_10_MAI_2026_A_7H = Instant.parse("2026-05-10T07:00:00Z");
+  public static final Instant INSTANT_10_MAI_2026_A_18H = Instant.parse("2026-05-10T18:00:00Z");
+  public static final AuteurDeLaCloture AUTEUR_DE_LA_CLOTURE_LEROY = new AuteurDeLaCloture("leroy");
 
   private ElementsDeFabricationFixture() {}
 
@@ -36,12 +42,16 @@ public final class ElementsDeFabricationFixture {
     return new Description("Carter en fonte");
   }
 
-  public static Periode premierTrimestre2026() {
-    return new Periode(LE_1ER_JANVIER_2026, LE_31_MARS_2026);
+  public static PassageOuvert passageEnCoursDepuisLe10Mai2026() {
+    return new PassageOuvert(SUIVI_DU_10_MAI_2026, INSTANT_10_MAI_2026_A_7H, EtatEnAtelier.EN_COURS);
   }
 
-  public static ElementDeFabricationCriteria criteresPremierTrimestre2026() {
-    return new ElementDeFabricationCriteria(premierTrimestre2026());
+  public static PassageClos passageClosParLeroyLe10Mai2026() {
+    return new PassageClos(SUIVI_DU_10_MAI_2026, INSTANT_10_MAI_2026_A_7H, INSTANT_10_MAI_2026_A_18H, AUTEUR_DE_LA_CLOTURE_LEROY);
+  }
+
+  public static Periode premierTrimestre2026() {
+    return new Periode(LE_1ER_JANVIER_2026, LE_31_MARS_2026);
   }
 
   public static ElementDeFabricationToCreate elementDeFabricationToCreateOrdre1015() {

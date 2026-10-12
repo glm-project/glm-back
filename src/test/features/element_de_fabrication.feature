@@ -187,6 +187,46 @@ Feature: Gestion des elements de fabrication
     Then la reponse a le statut http 200
     And la reponse contient au moins 2 elements
 
+  Scenario: La liste dit ou en est chaque element, de sa creation a sa reouverture
+    Given il est "2042-01-05T08:00:00Z"
+    And j'ai cree un element de fabrication
+      | categorie | OF   |
+      | reference | 3001 |
+    When je liste les elements de fabrication crees avec celui-ci
+    Then cet element de fabrication est liste avec
+      | cycle          | EN_PREPARATION |
+      | suivi          | -              |
+      | etatDAtelier   | -              |
+      | misALAtelierLe | -              |
+      | clotureLe      | -              |
+    Given il est "2042-01-05T09:00:00Z"
+    And j'ai mis cet element de fabrication a l'atelier
+    When je liste les elements de fabrication crees avec celui-ci
+    Then cet element de fabrication est liste avec
+      | cycle          | EN_ATELIER           |
+      | suivi          | suivi                |
+      | etatDAtelier   | EN_ATTENTE           |
+      | misALAtelierLe | 2042-01-05T09:00:00Z |
+      | clotureLe      | -                    |
+    Given il est "2042-01-05T17:00:00Z"
+    And j'ai cloture cet element de fabrication
+    When je liste les elements de fabrication crees avec celui-ci
+    Then cet element de fabrication est liste avec
+      | cycle          | CLOTURE              |
+      | suivi          | suivi                |
+      | etatDAtelier   | -                    |
+      | misALAtelierLe | 2042-01-05T09:00:00Z |
+      | clotureLe      | 2042-01-05T17:00:00Z |
+      | clotureePar    | gestionnaire         |
+    Given j'ai rouvert cet element de fabrication
+    When je liste les elements de fabrication crees avec celui-ci
+    Then cet element de fabrication est liste avec
+      | cycle        | EN_ATELIER |
+      | suivi        | suivi      |
+      | etatDAtelier | EN_ATTENTE |
+      | clotureLe    | -          |
+      | clotureePar  | -          |
+
   Scenario: Creation refusee a un utilisateur sans role gestionnaire
     Given I am logged in as "user" with role "USER"
     When je cree un element de fabrication

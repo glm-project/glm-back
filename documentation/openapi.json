@@ -736,6 +736,20 @@
           "categorie" : {
             "type" : "string"
           },
+          "clotureLe" : {
+            "description" : "Cloture du suivi, presente pour un element cloture seulement.",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "clotureePar" : {
+            "description" : "Auteur de la cloture, present pour un element cloture seulement.",
+            "type" : "string"
+          },
+          "cycle" : {
+            "description" : "Ou en est l'element, lu sur son suivi d'atelier. Renseigne par la liste seulement : EN_PREPARATION sans suivi, EN_ATELIER suivi ouvert, CLOTURE suivi cloture.",
+            "enum" : [ "EN_PREPARATION", "EN_ATELIER", "CLOTURE" ],
+            "type" : "string"
+          },
           "dateDeCreation" : {
             "format" : "date-time",
             "type" : "string"
@@ -747,14 +761,29 @@
           "description" : {
             "type" : "string"
           },
+          "etatDAtelier" : {
+            "description" : "L'etat du suivi ouvert a l'instant de la lecture, absent hors de l'atelier.",
+            "enum" : [ "EN_ATTENTE", "EN_COURS", "INTERROMPU" ],
+            "type" : "string"
+          },
           "id" : {
             "format" : "uuid",
+            "type" : "string"
+          },
+          "misALAtelierLe" : {
+            "description" : "Mise a l'atelier, absente en preparation.",
+            "format" : "date-time",
             "type" : "string"
           },
           "nom" : {
             "type" : "string"
           },
           "reference" : {
+            "type" : "string"
+          },
+          "suivi" : {
+            "description" : "Le suivi d'atelier de l'element, absent en preparation. C'est lui que visent cloture et reouverture.",
+            "format" : "uuid",
             "type" : "string"
           }
         },

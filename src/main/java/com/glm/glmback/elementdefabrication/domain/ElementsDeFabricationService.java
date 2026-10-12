@@ -1,7 +1,5 @@
 package com.glm.glmback.elementdefabrication.domain;
 
-import com.glm.glmback.shared.pagination.domain.Page;
-import com.glm.glmback.shared.pagination.domain.Pageable;
 import com.glm.glmback.shared.time.domain.Clock;
 import java.time.Instant;
 import java.util.Optional;
@@ -51,10 +49,6 @@ public final class ElementsDeFabricationService {
 
   public ElementDeFabrication get(ElementDeFabricationId id) {
     return repository.get(id).orElseThrow(() -> new ElementDeFabricationIntrouvableException(id));
-  }
-
-  public Page<ElementDeFabrication> list(Periode periode, Pageable pageable) {
-    return repository.list(new ElementDeFabricationCriteria(periode), pageable);
   }
 
   public ElementDeFabrication update(ElementDeFabricationToUpdate toUpdate) {
