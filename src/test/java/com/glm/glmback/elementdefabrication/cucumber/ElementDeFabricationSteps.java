@@ -122,6 +122,16 @@ public class ElementDeFabricationSteps {
     rest.get(avec(BASE_URI + "?debut=" + derniereCreation + "&fin=" + derniereCreation, parametres));
   }
 
+  @When("je compte les elements de fabrication crees avec celui-ci, avec")
+  public void jeCompteLesElementsCreesAvecCeluiCiAvec(Map<String, String> parametres) {
+    rest.get(avec(BASE_URI + "/compteurs?debut=" + derniereCreation + "&fin=" + derniereCreation, parametres));
+  }
+
+  @Then("les compteurs des cycles sont")
+  public void lesCompteursDesCyclesSont(Map<String, Integer> attendus) {
+    attendus.forEach((cycle, nombre) -> assertThat(CucumberRestTestContext.getElement("$." + cycle)).as(cycle).isEqualTo(nombre));
+  }
+
   @When("je liste les elements de fabrication avec")
   public void jeListeLesElementsDeFabricationAvec(Map<String, String> parametres) {
     rest.get(avec(BASE_URI + "?page=0", parametres));

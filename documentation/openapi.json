@@ -456,6 +456,26 @@
         },
         "type" : "object"
       },
+      "RestCompteursDesCycles" : {
+        "description" : "Le nombre d'elements de chaque cycle, pour les memes filtres.",
+        "properties" : {
+          "clotures" : {
+            "description" : "Sur la periode de cloture quand elle est donnee.",
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "enAtelier" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "enPreparation" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "clotures", "enAtelier", "enPreparation" ],
+        "type" : "object"
+      },
       "RestCout" : {
         "description" : "Un cout, separe en ce que coute la machine et en ce que coute la personne.\n\nLes deux ne s'agregent pas de la meme facon : le cout horaire de chaque poste actif court en entier, alors que le\ntaux horaire de l'operateur est divise par le nombre de postes qu'il occupait simultanement, tous elements\nconfondus. Les afficher separement est ce qui rend la regle lisible.\n",
         "properties" : {
@@ -3110,6 +3130,79 @@
             "description" : "Created"
           }
         },
+        "tags" : [ "element-de-fabrication-resource" ]
+      }
+    },
+    "/api/elements-de-fabrication/compteurs" : {
+      "get" : {
+        "description" : "Pour les badges des onglets : memes filtres que la liste, la periode de cloture ne comptant que les clotures.",
+        "operationId" : "compte",
+        "parameters" : [ {
+          "description" : "Debut de la periode de creation, a donner avec fin.",
+          "in" : "query",
+          "name" : "debut",
+          "required" : false,
+          "schema" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        }, {
+          "description" : "Fin de la periode de creation, a donner avec debut.",
+          "in" : "query",
+          "name" : "fin",
+          "required" : false,
+          "schema" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        }, {
+          "description" : "Ne compter que les elements de cette categorie, par son code.",
+          "in" : "query",
+          "name" : "categorie",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "Texte cherche dans le nom, la reference et la description.",
+          "in" : "query",
+          "name" : "recherche",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "Debut de la periode de cloture, pour le seul compteur des clotures.",
+          "in" : "query",
+          "name" : "clotureDebut",
+          "required" : false,
+          "schema" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        }, {
+          "description" : "Fin de la periode de cloture, pour le seul compteur des clotures.",
+          "in" : "query",
+          "name" : "clotureFin",
+          "required" : false,
+          "schema" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestCompteursDesCycles"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Compter les elements de chaque cycle",
         "tags" : [ "element-de-fabrication-resource" ]
       }
     },

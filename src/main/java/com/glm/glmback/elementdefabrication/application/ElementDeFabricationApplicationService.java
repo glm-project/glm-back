@@ -2,6 +2,7 @@ package com.glm.glmback.elementdefabrication.application;
 
 import com.glm.glmback.elementdefabrication.domain.CategoriesDeclarees;
 import com.glm.glmback.elementdefabrication.domain.CompteurDElementsDeFabrication;
+import com.glm.glmback.elementdefabrication.domain.CompteursDesCycles;
 import com.glm.glmback.elementdefabrication.domain.CycleDemande;
 import com.glm.glmback.elementdefabrication.domain.ElementDansSonCycle;
 import com.glm.glmback.elementdefabrication.domain.ElementDeFabrication;
@@ -13,6 +14,7 @@ import com.glm.glmback.elementdefabrication.domain.ElementsDansLeurCycle;
 import com.glm.glmback.elementdefabrication.domain.ElementsDansLeurCycleCriteria;
 import com.glm.glmback.elementdefabrication.domain.ElementsDeFabricationService;
 import com.glm.glmback.elementdefabrication.domain.FiltreDesElements;
+import com.glm.glmback.elementdefabrication.domain.Periode;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import com.glm.glmback.shared.time.domain.Clock;
@@ -60,6 +62,12 @@ public class ElementDeFabricationApplicationService {
   @Transactional(readOnly = true)
   public Page<ElementDansSonCycle> list(FiltreDesElements filtre, Optional<CycleDemande> cycle, Pageable pageable) {
     return elementsDansLeurCycle.list(new ElementsDansLeurCycleCriteria(filtre, cycle, clock.now()), pageable);
+  }
+
+  @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
+  @Transactional(readOnly = true)
+  public CompteursDesCycles compte(FiltreDesElements filtre, Optional<Periode> cloture) {
+    return elementsDansLeurCycle.compte(filtre, cloture);
   }
 
   @Secured("ROLE_GESTIONNAIRE")

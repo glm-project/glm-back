@@ -21,6 +21,7 @@ import com.glm.glmback.atelier.domain.SuiviDAtelierRepository;
 import com.glm.glmback.elementdefabrication.domain.Annee;
 import com.glm.glmback.elementdefabrication.domain.AuteurDeLaCloture;
 import com.glm.glmback.elementdefabrication.domain.Categorie;
+import com.glm.glmback.elementdefabrication.domain.CompteursDesCycles;
 import com.glm.glmback.elementdefabrication.domain.CycleDeVie;
 import com.glm.glmback.elementdefabrication.domain.CycleDemande;
 import com.glm.glmback.elementdefabrication.domain.ElementDansSonCycle;
@@ -209,6 +210,23 @@ class JpaElementsDansLeurCycleIT {
     assertThat(lit(new FiltreDesElements(Optional.of(periode), Optional.empty(), Optional.of(new Recherche("lecture par cycle"))))).hasSize(
       2
     );
+  }
+
+  @Test
+  @WithTenant(IMPECCMOLD)
+  void shouldCompterChaqueCycleLesCloturesSurLeurPeriode() {
+    Instant creation = Instant.parse("2041-07-08T06:00:00Z");
+    Instant engagement = creation.plusSeconds(3600);
+    cree(creation);
+    inTransaction(() -> suivis.create(engage(cree(creation), engagement)));
+    inTransaction(() -> suivis.create(engage(cree(creation), engagement)));
+    inTransaction(() -> suivis.create(engage(cree(creation), engagement).cloture(clotureParLeroyA(engagement.plusSeconds(60)))));
+    FiltreDesElements creesCeJourLa = creesPendant(new Periode(creation, creation));
+
+    assertThat(inTransaction(() -> lecture.compte(creesCeJourLa, Optional.empty()))).isEqualTo(new CompteursDesCycles(1, 2, 1));
+    assertThat(
+      inTransaction(() -> lecture.compte(creesCeJourLa, Optional.of(new Periode(engagement, engagement.plusSeconds(59)))))
+    ).isEqualTo(new CompteursDesCycles(1, 2, 0));
   }
 
   @Test

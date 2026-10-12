@@ -1,11 +1,14 @@
 package com.glm.glmback.elementdefabrication.infrastructure.secondary;
 
+import com.glm.glmback.elementdefabrication.domain.CompteursDesCycles;
 import com.glm.glmback.elementdefabrication.domain.CycleDeVie;
+import com.glm.glmback.elementdefabrication.domain.CycleDemande;
 import com.glm.glmback.elementdefabrication.domain.ElementDansSonCycle;
 import com.glm.glmback.elementdefabrication.domain.ElementsDansLeurCycle;
 import com.glm.glmback.elementdefabrication.domain.ElementsDansLeurCycleCriteria;
 import com.glm.glmback.elementdefabrication.domain.EtatEnAtelier;
 import com.glm.glmback.elementdefabrication.domain.FiltreDesElements;
+import com.glm.glmback.elementdefabrication.domain.Periode;
 import com.glm.glmback.elementdefabrication.domain.Recherche;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
@@ -54,7 +57,10 @@ class JpaElementsDansLeurCycle implements ElementsDansLeurCycle {
     CriteriaBuilder constructeur = entities.getCriteriaBuilder();
     CriteriaQuery<Tuple> requete = constructeur.createTupleQuery();
     Lecture lecture = Lecture.sur(requete, constructeur);
-    requete.multiselect(lecture.element(), lecture.suivi()).where(lecture.correspondA(criteria)).orderBy(lecture.tri(criteria));
+    requete
+      .multiselect(lecture.element(), lecture.suivi())
+      .where(lecture.correspondA(criteria.filtre(), criteria.cycle()))
+      .orderBy(lecture.tri(criteria));
 
     List<Tuple> lignes = entities
       .createQuery(requete)
@@ -66,14 +72,23 @@ class JpaElementsDansLeurCycle implements ElementsDansLeurCycle {
       .content(lus(lignes, criteria.evaluation()))
       .currentPage(pageable.page())
       .pageSize(pageable.size())
-      .totalElementsCount(compte(criteria));
+      .totalElementsCount(total(criteria.filtre(), criteria.cycle()));
   }
 
-  private long compte(ElementsDansLeurCycleCriteria criteria) {
+  @Override
+  public CompteursDesCycles compte(FiltreDesElements filtre, Optional<Periode> cloture) {
+    return new CompteursDesCycles(
+      total(filtre, Optional.of(new CycleDemande(CycleDeVie.EN_PREPARATION, Optional.empty()))),
+      total(filtre, Optional.of(new CycleDemande(CycleDeVie.EN_ATELIER, Optional.empty()))),
+      total(filtre, Optional.of(new CycleDemande(CycleDeVie.CLOTURE, cloture)))
+    );
+  }
+
+  private long total(FiltreDesElements filtre, Optional<CycleDemande> cycle) {
     CriteriaBuilder constructeur = entities.getCriteriaBuilder();
     CriteriaQuery<Long> requete = constructeur.createQuery(Long.class);
     Lecture lecture = Lecture.sur(requete, constructeur);
-    requete.select(constructeur.count(lecture.element())).where(lecture.correspondA(criteria));
+    requete.select(constructeur.count(lecture.element())).where(lecture.correspondA(filtre, cycle));
 
     return entities.createQuery(requete).getSingleResult();
   }
@@ -151,22 +166,19 @@ class JpaElementsDansLeurCycle implements ElementsDansLeurCycle {
       return new Lecture(element, suivi, constructeur);
     }
 
-    Predicate[] correspondA(ElementsDansLeurCycleCriteria criteria) {
+    Predicate[] correspondA(FiltreDesElements filtre, Optional<CycleDemande> cycle) {
       List<Predicate> predicats = new ArrayList<>();
-      FiltreDesElements filtre = criteria.filtre();
       filtre
         .creation()
         .ifPresent(periode -> predicats.add(constructeur.between(element.get("dateDeCreation"), periode.debut(), periode.fin())));
       filtre.categorie().ifPresent(categorie -> predicats.add(constructeur.equal(element.get("categorie"), categorie.value())));
       filtre.recherche().ifPresent(recherche -> predicats.add(trouve(recherche)));
-      criteria
-        .cycle()
-        .ifPresent(demande -> {
-          predicats.add(dans(demande.cycle()));
-          demande
-            .cloture()
-            .ifPresent(periode -> predicats.add(constructeur.between(suivi.get("clotureDateDeSurvenue"), periode.debut(), periode.fin())));
-        });
+      cycle.ifPresent(demande -> {
+        predicats.add(dans(demande.cycle()));
+        demande
+          .cloture()
+          .ifPresent(periode -> predicats.add(constructeur.between(suivi.get("clotureDateDeSurvenue"), periode.debut(), periode.fin())));
+      });
       return predicats.toArray(Predicate[]::new);
     }
 

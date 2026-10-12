@@ -12,6 +12,7 @@ import com.glm.glmback.elementdefabrication.domain.Recherche;
 import com.glm.glmback.shared.pagination.domain.Page;
 import com.glm.glmback.shared.pagination.domain.Pageable;
 import com.glm.glmback.shared.pagination.infrastructure.primary.RestPage;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
@@ -93,6 +94,28 @@ class ElementDeFabricationResource {
     Page<ElementDansSonCycle> resultat = applicationService.list(filtre, demande, new Pageable(page, size));
 
     return RestPage.from(resultat, RestElementDeFabrication::from);
+  }
+
+  @GetMapping("/compteurs")
+  @Operation(
+    summary = "Compter les elements de chaque cycle",
+    description = "Pour les badges des onglets : memes filtres que la liste, la periode de cloture ne comptant que les clotures."
+  )
+  RestCompteursDesCycles compte(
+    @Parameter(description = "Debut de la periode de creation, a donner avec fin.") @RequestParam Optional<Instant> debut,
+    @Parameter(description = "Fin de la periode de creation, a donner avec debut.") @RequestParam Optional<Instant> fin,
+    @Parameter(description = "Ne compter que les elements de cette categorie, par son code.") @RequestParam Optional<
+      @Pattern(regexp = "^[A-Z]{1,10}$") String
+    > categorie,
+    @Parameter(description = "Texte cherche dans le nom, la reference et la description.") @RequestParam Optional<String> recherche,
+    @Parameter(description = "Debut de la periode de cloture, pour le seul compteur des clotures.") @RequestParam Optional<
+      Instant
+    > clotureDebut,
+    @Parameter(description = "Fin de la periode de cloture, pour le seul compteur des clotures.") @RequestParam Optional<Instant> clotureFin
+  ) {
+    FiltreDesElements filtre = new FiltreDesElements(periode(debut, fin), categorie.map(Categorie::new), Recherche.de(recherche));
+
+    return RestCompteursDesCycles.from(applicationService.compte(filtre, periode(clotureDebut, clotureFin)));
   }
 
   /**

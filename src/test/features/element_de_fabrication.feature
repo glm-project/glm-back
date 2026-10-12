@@ -310,6 +310,34 @@ Feature: Gestion des elements de fabrication
     Then la reponse a le statut http 400
     And la reponse porte le code d'erreur "urn:glm:erreur:element-de-fabrication:cloture-hors-des-clotures"
 
+  Scenario: Les compteurs des onglets comptent chaque cycle, les clotures sur leur periode
+    Given il est "2042-04-08T08:00:00Z"
+    And j'ai cree un element de fabrication
+      | categorie | OF   |
+      | reference | 3401 |
+    And j'ai cree un element de fabrication
+      | categorie | OF   |
+      | reference | 3402 |
+    And j'ai mis cet element de fabrication a l'atelier
+    And j'ai cree un element de fabrication
+      | categorie | OF   |
+      | reference | 3403 |
+    And j'ai mis cet element de fabrication a l'atelier
+    And j'ai cloture cet element de fabrication
+    When je compte les elements de fabrication crees avec celui-ci, avec
+      | categorie | OF |
+    Then les compteurs des cycles sont
+      | enPreparation | 1 |
+      | enAtelier     | 1 |
+      | clotures      | 1 |
+    When je compte les elements de fabrication crees avec celui-ci, avec
+      | clotureDebut | 2042-04-09T00:00:00Z |
+      | clotureFin   | 2042-04-09T23:59:59Z |
+    Then les compteurs des cycles sont
+      | enPreparation | 1 |
+      | enAtelier     | 1 |
+      | clotures      | 0 |
+
   Scenario: Creation refusee a un utilisateur sans role gestionnaire
     Given I am logged in as "user" with role "USER"
     When je cree un element de fabrication
