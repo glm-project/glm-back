@@ -8,6 +8,7 @@ import com.glm.glmback.atelier.domain.PosteDeTravailId;
 import com.glm.glmback.atelier.domain.SuiviDAtelierId;
 import com.glm.glmback.atelier.domain.TypeDEvenementDAtelier;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.Optional;
@@ -25,7 +26,8 @@ record RestPointage(
     sur la cle (operateur, element, poste) : le geste ne designe aucune activite. Le serveur ignore un pointage qui ne
     s'accorde pas a l'etat de la cle.
     """,
-    requiredMode = Schema.RequiredMode.REQUIRED
+    requiredMode = Schema.RequiredMode.REQUIRED,
+    allowableValues = { "DEBUT", "NON_CONFORMITE", "FIN" }
   )
   @NotNull
   TypeDEvenementDAtelier type,
@@ -42,6 +44,16 @@ record RestPointage(
   )
   Instant dateDeSurvenue
 ) {
+  /**
+   * Le journal porte aussi les corrections du gestionnaire, retrait et changement de poste : le pupitre n'en pointe
+   * aucune.
+   */
+  @Schema(hidden = true)
+  @AssertTrue(message = "Un pointage est un DEBUT, une NON_CONFORMITE ou une FIN.")
+  boolean isTypeUnGeste() {
+    return type == null || type.estUnGeste();
+  }
+
   PointageAEnregistrer toDomain(SuiviDAtelierId suivi, Auteur auteur) {
     return PointageAEnregistrer.pupitreBuilder()
       .suivi(suivi)

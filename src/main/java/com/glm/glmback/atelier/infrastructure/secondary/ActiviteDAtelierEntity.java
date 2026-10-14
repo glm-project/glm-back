@@ -41,6 +41,14 @@ class ActiviteDAtelierEntity {
   @Column(name = "ouverture_id")
   private UUID ouvertureId;
 
+  /**
+   * Le fait qui porte le poste, la nature et les tarifs courants de l'activite : son ouvrant, tant que personne n'a
+   * corrige son poste, puis son dernier changement de poste. {@code ouverture_id} reste l'ouvrant d'origine, adresse
+   * d'un dossier d'anomalie.
+   */
+  @Column(name = "porteur_id")
+  private UUID porteurId;
+
   @Column(name = "operateur_id")
   private UUID operateurId;
 
@@ -88,14 +96,15 @@ class ActiviteDAtelierEntity {
   }
 
   /**
-   * Reporte la lecture courante de l'activite : un geste lui donne une fin reelle.
+   * Reporte la lecture courante de l'activite : un geste lui donne une fin reelle, une correction un autre poste.
    */
   void reporte(Activite activite) {
     ouvertureId = activite.ouvrant().id().uuid();
+    porteurId = activite.porteur().id().uuid();
     operateurId = activite.cle().operateur().uuid();
     posteId = activite.cle().poste().map(PosteDeTravailId::uuid).orElse(null);
     natureId = activite
-      .ouvrant()
+      .porteur()
       .nature()
       .map(nature -> nature.id().uuid())
       .orElse(null);

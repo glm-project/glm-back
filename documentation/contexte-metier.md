@@ -58,14 +58,14 @@ Le `Parametrage` n'a pas d'identifiant : chaque schéma d'entreprise porte une s
 
 ## atelier
 
-Gère l'exécution en atelier de ce que `elementdefabrication` a déclaré. Le gestionnaire y met un élément en atelier, les opérateurs y pointent leurs activités, le gestionnaire clôture et régularise la fin des activités oubliées.
+Gère l'exécution en atelier de ce que `elementdefabrication` a déclaré. Le gestionnaire y met un élément en atelier, les opérateurs y pointent leurs activités, le gestionnaire clôture, régularise la fin des activités oubliées et corrige la journée d'un opérateur (ajout, retrait, changement de poste).
 
 Le contexte porte le `SuiviDAtelier` d'un élément engagé et son journal d'activité. Les temps se lisent dans
 ses activités interprétées, avec leurs bornes et leur échéance.
 
 **Le journal d'événements est la source de vérité.** L'agrégat se reconstruit par le repli du journal, trié par date de survenue ; les projections d'activités sont réconciliées à chaque écriture pour les lectures. C'est l'insertion rétroactive qui l'impose — un temps juste exige qu'un pointage hors ligne compte à l'heure où il a eu lieu, pas à l'heure où il arrive, et un modèle à compteurs ne sait pas revenir en arrière. Chaque événement porte donc un `Horodatage` bitemporel : sa date de survenue, métier, et sa date d'enregistrement, technique.
 
-**Une régularisation est un acte du gestionnaire, conservé sur le fait, pas un écart de dates ni une identité d'auteur.** Chaque événement du journal d'un élément porte son origine : `POINTAGE` pour tout ce qui passe par la route des pointages, quels que soient le rôle de celui qui pointe et l'heure de geste fournie, `REGULARISATION` pour une régularisation, même saisie à l'heure du fait. `estUneRegularisation()` lit cette origine. L'écart entre les deux dates ne suffit pas : un pupitre resté hors ligne rejoue ses pointages après coup sans que le gestionnaire soit intervenu. Cet écart reste la lecture d'une saisie différée. Le booléen jumeau `estSaisiParUnTiers` a été retiré avec le passage à l'identifiant : l'`Auteur` vient du jeton et l'opérateur du référentiel, et rien ne relie encore les deux — le comparer n'aurait plus produit qu'une réponse toujours vraie. Il reviendra avec le lot « utilisateur connecté ».
+**Une régularisation est un acte du gestionnaire, conservé sur le fait, pas un écart de dates ni une identité d'auteur.** Chaque événement du journal d'un élément porte son origine : `POINTAGE` pour tout ce qui passe par la route des pointages, quels que soient le rôle de celui qui pointe et l'heure de geste fournie, `REGULARISATION` pour tout fait que le gestionnaire écrit — régularisation d'une fin, ajout d'une activité, retrait, changement de poste —, même saisi à l'heure du fait. `estUneRegularisation()` lit cette origine. L'écart entre les deux dates ne suffit pas : un pupitre resté hors ligne rejoue ses pointages après coup sans que le gestionnaire soit intervenu. Cet écart reste la lecture d'une saisie différée. Le booléen jumeau `estSaisiParUnTiers` a été retiré avec le passage à l'identifiant : l'`Auteur` vient du jeton et l'opérateur du référentiel, et rien ne relie encore les deux — le comparer n'aurait plus produit qu'une réponse toujours vraie. Il reviendra avec le lot « utilisateur connecté ».
 
 ### La pause et le travail non facturable
 
@@ -153,7 +153,7 @@ Rien d'autre n'en est copié, à la différence du nom de l'élément figé à l
 
 La contrepartie de ce choix : **ni un opérateur ni un poste ayant servi à pointer ne se supprime**. La règle vit dans les deux référentiels, derrière un port qui lit le journal d'atelier.
 
-**L'habilitation est la seule règle dure du contexte.** Un pointage sur un poste où l'opérateur n'est pas déclaré est refusé (409), par `Habilitations`. La règle ne joue que lorsqu'un poste est fourni : une entreprise sans parc machine n'a aucune habilitation à déclarer et retrouve son comportement nominal. Elle joue en revanche sur les **deux** écritures du journal — pointage et régularisation —, sans quoi le back-office contournerait ce que le pupitre applique.
+**L'habilitation est la seule règle dure du contexte.** Un pointage sur un poste où l'opérateur n'est pas déclaré est refusé (409), par `Habilitations`. La règle ne joue que lorsqu'un poste est fourni : une entreprise sans parc machine n'a aucune habilitation à déclarer et retrouve son comportement nominal. Elle joue en revanche sur **toutes** les écritures qui placent l'opérateur sur un poste — pointage, régularisation, ajout d'une activité, changement de poste —, sans quoi le back-office contournerait ce que le pupitre applique ; le retrait, qui n'en place aucune, ne la vérifie pas.
 
 ### Non conformité
 
@@ -161,13 +161,54 @@ Une pièce ratée se refait, sur le même élément et au même tarif, mais comp
 
 ### La régularisation de la fin
 
-Le gestionnaire ne réécrit pas le journal : il n'annule ni ne corrige un pointage. Il fait une seule chose, **régulariser la fin d'une activité échue**, celle qu'aucune fin n'a terminée avant son échéance. Il donne l'heure à laquelle la fin a réellement eu lieu ; elle peut dépasser l'échéance. L'opérateur, le poste et le type se déduisent de l'activité. La régularisation ne passe pas par la règle de réception.
+Le gestionnaire ne réécrit pas le journal : il n'annule ni ne corrige un pointage, il y **ajoute des faits**. Le premier est **régulariser la fin d'une activité échue**, celle qu'aucune fin n'a terminée avant son échéance ; le second, **corriger la journée d'un opérateur**, est décrit plus bas. Il donne l'heure à laquelle la fin a réellement eu lieu ; elle peut dépasser l'échéance. L'opérateur, le poste et le type se déduisent de l'activité. La régularisation ne passe pas par la règle de réception.
 
 Elle est refusée si l'activité n'est pas une fin automatique (`activite-non-echue`), si une régularisation la vise déjà (`activite-deja-regularisee`), si l'heure est dans le futur, ne suit pas le début (`fin-avant-debut`) ou dépasse le plus tôt du début suivant sur la clé et de la clôture (`fin-apres-borne`, `borneDeFin` du dossier). Le client fournit l'identifiant de la saisie ; un renvoi répond comme un succès et n'écrit rien de plus.
 
 Le dossier d'une fin automatique ne contient que l'élément, l'activité échue, les pointages de sa clé et `borneDeFin`.
 
-**La clôture ne fige rien pour le gestionnaire.** Elle ferme le pointage aux opérateurs ; la régularisation reste admise, et la clôture elle-même se déplace ou se rouvre. Le seul invariant qui subsiste est de cohérence, pas de permission : aucun événement daté après la clôture.
+**La clôture ne fige rien pour le gestionnaire.** Elle ferme le pointage aux opérateurs ; la régularisation reste admise, et la clôture elle-même se déplace ou se rouvre. Le seul invariant qui subsiste est de cohérence, pas de permission : aucun événement daté après la clôture. Il s'applique aux corrections de la journée, datées du moment de la correction : sur un suivi clôturé, un retrait ou un changement de poste est refusé (`evenement-posterieur-a-la-cloture`), et la clôture ne peut plus être déplacée avant une correction déjà faite.
+
+### La correction de la journée
+
+Le gestionnaire corrige la journée d'un opérateur par **activités**, jamais par pointages : corriger pointage par pointage
+recréerait les séquences incohérentes que la règle de réception a supprimées. Il peut **ajouter** une activité oubliée
+(élément, poste, type, début et fin, la fin pouvant tomber le lendemain), **changer le poste** d'une activité terminée, ou
+**la retirer**. Rien n'est modifié ni supprimé : chaque correction ajoute des faits d'origine `REGULARISATION`.
+
+- Un **ajout** écrit une ouverture (`DEBUT`, ou `NON_CONFORMITE` selon le type) à l'heure du début et une `FIN` à l'heure de
+  la fin, qui vise l'activité ajoutée. La nature d'opération, le coût horaire et le taux horaire sont recopiés du poste et de
+  l'opérateur, comme pour un pointage ; la durée max d'activité en vigueur est copiée sur l'ouverture.
+- Un **changement de poste** écrit un fait `CHANGEMENT_DE_POSTE` qui vise l'activité, daté du moment de la correction, et recopie
+  la nature et le coût horaire du nouveau poste ; le taux horaire reste celui de l'activité.
+- Un **retrait** écrit un fait `RETRAIT` qui vise l'activité, daté du moment de la correction.
+
+Ces trois corrections ne passent pas par la règle de réception, qui juge ensuite les pointages sur le journal tel qu'il est
+**après** les corrections : seuls les gestes (`DEBUT`, `NON_CONFORMITE`, `FIN`) bornent `ANTERIEUR`, jamais un `RETRAIT` ni un
+`CHANGEMENT_DE_POSTE` (datés du moment de la correction, ils feraient ignorer tous les pointages hors ligne de la clé
+jusque-là) ; les faits d'une activité retirée ne comptent plus ; après un changement de poste, les faits de l'activité comptent
+sur la nouvelle clé ; la `FIN` d'un ajout compte comme une fin régularisée — un pointage du pupitre sur la même clé, daté avant
+elle et reçu après l'ajout, est ignoré (`ANTERIEUR`) et part en audit. Le relevé, la supervision et le coût de revient se
+recalculent, pour chaque jour que l'activité touche ; retirer une fin automatique en fait disparaître l'anomalie, changer son
+poste la laisse ouverte sur la nouvelle clé.
+
+**Ce qu'on peut corriger.** Une activité terminée — par une fin pointée, une fin automatique ou une fin régularisée — dans un
+suivi non clôturé. Une activité en cours se refuse (`activite-en-cours`), une activité retirée est introuvable
+(`activite-visee-introuvable`). Une activité qui en chevauche une autre de la même clé se refuse à l'ajout comme au changement
+de poste (`chevauchement`), alors que deux activités de clés différentes peuvent se chevaucher, c'est voulu.
+
+**L'habilitation** se vérifie sur ce qui place l'opérateur sur un poste — le poste d'un ajout, le nouveau poste d'un changement —
+contre les habilitations actuelles, jamais au retrait : on doit pouvoir retirer une activité pointée sur un poste dont
+l'opérateur a perdu l'habilitation depuis.
+
+**La trace est le journal lui-même** : chaque fait garde son auteur, son origine et son horodatage (survenue et enregistrement).
+Il n'y a ni motif, ni table, ni écran d'historique.
+
+**La lecture de la journée** (`GET /api/atelier/operateurs/{operateurId}/journees/{jour}`) donne à la page les activités qui
+touchent le jour, coupées aux minuits du fuseau de l'entreprise, leur suivi (une correction vise un suivi), leur durée
+opérationnelle et de quoi ajouter une activité (suivis présents, postes habilités). Le fuseau est un port de cette seule lecture :
+le cœur de l'atelier n'a toujours ni fuseau ni jour calendaire. Voir
+[ADR 0015](adr/0015-let-the-manager-correct-an-operator-day.md) et [atelier-api.md](atelier-api.md#corriger-la-journée-dun-opérateur).
 
 ### Le temps réparti
 
@@ -230,7 +271,7 @@ porte le contrat détaillé et les limites de cohérence face aux écritures con
 
 ### Points ouverts
 
-1. **Régulariser après une dé-habilitation est refusé.** L'habilitation étant vérifiée sur les deux écritures du journal, un gestionnaire ne peut plus régulariser la fin d'une activité sur un poste dont l'opérateur a été retiré depuis. Le cas est assumé — il ferme la porte au contournement —, mais il empêcherait le rattrapage des activités concernées : à rouvrir si le client le rencontre.
+1. **Régulariser après une dé-habilitation est refusé.** L'habilitation étant vérifiée sur les deux écritures du journal, un gestionnaire ne peut plus régulariser la fin d'une activité sur un poste dont l'opérateur a été retiré depuis. Le cas est assumé — il ferme la porte au contournement —, mais il empêcherait le rattrapage des activités concernées : à rouvrir si le client le rencontre. Le retrait d'une activité, lui, ne vérifie pas l'habilitation.
 2. **Le coût de revient monétaire est sorti du contexte** : `coutderevient` lit les activités projetées par
    atelier et les tarifs du fait ouvrant, par ses propres ports en lecture seule. `atelier` capture ces
    tarifs ; le coût les combine. Reste ouvert le **coût par période** (par opérateur, par poste, par mois), qui

@@ -6,7 +6,8 @@ Responsabilité, frontières et invariants de ce contexte. Les règles de code c
 
 ## Ce dont ce contexte s'occupe
 
-Le **pointage et la régularisation de la fin d'une activité**, et rien d'autre. Trois actes :
+Le **pointage, la régularisation de la fin d'une activité et la correction de la journée d'un opérateur**, et rien d'autre.
+Quatre actes :
 
 1. **Engager** un élément de fabrication en atelier — geste métier explicite du back-office, distinct de la création de
    l'élément — puis le **clôturer** ou rouvrir la clôture.
@@ -14,8 +15,10 @@ Le **pointage et la régularisation de la fin d'une activité**, et rien d'autre
    Le serveur le juge à son arrivée (voir « La règle de réception ») : il entre au journal, ou il part en audit. La
    pause n'est pas un pointage du serveur : le pupitre la traduit en fins, puis en ouvertures
    ([ADR 0002](../../../../../../../documentation/adr/0002-let-the-pupitre-turn-a-pause-into-activity-stops.md)).
-3. **Régulariser la fin** d'une activité échue — le seul acte du gestionnaire sur le journal. Il n'existe ni correction
-   ni annulation : un fait du journal n'est jamais modifié après coup.
+3. **Régulariser la fin** d'une activité échue. Un fait du journal n'est jamais modifié après coup.
+4. **Corriger la journée** d'un opérateur : ajouter une activité oubliée, retirer une activité pointée à tort, changer son
+   poste. Une correction n'efface ni ne modifie rien : elle **ajoute des faits** au journal (voir « La correction de la
+   journée »).
 
 Il interprète les faits du journal et projette les activités à chaque écriture. Les lectures évaluent l'expiration à un
 instant explicite ; le journal reste la source de vérité.
@@ -33,7 +36,10 @@ Ne rien ajouter ici qui relève de :
   journal ne retient que `OperateurId` et `PosteDeTravailId` ;
 - **le cycle de vie de l'élément de fabrication** lui-même, qui appartient à `elementdefabrication` ;
 - **le fuseau horaire et le jour calendaire** — les lecteurs découpent les activités ; aucun `ZoneId` ni `LocalDate`
-  dans ce contexte.
+  dans le cœur de ce contexte. La seule exception est la lecture de la journée à corriger
+  (`domain/correctiondesactivites`), qui reçoit le fuseau de l'entreprise par son propre port
+  (`FuseauHoraireDeLEntreprise`) pour dire où tombent les minuits : les ports jumeaux de la feuille de temps, de la synthèse
+  et du coût de revient restent à leurs contextes.
 
 ## Agrégat
 
@@ -42,8 +48,11 @@ fixent les bornes de ses activités.
 
 Le parcours de gestion des anomalies de pointage est regroupé sous `gestionanomalies/` dans chaque couche d'Atelier :
 `domain/gestionanomalies`, `application/gestionanomalies`, `infrastructure/primary/gestionanomalies` et
-`infrastructure/secondary/gestionanomalies` portent le dossier et la liste. Ces sous-packages appartiennent au même
-bounded context et n'ont pas d'`AGENTS.md` propre : la section « Gestion des anomalies » ci-dessous les décrit.
+`infrastructure/secondary/gestionanomalies` portent le dossier et la liste. La correction de la journée l'est sous
+`correctiondesactivites/`, dans les mêmes quatre couches. Ces sous-packages appartiennent au même bounded context et
+n'ont pas d'`AGENTS.md` propre : les sections « Gestion des anomalies » et « La correction de la journée » ci-dessous les
+décrivent. Les faits de correction et leur lecture restent dans le cœur (`SuiviDAtelier`, `JournalDAtelier`,
+`SequenceDActivites`, `RegleDeReception`) : tout lecteur du journal doit les appliquer.
 
 ## La règle de réception
 
@@ -56,6 +65,12 @@ recopier ici.
 Côté code : la règle vit dans le domaine. `SuiviDAtelier.juge` appelle `RegleDeReception`, qui rend un
 `VerdictDeReception` — `Accepte`, ou `Ignore` avec sa `RaisonDePointageIgnore` et le dernier pointage accepté auquel il a
 été comparé. Un pointage ignoré ne change pas l'agrégat. Rien n'est jamais rejugé.
+
+**La règle juge le journal tel qu'il est après les corrections du gestionnaire**, restreint à sa clé : elle lit les activités
+effectives de la clé (`JournalDAtelier.activites`) et ne compte comme faits de la clé que les gestes qui les bornent
+(`Activite.gestes`). Un `RETRAIT` ou un `CHANGEMENT_DE_POSTE`, daté du moment de la correction, ne borne donc jamais
+`ANTERIEUR` ; les gestes d'une activité retirée ne comptent plus ; ceux d'une activité dont le poste a changé comptent sur
+le nouveau ; la `FIN` d'un ajout compte comme une fin régularisée.
 
 `SuivisDAtelierService.pointe` enchaîne, dans cet ordre :
 
@@ -106,15 +121,26 @@ le journal ne porte jamais une fin et l'ouverture qu'elle fermerait à la même 
 postérieure à ce début (`fin-avant-debut`). Cette garantie vient de ces deux contrôles, pas du journal, qui ne refuse
 rien.
 
-Le journal se **lit par clé** (`SequenceDActivites`, la seule interprétation) : les faits d'une clé, dans l'ordre du
+Le journal se **lit par clé** (`SequenceDActivites`, la seule interprétation) : les gestes d'une clé, dans l'ordre du
 journal, donnent ses activités. Un `DEBUT` ou une `NON_CONFORMITE` ouvre une activité, qui s'identifie par son pointage
-ouvrant (`ActiviteId`). Une `FIN` du pupitre ferme l'activité en cours de sa clé, sans la désigner. La `FIN` d'une
-régularisation ferme l'activité qu'elle cible. La clôture ferme l'activité restée en cours. La lecture suppose au plus
-une activité en cours par clé, ce que la règle de réception garantit ; un fait qui n'a rien à fermer n'a aucun effet, et
-rien n'est refusé à la lecture.
+ouvrant (`ActiviteId`). Une `FIN` du pupitre ferme l'activité que sa clé avait en cours à la réception, que le serveur écrit dans la fin (`activiteVisee`). La `FIN` d'une
+régularisation ou d'un ajout ferme l'activité qu'elle cible. La clôture ferme à son heure toute activité que rien n'a terminée, commencée avant elle et dont l'échéance n'est pas passée, quelle que soit sa clé (aucun rejeu). La lecture suppose
+au plus une activité en cours par clé, ce que la règle de réception garantit ; un fait qui n'a rien à fermer n'a aucun
+effet, et rien n'est refusé à la lecture.
 
-`EvenementDAtelier` impose son invariant : seul un `DEBUT` ou une `NON_CONFORMITE` porte une activité, et **seule la
-`FIN` d'une régularisation porte une cible** (`activiteVisee`).
+`JournalDAtelier.activites` lit en **deux temps**. Le premier lit les gestes : une fin ciblée ferme son activité à son heure, quelle
+que soit la clé sur laquelle elle est écrite ; une fin pointée sans cible (d'avant la liaison) ferme l'activité en cours de sa
+clé pointée, dans l'ordre des heures de geste ; il ne regarde jamais une correction. Le second applique les corrections : une activité qu'un
+`RETRAIT` cible disparaît, une activité qu'un `CHANGEMENT_DE_POSTE` cible compte sur le poste du dernier changement du
+journal. Une `Activite` porte donc son **`porteur`** — le fait qui parle pour son poste, sa nature et ses tarifs : son
+ouvrant, ou son dernier changement de poste — et sa clé (`cle()`) est celle du porteur. `ouvrant()` reste l'ouverture
+d'origine, qui donne l'identité, le début, la catégorie et l'échéance.
+
+`EvenementDAtelier` impose son invariant : seul un `DEBUT` ou une `NON_CONFORMITE` porte une activité, et un fait du
+gestionnaire porte toujours une cible (`activiteVisee`) : la `FIN` d'une régularisation ou d'un ajout, un `RETRAIT`, un
+`CHANGEMENT_DE_POSTE` — ces deux derniers, de type non-geste, ayant toujours l'origine `REGULARISATION` — et la `FIN` pointée
+en porte une aussi (origine `POINTAGE`), sauf si elle date d'avant la liaison ; une ouverture n'en porte jamais. Seuls `DEBUT`,
+`NON_CONFORMITE` et `FIN` sont des **gestes** (`TypeDEvenementDAtelier.estUnGeste`) : le pupitre ne pointe que ceux-là.
 
 ## L'échéance
 
@@ -195,6 +221,66 @@ automatique non régularisée. Un suivi absent répond 404 `suivi-d-atelier-intr
 L'habilitation est ensuite vérifiée comme pour un pointage (409). `saisie-concurrente` (409) dit qu'un pointage s'est
 glissé entre la lecture et l'écriture : le front relit le dossier.
 
+## La correction de la journée
+
+Le gestionnaire corrige la journée d'un opérateur **par activités**, jamais par pointages ([ADR
+0015](../../../../../../../documentation/adr/0015-let-the-manager-correct-an-operator-day.md)). Le détail métier est dans
+[contexte-metier.md](../../../../../../../documentation/contexte-metier.md#la-correction-de-la-journée), le contrat HTTP dans
+[atelier-api.md](../../../../../../../documentation/atelier-api.md#corriger-la-journée-dun-opérateur).
+
+**Trois écritures sur le suivi**, réservées au `GESTIONNAIRE` (`CorrectionsDesActivitesApplicationService`, transactionnel) :
+
+- `POST /api/atelier/suivis/{id}/activites` — `{id, operateur, poste?, categorie, debut, fin}` : une ouverture
+  (`DEBUT` ou `NON_CONFORMITE`) à `debut`, d'origine `REGULARISATION`, et une `FIN` à `fin` qui cible l'activité, dont
+  l'identifiant dérive de `id` (`AjoutDUneActivite.evenementDeFin`). La nature, le coût et le taux horaires sont figés comme
+  pour un pointage, la durée max en vigueur copiée sur l'ouverture. La fin peut tomber le lendemain ; le chevauchement se
+  vérifie sur toute l'activité.
+- `POST …/activites/{activite}/poste` — `{id, poste}` : un `CHANGEMENT_DE_POSTE` qui cible l'activité, daté du moment de la
+  correction, qui recopie la nature et le coût horaire du **nouveau** poste ; le taux horaire reste celui de l'activité.
+- `POST …/activites/{activite}/retrait` — `{id}` : un `RETRAIT` qui cible l'activité, daté du moment de la correction.
+
+L'`id` est l'identifiant de la saisie, généré une fois par le client : s'il figure déjà dans `evenement_d_atelier`, la réponse
+est 200 et rien n'est écrit, **avant toute règle** (un suivi absent répond 404). Une saisie périmée est refusée par la
+révision du suivi (`saisie-concurrente`), sans rejeu côté serveur. Les corrections ne passent pas par la règle de réception.
+
+**`CorrectionsDesActivitesService` vérifie dans cet ordre** (le contrat des codes est dans l'ADR 0015) :
+
+- ajout : suivi, opérateur, poste, habilitation, `fin-avant-debut`, `date-de-survenue-future` (la fin dans le futur), début
+  avant l'engagement, fin après la clôture (`evenement-posterieur-a-la-cloture`), `chevauchement` ;
+- changement de poste : suivi, activité (`SuiviDAtelier.exigeUneActiviteCorrigeable` : introuvable ou déjà retirée,
+  puis `activite-en-cours`), poste, habilitation, `meme-poste`, `chevauchement`, puis la clôture ;
+- retrait : suivi, activité, puis la clôture. **Jamais d'habilitation.**
+
+Une activité est **corrigeable** quand elle est terminée à l'instant présent (fin pointée, fin automatique, fin régularisée,
+clôture) ; la clôture du suivi se juge sur le fait de correction lui-même, daté du moment de la correction, par
+l'invariant « aucun événement après la clôture » (`EvenementApresClotureException`, jamais
+`SuiviDAtelierClotureException`, qui garde le pointage et le déplacement de la clôture). Un suivi clôturé refuse donc ses
+corrections, et sa clôture ne peut plus être déplacée avant une correction déjà faite. Le chevauchement ne joue que dans la
+clé (opérateur, poste) **du suivi** : une activité qui n'a pas de fin compte jusqu'à son échéance si elle est échue, sans
+fin sinon.
+
+**Dans le cœur** : `TypeDEvenementDAtelier` gagne `RETRAIT` et `CHANGEMENT_DE_POSTE`, qui ne sont pas des gestes ; `SuiviDAtelier.ajoute` garde lui-même ses invariants (fin postérieure au début, pas dans le futur, fin qui cible l'ouverture sur la même clé, engagement, clôture, chevauchement) ;
+`Activite` porte un `changementDePoste` et le fait qui l'a terminée (`evenementDeFin`) ; la projection `activite_d_atelier`
+gagne `porteur_id` (le fait porteur de ses tarifs, que lit le coût de revient — `ouverture_id` reste l'ouvrant d'origine, adresse
+d'un dossier d'anomalie) et perd les lignes des activités retirées (un suivi dont toutes les activités sont retirées reste `INTERROMPU` : l'état se lit sur les faits du journal, jamais sur la projection seule). Un poste de fin automatique change sans perdre son anomalie :
+le dossier et la liste suivent la nouvelle clé. Le `journal` rendu par l'API porte les nouveaux types.
+
+**La lecture de la journée** (`GET /api/atelier/operateurs/{operateurId}/journees/{jour}`, `JourneesACorrigerService`) lit les
+activités sur la projection (`ActivitesDeLOperateur`), les suivis présents (`SuivisPresents`), les fiches des éléments
+(`FichesDElement`, référence et description relues au référentiel) et les postes habilités (`Habilitations.postesHabilites`),
+et coupe les durées aux minuits du fuseau de l'entreprise (`DecoupageParJour`). Les bornes du jour sont calculées ici : le client
+ne calcule aucun minuit. Une activité en cours n'a ni fin ni durée ; la durée opérationnelle est une somme simple des portions du
+jour des activités terminées.
+
+**Limites connues.** Toute fin cible l'activité qu'elle ferme (`activiteVisee`), y compris la fin pointée : la règle de réception
+juge la fin sur la clé effective, après les corrections, et `SuivisDAtelierService.pointe` écrit dans la fin acceptée l'activité
+qu'elle a jugée en cours (`RegleDeReception.activiteQueFermeUneFin`). L'origine de la fin reste `POINTAGE`. La lecture ne devine
+donc plus rien et ne dépend ni de la date d'enregistrement ni des ouvertures ou corrections qui suivent. Reste lue par la clé et
+l'ordre des heures de geste — comme avant les corrections — la fin pointée **sans cible**, écrite avant cette liaison ; une
+correction appliquée sur un journal d'avant la liaison hérite de l'ancienne lecture pour ces fins. Il n'y a pas de migration :
+aucun client n'est déployé et les bases se remettent à zéro (ADR 0003, changelogs 016 et 017). Le journal brut de la synthèse des
+heures garde les gestes d'une activité retirée, et, après un changement de poste, les pointages gardent leur ancien poste.
+
 ## Invariants à ne pas casser
 
 - **Horodatage bitemporel** sur chaque événement : date de survenue (métier) et date d'enregistrement (technique).
@@ -202,7 +288,7 @@ glissé entre la lecture et l'écriture : le front relit le dossier.
   fin du gestionnaire, `POINTAGE` pour toute la route des pointages, même rejouée hors ligne avec l'heure du geste.
   C'est `SuivisDAtelierService` qui la fixe, d'après l'acte ; ni l'écart des dates ni l'auteur ne la déduisent.
 - **Le journal n'est jamais réécrit.** Aucun événement n'est annulé, corrigé ni supprimé ; un pointage ignoré n'y entre
-  pas.
+  pas. Retirer une activité ou changer son poste **ajoute** un fait (`RETRAIT`, `CHANGEMENT_DE_POSTE`) que la lecture applique.
 - **La pause n'existe pas pour le serveur.** Le pupitre la traduit en une `FIN` par activité, puis en nouvelles
   ouvertures ; une activité oubliée se termine à son échéance ou à la fin régularisée par le gestionnaire.
 - **Le poste de travail et la `NatureDOperation` sont toujours facultatifs.** L'application vise un maximum
@@ -221,9 +307,10 @@ glissé entre la lecture et l'écriture : le front relit le dossier.
 - **Les tarifs du journal restent réservés au `GESTIONNAIRE`.** La politique applicative
   `HourlyRatesAuthorization` retire coût horaire et taux horaire des projections REST `USER`, en lecture
   comme dans les réponses de pointage ; la persistance et la valorisation conservent les faits complets.
-- **L'habilitation, elle, bloque** : pointer ou régulariser sur un poste où l'opérateur n'est pas déclaré est refusé
-  (409). Elle ne joue que lorsqu'un poste est fourni, et elle joue sur les **deux** écritures du journal — pointage et
-  régularisation —, sans quoi le back-office contournerait le pupitre.
+- **L'habilitation, elle, bloque** : pointer, régulariser, ajouter une activité ou changer le poste d'une activité sur un
+  poste où l'opérateur n'est pas déclaré est refusé (409). Elle ne joue que lorsqu'un poste est fourni, et elle joue sur
+  **toutes** les écritures qui placent l'opérateur sur un poste, sans quoi le back-office contournerait le pupitre ; jamais
+  au retrait.
 - **Rien d'autre n'est copié du référentiel des ressources.** Le journal ne stocke qu'un identifiant, et les libellés
   sont relus à chaque lecture : une fiche corrigée doit s'afficher corrigée sur tout l'historique. La contrepartie vit
   chez les voisins — ni un opérateur ni un poste ayant servi à pointer ne se supprime.
@@ -235,7 +322,8 @@ glissé entre la lecture et l'écriture : le front relit le dossier.
 ## Ports sortants
 
 `SuiviDAtelierRepository`, `ElementsEngageables`, `OperateursConnus`, `PostesConnus`, `Habilitations`,
-`PointagesIgnores`, `LecturesDeSupervision`, `MaximumActivityDurations` (noyau partagé, implémenté par `parametrage`),
+`PointagesIgnores`, `LecturesDeSupervision`, et pour la correction de la journée `ActivitesDeLOperateur`, `SuivisPresents`,
+`FichesDElement` et `FuseauHoraireDeLEntreprise`, `MaximumActivityDurations` (noyau partagé, implémenté par `parametrage`),
 `Clock`.
 
 `OperateursConnus.get` résout la fiche pour copier le taux horaire au fait ; `parIds` résout les libellés d'une page.
@@ -328,7 +416,10 @@ La règle de réception est prouvée par `atelier_reception.feature` (les huit s
 pile à l'échéance, la `FIN` à l'heure du début, les clés jugées à part, la clôture et la lecture de la table d'audit en
 SQL), `SuiviDAtelierReceptionTest` (l'agrégat) et `SuivisDAtelierReceptionTest` (le service). L'idempotence l'est par
 `atelier_rejeu.feature`, l'échéance par `atelier_echeance.feature`, la régularisation et le dossier par
-`atelier_regularisation.feature` et `atelier_anomalies_*.feature`.
+`atelier_regularisation.feature` et `atelier_anomalies_*.feature`, la correction de la journée par
+`atelier_correction_des_activites.feature` (HTTP, effets sur la règle de réception, la synthèse et les anomalies),
+`SuiviDAtelierCorrectionsTest`, `JournalDAtelierCorrectionsTest`, `SuiviDAtelierReceptionApresCorrectionsTest`,
+`CorrectionsDesActivitesServiceTest` et `JourneesACorrigerServiceTest`.
 
 Le glue `EcrituresDuJournalDAtelier` n'en déduit rien : le corps d'un pointage part tel que le scénario le donne. Un
 scénario qui passe du travail à la non conformité pointe une `FIN`, puis la non conformité, à la même heure. Les

@@ -3,6 +3,7 @@ package com.glm.glmback.syntheseheures.infrastructure.secondary;
 import com.glm.glmback.syntheseheures.domain.JournalDElement;
 import com.glm.glmback.syntheseheures.domain.JournalDeLOperateur;
 import com.glm.glmback.syntheseheures.domain.OperateurId;
+import com.glm.glmback.syntheseheures.domain.TypeDEvenementDAtelier;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,8 +24,9 @@ class JournalDeLaSynthese implements JournalDeLOperateur {
   @Override
   public List<JournalDElement> dans(OperateurId operateur, Instant debut, Instant finExclusive) {
     var parSuivi = pointages
-      .findByOperateurIdAndDateDeSurvenueGreaterThanEqualAndDateDeSurvenueLessThanOrderByDateDeSurvenueAscIdAsc(
+      .findByOperateurIdAndTypeInAndDateDeSurvenueGreaterThanEqualAndDateDeSurvenueLessThanOrderByDateDeSurvenueAscIdAsc(
         operateur.uuid(),
+        List.of(TypeDEvenementDAtelier.values()),
         debut,
         finExclusive
       )

@@ -3,6 +3,7 @@ package com.glm.glmback.elementdefabrication.infrastructure.secondary;
 import static com.glm.glmback.atelier.domain.AtelierFixture.clotureParLeroyA;
 import static com.glm.glmback.atelier.domain.AtelierFixture.debutSurFraiseuse1ParDupontA;
 import static com.glm.glmback.atelier.domain.AtelierFixture.finDe;
+import static com.glm.glmback.atelier.domain.AtelierFixture.retraitParLeroyDe;
 import static com.glm.glmback.shared.pagination.domain.PaginationFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
@@ -158,6 +159,33 @@ class JpaElementsDansLeurCycleIT {
         echu.etat(evaluation).name()
       )
       .containsExactly("EN_ATTENTE", "EN_COURS", "INTERROMPU", "INTERROMPU");
+  }
+
+  /**
+   * Le gestionnaire retire la seule activite d'un suivi : la projection n'en porte plus, mais le journal garde le fait, et
+   * l'atelier dit toujours le suivi interrompu. La liste par cycle dit la meme chose.
+   */
+  @Test
+  @WithTenant(IMPECCMOLD)
+  void shouldLireInterrompuUnSuiviDontToutesLesActivitesSontRetirees() {
+    Instant creation = Instant.parse("2041-08-09T06:00:00Z");
+    Instant engagement = creation.plusSeconds(3600);
+    Instant debut = engagement.plusSeconds(3600);
+    EvenementDAtelier travail = debutSurFraiseuse1ParDupontA(debut);
+    SuiviDAtelier retire = engage(cree(creation), engagement)
+      .enregistre(travail)
+      .enregistre(finDe(travail).a(debut.plusSeconds(60)))
+      .retire(retraitParLeroyDe(travail).a(debut.plusSeconds(120)));
+    inTransaction(() -> suivis.create(retire));
+    Instant evaluation = debut.plusSeconds(4 * 3600);
+
+    Page<ElementDansSonCycle> page = lit(new Periode(creation, creation), evaluation, firstPageOfTen());
+
+    assertThat(retire.activites()).isEmpty();
+    assertThat(retire.etat(evaluation).name()).isEqualTo("INTERROMPU");
+    assertThat(page.content())
+      .singleElement()
+      .satisfies(lu -> assertThat(((PassageOuvert) lu.passage().orElseThrow()).etat()).isEqualTo(EtatEnAtelier.INTERROMPU));
   }
 
   @Test

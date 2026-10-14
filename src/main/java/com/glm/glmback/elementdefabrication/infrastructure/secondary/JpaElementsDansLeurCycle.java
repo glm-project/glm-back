@@ -26,6 +26,7 @@ import jakarta.persistence.criteria.Root;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -143,15 +144,21 @@ class JpaElementsDansLeurCycle implements ElementsDansLeurCycle {
       .collect(Collectors.toSet());
   }
 
+  /**
+   * Les suivis dont le journal porte un fait, comme l'atelier (`SuiviDAtelier.etat`) : un suivi dont toutes les activites
+   * ont ete retirees reste pointe, bien que la projection n'en porte plus aucune.
+   */
   private Set<UUID> pointes(Collection<UUID> suivis) {
     if (suivis.isEmpty()) {
       return Set.of();
     }
-    return entities
-      .createQuery("SELECT DISTINCT activite.suiviId FROM ActiviteDuProduitEntity activite WHERE activite.suiviId IN :suivis", UUID.class)
+    @SuppressWarnings("unchecked")
+    List<UUID> pointes = entities
+      .createNativeQuery("SELECT DISTINCT suivi_id FROM evenement_d_atelier WHERE suivi_id IN (:suivis)", UUID.class)
       .setParameter("suivis", suivis)
-      .getResultStream()
-      .collect(Collectors.toSet());
+      .getResultList();
+
+    return new HashSet<>(pointes);
   }
 
   /**

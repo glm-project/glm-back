@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.*;
 import com.glm.glmback.UnitTest;
 import com.glm.glmback.shared.activityduration.domain.MaximumActivityDuration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -603,6 +604,64 @@ class SuivisDAtelierServiceTest {
     assertThat(
       atelier.list(Optional.empty(), Set.of(EtatDAtelier.EN_ATTENTE), LE_10_MAI_2026_A_7H, firstPageOfTen()).content()
     ).containsExactly(engage);
+  }
+
+  /**
+   * La fin d'une activite dont le poste a change s'ecrit sur son poste d'aujourd'hui : l'habilitation, la nature et le cout
+   * horaire sont ceux du nouveau poste, et non du poste ou l'activite a ete pointee.
+   */
+  @Test
+  void shouldRegulariserLaFinSurLePosteQuAPrisUneActivite() {
+    SuiviDAtelier suivi = suiviAvecUnTravailOublie();
+    EvenementDAtelier travail = suivi.journal().evenements().getFirst();
+    suivis.update(suivi.enregistre(changementDePosteVersFraiseuse2ParLeroyDe(travail).a(LE_11_MAI_2026_A_8H)));
+
+    RegularisationTraitee regularise = atelier.regularise(regularisationDeLaFin(suivi, LE_10_MAI_2026_A_17H));
+
+    assertThat(regularise.suivi().journal().evenements())
+      .filteredOn(fait -> fait.type() == TypeDEvenementDAtelier.FIN)
+      .singleElement()
+      .satisfies(fin -> {
+        assertThat(fin.type()).isEqualTo(TypeDEvenementDAtelier.FIN);
+        assertThat(fin.poste()).contains(POSTE_ID_FRAISEUSE_2);
+        assertThat(fin.nature()).contains(NATURE_TOURNAGE);
+        assertThat(fin.coutHoraire()).isEmpty();
+      });
+    assertThat(regularise.suivi().activites())
+      .singleElement()
+      .satisfies(activite -> assertThat(activite.cle().poste()).contains(POSTE_ID_FRAISEUSE_2));
+  }
+
+  @Test
+  void shouldVerifierLHabilitationSurLeNouveauPosteDUneActiviteDeplacee() {
+    SuivisDAtelierService surLaFraiseuse1Seulement = SuivisDAtelierService.builder()
+      .repository(suivis)
+      .elements(new ElementsEngageablesFiges())
+      .operateurs(ressources.operateurs())
+      .postes(ressources.postes())
+      .habilitations(new HabilitationsSurLaFraiseuse1Seulement())
+      .pointagesIgnores(pointagesIgnores)
+      .dureeMax(dureeMax::get)
+      .clock(maintenant::get);
+    SuiviDAtelier suivi = suiviAvecUnTravailOublie();
+    EvenementDAtelier travail = suivi.journal().evenements().getFirst();
+    suivis.update(suivi.enregistre(changementDePosteVersFraiseuse2ParLeroyDe(travail).a(LE_11_MAI_2026_A_8H)));
+    RegularisationAEnregistrer commande = regularisationDeLaFin(suivi, LE_10_MAI_2026_A_17H);
+
+    assertThatThrownBy(() -> surLaFraiseuse1Seulement.regularise(commande)).isExactlyInstanceOf(OperateurNonHabiliteException.class);
+  }
+
+  private static final class HabilitationsSurLaFraiseuse1Seulement implements Habilitations {
+
+    @Override
+    public boolean estHabilite(OperateurId operateur, PosteDeTravailId poste) {
+      return poste.equals(POSTE_ID_FRAISEUSE_1);
+    }
+
+    @Override
+    public List<PosteDeTravailId> postesHabilites(OperateurId operateur) {
+      return List.of(POSTE_ID_FRAISEUSE_1);
+    }
   }
 
   private SuiviDAtelier engage() {

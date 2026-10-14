@@ -5,28 +5,38 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 /**
- * La lecture des faits d'une meme cle d'activite — un operateur sur un poste de travail, pour un element engage : la
- * seule interpretation du journal.
+ * La premiere lecture du journal : les activites que les gestes donnent, et la fin de chacune.
  *
  * <p>
- * Les faits arrivent dans l'ordre du journal. Cette lecture suppose qu'au plus une activite est en cours sur la cle :
- * c'est la regle de reception qui le garantit, en ignorant tout debut ou toute non conformite pointe pendant une
- * activite en cours. Un debut ou une non conformite ouvre une activite. Une fin pointee ferme l'activite en cours de la cle ; une fin regularisee ferme celle
- * qu'elle cible. La cloture, a defaut, ferme l'activite restee en cours.
+ * Un debut ou une non conformite ouvre une activite. Une fin <b>cible</b> l'activite qu'elle ferme : la fin d'une
+ * regularisation ou d'un ajout, et depuis que le serveur la lie a la reception, la fin pointee, qui porte l'activite que sa
+ * cle avait en cours (voir {@link RegleDeReception#activiteQueFermeUneFin}). Une fin ciblee ferme son activite a son heure,
+ * quelle que soit la cle sur laquelle elle est ecrite et quelles que soient les ouvertures ou les corrections qui suivent :
+ * rien n'est jamais redevine. La cloture, a defaut, ferme a son heure toute activite que rien n'a terminee,
+ * quelle que soit sa cle : elle ne depend d'aucun rejeu.
  * </p>
  *
  * <p>
- * L'echeance se lit sans aucun instant de lecture, sur les seules heures metier : une activite que rien n'a terminee
- * cesse d'etre en cours des que l'heure d'un fait, ou de la cloture, atteint son echeance. Elle garde alors sa borne
+ * Reste une seule lecture par la cle : celle d'une fin pointee <b>sans cible</b>, ecrite avant que le serveur ne la lie. Elle
+ * ferme l'activite en cours de sa cle, les pointages de la cle etant rejoues dans l'ordre du journal, celui des heures de
+ * geste, comme toujours. Un journal qui n'a jamais porte de correction est lu ainsi sans aucun ecart ; l'ouverture d'un
+ * ajout n'y entre jamais, puisque sa fin est ciblee.
+ * </p>
+ *
+ * <p>
+ * L'echeance se lit sans aucun instant de lecture, sur les seules heures metier : une activite que rien n'a terminee cesse
+ * d'etre en cours des que l'heure d'un fait, ou de la cloture, atteint son echeance. Elle garde alors sa borne
  * automatique, que seule une fin regularisee peut deplacer ; ni la cloture ni une ouverture ne la prolongent. Un fait
  * pile a l'echeance la trouve donc deja atteinte : un debut a cette heure ouvre une activite apres une fin automatique.
  * </p>
  *
  * <p>
- * Rien n'est jamais refuse ici. La regle de reception n'a laisse entrer au journal que des faits qui s'accordent : un
- * fait sans activite a fermer, ou qui cible une activite inconnue de la cle, n'a simplement aucun effet.
+ * Rien n'est jamais refuse ici, et une fin ne remplace jamais une fin deja posee. Un fait sans activite a fermer, ou qui
+ * cible une activite inconnue, n'a simplement aucun effet.
  * </p>
  */
 final class SequenceDActivites {
@@ -37,24 +47,46 @@ final class SequenceDActivites {
   private SequenceDActivites() {}
 
   /**
-   * Les activites que les faits de la cle donnent, dans l'ordre de leur ouverture.
+   * Les activites que les gestes donnent, dans l'ordre de leur ouverture au journal. Les gestes arrivent dans l'ordre du
+   * journal.
    */
-  static List<Activite> activites(List<EvenementDAtelier> faits, Optional<Instant> cloture) {
+  static List<Activite> activites(List<EvenementDAtelier> gestes, Optional<Instant> cloture) {
     SequenceDActivites sequence = new SequenceDActivites();
-    faits.forEach(sequence::lit);
+    gestes
+      .stream()
+      .filter(geste -> geste.type().ouvreUneActivite())
+      .forEach(ouverture -> sequence.activites.put(ouverture.activite().orElseThrow(), Activite.ouvertePar(ouverture)));
+    gestes
+      .stream()
+      .filter(geste -> geste.activiteVisee().isPresent())
+      .forEach(fin -> sequence.termine(fin.activiteVisee(), activite -> activite.termineePar(fin)));
+    gestes
+      .stream()
+      .filter(geste -> geste.activiteVisee().isEmpty() && geste.origine() == OrigineDuPointage.POINTAGE)
+      .collect(Collectors.groupingBy(EvenementDAtelier::cle, LinkedHashMap::new, Collectors.toList()))
+      .values()
+      .forEach(sequence::rejoue);
     cloture.ifPresent(sequence::clot);
 
     return List.copyOf(sequence.activites.values());
   }
 
-  private void lit(EvenementDAtelier fait) {
-    atteintLEcheance(fait.dateDeSurvenue());
-    if (fait.type().ouvreUneActivite()) {
-      Activite ouverte = Activite.ouvertePar(fait);
-      activites.put(ouverte.id(), ouverte);
-      courante = Optional.of(ouverte.id());
+  /**
+   * Rattache les fins sans cible d'une cle aux activites que la cle avait en cours : les pointages, rejoues dans l'ordre
+   * du journal, celui des heures de geste.
+   */
+  private void rejoue(List<EvenementDAtelier> pointages) {
+    courante = Optional.empty();
+    pointages.forEach(this::lit);
+  }
+
+  private void lit(EvenementDAtelier pointage) {
+    atteintLEcheance(pointage.dateDeSurvenue());
+    if (pointage.type().ouvreUneActivite()) {
+      courante = pointage.activite();
     } else {
-      arrete(fait);
+      termine(courante, activite -> activite.termineePar(pointage));
+      courante = Optional.empty();
     }
   }
 
@@ -67,26 +99,24 @@ final class SequenceDActivites {
   }
 
   /**
-   * Une fin ferme a son heure l'activite qu'elle cible si elle en porte une — c'est la fin regularisee —, sinon
-   * l'activite en cours de la cle.
+   * La cloture ferme a son heure toute activite que rien n'a terminee, commencee avant elle et dont l'echeance n'est pas
+   * atteinte : elle ne prolonge jamais une activite echue. Elle ne depend d'aucun rejeu, donc ni de la cle, ni des ouvertures
+   * qui ont suivi une correction : la regle de reception ne laisse qu'une activite en cours par cle apres elles.
    */
-  private void arrete(EvenementDAtelier fin) {
-    Optional<ActiviteId> terminee = fin.activiteVisee().or(() -> courante);
-    termine(terminee, fin.dateDeSurvenue());
-    if (courante.equals(terminee)) {
-      courante = Optional.empty();
-    }
+  private void clot(Instant date) {
+    activites.replaceAll((id, activite) ->
+      activite.fin().isEmpty() && !activite.debut().isAfter(date) && !activite.echeance().estAtteinteA(date)
+        ? activite.termineeA(date)
+        : activite
+    );
   }
 
   /**
-   * La cloture ferme a son heure l'activite encore vivante ; elle ne prolonge jamais une activite deja echue.
+   * Termine l'activite, sauf si une fin la ferme deja : la premiere fin posee reste la sienne.
    */
-  private void clot(Instant date) {
-    atteintLEcheance(date);
-    termine(courante, date);
-  }
-
-  private void termine(Optional<ActiviteId> activite, Instant heure) {
-    activite.ifPresent(identite -> activites.computeIfPresent(identite, (id, ouverte) -> ouverte.termineeA(heure)));
+  private void termine(Optional<ActiviteId> activite, UnaryOperator<Activite> terminaison) {
+    activite.ifPresent(identite ->
+      activites.computeIfPresent(identite, (id, ouverte) -> ouverte.fin().isEmpty() ? terminaison.apply(ouverte) : ouverte)
+    );
   }
 }

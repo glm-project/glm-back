@@ -72,12 +72,22 @@ class PariteDesRepositoriesDAtelierIT {
     EvenementDAtelier termine = debutA(lundi.plusSeconds(3600 * 3));
     EvenementDAtelier prolonge = debutA(lundi.plusSeconds(3600 * 4));
     EvenementDAtelier terminee = debutA(mardi.plusSeconds(3600 * 2));
+    EvenementDAtelier retiree = debutA(mardi.plusSeconds(3600 * 3));
+    EvenementDAtelier deplacee = debutA(mardi.plusSeconds(3600 * 5));
     List<SuiviDAtelier> jeu = List.of(
       suiviEngageA(lundi),
       suiviEngageA(lundi.plusSeconds(3600 * 2)).enregistre(termine).enregistre(finDe(termine).a(lundi.plusSeconds(3600 * 5))),
       suiviEngageA(lundi.plusSeconds(3600 * 3)).enregistre(prolonge).enregistre(finRegulariseeA(prolonge, mercredi)),
       suiviEngageA(mardi).enregistre(debutA(mardi.plusSeconds(3600))),
       suiviEngageA(mardi.plusSeconds(3600)).enregistre(terminee).enregistre(finDe(terminee).a(mardi.plusSeconds(3600 * 4))),
+      suiviEngageA(mardi.plusSeconds(7200))
+        .enregistre(retiree)
+        .enregistre(finDe(retiree).a(mardi.plusSeconds(3600 * 4)))
+        .retire(retraitParLeroyDe(retiree).a(mercredi)),
+      suiviEngageA(mardi.plusSeconds(10800))
+        .enregistre(deplacee)
+        .enregistre(finDe(deplacee).a(mardi.plusSeconds(3600 * 6)))
+        .changeLePoste(changementDePosteVersFraiseuse2ParLeroyDe(deplacee).a(mercredi), mercredi),
       suiviEngageA(mercredi).cloture(new Cloture(AUTEUR_LEROY, Horodatage.saisiA(mercredi.plusSeconds(36000))))
     );
 

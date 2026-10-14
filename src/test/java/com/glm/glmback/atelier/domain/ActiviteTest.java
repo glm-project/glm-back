@@ -160,4 +160,73 @@ class ActiviteTest {
         assertThat(lue.finAutomatique()).isFalse();
       });
   }
+
+  @Test
+  void shouldNotBuildWithoutChangementDePoste() {
+    EvenementDAtelier ouvrant = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+
+    assertThatThrownBy(() -> new Activite(ouvrant, null, Optional.empty(), Optional.empty()))
+      .isExactlyInstanceOf(MissingMandatoryValueException.class)
+      .hasMessageContaining("changement de poste");
+  }
+
+  @Test
+  void shouldNotBuildWithoutEvenementDeFin() {
+    EvenementDAtelier ouvrant = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+
+    assertThatThrownBy(() -> new Activite(ouvrant, Optional.empty(), Optional.empty(), null))
+      .isExactlyInstanceOf(MissingMandatoryValueException.class)
+      .hasMessageContaining("evenement de fin");
+  }
+
+  /**
+   * La fin pointee ou regularisee qui termine l'activite est retenue avec elle : c'est un fait de sa cle, que la regle de
+   * reception compte, alors que la cloture qui termine une activite n'en est pas un.
+   */
+  @Test
+  void shouldRetenirLeFaitQuiLaTermine() {
+    EvenementDAtelier ouvrant = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier fin = finDe(ouvrant).a(LE_10_MAI_2026_A_12H);
+
+    Activite terminee = Activite.ouvertePar(ouvrant).termineePar(fin);
+
+    assertThat(terminee.fin()).contains(LE_10_MAI_2026_A_12H);
+    assertThat(terminee.evenementDeFin()).contains(fin);
+    assertThat(terminee.gestes()).containsExactly(ouvrant, fin);
+    assertThat(Activite.ouvertePar(ouvrant).termineeA(LE_10_MAI_2026_A_12H).evenementDeFin()).isEmpty();
+    assertThat(Activite.ouvertePar(ouvrant).termineeA(LE_10_MAI_2026_A_12H).gestes()).containsExactly(ouvrant);
+  }
+
+  /**
+   * Un changement de poste ne touche ni l'identite, ni le debut, ni l'echeance de l'activite : elle compte desormais sur
+   * le poste du changement, dont elle tient sa nature et son cout horaire, et son ouvrant reste celui d'origine.
+   */
+  @Test
+  void shouldCompterSurLePosteDeSonChangement() {
+    EvenementDAtelier ouvrant = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier changement = changementDePosteVersFraiseuse2ParLeroyDe(ouvrant).a(LE_11_MAI_2026_A_8H);
+
+    Activite changee = Activite.ouvertePar(ouvrant).termineeA(LE_10_MAI_2026_A_12H).surLePosteDe(changement);
+
+    assertThat(changee.ouvrant()).isEqualTo(ouvrant);
+    assertThat(changee.id()).isEqualTo(ActiviteId.ouvertePar(ouvrant.id()));
+    assertThat(changee.porteur()).isEqualTo(changement);
+    assertThat(changee.cle()).isEqualTo(new CleDActivite(OPERATEUR_ID_DUPONT, Optional.of(POSTE_ID_FRAISEUSE_2)));
+    assertThat(changee.debut()).isEqualTo(LE_10_MAI_2026_A_8H);
+    assertThat(changee.fin()).contains(LE_10_MAI_2026_A_12H);
+    assertThat(changee.echeance()).isEqualTo(Activite.ouvertePar(ouvrant).echeance());
+    assertThat(changee.a(LE_11_MAI_2026_A_9H15)).satisfies(intervalle -> {
+      assertThat(intervalle.poste()).contains(POSTE_ID_FRAISEUSE_2);
+      assertThat(intervalle.nature()).contains(NATURE_TOURNAGE);
+      assertThat(intervalle.cle()).isEqualTo(changee.cle());
+    });
+  }
+
+  @Test
+  void shouldTenirSonPorteurDeSonOuvrantTantQuAucunChangementNEstPasse() {
+    EvenementDAtelier ouvrant = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+
+    assertThat(Activite.ouvertePar(ouvrant).porteur()).isEqualTo(ouvrant);
+    assertThat(Activite.ouvertePar(ouvrant).changementDePoste()).isEmpty();
+  }
 }

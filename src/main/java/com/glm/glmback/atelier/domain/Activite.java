@@ -3,14 +3,21 @@ package com.glm.glmback.atelier.domain;
 import com.glm.glmback.shared.error.domain.Assert;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Une activite telle que la lecture du journal la donne : le pointage ouvrant qui la porte, et sa fin reelle quand un
  * fait l'a terminee.
  *
  * <p>
- * Son identite est celle de son pointage ouvrant d'origine ; l'ouvrant, lui, est le fait qui la porte. Son operateur, son poste, sa nature, sa categorie et son debut sont
- * ceux de cet ouvrant.
+ * Son identite est celle de son pointage ouvrant d'origine ; l'ouvrant, lui, est le fait qui la porte. Son operateur, sa
+ * categorie et son debut sont ceux de cet ouvrant, qui lui donne aussi sa duree maximale et donc son echeance.
+ * </p>
+ *
+ * <p>
+ * Son poste, sa nature, son cout horaire et son taux horaire sont ceux de son <i>porteur</i> : l'ouvrant, tant que
+ * personne n'a corrige son poste, puis le dernier changement de poste que le gestionnaire a porte au journal. La
+ * correction ne modifie aucun fait : elle change seulement celui qui parle pour l'activite.
  * </p>
  *
  * <p>
@@ -20,19 +27,63 @@ import java.util.Optional;
  * son echeance.
  * </p>
  */
-public record Activite(EvenementDAtelier ouvrant, Optional<Instant> fin) {
+public record Activite(
+  EvenementDAtelier ouvrant,
+  Optional<EvenementDAtelier> changementDePoste,
+  Optional<Instant> fin,
+  Optional<EvenementDAtelier> evenementDeFin
+) {
   public Activite {
     Assert.notNull("ouvrant", ouvrant);
+    Assert.notNull("changement de poste", changementDePoste);
     Assert.notNull("fin", fin);
+    Assert.notNull("evenement de fin", evenementDeFin);
     fin.ifPresent(date -> Assert.field("fin", date).afterOrAt(ouvrant.dateDeSurvenue()));
+  }
+
+  public Activite(EvenementDAtelier ouvrant, Optional<Instant> fin) {
+    this(ouvrant, Optional.empty(), fin, Optional.empty());
   }
 
   static Activite ouvertePar(EvenementDAtelier ouvrant) {
     return new Activite(ouvrant, Optional.empty());
   }
 
+  /**
+   * Terminee a cette heure sans qu'aucun fait la ferme : la cloture du suivi.
+   */
   Activite termineeA(Instant date) {
-    return new Activite(ouvrant, Optional.of(date));
+    return new Activite(ouvrant, changementDePoste, Optional.of(date), Optional.empty());
+  }
+
+  /**
+   * Terminee par ce fait, fin pointee ou fin regularisee, a son heure.
+   */
+  Activite termineePar(EvenementDAtelier fin) {
+    return new Activite(ouvrant, changementDePoste, Optional.of(fin.dateDeSurvenue()), Optional.of(fin));
+  }
+
+  /**
+   * Comptee desormais sur le poste de ce changement, qui devient son porteur.
+   */
+  Activite surLePosteDe(EvenementDAtelier changement) {
+    return new Activite(ouvrant, Optional.of(changement), fin, evenementDeFin);
+  }
+
+  /**
+   * Le fait qui porte le poste, la nature et les tarifs de l'activite : son dernier changement de poste, sinon son
+   * ouvrant.
+   */
+  public EvenementDAtelier porteur() {
+    return changementDePoste.orElse(ouvrant);
+  }
+
+  /**
+   * Les gestes qui la bornent : son ouverture et, quand un fait la termine, sa fin. Ce sont les faits que la regle de
+   * reception compte sur la cle de l'activite, ni la cloture ni un changement de poste.
+   */
+  public Stream<EvenementDAtelier> gestes() {
+    return Stream.concat(Stream.of(ouvrant), evenementDeFin.stream());
   }
 
   public ActiviteId id() {
@@ -40,7 +91,7 @@ public record Activite(EvenementDAtelier ouvrant, Optional<Instant> fin) {
   }
 
   public CleDActivite cle() {
-    return ouvrant.cle();
+    return new CleDActivite(ouvrant.operateur(), porteur().poste());
   }
 
   public CategorieDActivite categorie() {
@@ -88,8 +139,8 @@ public record Activite(EvenementDAtelier ouvrant, Optional<Instant> fin) {
       .evenement(ouvrant.id())
       .activite(id())
       .operateur(ouvrant.operateur())
-      .poste(ouvrant.poste())
-      .nature(ouvrant.nature())
+      .poste(porteur().poste())
+      .nature(porteur().nature())
       .categorie(categorie())
       .debut(debut())
       .fin(bornee)

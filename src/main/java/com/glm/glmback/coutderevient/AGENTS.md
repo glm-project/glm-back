@@ -24,7 +24,9 @@ via `activitesEnCours`. Ne jamais fabriquer une fin à l'instant de lecture pour
 Les fins pointées, les régularisations et les clôtures sont déjà interprétées par atelier ; le coût lit leurs
 bornes à chaque appel.
 
-Les tarifs viennent du **fait ouvrant** de l'activité, figés à sa saisie ; lire `ouverture_id` pour les tarifs, jamais
+Les tarifs viennent du **fait porteur** de l'activité, figés à sa saisie : son fait ouvrant, ou le dernier changement
+de poste que le gestionnaire a porté au journal, qui recopie le coût horaire du nouveau poste. Lire `porteur_id` pour les
+tarifs (`ouverture_id` reste l'ouvrant d'origine), jamais
 le tarif courant du poste ou de l'opérateur.
 
 ## Valorisation

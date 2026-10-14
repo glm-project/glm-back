@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 @UnitTest
 class SuivisDAtelierReceptionTest {
 
+  private static final Instant LE_10_MAI_2026_A_10H = Instant.parse("2026-05-10T10:00:00Z");
   private static final Instant LE_10_MAI_2026_A_21H = Instant.parse("2026-05-10T21:00:00Z");
   private static final Instant LE_10_MAI_2026_A_23H = Instant.parse("2026-05-10T23:00:00Z");
   private static final Instant LE_11_MAI_2026_A_1H = Instant.parse("2026-05-11T01:00:00Z");
@@ -44,7 +45,7 @@ class SuivisDAtelierReceptionTest {
 
   /**
    * Le serveur ecrit au journal ce que le pupitre ne dit pas : un debut ouvre une activite, une fin ferme celle qui est en
-   * cours sur la cle, sans que le pointage la designe.
+   * cours sur la cle, sans que le pointage la designe : le serveur la designe lui-meme dans la fin qu'il ecrit.
    */
   @Test
   void shouldTraduireUnDebutEnOuvertureEtUneFinEnFinDeLActiviteEnCours() {
@@ -63,7 +64,8 @@ class SuivisDAtelierReceptionTest {
       terminant -> {
         assertThat(terminant.type()).isEqualTo(TypeDEvenementDAtelier.FIN);
         assertThat(terminant.activite()).isEmpty();
-        assertThat(terminant.activiteVisee()).isEmpty();
+        assertThat(terminant.activiteVisee()).contains(ActiviteId.ouvertePar(debut.evenement()));
+        assertThat(terminant.estUneRegularisation()).isFalse();
       }
     );
     assertThat(pointagesIgnores.lignes()).isEmpty();
@@ -308,6 +310,36 @@ class SuivisDAtelierReceptionTest {
     assertThat(pointagesIgnores.lignes()).hasSize(4);
   }
 
+  /**
+   * Une fin acceptee vise l'activite que la regle jugeait en cours sur la cle d'aujourd'hui, apres les corrections : ici
+   * celle qu'on a amenee sur la fraiseuse 2, et non l'autre activite de cette cle dont la fin est regularisee.
+   */
+  @Test
+  void shouldCiblerLActiviteJugeeEnCoursSurLaCleApresUneCorrection() {
+    EvenementDAtelier deja = debutSurFraiseuse2ParDupontA(LE_10_MAI_2026_A_8H);
+    EvenementDAtelier amenee = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_10H);
+    SuiviDAtelier suivi = suivis.create(
+      suiviDAtelierEngage()
+        .enregistre(deja)
+        .enregistre(finRegulariseeSurFraiseuse2ParLeroyDe(deja).a(LE_10_MAI_2026_A_9H))
+        .enregistre(amenee)
+        .enregistre(changementDePosteVersFraiseuse2ParLeroyDe(amenee).a(LE_11_MAI_2026_A_8H))
+    );
+    Instant onzeHeures = Instant.parse("2026-05-10T11:00:00Z");
+    maintenant.set(LE_11_MAI_2026_A_9H);
+
+    PointageDAtelierTraite traite = atelier.pointe(finSurFraiseuse2(suivi.id(), onzeHeures));
+
+    assertThat(traite.issue()).isEqualTo(IssueDePointage.ACCEPTE);
+    assertThat(traite.suivi().journal().evenements())
+      .filteredOn(fait -> fait.type() == TypeDEvenementDAtelier.FIN && !fait.estUneRegularisation())
+      .singleElement()
+      .satisfies(fin -> assertThat(fin.activiteVisee()).contains(amenee.activite().orElseThrow()));
+    assertThat(traite.suivi().activites())
+      .extracting(Activite::fin)
+      .containsExactly(Optional.of(LE_10_MAI_2026_A_9H), Optional.of(onzeHeures));
+  }
+
   private SuiviDAtelier engage() {
     return atelier.engage(new EngagementAEnregistrer(ELEMENT_OF_2026_000042, AUTEUR_LEROY));
   }
@@ -337,6 +369,17 @@ class SuivisDAtelierReceptionTest {
       .type(TypeDEvenementDAtelier.FIN)
       .operateur(OPERATEUR_ID_DUPONT)
       .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
+      .auteur(AUTEUR_DUPONT)
+      .dateDeSurvenue(Optional.of(dateDeSurvenue))
+      .evenement(EvenementDAtelierId.newId());
+  }
+
+  private static PointageAEnregistrer finSurFraiseuse2(SuiviDAtelierId suivi, Instant dateDeSurvenue) {
+    return PointageAEnregistrer.pupitreBuilder()
+      .suivi(suivi)
+      .type(TypeDEvenementDAtelier.FIN)
+      .operateur(OPERATEUR_ID_DUPONT)
+      .poste(Optional.of(POSTE_ID_FRAISEUSE_2))
       .auteur(AUTEUR_DUPONT)
       .dateDeSurvenue(Optional.of(dateDeSurvenue))
       .evenement(EvenementDAtelierId.newId());

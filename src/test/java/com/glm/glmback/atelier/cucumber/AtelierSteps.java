@@ -496,6 +496,21 @@ public class AtelierSteps {
       .withValue(auteur);
   }
 
+  /**
+   * L'identifiant du suivi retenu sous ce nom metier, pour les steps des autres sujets de l'atelier.
+   */
+  public String suiviId(String alias) {
+    return suivis.get(alias);
+  }
+
+  public String operateurId(String alias) {
+    return idDeLOperateur(alias);
+  }
+
+  public String posteId(String alias) {
+    return postes.getOrDefault(alias, alias);
+  }
+
   @SuppressWarnings("unchecked")
   private static List<String> identifiantsDeLaListe() {
     return (List<String>) CucumberRestTestContext.getElement("$.content[*].id");

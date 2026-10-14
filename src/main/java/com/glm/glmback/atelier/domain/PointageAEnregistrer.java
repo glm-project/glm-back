@@ -40,6 +40,9 @@ public record PointageAEnregistrer(
     Assert.notNull("auteur", auteur);
     Assert.notNull("dateDeSurvenue", dateDeSurvenue);
     Assert.notNull("id de l'evenement", evenement);
+    if (!type.estUnGeste()) {
+      throw new EvenementDAtelierIncoherentException(type, OrigineDuPointage.POINTAGE);
+    }
   }
 
   public static PointageAEnregistrerSuiviBuilder builder() {

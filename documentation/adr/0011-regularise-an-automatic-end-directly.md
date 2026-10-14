@@ -5,7 +5,8 @@
 Accepted on 9 October 2026 (glm-front#254). It supersedes
 [ADR 0006](0006-confirm-explicit-resolution-proposals.md) and
 [ADR 0008](0008-extend-explicit-proposals-to-automatic-ends.md), and amends
-[ADR 0007](0007-read-addressed-workshop-aggregates-coherently.md).
+[ADR 0007](0007-read-addressed-workshop-aggregates-coherently.md). A regularised end is no longer final since
+[ADR 0015](0015-let-the-manager-correct-an-operator-day.md), which amends it on that point.
 
 ## Context
 
@@ -58,6 +59,7 @@ The addressed read of [ADR 0007](0007-read-addressed-workshop-aggregates-coheren
 
 - The manager cannot see the consequences before writing; the bound stands in for the preview.
 - A regularised end is final. Nothing corrects or cancels it, and a second attempt answers
-  `activite-deja-regularisee`.
+  `activite-deja-regularisee`. _Amended by [ADR 0015](0015-let-the-manager-correct-an-operator-day.md): the activity it
+  ends can be removed or have its workstation changed; the end itself is still never modified._
 - The acts of the manager are not audited, and inconsistent ones are not refused beyond the bound. Both stay out of
   scope for now.

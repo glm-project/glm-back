@@ -120,8 +120,10 @@ La règle ne joue que si un poste est fourni : sans parc machine, il n'y a rien 
 
 Aucun événement n'est annulé, corrigé ni supprimé : le `journal` rendu par l'API contient tous les faits acceptés, et
 rien d'autre. Un pointage ignoré n'y entre pas (voir [Un pointage est jugé à sa
-réception](#un-pointage-est-jugé-à-sa-réception)). Le gestionnaire ne fait qu'une chose sur le journal : régulariser la
-fin d'une activité échue.
+réception](#un-pointage-est-jugé-à-sa-réception)). Le gestionnaire agit sur le journal de deux manières, toujours en y
+**ajoutant** des faits d'origine `REGULARISATION` : régulariser la fin d'une activité échue, et corriger la journée d'un
+opérateur (ajouter une activité, la retirer, changer son poste ; voir [Corriger la journée d'un
+opérateur](#corriger-la-journée-dun-opérateur)). Un retrait n'efface rien : le fait `RETRAIT` rejoint le journal.
 
 ### La pause se traduit en faits d'activité
 
@@ -223,8 +225,11 @@ Pour le gestionnaire, un pointage ignoré ne crée aucune anomalie : il ne trait
 Le journal est la source de vérité, et sa lecture est la seule interprétation. Les faits de chaque clé (opérateur, poste) se lisent dans l'ordre de l'heure du geste, la `FIN` avant
 l'ouverture à heure égale, puis par identifiant — jamais par l'ordre de réception :
 
-- une `FIN` du pupitre ferme l'activité en cours de sa clé, sans la désigner ;
-- la `FIN` d'une régularisation ferme l'activité qu'elle cible, seule `FIN` à porter une cible ;
+- une `FIN` ferme l'activité qu'elle cible (`activiteVisee`) : la régularisation et l'ajout la désignent, et le serveur écrit aussi, dans
+  la `FIN` d'un pointage qu'il accepte, l'activité que la clé avait en cours (jugée après les corrections). Le pupitre n'envoie toujours
+  aucune cible ; une `FIN` pointée d'avant cette liaison n'en porte aucune et se lit par la clé ;
+- un `RETRAIT` écarte l'activité qu'il cible de toute lecture, et un `CHANGEMENT_DE_POSTE` la fait compter sur son poste
+  (le dernier l'emporte) : ni l'un ni l'autre n'est un geste, ils ne ferment ni n'ouvrent rien ;
 - une activité atteint son échéance à son début plus sa durée max (13 h par défaut), borne comprise : elle compte alors comme terminée
   automatiquement. Un `DEBUT` pile à l'échéance est accepté et laisse à l'activité précédente sa fin automatique, jamais
   une fin réelle ; une `FIN` pile à l'échéance n'a aucun effet, comme la règle de réception qui l'ignore.
@@ -536,12 +541,12 @@ sort de plusieurs contextes. Le catalogue complet est dans [documentation/codes-
 Deux statuts du tableau ci-dessous n'en portent pas : le **400** de Bean Validation, qui se lit par son `errors`
 (`Map<champ, message>`), et le **403**, qui vient de la chaîne de filtres sans corps du tout.
 
-| Statut | Cas                                                                                                                                                                    |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 400    | Corps invalide (Bean Validation) — détail par champ dans `errors` — ou date de survenue future.                                                                        |
-| 403    | Jeton sans entreprise connue, ou rôle insuffisant.                                                                                                                     |
-| 404    | Suivi, opérateur, poste, élément de fabrication, activité visée (régularisation) ou fin automatique (dossier) introuvable.                                             |
-| 409    | Élément déjà engagé, élément clôturé, **pointage ignoré** (`pointage-ignore`), événement antérieur à l'engagement, refus de la régularisation, **saisie concurrente**. |
+| Statut | Cas                                                                                                                                                                                                                                 |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 400    | Corps invalide (Bean Validation) — détail par champ dans `errors` — ou date de survenue future.                                                                                                                                     |
+| 403    | Jeton sans entreprise connue, ou rôle insuffisant.                                                                                                                                                                                  |
+| 404    | Suivi, opérateur, poste, élément de fabrication, activité visée (régularisation) ou fin automatique (dossier) introuvable.                                                                                                          |
+| 409    | Élément déjà engagé, élément clôturé, **pointage ignoré** (`pointage-ignore`), événement antérieur à l'engagement ou postérieur à la clôture, refus de la régularisation ou d'une correction de la journée, **saisie concurrente**. |
 
 Un pointage qui ne s'accorde pas à l'état de sa clé n'est pas une erreur à afficher : le serveur l'ignore (409
 `pointage-ignore`, voir [Un pointage est jugé à sa réception](#un-pointage-est-jugé-à-sa-réception)) et l'audite.
@@ -583,7 +588,7 @@ conserve cette borne.
 
 La machine coûte l'intervalle terminé entier ; la main d'œuvre se partage par postes distincts occupés par
 les seules activités terminées du même opérateur, tous éléments confondus. Une fin nouvellement reçue peut
-modifier ce partage sur un autre élément. Les tarifs viennent du fait ouvrant, figés par atelier.
+modifier ce partage sur un autre élément. Les tarifs viennent du fait porteur de l'activité (son ouvrant, ou son dernier changement de poste), figés par atelier.
 
 Les champs de durée et de montant des lignes et du rapport sont des objets `{ "valeur": ... }`, y compris zéro. Un taux absent produit zéro, indépendamment du diviseur.
 
@@ -723,3 +728,85 @@ Le corps, les refus et l'idempotence sont décrits dans [Écran back-office](#é
 place après le début de l'activité (exclu) et jusqu'à `borneDeFin` (inclus), sans dépasser l'instant présent. Une fois
 régularisée, l'activité n'a plus de dossier (404) et quitte la liste ; un 409 `saisie-concurrente` dit de relire le
 dossier.
+
+## Corriger la journée d'un opérateur
+
+Le gestionnaire corrige la journée d'un opérateur par **activités**, jamais par pointages : il ajoute une activité
+oubliée, retire une activité pointée à tort, ou change son poste. Rien n'est modifié ni supprimé : chaque correction
+**ajoute des faits** d'origine `REGULARISATION` au journal du suivi, avec leur auteur et leur horodatage. Les quatre
+routes sont réservées au rôle `GESTIONNAIRE`
+([ADR 0015](adr/0015-let-the-manager-correct-an-operator-day.md)).
+
+### La lecture de la journée
+
+`GET /api/atelier/operateurs/{operateurId}/journees/{jour}?evaluation=…` (`jour` au format `AAAA-MM-JJ`, `evaluation`
+facultatif comme dans les autres lectures) rend :
+
+- `operateur` (`id`, `nom`, `prenom`), `jour`, et `evaluation`, l'instant effectivement utilisé ;
+- `bornes` : `debut` et `fin` du jour (minuit et minuit du lendemain) et `finDuLendemain`, **calculés dans le fuseau de
+  l'entreprise** (`Europe/Paris` aujourd'hui) : le client ne calcule aucun minuit. Les instants sont écrits en UTC, comme
+  partout dans l'API ;
+- `dureeOperationnelle`, la durée du jour au sens de la synthèse des heures : la somme des portions du jour des activités
+  terminées, fins automatiques comprises, sans union des intervalles ;
+- `activites`, celles qui touchent le jour, par début, **après les corrections déjà faites** : `id` (le pointage ouvrant,
+  qui ne change pas quand le poste change), `suivi` (celui des routes de correction), `element` (`id`, `categorie`, `nom`,
+  `reference`, `description` : le numéro affiché est la référence, à défaut le nom, la désignation est la description),
+  `poste` (`id`, `libelle`, `nature` : celle figée à la saisie, non celle que le référentiel donne aujourd'hui au poste), `categorie`, `debut`, `fin` (absente en cours ; l'échéance pour une fin
+  automatique), `etat` (`TERMINEE`, `TERMINEE_AUTOMATIQUEMENT`, `EN_COURS`), `dureeSurLeJour` (la portion comptée ce jour,
+  absente en cours) et `autresJours` (`jour` et `duree` des portions comptées ailleurs, vide pour une activité contenue
+  dans le jour) ;
+- `choix`, pour l'ajout : `suivis` (les suivis présents le jour : engagés avant la fin du jour et non clôturés avant son
+  début, clôturés depuis compris ; `suivi`, `element`, `engageLe`, `clotureLe` facultatif) et `postes` (les postes
+  habilités de l'opérateur aujourd'hui, par libellé, avec leur nature d'aujourd'hui).
+
+Un opérateur inconnu répond 404 `operateur-introuvable`. Une activité est corrigeable quand elle est terminée (fin
+pointée, automatique ou régularisée) et que son suivi n'est pas clôturé : la clôture se lit dans `choix.suivis`.
+
+### Les trois corrections
+
+Chaque corps porte `id`, l'identifiant de la saisie, **généré une fois par saisie** par le client et conservé d'un renvoi à
+l'autre : un identifiant déjà dans `evenement_d_atelier` répond **200** sans rien écrire, avant toute autre règle. Une
+nouvelle saisie répond **201**, sans corps ; la page relit ensuite la journée.
+
+| Route                                                        | Corps                                              | Fait écrit                                                       |
+| ------------------------------------------------------------ | -------------------------------------------------- | ---------------------------------------------------------------- |
+| `POST /api/atelier/suivis/{id}/activites`                    | `{ id, operateur, poste?, categorie, debut, fin }` | une ouverture à `debut` et une `FIN` à `fin` qui vise l'activité |
+| `POST /api/atelier/suivis/{id}/activites/{activite}/poste`   | `{ id, poste }`                                    | un `CHANGEMENT_DE_POSTE`, daté du moment de la correction        |
+| `POST /api/atelier/suivis/{id}/activites/{activite}/retrait` | `{ id }`                                           | un `RETRAIT`, daté du moment de la correction                    |
+
+- **Ajouter.** `categorie` (`TRAVAIL` ou `NON_CONFORMITE`) décide du fait d'ouverture (`DEBUT` ou `NON_CONFORMITE`). La
+  fin peut tomber le lendemain du début ; le chevauchement se vérifie sur toute l'activité. La nature, le coût horaire et
+  le taux horaire sont recopiés du poste et de l'opérateur, la durée max en vigueur sur l'ouverture. L'identifiant de
+  la `FIN` se dérive de `id` : un renvoi retrouve les deux faits.
+- **Changer le poste.** La nature et le coût horaire sont ceux du nouveau poste, recopiés à la correction ; le taux horaire
+  reste celui de l'activité. Le poste d'une fin automatique change aussi : son anomalie reste ouverte, sur la nouvelle clé.
+- **Retirer.** Une fin automatique retirée voit son anomalie disparaître. Aucune habilitation n'est vérifiée.
+
+L'habilitation se vérifie sur ce qui place l'opérateur sur un poste (l'ajout et le nouveau poste), jamais au retrait.
+
+**Les refus**, dans l'ordre où ils sont rendus :
+
+| Correction | Codes                                                                                                                                                                                                                                                            |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ajout      | `suivi-d-atelier-introuvable`, `operateur-introuvable`, `poste-de-travail-introuvable`, `operateur-non-habilite`, `fin-avant-debut`, `date-de-survenue-future` (400), `evenement-anterieur-a-l-engagement`, `evenement-posterieur-a-la-cloture`, `chevauchement` |
+| poste      | `suivi-d-atelier-introuvable`, `activite-visee-introuvable`, `activite-en-cours`, `poste-de-travail-introuvable`, `operateur-non-habilite`, `meme-poste`, `chevauchement`, `evenement-posterieur-a-la-cloture`                                                   |
+| retrait    | `suivi-d-atelier-introuvable`, `activite-visee-introuvable`, `activite-en-cours`, `evenement-posterieur-a-la-cloture`                                                                                                                                            |
+
+Une activité retirée est introuvable (`activite-visee-introuvable`). Un retrait et un changement de poste sont datés du
+moment de la correction et obéissent à l'invariant « aucun événement après la clôture » : sur un suivi clôturé, ils
+répondent `evenement-posterieur-a-la-cloture` — jamais `suivi-d-atelier-cloture`. `saisie-concurrente` n'est pas un
+refus : la journée a changé depuis la lecture, il faut la relire.
+
+### Ce que les corrections changent ailleurs
+
+La règle de réception juge un pointage sur le journal tel qu'il est après les corrections : seuls les gestes (`DEBUT`,
+`NON_CONFORMITE`, `FIN`) bornent `ANTERIEUR` ; les faits d'une activité retirée ne comptent plus ; ceux d'une activité dont
+le poste a changé comptent sur le nouveau ; la `FIN` d'un ajout compte comme une fin régularisée (un pointage du pupitre
+daté avant elle et reçu après l'ajout est ignoré, `ANTERIEUR`, et audité). La feuille de temps, la synthèse des heures,
+la supervision et le coût de revient se recalculent, pour chaque jour que l'activité touche. Le journal brut de la
+synthèse des heures reste le journal des **pointages** : il ne liste aucune correction, et garde les gestes d'une activité
+retirée.
+
+Le `journal` d'un suivi (`GET /api/atelier/suivis/{id}`) porte les faits `RETRAIT` et `CHANGEMENT_DE_POSTE`, avec
+`estUneRegularisation` vrai ; `activite` y est absente et `type` peut prendre ces deux valeurs. `POST …/pointages`
+n'accepte que `DEBUT`, `NON_CONFORMITE` et `FIN` (400 sinon).

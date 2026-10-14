@@ -1,5 +1,7 @@
 package com.glm.glmback.atelier.domain;
 
+import java.util.List;
+
 /**
  * Ce que l'atelier sait des habilitations, sans jamais dependre du contexte des operateurs.
  *
@@ -10,4 +12,10 @@ package com.glm.glmback.atelier.domain;
  */
 public interface Habilitations {
   boolean estHabilite(OperateurId operateur, PosteDeTravailId poste);
+
+  /**
+   * Les postes sur lesquels l'operateur est habilite aujourd'hui : les habilitations n'ont aucune date, elles se lisent
+   * toujours telles qu'elles sont.
+   */
+  List<PosteDeTravailId> postesHabilites(OperateurId operateur);
 }

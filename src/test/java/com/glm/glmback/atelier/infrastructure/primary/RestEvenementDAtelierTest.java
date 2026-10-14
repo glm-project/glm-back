@@ -23,4 +23,21 @@ class RestEvenementDAtelierTest {
     assertThat(json.path("operateur").isNull()).isTrue();
     assertThat(json.path("poste").isNull()).isTrue();
   }
+
+  @Test
+  void shouldCiterLActiviteQuUnFaitDuGestionnaireCible() {
+    EvenementDAtelier debut = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
+    var annuaire = new AnnuaireDAtelier(Map.of(), Map.of());
+
+    var retrait = JsonMapper.builder()
+      .build()
+      .valueToTree(RestEvenementDAtelier.from(retraitParLeroyDe(debut).a(LE_11_MAI_2026_A_9H), annuaire));
+    var ouverture = JsonMapper.builder().build().valueToTree(RestEvenementDAtelier.from(debut, annuaire));
+
+    assertThat(retrait.path("type").asString()).isEqualTo("RETRAIT");
+    assertThat(retrait.path("activiteVisee").asString()).isEqualTo(debut.activite().orElseThrow().uuid().toString());
+    assertThat(retrait.path("activite").isNull()).isTrue();
+    assertThat(retrait.path("estUneRegularisation").asBoolean()).isTrue();
+    assertThat(ouverture.path("activiteVisee").isNull()).isTrue();
+  }
 }

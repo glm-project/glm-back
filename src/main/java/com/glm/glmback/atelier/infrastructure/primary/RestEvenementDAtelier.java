@@ -24,7 +24,11 @@ import java.util.UUID;
 public record RestEvenementDAtelier(
   @Schema(description = "Identifiant de l'evenement.", requiredMode = Schema.RequiredMode.REQUIRED) UUID id,
   @Schema(
-    description = "Nature du pointage. La reprise du travail apres une non conformite se pointe DEBUT.",
+    description = """
+    Nature du fait. DEBUT, NON_CONFORMITE et FIN sont les gestes que le pupitre pointe ; la reprise du travail apres une non
+    conformite se pointe DEBUT. RETRAIT et CHANGEMENT_DE_POSTE sont des corrections du gestionnaire, qui ciblent une
+    activite (`activiteVisee`), sont datees du moment de la correction et ne se pointent pas.
+    """,
     requiredMode = Schema.RequiredMode.REQUIRED
   )
   TypeDEvenementDAtelier type,
@@ -35,6 +39,15 @@ public record RestEvenementDAtelier(
     """
   )
   UUID activite,
+  @Schema(
+    description = """
+    Identite de l'activite qu'un fait cible : la fin d'une regularisation ou d'un ajout, un retrait, un changement de poste,
+    et la fin pointee, que le serveur lie a la reception a l'activite que la cle avait en cours (jugee apres les corrections).
+    Absente pour une ouverture, et pour une fin pointee d'avant cette liaison, qui se lit par la cle. Une cible n'est pas
+    une regularisation : `estUneRegularisation` se lit sur l'origine.
+    """
+  )
+  UUID activiteVisee,
   @Schema(
     description = "Identite brute de l'operateur, conservee meme si la fiche est absente.",
     requiredMode = Schema.RequiredMode.REQUIRED
@@ -62,7 +75,8 @@ public record RestEvenementDAtelier(
   Instant dateDEnregistrement,
   @Schema(
     description = """
-    Vrai lorsque l'evenement a ete saisi par le gestionnaire, en regularisation.
+    Vrai pour tout fait que le gestionnaire ecrit : la fin d'une regularisation, l'ouverture et la fin d'une activite qu'il
+    ajoute, un retrait, un changement de poste.
     Un pointage ne l'est jamais, meme rejoue hors ligne avec l'heure de son geste : une saisie differee se lit a l'ecart
     entre dateDeSurvenue et dateDEnregistrement.
     """,
@@ -75,6 +89,7 @@ public record RestEvenementDAtelier(
       evenement.id().uuid(),
       evenement.type(),
       evenement.activite().map(ActiviteId::uuid).orElse(null),
+      evenement.activiteVisee().map(ActiviteId::uuid).orElse(null),
       evenement.operateur().uuid(),
       RestOperateur.resolu(annuaire, evenement.operateur()),
       evenement

@@ -206,8 +206,8 @@ class JpaSuiviDAtelierRepositoryIT {
   }
 
   /**
-   * Les activites d'un fait survivent au round-trip base : l'ouverture porte la sienne, la fin pointee aucune, et la fin
-   * regularisee seulement celle qu'elle cible.
+   * Les activites d'un fait survivent au round-trip base : l'ouverture porte la sienne, la fin pointee et la fin
+   * regularisee celle qu'elles ciblent : le serveur lie la fin pointee a l'activite que sa cle avait en cours.
    */
   @Test
   @WithTenant(IMPECCMOLD)
@@ -229,7 +229,7 @@ class JpaSuiviDAtelierRepositoryIT {
       .extracting(EvenementDAtelier::type, EvenementDAtelier::activite, EvenementDAtelier::activiteVisee)
       .containsExactly(
         tuple(TypeDEvenementDAtelier.DEBUT, Optional.of(ActiviteId.ouvertePar(debut.id())), Optional.empty()),
-        tuple(TypeDEvenementDAtelier.FIN, Optional.empty(), Optional.empty()),
+        tuple(TypeDEvenementDAtelier.FIN, Optional.empty(), Optional.of(ActiviteId.ouvertePar(debut.id()))),
         tuple(TypeDEvenementDAtelier.NON_CONFORMITE, Optional.of(ActiviteId.ouvertePar(nonConformite.id())), Optional.empty()),
         tuple(TypeDEvenementDAtelier.FIN, Optional.empty(), Optional.of(ActiviteId.ouvertePar(nonConformite.id())))
       );

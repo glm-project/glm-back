@@ -66,6 +66,30 @@ Feature: Cout de revient d'un element de fabrication
       | fraisage | PT1H    | PT1H          | 90.00   | 40.00       |
     And le rapport porte la non conformite de "2026-05-11T10:00:00Z" a "2026-05-11T11:00:00Z"
 
+  Scenario: Changer le poste d'une activite lui donne le tarif du nouveau poste
+    Given l'entreprise fabrique "OF 3060"
+    And "OF 3060" est mis en atelier a "2026-05-11T07:00:00Z"
+    And "dupont" pointe "DEBUT" sur "OF 3060" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
+    And "dupont" pointe "FIN" sur "OF 3060" au poste "fraiseuse" a "2026-05-11T11:00:00Z"
+    And pour le cout, le gestionnaire change a "2026-05-11T17:00:00Z" le poste de l'activite de "dupont" sur "OF 3060" commencee a "2026-05-11T09:00:00Z" vers "tour"
+    When je consulte le cout de revient de "OF 3060" a "2026-05-11T18:00:00Z"
+    Then la reponse a le statut http 200
+    # Deux heures de tournage a 60 EUR de machine et 20 EUR d'operateur : le tarif fige est celui du changement de poste.
+    And le rapport porte les lignes
+      | nature   | travail | nonConformite | machine | mainDOeuvre |
+      | tournage | PT2H    | PT0S          | 120.00  | 40.00       |
+
+  Scenario: Retirer une activite la sort du cout de revient
+    Given l'entreprise fabrique "OF 3061"
+    And "OF 3061" est mis en atelier a "2026-05-11T07:00:00Z"
+    And "dupont" pointe "DEBUT" sur "OF 3061" au poste "fraiseuse" a "2026-05-11T09:00:00Z"
+    And "dupont" pointe "FIN" sur "OF 3061" au poste "fraiseuse" a "2026-05-11T11:00:00Z"
+    And pour le cout, le gestionnaire retire a "2026-05-11T17:00:00Z" l'activite de "dupont" sur "OF 3061" commencee a "2026-05-11T09:00:00Z"
+    When je consulte le cout de revient de "OF 3061" a "2026-05-11T18:00:00Z"
+    Then la reponse a le statut http 200
+    And le rapport ne porte aucune ligne
+    And le cout total du rapport est "0.00" dont "0.00" de machine
+
   Scenario: Un double appui sur demarrer ne valorise rien de plus
     # Demarrer une activite deja en cours est ignore (DEJA_EN_COURS) : le second appui n'ouvre aucune activite.
     Given l'entreprise fabrique "OF 3010"

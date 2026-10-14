@@ -2,6 +2,7 @@ package com.glm.glmback.atelier.domain;
 
 import static com.glm.glmback.atelier.domain.AtelierFixture.*;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -17,7 +18,7 @@ import java.util.stream.Collectors;
  * poste : trois doubles independants obligeraient chaque test a les tenir coherents entre eux.
  * </p>
  */
-final class RessourcesDAtelierEnMemoire {
+public final class RessourcesDAtelierEnMemoire {
 
   private final Map<OperateurId, OperateurConnu> operateurs;
   private final Map<PosteDeTravailId, PosteConnu> postes;
@@ -37,7 +38,7 @@ final class RessourcesDAtelierEnMemoire {
    * Dupont est habilite sur les deux fraiseuses, Martin sur aucune : de quoi eprouver le refus sans rien declarer de
    * plus dans le test.
    */
-  static RessourcesDAtelierEnMemoire deLAtelier() {
+  public static RessourcesDAtelierEnMemoire deLAtelier() {
     return new RessourcesDAtelierEnMemoire(
       List.of(OPERATEUR_CONNU_DUPONT, OPERATEUR_CONNU_MARTIN),
       List.of(POSTE_CONNU_FRAISEUSE_1, POSTE_CONNU_FRAISEUSE_2),
@@ -45,15 +46,34 @@ final class RessourcesDAtelierEnMemoire {
     );
   }
 
-  OperateursConnus operateurs() {
+  /**
+   * Comme {@link #deLAtelier()}, mais le taux horaire de Dupont a ete revise depuis : ce que le referentiel dit
+   * aujourd'hui n'est plus ce que les faits deja ecrits ont fige.
+   */
+  public static RessourcesDAtelierEnMemoire deLAtelierAuTauxRevise() {
+    return new RessourcesDAtelierEnMemoire(
+      List.of(
+        OperateurConnu.builder()
+          .id(OPERATEUR_ID_DUPONT)
+          .nom(NOM_DUPONT)
+          .prenom(PRENOM_JEAN)
+          .tauxHoraire(TAUX_HORAIRE_DUPONT_REVISE.value()),
+        OPERATEUR_CONNU_MARTIN
+      ),
+      List.of(POSTE_CONNU_FRAISEUSE_1, POSTE_CONNU_FRAISEUSE_2),
+      Set.of(Map.entry(OPERATEUR_ID_DUPONT, POSTE_ID_FRAISEUSE_1), Map.entry(OPERATEUR_ID_DUPONT, POSTE_ID_FRAISEUSE_2))
+    );
+  }
+
+  public OperateursConnus operateurs() {
     return new OperateursEnMemoire();
   }
 
-  PostesConnus postes() {
+  public PostesConnus postes() {
     return new PostesEnMemoire();
   }
 
-  Habilitations habilitations() {
+  public Habilitations habilitations() {
     return new HabilitationsEnMemoire();
   }
 
@@ -88,6 +108,16 @@ final class RessourcesDAtelierEnMemoire {
     @Override
     public boolean estHabilite(OperateurId operateur, PosteDeTravailId poste) {
       return habilitations.contains(Map.entry(operateur, poste));
+    }
+
+    @Override
+    public List<PosteDeTravailId> postesHabilites(OperateurId operateur) {
+      return habilitations
+        .stream()
+        .filter(habilitation -> habilitation.getKey().equals(operateur))
+        .map(Map.Entry::getValue)
+        .sorted(Comparator.comparing(PosteDeTravailId::uuid))
+        .toList();
     }
   }
 }

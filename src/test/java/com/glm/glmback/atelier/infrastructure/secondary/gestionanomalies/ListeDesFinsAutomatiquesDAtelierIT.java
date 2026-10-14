@@ -130,7 +130,7 @@ class ListeDesFinsAutomatiquesDAtelierIT {
     var cloturee = debutSurFraiseuse1ParDupontA(LE_10_MAI_2026_A_8H);
     var suiviTardif = suiviEngageLe1erJanvier2025Pour(element)
       .enregistre(tardive)
-      .enregistre(finDe(tardive).a(Instant.parse("2026-05-10T23:00:00Z")));
+      .enregistre(finSansCibleDe(tardive).a(Instant.parse("2026-05-10T23:00:00Z")));
     var suiviEnCours = suiviEngageLe1erJanvier2025Pour(element).enregistre(enCours);
     var suiviReel = suiviEngageLe1erJanvier2025Pour(element).enregistre(reelle).enregistre(finDe(reelle).a(LE_10_MAI_2026_A_9H));
     var suiviRegularise = suiviEngageLe1erJanvier2025Pour(element)
@@ -339,7 +339,7 @@ class ListeDesFinsAutomatiquesDAtelierIT {
         .enregistre(finDe(terminee).a(LE_9_JANVIER_2043_A.plusSeconds(9 * HEURE))),
       suiviEngageLe1erJanvier2025Pour(element)
         .enregistre(finTardive)
-        .enregistre(finDe(finTardive).a(LE_9_JANVIER_2043_A.plusSeconds(23 * HEURE))),
+        .enregistre(finSansCibleDe(finTardive).a(LE_9_JANVIER_2043_A.plusSeconds(23 * HEURE))),
       suiviEngageLe1erJanvier2025Pour(element)
         .enregistre(clotureeAvant)
         .cloture(clotureParLeroyA(LE_9_JANVIER_2043_A.plusSeconds(20 * HEURE))),

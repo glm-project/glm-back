@@ -12,6 +12,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @UnitTest
@@ -151,6 +152,34 @@ class EvenementDAtelierTest {
     assertThat(fin.activiteVisee()).contains(ACTIVITE_VISEE);
   }
 
+  /**
+   * Un retrait et un changement de poste sont des corrections du gestionnaire : ils visent toujours une activite, n'en
+   * ouvrent aucune et ne portent pas de duree maximale.
+   */
+  @ParameterizedTest
+  @EnumSource(value = TypeDEvenementDAtelier.class, names = { "RETRAIT", "CHANGEMENT_DE_POSTE" })
+  void shouldBuildUneCorrectionQuiCibleUneActiviteSansEnOuvrir(TypeDEvenementDAtelier type) {
+    EvenementDAtelier correction = geste(type, OrigineDuPointage.REGULARISATION, Optional.empty(), Optional.of(ACTIVITE_VISEE));
+
+    assertThat(correction.activite()).isEmpty();
+    assertThat(correction.activiteVisee()).contains(ACTIVITE_VISEE);
+    assertThat(correction.dureeMax()).isEmpty();
+    assertThat(correction.estUneRegularisation()).isTrue();
+  }
+
+  /**
+   * Le serveur lie la fin pointee a l'activite que sa cle avait en cours ; une fin d'avant cette liaison n'en porte aucune.
+   * Dans les deux cas c'est un pointage, jamais un acte du gestionnaire.
+   */
+  @Test
+  void shouldBuildUneFinPointeeQuiCibleUneActiviteSansEnOuvrir() {
+    EvenementDAtelier fin = geste(TypeDEvenementDAtelier.FIN, OrigineDuPointage.POINTAGE, Optional.empty(), Optional.of(ACTIVITE_VISEE));
+
+    assertThat(fin.activite()).isEmpty();
+    assertThat(fin.activiteVisee()).contains(ACTIVITE_VISEE);
+    assertThat(fin.estUneRegularisation()).isFalse();
+  }
+
   @Test
   void shouldBuildUneFinPointeeSansCibleNiActivite() {
     EvenementDAtelier fin = geste(TypeDEvenementDAtelier.FIN, OrigineDuPointage.POINTAGE, Optional.empty(), Optional.empty());
@@ -212,12 +241,17 @@ class EvenementDAtelierTest {
 
     return Stream.of(
       Arguments.of(TypeDEvenementDAtelier.FIN, OrigineDuPointage.POINTAGE, ouverte, aucune),
-      Arguments.of(TypeDEvenementDAtelier.FIN, OrigineDuPointage.POINTAGE, aucune, visee),
       Arguments.of(TypeDEvenementDAtelier.FIN, OrigineDuPointage.REGULARISATION, aucune, aucune),
       Arguments.of(TypeDEvenementDAtelier.FIN, OrigineDuPointage.REGULARISATION, ouverte, visee),
       Arguments.of(TypeDEvenementDAtelier.DEBUT, OrigineDuPointage.POINTAGE, aucune, aucune),
       Arguments.of(TypeDEvenementDAtelier.DEBUT, OrigineDuPointage.POINTAGE, ouverte, visee),
-      Arguments.of(TypeDEvenementDAtelier.NON_CONFORMITE, OrigineDuPointage.REGULARISATION, ouverte, visee)
+      Arguments.of(TypeDEvenementDAtelier.NON_CONFORMITE, OrigineDuPointage.REGULARISATION, ouverte, visee),
+      Arguments.of(TypeDEvenementDAtelier.RETRAIT, OrigineDuPointage.REGULARISATION, aucune, aucune),
+      Arguments.of(TypeDEvenementDAtelier.RETRAIT, OrigineDuPointage.REGULARISATION, ouverte, visee),
+      Arguments.of(TypeDEvenementDAtelier.RETRAIT, OrigineDuPointage.POINTAGE, aucune, aucune),
+      Arguments.of(TypeDEvenementDAtelier.RETRAIT, OrigineDuPointage.POINTAGE, aucune, visee),
+      Arguments.of(TypeDEvenementDAtelier.CHANGEMENT_DE_POSTE, OrigineDuPointage.REGULARISATION, aucune, aucune),
+      Arguments.of(TypeDEvenementDAtelier.CHANGEMENT_DE_POSTE, OrigineDuPointage.POINTAGE, aucune, visee)
     );
   }
 

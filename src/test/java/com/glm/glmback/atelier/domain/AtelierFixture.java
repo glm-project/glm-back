@@ -56,6 +56,7 @@ public final class AtelierFixture {
   public static final NatureDOperation NATURE_TOURNAGE = new NatureDOperation(NATURE_D_OPERATION_ID_TOURNAGE, "tournage");
   public static final CoutHoraire COUT_HORAIRE_FRAISEUSE_1 = new CoutHoraire(new BigDecimal("45.50"));
   public static final TauxHoraire TAUX_HORAIRE_DUPONT = new TauxHoraire(new BigDecimal("22.00"));
+  public static final TauxHoraire TAUX_HORAIRE_DUPONT_REVISE = new TauxHoraire(new BigDecimal("30.00"));
   public static final OperateurConnu OPERATEUR_CONNU_DUPONT = OperateurConnu.builder()
     .id(OPERATEUR_ID_DUPONT)
     .nom(NOM_DUPONT)
@@ -255,11 +256,38 @@ public final class AtelierFixture {
   }
 
   /**
-   * La fin pointee sur la cle de l'activite qu'ouvre ce debut, par celui qui l'a ouverte : elle ferme l'activite en
-   * cours de la cle sans la designer, et il ne reste qu'a la dater.
+   * La fin pointee sur la cle de l'activite qu'ouvre ce debut, par celui qui l'a ouverte, telle que le serveur l'ecrit :
+   * elle vise l'activite que sa cle avait en cours, et il ne reste qu'a la dater.
    */
   public static GesteADater finDe(EvenementDAtelier ouvrant) {
+    return date -> finPointeeVisant(ouvrant, ouvrant.cle(), Horodatage.saisiA(date));
+  }
+
+  /**
+   * La fin pointee d'avant que le serveur ne la lie a l'activite qu'elle ferme : elle ne designe rien, la cle la donne. Les
+   * journaux ecrits alors se lisent encore ainsi ; seuls les tests qui les couvrent s'en servent.
+   */
+  public static GesteADater finSansCibleDe(EvenementDAtelier ouvrant) {
     return date -> pointageDAtelier(TypeDEvenementDAtelier.FIN, Optional.empty(), ouvrant.cle(), ouvrant.auteur(), Horodatage.saisiA(date));
+  }
+
+  /**
+   * La meme fin, mais ecrite sur la fraiseuse 2 : celle d'une activite qu'une correction y a amenee.
+   */
+  public static GesteADater finPointeeSurFraiseuse2De(EvenementDAtelier ouvrant) {
+    return date ->
+      finPointeeVisant(ouvrant, new CleDActivite(OPERATEUR_ID_DUPONT, Optional.of(POSTE_ID_FRAISEUSE_2)), Horodatage.saisiA(date));
+  }
+
+  /**
+   * La fin pointee de cette activite, recue le 11 mai a 9 h 15 : bien apres son geste.
+   */
+  public static GesteADater finPointeeRecueLe11MaiDe(EvenementDAtelier ouvrant) {
+    return date -> finPointeeVisant(ouvrant, ouvrant.cle(), new Horodatage(date, LE_11_MAI_2026_A_9H15));
+  }
+
+  private static EvenementDAtelier finPointeeVisant(EvenementDAtelier ouvrant, CleDActivite cle, Horodatage horodatage) {
+    return evenementDAtelier(TypeDEvenementDAtelier.FIN, ouvrant.activite(), cle, ouvrant.auteur(), OrigineDuPointage.POINTAGE, horodatage);
   }
 
   /**
@@ -275,6 +303,131 @@ public final class AtelierFixture {
         OrigineDuPointage.REGULARISATION,
         new Horodatage(date, LE_11_MAI_2026_A_9H15)
       );
+  }
+
+  /**
+   * Un debut pointe par Dupont a l'heure de son geste et recu plus tard, a l'instant donne : un pointage hors ligne.
+   */
+  public static GesteADater debutSurFraiseuse1ParDupontRecuLe(Instant reception) {
+    return date ->
+      evenementDAtelier(
+        TypeDEvenementDAtelier.DEBUT,
+        Optional.empty(),
+        cleDeFraiseuse1DeDupont(),
+        AUTEUR_DUPONT,
+        OrigineDuPointage.POINTAGE,
+        new Horodatage(date, reception)
+      );
+  }
+
+  /**
+   * La fin que le gestionnaire regularise sur l'activite de Dupont qu'ouvre ce debut, ecrite sur la fraiseuse 2 : la cle
+   * d'une activite dont le poste a change.
+   */
+  public static GesteADater finRegulariseeSurFraiseuse2ParLeroyDe(EvenementDAtelier ouvrant) {
+    return date ->
+      evenementDAtelier(
+        TypeDEvenementDAtelier.FIN,
+        ouvrant.activite(),
+        new CleDActivite(OPERATEUR_ID_DUPONT, Optional.of(POSTE_ID_FRAISEUSE_2)),
+        AUTEUR_LEROY,
+        OrigineDuPointage.REGULARISATION,
+        new Horodatage(date, LE_11_MAI_2026_A_9H15)
+      );
+  }
+
+  /**
+   * Un debut que le gestionnaire ajoute apres coup sur l'activite de Dupont : une ouverture d'origine regularisation,
+   * saisie quand elle a ete ajoutee, et qui porte la duree maximale en vigueur comme tout debut.
+   */
+  public static EvenementDAtelier debutAjouteParLeroySurFraiseuse1ParDupontA(Instant date) {
+    return evenementDAtelier(
+      TypeDEvenementDAtelier.DEBUT,
+      Optional.empty(),
+      cleDeFraiseuse1DeDupont(),
+      AUTEUR_LEROY,
+      OrigineDuPointage.REGULARISATION,
+      new Horodatage(date, LE_11_MAI_2026_A_9H15)
+    );
+  }
+
+  /**
+   * Un debut que le gestionnaire ajoute apres coup sur cette cle, saisi quand il l'a ajoute.
+   */
+  public static GesteADater debutAjouteParLeroySur(CleDActivite cle) {
+    return date ->
+      evenementDAtelier(
+        TypeDEvenementDAtelier.DEBUT,
+        Optional.empty(),
+        cle,
+        AUTEUR_LEROY,
+        OrigineDuPointage.REGULARISATION,
+        new Horodatage(date, LE_11_MAI_2026_A_9H15)
+      );
+  }
+
+  /**
+   * La fin d'une activite ajoutee : celle qui vise cette ouverture, sur sa cle.
+   */
+  public static GesteADater finAjouteeParLeroyDe(EvenementDAtelier ouverture) {
+    return date ->
+      evenementDAtelier(
+        TypeDEvenementDAtelier.FIN,
+        ouverture.activite(),
+        ouverture.cle(),
+        AUTEUR_LEROY,
+        OrigineDuPointage.REGULARISATION,
+        new Horodatage(date, LE_11_MAI_2026_A_9H15)
+      );
+  }
+
+  /**
+   * Le retrait de l'activite qu'ouvre ce debut, que le gestionnaire date du moment de sa correction : un fait de plus
+   * au journal, qui n'efface rien.
+   */
+  public static GesteADater retraitParLeroyDe(EvenementDAtelier ouvrant) {
+    return date ->
+      correctionParLeroy(TypeDEvenementDAtelier.RETRAIT, ouvrant, ouvrant.poste(), ouvrant.nature(), ouvrant.coutHoraire(), date);
+  }
+
+  /**
+   * Le changement de l'activite qu'ouvre ce debut vers la fraiseuse 2, dont il recopie la nature (tournage) et le cout
+   * horaire (aucun), le taux horaire de l'operateur restant celui de l'activite.
+   */
+  public static GesteADater changementDePosteVersFraiseuse2ParLeroyDe(EvenementDAtelier ouvrant) {
+    return date ->
+      correctionParLeroy(
+        TypeDEvenementDAtelier.CHANGEMENT_DE_POSTE,
+        ouvrant,
+        Optional.of(POSTE_ID_FRAISEUSE_2),
+        Optional.of(NATURE_TOURNAGE),
+        Optional.empty(),
+        date
+      );
+  }
+
+  private static EvenementDAtelier correctionParLeroy(
+    TypeDEvenementDAtelier type,
+    EvenementDAtelier ouvrant,
+    Optional<PosteDeTravailId> poste,
+    Optional<NatureDOperation> nature,
+    Optional<CoutHoraire> coutHoraire,
+    Instant date
+  ) {
+    return EvenementDAtelier.builder()
+      .id(EvenementDAtelierId.newId())
+      .type(type)
+      .activite(Optional.empty())
+      .activiteVisee(ouvrant.activite())
+      .operateur(ouvrant.operateur())
+      .poste(poste)
+      .nature(nature)
+      .coutHoraire(coutHoraire)
+      .tauxHoraire(ouvrant.tauxHoraire())
+      .dureeMax(Optional.empty())
+      .auteur(AUTEUR_LEROY)
+      .origine(OrigineDuPointage.REGULARISATION)
+      .horodatage(Horodatage.saisiA(date));
   }
 
   private static EvenementDAtelier ouvertureDeDupont(TypeDEvenementDAtelier type, PosteDeTravailId poste, Instant date) {
