@@ -28,6 +28,20 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+      <!--
+        Versions transitives alignees sur la plus haute deja tiree, pour que DependencyConvergence passe :
+        commons-io (poi 2.21.0, commons-compress 2.20.0) et commons-text (liquibase 1.15.0, opencsv 1.13.1).
+      -->
+      <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>${commons-io.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-text</artifactId>
+        <version>${commons-text.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
   <dependencies>
@@ -180,6 +194,8 @@
     <springdoc.version>3.0.1</springdoc.version>
     <poi.version>5.5.1</poi.version>
     <openhtmltopdf.version>1.1.97</openhtmltopdf.version>
+    <commons-io.version>2.21.0</commons-io.version>
+    <commons-text.version>1.15.0</commons-text.version>
     <testcontainers.version>2.0.5</testcontainers.version>
     <reflections.version>0.10.2</reflections.version>
     <cucumber.version>7.34.6</cucumber.version>
