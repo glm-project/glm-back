@@ -107,9 +107,10 @@ un autre pointage s'est glissé entre la lecture et l'écriture.
 
 `pointage-ignore` répond à un pointage (`POST /api/atelier/suivis/{id}/pointages`) que la règle de réception ignore : il
 ne s'accorde pas à l'état de sa clé (opérateur, élément, poste) et part dans la table d'audit, sans entrer au journal.
-Les quatre raisons d'audit (`DEJA_EN_COURS`, `AUCUNE_ACTIVITE`, `APRES_ECHEANCE`, `ANTERIEUR`) ne sortent pas dans la
-réponse. Le refus ne s'affiche pas à l'opérateur : le pupitre retire l'effet local du pointage et se recale sur le
-référentiel. Renvoyer l'identifiant d'un pointage déjà ignoré répond le même refus, sans nouvelle ligne d'audit. Seul
+Les quatre raisons de la règle (`DEJA_EN_COURS`, `AUCUNE_ACTIVITE`, `APRES_ECHEANCE`, `ANTERIEUR`), comme
+`HORLOGE_EN_AVANCE`, ne sortent pas dans la réponse. Le refus ne s'affiche pas à l'opérateur : le pupitre retire l'effet local du pointage et se recale sur le
+référentiel. Renvoyer l'identifiant d'un pointage déjà ignoré répond le même refus, sans nouvelle ligne d'audit ; de même pour un
+pointage refusé en `date-de-survenue-future`, que le serveur audite (`HORLOGE_EN_AVANCE`) avant de répondre 400. Seul
 `suivi-d-atelier-cloture`, pour un démarrage ou une non conformité sur un élément clôturé, est un refus à afficher.
 
 `activite-visee-introuvable` répond à la régularisation directe dont l'activité n'est pas une activité de ce suivi, et à une

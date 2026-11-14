@@ -580,6 +580,21 @@ class SuivisDAtelierServiceTest {
       .satisfies(fin -> assertThat(fin.dateDeSurvenue()).isEqualTo(LE_10_MAI_2026_A_17H));
   }
 
+  /**
+   * Seuls les pointages du pupitre partent en audit quand leur date est en avance : une cloture datee au-dela de la derive
+   * toleree reste refusee, sans rien ecrire.
+   */
+  @Test
+  void shouldRefuserUneClotureDateeAuDelaDeLaDeriveToleree() {
+    SuiviDAtelier engage = engage();
+    maintenant.set(LE_10_MAI_2026_A_17H);
+    ClotureAEnregistrer commande = new ClotureAEnregistrer(engage.id(), AUTEUR_LEROY, Optional.of(LE_10_MAI_2026_A_17H.plusSeconds(121)));
+
+    assertThatThrownBy(() -> atelier.cloture(commande)).isExactlyInstanceOf(DateDeSurvenueFutureException.class);
+    assertThat(suivis.get(engage.id())).contains(engage);
+    assertThat(pointagesIgnores.enAvance()).isEmpty();
+  }
+
   @Test
   void shouldRouvrirUnSuiviCloture() {
     SuiviDAtelier engage = engage();

@@ -1,7 +1,8 @@
 package com.glm.glmback.atelier.domain;
 
 /**
- * Pourquoi la regle de reception ignore un pointage : il part en audit, sans jamais entrer au journal.
+ * Pourquoi un pointage part en audit, sans jamais entrer au journal : l'une des quatre raisons de la regle de reception,
+ * ou une horloge en avance, refusee avant elle.
  */
 public enum RaisonDePointageIgnore {
   /**
@@ -25,4 +26,9 @@ public enum RaisonDePointageIgnore {
    * fermerait : une activite de duree nulle n'existe pas, elle reste en cours.
    */
   ANTERIEUR,
+  /**
+   * Un pointage dont l'heure annoncee depasse l'heure de reception de plus que la derive d'horloge toleree : il n'est pas
+   * juge, le pupitre en recoit le refus date-de-survenue-future. Jamais rendue par la regle de reception.
+   */
+  HORLOGE_EN_AVANCE,
 }

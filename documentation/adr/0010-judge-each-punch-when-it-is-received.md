@@ -6,6 +6,10 @@ Accepted on 9 October 2026 (glm-front#254). It replaces the reading of contradic
 that the manager resolves, and amends [ADR 0001](0001-generate-event-identities-in-the-offline-first-pupitre.md) and
 [ADR 0002](0002-let-the-pupitre-turn-a-pause-into-activity-stops.md).
 
+Amended on 14 November 2026 (#159): a punch whose gesture time is more than two minutes ahead of the server is still
+refused with 400 `date-de-survenue-future`, but it now writes its row in the audit first, with the reason
+`HORLOGE_EN_AVANCE`, so that it does not vanish without a trace.
+
 ## Context
 
 Pupitres punch offline, several pupitres can serve one operator, and a gesture reaches the server hours after it
@@ -51,7 +55,10 @@ operator, workstation, type, gesture time, reception time, one of the four reaso
 accepted punch it was compared with. The table has no key and no constraint, only an index on the identifier, so that
 nothing can prevent an ignored punch from being written. It is read in the database, with no endpoint and no screen.
 The answer is 409 `pointage-ignore`, raised after the transaction that wrote the audit has committed, so the refusal
-does not cancel it. The pupitre never displays it: it removes the local effect and realigns on the referential. The only
+does not cancel it. The pupitre never displays it: it removes the local effect and realigns on the referential.
+A punch whose gesture time is more than two minutes ahead of the server is not judged: it writes a row too, with the
+reason `HORLOGE_EN_AVANCE`, the announced time and no compared punch, and the answer stays 400
+`date-de-survenue-future`, raised after the same commit. Its replay then finds the audit: 409 `pointage-ignore`. The only
 refusal shown to the operator is `suivi-d-atelier-cloture`. The follow-up lock is taken before the judgement, so an
 ignored punch takes it too.
 

@@ -70,7 +70,7 @@ public record SuiviDAtelier(
   /**
    * Juge un pointage de la cle donnee, survenu a cette heure, selon la regle de reception : anterieur au dernier
    * accepte de la cle, echeance de sa derniere activite, puis le tableau. Il est accepte, ou ignore pour l'une des
-   * quatre raisons de {@link RaisonDePointageIgnore} ; le suivi ne change pas.
+   * quatre raisons de la regle ({@link RaisonDePointageIgnore}, hors {@code HORLOGE_EN_AVANCE}) ; le suivi ne change pas.
    */
   public VerdictDeReception juge(CleDActivite cle, TypeDEvenementDAtelier type, Instant survenue) {
     return RegleDeReception.juge(journal, cloture.map(Cloture::dateDeSurvenue), cle, type, survenue);

@@ -1,6 +1,7 @@
 package com.glm.glmback.atelier.infrastructure.secondary;
 
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
+import com.glm.glmback.atelier.domain.PointageEnAvance;
 import com.glm.glmback.atelier.domain.PointageIgnore;
 import com.glm.glmback.atelier.domain.PointagesIgnores;
 import jakarta.persistence.EntityManager;
@@ -21,6 +22,11 @@ class JpaPointagesIgnores implements PointagesIgnores {
 
   @Override
   public void enregistre(PointageIgnore pointage) {
+    entities.persist(PointageIgnoreEntity.from(pointage));
+  }
+
+  @Override
+  public void enregistre(PointageEnAvance pointage) {
     entities.persist(PointageIgnoreEntity.from(pointage));
   }
 

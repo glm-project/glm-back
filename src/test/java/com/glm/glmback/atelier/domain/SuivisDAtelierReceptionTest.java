@@ -186,6 +186,80 @@ class SuivisDAtelierReceptionTest {
   }
 
   /**
+   * Un pointage date au-dela de la derive toleree par une horloge en avance n'est pas juge : il part en audit avec
+   * l'heure que le pupitre annonce et l'heure de reception, et le journal ne change pas. Le pupitre en recoit le refus
+   * date-de-survenue-future.
+   */
+  @Test
+  void shouldEcrireALAuditUnPointageDUneHorlogeEnAvanceSansToucherAuJournal() {
+    SuiviDAtelier engage = engage();
+    PointageAEnregistrer enAvance = debutAnnonceA(engage.id(), LE_10_MAI_2026_A_8H.plusSeconds(120).plusNanos(1));
+
+    PointageDAtelierTraite traite = pointeA(enAvance, LE_10_MAI_2026_A_8H);
+
+    assertThat(traite.issue()).isEqualTo(IssueDePointage.HORLOGE_EN_AVANCE);
+    assertThat(traite.suivi()).isEqualTo(engage);
+    assertThat(suivis.get(engage.id())).contains(engage);
+    assertThat(pointagesIgnores.lignes()).isEmpty();
+    assertThat(pointagesIgnores.enAvance()).containsExactly(new PointageEnAvance(enAvance, LE_10_MAI_2026_A_8H));
+    assertThat(lecturesDeLaDuree).hasValue(0);
+  }
+
+  /**
+   * La date se verifie avant l'operateur, le poste et l'habilitation : un pointage en avance d'un operateur inconnu part
+   * lui aussi en audit, la table n'ayant aucune contrainte.
+   */
+  @Test
+  void shouldAuditerUnPointageEnAvanceAvantDeVerifierLOperateur() {
+    SuiviDAtelier engage = engage();
+    PointageAEnregistrer inconnu = PointageAEnregistrer.pupitreBuilder()
+      .suivi(engage.id())
+      .type(TypeDEvenementDAtelier.FIN)
+      .operateur(new OperateurId(java.util.UUID.randomUUID()))
+      .poste(Optional.empty())
+      .auteur(AUTEUR_DUPONT)
+      .dateDeSurvenue(Optional.of(LE_10_MAI_2026_A_9H))
+      .evenement(EvenementDAtelierId.newId());
+
+    PointageDAtelierTraite traite = pointeA(inconnu, LE_10_MAI_2026_A_8H);
+
+    assertThat(traite.issue()).isEqualTo(IssueDePointage.HORLOGE_EN_AVANCE);
+    assertThat(pointagesIgnores.enAvance()).containsExactly(new PointageEnAvance(inconnu, LE_10_MAI_2026_A_8H));
+  }
+
+  /**
+   * A deux minutes pile d'avance, le pointage reste dans la derive toleree : il est ramene a l'instant courant et juge.
+   */
+  @Test
+  void shouldJugerUnPointageAnnonceADeuxMinutesPileDAvance() {
+    SuiviDAtelier engage = engage();
+
+    PointageDAtelierTraite traite = pointeA(debutAnnonceA(engage.id(), LE_10_MAI_2026_A_8H.plusSeconds(120)), LE_10_MAI_2026_A_8H);
+
+    assertThat(traite.issue()).isEqualTo(IssueDePointage.ACCEPTE);
+    assertThat(traite.suivi().journal().evenements().getFirst().horodatage()).isEqualTo(Horodatage.saisiA(LE_10_MAI_2026_A_8H));
+    assertThat(pointagesIgnores.enAvance()).isEmpty();
+  }
+
+  /**
+   * Le renvoi d'un pointage parti en audit pour son horloge tombe sur l'audit avant toute autre verification : il est
+   * refuse comme un pointage ignore (pointage-ignore), sans nouvelle ligne, meme si sa date n'est plus en avance.
+   */
+  @Test
+  void shouldRefuserCommeIgnoreLeRenvoiDUnPointageEnAvanceSansNouvelleLigne() {
+    SuiviDAtelier engage = engage();
+    PointageAEnregistrer enAvance = debutAnnonceA(engage.id(), LE_10_MAI_2026_A_9H);
+    pointeA(enAvance, LE_10_MAI_2026_A_8H);
+
+    PointageDAtelierTraite renvoi = pointeA(enAvance, LE_10_MAI_2026_A_12H);
+
+    assertThat(renvoi.issue()).isEqualTo(IssueDePointage.IGNORE);
+    assertThat(renvoi.suivi().journal().evenements()).isEmpty();
+    assertThat(pointagesIgnores.enAvance()).hasSize(1);
+    assertThat(pointagesIgnores.lignes()).isEmpty();
+  }
+
+  /**
    * Les controles existants precedent la regle : un operateur inconnu, un poste inconnu, un operateur non habilite ou un
    * OF cloture sont refuses sans rien ecrire a l'audit, meme pour un pointage que la regle aurait ignore.
    */
@@ -367,6 +441,17 @@ class SuivisDAtelierReceptionTest {
     return PointageAEnregistrer.pupitreBuilder()
       .suivi(suivi)
       .type(TypeDEvenementDAtelier.FIN)
+      .operateur(OPERATEUR_ID_DUPONT)
+      .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
+      .auteur(AUTEUR_DUPONT)
+      .dateDeSurvenue(Optional.of(dateDeSurvenue))
+      .evenement(EvenementDAtelierId.newId());
+  }
+
+  private static PointageAEnregistrer debutAnnonceA(SuiviDAtelierId suivi, Instant dateDeSurvenue) {
+    return PointageAEnregistrer.pupitreBuilder()
+      .suivi(suivi)
+      .type(TypeDEvenementDAtelier.DEBUT)
       .operateur(OPERATEUR_ID_DUPONT)
       .poste(Optional.of(POSTE_ID_FRAISEUSE_1))
       .auteur(AUTEUR_DUPONT)

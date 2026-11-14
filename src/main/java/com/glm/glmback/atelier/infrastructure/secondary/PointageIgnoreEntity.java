@@ -2,6 +2,7 @@ package com.glm.glmback.atelier.infrastructure.secondary;
 
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.PointageAEnregistrer;
+import com.glm.glmback.atelier.domain.PointageEnAvance;
 import com.glm.glmback.atelier.domain.PointageIgnore;
 import com.glm.glmback.atelier.domain.PosteDeTravailId;
 import com.glm.glmback.atelier.domain.RaisonDePointageIgnore;
@@ -18,7 +19,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Une ligne de l'audit des pointages ignores.
+ * Une ligne de l'audit : un pointage ignore par la regle de reception, ou un pointage en avance.
  *
  * <p>
  * La table n'a ni cle ni contrainte : {@code @Id} ne dit que le seul identifiant que JPA exige, celui du geste, et rien
@@ -63,20 +64,33 @@ class PointageIgnoreEntity {
     // Constructeur requis par JPA.
   }
 
-  private PointageIgnoreEntity(PointageIgnore ignore) {
-    PointageAEnregistrer pointage = ignore.pointage();
+  private PointageIgnoreEntity(PointageAEnregistrer pointage) {
     id = pointage.evenement().uuid();
     suiviId = pointage.suivi().uuid();
     operateurId = pointage.operateur().uuid();
     posteId = pointage.poste().map(PosteDeTravailId::uuid).orElse(null);
     type = pointage.type();
-    dateDeSurvenue = ignore.horodatage().dateDeSurvenue();
-    dateDeReception = ignore.horodatage().dateDEnregistrement();
-    raison = ignore.verdict().raison();
-    dernierAccepteId = ignore.verdict().dernierAccepte().map(EvenementDAtelierId::uuid).orElse(null);
   }
 
   static PointageIgnoreEntity from(PointageIgnore ignore) {
-    return new PointageIgnoreEntity(ignore);
+    PointageIgnoreEntity ligne = new PointageIgnoreEntity(ignore.pointage());
+    ligne.dateDeSurvenue = ignore.horodatage().dateDeSurvenue();
+    ligne.dateDeReception = ignore.horodatage().dateDEnregistrement();
+    ligne.raison = ignore.verdict().raison();
+    ligne.dernierAccepteId = ignore.verdict().dernierAccepte().map(EvenementDAtelierId::uuid).orElse(null);
+
+    return ligne;
+  }
+
+  /**
+   * Un pointage en avance n'a ete compare a aucun pointage accepte : sa ligne n'en porte pas.
+   */
+  static PointageIgnoreEntity from(PointageEnAvance enAvance) {
+    PointageIgnoreEntity ligne = new PointageIgnoreEntity(enAvance.pointage());
+    ligne.dateDeSurvenue = enAvance.dateDeSurvenue();
+    ligne.dateDeReception = enAvance.dateDeReception();
+    ligne.raison = enAvance.raison();
+
+    return ligne;
   }
 }

@@ -7,6 +7,7 @@ import com.glm.glmback.IntegrationTest;
 import com.glm.glmback.atelier.domain.EvenementDAtelierId;
 import com.glm.glmback.atelier.domain.Horodatage;
 import com.glm.glmback.atelier.domain.PointageAEnregistrer;
+import com.glm.glmback.atelier.domain.PointageEnAvance;
 import com.glm.glmback.atelier.domain.PointageIgnore;
 import com.glm.glmback.atelier.domain.PointagesIgnores;
 import com.glm.glmback.atelier.domain.PosteDeTravailId;
@@ -33,6 +34,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 @IntegrationTest
 class JpaPointagesIgnoresIT {
 
+  private static final Instant LE_10_MAI_2046_A_7H = Instant.parse("2046-05-10T07:00:00Z");
   private static final Instant LE_10_MAI_2046_A_8H = Instant.parse("2046-05-10T08:00:00.123456789Z");
   private static final Instant LE_10_MAI_2046_A_9H = Instant.parse("2046-05-10T09:00:00Z");
 
@@ -82,6 +84,29 @@ class JpaPointagesIgnoresIT {
     assertThat(ligne[2]).isNull();
     assertThat(ligne[6]).isEqualTo("AUCUNE_ACTIVITE");
     assertThat(ligne[7]).isNull();
+  }
+
+  /**
+   * Un pointage d'une horloge en avance garde l'heure annoncee par le pupitre, posterieure a sa reception ; il n'a ete
+   * compare a aucun pointage accepte. Son renvoi se retrouve comme celui d'un pointage ignore.
+   */
+  @Test
+  @WithTenant("impeccmold")
+  void shouldEcrireToutesLesColonnesDUnPointageEnAvance() {
+    PointageEnAvance enAvance = new PointageEnAvance(pointage(Optional.of(POSTE_ID_FRAISEUSE_1)), LE_10_MAI_2046_A_7H);
+
+    inTransaction(() -> audit.enregistre(enAvance));
+
+    Object[] ligne = lignesDe(enAvance.pointage().evenement()).getFirst();
+    assertThat(ligne[0]).hasToString(enAvance.pointage().suivi().uuid().toString());
+    assertThat(ligne[1]).hasToString(OPERATEUR_ID_DUPONT.uuid().toString());
+    assertThat(ligne[2]).hasToString(POSTE_ID_FRAISEUSE_1.uuid().toString());
+    assertThat(ligne[3]).isEqualTo("FIN");
+    assertThat(instant(ligne[4])).isEqualTo(LE_10_MAI_2046_A_8H);
+    assertThat(instant(ligne[5])).isEqualTo(LE_10_MAI_2046_A_7H);
+    assertThat(ligne[6]).isEqualTo("HORLOGE_EN_AVANCE");
+    assertThat(ligne[7]).isNull();
+    assertThat(inTransaction(() -> audit.contient(enAvance.pointage().evenement()))).isTrue();
   }
 
   /**
