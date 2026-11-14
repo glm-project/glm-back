@@ -422,3 +422,35 @@ Feature: Regle de reception des pointages
     When je consulte "OF 1042 fin avant cloture"
     Then le journal du suivi contient 2 evenements
     And le suivi a l'etat "CLOTURE"
+
+  Scenario: Un pointage d'une horloge en avance est refuse mais laisse une ligne d'audit, son renvoi est ignore
+    # Au-dela de deux minutes d'avance sur le serveur, le pointage n'est pas juge : la reponse reste 400
+    # date-de-survenue-future, et l'audit garde l'heure annoncee par le pupitre. Un renvoi du meme identifiant tombe
+    # ensuite sur l'audit, avant la date : refus pointage-ignore, sans seconde ligne.
+    Given il est "2046-03-03T06:00:00Z"
+    And l'entreprise a cree l'element de fabrication "OF 1042 horloge en avance"
+      | categorie | OF       |
+      | reference | REC1042T |
+    And j'ai engage l'element "OF 1042 horloge en avance" en atelier
+    And il est "2046-03-03T07:00:00Z"
+    And I am logged in as "user" with role "USER"
+    When je pointe sur "OF 1042 horloge en avance"
+      | id             | 00000000-0000-0000-0000-000000104202 |
+      | type           | DEBUT                                |
+      | operateur      | paul-reception                       |
+      | poste          | fraiseuse-reception                  |
+      | dateDeSurvenue | 2046-03-03T07:02:01Z                 |
+    Then la reponse a le statut http 400
+    And la reponse porte le code d'erreur "urn:glm:erreur:atelier:date-de-survenue-future"
+    And la table d'audit des pointages ignores de "OF 1042 horloge en avance" contient
+      | id                                   | operateur      | poste               | type  | dateDeSurvenue       | dateDeReception      | raison            | dernierAccepte |
+      | 00000000-0000-0000-0000-000000104202 | paul-reception | fraiseuse-reception | DEBUT | 2046-03-03T07:02:01Z | 2046-03-03T07:00:00Z | HORLOGE_EN_AVANCE |                |
+    Given il est "2046-03-03T07:10:00Z"
+    When je rejoue le dernier geste du pupitre
+    Then le pointage est ignore
+    And la table d'audit des pointages ignores de "OF 1042 horloge en avance" contient
+      | id                                   | raison            |
+      | 00000000-0000-0000-0000-000000104202 | HORLOGE_EN_AVANCE |
+    When je consulte "OF 1042 horloge en avance"
+    Then le suivi a l'etat "EN_ATTENTE"
+    And le journal du suivi contient 0 evenements

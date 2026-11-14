@@ -10,4 +10,9 @@ public enum IssueDePointage {
   REJOUE,
   /** Il est parti en audit, sans entrer au journal ; le pupitre en recoit le refus. */
   IGNORE,
+  /**
+   * Son heure annoncee etait trop en avance pour etre jugee : il est parti en audit, sans entrer au journal ; le pupitre
+   * en recoit le refus date-de-survenue-future.
+   */
+  HORLOGE_EN_AVANCE,
 }

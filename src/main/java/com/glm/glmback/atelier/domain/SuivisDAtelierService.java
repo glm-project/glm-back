@@ -125,6 +125,12 @@ public final class SuivisDAtelierService {
    * </p>
    *
    * <p>
+   * Un pointage date au-dela de la derive d'horloge toleree n'est pas juge : il est ecrit dans l'audit avec l'heure
+   * annoncee, avant les controles de l'operateur, du poste et de l'habilitation, et le suivi rendu est inchange ; le
+   * pupitre en recoit le refus date-de-survenue-future. Son renvoi tombe sur l'audit et est ignore.
+   * </p>
+   *
+   * <p>
    * Un pointage ignore n'entre pas au journal : il est ecrit dans l'audit, et le suivi rendu est inchange. Accepte, il
    * entre au journal comme une ouverture, ou comme la fin de l'activite en cours de sa cle, que la fin designe alors
    * (`activiteVisee`) : le serveur l'a jugee en cours, apres les corrections, et aucune lecture ne la devinera plus.
@@ -145,6 +151,11 @@ public final class SuivisDAtelierService {
     }
 
     Instant maintenant = clock.now();
+    if (estEnAvance(commande.dateDeSurvenue(), maintenant)) {
+      pointagesIgnores.enregistre(new PointageEnAvance(commande, maintenant));
+      return new PointageDAtelierTraite(suivi, IssueDePointage.HORLOGE_EN_AVANCE);
+    }
+
     Horodatage horodatage = new Horodatage(survenue(commande.dateDeSurvenue(), maintenant), maintenant);
     ResolutionDesRessources.Ressources saisies = ressources.ressources(commande.operateur(), commande.poste());
 
@@ -232,15 +243,20 @@ public final class SuivisDAtelierService {
    *
    * <p>
    * Le poste date le geste avec sa propre horloge, qui peut avancer un peu sur celle du serveur : une avance
-   * jusqu'a {@link #DERIVE_D_HORLOGE_TOLEREE} est ramenee a l'instant courant, au-dela la date est refusee.
+   * jusqu'a {@link #DERIVE_D_HORLOGE_TOLEREE} est ramenee a l'instant courant, au-dela la date est refusee. Un pointage
+   * n'arrive ici qu'apres ce controle, fait par {@link #pointe} pour l'ecrire a l'audit : seule la cloture y est refusee.
    * </p>
    */
   private static Instant survenue(Optional<Instant> dateDeSurvenue, Instant maintenant) {
-    if (dateDeSurvenue.filter(date -> date.isAfter(maintenant.plus(DERIVE_D_HORLOGE_TOLEREE))).isPresent()) {
+    if (estEnAvance(dateDeSurvenue, maintenant)) {
       throw new DateDeSurvenueFutureException(dateDeSurvenue.orElseThrow());
     }
 
     return dateDeSurvenue.filter(date -> date.isBefore(maintenant)).orElse(maintenant);
+  }
+
+  private static boolean estEnAvance(Optional<Instant> dateDeSurvenue, Instant maintenant) {
+    return dateDeSurvenue.filter(date -> date.isAfter(maintenant.plus(DERIVE_D_HORLOGE_TOLEREE))).isPresent();
   }
 
   public interface SuivisDAtelierServiceRepositoryBuilder {

@@ -3,6 +3,7 @@ package com.glm.glmback.atelier.application;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelier;
 import com.glm.glmback.atelier.domain.AnnuaireDAtelierService;
 import com.glm.glmback.atelier.domain.ClotureAEnregistrer;
+import com.glm.glmback.atelier.domain.DateDeSurvenueFutureException;
 import com.glm.glmback.atelier.domain.ElementsEngageables;
 import com.glm.glmback.atelier.domain.EngagementAEnregistrer;
 import com.glm.glmback.atelier.domain.EtatDAtelier;
@@ -89,14 +90,17 @@ public class SuivisDAtelierApplicationService {
   }
 
   /**
-   * Le pointage se juge dans sa propre transaction, qui ecrit l'audit d'un pointage ignore. Le refus n'est leve qu'une
-   * fois cette transaction validee : une exception levee dedans l'aurait annulee, audit compris.
+   * Le pointage se juge dans sa propre transaction, qui ecrit l'audit d'un pointage ignore ou d'une horloge en avance. Le
+   * refus n'est leve qu'une fois cette transaction validee : une exception levee dedans l'aurait annulee, audit compris.
    */
   @Secured({ "ROLE_USER", "ROLE_GESTIONNAIRE" })
   public ResultatDEcriture<LectureDuSuivi> pointeDuPupitre(PointageAEnregistrer commande) {
     PointageDAtelierTraite traite = SaisieConcurrenteRejouee.executer(transactions, () -> suivisDAtelier.pointe(commande));
     if (traite.issue() == IssueDePointage.IGNORE) {
       throw new PointageIgnoreException(commande.evenement());
+    }
+    if (traite.issue() == IssueDePointage.HORLOGE_EN_AVANCE) {
+      throw new DateDeSurvenueFutureException(commande.dateDeSurvenue().orElseThrow());
     }
 
     return new ResultatDEcriture<>(lu(traite.suivi()), traite.issue() == IssueDePointage.REJOUE);

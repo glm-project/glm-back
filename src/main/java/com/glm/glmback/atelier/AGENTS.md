@@ -80,7 +80,9 @@ le nouveau ; la `FIN` d'un ajout compte comme une fin régularisée.
    même si le suivi a été clôturé depuis ;
 3. la clôture : un `DEBUT` ou une `NON_CONFORMITE` sur un suivi clôturé est refusé (409 `suivi-d-atelier-cloture`), seul
    refus que le pupitre affiche à l'opérateur ;
-4. la date de survenue (400 `date-de-survenue-future`), puis l'opérateur, le poste et l'habilitation ;
+4. la date de survenue : au-delà de la dérive d'horloge tolérée, le pointage n'est pas jugé, il part en audit
+   (`PointageEnAvance`, raison `HORLOGE_EN_AVANCE`) et le pupitre reçoit 400 `date-de-survenue-future` ; puis l'opérateur,
+   le poste et l'habilitation ;
 5. le jugement. Un `DEBUT` ou une `NON_CONFORMITE` antérieur à l'engagement reste refusé (409
    `evenement-anterieur-a-l-engagement`) ; une `FIN` antérieure à l'engagement n'a rien à fermer et part en audit.
 6. si le verdict est `Accepte` pour un `DEBUT` ou une `NON_CONFORMITE`, la lecture de la durée maximale en vigueur
@@ -94,15 +96,22 @@ seulement un index sur l'identifiant : deux lignes pour un même renvoi sont acc
 pointage ignoré de s'écrire. `PointageIgnoreEntity` ne déclare un `@Id` que parce que JPA l'exige ; elle n'est jamais
 relue, seulement écrite.
 
-Le refus est la réponse au pupitre : 409 `urn:glm:erreur:atelier:pointage-ignore` (`PointageIgnoreException`). Il est
-levé par `SuivisDAtelierApplicationService.pointeDuPupitre` **après** la validation de la transaction qui a écrit
-l'audit : le lever dedans l'aurait annulée, audit compris.
+Un pointage en avance écrit sa ligne dans la même table, par sa propre méthode du port : `PointageEnAvance` n'est pas un
+`VerdictDeReception` — il n'a été comparé à rien, sa ligne n'a pas de dernier pointage accepté — et son heure annoncée,
+postérieure à la réception, n'entre dans aucun `Horodatage`.
+
+Le refus est la réponse au pupitre : 409 `urn:glm:erreur:atelier:pointage-ignore` (`PointageIgnoreException`), ou 400
+`date-de-survenue-future` pour un pointage en avance (`IssueDePointage.HORLOGE_EN_AVANCE`). Il est levé par
+`SuivisDAtelierApplicationService.pointeDuPupitre` **après** la validation de la transaction qui a écrit l'audit : le
+lever dedans l'aurait annulée, audit compris. La régularisation, la clôture et les corrections refusent la même date
+sans rien écrire.
 
 **Idempotence**, pour un pointage comme pour une régularisation :
 
 1. l'identifiant est dans `evenement_d_atelier` — toute la table, le journal de n'importe quel suivi — : réponse 200,
    rien n'est écrit, quel que soit le contenu renvoyé ;
-2. sinon, pour un pointage, il est dans l'audit : même refus `pointage-ignore`, sans nouvelle ligne ;
+2. sinon, pour un pointage, il est dans l'audit : refus `pointage-ignore`, sans nouvelle ligne — y compris le renvoi d'un
+   pointage refusé en 400 pour son horloge en avance ;
 3. sinon le pointage est jugé.
 
 La régularisation applique la première étape seule. Il n'y a pas de registre d'identités ni de refus pour un
@@ -413,8 +422,8 @@ Deux scénarios métier de référence, à lire avant toute modification du mod�
 - `src/test/features/atelier_suivi.feature` — la même journée rejouée en HTTP.
 
 La règle de réception est prouvée par `atelier_reception.feature` (les huit situations de la page de règle, plus la `FIN`
-pile à l'échéance, la `FIN` à l'heure du début, les clés jugées à part, la clôture et la lecture de la table d'audit en
-SQL), `SuiviDAtelierReceptionTest` (l'agrégat) et `SuivisDAtelierReceptionTest` (le service). L'idempotence l'est par
+pile à l'échéance, la `FIN` à l'heure du début, les clés jugées à part, la clôture, l'horloge en avance et la lecture de
+la table d'audit en SQL), `SuiviDAtelierReceptionTest` (l'agrégat) et `SuivisDAtelierReceptionTest` (le service). L'idempotence l'est par
 `atelier_rejeu.feature`, l'échéance par `atelier_echeance.feature`, la régularisation et le dossier par
 `atelier_regularisation.feature` et `atelier_anomalies_*.feature`, la correction de la journée par
 `atelier_correction_des_activites.feature` (HTTP, effets sur la règle de réception, la synthèse et les anomalies),

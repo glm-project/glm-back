@@ -122,7 +122,7 @@ Le pupitre ne pointe que trois choses : `DEBUT`, `NON_CONFORMITE` et `FIN`. Un p
 | Rien en cours (jamais ouverte, terminée, clôturée ou échue) | accepté                  | accepté                  | ignoré : `APRES_ECHEANCE` si la dernière activité de la clé est échue et sans fin, sinon `AUCUNE_ACTIVITE` |
 | Activité en cours (travail ou NC)                           | ignoré : `DEJA_EN_COURS` | ignoré : `DEJA_EN_COURS` | accepté                                                                                                    |
 
-Les quatre raisons d'audit sont `DEJA_EN_COURS` (un double appui), `AUCUNE_ACTIVITE` (un deuxième arrêt),
+Les quatre raisons de la règle sont `DEJA_EN_COURS` (un double appui), `AUCUNE_ACTIVITE` (un deuxième arrêt),
 `APRES_ECHEANCE` (un arrêt à l'échéance ou après, la durée max d'activité après le début) et `ANTERIEUR` (un pointage hors ligne arrivé après un
 pointage plus récent). Travail à 7 h et arrêt à 12 h, puis un passage en non conformité pointé à 10 h qui arrive après :
 il est ignoré, et le travail reste compté de 7 h à 12 h.
@@ -131,6 +131,13 @@ Une fin survenue avant la clôture de l'élément, mais reçue après elle, est 
 pas sur un geste qui l'a précédée. Survenue après, elle est ignorée, la clôture ayant déjà arrêté l'activité encore en cours (`AUCUNE_ACTIVITE`, ou
 `APRES_ECHEANCE` si l'activité était déjà échue). Un `DEBUT` ou une `NON_CONFORMITE` sur un élément clôturé reste refusé (409 `suivi-d-atelier-cloture`) : c'est
 le seul refus que l'opérateur voit.
+
+Un pointage que l'horloge du pupitre date plus de deux minutes après l'heure du serveur n'est pas jugé : il répond 400
+`date-de-survenue-future`, que le pupitre range en refus définitif. Il part pourtant en audit, avant même les contrôles de
+l'opérateur et du poste, avec la raison `HORLOGE_EN_AVANCE`, l'heure qu'il annonce et l'heure de réception : sans cette
+trace, le geste n'existerait plus que sur la tablette, et personne ne saurait qu'il manque des heures. Le gestionnaire le
+retrouve en base et le rattrape par un ajout d'activité. Renvoyé avec le même identifiant, il tombe sur l'audit : 409
+`pointage-ignore`. La régularisation, la clôture et les corrections de la journée refusent la même date sans rien écrire.
 
 Le journal se relit par heure du geste, la fin avant l'ouverture à heure égale, puis par identifiant. Grâce à
 `ANTERIEUR`, c'est équivalent à l'ordre d'arrivée pour les pointages du pupitre, et une régularisation arrivée tard
@@ -244,7 +251,7 @@ Elles portent les bornes indépendantes de la lecture et servent les filtres san
 Le suivi se reconstruit depuis ses faits, et non depuis les projections.
 
 L'atelier écrit aussi l'audit des pointages ignorés, `pointage_ignore_d_atelier` : une ligne par pointage que la règle de
-réception a écarté. La table n'a **ni clé ni contrainte**, seulement un index sur l'identifiant : deux lignes pour un même
+réception a écarté, ou que l'horloge en avance du pupitre a fait refuser. La table n'a **ni clé ni contrainte**, seulement un index sur l'identifiant : deux lignes pour un même
 renvoi sont acceptées, et rien ne doit empêcher un pointage ignoré de s'écrire. Elle ne sert qu'à retrouver un renvoi
 et à relire en base ce que la règle a écarté ; aucun contexte voisin ne la lit.
 

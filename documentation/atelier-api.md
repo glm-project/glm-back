@@ -180,8 +180,8 @@ Le serveur juge chaque pointage à son arrivée, premier arrivé premier servi, 
    200, l'`id` déjà présent dans l'audit répond 409 `pointage-ignore`. Un renvoi accepté répond donc 200 même si le suivi
    a été clôturé depuis ;
 2. **les contrôles existants** : corps invalide (400), un `DEBUT` ou une `NON_CONFORMITE` sur un élément clôturé (409
-   `suivi-d-atelier-cloture`, seul refus à afficher à l'opérateur), date de survenue future (400), opérateur ou poste
-   introuvable (404), opérateur non habilité (409) ;
+   `suivi-d-atelier-cloture`, seul refus à afficher à l'opérateur), date de survenue future (400, mais auditée : voir
+   plus bas), opérateur ou poste introuvable (404), opérateur non habilité (409) ;
 3. **`ANTERIEUR`** : l'heure du geste est strictement plus ancienne que celle du dernier pointage accepté de la clé
    (régularisations comprises), ou bien c'est une `FIN` qui n'est pas postérieure au début de l'activité qu'elle fermerait
    (une activité de durée nulle n'existe pas : elle reste en cours). Pour un `DEBUT` ou une `NON_CONFORMITE`, une heure
@@ -202,17 +202,20 @@ survenue avant la clôture mais reçue après elle est acceptée à son heure.
 
 Ce que le pupitre reçoit :
 
-| Statut  | Cas                                                                                                                                                           |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **201** | Pointage accepté : il entre au journal, le corps est le suivi recalculé.                                                                                      |
-| **200** | Renvoi : l'`id` figure déjà dans la table des événements (le journal de n'importe quel élément). Rien n'est écrit, le corps est le suivi de la route.         |
-| **409** | `pointage-ignore` : pointage ignoré, ou renvoi d'un pointage déjà ignoré. Ne s'affiche pas : le pupitre retire l'effet local et se recale sur le référentiel. |
+| Statut  | Cas                                                                                                                                                                                                       |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **201** | Pointage accepté : il entre au journal, le corps est le suivi recalculé.                                                                                                                                  |
+| **200** | Renvoi : l'`id` figure déjà dans la table des événements (le journal de n'importe quel élément). Rien n'est écrit, le corps est le suivi de la route.                                                     |
+| **400** | `date-de-survenue-future` : l'heure annoncée dépasse de plus de deux minutes celle du serveur. Le pointage part en audit (`HORLOGE_EN_AVANCE`).                                                           |
+| **409** | `pointage-ignore` : pointage ignoré, ou renvoi d'un pointage déjà à l'audit (ignoré ou refusé en 400 pour son heure). Ne s'affiche pas : le pupitre retire l'effet local et se recale sur le référentiel. |
 
 Un pointage ignoré n'entre jamais au journal : il laisse une ligne dans la table d'audit `pointage_ignore_d_atelier`
 (identifiant, opérateur, suivi, poste, type, heure du geste, heure de réception, raison, identifiant du dernier pointage
 accepté comparé), consultée en base, sans endpoint ni écran. **Aucune clé, aucune contrainte** : deux lignes pour un même
 renvoi sont acceptées. L'audit est écrit avant le refus (le refus est levé après la validation de la transaction) et
-un pointage ignoré prend, comme tout pointage, le verrou du suivi.
+un pointage ignoré prend, comme tout pointage, le verrou du suivi. Un pointage refusé pour son heure en avance y laisse
+aussi sa ligne, avec la raison `HORLOGE_EN_AVANCE`, l'heure qu'il annonce (postérieure à sa réception) et sans dernier
+pointage accepté : il n'a pas été jugé. La réponse reste 400 `date-de-survenue-future`, avec le même message.
 
 **Idempotence**, avant toute règle (étape 1 ci-dessus) : (1) l'`id` est dans la table des événements → 200 ; (2) sinon il est dans l'audit →
 même refus `pointage-ignore` ; (3) sinon le pointage est jugé. Un `id` ne se réutilise donc jamais avec un autre contenu :
@@ -296,7 +299,8 @@ POST /api/atelier/suivis/{id}/pointages    { "id": "<uuid C>", "type": "NON_CONF
 - Un envoi accepté répond **201**. Renvoyer un UUID déjà présent dans la table des événements — le journal de n'importe
   quel élément, quel que soit le contenu renvoyé — répond **200**, sans créer de second événement ; conserver donc
   l'UUID dans la file offline jusqu'à l'acquittement. Renvoyer l'UUID d'un pointage ignoré répond de nouveau **409**
-  `pointage-ignore`. Il n'y a plus de refus pour un UUID réutilisé avec un autre contenu. Une date future répond 400.
+  `pointage-ignore`. Il n'y a plus de refus pour un UUID réutilisé avec un autre contenu. Une date en avance de plus de
+  deux minutes répond 400 et part en audit : renvoyer son UUID répond 409 `pointage-ignore`.
 
 Les états d'un élément :
 
@@ -558,7 +562,9 @@ tel quel est la bonne réaction — relire l'agrégat, et reproposer la saisie.
 
 Le pupitre date ses gestes avec l'horloge du poste, qui peut avancer un peu sur celle du serveur : une
 `dateDeSurvenue` en avance de **deux minutes au plus** est ramenée à l'instant courant du serveur. Au-delà, elle
-répond 400 avec le code stable `date-de-survenue-future`. Le pupitre peut alors corriger son contenu et réutiliser le même UUID.
+répond 400 avec le code stable `date-de-survenue-future`. Sur la route des pointages, le pointage refusé part en audit
+(`HORLOGE_EN_AVANCE`) : son UUID y figure désormais, et le renvoyer, même corrigé, répond 409 `pointage-ignore`. La
+régularisation, la clôture et les corrections de la journée refusent la même date sans rien écrire.
 
 ---
 
